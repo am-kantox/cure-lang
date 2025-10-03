@@ -424,35 +424,55 @@ parse_fsm_transition(State) ->
             {_, State2} = expect(State1, '('),
             {Event, State3} = parse_expression(State2),
             {_, State4} = expect(State3, ')'),
-            {_, State5} = expect(State4, '->'),
-            {TargetToken, State6} = expect(State5, identifier),
+            
+            % Optional guard condition with 'when'
+            {Guard, State5} = case match_token(State4, 'when') of
+                true ->
+                    {_, State4a} = expect(State4, 'when'),
+                    parse_expression(State4a);
+                false ->
+                    {undefined, State4}
+            end,
+            
+            {_, State6} = expect(State5, '->'),
+            {TargetToken, State7} = expect(State6, identifier),
             Target = binary_to_atom(get_token_value(TargetToken), utf8),
             
             Location = get_token_location(current_token(State)),
             Transition = #transition{
                 event = Event,
-                guard = undefined,
+                guard = Guard,
                 target = Target,
                 location = Location
             },
-            {Transition, State6};
+            {Transition, State7};
         timeout ->
             {_, State1} = expect(State, timeout),
             {_, State2} = expect(State1, '('),
             {TimeoutExpr, State3} = parse_expression(State2),
             {_, State4} = expect(State3, ')'),
-            {_, State5} = expect(State4, '->'),
-            {TargetToken, State6} = expect(State5, identifier),
+            
+            % Optional guard condition with 'when' for timeout as well
+            {Guard, State5} = case match_token(State4, 'when') of
+                true ->
+                    {_, State4a} = expect(State4, 'when'),
+                    parse_expression(State4a);
+                false ->
+                    {undefined, State4}
+            end,
+            
+            {_, State6} = expect(State5, '->'),
+            {TargetToken, State7} = expect(State6, identifier),
             Target = binary_to_atom(get_token_value(TargetToken), utf8),
             
             Location = get_token_location(current_token(State)),
             Transition = #transition{
                 event = TimeoutExpr,
-                guard = undefined,
+                guard = Guard,
                 target = Target,
                 location = Location
             },
-            {Transition, State6}
+            {Transition, State7}
     end.
 
 %% Parse list of atoms/identifiers
@@ -623,6 +643,7 @@ parse_expression_sequence(State, Acc) ->
 get_expr_location(#literal_expr{location = Loc}) -> Loc;
 get_expr_location(#identifier_expr{location = Loc}) -> Loc;
 get_expr_location(#binary_op_expr{location = Loc}) -> Loc;
+get_expr_location(#unary_op_expr{location = Loc}) -> Loc;
 get_expr_location(#function_call_expr{location = Loc}) -> Loc;
 get_expr_location(#if_expr{location = Loc}) -> Loc;
 get_expr_location(#let_expr{location = Loc}) -> Loc;
@@ -680,6 +701,28 @@ parse_primary_expression(State) ->
     case get_token_type(current_token(State)) of
         identifier ->
             parse_identifier_or_call(State);
+        '-' ->
+            % Unary minus
+            {_, State1} = expect(State, '-'),
+            {Operand, State2} = parse_primary_expression(State1),
+            Location = get_token_location(current_token(State)),
+            UnaryExpr = #unary_op_expr{
+                op = '-',
+                operand = Operand,
+                location = Location
+            },
+            {UnaryExpr, State2};
+        '+' ->
+            % Unary plus
+            {_, State1} = expect(State, '+'),
+            {Operand, State2} = parse_primary_expression(State1),
+            Location = get_token_location(current_token(State)),
+            UnaryExpr = #unary_op_expr{
+                op = '+',
+                operand = Operand,
+                location = Location
+            },
+            {UnaryExpr, State2};
         number ->
             {Token, State1} = expect(State, number),
             Value = get_token_value(Token),
