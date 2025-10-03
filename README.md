@@ -30,7 +30,52 @@ cure/
 
 ## Getting Started
 
-TODO: Add build and installation instructions
+### Quick Start
+```bash
+# Build the compiler
+make all
+
+# Compile a Cure program
+./cure examples/simple.cure
+
+# Run with verbose output
+./cure examples/simple.cure --verbose
+
+# Show help
+./cure --help
+```
+
+### Installation
+**Prerequisites**: Erlang/OTP 20+, Make, Unix-like environment
+
+```bash
+# Clone and build
+git clone <repository>
+cd cure
+make all
+
+# Verify installation
+./cure --version
+
+# Run tests
+make test
+```
+
+### Command Line Interface
+The Cure compiler includes a comprehensive CLI for compiling `.cure` files to BEAM bytecode.
+
+Basic usage:
+```bash
+cure [OPTIONS] <input-file>
+```
+
+Key options:
+- `-o, --output <file>`: Specify output file
+- `-d, --output-dir <dir>`: Set output directory
+- `--verbose`: Enable detailed output
+- `--no-type-check`: Skip type checking
+
+See [docs/CLI_USAGE.md](docs/CLI_USAGE.md) for complete documentation.
 
 ## Language Examples
 

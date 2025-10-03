@@ -18,6 +18,7 @@ TYPES_SRC = $(filter-out $(SRC_DIR)/types/cure_type_optimizer.erl, $(wildcard $(
 CODEGEN_SRC = $(wildcard $(SRC_DIR)/codegen/*.erl)
 FSM_SRC = $(wildcard $(SRC_DIR)/fsm/*.erl)
 RUNTIME_SRC = $(wildcard $(SRC_DIR)/runtime/*.erl)
+CLI_SRC = $(SRC_DIR)/cure_cli.erl
 
 # Test files (exclude problematic advanced tests for now)
 TEST_SRC = $(filter-out $(TEST_DIR)/dependent_types_advanced_test.erl $(TEST_DIR)/codegen_advanced_test.erl $(TEST_DIR)/fsm_advanced_test.erl $(TEST_DIR)/monomorphization_test.erl $(TEST_DIR)/inlining_test.erl, $(wildcard $(TEST_DIR)/*.erl))
@@ -27,14 +28,14 @@ BASIC_TESTS = $(TEST_DIR)/test_runner.erl $(TEST_DIR)/fsm_simple_test.erl $(TEST
 INTEGRATION_TESTS = $(TEST_DIR)/integration_test.erl
 PERFORMANCE_TESTS = $(TEST_DIR)/performance_test.erl
 
-ALL_SRC = $(LEXER_SRC) $(PARSER_SRC) $(TYPES_SRC) $(CODEGEN_SRC) $(FSM_SRC) $(RUNTIME_SRC)
+ALL_SRC = $(LEXER_SRC) $(PARSER_SRC) $(TYPES_SRC) $(CODEGEN_SRC) $(FSM_SRC) $(RUNTIME_SRC) $(CLI_SRC)
 BEAM_FILES = $(patsubst $(SRC_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(ALL_SRC))
 TEST_BEAM_FILES = $(patsubst $(TEST_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(TEST_SRC))
 
 # Compiler options
 ERLC_OPTS = +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(EBIN_DIR)
 
-.PHONY: all clean test test-basic test-integration test-performance docs setup compiler tests
+.PHONY: all clean test test-basic test-integration test-performance docs setup compiler tests compile-file
 
 all: setup compiler
 
@@ -115,6 +116,24 @@ format:
 	@echo "Formatting Cure source code..."
 	# TODO: Add code formatting
 
+# Compile a specific .cure file
+compile-file: compiler
+	@if [ -z "$(CURE_FILE)" ]; then \
+		echo "Usage: make compile-file CURE_FILE=path/to/file.cure [OUTPUT=output.beam]"; \
+		echo "Example: make compile-file CURE_FILE=examples/simple.cure"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(CURE_FILE)" ]; then \
+		echo "Error: File $(CURE_FILE) not found"; \
+		exit 1; \
+	fi
+	@echo "Compiling $(CURE_FILE)..."
+	@if [ -n "$(OUTPUT)" ]; then \
+		./cure "$(CURE_FILE)" -o "$(OUTPUT)" --verbose; \
+	else \
+		./cure "$(CURE_FILE)" --verbose; \
+	fi
+
 # Show help
 help:
 	@echo "Cure Programming Language Build System"
@@ -133,4 +152,5 @@ help:
 	@echo "  shell      - Start Erlang shell with Cure modules loaded"
 	@echo "  lint       - Run static analysis"
 	@echo "  format     - Format source code"
+	@echo "  compile-file - Compile a single .cure file (Usage: make compile-file CURE_FILE=file.cure)"
 	@echo "  help       - Show this help"
