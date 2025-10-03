@@ -10,7 +10,7 @@
     version/0         % Show version information
 ]).
 
-% -include("parser/cure_ast.hrl"). % Commented out to avoid type issues
+-include("parser/cure_ast_simple.hrl").
 
 %% Version information
 -define(CURE_VERSION, "0.1.0").
@@ -255,14 +255,87 @@ run_pipeline([{StageName, StageFunc} | RestStages], Input, Options) ->
 type_check_ast(AST) ->
     try
         TypeEnv = cure_typechecker:builtin_env(),
-        case cure_typechecker:check_module(AST, TypeEnv) of
-            {ok, TypedAST} -> {ok, TypedAST};
-            {error, Reason} -> {error, Reason}
+        case AST of
+            [FirstItem | _] when is_record(FirstItem, module_def) ->
+                % Single module case - check the first (and should be only) module
+                case cure_typechecker:check_module(FirstItem, TypeEnv) of
+                    {ok, _NewEnv, Result} -> 
+                        io:format("Type checking successful~n"),
+                        {ok, AST};
+                    {error, Reason} -> 
+                        io:format("Type checking error: ~p~n", [Reason]),
+                        {error, Reason}
+                end;
+            Items when is_list(Items) ->
+                % Multiple top-level items - check them as a program
+                case cure_typechecker:check_program(Items) of
+                    Result when is_tuple(Result) ->
+                        % Check if it looks like a success result
+                        case element(1, Result) of
+                            success_result -> 
+                                io:format("Type checking successful~n"),
+                                {ok, AST};
+                            _ ->
+                                % Try to extract error information
+                                case tuple_size(Result) >= 2 of
+                                    true ->
+                                        case element(2, Result) of
+                                            true -> 
+                                                io:format("Type checking successful~n"),
+                                                {ok, AST};
+                                            false ->
+                                                io:format("Type checking failed~n"),
+                                                {error, type_check_failed}
+                                        end;
+                                    false ->
+                                        io:format("Type checking failed (unknown format)~n"),
+                                        {error, type_check_failed}
+                                end
+                        end;
+                    {error, Reason} -> 
+                        io:format("Type checking error: ~p~n", [Reason]),
+                        {error, Reason}
+                end;
+            SingleItem ->
+                % Single non-module item - check as program with single item
+                case cure_typechecker:check_program([SingleItem]) of
+                    Result when is_tuple(Result) ->
+                        % Check if it looks like a success result
+                        case element(1, Result) of
+                            success_result -> 
+                                io:format("Type checking successful~n"),
+                                {ok, AST};
+                            _ ->
+                                % Try to extract error information
+                                case tuple_size(Result) >= 2 of
+                                    true ->
+                                        case element(2, Result) of
+                                            true -> 
+                                                io:format("Type checking successful~n"),
+                                                {ok, AST};
+                                            false ->
+                                                io:format("Type checking failed~n"),
+                                                {error, type_check_failed}
+                                        end;
+                                    false ->
+                                        io:format("Type checking failed (unknown format)~n"),
+                                        {error, type_check_failed}
+                                end
+                        end;
+                    {error, Reason} -> 
+                        io:format("Type checking error: ~p~n", [Reason]),
+                        {error, Reason}
+                end
         end
     catch
-        _:_ ->
-            % If type checking fails, return original AST with warning
-            io:format("Warning: Type checking unavailable, proceeding without type information~n"),
+        Class:Error:Stack ->
+            % If type checking fails with exception, provide more detailed error
+            io:format("Warning: Type checking failed with exception ~p:~p~n", [Class, Error]),
+            case os:getenv("CURE_DEBUG") of
+                "1" -> io:format("Stack trace: ~p~n", [Stack]);
+                _ -> ok
+            end,
+            io:format("Proceeding without type information~n"),
             {ok, AST}
     end.
 
