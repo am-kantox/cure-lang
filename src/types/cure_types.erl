@@ -1,0 +1,532 @@
+%% Cure Programming Language - Type System Core
+%% Dependent type system with constraint solving and inference
+-module(cure_types).
+
+-export([
+    % Type operations
+    new_type_var/0, new_type_var/1,
+    is_type_var/1, occurs_check/2,
+    
+    % Type unification  
+    unify/2, unify/3,
+    
+    % Type environment
+    new_env/0, extend_env/3, lookup_env/2,
+    
+    % Type inference
+    infer_type/2, infer_type/3,
+    
+    % Type checking
+    check_type/3, check_type/4,
+    
+    % Constraint solving
+    solve_constraints/1, solve_constraints/2,
+    
+    % Utility functions
+    substitute/2, normalize_type/1,
+    type_to_string/1
+]).
+
+%% Type variable counter for generating unique type variables
+-define(TYPE_VAR_COUNTER, cure_type_var_counter).
+
+%% Type definitions
+-record(type_var, {
+    id :: integer(),
+    name :: atom() | undefined,
+    constraints :: [term()]
+}).
+
+-record(type_param, {name, bound = any, value}).
+
+-record(type_constraint, {
+    left :: type_expr(),
+    op :: constraint_op(),
+    right :: type_expr(),
+    location :: location()
+}).
+
+-record(type_env, {
+    bindings :: #{atom() => type_expr()},
+    constraints :: [type_constraint()],
+    parent :: type_env() | undefined
+}).
+
+-type constraint_op() :: '=' | '<:' | '>:' | 'elem_of' | 'length_eq'.
+-type type_expr() :: term().
+-type location() :: term().
+-type constraint() :: term().
+-type type_env() :: #type_env{}.
+-type type_var() :: #type_var{}.
+-type type_constraint() :: #type_constraint{}.
+
+-record(inference_result, {
+    type :: type_expr(),
+    constraints :: [type_constraint()],
+    substitution :: #{type_var() => type_expr()}
+}).
+
+%% Built-in types
+-define(TYPE_INT, {primitive_type, 'Int'}).
+-define(TYPE_FLOAT, {primitive_type, 'Float'}).  
+-define(TYPE_STRING, {primitive_type, 'String'}).
+-define(TYPE_BOOL, {primitive_type, 'Bool'}).
+-define(TYPE_ATOM, {primitive_type, 'Atom'}).
+
+%% Dependent types
+-define(TYPE_NAT, {refined_type, 'Int', fun(N) -> N >= 0 end}).
+-define(TYPE_POS, {refined_type, 'Int', fun(N) -> N > 0 end}).
+
+%% Type variable generation
+new_type_var() ->
+    new_type_var(undefined).
+
+new_type_var(Name) ->
+    Counter = case get(?TYPE_VAR_COUNTER) of
+        undefined -> 0;
+        N -> N
+    end,
+    put(?TYPE_VAR_COUNTER, Counter + 1),
+    #type_var{
+        id = Counter,
+        name = Name,
+        constraints = []
+    }.
+
+is_type_var(#type_var{}) -> true;
+is_type_var(_) -> false.
+
+%% Occurs check for infinite types
+occurs_check(#type_var{id = Id}, Type) ->
+    occurs_check_impl(Id, Type).
+
+occurs_check_impl(Id, #type_var{id = Id}) -> true;
+occurs_check_impl(Id, {function_type, Params, Return}) ->
+    lists:any(fun(P) -> occurs_check_impl(Id, P) end, Params) orelse
+    occurs_check_impl(Id, Return);
+occurs_check_impl(Id, {dependent_type, _, Params}) ->
+    lists:any(fun(#type_param{value = V}) -> 
+        occurs_check_impl(Id, V) 
+    end, Params);
+occurs_check_impl(Id, {list_type, ElemType, LenExpr}) ->
+    occurs_check_impl(Id, ElemType) orelse
+    case LenExpr of
+        undefined -> false;
+        _ -> occurs_check_impl(Id, LenExpr)
+    end;
+occurs_check_impl(_, _) -> false.
+
+%% Type Environment Operations
+new_env() ->
+    #type_env{
+        bindings = #{},
+        constraints = [],
+        parent = undefined
+    }.
+
+extend_env(Env = #type_env{bindings = Bindings}, Var, Type) ->
+    Env#type_env{bindings = maps:put(Var, Type, Bindings)}.
+
+lookup_env(#type_env{bindings = Bindings, parent = Parent}, Var) ->
+    case maps:get(Var, Bindings, undefined) of
+        undefined when Parent =/= undefined ->
+            lookup_env(Parent, Var);
+        Result ->
+            Result
+    end.
+
+%% Type Unification
+unify(Type1, Type2) ->
+    unify(Type1, Type2, #{}).
+
+unify(Type1, Type2, Subst) ->
+    unify_impl(apply_substitution(Type1, Subst), 
+               apply_substitution(Type2, Subst), 
+               Subst).
+
+unify_impl(T, T, Subst) -> 
+    {ok, Subst};
+
+unify_impl(Var = #type_var{id = Id}, Type, Subst) ->
+    case occurs_check(Var, Type) of
+        true -> {error, {occurs_check_failed, Var, Type}};
+        false -> {ok, maps:put(Id, Type, Subst)}
+    end;
+
+unify_impl(Type, Var = #type_var{}, Subst) ->
+    unify_impl(Var, Type, Subst);
+
+unify_impl({primitive_type, Name1}, {primitive_type, Name2}, Subst) 
+    when Name1 =:= Name2 ->
+    {ok, Subst};
+
+unify_impl({function_type, Params1, Return1}, 
+          {function_type, Params2, Return2}, Subst) ->
+    case length(Params1) =:= length(Params2) of
+        false -> {error, {arity_mismatch, length(Params1), length(Params2)}};
+        true ->
+            case unify_lists(Params1, Params2, Subst) of
+                {ok, Subst1} ->
+                    unify_impl(Return1, Return2, Subst1);
+                Error -> Error
+            end
+    end;
+
+unify_impl({list_type, Elem1, Len1}, {list_type, Elem2, Len2}, Subst) ->
+    case unify_impl(Elem1, Elem2, Subst) of
+        {ok, Subst1} ->
+            unify_lengths(Len1, Len2, Subst1);
+        Error -> Error
+    end;
+
+unify_impl({dependent_type, Name1, Params1}, 
+          {dependent_type, Name2, Params2}, Subst) 
+    when Name1 =:= Name2, length(Params1) =:= length(Params2) ->
+    unify_type_params(Params1, Params2, Subst);
+
+unify_impl(Type1, Type2, _Subst) ->
+    {error, {unification_failed, Type1, Type2}}.
+
+%% Helper functions for unification
+unify_lists([], [], Subst) -> {ok, Subst};
+unify_lists([H1|T1], [H2|T2], Subst) ->
+    case unify_impl(H1, H2, Subst) of
+        {ok, Subst1} -> unify_lists(T1, T2, Subst1);
+        Error -> Error
+    end.
+
+unify_lengths(undefined, undefined, Subst) -> {ok, Subst};
+unify_lengths(Len1, Len2, Subst) when Len1 =/= undefined, Len2 =/= undefined ->
+    % For now, just check if they're the same expression
+    % In a full implementation, we'd need constraint solving here
+    case expr_equal(Len1, Len2) of
+        true -> {ok, Subst};
+        false -> {error, {length_mismatch, Len1, Len2}}
+    end;
+unify_lengths(_, _, Subst) -> {ok, Subst}.
+
+unify_type_params([], [], Subst) -> {ok, Subst};
+unify_type_params([#type_param{value = V1}|T1], 
+                 [#type_param{value = V2}|T2], Subst) ->
+    case unify_impl(V1, V2, Subst) of
+        {ok, Subst1} -> unify_type_params(T1, T2, Subst1);
+        Error -> Error
+    end.
+
+%% Expression equality (simplified)
+expr_equal(Expr1, Expr2) ->
+    % Simplified structural equality - would need full expression comparison
+    Expr1 =:= Expr2.
+
+%% Apply substitution to types
+apply_substitution(#type_var{id = Id}, Subst) ->
+    case maps:get(Id, Subst, undefined) of
+        undefined -> #type_var{id = Id};
+        Type -> apply_substitution(Type, Subst)
+    end;
+
+apply_substitution({function_type, Params, Return}, Subst) ->
+    {function_type, 
+     [apply_substitution(P, Subst) || P <- Params],
+     apply_substitution(Return, Subst)};
+
+apply_substitution({list_type, ElemType, LenExpr}, Subst) ->
+    {list_type, 
+     apply_substitution(ElemType, Subst),
+     case LenExpr of
+         undefined -> undefined;
+         _ -> apply_substitution_to_expr(LenExpr, Subst)
+     end};
+
+apply_substitution({dependent_type, Name, Params}, Subst) ->
+    {dependent_type, Name,
+     [P#type_param{value = apply_substitution(P#type_param.value, Subst)} 
+      || P <- Params]};
+
+apply_substitution(Type, _Subst) ->
+    Type.
+
+%% Apply substitution to expressions (simplified)
+apply_substitution_to_expr(Expr, _Subst) ->
+    % In full implementation, would substitute type variables in expressions
+    Expr.
+
+%% Type inference entry point
+infer_type(Expr, Env) ->
+    infer_type(Expr, Env, []).
+
+infer_type(Expr, Env, Constraints) ->
+    case infer_expr(Expr, Env) of
+        {ok, Type, NewConstraints} ->
+            AllConstraints = Constraints ++ NewConstraints,
+            case solve_constraints(AllConstraints) of
+                {ok, Subst} ->
+                    FinalType = apply_substitution(Type, Subst),
+                    {ok, #inference_result{
+                        type = FinalType,
+                        constraints = AllConstraints,
+                        substitution = Subst
+                    }};
+                {error, Reason} ->
+                    {error, {constraint_solving_failed, Reason}}
+            end;
+        {error, Reason} ->
+            {error, {type_inference_failed, Reason}}
+    end.
+
+%% Type inference for expressions
+infer_expr({literal_expr, Value, _Location}, _Env) ->
+    Type = infer_literal_type(Value),
+    {ok, Type, []};
+
+infer_expr({identifier_expr, Name, Location}, Env) ->
+    case lookup_env(Env, Name) of
+        undefined ->
+            {error, {unbound_variable, Name, Location}};
+        Type ->
+            {ok, Type, []}
+    end;
+
+infer_expr({binary_op_expr, Op, Left, Right, Location}, Env) ->
+    case infer_expr(Left, Env) of
+        {ok, LeftType, LeftConstraints} ->
+            case infer_expr(Right, Env) of
+                {ok, RightType, RightConstraints} ->
+                    infer_binary_op(Op, LeftType, RightType, Location, 
+                                   LeftConstraints ++ RightConstraints);
+                Error -> Error
+            end;
+        Error -> Error
+    end;
+
+infer_expr({function_call_expr, Function, Args, Location}, Env) ->
+    case infer_expr(Function, Env) of
+        {ok, FuncType, FuncConstraints} ->
+            case infer_args(Args, Env) of
+                {ok, ArgTypes, ArgConstraints} ->
+                    ReturnType = new_type_var(),
+                    ExpectedFuncType = {function_type, ArgTypes, ReturnType},
+                    UnifyConstraint = #type_constraint{
+                        left = FuncType,
+                        op = '=',
+                        right = ExpectedFuncType,
+                        location = Location
+                    },
+                    AllConstraints = FuncConstraints ++ ArgConstraints ++ [UnifyConstraint],
+                    {ok, ReturnType, AllConstraints};
+                Error -> Error
+            end;
+        Error -> Error
+    end;
+
+infer_expr({if_expr, Condition, ThenBranch, ElseBranch, Location}, Env) ->
+    case infer_expr(Condition, Env) of
+        {ok, CondType, CondConstraints} ->
+            BoolConstraint = #type_constraint{
+                left = CondType,
+                op = '=',
+                right = ?TYPE_BOOL,
+                location = Location
+            },
+            case infer_expr(ThenBranch, Env) of
+                {ok, ThenType, ThenConstraints} ->
+                    case infer_expr(ElseBranch, Env) of
+                        {ok, ElseType, ElseConstraints} ->
+                            UnifyConstraint = #type_constraint{
+                                left = ThenType,
+                                op = '=',
+                                right = ElseType,
+                                location = Location
+                            },
+                            AllConstraints = CondConstraints ++ ThenConstraints ++ 
+                                           ElseConstraints ++ [BoolConstraint, UnifyConstraint],
+                            {ok, ThenType, AllConstraints};
+                        Error -> Error
+                    end;
+                Error -> Error
+            end;
+        Error -> Error
+    end;
+
+infer_expr({let_expr, Bindings, Body, _Location}, Env) ->
+    infer_let_expr(Bindings, Body, Env, []);
+
+infer_expr({list_expr, Elements, Location}, Env) ->
+    case Elements of
+        [] ->
+            ElemType = new_type_var(),
+            LenExpr = {literal_expr, 0, Location},
+            {ok, {list_type, ElemType, LenExpr}, []};
+        [FirstElem | RestElems] ->
+            case infer_expr(FirstElem, Env) of
+                {ok, ElemType, FirstConstraints} ->
+                    case infer_list_elements(RestElems, ElemType, Env, FirstConstraints) of
+                        {ok, FinalConstraints} ->
+                            Length = length(Elements),
+                            LenExpr = {literal_expr, Length, Location},
+                            {ok, {list_type, ElemType, LenExpr}, FinalConstraints};
+                        Error -> Error
+                    end;
+                Error -> Error
+            end
+    end;
+
+infer_expr(Expr, _Env) ->
+    {error, {unsupported_expression, Expr}}.
+
+%% Helper functions for type inference
+infer_literal_type(N) when is_integer(N) -> ?TYPE_INT;
+infer_literal_type(F) when is_float(F) -> ?TYPE_FLOAT;
+infer_literal_type(S) when is_list(S) -> ?TYPE_STRING;
+infer_literal_type(B) when is_boolean(B) -> ?TYPE_BOOL;
+infer_literal_type(A) when is_atom(A) -> ?TYPE_ATOM.
+
+infer_binary_op('+', LeftType, RightType, Location, Constraints) ->
+    NumConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
+        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
+    ],
+    {ok, ?TYPE_INT, Constraints ++ NumConstraints};
+
+infer_binary_op('-', LeftType, RightType, Location, Constraints) ->
+    NumConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
+        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
+    ],
+    {ok, ?TYPE_INT, Constraints ++ NumConstraints};
+
+infer_binary_op('*', LeftType, RightType, Location, Constraints) ->
+    NumConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
+        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
+    ],
+    {ok, ?TYPE_INT, Constraints ++ NumConstraints};
+
+infer_binary_op('==', LeftType, RightType, Location, Constraints) ->
+    EqualityConstraint = #type_constraint{
+        left = LeftType,
+        op = '=',
+        right = RightType,
+        location = Location
+    },
+    {ok, ?TYPE_BOOL, Constraints ++ [EqualityConstraint]};
+
+infer_binary_op(Op, _LeftType, _RightType, Location, _Constraints) ->
+    {error, {unsupported_binary_operator, Op, Location}}.
+
+infer_args([], _Env) -> {ok, [], []};
+infer_args([Arg | RestArgs], Env) ->
+    case infer_expr(Arg, Env) of
+        {ok, ArgType, ArgConstraints} ->
+            case infer_args(RestArgs, Env) of
+                {ok, RestTypes, RestConstraints} ->
+                    {ok, [ArgType | RestTypes], ArgConstraints ++ RestConstraints};
+                Error -> Error
+            end;
+        Error -> Error
+    end.
+
+infer_let_expr([], Body, Env, Constraints) ->
+    case infer_expr(Body, Env) of
+        {ok, BodyType, BodyConstraints} ->
+            {ok, BodyType, Constraints ++ BodyConstraints};
+        Error -> Error
+    end;
+infer_let_expr([{binding, Pattern, Value, _Location} | RestBindings], Body, Env, Constraints) ->
+    case infer_expr(Value, Env) of
+        {ok, ValueType, ValueConstraints} ->
+            case infer_pattern(Pattern) of
+                {ok, PatternType, VarName} ->
+                    UnifyConstraint = #type_constraint{
+                        left = PatternType,
+                        op = '=',
+                        right = ValueType,
+                        location = undefined
+                    },
+                    NewEnv = extend_env(Env, VarName, ValueType),
+                    AllConstraints = Constraints ++ ValueConstraints ++ [UnifyConstraint],
+                    infer_let_expr(RestBindings, Body, NewEnv, AllConstraints);
+                Error -> Error
+            end;
+        Error -> Error
+    end.
+
+infer_pattern({identifier_pattern, Name, _Location}) ->
+    PatternType = new_type_var(),
+    {ok, PatternType, Name}.
+
+infer_list_elements([], _ElemType, _Env, Constraints) ->
+    {ok, Constraints};
+infer_list_elements([Elem | RestElems], ElemType, Env, Constraints) ->
+    case infer_expr(Elem, Env) of
+        {ok, ElemTypeInferred, ElemConstraints} ->
+            UnifyConstraint = #type_constraint{
+                left = ElemType,
+                op = '=',
+                right = ElemTypeInferred,
+                location = undefined
+            },
+            NewConstraints = Constraints ++ ElemConstraints ++ [UnifyConstraint],
+            infer_list_elements(RestElems, ElemType, Env, NewConstraints);
+        Error -> Error
+    end.
+
+%% Type checking (simplified)
+check_type(Expr, ExpectedType, Env) ->
+    check_type(Expr, ExpectedType, Env, []).
+
+check_type(Expr, ExpectedType, Env, Constraints) ->
+    case infer_type(Expr, Env, Constraints) of
+        {ok, #inference_result{type = InferredType}} ->
+            case unify(InferredType, ExpectedType) of
+                {ok, _Subst} -> ok;
+                {error, Reason} -> {error, {type_mismatch, ExpectedType, InferredType, Reason}}
+            end;
+        Error -> Error
+    end.
+
+%% Constraint solving (simplified)
+solve_constraints(Constraints) ->
+    solve_constraints(Constraints, #{}).
+
+solve_constraints([], Subst) -> {ok, Subst};
+solve_constraints([Constraint | RestConstraints], Subst) ->
+    case solve_constraint(Constraint, Subst) of
+        {ok, NewSubst} ->
+            solve_constraints(RestConstraints, NewSubst);
+        Error -> Error
+    end.
+
+solve_constraint(#type_constraint{left = Left, op = '=', right = Right}, Subst) ->
+    unify(Left, Right, Subst);
+solve_constraint(#type_constraint{op = Op}, _Subst) ->
+    {error, {unsupported_constraint_op, Op}}.
+
+%% Utility functions
+substitute(Type, Subst) ->
+    apply_substitution(Type, Subst).
+
+normalize_type(Type) ->
+    % Simplified normalization
+    Type.
+
+type_to_string(?TYPE_INT) -> "Int";
+type_to_string(?TYPE_FLOAT) -> "Float";
+type_to_string(?TYPE_STRING) -> "String";
+type_to_string(?TYPE_BOOL) -> "Bool";
+type_to_string(?TYPE_ATOM) -> "Atom";
+type_to_string(#type_var{id = Id, name = undefined}) ->
+    "T" ++ integer_to_list(Id);
+type_to_string(#type_var{name = Name}) when Name =/= undefined ->
+    atom_to_list(Name);
+type_to_string({function_type, Params, Return}) ->
+    ParamStrs = [type_to_string(P) || P <- Params],
+    "(" ++ string:join(ParamStrs, ", ") ++ ") -> " ++ type_to_string(Return);
+type_to_string({list_type, ElemType, undefined}) ->
+    "[" ++ type_to_string(ElemType) ++ "]";
+type_to_string({list_type, ElemType, _LenExpr}) ->
+    "[" ++ type_to_string(ElemType) ++ "]";  % Simplified
+type_to_string({dependent_type, Name, _Params}) ->
+    atom_to_list(Name);  % Simplified
+type_to_string(Type) ->
+    io_lib:format("~p", [Type]).

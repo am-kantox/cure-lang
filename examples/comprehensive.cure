@@ -1,0 +1,62 @@
+# Comprehensive test of enhanced parser features
+
+# Module with export list
+module Utils do
+  export [process_list/1, complex_calculation/2]
+  
+  # Function with list literals and function calls
+  def process_list(items: List(Int)): Int =
+    let filtered = filter(items, is_positive)
+    let mapped = map(filtered, double)
+    sum(mapped)
+  
+  # Function with complex multi-statement body
+  def complex_calculation(x: Int, y: Int): Int =
+    let step1 = x * 2
+    let step2 = y + 3
+    let step3 = Math.add(step1, step2)
+    let result = if step3 > 10 then step3 * 2 else step3
+    result
+    
+  # Private helper functions
+  defp is_positive(n) = n > 0
+  defp double(n) = n * 2
+end
+
+# FSM with more complex transitions
+fsm Calculator do
+  states: [Idle, Computing, Result]
+  initial: Idle
+  
+  state Idle do
+    event(:start) -> Computing
+    event(:reset) -> Idle
+  end
+  
+  state Computing do  
+    event(:compute) -> Result
+    event(:cancel) -> Idle
+    timeout(5000) -> Idle
+  end
+  
+  state Result do
+    event(:new_calculation) -> Computing
+    event(:reset) -> Idle
+  end
+end
+
+# Main function with comprehensive features
+def main() =
+  let numbers = [1, 2, 3, 4, 5]
+  let calculator = fsm_spawn(Calculator)
+  let result = Utils.process_list(numbers)
+  
+  # Send events to FSM
+  fsm_send(calculator, :start)
+  fsm_send(calculator, :compute)
+  
+  # Complex calculation
+  let final_result = Utils.complex_calculation(result, 10)
+  
+  # Return final result
+  final_result

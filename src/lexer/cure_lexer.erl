@@ -1,0 +1,256 @@
+%% Cure Programming Language - Lexer
+%% Tokenizes Cure source code into a stream of tokens
+-module(cure_lexer).
+
+-export([tokenize/1, tokenize_file/1, token_type/1]).
+
+%% Token definitions
+-record(token, {
+    type :: atom(),
+    value :: term(),
+    line :: integer(),
+    column :: integer()
+}).
+
+
+
+%% Public API
+
+%% @doc Tokenize a string of Cure source code
+-spec tokenize(binary()) -> {ok, [#token{}]} | {error, term()}.
+tokenize(Source) when is_binary(Source) ->
+    try
+        Tokens = scan_tokens(Source, 1, 1, []),
+        {ok, lists:reverse(Tokens)}
+    catch
+        throw:{lexer_error, Reason, Line, Column} ->
+            {error, {Reason, Line, Column}};
+        Error:Reason:Stack ->
+            {error, {Error, Reason, Stack}}
+    end.
+
+%% @doc Tokenize a file
+-spec tokenize_file(string()) -> {ok, [#token{}]} | {error, term()}.
+tokenize_file(Filename) ->
+    case file:read_file(Filename) of
+        {ok, Content} ->
+            tokenize(Content);
+        {error, Reason} ->
+            {error, {file_error, Reason}}
+    end.
+
+%% @doc Get the type of a token
+-spec token_type(#token{}) -> atom().
+token_type(#token{type = Type}) -> Type.
+
+%% Internal functions
+
+%% Get operators map
+operators() ->
+    #{
+        <<"=">> => '=',
+        <<"->">> => '->',
+        <<":">> => ':',
+        <<";">> => ';',
+        <<",">> => ',',
+        <<".">> => '.',
+        <<"(">> => '(',
+        <<")">> => ')',
+        <<"[">> => '[',
+        <<"]">> => ']',
+        <<"{">> => '{',
+        <<"}">> => '}',
+        <<"|">> => '|',
+        <<"::">> => '::',
+        <<"+">> => '+',
+        <<"-">> => '-',
+        <<"*">> => '*',
+        <<"/">> => '/',
+        <<"<">> => '<',
+        <<">">> => '>',
+        <<"<=">> => '<=',
+        <<">=">> => '>=',
+        <<"==">> => '==',
+        <<"!=">> => '!=',
+        <<"++">> => '++',
+        <<"--">> => '--'
+    }.
+
+%% Get keywords map
+keywords() ->
+    #{
+        <<"def">> => 'def',
+        <<"defp">> => 'defp',
+        <<"end">> => 'end',
+        <<"do">> => 'do',
+        <<"if">> => 'if',
+        <<"then">> => 'then',
+        <<"else">> => 'else',
+        <<"match">> => 'match',
+        <<"when">> => 'when',
+        <<"let">> => 'let',
+        <<"module">> => 'module',
+        <<"import">> => 'import',
+        <<"export">> => 'export',
+        <<"process">> => 'process',
+        <<"fsm">> => 'fsm',
+        <<"state">> => 'state',
+        <<"states">> => 'states',
+        <<"initial">> => 'initial',
+        <<"event">> => 'event',
+        <<"timeout">> => 'timeout',
+        <<"receive">> => 'receive',
+        <<"send">> => 'send',
+        <<"spawn">> => 'spawn',
+        <<"record">> => 'record',
+        <<"type">> => 'type',
+        <<"true">> => 'true',
+        <<"false">> => 'false',
+        <<"and">> => 'and',
+        <<"or">> => 'or',
+        <<"not">> => 'not'
+    }.
+
+%% Main scanning loop
+scan_tokens(<<>>, _Line, _Column, Acc) ->
+    Acc;
+
+%% Skip whitespace except newlines
+scan_tokens(<<C, Rest/binary>>, Line, Column, Acc) when C =:= $\s; C =:= $\t; C =:= $\r ->
+    scan_tokens(Rest, Line, Column + 1, Acc);
+
+%% Handle newlines
+scan_tokens(<<$\n, Rest/binary>>, Line, _Column, Acc) ->
+    scan_tokens(Rest, Line + 1, 1, Acc);
+
+%% Skip comments (# to end of line)
+scan_tokens(<<$#, Rest/binary>>, Line, Column, Acc) ->
+    {_, NewRest} = skip_line_comment(Rest),
+    scan_tokens(NewRest, Line + 1, 1, Acc);
+
+%% String literals
+scan_tokens(<<$", Rest/binary>>, Line, Column, Acc) ->
+    {String, NewRest, NewColumn} = scan_string(Rest, Column + 1, <<>>),
+    Token = #token{type = string, value = String, line = Line, column = Column},
+    scan_tokens(NewRest, Line, NewColumn, [Token | Acc]);
+
+%% Atom literals (starting with :) - but check for :: first
+scan_tokens(<<$:, $:, Rest/binary>>, Line, Column, Acc) ->
+    Token = #token{type = '::', value = '::', line = Line, column = Column},
+    scan_tokens(Rest, Line, Column + 2, [Token | Acc]);
+scan_tokens(<<$:, Rest/binary>>, Line, Column, Acc) ->
+    case Rest of
+        <<C, _/binary>> when C >= $a, C =< $z; C >= $A, C =< $Z; C =:= $_ ->
+            {Atom, NewRest, NewColumn} = scan_atom(Rest, Column + 1, <<>>),
+            Token = #token{type = atom, value = Atom, line = Line, column = Column},
+            scan_tokens(NewRest, Line, NewColumn, [Token | Acc]);
+        _ ->
+            Token = #token{type = ':', value = ':', line = Line, column = Column},
+            scan_tokens(Rest, Line, Column + 1, [Token | Acc])
+    end;
+
+%% Numbers
+scan_tokens(<<C, Rest/binary>>, Line, Column, Acc) when C >= $0, C =< $9 ->
+    {Number, NewRest, NewColumn} = scan_number(<<C, Rest/binary>>, Column, <<>>),
+    Token = #token{type = number, value = Number, line = Line, column = Column},
+    scan_tokens(NewRest, Line, NewColumn, [Token | Acc]);
+
+%% Identifiers and keywords
+scan_tokens(<<C, Rest/binary>>, Line, Column, Acc) 
+    when C >= $a, C =< $z; C >= $A, C =< $Z; C =:= $_ ->
+    {Identifier, NewRest, NewColumn} = scan_identifier(<<C, Rest/binary>>, Column, <<>>),
+    TokenType = case maps:get(Identifier, keywords(), undefined) of
+        undefined -> identifier;
+        Keyword -> Keyword
+    end,
+    Value = case TokenType of
+        identifier -> Identifier;
+        _ -> TokenType
+    end,
+    Token = #token{type = TokenType, value = Value, line = Line, column = Column},
+    scan_tokens(NewRest, Line, NewColumn, [Token | Acc]);
+
+%% Two-character operators
+scan_tokens(<<C1, C2, Rest/binary>>, Line, Column, Acc) ->
+    TwoChar = <<C1, C2>>,
+    case maps:get(TwoChar, operators(), undefined) of
+        undefined ->
+            % Try single character
+            scan_single_char(<<C1, C2, Rest/binary>>, Line, Column, Acc);
+        Op ->
+            Token = #token{type = Op, value = Op, line = Line, column = Column},
+            scan_tokens(Rest, Line, Column + 2, [Token | Acc])
+    end;
+
+%% Single character (including single-char operators)
+scan_tokens(Binary, Line, Column, Acc) ->
+    scan_single_char(Binary, Line, Column, Acc).
+
+%% Handle single character tokens
+scan_single_char(<<C, Rest/binary>>, Line, Column, Acc) ->
+    SingleChar = <<C>>,
+    case maps:get(SingleChar, operators(), undefined) of
+        undefined ->
+            throw({lexer_error, {unexpected_character, C}, Line, Column});
+        Op ->
+            Token = #token{type = Op, value = Op, line = Line, column = Column},
+            scan_tokens(Rest, Line, Column + 1, [Token | Acc])
+    end;
+scan_single_char(<<>>, _Line, _Column, Acc) ->
+    Acc.
+
+%% Skip line comment until newline
+skip_line_comment(<<$\n, Rest/binary>>) ->
+    {comment, Rest};
+skip_line_comment(<<_, Rest/binary>>) ->
+    skip_line_comment(Rest);
+skip_line_comment(<<>>) ->
+    {comment, <<>>}.
+
+%% Scan string literal
+scan_string(<<$", Rest/binary>>, Column, Acc) ->
+    {binary_to_list(Acc), Rest, Column + 1};
+scan_string(<<$\\, C, Rest/binary>>, Column, Acc) ->
+    Escaped = escape_char(C),
+    scan_string(Rest, Column + 2, <<Acc/binary, Escaped>>);
+scan_string(<<C, Rest/binary>>, Column, Acc) ->
+    scan_string(Rest, Column + 1, <<Acc/binary, C>>);
+scan_string(<<>>, Column, _Acc) ->
+    throw({lexer_error, unterminated_string, Column, Column}).
+
+%% Handle escape sequences
+escape_char($n) -> $\n;
+escape_char($t) -> $\t;
+escape_char($r) -> $\r;
+escape_char($\\) -> $\\;
+escape_char($") -> $";
+escape_char(C) -> C.
+
+%% Scan atom
+scan_atom(<<C, Rest/binary>>, Column, Acc) 
+    when C >= $a, C =< $z; C >= $A, C =< $Z; C >= $0, C =< $9; C =:= $_; C =:= $? ->
+    scan_atom(Rest, Column + 1, <<Acc/binary, C>>);
+scan_atom(Rest, Column, Acc) ->
+    {binary_to_atom(Acc, utf8), Rest, Column}.
+
+%% Scan number (integers and floats)
+scan_number(<<C, Rest/binary>>, Column, Acc) when C >= $0, C =< $9 ->
+    scan_number(Rest, Column + 1, <<Acc/binary, C>>);
+scan_number(<<$., C, Rest/binary>>, Column, Acc) when C >= $0, C =< $9 ->
+    % Float
+    scan_float(Rest, Column + 2, <<Acc/binary, $., C>>);
+scan_number(Rest, Column, Acc) ->
+    {binary_to_integer(Acc), Rest, Column}.
+
+%% Scan float part
+scan_float(<<C, Rest/binary>>, Column, Acc) when C >= $0, C =< $9 ->
+    scan_float(Rest, Column + 1, <<Acc/binary, C>>);
+scan_float(Rest, Column, Acc) ->
+    {binary_to_float(Acc), Rest, Column}.
+
+%% Scan identifier
+scan_identifier(<<C, Rest/binary>>, Column, Acc) 
+    when C >= $a, C =< $z; C >= $A, C =< $Z; C >= $0, C =< $9; C =:= $_; C =:= $? ->
+    scan_identifier(Rest, Column + 1, <<Acc/binary, C>>);
+scan_identifier(Rest, Column, Acc) ->
+    {Acc, Rest, Column}.

@@ -1,0 +1,3 @@
+def test() =
+  let x = func(1, 2)
+  x

@@ -1,0 +1,1 @@
+def test(items: List(Int)): Int = sum(items)

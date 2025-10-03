@@ -1,0 +1,41 @@
+# Simple Cure program example
+module Math do
+  export [add/2, factorial/1]
+  
+  # Simple addition function
+  def add(x: Int, y: Int): Int = x + y
+  
+  # Factorial with dependent types
+  def factorial(n: Nat): Pos =
+    if n == 0 then 1 else n * factorial(n - 1)
+    
+  # Private helper function
+  defp helper(x) = x * 2
+end
+
+# FSM example - simple counter
+fsm Counter do
+  states: [Zero, Positive]
+  initial: Zero
+  
+  state Zero do
+    event(:increment) -> Positive
+  end
+  
+  state Positive do
+    event(:increment) -> Positive
+    event(:reset) -> Zero
+  end
+end
+
+# Main function
+def main() = 
+  let result = Math.add(5, 3)
+  let counter = fsm_spawn(Counter)
+  
+  # Send events to FSM
+  fsm_send(counter, :increment)
+  fsm_send(counter, :increment)
+  
+  # Return result
+  result
