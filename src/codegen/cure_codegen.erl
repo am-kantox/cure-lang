@@ -104,7 +104,6 @@ compile_module(ModuleAST) ->
 compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) ->
     % Using new AST format compilation path
     ConvertedExports = convert_exports_new(Exports, Items),
-    io:format("[DEBUG] Converted exports: ~p~n", [ConvertedExports]),
     State = #codegen_state{
         module_name = Name,
         exports = ConvertedExports,
@@ -923,10 +922,8 @@ compile_item(Item, _Options) ->
 generate_beam_file(Module, OutputPath) ->
     case convert_to_erlang_forms(Module) of
         {ok, Forms} ->
-            io:format("[DEBUG] About to compile ~p forms with Erlang compiler~n", [length(Forms)]),
             case compile:forms(Forms, [binary, return_errors]) of
                 {ok, ModuleName, Binary} ->
-                    io:format("[DEBUG] Erlang compilation successful, binary size: ~p bytes~n", [size(Binary)]),
                     case file:write_file(OutputPath, Binary) of
                         ok -> {ok, {ModuleName, OutputPath}};
                         {error, Reason} -> {error, {write_failed, Reason}}

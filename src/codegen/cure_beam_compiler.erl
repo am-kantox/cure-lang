@@ -176,10 +176,16 @@ compile_binary_op([Operator], Context) ->
 compile_call([Arity], Context) ->
     case pop_n_from_stack(Arity + 1, Context) of  % +1 for function itself
         {Elements, NewContext} ->
-            [Function | Args] = lists:reverse(Elements),
-            Line = NewContext#compile_context.line,
+            % With corrected instruction order (Function first, then Args),
+            % the stack has Function at bottom, Args on top
+            % After popping, we get [Function, Arg1, Arg2, ...] (no need to reverse)
+            case Elements of
+                [] -> 
+                    {error, {empty_elements_for_call, Arity}};
+                [Function | Args] when length(Args) =:= Arity ->
+                    Line = NewContext#compile_context.line,
             
-            CallForm = case Function of
+                    CallForm = case Function of
                 {atom, _, FuncName} ->
                     % Check if it's a stdlib function
                     case is_stdlib_function(FuncName) of
@@ -193,9 +199,12 @@ compile_call([Arity], Context) ->
                 _ ->
                     % Complex function expression
                     {call, Line, Function, Args}
-            end,
+                    end,
             
-            {ok, [], push_stack(CallForm, NewContext)};
+                    {ok, [], push_stack(CallForm, NewContext)};
+                _ ->
+                    {error, {wrong_arity, Arity, length(Elements)}}
+            end;
         Error ->
             Error
     end.
@@ -368,6 +377,16 @@ is_stdlib_function(ok) -> true;
 is_stdlib_function(error) -> true;
 is_stdlib_function(some) -> true;
 is_stdlib_function(none) -> true;
+is_stdlib_function('Ok') -> true;
+is_stdlib_function('Error') -> true;
+is_stdlib_function('Some') -> true;
+is_stdlib_function('None') -> true;
+is_stdlib_function(map_ok) -> true;
+is_stdlib_function(bind_ok) -> true;
+is_stdlib_function(map_error) -> true;
+is_stdlib_function(map_some) -> true;
+is_stdlib_function(bind_some) -> true;
+is_stdlib_function(safe_div) -> true;
 is_stdlib_function(map) -> true;
 is_stdlib_function(filter) -> true;
 is_stdlib_function(foldl) -> true;
@@ -400,6 +419,16 @@ get_function_arity(ok) -> 1;
 get_function_arity(error) -> 1;
 get_function_arity(some) -> 1;
 get_function_arity(none) -> 0;
+get_function_arity('Ok') -> 1;
+get_function_arity('Error') -> 1;
+get_function_arity('Some') -> 1;
+get_function_arity('None') -> 0;
+get_function_arity(map_ok) -> 2;
+get_function_arity(bind_ok) -> 2;
+get_function_arity(map_error) -> 2;
+get_function_arity(map_some) -> 2;
+get_function_arity(bind_some) -> 2;
+get_function_arity(safe_div) -> 2;
 get_function_arity(map) -> 2;
 get_function_arity(filter) -> 2;
 get_function_arity(foldl) -> 3;
