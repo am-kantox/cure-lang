@@ -45,13 +45,13 @@ none() -> 'None'.
 
 %% Result monadic operations
 map_ok({'Ok', Value}, Fun) -> ok(Fun(Value));
-map_ok({'Error', Reason}, _Fun) -> error(Reason).
+map_ok({'Error', Reason}, _Fun) -> {'Error', Reason}.
 
 bind_ok({'Ok', Value}, Fun) -> Fun(Value);
-bind_ok({'Error', Reason}, _Fun) -> error(Reason).
+bind_ok({'Error', Reason}, _Fun) -> {'Error', Reason}.
 
 map_error({'Ok', Value}, _Fun) -> ok(Value);
-map_error({'Error', Reason}, Fun) -> error(Fun(Reason)).
+map_error({'Error', Reason}, Fun) -> {'Error', Fun(Reason)}.
 
 %% Option monadic operations
 map_some({'Some', Value}, Fun) -> some(Fun(Value));
@@ -108,7 +108,7 @@ fsm_send_safe(_Fsm, _Event) -> ok(sent).
 create_counter(_InitialValue) -> ok({'Counter', 0}).
 
 %% Safe division that returns Result type
-safe_div(_Numerator, 0) -> error("Division by zero");
+safe_div(_Numerator, 0) -> {'Error', "Division by zero"};
 safe_div(Numerator, Denominator) -> ok(Numerator / Denominator).
 
 %% ============================================================================
