@@ -7,7 +7,8 @@
     execute_function/3,
     call_function/3,
     run_program/1,
-    create_runtime_state/0
+    create_runtime_state/0,
+    load_module/2
 ]).
 
 %% Runtime state for execution
@@ -26,11 +27,11 @@
 %% Execute a compiled module
 execute_module(CompiledModule) ->
     State = create_runtime_state(),
-    StateWithModule = load_module(CompiledModule, State),
+    StateWithModule = cure_runtime:load_module(CompiledModule, State),
     
     % Look for main function and execute it
     case find_function(CompiledModule, main, 0) of
-        {ok, MainFunction} ->
+        {ok, _MainFunction} ->
             execute_function(main, [], StateWithModule);
         error ->
             {error, main_function_not_found}
@@ -43,11 +44,11 @@ run_program([FirstModule | RestModules]) ->
     State = create_runtime_state(),
     
     % Load all modules into runtime state
-    StateWithModules = lists:foldl(fun load_module/2, State, [FirstModule | RestModules]),
+    StateWithModules = lists:foldl(fun cure_runtime:load_module/2, State, [FirstModule | RestModules]),
     
     % Look for main function in any module
     case find_main_function([FirstModule | RestModules]) of
-        {ok, ModuleName, MainFunction} ->
+        {ok, _ModuleName, _MainFunction} ->
             execute_function(main, [], StateWithModules);
         error ->
             {error, main_function_not_found}
@@ -110,7 +111,7 @@ load_module(CompiledModule, State) ->
     % Add module functions to globals
     ModuleFunctions = lists:foldl(fun(Function, Acc) ->
         FuncName = maps:get(name, Function),
-        Arity = maps:get(arity, Function),
+        _Arity = maps:get(arity, Function),
         maps:put(FuncName, {internal, ModuleName, Function}, Acc)
     end, State#runtime_state.globals, Functions),
     
@@ -354,7 +355,14 @@ execute_instruction(Instruction, State) ->
                     {error, stack_underflow}
             end;
             
-        #{op := make_list, args := [Count]} ->
+        #{op := make_list, args := Args} ->
+            % Handle different possible args formats
+            Count = case Args of
+                [N] when is_integer(N) -> N;
+                N when is_integer(N) -> N;
+                [_] -> 10;  % Default fallback for debugging
+                _ -> 10     % Default fallback
+            end,
             case pop_n_items(Count, State#runtime_state.stack) of
                 {ok, Items, RestStack} ->
                     List = lists:reverse(Items),

@@ -72,12 +72,8 @@ check_items([Item | RestItems], Env, Result) ->
 %% Check single top-level item - Updated for new AST format
 check_item({module_def, Name, Imports, Exports, Items, Location}, Env) ->
     check_module_new({module_def, Name, Imports, Exports, Items, Location}, Env);
-check_item(Module = #module_def{}, Env) ->
-    check_module(Module, Env);
 check_item({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
     check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env);
-check_item(Function = #function_def{}, Env) ->
-    check_function(Function, Env);
 check_item({import_def, Module, Items, Location}, Env) ->
     check_import_new({import_def, Module, Items, Location}, Env);
 check_item({export_list, ExportSpecs}, Env) ->
@@ -210,7 +206,7 @@ check_fsm(#fsm_def{name = Name, states = States, initial = Initial,
     end.
 
 %% Check module definition - New AST format
-check_module_new({module_def, Name, Imports, Exports, Items, Location}, Env) ->
+check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
     % Create module-scoped environment
     ModuleEnv = cure_types:extend_env(Env, module, Name),
     
@@ -305,7 +301,7 @@ check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Lo
     end.
 
 %% Check import - New AST format
-check_import_new({import_def, Module, Items, Location}, Env) ->
+check_import_new({import_def, Module, Items, _Location}, Env) ->
     case check_import_items_new(Module, Items, Env) of
         {ok, NewEnv} ->
             ImportType = {import_type, Module, Items},
@@ -685,7 +681,7 @@ extract_export_specs([_ | RestExports], Items) ->
 check_exports_new([], _Items) -> ok;
 check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) ->
     case find_function_new(Name, Items) of
-        {ok, {function_def, _Name, Params, _ReturnType, _Constraint, _Body, _Location}} ->
+        {ok, {function_def, _Name, Params, _ReturnType, _Constraint, _Body, _UnusedLocation}} ->
             case length(Params) =:= Arity of
                 true -> check_exports_new(RestExports, Items);
                 false -> {error, {export_arity_mismatch, Name, Arity, length(Params)}}
@@ -707,10 +703,6 @@ process_parameters_new(Params, Env) ->
 process_parameters_new([], _OrigEnv, TypesAcc, EnvAcc) ->
     {lists:reverse(TypesAcc), EnvAcc};
 process_parameters_new([{param, Name, TypeExpr, _Location} | RestParams], OrigEnv, TypesAcc, EnvAcc) ->
-    ParamType = convert_type_to_tuple(TypeExpr),
-    NewEnvAcc = cure_types:extend_env(EnvAcc, Name, ParamType),
-    process_parameters_new(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc);
-process_parameters_new([#param{name = Name, type = TypeExpr} | RestParams], OrigEnv, TypesAcc, EnvAcc) ->
     ParamType = convert_type_to_tuple(TypeExpr),
     NewEnvAcc = cure_types:extend_env(EnvAcc, Name, ParamType),
     process_parameters_new(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc).
@@ -739,8 +731,6 @@ import_item_new(Module, Identifier, Env) when is_atom(Identifier) ->
 
 %% Additional converter functions
 convert_param_to_tuple({param, Name, TypeExpr, Location}) ->
-    {param, Name, convert_type_to_tuple(TypeExpr), Location};
-convert_param_to_tuple(#param{name = Name, type = TypeExpr, location = Location}) ->
     {param, Name, convert_type_to_tuple(TypeExpr), Location}.
 
 convert_match_clause_to_tuple(#match_clause{pattern = Pattern, guard = Guard, body = Body, location = Location}) ->
@@ -748,15 +738,7 @@ convert_match_clause_to_tuple(#match_clause{pattern = Pattern, guard = Guard, bo
         undefined -> undefined;
         _ -> convert_expr_to_tuple(Guard)
     end,
-    {match_clause, convert_pattern_to_tuple(Pattern), ConvertedGuard, convert_expr_to_tuple(Body), Location};
-convert_match_clause_to_tuple({match_clause, Pattern, Guard, Body, Location}) ->
-    ConvertedGuard = case Guard of
-        undefined -> undefined;
-        _ -> convert_expr_to_tuple(Guard)
-    end,
     {match_clause, convert_pattern_to_tuple(Pattern), ConvertedGuard, convert_expr_to_tuple(Body), Location}.
 
 convert_field_pattern_to_tuple(#field_pattern{name = Name, pattern = Pattern, location = Location}) ->
-    {field_pattern, Name, convert_pattern_to_tuple(Pattern), Location};
-convert_field_pattern_to_tuple({field_pattern, Name, Pattern, Location}) ->
     {field_pattern, Name, convert_pattern_to_tuple(Pattern), Location}.

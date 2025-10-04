@@ -146,7 +146,7 @@ map_ok(_F, Error) ->
     Error.
 
 %% Map function over Error result
-map_error(_F, Ok) ->
+map_error(_F, {'Ok', _} = Ok) ->
     Ok;
 map_error(F, {'Error', Reason}) ->
     {'Error', F(Reason)}.
@@ -158,7 +158,7 @@ and_then(_F, Error) ->
     Error.
 
 %% Use alternative on error
-or_else(_F, Ok) ->
+or_else(_F, {'Ok', _} = Ok) ->
     Ok;
 or_else(F, {'Error', _Reason}) ->
     F().
@@ -196,7 +196,7 @@ foldr(F, Acc, [H | T]) ->
 
 %% Get head of list
 head([]) ->
-    error("Empty list");
+    erlang:error("Empty list");
 head([H | _]) ->
     H.
 
@@ -235,7 +235,7 @@ abs(N) -> N.
 sqrt(N) when N >= 0 ->
     math:sqrt(N);
 sqrt(_) ->
-    error("Cannot take square root of negative number").
+    erlang:error("Cannot take square root of negative number").
 
 %% Pi constant
 pi() ->
@@ -254,13 +254,13 @@ safe_sqrt(_) ->
     {'Error', "Cannot take square root of negative number"}.
 
 %% Greatest common divisor
-gcd(A, 0) -> abs(A);
+gcd(A, 0) -> erlang:abs(A);
 gcd(A, B) -> gcd(B, A rem B).
 
 %% Factorial
 factorial(0) -> 1;
 factorial(N) when N > 0 -> N * factorial(N - 1);
-factorial(_) -> error("Factorial of negative number").
+factorial(_) -> erlang:error("Factorial of negative number").
 
 %% ============================================================================
 %% String Operations
@@ -296,7 +296,7 @@ starts_with(String, Prefix) ->
 
 %% Check if string ends with suffix
 ends_with(String, Suffix) ->
-    length(String) >= length(Suffix) andalso
+    erlang:length(String) >= erlang:length(Suffix) andalso
     lists:suffix(Suffix, String).
 
 %% Join list of strings with separator

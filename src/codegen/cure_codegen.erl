@@ -240,21 +240,6 @@ compile_module_item(#import_def{} = Import, State) ->
             {error, Reason}
     end;
 
-%% Handle new import definition format
-compile_module_item({import_def, Module, Items, Location}, State) ->
-    Import = #import_def{
-        module = Module,
-        items = Items,
-        location = Location
-    },
-    case process_import(Import, State) of
-        {ok, NewState} ->
-            NewImports = [Import | NewState#codegen_state.imports],
-            FinalState = NewState#codegen_state{imports = NewImports},
-            {ok, {import, Import}, FinalState};
-        {error, Reason} ->
-            {error, Reason}
-    end;
 
 %% Handle export list (metadata only - no code generation needed)
 compile_module_item({export_list, _Exports, _Location}, State) ->
@@ -299,11 +284,11 @@ process_imported_items(Module, [Item | RestItems], State) ->
     end.
 
 %% Process single imported item
-process_imported_item(Module, #function_import{name = Name, arity = Arity}, State) ->
+process_imported_item(_Module, #function_import{name = _Name, arity = _Arity}, State) ->
     % Register function import for call resolution
     % In a full implementation, would verify the function exists in the module
     % and potentially generate import stubs or call wrappers
-    ImportInfo = {imported_function, Module, Name, Arity},
+    % ImportInfo = {imported_function, Module, Name, Arity},
     % Could store this information in the state for later use during call compilation
     {ok, State};
 process_imported_item(_Module, Identifier, State) when is_atom(Identifier) ->
@@ -908,7 +893,7 @@ convert_export_specs([_ | Rest]) ->
 %% Process imports for new AST format
 process_imports_new([], State) ->
     {ok, State};
-process_imports_new([{import_def, Module, Imports, _Location} | Rest], State) ->
+process_imports_new([{import_def, _Module, _Imports, _Location} | Rest], State) ->
     % For now, just continue processing - full import resolution would need module loading
     process_imports_new(Rest, State);
 process_imports_new([_ | Rest], State) ->

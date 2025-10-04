@@ -1161,9 +1161,6 @@ parse_lambda_parameters(State, Acc) ->
             end
     end.
 
-%% Parse lambda body - stops at 'end' token
-parse_lambda_body(State) ->
-    parse_binary_expression(State, 0).
 
 %% Parse match expression: match expr do pattern -> body end
 parse_match_expression(State) ->
