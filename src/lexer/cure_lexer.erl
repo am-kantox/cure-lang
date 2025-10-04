@@ -74,7 +74,8 @@ operators() ->
         <<"==">> => '==',
         <<"!=">> => '!=',
         <<"++">> => '++',
-        <<"--">> => '--'
+        <<"--">> => '--',
+        <<"|>">> => '|>'
     }.
 
 %% Get keywords map
@@ -109,7 +110,15 @@ keywords() ->
         <<"false">> => 'false',
         <<"and">> => 'and',
         <<"or">> => 'or',
-        <<"not">> => 'not'
+        <<"not">> => 'not',
+        <<"fn">> => 'fn',
+        <<"Ok">> => 'Ok',
+        <<"Error">> => 'Error',
+        <<"Some">> => 'Some',
+        <<"None">> => 'None',
+        <<"Unit">> => 'Unit',
+        <<"ok">> => 'ok',
+        <<"error">> => 'error'
     }.
 
 %% Main scanning loop

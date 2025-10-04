@@ -74,6 +74,13 @@
     location
 }).
 
+%% Function import specification (name/arity)
+-record(function_import, {
+    name,
+    arity,
+    location
+}).
+
 %% Export specification
 -record(export_spec, {
     name,

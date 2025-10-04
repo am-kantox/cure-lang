@@ -208,11 +208,55 @@ check_type_definition(#type_def{name = Name, definition = Definition}, Env) ->
     {ok, NewEnv, success_result(TypeDefType)}.
 
 %% Check import
-check_import(#import_def{module = Module}, Env) ->
-    % For now, just assume import is valid
-    % In full implementation, would check module exists and load its interface
-    ImportType = {import_type, Module},
-    {ok, Env, success_result(ImportType)}.
+check_import(#import_def{module = Module, items = Items}, Env) ->
+    case check_import_items(Module, Items, Env) of
+        {ok, NewEnv} ->
+            ImportType = {import_type, Module, Items},
+            {ok, NewEnv, success_result(ImportType)};
+        {error, Error} ->
+            {ok, Env, error_result(Error)}
+    end.
+
+%% Check import items (functions and identifiers)
+check_import_items(_Module, all, Env) ->
+    % Import all exports from module - for now just return environment unchanged
+    % In a full implementation, would load module interface and import all exports
+    {ok, Env};
+check_import_items(Module, Items, Env) when is_list(Items) ->
+    % Check and import specific items
+    import_items(Module, Items, Env, Env).
+
+%% Import individual items
+import_items(_Module, [], _OrigEnv, AccEnv) ->
+    {ok, AccEnv};
+import_items(Module, [Item | RestItems], OrigEnv, AccEnv) ->
+    case import_item(Module, Item, AccEnv) of
+        {ok, NewAccEnv} ->
+            import_items(Module, RestItems, OrigEnv, NewAccEnv);
+        {error, Error} ->
+            {error, Error}
+    end.
+
+%% Import single item (function or identifier)
+import_item(Module, #function_import{name = Name, arity = Arity}, Env) ->
+    % For now, create a generic function type for imported functions
+    % In a full implementation, would look up actual type from module interface
+    FunctionType = create_imported_function_type(Module, Name, Arity),
+    NewEnv = cure_types:extend_env(Env, Name, FunctionType),
+    {ok, NewEnv};
+import_item(Module, Identifier, Env) when is_atom(Identifier) ->
+    % Import identifier (type constructor, constant, etc.)
+    % For now, create a generic identifier type
+    IdentifierType = {imported_identifier, Module, Identifier},
+    NewEnv = cure_types:extend_env(Env, Identifier, IdentifierType),
+    {ok, NewEnv}.
+
+%% Create function type for imported function with given arity
+create_imported_function_type(Module, Name, Arity) ->
+    % Generate parameter types
+    ParamTypes = [cure_types:new_type_var() || _ <- lists:seq(1, Arity)],
+    ReturnType = cure_types:new_type_var(),
+    {imported_function_type, Module, Name, ParamTypes, ReturnType}.
 
 %% Check expression with given environment
 check_expression(Expr, Env) ->

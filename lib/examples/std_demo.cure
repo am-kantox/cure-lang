@@ -1,5 +1,12 @@
 # Cure Standard Library Demo
 # Demonstrates usage of the standard library modules
+#
+# 1. Import statements with function lists: import Std [abs/1, sqrt/1, ...]
+# 2. Function arity specifications: abs/1, sqrt/1 
+# 3. Advanced type annotations: Result(Int, String), List(Int)
+# 4. Lambda functions: fn(x) -> x * 2 end
+# 5. Pattern matching: match ... do ... end
+# 6. Pipe operators: |>
 
 module StdDemo do
   import Std [

@@ -193,9 +193,55 @@ compile_module_item(#type_def{} = TypeDef, State) ->
 
 compile_module_item(#import_def{} = Import, State) ->
     % Process import for code generation context
-    NewImports = [Import | State#codegen_state.imports],
-    NewState = State#codegen_state{imports = NewImports},
-    {ok, {import, Import}, NewState}.
+    case process_import(Import, State) of
+        {ok, NewState} ->
+            NewImports = [Import | NewState#codegen_state.imports],
+            FinalState = NewState#codegen_state{imports = NewImports},
+            {ok, {import, Import}, FinalState};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Process import for code generation
+process_import(#import_def{module = Module, items = Items}, State) ->
+    case process_import_items(Module, Items, State) of
+        {ok, NewState} ->
+            {ok, NewState};
+        {error, Reason} ->
+            {error, {import_processing_failed, Module, Reason}}
+    end.
+
+%% Process import items (functions and identifiers)
+process_import_items(_Module, all, State) ->
+    % Import all exports - no specific processing needed for code gen
+    {ok, State};
+process_import_items(Module, Items, State) when is_list(Items) ->
+    % Process specific imported items
+    process_imported_items(Module, Items, State).
+
+%% Process individual import items
+process_imported_items(_Module, [], State) ->
+    {ok, State};
+process_imported_items(Module, [Item | RestItems], State) ->
+    case process_imported_item(Module, Item, State) of
+        {ok, NewState} ->
+            process_imported_items(Module, RestItems, NewState);
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Process single imported item
+process_imported_item(Module, #function_import{name = Name, arity = Arity}, State) ->
+    % Register function import for call resolution
+    % In a full implementation, would verify the function exists in the module
+    % and potentially generate import stubs or call wrappers
+    ImportInfo = {imported_function, Module, Name, Arity},
+    % Could store this information in the state for later use during call compilation
+    {ok, State};
+process_imported_item(_Module, Identifier, State) when is_atom(Identifier) ->
+    % Register identifier import (type constructor, constant, etc.)
+    % In a full implementation, would handle identifier imports appropriately
+    {ok, State}.
 
 %% ============================================================================
 %% Function Compilation
