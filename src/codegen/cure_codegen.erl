@@ -120,6 +120,28 @@ compile_program_impl(AST, Options) when is_list(AST) ->
 compile_module(ModuleAST) ->
     compile_module(ModuleAST, default_options()).
 
+%% Support for new AST format
+compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) ->
+    State = #codegen_state{
+        module_name = Name,
+        exports = convert_exports_new(Exports, Items),
+        options = Options,
+        type_env = cure_typechecker:builtin_env()
+    },
+    
+    % Process imports first
+    StateWithImports = case process_imports_new(Imports, State) of
+        {ok, ImportState} -> ImportState;
+        {error, _} -> State  % Continue with basic state on import errors
+    end,
+    
+    case compile_module_items(Items, StateWithImports) of
+        {ok, CompiledState} ->
+            generate_beam_module(CompiledState);
+        {error, Reason} ->
+            {error, Reason}
+    end;
+
 compile_module(#module_def{name = Name, exports = Exports, items = Items} = _Module, Options) ->
     State = #codegen_state{
         module_name = Name,
@@ -179,6 +201,22 @@ compile_module_item(#function_def{} = Function, State) ->
             {error, Reason}
     end;
 
+%% Handle new function definition format
+compile_module_item({function_def, Name, Params, Body, Location}, State) ->
+    % Convert to old format for compatibility
+    Function = #function_def{
+        name = Name,
+        params = Params,
+        body = Body,
+        location = Location
+    },
+    case compile_function_impl(Function, State) of
+        {ok, CompiledFunction, NewState} ->
+            {ok, CompiledFunction, NewState};
+        {error, Reason} ->
+            {error, Reason}
+    end;
+
 compile_module_item(#fsm_def{} = FSM, State) ->
     case compile_fsm_impl(FSM, State) of
         {ok, CompiledFSM, NewState} ->
@@ -200,6 +238,36 @@ compile_module_item(#import_def{} = Import, State) ->
             {ok, {import, Import}, FinalState};
         {error, Reason} ->
             {error, Reason}
+    end;
+
+%% Handle new import definition format
+compile_module_item({import_def, Module, Items, Location}, State) ->
+    Import = #import_def{
+        module = Module,
+        items = Items,
+        location = Location
+    },
+    case process_import(Import, State) of
+        {ok, NewState} ->
+            NewImports = [Import | NewState#codegen_state.imports],
+            FinalState = NewState#codegen_state{imports = NewImports},
+            {ok, {import, Import}, FinalState};
+        {error, Reason} ->
+            {error, Reason}
+    end;
+
+%% Handle export list (metadata only - no code generation needed)
+compile_module_item({export_list, _Exports, _Location}, State) ->
+    % Export lists are handled during module setup, no code generation needed
+    {ok, {export_list, metadata_only}, State};
+
+%% Skip other metadata items that don't need code generation
+compile_module_item(Item, State) when is_tuple(Item) ->
+    case element(1, Item) of
+        export_list ->
+            {ok, {metadata, Item}, State};
+        _ ->
+            {error, {unsupported_module_item, Item}}
     end.
 
 %% Process import for code generation
@@ -309,6 +377,11 @@ compile_expression(Expr, State) ->
         #let_expr{} -> compile_let_expr(Expr, State);
         #list_expr{} -> compile_list_expr(Expr, State);
         #block_expr{} -> compile_block_expr(Expr, State);
+        #lambda_expr{} -> compile_lambda_expr(Expr, State);
+        #unary_op_expr{} -> compile_unary_op_expr(Expr, State);
+        #match_expr{} -> compile_match_expr(Expr, State);
+        % Note: pipe operators are parsed as binary_op_expr with op = '|>'
+        % Note: constructor expressions are parsed as function_call_expr
         _ -> {error, {unsupported_expression, Expr}}
     end.
 
@@ -351,17 +424,55 @@ compile_identifier(#identifier_expr{name = Name, location = Location}, State) ->
 %% Compile binary operations
 compile_binary_op(#binary_op_expr{op = Op, left = Left, right = Right, 
                                  location = Location}, State) ->
-    {LeftInstructions, State1} = compile_expression(Left, State),
-    {RightInstructions, State2} = compile_expression(Right, State1),
-    
-    BinaryOpInstruction = #beam_instr{
-        op = binary_op,
-        args = [Op],
-        location = Location
-    },
-    
-    Instructions = LeftInstructions ++ RightInstructions ++ [BinaryOpInstruction],
-    {Instructions, State2}.
+    case Op of
+        '|>' ->
+            % Pipe operator: Left |> Right becomes Right(Left)
+            {LeftInstructions, State1} = compile_expression(Left, State),
+            
+            % Right should be a function call where Left becomes the first argument
+            case Right of
+                #function_call_expr{function = Function, args = Args} ->
+                    % Compile function and original args
+                    {FuncInstructions, State2} = compile_expression(Function, State1),
+                    {ArgInstructions, State3} = compile_expressions(Args, State2),
+                    
+                    % Create call with Left as first argument
+                    CallInstruction = #beam_instr{
+                        op = call,
+                        args = [length(Args) + 1], % +1 for the piped value
+                        location = Location
+                    },
+                    
+                    % Instructions: Left, Args..., Function, Call
+                    Instructions = LeftInstructions ++ ArgInstructions ++ FuncInstructions ++ [CallInstruction],
+                    {Instructions, State3};
+                _ ->
+                    % Right is just a function, call it with Left as argument
+                    {RightInstructions, State2} = compile_expression(Right, State1),
+                    
+                    CallInstruction = #beam_instr{
+                        op = call,
+                        args = [1], % One argument (the piped value)
+                        location = Location
+                    },
+                    
+                    Instructions = LeftInstructions ++ RightInstructions ++ [CallInstruction],
+                    {Instructions, State2}
+            end;
+        _ ->
+            % Regular binary operation
+            {LeftInstructions, State1} = compile_expression(Left, State),
+            {RightInstructions, State2} = compile_expression(Right, State1),
+            
+            BinaryOpInstruction = #beam_instr{
+                op = binary_op,
+                args = [Op],
+                location = Location
+            },
+            
+            Instructions = LeftInstructions ++ RightInstructions ++ [BinaryOpInstruction],
+            {Instructions, State2}
+    end.
 
 %% Compile function calls
 compile_function_call(#function_call_expr{function = Function, args = Args, 
@@ -428,6 +539,59 @@ compile_list_expr(#list_expr{elements = Elements, location = Location}, State) -
 %% Compile block expressions
 compile_block_expr(#block_expr{expressions = Expressions, location = _Location}, State) ->
     compile_expressions_sequence(Expressions, State).
+
+%% Compile lambda expressions
+compile_lambda_expr(#lambda_expr{params = Params, body = Body, location = Location}, State) ->
+    % Generate lambda as anonymous function
+    {LambdaName, State1} = new_temp_var(State),
+    
+    % Create parameter bindings for lambda
+    ParamBindings = create_param_bindings(Params),
+    LambdaState = State1#codegen_state{
+        local_vars = maps:merge(State1#codegen_state.local_vars, ParamBindings)
+    },
+    
+    % Compile lambda body
+    {BodyInstructions, State2} = compile_expression(Body, LambdaState),
+    
+    % Generate lambda creation instruction
+    LambdaInstruction = #beam_instr{
+        op = make_lambda,
+        args = [LambdaName, Params, BodyInstructions],
+        location = Location
+    },
+    
+    {[LambdaInstruction], State2}.
+
+%% Compile unary operations
+compile_unary_op_expr(#unary_op_expr{op = Op, operand = Operand, location = Location}, State) ->
+    {OperandInstructions, State1} = compile_expression(Operand, State),
+    
+    UnaryOpInstruction = #beam_instr{
+        op = unary_op,
+        args = [Op],
+        location = Location
+    },
+    
+    Instructions = OperandInstructions ++ [UnaryOpInstruction],
+    {Instructions, State1}.
+
+%% Compile pattern matching expressions
+compile_match_expr(#match_expr{expr = Expr, patterns = Patterns, location = Location}, State) ->
+    {ExprInstructions, State1} = compile_expression(Expr, State),
+    
+    % Generate match instruction with patterns
+    MatchInstruction = #beam_instr{
+        op = pattern_match,
+        args = [Patterns],
+        location = Location
+    },
+    
+    % For now, just basic pattern matching - full implementation would need
+    % pattern compilation to decision trees and guard generation
+    Instructions = ExprInstructions ++ [MatchInstruction],
+    {Instructions, State1}.
+
 
 %% ============================================================================
 %% FSM Compilation
@@ -709,6 +873,46 @@ generate_module_attributes(State) ->
 %% Convert export specifications
 convert_exports(Exports) ->
     [{Name, Arity} || #export_spec{name = Name, arity = Arity} <- Exports].
+
+%% Convert exports for new AST format
+convert_exports_new(ExportList, Items) ->
+    case ExportList of
+        all ->
+            extract_all_functions(Items);
+        {export_list, Exports, _Location} ->
+            convert_export_specs(Exports);
+        _ ->
+            []
+    end.
+
+%% Extract all function names and arities from items
+extract_all_functions(Items) ->
+    extract_all_functions(Items, []).
+
+extract_all_functions([], Acc) ->
+    lists:reverse(Acc);
+extract_all_functions([{function_def, Name, Params, _Body, _Location} | Rest], Acc) ->
+    Arity = length(Params),
+    extract_all_functions(Rest, [{Name, Arity} | Acc]);
+extract_all_functions([_ | Rest], Acc) ->
+    extract_all_functions(Rest, Acc).
+
+%% Convert export specifications for new format
+convert_export_specs([]) ->
+    [];
+convert_export_specs([{export_spec, Name, Arity, _Location} | Rest]) ->
+    [{Name, Arity} | convert_export_specs(Rest)];
+convert_export_specs([_ | Rest]) ->
+    convert_export_specs(Rest).
+
+%% Process imports for new AST format
+process_imports_new([], State) ->
+    {ok, State};
+process_imports_new([{import_def, Module, Imports, _Location} | Rest], State) ->
+    % For now, just continue processing - full import resolution would need module loading
+    process_imports_new(Rest, State);
+process_imports_new([_ | Rest], State) ->
+    process_imports_new(Rest, State).
 
 %% Compile individual items (for program compilation)
 compile_item(#module_def{} = Module, Options) ->

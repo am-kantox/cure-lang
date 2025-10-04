@@ -69,11 +69,20 @@ check_items([Item | RestItems], Env, Result) ->
             check_items(RestItems, Env, ErrorResult)
     end.
 
-%% Check single top-level item
+%% Check single top-level item - Updated for new AST format
+check_item({module_def, Name, Imports, Exports, Items, Location}, Env) ->
+    check_module_new({module_def, Name, Imports, Exports, Items, Location}, Env);
 check_item(Module = #module_def{}, Env) ->
     check_module(Module, Env);
+check_item({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
+    check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env);
 check_item(Function = #function_def{}, Env) ->
     check_function(Function, Env);
+check_item({import_def, Module, Items, Location}, Env) ->
+    check_import_new({import_def, Module, Items, Location}, Env);
+check_item({export_list, ExportSpecs}, Env) ->
+    % Export lists are handled during module checking - just pass through
+    {ok, Env, success_result({export_list, ExportSpecs})};
 check_item(FSM = #fsm_def{}, Env) ->
     check_fsm(FSM, Env);
 check_item(TypeDef = #type_def{}, Env) ->
@@ -200,7 +209,112 @@ check_fsm(#fsm_def{name = Name, states = States, initial = Initial,
             end
     end.
 
-%% Check type definition  
+%% Check module definition - New AST format
+check_module_new({module_def, Name, Imports, Exports, Items, Location}, Env) ->
+    % Create module-scoped environment
+    ModuleEnv = cure_types:extend_env(Env, module, Name),
+    
+    % Process imports first to extend environment
+    ImportEnv = case process_imports(Imports, ModuleEnv) of
+        {ok, TempEnv} -> TempEnv;
+        {error, _} -> ModuleEnv  % Continue with original env on import errors
+    end,
+    
+    % Check all items in the module
+    case check_items(Items, ImportEnv, new_result()) of
+        Result = #typecheck_result{success = true} ->
+            % Verify exported functions exist and have correct arities
+            ExportSpecs = extract_export_specs(Exports, Items),
+            case check_exports_new(ExportSpecs, Items) of
+                ok ->
+                    {ok, cure_types:extend_env(Env, Name, {module_type, Name}), Result};
+                {error, ExportError} ->
+                    {error, ExportError}
+            end;
+        Result ->
+            {ok, Env, Result}
+    end.
+
+%% Check function definition - New AST format
+check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
+    try
+        % Convert parameters to type environment
+        {ParamTypes, ParamEnv} = process_parameters_new(Params, Env),
+        
+        % Check constraint if present
+        case Constraint of
+            undefined -> ok;
+            _ ->
+                case cure_types:infer_type(convert_expr_to_tuple(Constraint), ParamEnv) of
+                    {ok, InferenceResult} ->
+                        ConstraintType = element(2, InferenceResult),
+                        case cure_types:unify(ConstraintType, {primitive_type, 'Bool'}) of
+                            {ok, _} -> ok;
+                            {error, Reason} ->
+                                throw({constraint_not_bool, Reason, Location})
+                        end;
+                    {error, Reason} ->
+                        throw({constraint_inference_failed, Reason, Location})
+                end
+        end,
+        
+        % Check function body
+        case cure_types:infer_type(convert_expr_to_tuple(Body), ParamEnv) of
+            {ok, InferenceResult2} ->
+                BodyType = element(2, InferenceResult2),
+                % Check return type if specified
+                case ReturnType of
+                    undefined ->
+                        % Function type is inferred
+                        FuncType = {function_type, ParamTypes, BodyType},
+                        NewEnv = cure_types:extend_env(Env, Name, FuncType),
+                        {ok, NewEnv, success_result(FuncType)};
+                    _ ->
+                        % Check body matches declared return type
+                        ExpectedReturnType = convert_type_to_tuple(ReturnType),
+                        case cure_types:unify(BodyType, ExpectedReturnType) of
+                            {ok, _} ->
+                                FuncType = {function_type, ParamTypes, ExpectedReturnType},
+                                NewEnv = cure_types:extend_env(Env, Name, FuncType),
+                                {ok, NewEnv, success_result(FuncType)};
+                            {error, UnifyReason} ->
+                                ErrorMsg = #typecheck_error{
+                                    message = "Function body type doesn't match declared return type",
+                                    location = Location,
+                                    details = {type_mismatch, ExpectedReturnType, BodyType, UnifyReason}
+                                },
+                                {ok, Env, error_result(ErrorMsg)}
+                        end
+                end;
+            {error, InferReason} ->
+                ErrorMsg2 = #typecheck_error{
+                    message = "Failed to infer function body type",
+                    location = Location,
+                    details = {inference_failed, InferReason}
+                },
+                {ok, Env, error_result(ErrorMsg2)}
+        end
+    catch
+        throw:{ErrorType, Details, ErrorLocation} ->
+            ThrownError = #typecheck_error{
+                message = format_error_type(ErrorType),
+                location = ErrorLocation,
+                details = Details
+            },
+            {ok, Env, error_result(ThrownError)}
+    end.
+
+%% Check import - New AST format
+check_import_new({import_def, Module, Items, Location}, Env) ->
+    case check_import_items_new(Module, Items, Env) of
+        {ok, NewEnv} ->
+            ImportType = {import_type, Module, Items},
+            {ok, NewEnv, success_result(ImportType)};
+        {error, Error} ->
+            {ok, Env, error_result(Error)}
+    end.
+
+%% Check type definition
 check_type_definition(#type_def{name = Name, definition = Definition}, Env) ->
     % For now, just add the type to environment
     TypeDefType = convert_type_to_tuple(Definition),
@@ -397,6 +511,14 @@ convert_expr_to_tuple(#list_expr{elements = Elements, location = Location}) ->
 convert_expr_to_tuple(#block_expr{expressions = Expressions, location = Location}) ->
     % Convert block to sequence of let expressions
     convert_block_to_lets(Expressions, Location);
+convert_expr_to_tuple(#lambda_expr{params = Params, body = Body, location = Location}) ->
+    ConvertedParams = [convert_param_to_tuple(P) || P <- Params],
+    {lambda_expr, ConvertedParams, convert_expr_to_tuple(Body), Location};
+convert_expr_to_tuple(#unary_op_expr{op = Op, operand = Operand, location = Location}) ->
+    {unary_op_expr, Op, convert_expr_to_tuple(Operand), Location};
+convert_expr_to_tuple(#match_expr{expr = Expr, patterns = Patterns, location = Location}) ->
+    ConvertedPatterns = [convert_match_clause_to_tuple(P) || P <- Patterns],
+    {match_expr, convert_expr_to_tuple(Expr), ConvertedPatterns, Location};
 convert_expr_to_tuple(Expr) ->
     % Fallback - return as-is for unsupported expressions
     Expr.
@@ -406,6 +528,20 @@ convert_binding_to_tuple(#binding{pattern = Pattern, value = Value, location = L
 
 convert_pattern_to_tuple(#identifier_pattern{name = Name, location = Location}) ->
     {identifier_pattern, Name, Location};
+convert_pattern_to_tuple(#literal_pattern{value = Value, location = Location}) ->
+    {literal_pattern, Value, Location};
+convert_pattern_to_tuple(#list_pattern{elements = Elements, tail = Tail, location = Location}) ->
+    ConvertedElements = [convert_pattern_to_tuple(E) || E <- Elements],
+    ConvertedTail = case Tail of
+        undefined -> undefined;
+        _ -> convert_pattern_to_tuple(Tail)
+    end,
+    {list_pattern, ConvertedElements, ConvertedTail, Location};
+convert_pattern_to_tuple(#record_pattern{name = Name, fields = Fields, location = Location}) ->
+    ConvertedFields = [convert_field_pattern_to_tuple(F) || F <- Fields],
+    {record_pattern, Name, ConvertedFields, Location};
+convert_pattern_to_tuple(#wildcard_pattern{location = Location}) ->
+    {wildcard_pattern, Location};
 convert_pattern_to_tuple(Pattern) ->
     Pattern.
 
@@ -527,3 +663,100 @@ infer_dependent_type(Expr, Env) ->
         {ok, Result} -> {ok, Result};
         Error -> Error
     end.
+
+%% Helper functions for new AST format
+process_imports([], Env) ->
+    {ok, Env};
+process_imports([Import | RestImports], Env) ->
+    case check_import_new(Import, Env) of
+        {ok, NewEnv, _Result} ->
+            process_imports(RestImports, NewEnv);
+        {error, Error} ->
+            {error, Error}
+    end.
+
+extract_export_specs([], _Items) ->
+    [];
+extract_export_specs([{export_list, ExportSpecs}], _Items) ->
+    ExportSpecs;
+extract_export_specs([_ | RestExports], Items) ->
+    extract_export_specs(RestExports, Items).
+
+check_exports_new([], _Items) -> ok;
+check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) ->
+    case find_function_new(Name, Items) of
+        {ok, {function_def, _Name, Params, _ReturnType, _Constraint, _Body, _Location}} ->
+            case length(Params) =:= Arity of
+                true -> check_exports_new(RestExports, Items);
+                false -> {error, {export_arity_mismatch, Name, Arity, length(Params)}}
+            end;
+        not_found ->
+            {error, {exported_function_not_found, Name, Arity}}
+    end.
+
+find_function_new(Name, [{function_def, Name, Params, ReturnType, Constraint, Body, Location} | _]) ->
+    {ok, {function_def, Name, Params, ReturnType, Constraint, Body, Location}};
+find_function_new(Name, [_ | RestItems]) ->
+    find_function_new(Name, RestItems);
+find_function_new(_Name, []) ->
+    not_found.
+
+process_parameters_new(Params, Env) ->
+    process_parameters_new(Params, Env, [], Env).
+
+process_parameters_new([], _OrigEnv, TypesAcc, EnvAcc) ->
+    {lists:reverse(TypesAcc), EnvAcc};
+process_parameters_new([{param, Name, TypeExpr, _Location} | RestParams], OrigEnv, TypesAcc, EnvAcc) ->
+    ParamType = convert_type_to_tuple(TypeExpr),
+    NewEnvAcc = cure_types:extend_env(EnvAcc, Name, ParamType),
+    process_parameters_new(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc);
+process_parameters_new([#param{name = Name, type = TypeExpr} | RestParams], OrigEnv, TypesAcc, EnvAcc) ->
+    ParamType = convert_type_to_tuple(TypeExpr),
+    NewEnvAcc = cure_types:extend_env(EnvAcc, Name, ParamType),
+    process_parameters_new(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc).
+
+check_import_items_new(Module, Items, Env) ->
+    import_items_new(Module, Items, Env).
+
+import_items_new(_Module, [], AccEnv) ->
+    {ok, AccEnv};
+import_items_new(Module, [Item | RestItems], AccEnv) ->
+    case import_item_new(Module, Item, AccEnv) of
+        {ok, NewAccEnv} ->
+            import_items_new(Module, RestItems, NewAccEnv);
+        {error, Error} ->
+            {error, Error}
+    end.
+
+import_item_new(Module, {function_import, Name, Arity, _Location}, Env) ->
+    FunctionType = create_imported_function_type(Module, Name, Arity),
+    NewEnv = cure_types:extend_env(Env, Name, FunctionType),
+    {ok, NewEnv};
+import_item_new(Module, Identifier, Env) when is_atom(Identifier) ->
+    IdentifierType = {imported_identifier, Module, Identifier},
+    NewEnv = cure_types:extend_env(Env, Identifier, IdentifierType),
+    {ok, NewEnv}.
+
+%% Additional converter functions
+convert_param_to_tuple({param, Name, TypeExpr, Location}) ->
+    {param, Name, convert_type_to_tuple(TypeExpr), Location};
+convert_param_to_tuple(#param{name = Name, type = TypeExpr, location = Location}) ->
+    {param, Name, convert_type_to_tuple(TypeExpr), Location}.
+
+convert_match_clause_to_tuple(#match_clause{pattern = Pattern, guard = Guard, body = Body, location = Location}) ->
+    ConvertedGuard = case Guard of
+        undefined -> undefined;
+        _ -> convert_expr_to_tuple(Guard)
+    end,
+    {match_clause, convert_pattern_to_tuple(Pattern), ConvertedGuard, convert_expr_to_tuple(Body), Location};
+convert_match_clause_to_tuple({match_clause, Pattern, Guard, Body, Location}) ->
+    ConvertedGuard = case Guard of
+        undefined -> undefined;
+        _ -> convert_expr_to_tuple(Guard)
+    end,
+    {match_clause, convert_pattern_to_tuple(Pattern), ConvertedGuard, convert_expr_to_tuple(Body), Location}.
+
+convert_field_pattern_to_tuple(#field_pattern{name = Name, pattern = Pattern, location = Location}) ->
+    {field_pattern, Name, convert_pattern_to_tuple(Pattern), Location};
+convert_field_pattern_to_tuple({field_pattern, Name, Pattern, Location}) ->
+    {field_pattern, Name, convert_pattern_to_tuple(Pattern), Location}.
