@@ -72,6 +72,9 @@ check_items([Item | RestItems], Env, Result) ->
 %% Check single top-level item - Updated for new AST format
 check_item({module_def, Name, Imports, Exports, Items, Location}, Env) ->
     check_module_new({module_def, Name, Imports, Exports, Items, Location}, Env);
+check_item({module_def, Name, Exports, Items, Location}, Env) ->
+    % Parser format without imports field - add empty imports
+    check_module_new({module_def, Name, [], Exports, Items, Location}, Env);
 check_item({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
     check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env);
 check_item({import_def, Module, Items, Location}, Env) ->

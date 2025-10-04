@@ -482,15 +482,24 @@ parse_fsm_transition(State) ->
             {TargetToken, State7} = expect(State6, identifier),
             Target = binary_to_atom(get_token_value(TargetToken), utf8),
             
+            % Optional action with 'do'
+            {Action, State8} = case match_token(State7, 'do') of
+                true ->
+                    {_, State7a} = expect(State7, 'do'),
+                    parse_action_expression(State7a);
+                false ->
+                    {undefined, State7}
+            end,
+            
             Location = get_token_location(current_token(State)),
             Transition = #transition{
                 event = Event,
                 guard = Guard,
                 target = Target,
-                action = undefined,  % TODO: Parse action expressions
+                action = Action,
                 location = Location
             },
-            {Transition, State7};
+            {Transition, State8};
         timeout ->
             {_, State1} = expect(State, timeout),
             {_, State2} = expect(State1, '('),
@@ -510,15 +519,24 @@ parse_fsm_transition(State) ->
             {TargetToken, State7} = expect(State6, identifier),
             Target = binary_to_atom(get_token_value(TargetToken), utf8),
             
+            % Optional action with 'do'
+            {Action, State8} = case match_token(State7, 'do') of
+                true ->
+                    {_, State7a} = expect(State7, 'do'),
+                    parse_action_expression(State7a);
+                false ->
+                    {undefined, State7}
+            end,
+            
             Location = get_token_location(current_token(State)),
             Transition = #transition{
                 event = TimeoutExpr,
                 guard = Guard,
                 target = Target,
-                action = undefined,  % TODO: Parse action expressions
+                action = Action,
                 location = Location
             },
-            {Transition, State7}
+            {Transition, State8}
     end.
 
 %% Parse list of atoms/identifiers (backwards compatibility)
@@ -1528,4 +1546,266 @@ is_end_of_body(State) ->
         'def' -> true;
         'defp' -> true;
         _ -> false
+    end.
+
+%% ============================================================================
+%% Action Expression Parsing
+%% ============================================================================
+
+%% Parse action expressions for FSM transitions
+parse_action_expression(State) ->
+    case get_token_type(current_token(State)) of
+        '{' ->
+            % Action sequence: do { action1; action2; ... }
+            {_, State1} = expect(State, '{'),
+            {Actions, State2} = parse_action_sequence(State1, []),
+            {_, State3} = expect(State2, '}'),
+            Location = get_token_location(current_token(State)),
+            {{sequence, Actions, Location}, State3};
+        
+        identifier ->
+            % Single action or assignment
+            parse_single_action(State);
+        
+        'if' ->
+            % Conditional action
+            parse_conditional_action(State);
+        
+        'log' ->
+            % Logging action
+            parse_log_action(State);
+        
+        'emit' ->
+            % Event emission action
+            parse_emit_action(State);
+        
+        _ ->
+            {error, {unexpected_token_in_action, get_token_type(current_token(State))}}
+    end.
+
+%% Parse a sequence of actions separated by semicolons
+parse_action_sequence(State, Acc) ->
+    case get_token_type(current_token(State)) of
+        '}' ->
+            {lists:reverse(Acc), State};
+        _ ->
+            {Action, State1} = parse_single_action(State),
+            case match_token(State1, ';') of
+                true ->
+                    {_, State2} = expect(State1, ';'),
+                    parse_action_sequence(State2, [Action | Acc]);
+                false ->
+                    {lists:reverse([Action | Acc]), State1}
+            end
+    end.
+
+%% Parse a single action
+parse_single_action(State) ->
+    {NameToken, State1} = expect(State, identifier),
+    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Location = get_token_location(NameToken),
+    
+    case get_token_type(current_token(State1)) of
+        '=' ->
+            % Assignment: variable = value
+            {_, State2} = expect(State1, '='),
+            {Value, State3} = parse_action_value(State2),
+            {{assign, Name, Value, Location}, State3};
+        
+        '+=' ->
+            % Increment: variable += amount
+            {_, State2} = expect(State1, '+='),
+            {Amount, State3} = parse_action_value(State2),
+            {{increment, Name, Amount, Location}, State3};
+        
+        '-=' ->
+            % Decrement: variable -= amount
+            {_, State2} = expect(State1, '-='),
+            {Amount, State3} = parse_action_value(State2),
+            {{decrement, Name, Amount, Location}, State3};
+        
+        '(' ->
+            % Function call: function(args)
+            {_, State2} = expect(State1, '('),
+            {Args, State3} = parse_action_arguments(State2, []),
+            {_, State4} = expect(State3, ')'),
+            {{call, Name, Args, Location}, State4};
+        
+        _ ->
+            % Just a variable reference or field access
+            case match_token(State1, '.') of
+                true ->
+                    {_, State2} = expect(State1, '.'),
+                    {FieldToken, State3} = expect(State2, identifier),
+                    Field = binary_to_atom(get_token_value(FieldToken), utf8),
+                    
+                    case match_token(State3, '=') of
+                        true ->
+                            {_, State4} = expect(State3, '='),
+                            {Value, State5} = parse_action_value(State4),
+                            {{update, Field, Value, Location}, State5};
+                        false ->
+                            {{state_field, Field, Location}, State3}
+                    end;
+                false ->
+                    {{state_var, Name, Location}, State1}
+            end
+    end.
+
+%% Parse conditional actions: if condition then action else action end
+parse_conditional_action(State) ->
+    {_, State1} = expect(State, 'if'),
+    {Condition, State2} = parse_action_condition(State1),
+    {_, State3} = expect(State2, 'then'),
+    {ThenAction, State4} = parse_action_expression(State3),
+    
+    {ElseAction, State5} = case match_token(State4, 'else') of
+        true ->
+            {_, State4a} = expect(State4, 'else'),
+            parse_action_expression(State4a);
+        false ->
+            {undefined, State4}
+    end,
+    
+    {_, State6} = expect(State5, 'end'),
+    Location = get_token_location(current_token(State)),
+    {{if_then, Condition, ThenAction, ElseAction, Location}, State6}.
+
+%% Parse log actions: log(level, message)
+parse_log_action(State) ->
+    {_, State1} = expect(State, 'log'),
+    {_, State2} = expect(State1, '('),
+    {LevelToken, State3} = expect(State2, identifier),
+    Level = binary_to_atom(get_token_value(LevelToken), utf8),
+    {_, State4} = expect(State3, ','),
+    {Message, State5} = parse_action_value(State4),
+    {_, State6} = expect(State5, ')'),
+    Location = get_token_location(current_token(State)),
+    {{log, Level, Message, Location}, State6}.
+
+%% Parse emit actions: emit(event) or emit(event, data)
+parse_emit_action(State) ->
+    {_, State1} = expect(State, 'emit'),
+    {_, State2} = expect(State1, '('),
+    {Event, State3} = parse_action_value(State2),
+    
+    {Data, State4} = case match_token(State3, ',') of
+        true ->
+            {_, State3a} = expect(State3, ','),
+            parse_action_value(State3a);
+        false ->
+            {undefined, State3}
+    end,
+    
+    {_, State5} = expect(State4, ')'),
+    Location = get_token_location(current_token(State)),
+    {{emit, Event, Data, Location}, State5}.
+
+%% Parse action conditions (similar to expressions)
+parse_action_condition(State) ->
+    parse_expression(State).
+
+%% Parse action values (expressions that produce values)
+parse_action_value(State) ->
+    case get_token_type(current_token(State)) of
+        number ->
+            {Token, State1} = expect(State, number),
+            Value = get_token_value(Token),
+            Location = get_token_location(Token),
+            {{literal, Value, Location}, State1};
+        
+        string ->
+            {Token, State1} = expect(State, string),
+            Value = get_token_value(Token),
+            Location = get_token_location(Token),
+            {{literal, Value, Location}, State1};
+        
+        atom ->
+            {Token, State1} = expect(State, atom),
+            Value = get_token_value(Token),
+            Location = get_token_location(Token),
+            {{literal, Value, Location}, State1};
+        
+        identifier ->
+            {NameToken, State1} = expect(State, identifier),
+            Name = binary_to_atom(get_token_value(NameToken), utf8),
+            Location = get_token_location(NameToken),
+            
+            case Name of
+                event_data -> {{event_data, Location}, State1};
+                current_state -> {{current_state, Location}, State1};
+                _ ->
+                    case match_token(State1, '.') of
+                        true ->
+                            {_, State2} = expect(State1, '.'),
+                            {FieldToken, State3} = expect(State2, identifier),
+                            Field = binary_to_atom(get_token_value(FieldToken), utf8),
+                            {{state_field, Field, Location}, State3};
+                        false ->
+                            case match_token(State1, '(') of
+                                true ->
+                                    % Function call
+                                    {_, State2} = expect(State1, '('),
+                                    {Args, State3} = parse_action_arguments(State2, []),
+                                    {_, State4} = expect(State3, ')'),
+                                    {{function_call, Name, Args, Location}, State4};
+                                false ->
+                                    {{state_var, Name, Location}, State1}
+                            end
+                    end
+            end;
+        
+        '(' ->
+            % Parenthesized expression or binary operation
+            {_, State1} = expect(State, '('),
+            {Value, State2} = parse_action_binary_expr(State1),
+            {_, State3} = expect(State2, ')'),
+            {Value, State3};
+        
+        _ ->
+            {error, {unexpected_token_in_action_value, get_token_type(current_token(State))}}
+    end.
+
+%% Parse binary expressions in actions
+parse_action_binary_expr(State) ->
+    {Left, State1} = parse_action_value(State),
+    case get_token_type(current_token(State1)) of
+        '+' ->
+            {_, State2} = expect(State1, '+'),
+            {Right, State3} = parse_action_value(State2),
+            Location = get_token_location(current_token(State)),
+            {{binary_op, '+', Left, Right, Location}, State3};
+        '-' ->
+            {_, State2} = expect(State1, '-'),
+            {Right, State3} = parse_action_value(State2),
+            Location = get_token_location(current_token(State)),
+            {{binary_op, '-', Left, Right, Location}, State3};
+        '*' ->
+            {_, State2} = expect(State1, '*'),
+            {Right, State3} = parse_action_value(State2),
+            Location = get_token_location(current_token(State)),
+            {{binary_op, '*', Left, Right, Location}, State3};
+        '/' ->
+            {_, State2} = expect(State1, '/'),
+            {Right, State3} = parse_action_value(State2),
+            Location = get_token_location(current_token(State)),
+            {{binary_op, '/', Left, Right, Location}, State3};
+        _ ->
+            {Left, State1}
+    end.
+
+%% Parse action function arguments
+parse_action_arguments(State, Acc) ->
+    case get_token_type(current_token(State)) of
+        ')' ->
+            {lists:reverse(Acc), State};
+        _ ->
+            {Arg, State1} = parse_action_value(State),
+            case match_token(State1, ',') of
+                true ->
+                    {_, State2} = expect(State1, ','),
+                    parse_action_arguments(State2, [Arg | Acc]);
+                false ->
+                    {lists:reverse([Arg | Acc]), State1}
+            end
     end.

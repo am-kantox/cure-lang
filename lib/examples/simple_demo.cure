@@ -9,8 +9,9 @@ module SimpleDemo do
 
   def test_basic(): Int =
     let x = 42
-    let y = 10
+    let y = "10"
     let sum = add(x, y)
+    let _ = println("Sum is calculated")
     sum
     
   def add(a: Int, b: Int): Int =

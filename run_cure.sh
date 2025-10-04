@@ -25,8 +25,35 @@ begin
     io:format(\"📝 Tokenization: SUCCESS (~p tokens)~n\", [length(Tokens)]),
     {ok, AST} = cure_parser:parse(Tokens),
     io:format(\"🔍 Parsing: SUCCESS~n\"),
-    {ok, CompiledModules} = cure_codegen:compile_program(AST, []),
-    io:format(\"⚙️  Compilation: SUCCESS (~p modules)~n\", [length(CompiledModules)]),
+    % Type checking step
+    TypeCheckResult = cure_typechecker:check_program(AST),
+    CompiledModules = case TypeCheckResult of
+        Result when is_tuple(Result) ->
+            case element(1, Result) of
+                typecheck_result ->
+                    Success = element(2, Result),
+                    case Success of
+                        true ->
+                            io:format(\"🔎 Type checking: SUCCESS~n\"),
+                            {ok, Modules} = cure_codegen:compile_program(AST, []),
+                            io:format(\"⚙️  Compilation: SUCCESS (~p modules)~n\", [length(Modules)]),
+                            Modules;
+                        false ->
+                            Errors = element(4, Result),  % errors field
+                            io:format(\"❌ Type checking FAILED~n\"),
+                            lists:foreach(fun(Error) ->
+                                io:format(\"  Type Error: ~p~n\", [Error])
+                            end, Errors),
+                            halt(1)
+                    end;
+                _ ->
+                    io:format(\"❌ Type checking ERROR: ~p~n\", [Result]),
+                    halt(1)
+            end;
+        {error, TypeCheckError} ->
+            io:format(\"❌ Type checking ERROR: ~p~n\", [TypeCheckError]),
+            halt(1)
+    end,
     io:format(\"🎯 Execution Output:~n--------------------~n\"),
     case cure_runtime:run_program(CompiledModules) of
         {ok, _Result, _State} ->

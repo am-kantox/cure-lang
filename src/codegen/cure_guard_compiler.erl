@@ -10,6 +10,7 @@
 ]).
 
 -include("cure_codegen.hrl").
+-include("../parser/cure_ast_simple.hrl").
 
 %% ============================================================================
 %% Main Guard Compilation Interface

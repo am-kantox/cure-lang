@@ -1,0 +1,15 @@
+module TestScript do
+  export [main/0, greet/1]
+  
+  def main() = 
+    let _ = greet("World")
+    let _ = greet("Cure Programming Language")
+    let _ = println("Testing mathematical operations...")
+    let result = ok(50)
+    result
+    
+  def greet(name: String) = 
+    let message = string_concat("Hello, ", name)
+    println(message)
+    unit
+end

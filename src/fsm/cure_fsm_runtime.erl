@@ -459,7 +459,224 @@ is_truthy(0.0) -> false;
 is_truthy([]) -> false;
 is_truthy(_) -> true.
 
-%% Execute action (simplified - can be extended)
+%% ============================================================================
+%% Action Instruction Execution
+%% ============================================================================
+
+%% Execute compiled action instructions
+execute_action_instructions(Instructions, State, EventData) ->
+    try
+        Context = #{
+            state => State,
+            event_data => EventData,
+            variables => #{},
+            stack => [],
+            state_data => State#fsm_state.data,
+            modified => false
+        },
+        Result = execute_action_instructions_impl(Instructions, Context),
+        maps:get(state_data, Result, State#fsm_state.data)
+    catch
+        _:_ -> State#fsm_state.data
+    end.
+
+%% Execute a list of action instructions
+execute_action_instructions_impl([], Context) ->
+    Context;
+execute_action_instructions_impl([Instruction | Rest], Context) ->
+    NewContext = execute_action_instruction(Instruction, Context),
+    execute_action_instructions_impl(Rest, NewContext).
+
+%% Execute individual action instructions
+execute_action_instruction(#{op := load_literal, args := [Value]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    Context#{stack => [Value | Stack]};
+
+execute_action_instruction(#{op := load_state_var, args := [Variable]}, Context) ->
+    StateData = maps:get(state_data, Context),
+    Stack = maps:get(stack, Context, []),
+    
+    Value = case StateData of
+        Map when is_map(Map) -> maps:get(Variable, Map, undefined);
+        _ -> undefined
+    end,
+    
+    Context#{stack => [Value | Stack]};
+
+execute_action_instruction(#{op := load_state_field, args := [Field]}, Context) ->
+    StateData = maps:get(state_data, Context),
+    Stack = maps:get(stack, Context, []),
+    
+    Value = case StateData of
+        Map when is_map(Map) -> maps:get(Field, Map, undefined);
+        Tuple when is_tuple(Tuple) -> element(Field, Tuple);
+        _ -> undefined
+    end,
+    
+    Context#{stack => [Value | Stack]};
+
+execute_action_instruction(#{op := load_event_data}, Context) ->
+    EventData = maps:get(event_data, Context),
+    Stack = maps:get(stack, Context, []),
+    Context#{stack => [EventData | Stack]};
+
+execute_action_instruction(#{op := load_current_state}, Context) ->
+    State = maps:get(state, Context),
+    CurrentState = State#fsm_state.current_state,
+    Stack = maps:get(stack, Context, []),
+    Context#{stack => [CurrentState | Stack]};
+
+execute_action_instruction(#{op := assign_state_var, args := [Variable]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [Value | RestStack] ->
+            StateData = maps:get(state_data, Context),
+            NewStateData = case StateData of
+                Map when is_map(Map) -> maps:put(Variable, Value, Map);
+                _ -> #{Variable => Value}
+            end,
+            Context#{
+                stack => RestStack,
+                state_data => NewStateData,
+                modified => true
+            };
+        [] ->
+            Context
+    end;
+
+execute_action_instruction(#{op := update_state_field, args := [Field]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [Value | RestStack] ->
+            StateData = maps:get(state_data, Context),
+            NewStateData = case StateData of
+                Map when is_map(Map) -> maps:put(Field, Value, Map);
+                _ -> #{Field => Value}
+            end,
+            Context#{
+                stack => RestStack,
+                state_data => NewStateData,
+                modified => true
+            };
+        [] ->
+            Context
+    end;
+
+execute_action_instruction(#{op := binary_op, args := [Op]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [Right, Left | RestStack] ->
+            Result = apply_action_binary_op(Op, Left, Right),
+            Context#{stack => [Result | RestStack]};
+        _ ->
+            Context
+    end;
+
+execute_action_instruction(#{op := emit_event, args := [Event, HasData]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    State = maps:get(state, Context),
+    
+    {EventData, NewStack} = case HasData of
+        true ->
+            case Stack of
+                [Data | Rest] -> {Data, Rest};
+                [] -> {undefined, []}
+            end;
+        false ->
+            {undefined, Stack}
+    end,
+    
+    % Send event to self (asynchronous)
+    gen_statem:cast(self(), {event, Event, EventData}),
+    
+    Context#{stack => NewStack};
+
+execute_action_instruction(#{op := call_action_function, args := [Function, Arity]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    {Args, RestStack} = lists:split(min(Arity, length(Stack)), Stack),
+    
+    Result = apply_action_function(Function, lists:reverse(Args)),
+    Context#{stack => [Result | RestStack]};
+
+execute_action_instruction(#{op := log_action, args := [Level]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [Message | RestStack] ->
+            log_action_message(Level, Message),
+            Context#{stack => RestStack};
+        [] ->
+            Context
+    end;
+
+execute_action_instruction(#{op := action_sequence_start}, Context) ->
+    % Marker for debugging - no operation
+    Context;
+
+execute_action_instruction(#{op := action_sequence_end}, Context) ->
+    % Marker for debugging - no operation
+    Context;
+
+execute_action_instruction(#{op := jump_if_false, args := [_Label]}, Context) ->
+    % For now, just consume the top stack value
+    % Full implementation would need label handling
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [_Value | RestStack] -> Context#{stack => RestStack};
+        [] -> Context
+    end;
+
+execute_action_instruction(#{op := jump, args := [_Label]}, Context) ->
+    % No-op for now - full implementation would need proper control flow
+    Context;
+
+execute_action_instruction(#{op := label, args := [_Label]}, Context) ->
+    % No-op for now - labels are handled by control flow
+    Context;
+
+execute_action_instruction(_, Context) ->
+    % Unknown instruction, skip
+    Context.
+
+%% Apply binary operations for actions
+apply_action_binary_op('+', A, B) -> A + B;
+apply_action_binary_op('-', A, B) -> A - B;
+apply_action_binary_op('*', A, B) -> A * B;
+apply_action_binary_op('/', A, B) when B =/= 0 -> A / B;
+apply_action_binary_op('div', A, B) when B =/= 0 -> A div B;
+apply_action_binary_op('rem', A, B) when B =/= 0 -> A rem B;
+apply_action_binary_op('++', A, B) when is_list(A), is_list(B) -> A ++ B;
+apply_action_binary_op('--', A, B) when is_list(A), is_list(B) -> A -- B;
+apply_action_binary_op(_, _, _) -> undefined.
+
+%% Apply safe action functions
+apply_action_function(length, [List]) when is_list(List) -> length(List);
+apply_action_function(size, [Data]) -> size(Data);
+apply_action_function(hd, [List]) when is_list(List), List =/= [] -> hd(List);
+apply_action_function(tl, [List]) when is_list(List), List =/= [] -> tl(List);
+apply_action_function(element, [N, Tuple]) when is_tuple(Tuple) -> element(N, Tuple);
+apply_action_function(abs, [N]) when is_number(N) -> abs(N);
+apply_action_function(max, [A, B]) -> max(A, B);
+apply_action_function(min, [A, B]) -> min(A, B);
+apply_action_function(round, [N]) when is_number(N) -> round(N);
+apply_action_function(trunc, [N]) when is_number(N) -> trunc(N);
+apply_action_function(lists_reverse, [List]) when is_list(List) -> lists:reverse(List);
+apply_action_function(maps_get, [Key, Map]) when is_map(Map) -> maps:get(Key, Map, undefined);
+apply_action_function(maps_put, [Key, Value, Map]) when is_map(Map) -> maps:put(Key, Value, Map);
+apply_action_function(_, _) -> undefined.
+
+%% Log action messages
+log_action_message(debug, Message) ->
+    io:format("[FSM DEBUG] ~p~n", [Message]);
+log_action_message(info, Message) ->
+    io:format("[FSM INFO] ~p~n", [Message]);
+log_action_message(warning, Message) ->
+    io:format("[FSM WARNING] ~p~n", [Message]);
+log_action_message(error, Message) ->
+    io:format("[FSM ERROR] ~p~n", [Message]);
+log_action_message(_, Message) ->
+    io:format("[FSM LOG] ~p~n", [Message]).
+
+%% Execute action with compiled action expression support
 execute_action(undefined, State, _EventData) ->
     State#fsm_state.data;
 execute_action(Action, State, EventData) when is_function(Action, 2) ->
@@ -468,9 +685,21 @@ execute_action(Action, State, EventData) when is_function(Action, 2) ->
     catch
         _:_ -> State#fsm_state.data
     end;
-execute_action(_Action, State, _EventData) ->
-    % TODO: Implement action expression execution
-    State#fsm_state.data.
+execute_action({compiled_action, Instructions}, State, EventData) ->
+    % Execute compiled action instructions
+    try
+        execute_action_instructions(Instructions, State, EventData)
+    catch
+        _:_ -> State#fsm_state.data
+    end;
+execute_action(Action, State, EventData) ->
+    % Handle AST action expressions for backward compatibility
+    case cure_action_compiler:compile_action(Action, #{}) of
+        {ok, Instructions, _} ->
+            execute_action_instructions(Instructions, State, EventData);
+        {error, _Reason} ->
+            State#fsm_state.data
+    end.
 
 %% Set FSM timeout
 set_fsm_timeout(Timeout, _TimeoutEvent, State) ->
@@ -616,13 +845,21 @@ extract_event({atom, Event}) -> Event;
 extract_event(Event) when is_atom(Event) -> Event;
 extract_event(_) -> unknown_event.
 
-%% Compile guard expression (placeholder)
+%% Compile guard expression
 compile_guard(undefined) -> undefined;
-compile_guard(_Guard) -> undefined.  % TODO: Compile guard expressions
+compile_guard(Guard) -> 
+    case cure_guard_compiler:compile_guard(Guard, #{}) of
+        {ok, Instructions, _} -> {compiled_guard, Instructions};
+        {error, _Reason} -> undefined
+    end.
 
-%% Compile action expression (placeholder)
+%% Compile action expression
 compile_action(undefined) -> undefined;
-compile_action(_Action) -> undefined.  % TODO: Compile action expressions
+compile_action(Action) ->
+    case cure_action_compiler:compile_action(Action, #{}) of
+        {ok, Instructions, _} -> {compiled_action, Instructions};
+        {error, _Reason} -> undefined
+    end.
 
 %% Find timeout transition in list of transitions
 find_timeout_in_transitions([]) -> not_found;
