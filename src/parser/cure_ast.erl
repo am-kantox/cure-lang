@@ -75,6 +75,7 @@
     event :: expr(),
     guard :: expr() | undefined,
     target :: atom(),
+    action :: expr() | undefined,
     location :: location()
 }).
 -type transition() :: #transition{}.

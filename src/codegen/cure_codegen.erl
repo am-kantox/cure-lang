@@ -567,17 +567,19 @@ compile_bindings(Bindings, State) ->
     compile_bindings(Bindings, State, []).
 
 compile_bindings([], State, Acc) ->
-    {lists:reverse(lists:flatten(Acc)), State};
+    {lists:flatten(lists:reverse(Acc)), State};
 compile_bindings([#binding{pattern = Pattern, value = Value, location = Location} | RestBindings], State, Acc) ->
     {ValueInstructions, State1} = compile_expression(Value, State),
     {PatternInstructions, State2} = compile_pattern_binding(Pattern, Location, State1),
     
+    % Ensure correct order: first load value, then store it
     Instructions = ValueInstructions ++ PatternInstructions,
     compile_bindings(RestBindings, State2, [Instructions | Acc]).
 
 %% Compile pattern bindings (simplified - only identifier patterns for now)
 compile_pattern_binding(#identifier_pattern{name = Name, location = Location}, _BindingLocation, State) ->
-    % Store the value in a local variable
+    % Store the value from the top of stack in a local variable
+    % At this point, the value should already be on the stack from compile_expression
     {TempVar, State1} = new_temp_var(State),
     StoreInstruction = #beam_instr{
         op = store_local,
@@ -585,7 +587,7 @@ compile_pattern_binding(#identifier_pattern{name = Name, location = Location}, _
         location = Location
     },
     
-    % Update local variable map
+    % Update local variable map to track this variable
     NewLocalVars = maps:put(Name, {local, TempVar}, State1#codegen_state.local_vars),
     State2 = State1#codegen_state{local_vars = NewLocalVars},
     

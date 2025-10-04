@@ -103,21 +103,21 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         _ -> {error, {unsupported_instruction, Op}}
     end.
 
-%% Load literal value
+%% Load literal value - just push to stack, don't generate forms
 compile_load_literal([Value], Context) ->
     Form = compile_value_to_form(Value, Context#compile_context.line),
-    {ok, [Form], push_stack(Form, Context)}.
+    {ok, [], push_stack(Form, Context)}.
 
-%% Load parameter
+%% Load parameter - just push to stack, don't generate forms
 compile_load_param([ParamName], Context) ->
     case maps:get(ParamName, Context#compile_context.variables, undefined) of
         undefined ->
             {error, {undefined_parameter, ParamName}};
         VarForm ->
-            {ok, [VarForm], push_stack(VarForm, Context)}
+            {ok, [], push_stack(VarForm, Context)}
     end.
 
-%% Load local variable
+%% Load local variable - just push to stack, don't generate forms
 compile_load_local([VarName], Context) ->
     case maps:get(VarName, Context#compile_context.variables, undefined) of
         undefined ->
@@ -125,12 +125,12 @@ compile_load_local([VarName], Context) ->
             VarForm = {var, Line, VarName},
             NewVariables = maps:put(VarName, VarForm, Context#compile_context.variables),
             NewContext = Context#compile_context{variables = NewVariables},
-            {ok, [VarForm], push_stack(VarForm, NewContext)};
+            {ok, [], push_stack(VarForm, NewContext)};
         VarForm ->
-            {ok, [VarForm], push_stack(VarForm, Context)}
+            {ok, [], push_stack(VarForm, Context)}
     end.
 
-%% Load global function or variable
+%% Load global function or variable - just push to stack, don't generate forms
 compile_load_global([Name], Context) ->
     Line = Context#compile_context.line,
     
@@ -144,7 +144,7 @@ compile_load_global([Name], Context) ->
             {atom, Line, Name}
     end,
     
-    {ok, [Form], push_stack(Form, Context)}.
+    {ok, [], push_stack(Form, Context)}.
 
 %% Store value in local variable
 compile_store_local([VarName], Context) ->
@@ -162,18 +162,18 @@ compile_store_local([VarName], Context) ->
             Error
     end.
 
-%% Compile binary operations
+%% Compile binary operations - just push result to stack, don't generate forms
 compile_binary_op([Operator], Context) ->
     case pop_two_from_stack(Context) of
         {Right, Left, NewContext} ->
             Line = NewContext#compile_context.line,
             OpForm = compile_binary_operator(Operator, Left, Right, Line),
-            {ok, [OpForm], push_stack(OpForm, NewContext)};
+            {ok, [], push_stack(OpForm, NewContext)};
         Error ->
             Error
     end.
 
-%% Compile function calls
+%% Compile function calls - just push result to stack, don't generate forms
 compile_call([Arity], Context) ->
     case pop_n_from_stack(Arity + 1, Context) of  % +1 for function itself
         {Elements, NewContext} ->
@@ -189,7 +189,7 @@ compile_call([Arity], Context) ->
                     {call, Line, Function, Args}
             end,
             
-            {ok, [CallForm], push_stack(CallForm, NewContext)};
+            {ok, [], push_stack(CallForm, NewContext)};
         Error ->
             Error
     end.
@@ -199,7 +199,8 @@ compile_make_list([Count], Context) ->
     case pop_n_from_stack(Count, Context) of
         {Elements, NewContext} ->
             Line = NewContext#compile_context.line,
-            ListForm = {cons, Line, Elements},
+            % Build proper cons list from elements
+            ListForm = build_cons_list(Elements, Line),
             {ok, [ListForm], push_stack(ListForm, NewContext)};
         Error ->
             Error
@@ -392,6 +393,14 @@ store_label_info(_LabelInfo, Context) ->
 %% ============================================================================
 %% Optimization Functions
 %% ============================================================================
+
+%% Build proper cons list from elements
+build_cons_list([], Line) ->
+    {nil, Line};
+build_cons_list([Element], Line) ->
+    {cons, Line, Element, {nil, Line}};
+build_cons_list([H | T], Line) ->
+    {cons, Line, H, build_cons_list(T, Line)}.
 
 %% Optimize instruction sequence
 optimize_instructions(Instructions) ->

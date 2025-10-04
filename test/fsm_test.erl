@@ -32,6 +32,7 @@ test_fsm_definition_compilation() ->
                         event = increment,
                         guard = undefined,
                         target = 'Positive',
+                        action = undefined,
                         location = #location{line = 1, column = 1, file = "test"}
                     }
                 ],
@@ -44,6 +45,7 @@ test_fsm_definition_compilation() ->
                         event = reset,
                         guard = undefined,
                         target = 'Zero',
+                        action = undefined,
                         location = #location{line = 1, column = 1, file = "test"}
                     }
                 ],

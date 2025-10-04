@@ -202,24 +202,30 @@ compile_source(Filename, Source, Options) ->
             end
         end},
         {"Code Generation", fun(AST) -> 
-            % For now, just return a simple binary placeholder to test the pipeline
             if Options#compile_options.verbose ->
                 io:format("    AST structure: ~p~n", [AST]);
             true -> ok
             end,
             
-            % Generate a simple mock BEAM binary for testing
-            MockBeamBinary = iolist_to_binary([
-                "FOR1",  % BEAM file signature 
-                <<0,0,0,100>>,  % File size (placeholder)
-                "BEAM",  % BEAM format
-                "AtU8",  % Atom table section
-                <<0,0,0,20>>,  % Atom section size
-                <<0,0,0,1>>,   % Number of atoms
-                <<4>>, "test", <<0,0,0>>  % Atom "test" with padding
-            ]),
-            
-            {ok, MockBeamBinary}
+            % Use the actual code generator
+            CodegenOpts = compile_opts_to_codegen_opts(Options),
+            case cure_codegen:compile_program(AST, CodegenOpts) of
+                {ok, CompiledModules} ->
+                    % Take the first module and generate BEAM file
+                    case CompiledModules of
+                        [Module | _] ->
+                            case cure_codegen:generate_beam_file(Module, temp) of
+                                {ok, {_ModuleName, Binary}} ->
+                                    {ok, Binary};
+                                {error, BeamError} ->
+                                    {error, {beam_generation_failed, BeamError}}
+                            end;
+                        [] ->
+                            {error, no_modules_compiled}
+                    end;
+                {error, CodegenError} ->
+                    {error, {codegen_failed, CodegenError}}
+            end
         end}
     ],
     

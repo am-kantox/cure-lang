@@ -465,10 +465,10 @@ compile_transitions(StateDefs) ->
 %% Compile transitions for a single state
 compile_state_transitions(Transitions) ->
     lists:foldl(fun(Transition, Acc) ->
-        #transition{event = Event, target = Target, guard = Guard} = Transition,
+        #transition{event = Event, target = Target, guard = Guard, action = Action} = Transition,
         CompiledEvent = extract_event(Event),
         CompiledGuard = compile_guard(Guard),
-        CompiledAction = undefined,  % No action field in transition record
+        CompiledAction = compile_action(Action),
         maps:put(CompiledEvent, {Target, CompiledGuard, CompiledAction}, Acc)
     end, #{}, Transitions).
 
@@ -494,6 +494,7 @@ compile_guard(undefined) -> undefined;
 compile_guard(_Guard) -> undefined.  % TODO: Compile guard expressions
 
 %% Compile action expression (placeholder)
+compile_action(undefined) -> undefined;
 compile_action(_Action) -> undefined.  % TODO: Compile action expressions
 
 %% Find timeout transition in list of transitions

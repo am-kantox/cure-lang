@@ -57,7 +57,6 @@
 -type location() :: term().
 -type type_env() :: #type_env{}.
 -type type_var() :: #type_var{}.
--type constraint() :: term().
 -type type_constraint() :: #type_constraint{}.
 
 -record(inference_result, {

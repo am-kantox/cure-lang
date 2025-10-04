@@ -443,6 +443,7 @@ parse_fsm_transition(State) ->
                 event = Event,
                 guard = Guard,
                 target = Target,
+                action = undefined,  % TODO: Parse action expressions
                 location = Location
             },
             {Transition, State7};
@@ -470,6 +471,7 @@ parse_fsm_transition(State) ->
                 event = TimeoutExpr,
                 guard = Guard,
                 target = Target,
+                action = undefined,  % TODO: Parse action expressions
                 location = Location
             },
             {Transition, State7}

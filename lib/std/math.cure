@@ -1,0 +1,220 @@
+# Cure Standard Library - Math Module
+# Provides mathematical functions and numerical operations
+
+module Std.Math do
+  import Std.Core [Option, Result, some, none, ok, error]
+
+  export [
+    # Basic arithmetic (these might be built-ins)
+    add/2, subtract/2, multiply/2, divide/2, remainder/2, power/2,
+    
+    # Mathematical constants
+    pi/0, e/0, tau/0,
+    
+    # Absolute values and signs
+    abs/1, sign/1, negate/1,
+    
+    # Rounding and ceiling/floor
+    round/1, floor/1, ceiling/1, truncate/1,
+    
+    # Exponential and logarithmic
+    exp/1, ln/1, log10/1, log/2, sqrt/1,
+    
+    # Trigonometric functions
+    sin/1, cos/1, tan/1, asin/1, acos/1, atan/1, atan2/2,
+    
+    # Hyperbolic functions
+    sinh/1, cosh/1, tanh/1,
+    
+    # Number theory
+    gcd/2, lcm/2, factorial/1, fibonacci/1,
+    
+    # Statistical functions
+    mean/1, median/1, mode/1, variance/1, stddev/1,
+    
+    # Utility functions
+    clamp/3, lerp/3, degrees_to_radians/1, radians_to_degrees/1,
+    
+    # Safe division
+    safe_divide/2, safe_sqrt/1, safe_ln/1
+  ]
+
+  # Mathematical constants
+  def pi(): Float = 3.141592653589793
+  def e(): Float = 2.718281828459045  
+  def tau(): Float = 6.283185307179586
+
+  # Basic arithmetic operations
+  def add(x: Num, y: Num): Num = x + y
+  def subtract(x: Num, y: Num): Num = x - y
+  def multiply(x: Num, y: Num): Num = x * y
+  
+  def divide(x: Float, y: Float): Float = x / y
+  def remainder(x: Int, y: Int): Int = x % y
+
+  def power(base: Float, exponent: Float): Float =
+    # Would need built-in power function or implement using exp/ln
+    exp(exponent * ln(base))
+
+  # Absolute values and signs
+  def abs(x: Num): Num =
+    if x < 0 then -x else x end
+
+  def sign(x: Num): Int =
+    if x > 0 then 1
+    else if x < 0 then -1
+    else 0
+    end
+
+  def negate(x: Num): Num = -x
+
+  # Rounding functions
+  def round(x: Float): Int =
+    # Simple rounding implementation
+    if x >= 0 then truncate(x + 0.5)
+    else truncate(x - 0.5)
+    end
+
+  def floor(x: Float): Int =
+    let t = truncate(x)
+    if x >= 0 or t == x then t else t - 1 end
+
+  def ceiling(x: Float): Int =
+    let t = truncate(x)
+    if x <= 0 or t == x then t else t + 1 end
+
+  def truncate(x: Float): Int =
+    # Built-in truncation - removes decimal part
+    # This would be implemented as a primitive
+    0  # Placeholder
+
+  # Mathematical functions (these would be implemented as primitives)
+  def exp(x: Float): Float = 
+    # e^x - would be built-in
+    0.0  # Placeholder
+
+  def ln(x: Float): Float =
+    # Natural logarithm - would be built-in
+    0.0  # Placeholder
+
+  def log10(x: Float): Float =
+    divide(ln(x), ln(10.0))
+
+  def log(base: Float, x: Float): Float =
+    divide(ln(x), ln(base))
+
+  def sqrt(x: Float): Float =
+    # Square root - would be built-in
+    0.0  # Placeholder
+
+  # Trigonometric functions (these would be primitives)
+  def sin(x: Float): Float = 0.0  # Placeholder
+  def cos(x: Float): Float = 0.0  # Placeholder
+  def tan(x: Float): Float = divide(sin(x), cos(x))
+
+  def asin(x: Float): Float = 0.0  # Placeholder
+  def acos(x: Float): Float = 0.0  # Placeholder
+  def atan(x: Float): Float = 0.0  # Placeholder
+  def atan2(y: Float, x: Float): Float = 0.0  # Placeholder
+
+  # Hyperbolic functions
+  def sinh(x: Float): Float =
+    divide(subtract(exp(x), exp(negate(x))), 2.0)
+
+  def cosh(x: Float): Float =
+    divide(add(exp(x), exp(negate(x))), 2.0)
+
+  def tanh(x: Float): Float =
+    divide(sinh(x), cosh(x))
+
+  # Number theory functions
+  def gcd(a: Int, b: Int): Int =
+    if b == 0 then abs(a)
+    else gcd(b, remainder(a, b))
+    end
+
+  def lcm(a: Int, b: Int): Int =
+    if a == 0 or b == 0 then 0
+    else divide(abs(multiply(a, b)), gcd(a, b))
+    end
+
+  def factorial(n: Nat): Pos =
+    if n == 0 then 1
+    else multiply(n, factorial(subtract(n, 1)))
+    end
+
+  def fibonacci(n: Nat): Nat =
+    if n <= 1 then n
+    else add(fibonacci(subtract(n, 1)), fibonacci(subtract(n, 2)))
+    end
+
+  # Statistical functions
+  def mean(numbers: List(Float, n)): Float when n > 0 =
+    import Std.List [foldl, length]
+    let sum = foldl(numbers, 0.0, add)
+    let count = length(numbers)
+    divide(sum, count)
+
+  def median(numbers: List(Float)): Option(Float) =
+    import Std.List [sort, length, safe_nth]
+    let sorted = sort(numbers)
+    let len = length(sorted)
+    if len == 0 then none()
+    else
+      let mid = divide(len, 2)
+      if remainder(len, 2) == 0 then
+        # Even number of elements - average of two middle elements
+        match safe_nth(sorted, subtract(mid, 1)), safe_nth(sorted, mid) do
+          Some(a), Some(b) -> some(divide(add(a, b), 2.0))
+          _, _ -> none()
+        end
+      else
+        # Odd number of elements - middle element
+        safe_nth(sorted, mid)
+      end
+    end
+
+  def mode(numbers: List(Float)): Option(Float) =
+    # Find the most frequent element
+    # This is a simplified implementation
+    none()  # Placeholder
+
+  def variance(numbers: List(Float, n)): Float when n > 0 =
+    import Std.List [map, foldl]
+    let avg = mean(numbers)
+    let squared_diffs = map(numbers, fn(x) -> power(subtract(x, avg), 2.0) end)
+    mean(squared_diffs)
+
+  def stddev(numbers: List(Float, n)): Float when n > 0 =
+    sqrt(variance(numbers))
+
+  # Utility functions
+  def clamp(value: Num, min_val: Num, max_val: Num): Num =
+    import Std.Core [min, max]
+    min(max(value, min_val), max_val)
+
+  def lerp(a: Float, b: Float, t: Float): Float =
+    add(a, multiply(t, subtract(b, a)))
+
+  def degrees_to_radians(degrees: Float): Float =
+    multiply(degrees, divide(pi(), 180.0))
+
+  def radians_to_degrees(radians: Float): Float =
+    multiply(radians, divide(180.0, pi()))
+
+  # Safe mathematical operations
+  def safe_divide(x: Float, y: Float): Result(Float, String) =
+    if y == 0.0 then error("Division by zero")
+    else ok(divide(x, y))
+    end
+
+  def safe_sqrt(x: Float): Result(Float, String) =
+    if x < 0.0 then error("Square root of negative number")
+    else ok(sqrt(x))
+    end
+
+  def safe_ln(x: Float): Result(Float, String) =
+    if x <= 0.0 then error("Logarithm of non-positive number")
+    else ok(ln(x))
+    end
+end

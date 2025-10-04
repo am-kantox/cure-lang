@@ -1,0 +1,18 @@
+# Simple Cure Demo
+# A basic demonstration that should compile with current parser
+
+module SimpleDemo do
+  export [main/0, test_basic/0]
+
+  def main(): Int =
+    test_basic()
+
+  def test_basic(): Int =
+    let x = 42
+    let y = 10
+    let sum = add(x, y)
+    sum
+    
+  def add(a: Int, b: Int): Int =
+    a + b
+end

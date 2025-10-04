@@ -1,0 +1,351 @@
+# Cure Standard Library - String Module
+# Provides string manipulation and text processing functions
+
+module Std.String do
+  import Std.Core [Option, Result, some, none, ok, error]
+  import Std.List [map, filter, foldl, foldr]
+
+  export [
+    # String properties
+    length/1, is_empty/1, 
+    
+    # String construction and concatenation
+    concat/2, join/2, repeat/2,
+    
+    # String conversion
+    to_upper/1, to_lower/1, capitalize/1, to_chars/1, from_chars/1,
+    
+    # String searching and matching
+    contains/2, starts_with/2, ends_with/2, index_of/2, last_index_of/2,
+    
+    # String slicing and manipulation
+    slice/3, substring/2, take/2, drop/2, reverse/1,
+    
+    # String trimming and padding
+    trim/1, trim_left/1, trim_right/1, pad_left/3, pad_right/3,
+    
+    # String splitting and parsing
+    split/2, split_lines/1, words/1,
+    
+    # String replacement
+    replace/3, replace_all/3,
+    
+    # String predicates
+    all_digits/1, all_alpha/1, all_alphanumeric/1, all_whitespace/1,
+    
+    # String formatting (basic)
+    format/2, interpolate/2
+  ]
+
+  # String properties
+  def length(s: String): Nat =
+    # This would be a primitive operation
+    # For now, convert to char list and count
+    length_chars(to_chars(s), 0)
+
+  defp length_chars(chars: List(Char), count: Nat): Nat =
+    match chars do
+      [] -> count
+      [_ | rest] -> length_chars(rest, count + 1)
+    end
+
+  def is_empty(s: String): Bool =
+    length(s) == 0
+
+  # String construction and concatenation
+  def concat(s1: String, s2: String): String =
+    # Primitive concatenation operation
+    s1 ++ s2
+
+  def join(strings: List(String), separator: String): String =
+    match strings do
+      [] -> ""
+      [s] -> s
+      [s | rest] -> concat(s, concat(separator, join(rest, separator)))
+    end
+
+  def repeat(s: String, n: Nat): String =
+    if n == 0 then ""
+    else concat(s, repeat(s, n - 1))
+    end
+
+  # String conversion functions
+  def to_upper(s: String): String =
+    from_chars(map(to_chars(s), char_to_upper))
+
+  def to_lower(s: String): String =
+    from_chars(map(to_chars(s), char_to_lower))
+
+  def capitalize(s: String): String =
+    match to_chars(s) do
+      [] -> ""
+      [first | rest] -> from_chars([char_to_upper(first) | map(rest, char_to_lower)])
+    end
+
+  def to_chars(s: String): List(Char) =
+    # Convert string to list of characters
+    # This would be a primitive operation
+    []  # Placeholder
+
+  def from_chars(chars: List(Char)): String =
+    # Convert list of characters to string
+    # This would be a primitive operation
+    ""  # Placeholder
+
+  # Character case conversion helpers
+  defp char_to_upper(c: Char): Char =
+    # Would use ASCII/Unicode conversion
+    c  # Placeholder
+
+  defp char_to_lower(c: Char): Char =
+    # Would use ASCII/Unicode conversion
+    c  # Placeholder
+
+  # String searching and matching
+  def contains(haystack: String, needle: String): Bool =
+    match index_of(haystack, needle) do
+      Some(_) -> true
+      None -> false
+    end
+
+  def starts_with(s: String, prefix: String): Bool =
+    let prefix_len = length(prefix)
+    if prefix_len > length(s) then false
+    else substring(s, {0, prefix_len}) == prefix
+    end
+
+  def ends_with(s: String, suffix: String): Bool =
+    let suffix_len = length(suffix)
+    let s_len = length(s)
+    if suffix_len > s_len then false
+    else
+      let start_pos = s_len - suffix_len
+      substring(s, {start_pos, suffix_len}) == suffix
+    end
+
+  def index_of(haystack: String, needle: String): Option(Nat) =
+    index_of_helper(to_chars(haystack), to_chars(needle), 0)
+
+  defp index_of_helper(haystack: List(Char), needle: List(Char), pos: Nat): Option(Nat) =
+    match haystack do
+      [] -> none()
+      _ ->
+        if starts_with_chars(haystack, needle) then some(pos)
+        else
+          match haystack do
+            [] -> none()
+            [_ | rest] -> index_of_helper(rest, needle, pos + 1)
+          end
+        end
+    end
+
+  defp starts_with_chars(haystack: List(Char), needle: List(Char)): Bool =
+    match haystack, needle do
+      _, [] -> true
+      [], _ -> false
+      [h | hs], [n | ns] -> h == n and starts_with_chars(hs, ns)
+    end
+
+  def last_index_of(haystack: String, needle: String): Option(Nat) =
+    # Find all indices and return the last one
+    find_last_index(to_chars(haystack), to_chars(needle), 0, none())
+
+  defp find_last_index(haystack: List(Char), needle: List(Char), pos: Nat, last_found: Option(Nat)): Option(Nat) =
+    match haystack do
+      [] -> last_found
+      _ ->
+        let new_last = if starts_with_chars(haystack, needle) then some(pos) else last_found
+        match haystack do
+          [] -> new_last
+          [_ | rest] -> find_last_index(rest, needle, pos + 1, new_last)
+        end
+    end
+
+  # String slicing and manipulation
+  def slice(s: String, start: Nat, length: Nat): String =
+    let chars = to_chars(s)
+    let dropped = drop_chars(chars, start)
+    let taken = take_chars(dropped, length)
+    from_chars(taken)
+
+  def substring(s: String, range: {Nat, Nat}): String =
+    match range do
+      {start, len} -> slice(s, start, len)
+    end
+
+  def take(s: String, n: Nat): String =
+    slice(s, 0, n)
+
+  def drop(s: String, n: Nat): String =
+    let s_len = length(s)
+    if n >= s_len then ""
+    else slice(s, n, s_len - n)
+    end
+
+  def reverse(s: String): String =
+    from_chars(reverse_chars(to_chars(s)))
+
+  # Helper functions for char list operations
+  defp drop_chars(chars: List(Char), n: Nat): List(Char) =
+    if n == 0 then chars
+    else
+      match chars do
+        [] -> []
+        [_ | rest] -> drop_chars(rest, n - 1)
+      end
+    end
+
+  defp take_chars(chars: List(Char), n: Nat): List(Char) =
+    if n == 0 then []
+    else
+      match chars do
+        [] -> []
+        [c | rest] -> [c | take_chars(rest, n - 1)]
+      end
+    end
+
+  defp reverse_chars(chars: List(Char)): List(Char) =
+    foldl(chars, [], fn(c, acc) -> [c | acc] end)
+
+  # String trimming and padding
+  def trim(s: String): String =
+    trim_right(trim_left(s))
+
+  def trim_left(s: String): String =
+    from_chars(drop_while_chars(to_chars(s), is_whitespace_char))
+
+  def trim_right(s: String): String =
+    from_chars(reverse_chars(drop_while_chars(reverse_chars(to_chars(s)), is_whitespace_char)))
+
+  defp drop_while_chars(chars: List(Char), predicate: Char -> Bool): List(Char) =
+    match chars do
+      [] -> []
+      [c | rest] ->
+        if predicate(c) then drop_while_chars(rest, predicate)
+        else [c | rest]
+        end
+    end
+
+  defp is_whitespace_char(c: Char): Bool =
+    # Check for common whitespace characters
+    c == ' ' or c == '\t' or c == '\n' or c == '\r'
+
+  def pad_left(s: String, total_width: Nat, pad_char: Char): String =
+    let current_len = length(s)
+    if current_len >= total_width then s
+    else
+      let padding_needed = total_width - current_len
+      let padding = from_chars(repeat_char(pad_char, padding_needed))
+      concat(padding, s)
+    end
+
+  def pad_right(s: String, total_width: Nat, pad_char: Char): String =
+    let current_len = length(s)
+    if current_len >= total_width then s
+    else
+      let padding_needed = total_width - current_len
+      let padding = from_chars(repeat_char(pad_char, padding_needed))
+      concat(s, padding)
+    end
+
+  defp repeat_char(c: Char, n: Nat): List(Char) =
+    if n == 0 then []
+    else [c | repeat_char(c, n - 1)]
+    end
+
+  # String splitting
+  def split(s: String, delimiter: String): List(String) =
+    split_helper(to_chars(s), to_chars(delimiter), [], [])
+
+  defp split_helper(chars: List(Char), delimiter: List(Char), current: List(Char), result: List(String)): List(String) =
+    match chars do
+      [] -> 
+        let final_part = from_chars(reverse_chars(current))
+        reverse_string_list([final_part | result])
+      _ ->
+        if starts_with_chars(chars, delimiter) then
+          let part = from_chars(reverse_chars(current))
+          let remaining = drop_chars(chars, length_char_list(delimiter))
+          split_helper(remaining, delimiter, [], [part | result])
+        else
+          match chars do
+            [] -> split_helper([], delimiter, current, result)
+            [c | rest] -> split_helper(rest, delimiter, [c | current], result)
+          end
+        end
+    end
+
+  defp length_char_list(chars: List(Char)): Nat =
+    foldl(chars, 0, fn(_, acc) -> acc + 1 end)
+
+  defp reverse_string_list(strings: List(String)): List(String) =
+    foldl(strings, [], fn(s, acc) -> [s | acc] end)
+
+  def split_lines(s: String): List(String) =
+    split(s, "\n")
+
+  def words(s: String): List(String) =
+    filter(split(trim(s), " "), fn(word) -> not(is_empty(word)) end)
+
+  # String replacement (simplified)
+  def replace(s: String, old: String, new: String): String =
+    # Replace first occurrence
+    match index_of(s, old) do
+      None -> s
+      Some(pos) ->
+        let before = take(s, pos)
+        let after = drop(s, pos + length(old))
+        concat(before, concat(new, after))
+    end
+
+  def replace_all(s: String, old: String, new: String): String =
+    match index_of(s, old) do
+      None -> s
+      Some(pos) ->
+        let before = take(s, pos)
+        let after = drop(s, pos + length(old))
+        concat(before, concat(new, replace_all(after, old, new)))
+    end
+
+  # String predicates
+  def all_digits(s: String): Bool =
+    not(is_empty(s)) and all_chars(to_chars(s), is_digit_char)
+
+  def all_alpha(s: String): Bool =
+    not(is_empty(s)) and all_chars(to_chars(s), is_alpha_char)
+
+  def all_alphanumeric(s: String): Bool =
+    not(is_empty(s)) and all_chars(to_chars(s), is_alphanumeric_char)
+
+  def all_whitespace(s: String): Bool =
+    not(is_empty(s)) and all_chars(to_chars(s), is_whitespace_char)
+
+  defp all_chars(chars: List(Char), predicate: Char -> Bool): Bool =
+    match chars do
+      [] -> true
+      [c | rest] -> predicate(c) and all_chars(rest, predicate)
+    end
+
+  defp is_digit_char(c: Char): Bool =
+    # Check if character is a digit (0-9)
+    # This would use ASCII values in real implementation
+    true  # Placeholder
+
+  defp is_alpha_char(c: Char): Bool =
+    # Check if character is alphabetic (a-z, A-Z)
+    true  # Placeholder
+
+  defp is_alphanumeric_char(c: Char): Bool =
+    is_alpha_char(c) or is_digit_char(c)
+
+  # String formatting (basic)
+  def format(template: String, args: List(Any)): String =
+    # Simple string formatting with placeholders
+    # This would be more sophisticated in a real implementation
+    template  # Placeholder
+
+  def interpolate(template: String, values: Map(String, Any)): String =
+    # String interpolation with named placeholders
+    # This would be more sophisticated in a real implementation
+    template  # Placeholder
+end

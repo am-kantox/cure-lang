@@ -1,0 +1,291 @@
+# Cure Standard Library - List Module
+# Provides comprehensive list operations with dependent types
+
+module Std.List do
+  import Std.Core [Result, Option, some, none, ok, error]
+
+  export [
+    # List construction and basic operations
+    cons/2, head/1, tail/1, last/1, init/1, length/1, is_empty/1,
+    
+    # List transformation
+    map/2, filter/2, reverse/1, append/2, concat/1, 
+    
+    # Folding and reducing
+    foldl/3, foldr/3, reduce/2, scan/3,
+    
+    # List searching and finding
+    find/2, find_index/2, elem/2, all/2, any/2,
+    
+    # List slicing and manipulation
+    take/2, drop/2, take_while/2, drop_while/2, split_at/2,
+    
+    # List zipping and unzipping
+    zip/2, zip3/3, zip_with/3, unzip/1,
+    
+    # List sorting and ordering
+    sort/1, sort_by/2, group_by/2,
+    
+    # Safe list operations that return Options
+    safe_head/1, safe_tail/1, safe_last/1, safe_nth/2,
+    
+    # Length-preserving operations
+    map_preserving_length/2, zip_same_length/2
+  ]
+
+  # Basic list operations
+  def cons(x: T, xs: List(T)): List(T) = [x | xs]
+
+  def head(list: List(T, n)) -> T when n > 0 =
+    match list do
+      [x | _] -> x
+    end
+
+  def tail(list: List(T, n)) -> List(T, n-1) when n > 0 =
+    match list do
+      [_ | xs] -> xs
+    end
+
+  def last(list: List(T, n)) -> T when n > 0 =
+    match list do
+      [x] -> x
+      [_ | xs] -> last(xs)
+    end
+
+  def init(list: List(T, n)) -> List(T, n-1) when n > 0 =
+    match list do
+      [_] -> []
+      [x | xs] -> [x | init(xs)]
+    end
+
+  def length(list: List(T)): Nat =
+    foldl(list, 0, fn(_, acc) -> acc + 1 end)
+
+  def is_empty(list: List(T)): Bool =
+    match list do
+      [] -> true
+      _ -> false
+    end
+
+  # List transformation
+  def map(list: List(T), f: T -> U): List(U) =
+    match list do
+      [] -> []
+      [x | xs] -> [f(x) | map(xs, f)]
+    end
+
+  def filter(list: List(T), predicate: T -> Bool): List(T) =
+    match list do
+      [] -> []
+      [x | xs] ->
+        let rest = filter(xs, predicate)
+        if predicate(x) then [x | rest] else rest
+        end
+    end
+
+  def reverse(list: List(T)): List(T) =
+    foldl(list, [], fn(x, acc) -> [x | acc] end)
+
+  def append(xs: List(T), ys: List(T)): List(T) =
+    match xs do
+      [] -> ys
+      [x | rest] -> [x | append(rest, ys)]
+    end
+
+  def concat(lists: List(List(T))): List(T) =
+    foldl(lists, [], append)
+
+  # Folding and reducing
+  def foldl(list: List(T), acc: U, f: T -> U -> U): U =
+    match list do
+      [] -> acc
+      [x | xs] -> foldl(xs, f(x, acc), f)
+    end
+
+  def foldr(list: List(T), acc: U, f: T -> U -> U): U =
+    match list do
+      [] -> acc
+      [x | xs] -> f(x, foldr(xs, acc, f))
+    end
+
+  def reduce(list: List(T, n), f: T -> T -> T): Option(T) when n > 0 =
+    match list do
+      [] -> none()
+      [x | xs] -> some(foldl(xs, x, f))
+    end
+
+  def scan(list: List(T), acc: U, f: T -> U -> U): List(U) =
+    match list do
+      [] -> [acc]
+      [x | xs] ->
+        let new_acc = f(x, acc)
+        [acc | scan(xs, new_acc, f)]
+    end
+
+  # List searching and finding
+  def find(list: List(T), predicate: T -> Bool): Option(T) =
+    match list do
+      [] -> none()
+      [x | xs] ->
+        if predicate(x) then some(x) else find(xs, predicate)
+        end
+    end
+
+  def find_index(list: List(T), predicate: T -> Bool): Option(Nat) =
+    find_index_helper(list, predicate, 0)
+
+  defp find_index_helper(list: List(T), predicate: T -> Bool, index: Nat): Option(Nat) =
+    match list do
+      [] -> none()
+      [x | xs] ->
+        if predicate(x) then some(index)
+        else find_index_helper(xs, predicate, index + 1)
+        end
+    end
+
+  def elem(list: List(T), element: T): Bool =
+    match find(list, fn(x) -> x == element end) do
+      Some(_) -> true
+      None -> false
+    end
+
+  def all(list: List(T), predicate: T -> Bool): Bool =
+    match list do
+      [] -> true
+      [x | xs] -> predicate(x) and all(xs, predicate)
+    end
+
+  def any(list: List(T), predicate: T -> Bool): Bool =
+    match list do
+      [] -> false
+      [x | xs] -> predicate(x) or any(xs, predicate)
+    end
+
+  # List slicing and manipulation
+  def take(list: List(T), n: Nat): List(T) =
+    if n == 0 then []
+    else
+      match list do
+        [] -> []
+        [x | xs] -> [x | take(xs, n - 1)]
+      end
+    end
+
+  def drop(list: List(T), n: Nat): List(T) =
+    if n == 0 then list
+    else
+      match list do
+        [] -> []
+        [_ | xs] -> drop(xs, n - 1)
+      end
+    end
+
+  def take_while(list: List(T), predicate: T -> Bool): List(T) =
+    match list do
+      [] -> []
+      [x | xs] ->
+        if predicate(x) then [x | take_while(xs, predicate)]
+        else []
+        end
+    end
+
+  def drop_while(list: List(T), predicate: T -> Bool): List(T) =
+    match list do
+      [] -> []
+      [x | xs] ->
+        if predicate(x) then drop_while(xs, predicate)
+        else [x | xs]
+        end
+    end
+
+  def split_at(list: List(T), n: Nat): {List(T), List(T)} =
+    {take(list, n), drop(list, n)}
+
+  # Zipping and unzipping
+  def zip(xs: List(T), ys: List(U)): List({T, U}) =
+    match xs, ys do
+      [], _ -> []
+      _, [] -> []
+      [x | xs_rest], [y | ys_rest] -> [{x, y} | zip(xs_rest, ys_rest)]
+    end
+
+  def zip3(xs: List(T), ys: List(U), zs: List(V)): List({T, U, V}) =
+    match xs, ys, zs do
+      [], _, _ -> []
+      _, [], _ -> []
+      _, _, [] -> []
+      [x | xs_rest], [y | ys_rest], [z | zs_rest] ->
+        [{x, y, z} | zip3(xs_rest, ys_rest, zs_rest)]
+    end
+
+  def zip_with(xs: List(T), ys: List(U), f: T -> U -> V): List(V) =
+    map(zip(xs, ys), fn({x, y}) -> f(x, y) end)
+
+  def unzip(list: List({T, U})): {List(T), List(U)} =
+    foldr(list, {[], []}, fn({x, y}, {xs, ys}) -> {[x | xs], [y | ys]} end)
+
+  # Sorting (simplified - would need proper comparison)
+  def sort(list: List(T)): List(T) =
+    # Simple insertion sort for demonstration
+    foldl(list, [], insert_sorted)
+
+  defp insert_sorted(x: T, sorted: List(T)): List(T) =
+    match sorted do
+      [] -> [x]
+      [y | ys] ->
+        if x <= y then [x, y | ys]
+        else [y | insert_sorted(x, ys)]
+        end
+    end
+
+  def sort_by(list: List(T), key_fn: T -> U): List(T) =
+    # Would need to implement using key function
+    # For now, just return the list (placeholder)
+    list
+
+  def group_by(list: List(T), key_fn: T -> U): List({U, List(T)}) =
+    # Placeholder implementation
+    # Would group elements by the result of key_fn
+    []
+
+  # Safe operations that return Options
+  def safe_head(list: List(T)): Option(T) =
+    match list do
+      [] -> none()
+      [x | _] -> some(x)
+    end
+
+  def safe_tail(list: List(T)): Option(List(T)) =
+    match list do
+      [] -> none()
+      [_ | xs] -> some(xs)
+    end
+
+  def safe_last(list: List(T)): Option(T) =
+    match reverse(list) do
+      [] -> none()
+      [x | _] -> some(x)
+    end
+
+  def safe_nth(list: List(T), n: Nat): Option(T) =
+    if n == 0 then safe_head(list)
+    else
+      match list do
+        [] -> none()
+        [_ | xs] -> safe_nth(xs, n - 1)
+      end
+    end
+
+  # Length-preserving operations with dependent types
+  def map_preserving_length(list: List(T, n), f: T -> U): List(U, n) =
+    match list do
+      [] -> []
+      [x | xs] -> [f(x) | map_preserving_length(xs, f)]
+    end
+
+  def zip_same_length(xs: List(T, n), ys: List(U, n)): List({T, U}, n) =
+    match xs, ys do
+      [], [] -> []
+      [x | xs_rest], [y | ys_rest] -> [{x, y} | zip_same_length(xs_rest, ys_rest)]
+    end
+end

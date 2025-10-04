@@ -1,0 +1,332 @@
+# Cure Standard Library - FSM Module
+# High-level FSM utilities and common patterns
+
+module Std.FSM do
+  import Std.Core [Option, Result, some, none, ok, error]
+  import Std.List [map, foldl, filter]
+
+  export [
+    # FSM creation and management
+    create/2, start/1, start_with_data/2, stop/1,
+    
+    # FSM state queries and manipulation
+    current_state/1, get_data/1, set_data/2, update_data/2,
+    
+    # FSM event handling
+    send_event/2, send_event_sync/2, send_batch_events/2,
+    
+    # FSM monitoring and debugging
+    get_info/1, get_history/1, get_stats/1, is_alive/1,
+    
+    # FSM coordination and supervision
+    link_fsms/2, supervise_fsm/2, broadcast_event/2,
+    
+    # Common FSM patterns
+    create_counter/1, create_toggle/1, create_timer/2,
+    create_state_machine/2, create_workflow/2
+  ]
+
+  # Type definitions for FSM operations
+  type FSMRef = FSM  # Reference to an FSM process
+  type FSMState = Atom
+  type FSMEvent = Atom | {Atom, Any}
+  type FSMData = Any
+
+  type FSMInfo = {
+    fsm_type: Atom,
+    current_state: FSMState,
+    data: FSMData,
+    uptime: Int,
+    events_processed: Int
+  }
+
+  # FSM creation and management
+  def create(fsm_type: Atom, initial_data: FSMData): Result(FSMRef, String) =
+    try
+      let fsm = fsm_spawn(fsm_type, initial_data)
+      ok(fsm)
+    catch
+      error -> error("Failed to create FSM: " ++ error.message)
+    end
+
+  def start(fsm_type: Atom): Result(FSMRef, String) =
+    create(fsm_type, #{})
+
+  def start_with_data(fsm_type: Atom, data: FSMData): Result(FSMRef, String) =
+    create(fsm_type, data)
+
+  def stop(fsm: FSMRef): Result(Unit, String) =
+    try
+      fsm_stop(fsm)
+      ok(unit)
+    catch
+      error -> error("Failed to stop FSM: " ++ error.message)
+    end
+
+  # FSM state queries and manipulation
+  def current_state(fsm: FSMRef): Result(FSMState, String) =
+    try
+      let state = fsm_state(fsm)
+      ok(state)
+    catch
+      error -> error("Failed to get FSM state: " ++ error.message)
+    end
+
+  def get_data(fsm: FSMRef): Result(FSMData, String) =
+    match get_info(fsm) do
+      Ok(info) -> ok(info.data)
+      Error(err) -> error(err)
+    end
+
+  def set_data(fsm: FSMRef, new_data: FSMData): Result(Unit, String) =
+    # This would require an internal event to update FSM data
+    # For now, this is a placeholder
+    error("set_data not implemented yet")
+
+  def update_data(fsm: FSMRef, update_fn: FSMData -> FSMData): Result(Unit, String) =
+    match get_data(fsm) do
+      Ok(current_data) -> set_data(fsm, update_fn(current_data))
+      Error(err) -> error(err)
+    end
+
+  # FSM event handling
+  def send_event(fsm: FSMRef, event: FSMEvent): Result(Unit, String) =
+    try
+      fsm_send(fsm, event)
+      ok(unit)
+    catch
+      error -> error("Failed to send event: " ++ error.message)
+    end
+
+  def send_event_sync(fsm: FSMRef, event: FSMEvent): Result(FSMState, String) =
+    # Synchronous event sending with state response
+    match send_event(fsm, event) do
+      Ok(_) ->
+        # Wait briefly and get new state
+        # This is simplified - real implementation would need proper sync
+        current_state(fsm)
+      Error(err) -> error(err)
+    end
+
+  def send_batch_events(fsm: FSMRef, events: List(FSMEvent)): Result(List(Result(Unit, String)), String) =
+    let results = map(events, fn(event) -> send_event(fsm, event) end)
+    ok(results)
+
+  # FSM monitoring and debugging
+  def get_info(fsm: FSMRef): Result(FSMInfo, String) =
+    try
+      let info = fsm_info(fsm)
+      match info do
+        {ok, fsm_info} -> ok(fsm_info)
+        {error, reason} -> error("Failed to get FSM info: " ++ reason)
+      end
+    catch
+      error -> error("Failed to get FSM info: " ++ error.message)
+    end
+
+  def get_history(fsm: FSMRef): Result(List(Any), String) =
+    match get_info(fsm) do
+      Ok(info) ->
+        # Extract event history if available
+        ok([])  # Placeholder
+      Error(err) -> error(err)
+    end
+
+  def get_stats(fsm: FSMRef): Result(Map(String, Any), String) =
+    match get_info(fsm) do
+      Ok(info) ->
+        let stats = #{
+          "events_processed" => info.events_processed,
+          "uptime" => info.uptime,
+          "current_state" => info.current_state
+        }
+        ok(stats)
+      Error(err) -> error(err)
+    end
+
+  def is_alive(fsm: FSMRef): Bool =
+    fsm_is_alive(fsm)
+
+  # FSM coordination and supervision
+  def link_fsms(fsm1: FSMRef, fsm2: FSMRef): Result(Unit, String) =
+    # Link two FSMs so they can communicate
+    # This would require runtime support
+    error("link_fsms not implemented yet")
+
+  def supervise_fsm(fsm: FSMRef, supervisor: FSMRef): Result(Unit, String) =
+    # Set up supervision relationship
+    # This would require runtime support
+    error("supervise_fsm not implemented yet")
+
+  def broadcast_event(fsms: List(FSMRef), event: FSMEvent): Result(List(Result(Unit, String)), String) =
+    let results = map(fsms, fn(fsm) -> send_event(fsm, event) end)
+    ok(results)
+
+  # Common FSM patterns
+  def create_counter(initial_value: Int): Result(FSMRef, String) =
+    # Create a simple counter FSM
+    let counter_data = #{ value => initial_value }
+    create('Counter', counter_data)
+
+  def create_toggle(initial_state: Bool): Result(FSMRef, String) =
+    # Create a simple toggle FSM (on/off)
+    let toggle_data = #{ state => initial_state }
+    create('Toggle', toggle_data)
+
+  def create_timer(duration_ms: Int, callback: FSMRef): Result(FSMRef, String) =
+    # Create a timer FSM that sends an event after duration
+    let timer_data = #{
+      duration => duration_ms,
+      callback => callback,
+      start_time => current_time()
+    }
+    create('Timer', timer_data)
+
+  def create_state_machine(states: List(Atom), transitions: Map({Atom, Atom}, Atom)): Result(FSMRef, String) =
+    # Create a generic state machine with given states and transitions
+    let sm_data = #{
+      states => states,
+      transitions => transitions,
+      current => head_of_list(states)
+    }
+    create('StateMachine', sm_data)
+
+  def create_workflow(steps: List(Atom), data: FSMData): Result(FSMRef, String) =
+    # Create a workflow FSM that processes steps sequentially
+    let workflow_data = #{
+      steps => steps,
+      current_step => 0,
+      data => data
+    }
+    create('Workflow', workflow_data)
+
+  # Helper functions
+  defp current_time(): Int =
+    # Get current system time in milliseconds
+    # This would be a built-in function
+    0
+
+  defp head_of_list(list: List(T)): Option(T) =
+    match list do
+      [] -> none()
+      [x | _] -> some(x)
+    end
+
+  defp unit(): Unit = ok
+end
+
+# Common FSM Definitions
+
+# Simple Counter FSM
+fsm Counter do
+  states: [Zero, Positive, Negative]
+  initial: Zero
+
+  state Zero do
+    event(:increment) -> Positive
+    event(:decrement) -> Negative
+    event(:reset) -> Zero
+  end
+
+  state Positive do
+    event(:increment) -> Positive
+    event(:decrement) when value > 1 -> Positive
+    event(:decrement) when value == 1 -> Zero
+    event(:decrement) when value < 1 -> Negative
+    event(:reset) -> Zero
+  end
+
+  state Negative do
+    event(:increment) when value < -1 -> Negative  
+    event(:increment) when value == -1 -> Zero
+    event(:increment) when value > -1 -> Positive
+    event(:decrement) -> Negative
+    event(:reset) -> Zero
+  end
+end
+
+# Simple Toggle FSM
+fsm Toggle do
+  states: [On, Off]
+  initial: Off
+
+  state On do
+    event(:toggle) -> Off
+    event(:turn_off) -> Off
+    event(:turn_on) -> On
+  end
+
+  state Off do
+    event(:toggle) -> On
+    event(:turn_on) -> On
+    event(:turn_off) -> Off
+  end
+end
+
+# Timer FSM
+fsm Timer do
+  states: [Running, Expired, Stopped]
+  initial: Running
+
+  state Running do
+    timeout(duration) -> Expired
+    event(:stop) -> Stopped
+    event(:reset) -> Running
+  end
+
+  state Expired do
+    event(:reset) -> Running
+    event(:stop) -> Stopped
+  end
+
+  state Stopped do
+    event(:start) -> Running
+    event(:reset) -> Running
+  end
+end
+
+# Generic State Machine FSM
+fsm StateMachine do
+  states: [State1, State2, State3]  # Would be dynamic in real implementation
+  initial: State1
+
+  state State1 do
+    event(:next) -> State2
+    event(:jump) -> State3
+  end
+
+  state State2 do
+    event(:next) -> State3
+    event(:back) -> State1
+  end
+
+  state State3 do
+    event(:back) -> State2
+    event(:reset) -> State1
+  end
+end
+
+# Workflow FSM
+fsm Workflow do
+  states: [NotStarted, InProgress, Completed, Failed]
+  initial: NotStarted
+
+  state NotStarted do
+    event(:start) -> InProgress
+  end
+
+  state InProgress do
+    event(:complete) -> Completed
+    event(:fail) -> Failed
+    event(:abort) -> NotStarted
+  end
+
+  state Completed do
+    event(:restart) -> NotStarted
+  end
+
+  state Failed do
+    event(:retry) -> InProgress
+    event(:abort) -> NotStarted
+  end
+end
