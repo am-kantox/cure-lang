@@ -15,6 +15,8 @@
     
     % FSM registration and compilation
     register_fsm_type/2,
+    get_registered_fsm_types/0,
+    unregister_fsm_type/1,
     lookup_fsm_definition/1,
     clear_fsm_registry/0,
     compile_fsm_definition/1,
@@ -344,7 +346,7 @@ execute_action(_Action, State, _EventData) ->
     State#fsm_state.data.
 
 %% Set FSM timeout
-set_fsm_timeout(Timeout, TimeoutEvent, State) ->
+set_fsm_timeout(Timeout, _TimeoutEvent, State) ->
     TimerRef = erlang:send_after(Timeout, self(), {timeout, make_ref(), timeout_event}),
     State#fsm_state{timeout_ref = TimerRef}.
 
@@ -376,11 +378,11 @@ maybe_set_state_timeout(State) ->
 %% Handle multiple events in batch for reduced message passing overhead
 handle_batch_events([], State) ->
     State;
-handle_batch_events([Event | Rest], State) ->
-    NewState = handle_fsm_event(Event, undefined, State),
-    handle_batch_events(Rest, NewState);
 handle_batch_events([{Event, EventData} | Rest], State) ->
     NewState = handle_fsm_event(Event, EventData, State),
+    handle_batch_events(Rest, NewState);
+handle_batch_events([Event | Rest], State) ->
+    NewState = handle_fsm_event(Event, undefined, State),
     handle_batch_events(Rest, NewState).
 
 %% Optimize FSM state by trimming history when it gets too large

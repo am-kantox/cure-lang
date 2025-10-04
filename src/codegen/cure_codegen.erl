@@ -120,7 +120,7 @@ compile_program_impl(AST, Options) when is_list(AST) ->
 compile_module(ModuleAST) ->
     compile_module(ModuleAST, default_options()).
 
-compile_module(#module_def{name = Name, exports = Exports, items = Items} = Module, Options) ->
+compile_module(#module_def{name = Name, exports = Exports, items = Items} = _Module, Options) ->
     State = #codegen_state{
         module_name = Name,
         exports = convert_exports(Exports),
@@ -202,7 +202,7 @@ compile_module_item(#import_def{} = Import, State) ->
 %% ============================================================================
 
 compile_function_impl(#function_def{name = Name, params = Params, body = Body, 
-                                   location = Location} = Function, State) ->
+                                   location = Location} = _Function, State) ->
     % Create function compilation context
     FunctionState = State#codegen_state{
         current_function = Name,
@@ -359,7 +359,7 @@ compile_if_expr(#if_expr{condition = Condition, then_branch = ThenBranch,
     {Instructions, State5}.
 
 %% Compile let expressions
-compile_let_expr(#let_expr{bindings = Bindings, body = Body, location = Location}, State) ->
+compile_let_expr(#let_expr{bindings = Bindings, body = Body, location = _Location}, State) ->
     {BindingInstructions, State1} = compile_bindings(Bindings, State),
     {BodyInstructions, State2} = compile_expression(Body, State1),
     

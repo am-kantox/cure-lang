@@ -124,7 +124,7 @@ scan_tokens(<<$\n, Rest/binary>>, Line, _Column, Acc) ->
     scan_tokens(Rest, Line + 1, 1, Acc);
 
 %% Skip comments (# to end of line)
-scan_tokens(<<$#, Rest/binary>>, Line, Column, Acc) ->
+scan_tokens(<<$#, Rest/binary>>, Line, _Column, Acc) ->
     {_, NewRest} = skip_line_comment(Rest),
     scan_tokens(NewRest, Line + 1, 1, Acc);
 

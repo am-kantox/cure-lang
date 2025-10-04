@@ -158,8 +158,8 @@ compile_store_local([VarName], Context) ->
             FinalContext = NewContext#compile_context{variables = NewVariables},
             
             {ok, [MatchForm], push_stack(VarForm, FinalContext)};
-        {error, Reason} ->
-            {error, Reason}
+        Error ->
+            Error
     end.
 
 %% Compile binary operations
@@ -169,8 +169,8 @@ compile_binary_op([Operator], Context) ->
             Line = NewContext#compile_context.line,
             OpForm = compile_binary_operator(Operator, Left, Right, Line),
             {ok, [OpForm], push_stack(OpForm, NewContext)};
-        {error, Reason} ->
-            {error, Reason}
+        Error ->
+            Error
     end.
 
 %% Compile function calls
@@ -181,7 +181,7 @@ compile_call([Arity], Context) ->
             Line = NewContext#compile_context.line,
             
             CallForm = case Function of
-                {atom, _, FuncName} ->
+                {atom, _, _FuncName} ->
                     % Local function call
                     {call, Line, Function, Args};
                 _ ->
@@ -190,8 +190,8 @@ compile_call([Arity], Context) ->
             end,
             
             {ok, [CallForm], push_stack(CallForm, NewContext)};
-        {error, Reason} ->
-            {error, Reason}
+        Error ->
+            Error
     end.
 
 %% Create list from stack elements
@@ -201,8 +201,8 @@ compile_make_list([Count], Context) ->
             Line = NewContext#compile_context.line,
             ListForm = {cons, Line, Elements},
             {ok, [ListForm], push_stack(ListForm, NewContext)};
-        {error, Reason} ->
-            {error, Reason}
+        Error ->
+            Error
     end.
 
 %% Conditional jump (for if expressions)
@@ -213,8 +213,8 @@ compile_jump_if_false([Label], Context) ->
             % For now, we'll store the condition and label information
             LabelInfo = {jump_if_false, Label, Condition},
             {ok, [], store_label_info(LabelInfo, NewContext)};
-        {error, Reason} ->
-            {error, Reason}
+        Error ->
+            Error
     end.
 
 %% Unconditional jump
@@ -233,8 +233,8 @@ compile_pop([], Context) ->
     case pop_stack(Context) of
         {_Value, NewContext} ->
             {ok, [], NewContext};
-        {error, Reason} ->
-            {error, Reason}
+        Error ->
+            Error
     end.
 
 %% Return statement
@@ -350,11 +350,11 @@ pop_two_from_stack(Context) ->
             case pop_stack(Context1) of
                 {Value2, Context2} ->
                     {Value1, Value2, Context2};
-                {error, Reason} ->
-                    {error, Reason}
+                Error ->
+                    Error
             end;
-        {error, Reason} ->
-            {error, Reason}
+        Error ->
+            Error
     end.
 
 %% Pop N values from stack
@@ -367,8 +367,8 @@ pop_n_from_stack(N, Context, Acc) when N > 0 ->
     case pop_stack(Context) of
         {Value, NewContext} ->
             pop_n_from_stack(N - 1, NewContext, [Value | Acc]);
-        {error, Reason} ->
-            {error, Reason}
+        Error ->
+            Error
     end.
 
 %% ============================================================================
@@ -384,7 +384,7 @@ get_line_from_location(_, DefaultLine) ->
     DefaultLine.
 
 %% Store label information for later processing
-store_label_info(LabelInfo, Context) ->
+store_label_info(_LabelInfo, Context) ->
     % For now, we'll store label info in the context
     % In a full implementation, this would be used for proper control flow
     Context.

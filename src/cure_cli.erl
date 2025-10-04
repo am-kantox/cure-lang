@@ -6,6 +6,9 @@
     main/1,           % Main entry point for escript
     compile_file/1,   % Compile a single .cure file
     compile_file/2,   % Compile with options
+    compile_opts_to_codegen_opts/1,  %% Convert compile options to codegen options
+    get_module_info/1, %% Get module information from AST (simplified, for future use)
+    check_cure_installation/0, %% Utility function to check if we have a complete Cure installation
     help/0,           % Show help information
     version/0         % Show version information
 ]).
@@ -259,7 +262,7 @@ type_check_ast(AST) ->
             [FirstItem | _] when is_record(FirstItem, module_def) ->
                 % Single module case - check the first (and should be only) module
                 case cure_typechecker:check_module(FirstItem, TypeEnv) of
-                    {ok, _NewEnv, Result} -> 
+                    {ok, _NewEnv, _Result} ->
                         io:format("Type checking successful~n"),
                         {ok, AST};
                     {error, Reason} -> 
@@ -521,3 +524,4 @@ check_cure_installation() ->
             io:format("Make sure to run 'make all' to build the complete compiler~n"),
             {error, {missing_modules, MissingModules}}
     end.
+

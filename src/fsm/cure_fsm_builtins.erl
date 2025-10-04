@@ -268,11 +268,11 @@ register_fsm_builtins(TypeEnv) ->
     
     % fsm_spawn/1,2
     FSMSpawn1Type = {function_type, [{primitive_type, 'Atom'}], {fsm_type}},
-    FSMSpawn2Type = {function_type, [{primitive_type, 'Atom'}, {any_type}], {fsm_type}},
+    _FSMSpawn2Type = {function_type, [{primitive_type, 'Atom'}, {any_type}], {fsm_type}},
     
     % fsm_send/2,3
     FSMSend2Type = {function_type, [{fsm_type}, {any_type}], {primitive_type, 'Atom'}},
-    FSMSend3Type = {function_type, [{fsm_type}, {any_type}, {any_type}], {primitive_type, 'Atom'}},
+    _FSMSend3Type = {function_type, [{fsm_type}, {any_type}, {any_type}], {primitive_type, 'Atom'}},
     
     % fsm_state/1
     FSMStateType = {function_type, [{fsm_type}], {union_type, [{primitive_type, 'Atom'}, {error_type}]}},
