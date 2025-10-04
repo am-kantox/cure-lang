@@ -31,27 +31,8 @@
 
 %% Include necessary headers
 -include("../parser/cure_ast_simple.hrl").
+-include("cure_codegen.hrl").
 
-%% Code generation state
--record(codegen_state, {
-    module_name,           % Current module being compiled
-    functions = [],        % Accumulated function definitions
-    exports = [],          % Export specifications
-    imports = [],          % Import specifications  
-    type_env,              % Type environment from type checker
-    options = [],          % Compilation options
-    temp_var_counter = 0,  % Counter for generating temporary variables
-    label_counter = 0,     % Counter for generating labels
-    current_function,      % Currently compiling function
-    local_vars = #{}       % Local variable mappings
-}).
-
-%% BEAM instruction record for internal representation
--record(beam_instr, {
-    op,                    % Instruction opcode
-    args = [],             % Instruction arguments
-    location               % Source location for debugging
-}).
 
 %% Default compilation options
 default_options() ->
@@ -80,13 +61,12 @@ new_state() ->
         module_name = undefined,
         exports = [],
         functions = [],
-        imports = [],
         local_vars = #{},
-        temp_var_counter = 0,
+        temp_counter = 0,
         label_counter = 0,
-        current_function = undefined,
-        type_env = cure_typechecker:builtin_env(),
-        options = []
+        constants = #{},
+        type_info = cure_typechecker:builtin_env(),
+        optimization_level = 0
     }.
 
 %% ============================================================================
@@ -125,8 +105,8 @@ compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) 
     State = #codegen_state{
         module_name = Name,
         exports = convert_exports_new(Exports, Items),
-        options = Options,
-        type_env = cure_typechecker:builtin_env()
+        optimization_level = proplists:get_value(optimize, Options, 0),
+        type_info = cure_typechecker:builtin_env()
     },
     
     % Process imports first
@@ -146,8 +126,8 @@ compile_module(#module_def{name = Name, exports = Exports, items = Items} = _Mod
     State = #codegen_state{
         module_name = Name,
         exports = convert_exports(Exports),
-        options = Options,
-        type_env = cure_typechecker:builtin_env()
+        optimization_level = proplists:get_value(optimize, Options, 0),
+        type_info = cure_typechecker:builtin_env()
     },
     
     case compile_module_items(Items, State) of
@@ -167,8 +147,8 @@ compile_function(FunctionAST) ->
 compile_function(#function_def{} = Function, Options) ->
     State = #codegen_state{
         module_name = test_module,
-        options = Options,
-        type_env = cure_typechecker:builtin_env()
+        optimization_level = proplists:get_value(optimize, Options, 0),
+        type_info = cure_typechecker:builtin_env()
     },
     compile_function_impl(Function, State);
 
@@ -233,8 +213,8 @@ compile_module_item(#import_def{} = Import, State) ->
     % Process import for code generation context
     case process_import(Import, State) of
         {ok, NewState} ->
-            NewImports = [Import | NewState#codegen_state.imports],
-            FinalState = NewState#codegen_state{imports = NewImports},
+            % Import processing would be handled here in a full implementation
+            FinalState = NewState,
             {ok, {import, Import}, FinalState};
         {error, Reason} ->
             {error, Reason}
@@ -301,27 +281,51 @@ process_imported_item(_Module, Identifier, State) when is_atom(Identifier) ->
 %% ============================================================================
 
 compile_function_impl(#function_def{name = Name, params = Params, body = Body, 
-                                   location = Location} = _Function, State) ->
+                                   constraint = Constraint, location = Location} = _Function, State) ->
     % Create function compilation context
     FunctionState = State#codegen_state{
-        current_function = Name,
         local_vars = create_param_bindings(Params),
-        temp_var_counter = 0,
+        temp_counter = 0,
         label_counter = 0
     },
     
     try
+        % Compile parameter constraint guards if present
+        {GuardInstructions, State1} = case Constraint of
+            undefined -> {[], FunctionState};
+            _ -> 
+                case cure_guard_compiler:compile_guard(Constraint, FunctionState) of
+                    {ok, Instructions, NewState} ->
+                        {Instructions ++ [generate_guard_check_instruction(Location)], NewState};
+                    {error, Reason} ->
+                        throw({guard_compilation_failed, Reason})
+                end
+        end,
+        
         % Compile function body
-        {BodyInstructions, FinalState} = compile_expression(Body, FunctionState),
+        {BodyInstructions, FinalState} = compile_expression(Body, State1),
         
         % Generate function prologue and epilogue
-        FunctionCode = generate_function_code(Name, Params, BodyInstructions, Location),
+        FunctionCode = generate_function_code(Name, Params, GuardInstructions ++ BodyInstructions, Location),
         
         {ok, {function, FunctionCode}, FinalState}
     catch
-        error:Reason:Stack ->
-            {error, {function_compilation_failed, Name, Reason, Stack}}
-    end.
+        error:CompileReason:Stack ->
+            {error, {function_compilation_failed, Name, CompileReason, Stack}}
+    end;
+
+% Legacy function definition support (without constraint field)
+compile_function_impl(#function_def{name = Name, params = Params, body = Body, 
+                                   location = Location}, State) ->
+    % Convert to new format with undefined constraint
+    NewFunction = #function_def{
+        name = Name,
+        params = Params,
+        body = Body,
+        constraint = undefined,
+        location = Location
+    },
+    compile_function_impl(NewFunction, State).
 
 %% Create parameter bindings for local variable map
 create_param_bindings(Params) ->
@@ -565,17 +569,11 @@ compile_unary_op_expr(#unary_op_expr{op = Op, operand = Operand, location = Loca
 compile_match_expr(#match_expr{expr = Expr, patterns = Patterns, location = Location}, State) ->
     {ExprInstructions, State1} = compile_expression(Expr, State),
     
-    % Generate match instruction with patterns
-    MatchInstruction = #beam_instr{
-        op = pattern_match,
-        args = [Patterns],
-        location = Location
-    },
+    % Compile patterns with guards
+    {PatternInstructions, State2} = compile_match_patterns(Patterns, Location, State1),
     
-    % For now, just basic pattern matching - full implementation would need
-    % pattern compilation to decision trees and guard generation
-    Instructions = ExprInstructions ++ [MatchInstruction],
-    {Instructions, State1}.
+    Instructions = ExprInstructions ++ PatternInstructions,
+    {Instructions, State2}.
 
 
 %% ============================================================================
@@ -793,9 +791,9 @@ compile_pattern_binding(Pattern, Location, _State) ->
 
 %% Generate new temporary variable
 new_temp_var(State) ->
-    Counter = State#codegen_state.temp_var_counter,
+    Counter = State#codegen_state.temp_counter,
     TempVar = list_to_atom("_temp_" ++ integer_to_list(Counter)),
-    NewState = State#codegen_state{temp_var_counter = Counter + 1},
+    NewState = State#codegen_state{temp_counter = Counter + 1},
     {TempVar, NewState}.
 
 %% Generate new label
@@ -804,6 +802,14 @@ new_label(State) ->
     Label = list_to_atom("label_" ++ integer_to_list(Counter)),
     NewState = State#codegen_state{label_counter = Counter + 1},
     {Label, NewState}.
+
+%% Generate guard check instruction
+generate_guard_check_instruction(Location) ->
+    #beam_instr{
+        op = guard_check,
+        args = [function_clause_error],
+        location = Location
+    }.
 
 %% ============================================================================
 %% BEAM Module Generation
@@ -826,14 +832,14 @@ generate_beam_module(State) ->
         functions => AllFunctions,
         fsm_definitions => FSMDefinitions,
         attributes => generate_module_attributes(State),
-        options => State#codegen_state.options
+        optimization_level => State#codegen_state.optimization_level
     },
     {ok, Module}.
 
 generate_module_attributes(State) ->
     BaseAttributes = [
         {vsn, [erlang:unique_integer()]},
-        {compile_info, State#codegen_state.options}
+        {compile_info, [{optimization_level, State#codegen_state.optimization_level}]}
     ],
     
     % Add FSM registration attributes
@@ -845,13 +851,8 @@ generate_module_attributes(State) ->
             [{fsm_types, FSMNames}]
     end,
     
-    % Add debug info if requested
-    DebugAttributes = case lists:keyfind(debug_info, 1, State#codegen_state.options) of
-        {debug_info, true} ->
-            [{debug_info, true}];
-        _ ->
-            []
-    end,
+    % Add debug info if requested (default to true for now)
+    DebugAttributes = [{debug_info, true}],
     
     BaseAttributes ++ FSMAttributes ++ DebugAttributes.
 
@@ -1026,3 +1027,157 @@ generate_fsm_registration_function(FSMDefinitions, Line) ->
 %% Write compiled module to file
 write_beam_module(Module, OutputPath) ->
     generate_beam_file(Module, OutputPath).
+
+%% ============================================================================
+%% Pattern Compilation with Guard Support
+%% ============================================================================
+
+%% Compile match patterns with guards
+compile_match_patterns(Patterns, Location, State) ->
+    compile_match_patterns_impl(Patterns, [], Location, State).
+
+compile_match_patterns_impl([], Acc, _Location, State) ->
+    {lists:flatten(lists:reverse(Acc)), State};
+compile_match_patterns_impl([Pattern | Rest], Acc, Location, State) ->
+    case compile_match_pattern(Pattern, Location, State) of
+        {ok, Instructions, NewState} ->
+            compile_match_patterns_impl(Rest, [Instructions | Acc], Location, NewState);
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Compile a single match pattern with optional guard
+compile_match_pattern(#match_clause{pattern = Pattern, guard = Guard, body = Body, location = Location}, _OverrideLocation, State) ->
+    % Generate labels for control flow
+    {FailLabel, State1} = new_label(State),
+    {SuccessLabel, State2} = new_label(State1),
+    
+    % Compile pattern matching
+    {PatternInstr, State3} = compile_pattern(Pattern, FailLabel, State2),
+    
+    % Compile guard if present
+    case Guard of
+        undefined ->
+            % No guard, compile body directly
+            {BodyInstr, State4} = compile_expression(Body, State3),
+            
+            % Assemble instructions
+            Instructions = PatternInstr ++ BodyInstr ++ [
+                #beam_instr{op = jump, args = [SuccessLabel], location = Location},
+                #beam_instr{op = label, args = [FailLabel], location = Location},
+                #beam_instr{op = pattern_fail, args = [], location = Location},
+                #beam_instr{op = label, args = [SuccessLabel], location = Location}
+            ],
+            
+            {ok, Instructions, State4};
+        _ ->
+            case cure_guard_compiler:compile_guard(Guard, State3) of
+                {ok, GuardCode, GuardState} ->
+                    GuardFailInstr = #beam_instr{
+                        op = jump_if_false,
+                        args = [FailLabel],
+                        location = Location
+                    },
+                    
+                    % Compile body
+                    {BodyInstr, State5} = compile_expression(Body, GuardState),
+                    
+                    % Assemble instructions
+                    Instructions = PatternInstr ++ GuardCode ++ [GuardFailInstr] ++ BodyInstr ++ [
+                        #beam_instr{op = jump, args = [SuccessLabel], location = Location},
+                        #beam_instr{op = label, args = [FailLabel], location = Location},
+                        #beam_instr{op = pattern_fail, args = [], location = Location},
+                        #beam_instr{op = label, args = [SuccessLabel], location = Location}
+                    ],
+                    
+                    {ok, Instructions, State5};
+                {error, GuardReason} ->
+                    {error, GuardReason}
+            end
+    end;
+
+compile_match_pattern(Pattern, Location, State) ->
+    % Handle non-clause patterns (backward compatibility)
+    {FailLabel, State1} = new_label(State),
+    {PatternInstr, State2} = compile_pattern(Pattern, FailLabel, State1),
+    
+    Instructions = PatternInstr ++ [
+        #beam_instr{op = label, args = [FailLabel], location = Location},
+        #beam_instr{op = pattern_fail, args = [], location = Location}
+    ],
+    
+    {ok, Instructions, State2}.
+
+%% Compile individual patterns
+compile_pattern(#literal_pattern{value = Value, location = Location}, FailLabel, State) ->
+    Instructions = [
+        #beam_instr{op = match_literal, args = [Value, FailLabel], location = Location}
+    ],
+    {Instructions, State};
+
+compile_pattern(#identifier_pattern{name = Name, location = Location}, _FailLabel, State) ->
+    {VarRef, State1} = new_temp_var(State),
+    NewVars = maps:put(Name, VarRef, State#codegen_state.local_vars),
+    
+    Instructions = [
+        #beam_instr{op = bind_var, args = [VarRef], location = Location}
+    ],
+    
+    {Instructions, State1#codegen_state{local_vars = NewVars}};
+
+compile_pattern(#wildcard_pattern{location = Location}, _FailLabel, State) ->
+    Instructions = [
+        #beam_instr{op = match_any, args = [], location = Location}
+    ],
+    {Instructions, State};
+
+compile_pattern(#tuple_pattern{elements = Elements, location = Location}, FailLabel, State) ->
+    % Match tuple structure first
+    TupleMatchInstr = #beam_instr{
+        op = match_tuple,
+        args = [length(Elements), FailLabel],
+        location = Location
+    },
+    
+    % Compile element patterns
+    {ElementInstr, State1} = compile_pattern_elements(Elements, FailLabel, State),
+    
+    Instructions = [TupleMatchInstr] ++ ElementInstr,
+    {Instructions, State1};
+
+compile_pattern(#list_pattern{elements = Elements, tail = Tail, location = Location}, FailLabel, State) ->
+    % Match list structure
+    ListMatchInstr = #beam_instr{
+        op = match_list,
+        args = [length(Elements), Tail =/= undefined, FailLabel],
+        location = Location
+    },
+    
+    % Compile element patterns
+    {ElementInstr, State1} = compile_pattern_elements(Elements, FailLabel, State),
+    
+    % Compile tail pattern if present
+    {TailInstr, State2} = case Tail of
+        undefined -> {[], State1};
+        _ -> compile_pattern(Tail, FailLabel, State1)
+    end,
+    
+    Instructions = [ListMatchInstr] ++ ElementInstr ++ TailInstr,
+    {Instructions, State2};
+
+compile_pattern(Pattern, _FailLabel, State) ->
+    {error, {unsupported_pattern, Pattern}, State}.
+
+%% Compile pattern elements (for tuples and lists)
+compile_pattern_elements(Elements, FailLabel, State) ->
+    compile_pattern_elements_impl(Elements, [], FailLabel, State).
+
+compile_pattern_elements_impl([], Acc, _FailLabel, State) ->
+    {lists:flatten(lists:reverse(Acc)), State};
+compile_pattern_elements_impl([Element | Rest], Acc, FailLabel, State) ->
+    case compile_pattern(Element, FailLabel, State) of
+        {Instructions, NewState} ->
+            compile_pattern_elements_impl(Rest, [Instructions | Acc], FailLabel, NewState);
+        {error, Reason, ErrorState} ->
+            {error, Reason, ErrorState}
+    end.

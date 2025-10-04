@@ -26,12 +26,12 @@
 
 %% Function definition
 -record(function_def, {
-    name :: atom(),
-    params :: [param()],
-    return_type :: type_expr() | undefined,
-    constraint :: expr() | undefined,
-    body :: expr(),
-    location :: location()
+    name,
+    params,
+    return_type,
+    constraint,
+    body,
+    location
 }).
 
 %% Type definition

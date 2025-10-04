@@ -319,7 +319,7 @@ find_transition(State, Event, Transitions) ->
             end
     end.
 
-%% Evaluate guard condition (simplified - can be extended)
+%% Evaluate guard condition with compiled guard expression support
 evaluate_guard(undefined, _State, _EventData) ->
     true;
 evaluate_guard(Guard, State, EventData) when is_function(Guard, 2) ->
@@ -328,9 +328,136 @@ evaluate_guard(Guard, State, EventData) when is_function(Guard, 2) ->
     catch
         _:_ -> false
     end;
-evaluate_guard(_Guard, _State, _EventData) ->
-    % TODO: Implement guard expression evaluation
-    true.
+evaluate_guard({compiled_guard, Instructions}, State, EventData) ->
+    % Execute compiled guard instructions
+    try
+        execute_guard_instructions(Instructions, State, EventData)
+    catch
+        _:_ -> false
+    end;
+evaluate_guard(Guard, State, EventData) ->
+    % Handle AST guard expressions for backward compatibility
+    case cure_guard_compiler:compile_guard(Guard, #{}) of
+        {ok, Instructions, _} ->
+            execute_guard_instructions(Instructions, State, EventData);
+        {error, _Reason} ->
+            false
+    end.
+
+%% Execute compiled guard instructions
+execute_guard_instructions(Instructions, State, EventData) ->
+    try
+        Context = #{
+            state => State,
+            event_data => EventData,
+            variables => #{},
+            stack => []
+        },
+        Result = execute_instructions(Instructions, Context),
+        case Result of
+            #{stack := [Value | _]} -> is_truthy(Value);
+            _ -> false
+        end
+    catch
+        _:_ -> false
+    end.
+
+%% Execute a list of guard instructions
+execute_instructions([], Context) ->
+    Context;
+execute_instructions([Instruction | Rest], Context) ->
+    NewContext = execute_instruction(Instruction, Context),
+    execute_instructions(Rest, NewContext).
+
+%% Execute individual guard instructions
+execute_instruction(#{op := load_literal, args := [Value]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    Context#{stack => [Value | Stack]};
+
+execute_instruction(#{op := load_param, args := [Name]}, Context) ->
+    State = maps:get(state, Context),
+    EventData = maps:get(event_data, Context),
+    Stack = maps:get(stack, Context, []),
+    
+    Value = case Name of
+        current_state -> State#fsm_state.current_state;
+        data -> State#fsm_state.data;
+        event_data -> EventData;
+        _ -> maps:get(Name, State#fsm_state.data, undefined)
+    end,
+    
+    Context#{stack => [Value | Stack]};
+
+execute_instruction(#{op := guard_bif, args := [Op, Arity]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    {Args, RestStack} = lists:split(Arity, Stack),
+    
+    Result = apply_guard_bif(Op, lists:reverse(Args)),
+    Context#{stack => [Result | RestStack]};
+
+execute_instruction(_, Context) ->
+    % Unknown instruction, skip
+    Context.
+
+%% Apply guard built-in functions
+apply_guard_bif('+', [A, B]) -> A + B;
+apply_guard_bif('-', [A, B]) -> A - B;
+apply_guard_bif('*', [A, B]) -> A * B;
+apply_guard_bif('/', [A, B]) when B =/= 0 -> A / B;
+apply_guard_bif('div', [A, B]) when B =/= 0 -> A div B;
+apply_guard_bif('rem', [A, B]) when B =/= 0 -> A rem B;
+apply_guard_bif('==', [A, B]) -> A == B;
+apply_guard_bif('!=', [A, B]) -> A /= B;
+apply_guard_bif('=:=', [A, B]) -> A =:= B;
+apply_guard_bif('=/=', [A, B]) -> A =/= B;
+apply_guard_bif('<', [A, B]) -> A < B;
+apply_guard_bif('>', [A, B]) -> A > B;
+apply_guard_bif('=<', [A, B]) -> A =< B;
+apply_guard_bif('<=', [A, B]) -> A =< B;
+apply_guard_bif('>=', [A, B]) -> A >= B;
+apply_guard_bif('and', [A, B]) -> A and B;
+apply_guard_bif('or', [A, B]) -> A or B;
+apply_guard_bif('not', [A]) -> not A;
+apply_guard_bif('andalso', [A, B]) -> A andalso B;
+apply_guard_bif('orelse', [A, B]) -> A orelse B;
+apply_guard_bif('xor', [A, B]) -> A xor B;
+apply_guard_bif('band', [A, B]) -> A band B;
+apply_guard_bif('bor', [A, B]) -> A bor B;
+apply_guard_bif('bxor', [A, B]) -> A bxor B;
+apply_guard_bif('bnot', [A]) -> bnot A;
+apply_guard_bif('bsl', [A, B]) -> A bsl B;
+apply_guard_bif('bsr', [A, B]) -> A bsr B;
+apply_guard_bif('abs', [A]) -> abs(A);
+apply_guard_bif('trunc', [A]) -> trunc(A);
+apply_guard_bif('round', [A]) -> round(A);
+apply_guard_bif('size', [A]) -> size(A);
+apply_guard_bif('length', [A]) -> length(A);
+apply_guard_bif('hd', [A]) when is_list(A), A =/= [] -> hd(A);
+apply_guard_bif('tl', [A]) when is_list(A), A =/= [] -> tl(A);
+apply_guard_bif('element', [N, T]) when is_tuple(T) -> element(N, T);
+apply_guard_bif('is_atom', [A]) -> is_atom(A);
+apply_guard_bif('is_binary', [A]) -> is_binary(A);
+apply_guard_bif('is_boolean', [A]) -> is_boolean(A);
+apply_guard_bif('is_float', [A]) -> is_float(A);
+apply_guard_bif('is_function', [A]) -> is_function(A);
+apply_guard_bif('is_integer', [A]) -> is_integer(A);
+apply_guard_bif('is_list', [A]) -> is_list(A);
+apply_guard_bif('is_number', [A]) -> is_number(A);
+apply_guard_bif('is_pid', [A]) -> is_pid(A);
+apply_guard_bif('is_port', [A]) -> is_port(A);
+apply_guard_bif('is_reference', [A]) -> is_reference(A);
+apply_guard_bif('is_tuple', [A]) -> is_tuple(A);
+apply_guard_bif('node', []) -> node();
+apply_guard_bif('self', []) -> self();
+apply_guard_bif(_, _) -> false.
+
+%% Check if a value is truthy for guard evaluation
+is_truthy(false) -> false;
+is_truthy(undefined) -> false;
+is_truthy(0) -> false;
+is_truthy(0.0) -> false;
+is_truthy([]) -> false;
+is_truthy(_) -> true.
 
 %% Execute action (simplified - can be extended)
 execute_action(undefined, State, _EventData) ->
