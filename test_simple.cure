@@ -1,0 +1,3 @@
+module SimpleTest do
+  def test(): Int = 42
+end

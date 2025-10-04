@@ -102,9 +102,12 @@ compile_module(ModuleAST) ->
 
 %% Support for new AST format
 compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) ->
+    % Using new AST format compilation path
+    ConvertedExports = convert_exports_new(Exports, Items),
+    io:format("[DEBUG] Converted exports: ~p~n", [ConvertedExports]),
     State = #codegen_state{
         module_name = Name,
-        exports = convert_exports_new(Exports, Items),
+        exports = ConvertedExports,
         optimization_level = proplists:get_value(optimize, Options, 0),
         type_info = cure_typechecker:builtin_env()
     },
@@ -123,6 +126,7 @@ compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) 
     end;
 
 compile_module(#module_def{name = Name, exports = Exports, items = Items} = _Module, Options) ->
+    % Using old AST format compilation path
     State = #codegen_state{
         module_name = Name,
         exports = convert_exports(Exports),
@@ -432,8 +436,8 @@ compile_binary_op(#binary_op_expr{op = Op, left = Left, right = Right,
                         location = Location
                     },
                     
-                    % Instructions: Left, Args..., Function, Call
-                    Instructions = LeftInstructions ++ ArgInstructions ++ FuncInstructions ++ [CallInstruction],
+                    % Instructions: Function, Left, Args..., Call (correct stack order)
+                    Instructions = FuncInstructions ++ LeftInstructions ++ ArgInstructions ++ [CallInstruction],
                     {Instructions, State3};
                 _ ->
                     % Right is just a function, call it with Left as argument
@@ -445,7 +449,8 @@ compile_binary_op(#binary_op_expr{op = Op, left = Left, right = Right,
                         location = Location
                     },
                     
-                    Instructions = LeftInstructions ++ RightInstructions ++ [CallInstruction],
+                    % Instructions: Function, Left, Call (correct stack order)
+                    Instructions = RightInstructions ++ LeftInstructions ++ [CallInstruction],
                     {Instructions, State2}
             end;
         _ ->
@@ -466,11 +471,11 @@ compile_binary_op(#binary_op_expr{op = Op, left = Left, right = Right,
 %% Compile function calls
 compile_function_call(#function_call_expr{function = Function, args = Args, 
                                          location = Location}, State) ->
-    % Compile arguments
-    {ArgInstructions, State1} = compile_expressions(Args, State),
+    % Compile function expression first (function goes on bottom of stack)
+    {FuncInstructions, State1} = compile_expression(Function, State),
     
-    % Compile function expression
-    {FuncInstructions, State2} = compile_expression(Function, State1),
+    % Compile arguments (arguments go on top of stack)
+    {ArgInstructions, State2} = compile_expressions(Args, State1),
     
     % Generate call instruction
     CallInstruction = #beam_instr{
@@ -479,7 +484,8 @@ compile_function_call(#function_call_expr{function = Function, args = Args,
         location = Location
     },
     
-    Instructions = ArgInstructions ++ FuncInstructions ++ [CallInstruction],
+    % Instructions: Function first, then Args, then Call
+    Instructions = FuncInstructions ++ ArgInstructions ++ [CallInstruction],
     {Instructions, State2}.
 
 %% Compile if expressions
@@ -543,10 +549,12 @@ compile_lambda_expr(#lambda_expr{params = Params, body = Body, location = Locati
     % Compile lambda body
     {BodyInstructions, State2} = compile_expression(Body, LambdaState),
     
-    % Generate lambda creation instruction
+    % Generate lambda creation instruction with proper format
+    % Lambda should create a proper function reference that can be called
+    ParamNames = [P#param.name || P <- Params],
     LambdaInstruction = #beam_instr{
         op = make_lambda,
-        args = [LambdaName, Params, BodyInstructions],
+        args = [LambdaName, ParamNames, BodyInstructions, length(Params)],
         location = Location
     },
     
@@ -915,8 +923,10 @@ compile_item(Item, _Options) ->
 generate_beam_file(Module, OutputPath) ->
     case convert_to_erlang_forms(Module) of
         {ok, Forms} ->
+            io:format("[DEBUG] About to compile ~p forms with Erlang compiler~n", [length(Forms)]),
             case compile:forms(Forms, [binary, return_errors]) of
                 {ok, ModuleName, Binary} ->
+                    io:format("[DEBUG] Erlang compilation successful, binary size: ~p bytes~n", [size(Binary)]),
                     case file:write_file(OutputPath, Binary) of
                         ok -> {ok, {ModuleName, OutputPath}};
                         {error, Reason} -> {error, {write_failed, Reason}}
@@ -932,8 +942,17 @@ generate_beam_file(Module, OutputPath) ->
 convert_to_erlang_forms(Module) ->
     try
         ModuleName = maps:get(name, Module),
-        Exports = maps:get(exports, Module, []),
+        RawExports = maps:get(exports, Module, []),
         Functions = maps:get(functions, Module, []),
+        % Auto-generate exports from functions if no exports specified
+        Exports = case RawExports of
+            [] -> 
+                % Extract {name, arity} from all functions
+                [{maps:get(name, F), maps:get(arity, F)} || F <- Functions, 
+                 maps:is_key(name, F) andalso maps:is_key(arity, F)];
+            _ -> 
+                RawExports
+        end,
         FSMDefinitions = maps:get(fsm_definitions, Module, []),
         Attributes = maps:get(attributes, Module, []),
         
@@ -963,6 +982,7 @@ convert_to_erlang_forms(Module) ->
         
         Forms = BaseAttributes ++ AttributeForms ++ LoadHook ++ FunctionForms ++ FSMRegisterFunc,
         
+        
         {ok, Forms}
     catch
         error:Reason:Stack ->
@@ -979,7 +999,7 @@ convert_functions_to_forms([Function | RestFunctions], Line, Acc) ->
     case convert_function_to_form(Function, Line) of
         {ok, Form, NextLine} ->
             convert_functions_to_forms(RestFunctions, NextLine, [Form | Acc]);
-        {error, _Reason} ->
+        {error, Reason} ->
             % Skip invalid functions for now
             convert_functions_to_forms(RestFunctions, Line + 1, Acc)
     end.
@@ -1117,7 +1137,7 @@ compile_pattern(#literal_pattern{value = Value, location = Location}, FailLabel,
 
 compile_pattern(#identifier_pattern{name = Name, location = Location}, _FailLabel, State) ->
     {VarRef, State1} = new_temp_var(State),
-    NewVars = maps:put(Name, VarRef, State#codegen_state.local_vars),
+    NewVars = maps:put(Name, {local, VarRef}, State#codegen_state.local_vars),
     
     Instructions = [
         #beam_instr{op = bind_var, args = [VarRef], location = Location}
@@ -1165,12 +1185,46 @@ compile_pattern(#list_pattern{elements = Elements, tail = Tail, location = Locat
     Instructions = [ListMatchInstr] ++ ElementInstr ++ TailInstr,
     {Instructions, State2};
 
+%% Record pattern
+compile_pattern(#record_pattern{name = RecordName, fields = Fields, location = Location}, FailLabel, State) ->
+    % First, match that it's the correct record type (represented as tagged tuple)
+    % In Erlang, records are represented as {RecordName, Field1, Field2, ...}
+    RecordMatchInstr = #beam_instr{
+        op = match_tagged_tuple,
+        args = [RecordName, length(Fields), FailLabel],
+        location = Location
+    },
+    
+    % Compile field patterns
+    {FieldInstr, State1} = compile_record_field_patterns(Fields, FailLabel, State),
+    
+    Instructions = [RecordMatchInstr] ++ FieldInstr,
+    {Instructions, State1};
+
 compile_pattern(Pattern, _FailLabel, State) ->
     {error, {unsupported_pattern, Pattern}, State}.
 
 %% Compile pattern elements (for tuples and lists)
 compile_pattern_elements(Elements, FailLabel, State) ->
     compile_pattern_elements_impl(Elements, [], FailLabel, State).
+
+%% Compile record field patterns
+compile_record_field_patterns(Fields, FailLabel, State) ->
+    compile_record_field_patterns_impl(Fields, [], FailLabel, State).
+
+compile_record_field_patterns_impl([], Acc, _FailLabel, State) ->
+    {lists:flatten(lists:reverse(Acc)), State};
+compile_record_field_patterns_impl([#field_pattern{name = _FieldName, pattern = Pattern} | Rest], Acc, FailLabel, State) ->
+    % For record patterns, we assume positional field matching
+    % The field order must match the record definition
+    case compile_pattern(Pattern, FailLabel, State) of
+        {Instructions, NewState} ->
+            % Add instruction to advance to next field position
+            FieldInstr = Instructions ++ [#beam_instr{op = advance_field, args = [], location = undefined}],
+            compile_record_field_patterns_impl(Rest, [FieldInstr | Acc], FailLabel, NewState);
+        {error, Reason, ErrorState} ->
+            {error, Reason, ErrorState}
+    end.
 
 compile_pattern_elements_impl([], Acc, _FailLabel, State) ->
     {lists:flatten(lists:reverse(Acc)), State};

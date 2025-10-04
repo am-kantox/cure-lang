@@ -46,6 +46,7 @@
 ]).
 
 -include("../parser/cure_ast_simple.hrl").
+-include("../codegen/cure_beam_compiler.hrl").
 
 %% Type optimization context
 -record(optimization_context, {
@@ -53,7 +54,11 @@
     type_info :: type_info(),
     usage_stats :: usage_statistics(),
     specializations :: specialization_map(),
-    inlining_decisions :: inlining_map()
+    inlining_decisions :: inlining_map(),
+    type_checker = undefined,
+    function_specializations = #{},
+    monomorphic_instances = #{},
+    beam_generation = #{}
 }).
 
 %% Optimization configuration
@@ -2636,7 +2641,7 @@ apply_beam_generation_pass(AST, Context) ->
     },
     
     % Update context with BEAM generation results
-    NewContext = Context#opt_context{
+    NewContext = Context#optimization_context{
         beam_generation = BeamResult
     },
     
@@ -2645,10 +2650,10 @@ apply_beam_generation_pass(AST, Context) ->
 
 %% Extract relevant type information for BEAM generation
 extract_type_info_for_beam(Context) ->
-    TypeChecker = Context#opt_context.type_checker,
-    FunctionSpecs = Context#opt_context.function_specializations,
-    MonomorphicInstances = Context#opt_context.monomorphic_instances,
-    InliningDecisions = Context#opt_context.inlining_decisions,
+    TypeChecker = Context#optimization_context.type_checker,
+    FunctionSpecs = Context#optimization_context.function_specializations,
+    MonomorphicInstances = Context#optimization_context.monomorphic_instances,
+    InliningDecisions = Context#optimization_context.inlining_decisions,
     
     #{
         function_types => get_function_type_mappings(TypeChecker),
@@ -3972,15 +3977,6 @@ generate_performance_driven_optimizations(Priorities, PerformanceTargets) ->
     end, Priorities).
 
 %% Update opt_context record to include profile_guided_optimization field
--record(opt_context, {
-    type_checker,                    % Type checker state
-    function_specializations = #{},  % Function specialization results
-    monomorphic_instances = #{},     % Monomorphic function instances
-    inlining_decisions = #{},        % Function inlining decisions
-    dead_code_analysis = #{},        % Dead code elimination results
-    beam_generation = #{},           % Type-directed BEAM generation results
-    profile_guided_optimization = #{} % Profile-guided optimization results
-}).
 
 %% ============================================================================
 %% Additional Helper Functions for Profile-guided Optimization

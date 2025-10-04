@@ -95,6 +95,12 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         binary_op -> compile_binary_op(Args, NewContext);
         call -> compile_call(Args, NewContext);
         make_list -> compile_make_list(Args, NewContext);
+        make_lambda -> compile_make_lambda(Args, NewContext);
+        match_tagged_tuple -> compile_match_tagged_tuple(Args, NewContext);
+        match_list -> compile_match_list(Args, NewContext);
+        advance_field -> compile_advance_field(Args, NewContext);
+        bind_var -> compile_bind_var(Args, NewContext);
+        pattern_fail -> compile_pattern_fail(Args, NewContext);
         jump_if_false -> compile_jump_if_false(Args, NewContext);
         jump -> compile_jump(Args, NewContext);
         label -> compile_label(Args, NewContext);
@@ -134,15 +140,8 @@ compile_load_local([VarName], Context) ->
 compile_load_global([Name], Context) ->
     Line = Context#compile_context.line,
     
-    % Check if it's a built-in function or FSM function
-    Form = case is_builtin_function(Name) of
-        true ->
-            % Reference to built-in function
-            {atom, Line, Name};
-        false ->
-            % External function reference - generate function call form
-            {atom, Line, Name}
-    end,
+    % For now, just push the function name - we'll handle stdlib calls in call compilation
+    Form = {atom, Line, Name},
     
     {ok, [], push_stack(Form, Context)}.
 
@@ -181,9 +180,16 @@ compile_call([Arity], Context) ->
             Line = NewContext#compile_context.line,
             
             CallForm = case Function of
-                {atom, _, _FuncName} ->
-                    % Local function call
-                    {call, Line, Function, Args};
+                {atom, _, FuncName} ->
+                    % Check if it's a stdlib function
+                    case is_stdlib_function(FuncName) of
+                        true ->
+                            % Remote call to stdlib
+                            {call, Line, {remote, Line, {atom, Line, cure_stdlib}, {atom, Line, FuncName}}, Args};
+                        false ->
+                            % Local function call
+                            {call, Line, Function, Args}
+                    end;
                 _ ->
                     % Complex function expression
                     {call, Line, Function, Args}
@@ -248,6 +254,85 @@ compile_return([], Context) ->
             {ok, [{atom, Line, ok}], Context}
     end.
 
+%% Lambda creation
+compile_make_lambda([_LambdaName, ParamNames, _BodyInstructions, Arity], Context) ->
+    Line = Context#compile_context.line,
+    % Create a simple anonymous function reference for now
+    % In a full implementation, this would compile the body instructions to a proper lambda
+    ParamVars = [{var, Line, Param} || Param <- ParamNames],
+    LambdaForm = {'fun', Line, {clauses, [
+        {clause, Line, ParamVars, [], [{atom, Line, lambda_body}]}
+    ]}},
+    {ok, [], push_stack(LambdaForm, Context)}.
+
+%% Tagged tuple matching (for records like Ok(value), Error(msg))
+compile_match_tagged_tuple([Tag, FieldCount, _FailLabel], Context) ->
+    % This should check that the value on stack is a tuple {Tag, Field1, Field2, ...}
+    % For now, we'll just pop the value and push a match success
+    case pop_stack(Context) of
+        {Value, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Create a case expression to match the tagged tuple
+            MatchForm = {'case', Line, Value, [
+                {clause, Line, [{tuple, Line, [{atom, Line, Tag} | lists:duplicate(FieldCount, {var, Line, '_'})]}], [], [{atom, Line, match_success}]},
+                {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
+            ]},
+            {ok, [], push_stack(MatchForm, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% List pattern matching  
+compile_match_list([ElementCount, HasTail, _FailLabel], Context) ->
+    case pop_stack(Context) of
+        {Value, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Create pattern for list matching
+            Pattern = case HasTail of
+                true when ElementCount > 0 ->
+                    Elements = lists:duplicate(ElementCount, {var, Line, '_'}),
+                    TailVar = {var, Line, '_tail'},
+                    build_list_pattern(Elements, TailVar, Line);
+                false ->
+                    Elements = lists:duplicate(ElementCount, {var, Line, '_'}),
+                    build_list_pattern(Elements, {nil, Line}, Line)
+            end,
+            MatchForm = {'case', Line, Value, [
+                {clause, Line, [Pattern], [], [{atom, Line, match_success}]},
+                {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
+            ]},
+            {ok, [], push_stack(MatchForm, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% Advance field (used in record pattern matching)
+compile_advance_field([], Context) ->
+    % This is a no-op in our simplified compilation
+    % In a full implementation, this would advance to the next record field
+    {ok, [], Context}.
+
+%% Bind variable (pattern matching)
+compile_bind_var([VarName], Context) ->
+    case pop_stack(Context) of
+        {Value, NewContext} ->
+            Line = NewContext#compile_context.line,
+            VarForm = {var, Line, VarName},
+            MatchForm = {match, Line, VarForm, Value},
+            NewVariables = maps:put(VarName, VarForm, NewContext#compile_context.variables),
+            FinalContext = NewContext#compile_context{variables = NewVariables},
+            {ok, [MatchForm], push_stack(VarForm, FinalContext)};
+        Error ->
+            Error
+    end.
+
+%% Pattern match failure
+compile_pattern_fail([], Context) ->
+    Line = Context#compile_context.line,
+    % Generate a function clause error
+    FailForm = {call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, error}}, [{atom, Line, function_clause}]},
+    {ok, [FailForm], Context}.
+
 %% ============================================================================
 %% Helper Functions
 %% ============================================================================
@@ -278,6 +363,70 @@ compile_list_to_form([H | T], Line) ->
     TailForm = compile_list_to_form(T, Line),
     {cons, Line, HeadForm, TailForm}.
 
+%% Check if function is from standard library
+is_stdlib_function(ok) -> true;
+is_stdlib_function(error) -> true;
+is_stdlib_function(some) -> true;
+is_stdlib_function(none) -> true;
+is_stdlib_function(map) -> true;
+is_stdlib_function(filter) -> true;
+is_stdlib_function(foldl) -> true;
+is_stdlib_function(head) -> true;
+is_stdlib_function(tail) -> true;
+is_stdlib_function(length) -> true;
+is_stdlib_function(string_concat) -> true;
+is_stdlib_function(split) -> true;
+is_stdlib_function(trim) -> true;
+is_stdlib_function(to_upper) -> true;
+is_stdlib_function(contains) -> true;
+is_stdlib_function(starts_with) -> true;
+is_stdlib_function(abs) -> true;
+is_stdlib_function(sqrt) -> true;
+is_stdlib_function(pi) -> true;
+is_stdlib_function(fsm_create) -> true;
+is_stdlib_function(fsm_send_safe) -> true;
+is_stdlib_function(create_counter) -> true;
+is_stdlib_function(print) -> true;
+is_stdlib_function(int_to_string) -> true;
+is_stdlib_function(float_to_string) -> true;
+is_stdlib_function(list_to_string) -> true;
+is_stdlib_function(join_ints) -> true;
+is_stdlib_function(string_empty) -> true;
+is_stdlib_function(string_join) -> true;
+is_stdlib_function(_) -> false.
+
+%% Get function arity for stdlib functions
+get_function_arity(ok) -> 1;
+get_function_arity(error) -> 1;
+get_function_arity(some) -> 1;
+get_function_arity(none) -> 0;
+get_function_arity(map) -> 2;
+get_function_arity(filter) -> 2;
+get_function_arity(foldl) -> 3;
+get_function_arity(head) -> 1;
+get_function_arity(tail) -> 1;
+get_function_arity(length) -> 1;
+get_function_arity(string_concat) -> 2;
+get_function_arity(split) -> 2;
+get_function_arity(trim) -> 1;
+get_function_arity(to_upper) -> 1;
+get_function_arity(contains) -> 2;
+get_function_arity(starts_with) -> 2;
+get_function_arity(abs) -> 1;
+get_function_arity(sqrt) -> 1;
+get_function_arity(pi) -> 0;
+get_function_arity(fsm_create) -> 2;
+get_function_arity(fsm_send_safe) -> 2;
+get_function_arity(create_counter) -> 1;
+get_function_arity(print) -> 1;
+get_function_arity(int_to_string) -> 1;
+get_function_arity(float_to_string) -> 1;
+get_function_arity(list_to_string) -> 1;
+get_function_arity(join_ints) -> 2;
+get_function_arity(string_empty) -> 1;
+get_function_arity(string_join) -> 2;
+get_function_arity(_) -> 0.
+
 %% Compile binary operators
 compile_binary_operator('+', Left, Right, Line) ->
     {op, Line, '+', Left, Right};
@@ -303,6 +452,8 @@ compile_binary_operator('and', Left, Right, Line) ->
     {op, Line, 'and', Left, Right};
 compile_binary_operator('or', Left, Right, Line) ->
     {op, Line, 'or', Left, Right};
+compile_binary_operator('++', Left, Right, Line) ->
+    {op, Line, '++', Left, Right};
 compile_binary_operator(Op, Left, Right, Line) ->
     % Generic binary operation
     {call, Line, {atom, Line, Op}, [Left, Right]}.
@@ -401,6 +552,12 @@ build_cons_list([Element], Line) ->
     {cons, Line, Element, {nil, Line}};
 build_cons_list([H | T], Line) ->
     {cons, Line, H, build_cons_list(T, Line)}.
+
+%% Build list pattern for pattern matching
+build_list_pattern([], Tail, _Line) ->
+    Tail;
+build_list_pattern([H | T], Tail, Line) ->
+    {cons, Line, H, build_list_pattern(T, Tail, Line)}.
 
 %% Optimize instruction sequence
 optimize_instructions(Instructions) ->

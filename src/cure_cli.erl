@@ -214,11 +214,17 @@ compile_source(Filename, Source, Options) ->
                     % Take the first module and generate BEAM file
                     case CompiledModules of
                         [Module | _] ->
-                            case cure_codegen:generate_beam_file(Module, temp) of
-                                {ok, {_ModuleName, Binary}} ->
-                                    {ok, Binary};
-                                {error, BeamError} ->
-                                    {error, {beam_generation_failed, BeamError}}
+                            % Generate BEAM binary in memory
+                            case cure_codegen:convert_to_erlang_forms(Module) of
+                                {ok, Forms} ->
+                                    case compile:forms(Forms, [binary, return_errors]) of
+                                        {ok, ModuleName, Binary} ->
+                                            {ok, {ModuleName, Binary}};
+                                        {error, Errors, _Warnings} ->
+                                            {error, {beam_generation_failed, Errors}}
+                                    end;
+                                {error, FormError} ->
+                                    {error, {form_conversion_failed, FormError}}
                             end;
                         [] ->
                             {error, no_modules_compiled}
@@ -230,7 +236,10 @@ compile_source(Filename, Source, Options) ->
     ],
     
     case run_pipeline(Pipeline, Source, Options) of
-        {ok, BeamBinary} ->
+        {ok, {ModuleName, BeamBinary}} ->
+            write_output(Filename, {ModuleName, BeamBinary}, Options);
+        {ok, BeamBinary} when is_binary(BeamBinary) ->
+            % Fallback for old format
             write_output(Filename, BeamBinary, Options);
         {error, Stage, Reason} ->
             if Options#compile_options.verbose ->
@@ -375,8 +384,16 @@ compile_opts_to_codegen_opts(Options) ->
     CodegenOpts4.
 
 %% Write output file
-write_output(InputFilename, BeamBinary, Options) ->
-    OutputFile = determine_output_filename(InputFilename, Options),
+write_output(InputFilename, BeamData, Options) ->
+    {OutputFile, BeamBinary} = case BeamData of
+        {ModuleName, Binary} ->
+            % Use module name for BEAM filename
+            {atom_to_list(ModuleName) ++ ".beam", Binary};
+        Binary when is_binary(Binary) ->
+            % Fallback to input filename
+            {determine_output_filename(InputFilename, Options), Binary}
+    end,
+    
     OutputDir = Options#compile_options.output_dir,
     
     % Ensure output directory exists
