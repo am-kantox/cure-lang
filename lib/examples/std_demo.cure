@@ -164,9 +164,9 @@ module StdDemo do
     # Would be a built-in function  
     "3.14"  # Placeholder
 
-  defp print(message: String): Unit =
-    # Built-in print function
-    ok
+  defp print(message: String): String
+    let _ = println(message)
+    message
 end
 
 # Additional example showing mathematical operations
