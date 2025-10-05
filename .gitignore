@@ -1,3 +1,4 @@
 /_build/
 /ebin/
+/.erl.history/
 erl_crash.dump
