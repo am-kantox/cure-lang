@@ -152,6 +152,8 @@ parse_item(State) ->
             parse_function(State);
         defp ->
             parse_function(State);
+        def_erl ->
+            parse_erlang_function(State);
         fsm ->
             parse_fsm(State);
         type ->
@@ -270,6 +272,8 @@ parse_module_item(State) ->
             parse_function(State);
         defp ->
             parse_function(State);
+        def_erl ->
+            parse_erlang_function(State);
         fsm ->
             parse_fsm(State);
         type ->
@@ -332,6 +336,54 @@ parse_function(State) ->
         location = Location
     },
     {Function, State9}.
+
+%% Parse Erlang function definition
+parse_erlang_function(State) ->
+    {DefToken, State1} = expect(State, def_erl),
+    
+    {NameToken, State2} = expect(State1, identifier),
+    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    
+    {_, State3} = expect(State2, '('),
+    {Params, State4} = parse_parameters(State3, []),
+    {_, State5} = expect(State4, ')'),
+    
+    {ReturnType, State6} = case match_token(State5, ':') of
+        true ->
+            {_, State5a} = expect(State5, ':'),
+            parse_type(State5a);
+        false ->
+            case match_token(State5, '->') of
+                true ->
+                    {_, State5b} = expect(State5, '->'),
+                    parse_type(State5b);
+                false ->
+                    % For def_erl, return type is required for type safety
+                    throw({parse_error, {missing_return_type_for_def_erl}, 0, 0})
+            end
+    end,
+    
+    {Constraint, State7} = case match_token(State6, 'when') of
+        true ->
+            {_, State6a} = expect(State6, 'when'),
+            parse_expression(State6a);
+        false ->
+            {undefined, State6}
+    end,
+    
+    {_, State8} = expect(State7, '='),
+    {ErlangBody, State9} = parse_erlang_body(State8),
+    
+    Location = get_token_location(DefToken),
+    ErlangFunction = #erlang_function_def{
+        name = Name,
+        params = Params,
+        return_type = ReturnType,
+        constraint = Constraint,
+        erlang_body = ErlangBody,
+        location = Location
+    },
+    {ErlangFunction, State9}.
 
 %% Parse function parameters
 parse_parameters(State, Acc) ->
@@ -1545,6 +1597,7 @@ is_end_of_body(State) ->
         'else' -> true;
         'def' -> true;
         'defp' -> true;
+        'def_erl' -> true;
         _ -> false
     end.
 
@@ -1808,4 +1861,49 @@ parse_action_arguments(State, Acc) ->
                 false ->
                     {lists:reverse([Arg | Acc]), State1}
             end
+    end.
+
+%% ============================================================================
+%% Erlang Body Parsing
+%% ============================================================================
+
+%% Parse raw Erlang code until we find a closing '.'
+%% This collects all tokens as raw text and doesn't try to parse them
+parse_erlang_body(State) ->
+    parse_erlang_tokens(State, []).
+
+%% Collect tokens until we find a '.' that ends the Erlang function
+parse_erlang_tokens(State, Acc) ->
+    case current_token(State) of
+        eof ->
+            throw({parse_error, {unexpected_eof_in_erlang_body}, 0, 0});
+        Token ->
+            case get_token_type(Token) of
+                '.' ->
+                    % Found the end of Erlang body
+                    ErlangCode = tokens_to_string(lists:reverse(Acc)),
+                    {ErlangCode, advance(State)};
+                _ ->
+                    % Add this token to the Erlang body and continue
+                    parse_erlang_tokens(advance(State), [Token | Acc])
+            end
+    end.
+
+%% Convert collected tokens back to a string representation
+tokens_to_string(Tokens) ->
+    string:join([token_to_string(Token) || Token <- Tokens], " ").
+
+%% Convert a single token to its string representation
+token_to_string(Token) ->
+    case get_token_type(Token) of
+        identifier -> binary_to_list(get_token_value(Token));
+        string -> "\"" ++ get_token_value(Token) ++ "\"";
+        number -> 
+            Value = get_token_value(Token),
+            if 
+                is_integer(Value) -> integer_to_list(Value);
+                is_float(Value) -> float_to_list(Value)
+            end;
+        atom -> atom_to_list(get_token_value(Token));
+        _ -> atom_to_list(get_token_value(Token))
     end.

@@ -77,6 +77,8 @@ check_item({module_def, Name, Exports, Items, Location}, Env) ->
     check_module_new({module_def, Name, [], Exports, Items, Location}, Env);
 check_item({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
     check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env);
+check_item({erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}, Env) ->
+    check_erlang_function_new({erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}, Env);
 check_item({import_def, Module, Items, Location}, Env) ->
     check_import_new({import_def, Module, Items, Location}, Env);
 check_item({export_list, ExportSpecs}, Env) ->
@@ -292,6 +294,52 @@ check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Lo
                     details = {inference_failed, InferReason}
                 },
                 {ok, Env, error_result(ErrorMsg2)}
+        end
+    catch
+        throw:{ErrorType, Details, ErrorLocation} ->
+            ThrownError = #typecheck_error{
+                message = format_error_type(ErrorType),
+                location = ErrorLocation,
+                details = Details
+            },
+            {ok, Env, error_result(ThrownError)}
+    end.
+
+%% Check Erlang function definition (def_erl) - New AST format
+%% For def_erl functions, we trust the type annotations and skip body type checking
+check_erlang_function_new({erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}, Env) ->
+    try
+        % Convert parameters to type environment  
+        {ParamTypes, ParamEnv} = process_parameters_new(Params, Env),
+        
+        % Check constraint if present (same as regular functions)
+        case Constraint of
+            undefined -> ok;
+            _ ->
+                case cure_types:infer_type(convert_expr_to_tuple(Constraint), ParamEnv) of
+                    {ok, InferenceResult} ->
+                        ConstraintType = element(2, InferenceResult),
+                        case cure_types:unify(ConstraintType, {primitive_type, 'Bool'}) of
+                            {ok, _} -> ok;
+                            {error, Reason} ->
+                                throw({constraint_not_bool, Reason, Location})
+                        end;
+                    {error, Reason} ->
+                        throw({constraint_inference_failed, Reason, Location})
+                end
+        end,
+        
+        % For def_erl functions, the return type MUST be specified (enforced by parser)
+        % We trust the type annotation and don't check the Erlang body
+        case ReturnType of
+            undefined ->
+                % This should never happen as parser enforces return type for def_erl
+                throw({missing_return_type_for_def_erl, Location});
+            _ ->
+                ExpectedReturnType = convert_type_to_tuple(ReturnType),
+                FuncType = {erlang_function_type, ParamTypes, ExpectedReturnType, ErlangBody},
+                NewEnv = cure_types:extend_env(Env, Name, FuncType),
+                {ok, NewEnv, success_result(FuncType)}
         end
     catch
         throw:{ErrorType, Details, ErrorLocation} ->
@@ -639,6 +687,7 @@ get_expr_location(_) -> #location{line = 0, column = 0, file = undefined}.
 
 format_error_type(constraint_not_bool) -> "Function constraint must be a boolean expression";
 format_error_type(constraint_inference_failed) -> "Failed to infer type of function constraint";
+format_error_type(missing_return_type_for_def_erl) -> "def_erl functions must have explicit return type annotation";
 format_error_type(ErrorType) -> atom_to_list(ErrorType).
 
 %% Dependent type checking helpers
@@ -689,12 +738,19 @@ check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) 
                 true -> check_exports_new(RestExports, Items);
                 false -> {error, {export_arity_mismatch, Name, Arity, length(Params)}}
             end;
+        {ok, {erlang_function_def, _Name, Params, _ReturnType, _Constraint, _ErlangBody, _UnusedLocation}} ->
+            case length(Params) =:= Arity of
+                true -> check_exports_new(RestExports, Items);
+                false -> {error, {export_arity_mismatch, Name, Arity, length(Params)}}
+            end;
         not_found ->
             {error, {exported_function_not_found, Name, Arity}}
     end.
 
 find_function_new(Name, [{function_def, Name, Params, ReturnType, Constraint, Body, Location} | _]) ->
     {ok, {function_def, Name, Params, ReturnType, Constraint, Body, Location}};
+find_function_new(Name, [{erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location} | _]) ->
+    {ok, {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}};
 find_function_new(Name, [_ | RestItems]) ->
     find_function_new(Name, RestItems);
 find_function_new(_Name, []) ->

@@ -34,6 +34,16 @@
     location
 }).
 
+%% Erlang function definition (for Erlang interop)
+-record(erlang_function_def, {
+    name,
+    params,
+    return_type,
+    constraint,
+    erlang_body,  % Raw Erlang code as string
+    location
+}).
+
 %% Type definition
 -record(type_def, {
     name,

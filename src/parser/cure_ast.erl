@@ -19,6 +19,7 @@
 -type item() :: 
     module_def() | 
     function_def() | 
+    erlang_function_def() |
     type_def() | 
     fsm_def() | 
     import_def().
@@ -42,6 +43,17 @@
     location :: location()
 }).
 -type function_def() :: #function_def{}.
+
+%% Erlang function definition (for Erlang interop)
+-record(erlang_function_def, {
+    name :: atom(),
+    params :: [param()],
+    return_type :: type_expr(),
+    constraint :: expr() | undefined,
+    erlang_body :: string(),  % Raw Erlang code as string
+    location :: location()
+}).
+-type erlang_function_def() :: #erlang_function_def{}.
 
 %% Type definition
 -record(type_def, {
@@ -360,7 +372,7 @@
 %% Export all type definitions
 -export_type([
     program/0, item/0,
-    module_def/0, function_def/0, type_def/0, fsm_def/0, import_def/0,
+    module_def/0, function_def/0, erlang_function_def/0, type_def/0, fsm_def/0, import_def/0,
     state_def/0, transition/0,
     export_spec/0, param/0,
     expr/0, literal_expr/0, identifier_expr/0, function_call_expr/0,

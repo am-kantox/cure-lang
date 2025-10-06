@@ -34,6 +34,16 @@
     location
 }).
 
+%% Erlang function definition (for interop)
+-record(erlang_function_def, {
+    name :: atom(),
+    params :: [param()],
+    return_type :: type_expr(),
+    constraint :: expr() | undefined,
+    erlang_body :: string(),  % Raw Erlang code as string
+    location :: location()
+}).
+
 %% Type definition
 -record(type_def, {
     name :: atom(),

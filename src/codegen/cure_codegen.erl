@@ -200,6 +200,15 @@ compile_module_item({function_def, Name, Params, Body, Location}, State) ->
             {error, Reason}
     end;
 
+%% Handle Erlang function definition (def_erl)
+compile_module_item({erlang_function_def, Name, Params, _ReturnType, _Constraint, ErlangBody, Location}, State) ->
+    case compile_erlang_function_impl(Name, Params, ErlangBody, Location, State) of
+        {ok, CompiledFunction, NewState} ->
+            {ok, CompiledFunction, NewState};
+        {error, Reason} ->
+            {error, Reason}
+    end;
+
 compile_module_item(#fsm_def{} = FSM, State) ->
     case compile_fsm_impl(FSM, State) of
         {ok, CompiledFSM, NewState} ->
@@ -329,6 +338,29 @@ compile_function_impl(#function_def{name = Name, params = Params, body = Body,
         location = Location
     },
     compile_function_impl(NewFunction, State).
+
+%% Compile Erlang function (def_erl)
+%% For def_erl functions, we generate a simple function that directly contains the raw Erlang code
+compile_erlang_function_impl(Name, Params, ErlangBody, Location, State) ->
+    try
+        % For def_erl functions, we create a function with raw Erlang code in the body
+        % This will be handled specially in the BEAM generation phase
+        ParamList = [P#param.name || P <- Params],
+        
+        FunctionCode = #{
+            name => Name,
+            arity => length(Params),
+            params => ParamList,
+            erlang_body => ErlangBody,  % Store raw Erlang code
+            is_erlang_function => true,  % Flag to identify this as def_erl
+            location => Location
+        },
+        
+        {ok, {function, FunctionCode}, State}
+    catch
+        error:CompileReason:Stack ->
+            {error, {erlang_function_compilation_failed, Name, CompileReason, Stack}}
+    end.
 
 %% Create parameter bindings for local variable map
 create_param_bindings(Params) ->
@@ -885,6 +917,9 @@ extract_all_functions(Items) ->
 extract_all_functions([], Acc) ->
     lists:reverse(Acc);
 extract_all_functions([{function_def, Name, Params, _Body, _Location} | Rest], Acc) ->
+    Arity = length(Params),
+    extract_all_functions(Rest, [{Name, Arity} | Acc]);
+extract_all_functions([{erlang_function_def, Name, Params, _ReturnType, _Constraint, _ErlangBody, _Location} | Rest], Acc) ->
     Arity = length(Params),
     extract_all_functions(Rest, [{Name, Arity} | Acc]);
 extract_all_functions([_ | Rest], Acc) ->

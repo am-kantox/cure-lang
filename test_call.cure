@@ -1,4 +1,0 @@
-module TestCall do
-  def helper(): Int = 42
-  def main(): Int = helper()
-end
