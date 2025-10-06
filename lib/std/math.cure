@@ -2,7 +2,7 @@
 # Provides mathematical functions and numerical operations
 
 module Std.Math do
-  import Std.Core [Option, Result, some, none, ok, error]
+  import Std.Core [Option, Result, 'Some', 'None', 'Ok', 'Error']
 
   export [
     # Basic arithmetic (these might be built-ins)
@@ -159,14 +159,14 @@ module Std.Math do
     import Std.List [sort, length, safe_nth]
     let sorted = sort(numbers)
     let len = length(sorted)
-    if len == 0 then none()
+    if len == 0 then 'None'()
     else
       let mid = divide(len, 2)
       if remainder(len, 2) == 0 then
         # Even number of elements - average of two middle elements
         match safe_nth(sorted, subtract(mid, 1)), safe_nth(sorted, mid) do
-          Some(a), Some(b) -> some(divide(add(a, b), 2.0))
-          _, _ -> none()
+          'Some'(a), 'Some'(b) -> 'Some'(divide(add(a, b), 2.0))
+          _, _ -> 'None'()
         end
       else
         # Odd number of elements - middle element
@@ -177,7 +177,7 @@ module Std.Math do
   def mode(numbers: List(Float)): Option(Float) =
     # Find the most frequent element
     # This is a simplified implementation
-    none()  # Placeholder
+    'None'()  # Placeholder
 
   def variance(numbers: List(Float, n)): Float when n > 0 =
     import Std.List [map, foldl]
@@ -204,17 +204,17 @@ module Std.Math do
 
   # Safe mathematical operations
   def safe_divide(x: Float, y: Float): Result(Float, String) =
-    if y == 0.0 then error("Division by zero")
-    else ok(divide(x, y))
+    if y == 0.0 then 'Error'("Division by zero")
+    else 'Ok'(divide(x, y))
     end
 
   def safe_sqrt(x: Float): Result(Float, String) =
-    if x < 0.0 then error("Square root of negative number")
-    else ok(sqrt(x))
+    if x < 0.0 then 'Error'("Square root of negative number")
+    else 'Ok'(sqrt(x))
     end
 
   def safe_ln(x: Float): Result(Float, String) =
-    if x <= 0.0 then error("Logarithm of non-positive number")
-    else ok(ln(x))
+    if x <= 0.0 then 'Error'("Logarithm of non-positive number")
+    else 'Ok'(ln(x))
     end
 end

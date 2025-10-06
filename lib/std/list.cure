@@ -2,7 +2,7 @@
 # Provides comprehensive list operations with dependent types
 
 module Std.List do
-  import Std.Core [Result, Option, some, none, ok, error]
+  import Std.Core [Result, Option, 'Some', 'None', 'Ok', 'Error']
 
   export [
     # List construction and basic operations
@@ -110,8 +110,8 @@ module Std.List do
 
   def reduce(list: List(T, n), f: T -> T -> T): Option(T) when n > 0 =
     match list do
-      [] -> none()
-      [x | xs] -> some(foldl(xs, x, f))
+      [] -> 'None'()
+      [x | xs] -> 'Some'(foldl(xs, x, f))
     end
 
   def scan(list: List(T), acc: U, f: T -> U -> U): List(U) =
@@ -125,9 +125,9 @@ module Std.List do
   # List searching and finding
   def find(list: List(T), predicate: T -> Bool): Option(T) =
     match list do
-      [] -> none()
+      [] -> 'None'()
       [x | xs] ->
-        if predicate(x) then some(x) else find(xs, predicate)
+        if predicate(x) then 'Some'(x) else find(xs, predicate)
         end
     end
 
@@ -136,9 +136,9 @@ module Std.List do
 
   defp find_index_helper(list: List(T), predicate: T -> Bool, index: Nat): Option(Nat) =
     match list do
-      [] -> none()
+      [] -> 'None'()
       [x | xs] ->
-        if predicate(x) then some(index)
+        if predicate(x) then 'Some'(index)
         else find_index_helper(xs, predicate, index + 1)
         end
     end
@@ -251,27 +251,27 @@ module Std.List do
   # Safe operations that return Options
   def safe_head(list: List(T)): Option(T) =
     match list do
-      [] -> none()
-      [x | _] -> some(x)
+      [] -> 'None'()
+      [x | _] -> 'Some'(x)
     end
 
   def safe_tail(list: List(T)): Option(List(T)) =
     match list do
-      [] -> none()
-      [_ | xs] -> some(xs)
+      [] -> 'None'()
+      [_ | xs] -> 'Some'(xs)
     end
 
   def safe_last(list: List(T)): Option(T) =
     match reverse(list) do
-      [] -> none()
-      [x | _] -> some(x)
+      [] -> 'None'()
+      [x | _] -> 'Some'(x)
     end
 
   def safe_nth(list: List(T), n: Nat): Option(T) =
     if n == 0 then safe_head(list)
     else
       match list do
-        [] -> none()
+        [] -> 'None'()
         [_ | xs] -> safe_nth(xs, n - 1)
       end
     end

@@ -12,7 +12,8 @@ run() ->
     io:format("Running Standard Library Compiler Integration tests...~n"),
     test_function_call_compilation(),
     test_capitalized_function_calls(),
-    test_monadic_function_chains(),
+    % Note: monadic function chains are now handled by Std.Core module
+    % test_monadic_function_chains(),
     test_safe_div_compilation(),
     io:format("All stdlib compiler integration tests passed!~n").
 
@@ -38,11 +39,10 @@ test_function_call_compilation() ->
     % For this test, we'll just verify that the functions exist and are callable
     % In a real implementation, this would involve the actual Cure parser
     
-    % Verify the functions exist in the module by calling them
-    ?assertMatch({'Ok', _}, cure_stdlib:ok(test)),
+    % Verify the remaining built-in functions exist in the module by calling them
+    ?assertMatch({'Ok', _}, cure_stdlib:'Ok'(test)),
     ?assertMatch({'Ok', _}, cure_stdlib:safe_div(10, 2)),
-    ?assertMatch({'Ok', _}, cure_stdlib:map_ok(cure_stdlib:ok(5), fun(X) -> X + 1 end)),
-    ?assertMatch({'Ok', _}, cure_stdlib:bind_ok(cure_stdlib:ok(5), fun(X) -> cure_stdlib:ok(X + 1) end)),
+    % Note: map_ok and bind_ok are now handled by Std.Core module
     
     io:format("✓ Function call compilation test passed~n").
 
@@ -57,12 +57,48 @@ test_capitalized_function_calls() ->
     ?assert(lists:member({'Some', 1}, Exports)),
     ?assert(lists:member({'None', 0}, Exports)),
     
-    % Test that they produce the same results as lowercase versions
+    % Verify lowercase versions are NOT exported
+    ?assert(not lists:member({ok, 1}, Exports)),
+    ?assert(not lists:member({error, 1}, Exports)),
+    ?assert(not lists:member({some, 1}, Exports)),
+    ?assert(not lists:member({none, 0}, Exports)),
+    
+    % Verify list operations are NOT exported (now handled by Std.List)
+    ?assert(not lists:member({map, 2}, Exports)),
+    ?assert(not lists:member({filter, 2}, Exports)),
+    ?assert(not lists:member({foldl, 3}, Exports)),
+    ?assert(not lists:member({head, 1}, Exports)),
+    ?assert(not lists:member({tail, 1}, Exports)),
+    ?assert(not lists:member({length, 1}, Exports)),
+    
+    % Verify string operations are NOT exported (now handled by Std.String)
+    ?assert(not lists:member({string_concat, 2}, Exports)),
+    ?assert(not lists:member({split, 2}, Exports)),
+    ?assert(not lists:member({trim, 1}, Exports)),
+    ?assert(not lists:member({to_upper, 1}, Exports)),
+    ?assert(not lists:member({contains, 2}, Exports)),
+    ?assert(not lists:member({starts_with, 2}, Exports)),
+    
+    % Verify math operations are NOT exported (now handled by Std.Math)
+    ?assert(not lists:member({abs, 1}, Exports)),
+    ?assert(not lists:member({sqrt, 1}, Exports)),
+    ?assert(not lists:member({pi, 0}, Exports)),
+    
+    % Verify utility functions are NOT exported (except print/1)
+    ?assert(lists:member({print, 1}, Exports)),  % print/1 should remain
+    ?assert(not lists:member({int_to_string, 1}, Exports)),
+    ?assert(not lists:member({float_to_string, 1}, Exports)),
+    ?assert(not lists:member({list_to_string, 1}, Exports)),
+    ?assert(not lists:member({join_ints, 2}, Exports)),
+    ?assert(not lists:member({string_empty, 1}, Exports)),
+    ?assert(not lists:member({string_join, 2}, Exports)),
+    
+    % Test that capitalized versions work correctly
     TestValue = test_value,
-    ?assertEqual(cure_stdlib:ok(TestValue), cure_stdlib:'Ok'(TestValue)),
-    ?assertEqual(cure_stdlib:error(TestValue), cure_stdlib:'Error'(TestValue)),
-    ?assertEqual(cure_stdlib:some(TestValue), cure_stdlib:'Some'(TestValue)),
-    ?assertEqual(cure_stdlib:none(), cure_stdlib:'None'()),
+    ?assertMatch({'Ok', _}, cure_stdlib:'Ok'(TestValue)),
+    ?assertMatch({'Error', _}, cure_stdlib:'Error'(TestValue)),
+    ?assertMatch({'Some', _}, cure_stdlib:'Some'(TestValue)),
+    ?assertEqual('None', cure_stdlib:'None'()),
     
     io:format("✓ Capitalized function calls test passed~n").
 
@@ -125,19 +161,7 @@ test_safe_div_compilation() ->
         ?assertEqual(Expected, Result)
     end, TestCases),
     
-    % Test that safe_div can be used in larger computations
-    ComputationResult = cure_stdlib:bind_ok(
-        cure_stdlib:safe_div(100, 5),     % Ok(20.0)
-        fun(X) -> 
-            cure_stdlib:bind_ok(
-                cure_stdlib:safe_div(X, 2),   % Ok(10.0)
-                fun(Y) -> 
-                    cure_stdlib:safe_div(Y, 0) % Error("Division by zero")
-                end
-            )
-        end
-    ),
-    
-    ?assertEqual({'Error', "Division by zero"}, ComputationResult),
+    % Note: More complex computations using bind_ok are now handled by Std.Core module
+    % We can only test basic safe_div functionality here
     
     io:format("✓ safe_div compilation and behavior test passed~n").

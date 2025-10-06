@@ -2,7 +2,7 @@
 # Provides string manipulation and text processing functions
 
 module Std.String do
-  import Std.Core [Option, Result, some, none, ok, error]
+  import Std.Core [Option, Result, 'Some', 'None', 'Ok', 'Error']
   import Std.List [map, filter, foldl, foldr]
 
   export [
@@ -104,8 +104,8 @@ module Std.String do
   # String searching and matching
   def contains(haystack: String, needle: String): Bool =
     match index_of(haystack, needle) do
-      Some(_) -> true
-      None -> false
+      'Some'(_) -> true
+      'None' -> false
     end
 
   def starts_with(s: String, prefix: String): Bool =
@@ -128,12 +128,12 @@ module Std.String do
 
   defp index_of_helper(haystack: List(Char), needle: List(Char), pos: Nat): Option(Nat) =
     match haystack do
-      [] -> none()
+      [] -> 'None'()
       _ ->
-        if starts_with_chars(haystack, needle) then some(pos)
+        if starts_with_chars(haystack, needle) then 'Some'(pos)
         else
           match haystack do
-            [] -> none()
+            [] -> 'None'()
             [_ | rest] -> index_of_helper(rest, needle, pos + 1)
           end
         end
@@ -148,13 +148,13 @@ module Std.String do
 
   def last_index_of(haystack: String, needle: String): Option(Nat) =
     # Find all indices and return the last one
-    find_last_index(to_chars(haystack), to_chars(needle), 0, none())
+    find_last_index(to_chars(haystack), to_chars(needle), 0, 'None'())
 
   defp find_last_index(haystack: List(Char), needle: List(Char), pos: Nat, last_found: Option(Nat)): Option(Nat) =
     match haystack do
       [] -> last_found
       _ ->
-        let new_last = if starts_with_chars(haystack, needle) then some(pos) else last_found
+        let new_last = if starts_with_chars(haystack, needle) then 'Some'(pos) else last_found
         match haystack do
           [] -> new_last
           [_ | rest] -> find_last_index(rest, needle, pos + 1, new_last)
@@ -291,8 +291,8 @@ module Std.String do
   def replace(s: String, old: String, new: String): String =
     # Replace first occurrence
     match index_of(s, old) do
-      None -> s
-      Some(pos) ->
+      'None' -> s
+      'Some'(pos) ->
         let before = take(s, pos)
         let after = drop(s, pos + length(old))
         concat(before, concat(new, after))
@@ -300,8 +300,8 @@ module Std.String do
 
   def replace_all(s: String, old: String, new: String): String =
     match index_of(s, old) do
-      None -> s
-      Some(pos) ->
+      'None' -> s
+      'Some'(pos) ->
         let before = take(s, pos)
         let after = drop(s, pos + length(old))
         concat(before, concat(new, replace_all(after, old, new)))

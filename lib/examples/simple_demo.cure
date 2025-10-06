@@ -4,15 +4,15 @@
 module SimpleDemo do
   export [main/0, test_basic/0]
 
-  # Record definition
-  record Person do
-    name: String
-    age: Nat
-    email: String
-  end
+  # # Record definition
+  # record Person do
+  #   name: String
+  #   age: Nat
+  #   email: String
+  # end
 
-  # Creating records
-  let person = Person{name: "Alice", age: 30, email: "alice@example.com"}
+  # # Creating records
+  # let person = Person{name: "Alice", age: 30, email: "alice@example.com"}
 
   def add(a: Int, b: Int): Int =
     # a + b
@@ -22,6 +22,7 @@ module SimpleDemo do
     let x = 42
     let y = 10
     let sum = add(x, y)
+    print(sum)
     sum
     
   def main(): Int =

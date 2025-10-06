@@ -12,46 +12,39 @@ run() ->
     io:format("Running Cure Standard Library tests...~n"),
     test_capitalized_alias_functions(),
     test_safe_div_function(),
-    test_result_monadic_operations(),
-    test_option_monadic_operations(),
-    test_compiler_integration(),
+    % Note: monadic operations (map_ok, bind_ok, map_some, bind_some) are now handled by Std.Core module
+    % test_result_monadic_operations(),
+    % test_option_monadic_operations(),
+    test_remaining_functions(),
     io:format("All standard library tests passed!~n").
 
 %% ============================================================================
-%% Test 1: Capitalized alias functions
+%% Test 1: Capitalized constructor functions
 %% ============================================================================
 
 test_capitalized_alias_functions() ->
-    io:format("Testing capitalized alias functions...~n"),
+    io:format("Testing capitalized constructor functions...~n"),
     
-    % Test Ok/ok alias
+    % Test Ok constructor
     Value1 = 42,
-    OkResult1 = cure_stdlib:ok(Value1),
-    OkResult2 = cure_stdlib:'Ok'(Value1),
-    ?assertEqual(OkResult1, OkResult2),
+    OkResult1 = cure_stdlib:'Ok'(Value1),
     ?assertEqual({'Ok', 42}, OkResult1),
     
-    % Test Error/error alias
+    % Test Error constructor
     Reason1 = "something went wrong",
-    ErrorResult1 = cure_stdlib:error(Reason1),
-    ErrorResult2 = cure_stdlib:'Error'(Reason1),
-    ?assertEqual(ErrorResult1, ErrorResult2),
+    ErrorResult1 = cure_stdlib:'Error'(Reason1),
     ?assertEqual({'Error', "something went wrong"}, ErrorResult1),
     
-    % Test Some/some alias
+    % Test Some constructor
     Value2 = "hello",
-    SomeResult1 = cure_stdlib:some(Value2),
-    SomeResult2 = cure_stdlib:'Some'(Value2),
-    ?assertEqual(SomeResult1, SomeResult2),
+    SomeResult1 = cure_stdlib:'Some'(Value2),
     ?assertEqual({'Some', "hello"}, SomeResult1),
     
-    % Test None/none alias
-    NoneResult1 = cure_stdlib:none(),
-    NoneResult2 = cure_stdlib:'None'(),
-    ?assertEqual(NoneResult1, NoneResult2),
+    % Test None constructor
+    NoneResult1 = cure_stdlib:'None'(),
     ?assertEqual('None', NoneResult1),
     
-    io:format("✓ Capitalized alias functions test passed~n").
+    io:format("✓ Capitalized constructor functions test passed~n").
 
 %% ============================================================================
 %% Test 2: safe_div function
@@ -188,59 +181,36 @@ test_option_monadic_operations() ->
     io:format("✓ Option monadic operations test passed~n").
 
 %% ============================================================================
-%% Test 5: Compiler integration
+%% Test 5: Test remaining functions work correctly
 %% ============================================================================
 
-test_compiler_integration() ->
-    io:format("Testing compiler integration...~n"),
+test_remaining_functions() ->
+    io:format("Testing remaining built-in functions...~n"),
     
-    % Test that all the new functions are accessible and callable
-    % This verifies they're properly exported and integrated
-    
-    % Test capitalized constructor functions
+    % Test capitalized constructor functions (these remain as built-ins)
     ?assertMatch({'Ok', _}, cure_stdlib:'Ok'(test_value)),
     ?assertMatch({'Error', _}, cure_stdlib:'Error'(test_error)),
     ?assertMatch({'Some', _}, cure_stdlib:'Some'(test_value)),
     ?assertEqual('None', cure_stdlib:'None'()),
     
-    % Test monadic operation functions
-    TestOk = cure_stdlib:ok(42),
-    TestSome = cure_stdlib:some(42),
-    TestError = cure_stdlib:error("test"),
-    TestNone = cure_stdlib:none(),
+    % Test basic constructor functions
+    TestOk = cure_stdlib:'Ok'(42),
+    TestSome = cure_stdlib:'Some'(42),
+    TestError = cure_stdlib:'Error'("test"),
+    TestNone = cure_stdlib:'None'(),
     
-    % Verify map_ok function is callable
-    ?assertMatch({'Ok', _}, cure_stdlib:map_ok(TestOk, fun(X) -> X + 1 end)),
-    ?assertMatch({'Error', _}, cure_stdlib:map_ok(TestError, fun(X) -> X + 1 end)),
+    % Verify basic functions work
+    ?assertMatch({'Ok', 42}, TestOk),
+    ?assertMatch({'Some', 42}, TestSome),
+    ?assertMatch({'Error', "test"}, TestError),
+    ?assertEqual('None', TestNone),
     
-    % Verify bind_ok function is callable  
-    ?assertMatch({'Ok', _}, cure_stdlib:bind_ok(TestOk, fun(X) -> cure_stdlib:ok(X * 2) end)),
-    ?assertMatch({'Error', _}, cure_stdlib:bind_ok(TestError, fun(X) -> cure_stdlib:ok(X * 2) end)),
-    
-    % Verify map_some function is callable
-    ?assertMatch({'Some', _}, cure_stdlib:map_some(TestSome, fun(X) -> X + 1 end)),
-    ?assertEqual('None', cure_stdlib:map_some(TestNone, fun(X) -> X + 1 end)),
-    
-    % Verify bind_some function is callable
-    ?assertMatch({'Some', _}, cure_stdlib:bind_some(TestSome, fun(X) -> cure_stdlib:some(X * 2) end)),
-    ?assertEqual('None', cure_stdlib:bind_some(TestNone, fun(X) -> cure_stdlib:some(X * 2) end)),
-    
-    % Verify safe_div function is callable
+    % Verify safe_div function is still callable
     ?assertMatch({'Ok', _}, cure_stdlib:safe_div(10, 2)),
     ?assertMatch({'Error', _}, cure_stdlib:safe_div(10, 0)),
     
-    % Test complex interaction between functions
-    ComplexResult = cure_stdlib:bind_ok(
-        cure_stdlib:safe_div(100, 4),  % Should give Ok(25.0)
-        fun(X) ->
-            cure_stdlib:bind_ok(
-                cure_stdlib:safe_div(X, 5),  % Should give Ok(5.0)
-                fun(Y) ->
-                    cure_stdlib:ok(Y + 1)  % Should give Ok(6.0)
-                end
-            )
-        end
-    ),
-    ?assertEqual({'Ok', 6.0}, ComplexResult),
+    % Note: List operations (map, filter, foldl, head, tail, length) are now handled by Std.List module
     
-    io:format("✓ Compiler integration test passed~n").
+    % Note: String operations (string_concat, split, trim, to_upper, contains, starts_with) are now handled by Std.String module
+    
+    io:format("✓ Remaining built-in functions test passed~n").
