@@ -1,0 +1,8 @@
+module PrintProper do
+  export [main/0]
+
+  def main(): Int =
+    let _ = print("Hello Cure!")
+    42
+
+end

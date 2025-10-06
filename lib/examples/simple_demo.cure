@@ -2,30 +2,27 @@
 # A basic demonstration that should compile with current parser
 
 module SimpleDemo do
-  export [main/0, test_basic/0]
-
-  # # Record definition
-  # record Person do
-  #   name: String
-  #   age: Nat
-  #   email: String
-  # end
-
-  # # Creating records
-  # let person = Person{name: "Alice", age: 30, email: "alice@example.com"}
+  export [main/0, test_basic/0, test_lists/0]
 
   def add(a: Int, b: Int): Int =
-    # a + b
-    a
+    a + b
 
   def test_basic(): Int =
     let x = 42
     let y = 10
     let sum = add(x, y)
-    print(sum)
     sum
+
+  def test_lists(): Int =
+    let numbers = [1, 2, 3]
+    let empty_list = []
+    let tuples = {10, 20}
+    30
     
   def main(): Int =
     let result = test_basic()
-    result
+    let list_result = test_lists()
+    let _ = print("Almost there…")
+    result + list_result
+
 end

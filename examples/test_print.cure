@@ -1,0 +1,8 @@
+module PrintTest do
+  export [main/0]
+
+  def main(): Int =
+    print("Hello from Cure!")
+    42
+
+end

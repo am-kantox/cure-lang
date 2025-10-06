@@ -1,0 +1,11 @@
+module PrintTestLast do
+  export [main/0, test_print_first/0]
+
+  def test_print_first(): Int =
+    print("First message")
+    
+  def main(): Int =
+    let x = test_print_first()
+    print("Last message")
+
+end

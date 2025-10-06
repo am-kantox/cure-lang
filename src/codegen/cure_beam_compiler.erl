@@ -134,6 +134,7 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         binary_op -> compile_binary_op(Args, NewContext);
         call -> compile_call(Args, NewContext);
         make_list -> compile_make_list(Args, NewContext);
+        make_tuple -> compile_make_tuple(Args, NewContext);
         make_lambda -> compile_make_lambda(Args, NewContext);
         match_tagged_tuple -> compile_match_tagged_tuple(Args, NewContext);
         match_list -> compile_match_list(Args, NewContext);
@@ -230,7 +231,7 @@ compile_call([Arity], Context) ->
                     case is_stdlib_function(FuncName) of
                         true ->
                             % Remote call to stdlib
-                            {call, Line, {remote, Line, {atom, Line, cure_stdlib}, {atom, Line, FuncName}}, Args};
+                            {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, FuncName}}, Args};
                         false ->
                             % Local function call
                             {call, Line, Function, Args}
@@ -255,7 +256,19 @@ compile_make_list([Count], Context) ->
             Line = NewContext#compile_context.line,
             % Build proper cons list from elements
             ListForm = build_cons_list(Elements, Line),
-            {ok, [ListForm], push_stack(ListForm, NewContext)};
+            {ok, [], push_stack(ListForm, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% Create tuple from stack elements
+compile_make_tuple([Count], Context) ->
+    case pop_n_from_stack(Count, Context) of
+        {Elements, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Build tuple from elements
+            TupleForm = {tuple, Line, Elements},
+            {ok, [], push_stack(TupleForm, NewContext)};
         Error ->
             Error
     end.

@@ -400,6 +400,7 @@ compile_expression(Expr, State) ->
         #if_expr{} -> compile_if_expr(Expr, State);
         #let_expr{} -> compile_let_expr(Expr, State);
         #list_expr{} -> compile_list_expr(Expr, State);
+        #tuple_expr{} -> compile_tuple_expr(Expr, State);
         #block_expr{} -> compile_block_expr(Expr, State);
         #lambda_expr{} -> compile_lambda_expr(Expr, State);
         #unary_op_expr{} -> compile_unary_op_expr(Expr, State);
@@ -560,6 +561,19 @@ compile_list_expr(#list_expr{elements = Elements, location = Location}, State) -
     },
     
     Instructions = ElementInstructions ++ [ListInstruction],
+    {Instructions, State1}.
+
+%% Compile tuple expressions
+compile_tuple_expr(#tuple_expr{elements = Elements, location = Location}, State) ->
+    {ElementInstructions, State1} = compile_expressions(Elements, State),
+    
+    TupleInstruction = #beam_instr{
+        op = make_tuple,
+        args = [length(Elements)],
+        location = Location
+    },
+    
+    Instructions = ElementInstructions ++ [TupleInstruction],
     {Instructions, State1}.
 
 %% Compile block expressions
