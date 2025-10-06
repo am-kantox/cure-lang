@@ -64,8 +64,11 @@ compile_erlang_function_to_erlang(#{name := Name, arity := Arity, params := Para
         % and insert it as the function body
         ParamVars = [{var, StartLine, Param} || Param <- Params],
         
+        % Create parameter mapping from uppercase to lowercase
+        ParamMapping = create_param_mapping(Params),
+        
         % Parse the raw Erlang code to convert it to proper Erlang abstract syntax
-        case parse_erlang_body(ErlangBody, StartLine) of
+        case parse_erlang_body(ErlangBody, StartLine, ParamMapping) of
             {ok, ParsedBody} ->
                 FunctionForm = {function, StartLine, Name, Arity, [
                     {clause, StartLine, ParamVars, [], ParsedBody}
@@ -78,6 +81,14 @@ compile_erlang_function_to_erlang(#{name := Name, arity := Arity, params := Para
         error:Reason:Stack ->
             {error, {erlang_function_compilation_failed, Name, Reason, Stack}}
     end.
+
+%% Create mapping from uppercase variable names to parameter names
+create_param_mapping(Params) ->
+    lists:foldl(fun(Param, Acc) ->
+        % Map both uppercase and same-case versions
+        UpperParam = list_to_atom(string:uppercase(atom_to_list(Param))),
+        maps:put(UpperParam, Param, maps:put(Param, Param, Acc))
+    end, #{}, Params).
 
 %% Create parameter variable mappings
 create_param_variables(Params, Line) ->
@@ -683,10 +694,13 @@ validate_erlang_forms(Forms) ->
 %% Parse raw Erlang code string into Erlang abstract syntax
 %% This converts the tokenized Erlang body back to abstract forms
 parse_erlang_body(ErlangBody, StartLine) ->
+    parse_erlang_body(ErlangBody, StartLine, #{}).
+
+parse_erlang_body(ErlangBody, StartLine, ParamMapping) ->
     try
         % The ErlangBody is a string containing raw Erlang code
         % For now, we'll create a simple body by parsing it as a simple expression
-        case parse_simple_erlang_expression(ErlangBody, StartLine) of
+        case parse_simple_erlang_expression(ErlangBody, StartLine, ParamMapping) of
             {ok, ParsedExpr} ->
                 {ok, [ParsedExpr]};
             {error, Reason} ->
@@ -700,6 +714,9 @@ parse_erlang_body(ErlangBody, StartLine) ->
 %% Parse simple Erlang expressions
 %% This is a simplified parser for common Erlang patterns
 parse_simple_erlang_expression(ErlangCode, Line) ->
+    parse_simple_erlang_expression(ErlangCode, Line, #{}).
+
+parse_simple_erlang_expression(ErlangCode, Line, ParamMapping) ->
     try
         % Handle common cases that def_erl will use
         TrimmedCode = string:trim(ErlangCode),
@@ -707,23 +724,23 @@ parse_simple_erlang_expression(ErlangCode, Line) ->
         case TrimmedCode of
             "length ( " ++ Rest ->
                 % Handle length(list) calls
-                case parse_function_call("length", Rest, Line) of
+                case parse_function_call("length", Rest, Line, ParamMapping) of
                     {ok, Call} -> {ok, Call};
-                    error -> parse_as_simple_term(TrimmedCode, Line)
+                    error -> parse_as_simple_term(TrimmedCode, Line, ParamMapping)
                 end;
             "lists reverse ( " ++ Rest ->
                 % Handle lists:reverse(list) calls
-                case parse_remote_call("lists", "reverse", Rest, Line) of
+                case parse_remote_call("lists", "reverse", Rest, Line, ParamMapping) of
                     {ok, Call} -> {ok, Call};
-                    error -> parse_as_simple_term(TrimmedCode, Line)
+                    error -> parse_as_simple_term(TrimmedCode, Line, ParamMapping)
                 end;
             _ when TrimmedCode =:= "42" orelse 
                    TrimmedCode =:= "result" orelse
                    TrimmedCode =:= "Result" ->
-                parse_as_simple_term(TrimmedCode, Line);
+                parse_as_simple_term(TrimmedCode, Line, ParamMapping);
             _ ->
                 % For more complex cases, parse as general Erlang code
-                parse_general_erlang_code(TrimmedCode, Line)
+                parse_general_erlang_code(TrimmedCode, Line, ParamMapping)
         end
     catch
         error:Reason ->
@@ -732,9 +749,12 @@ parse_simple_erlang_expression(ErlangCode, Line) ->
 
 %% Parse function calls like "length(list)"
 parse_function_call(FuncName, Rest, Line) ->
+    parse_function_call(FuncName, Rest, Line, #{}).
+
+parse_function_call(FuncName, Rest, Line, ParamMapping) ->
     case extract_args_from_call(Rest) of
         {ok, Args} ->
-            ArgForms = [parse_simple_arg(Arg, Line) || Arg <- Args],
+            ArgForms = [parse_simple_arg(Arg, Line, ParamMapping) || Arg <- Args],
             Call = {call, Line, {atom, Line, list_to_atom(FuncName)}, ArgForms},
             {ok, Call};
         error ->
@@ -743,9 +763,12 @@ parse_function_call(FuncName, Rest, Line) ->
 
 %% Parse remote calls like "lists:reverse(list)"
 parse_remote_call(ModuleName, FuncName, Rest, Line) ->
+    parse_remote_call(ModuleName, FuncName, Rest, Line, #{}).
+
+parse_remote_call(ModuleName, FuncName, Rest, Line, ParamMapping) ->
     case extract_args_from_call(Rest) of
         {ok, Args} ->
-            ArgForms = [parse_simple_arg(Arg, Line) || Arg <- Args],
+            ArgForms = [parse_simple_arg(Arg, Line, ParamMapping) || Arg <- Args],
             Call = {call, Line, 
                    {remote, Line, {atom, Line, list_to_atom(ModuleName)}, 
                     {atom, Line, list_to_atom(FuncName)}}, 
@@ -769,20 +792,31 @@ extract_args_from_call(CallRest) ->
 
 %% Parse simple arguments
 parse_simple_arg(Arg, Line) ->
+    parse_simple_arg(Arg, Line, #{}).
+
+parse_simple_arg(Arg, Line, ParamMapping) ->
     case string:to_integer(Arg) of
         {Int, []} -> {integer, Line, Int};
         _ ->
             case string:to_float(Arg) of
                 {Float, []} -> {float, Line, Float};
                 _ ->
-                    % Treat as variable
+                    % Treat as variable - check parameter mapping first
                     VarName = list_to_atom(Arg),
-                    {var, Line, VarName}
+                    case maps:get(VarName, ParamMapping, undefined) of
+                        undefined ->
+                            {var, Line, VarName};
+                        MappedName ->
+                            {var, Line, MappedName}
+                    end
             end
     end.
 
 %% Parse as simple term (literals, variables)
 parse_as_simple_term(Term, Line) ->
+    parse_as_simple_term(Term, Line, #{}).
+
+parse_as_simple_term(Term, Line, ParamMapping) ->
     case string:to_integer(Term) of
         {Int, []} -> 
             {ok, {integer, Line, Int}};
@@ -791,11 +825,16 @@ parse_as_simple_term(Term, Line) ->
                 {Float, []} -> 
                     {ok, {float, Line, Float}};
                 _ ->
-                    % Treat as variable name
+                    % Treat as variable name - check parameter mapping first
                     case Term of
                         [C|_] when C >= $A, C =< $Z; C >= $a, C =< $z ->
                             VarName = list_to_atom(Term),
-                            {ok, {var, Line, VarName}};
+                            case maps:get(VarName, ParamMapping, undefined) of
+                                undefined ->
+                                    {ok, {var, Line, VarName}};
+                                MappedName ->
+                                    {ok, {var, Line, MappedName}}
+                            end;
                         _ ->
                             % Default to atom
                             AtomName = list_to_atom(Term),
@@ -806,6 +845,9 @@ parse_as_simple_term(Term, Line) ->
 
 %% Parse general Erlang code using erl_scan and erl_parse
 parse_general_erlang_code(ErlangCode, Line) ->
+    parse_general_erlang_code(ErlangCode, Line, #{}).
+
+parse_general_erlang_code(ErlangCode, Line, ParamMapping) ->
     try
         % Add a period if it doesn't end with one
         CodeWithPeriod = case lists:last(ErlangCode) of
@@ -818,10 +860,13 @@ parse_general_erlang_code(ErlangCode, Line) ->
             {ok, Tokens, _} ->
                 case erl_parse:parse_exprs(Tokens) of
                     {ok, [Expr]} -> 
-                        {ok, Expr};
+                        % Apply parameter mapping to the parsed expression
+                        MappedExpr = apply_param_mapping_to_expr(Expr, ParamMapping),
+                        {ok, MappedExpr};
                     {ok, Exprs} ->
-                        % Multiple expressions, wrap in a block
-                        {ok, {block, Line, Exprs}};
+                        % Multiple expressions, wrap in a block and apply mapping
+                        MappedExprs = [apply_param_mapping_to_expr(E, ParamMapping) || E <- Exprs],
+                        {ok, {block, Line, MappedExprs}};
                     {error, ParseError} ->
                         {error, {parse_error, ParseError}}
                 end;
@@ -833,3 +878,40 @@ parse_general_erlang_code(ErlangCode, Line) ->
             % If general parsing fails, fall back to atom
             {ok, {atom, Line, list_to_atom("erlang_code")}}
     end.
+
+%% Apply parameter mapping to Erlang expression AST
+apply_param_mapping_to_expr(Expr, ParamMapping) when map_size(ParamMapping) == 0 ->
+    Expr;  % No mapping needed
+apply_param_mapping_to_expr({var, Line, VarName}, ParamMapping) ->
+    case maps:get(VarName, ParamMapping, undefined) of
+        undefined -> {var, Line, VarName};
+        MappedName -> {var, Line, MappedName}
+    end;
+apply_param_mapping_to_expr({call, Line, Func, Args}, ParamMapping) ->
+    MappedFunc = apply_param_mapping_to_expr(Func, ParamMapping),
+    MappedArgs = [apply_param_mapping_to_expr(Arg, ParamMapping) || Arg <- Args],
+    {call, Line, MappedFunc, MappedArgs};
+apply_param_mapping_to_expr({'case', Line, Expr, Clauses}, ParamMapping) ->
+    MappedExpr = apply_param_mapping_to_expr(Expr, ParamMapping),
+    MappedClauses = [apply_param_mapping_to_clause(Clause, ParamMapping) || Clause <- Clauses],
+    {'case', Line, MappedExpr, MappedClauses};
+apply_param_mapping_to_expr({block, Line, Exprs}, ParamMapping) ->
+    MappedExprs = [apply_param_mapping_to_expr(E, ParamMapping) || E <- Exprs],
+    {block, Line, MappedExprs};
+apply_param_mapping_to_expr({op, Line, Op, Left, Right}, ParamMapping) ->
+    MappedLeft = apply_param_mapping_to_expr(Left, ParamMapping),
+    MappedRight = apply_param_mapping_to_expr(Right, ParamMapping),
+    {op, Line, Op, MappedLeft, MappedRight};
+apply_param_mapping_to_expr({match, Line, Left, Right}, ParamMapping) ->
+    MappedLeft = apply_param_mapping_to_expr(Left, ParamMapping),
+    MappedRight = apply_param_mapping_to_expr(Right, ParamMapping),
+    {match, Line, MappedLeft, MappedRight};
+apply_param_mapping_to_expr(Expr, _ParamMapping) ->
+    Expr.  % For literals and other forms, no mapping needed
+
+%% Apply parameter mapping to case clause
+apply_param_mapping_to_clause({clause, Line, Patterns, Guards, Body}, ParamMapping) ->
+    MappedPatterns = [apply_param_mapping_to_expr(P, ParamMapping) || P <- Patterns],
+    MappedGuards = [apply_param_mapping_to_expr(G, ParamMapping) || G <- Guards],
+    MappedBody = [apply_param_mapping_to_expr(B, ParamMapping) || B <- Body],
+    {clause, Line, MappedPatterns, MappedGuards, MappedBody}.

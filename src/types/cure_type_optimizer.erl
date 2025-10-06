@@ -3520,7 +3520,7 @@ apply_profile_guided_optimization_pass(AST, Context) ->
     
     % Update context with profile-guided optimization results
     NewContext = Context#opt_context{
-        profile_guided_optimization = #{
+        profile_collector = #{
             profile_collector => ProfileCollector,
             adaptive_context => AdaptiveContext,
             feedback_system => FeedbackSystem,
