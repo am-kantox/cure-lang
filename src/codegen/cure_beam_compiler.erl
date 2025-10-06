@@ -145,6 +145,7 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         jump -> compile_jump(Args, NewContext);
         label -> compile_label(Args, NewContext);
         pop -> compile_pop(Args, NewContext);
+        execute_and_discard -> compile_execute_and_discard(Args, NewContext);
         return -> compile_return(Args, NewContext);
         _ -> {error, {unsupported_instruction, Op}}
     end.
@@ -305,6 +306,19 @@ compile_pop([], Context) ->
             Error
     end.
 
+%% Execute and discard (execute side-effecting expression and discard result)
+compile_execute_and_discard([], Context) ->
+    case pop_stack(Context) of
+        {Value, NewContext} ->
+            % Generate code that executes the expression but discards its result
+            % We do this by wrapping it in a let expression that binds to _
+            Line = NewContext#compile_context.line,
+            ExecuteForm = {match, Line, {var, Line, '_'}, Value},
+            {ok, [ExecuteForm], NewContext};
+        Error ->
+            Error
+    end.
+
 %% Return statement
 compile_return([], Context) ->
     case Context#compile_context.stack of
@@ -458,6 +472,7 @@ is_stdlib_function(fsm_create) -> true;
 is_stdlib_function(fsm_send_safe) -> true;
 is_stdlib_function(create_counter) -> true;
 is_stdlib_function(print) -> true;
+is_stdlib_function(println) -> true;
 is_stdlib_function(int_to_string) -> true;
 is_stdlib_function(float_to_string) -> true;
 is_stdlib_function(list_to_string) -> true;
@@ -500,6 +515,7 @@ get_function_arity(fsm_create) -> 2;
 get_function_arity(fsm_send_safe) -> 2;
 get_function_arity(create_counter) -> 1;
 get_function_arity(print) -> 1;
+get_function_arity(println) -> 1;
 get_function_arity(int_to_string) -> 1;
 get_function_arity(float_to_string) -> 1;
 get_function_arity(list_to_string) -> 1;

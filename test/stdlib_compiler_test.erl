@@ -40,8 +40,8 @@ test_function_call_compilation() ->
     % In a real implementation, this would involve the actual Cure parser
     
     % Verify the remaining built-in functions exist in the module by calling them
-    ?assertMatch({'Ok', _}, cure_stdlib:'Ok'(test)),
-    ?assertMatch({'Ok', _}, cure_stdlib:safe_div(10, 2)),
+    ?assertMatch({'Ok', _}, cure_std:'Ok'(test)),
+    ?assertMatch({'Ok', _}, cure_std:safe_divide(10, 2)),
     % Note: map_ok and bind_ok are now handled by Std.Core module
     
     io:format("✓ Function call compilation test passed~n").
@@ -51,7 +51,7 @@ test_capitalized_function_calls() ->
     io:format("Testing capitalized function calls...~n"),
     
     % Test that capitalized versions exist
-    Exports = cure_stdlib:module_info(exports),
+    Exports = cure_std:module_info(exports),
     ?assert(lists:member({'Ok', 1}, Exports)),
     ?assert(lists:member({'Error', 1}, Exports)),
     ?assert(lists:member({'Some', 1}, Exports)),
@@ -95,10 +95,10 @@ test_capitalized_function_calls() ->
     
     % Test that capitalized versions work correctly
     TestValue = test_value,
-    ?assertMatch({'Ok', _}, cure_stdlib:'Ok'(TestValue)),
-    ?assertMatch({'Error', _}, cure_stdlib:'Error'(TestValue)),
-    ?assertMatch({'Some', _}, cure_stdlib:'Some'(TestValue)),
-    ?assertEqual('None', cure_stdlib:'None'()),
+    ?assertMatch({'Ok', _}, cure_std:'Ok'(TestValue)),
+    ?assertMatch({'Error', _}, cure_std:'Error'(TestValue)),
+    ?assertMatch({'Some', _}, cure_std:'Some'(TestValue)),
+    ?assertEqual('None', cure_std:'None'()),
     
     io:format("✓ Capitalized function calls test passed~n").
 
@@ -107,32 +107,28 @@ test_monadic_function_chains() ->
     io:format("Testing monadic function chains...~n"),
     
     % Test Result monadic chain
-    InitialOk = cure_stdlib:ok(10),
+    InitialOk = cure_std:ok(10),
     
-    % Chain: Ok(10) -> map_ok(*2) -> bind_ok(safe_div(_, 4)) -> map_ok(+1)
-    ChainResult = cure_stdlib:map_ok(
-        cure_stdlib:bind_ok(
-            cure_stdlib:map_ok(InitialOk, fun(X) -> X * 2 end),
-            fun(X) -> cure_stdlib:safe_div(X, 4) end
+    % Chain: Ok(10) -> map_ok(*2) -> and_then(safe_divide(_, 4)) -> map_ok(+1)
+    ChainResult = cure_std:map_ok(
+        cure_std:and_then(
+            cure_std:map_ok(InitialOk, fun(X) -> X * 2 end),
+            fun(X) -> cure_std:safe_divide(X, 4) end
         ),
-        fun(X) -> X + 1
-    end),
+        fun(X) -> X + 1 end
+    ),
     
     ?assertEqual({'Ok', 6.0}, ChainResult),
     
     % Test Option monadic chain
-    InitialSome = cure_stdlib:some(8),
+    InitialSome = cure_std:some(8),
     
-    % Chain: Some(8) -> map_some(*3) -> bind_some(check_positive) -> map_some(sqrt)
-    OptionalChainResult = cure_stdlib:map_some(
-        cure_stdlib:bind_some(
-            cure_stdlib:map_some(InitialSome, fun(X) -> X * 3 end),
-            fun(X) -> 
-                if X > 0 -> cure_stdlib:some(X); 
-                   true -> cure_stdlib:none() 
-                end 
-            end
-        ),
+    % Chain: Some(8) -> map_option(*3) -> bind_some(check_positive) -> map_option(sqrt)
+    OptionalChainResult = cure_std:map_option(
+        case cure_std:map_option(InitialSome, fun(X) -> X * 3 end) of
+            {'Some', X} when X > 0 -> cure_std:some(X);
+            _ -> cure_std:none()
+        end,
         fun(X) -> math:sqrt(X) end
     ),
     
@@ -157,7 +153,7 @@ test_safe_div_compilation() ->
     
     % Test each case
     lists:foreach(fun({Numerator, Denominator, Expected}) ->
-        Result = cure_stdlib:safe_div(Numerator, Denominator),
+        Result = cure_std:safe_divide(Numerator, Denominator),
         ?assertEqual(Expected, Result)
     end, TestCases),
     

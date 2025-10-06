@@ -804,9 +804,19 @@ compile_expressions_sequence([Expr | RestExprs], State) ->
     {Instructions1, State1} = compile_expression(Expr, State),
     {Instructions2, State2} = compile_expressions_sequence(RestExprs, State1),
     
-    % Add pop instruction to discard intermediate results
-    PopInstruction = #beam_instr{op = pop, args = []},
-    {Instructions1 ++ [PopInstruction] ++ Instructions2, State2}.
+    % Check if the expression has side effects (like print calls)
+    % If so, we need to generate code that executes it but still discards the result
+    case has_side_effects(Expr) of
+        true ->
+            % For side-effecting expressions, generate code to execute and discard result
+            % but don't use pop instruction which prevents execution
+            ExecuteInstr = #beam_instr{op = execute_and_discard, args = []},
+            {Instructions1 ++ [ExecuteInstr] ++ Instructions2, State2};
+        false ->
+            % For pure expressions, use pop to discard intermediate results
+            PopInstruction = #beam_instr{op = pop, args = []},
+            {Instructions1 ++ [PopInstruction] ++ Instructions2, State2}
+    end.
 
 %% Compile let bindings
 compile_bindings(Bindings, State) ->
@@ -855,6 +865,28 @@ new_label(State) ->
     Label = list_to_atom("label_" ++ integer_to_list(Counter)),
     NewState = State#codegen_state{label_counter = Counter + 1},
     {Label, NewState}.
+
+%% Check if expression has side effects and should not be discarded
+has_side_effects(#function_call_expr{function = Function}) ->
+    case Function of
+        #identifier_expr{name = FuncName} ->
+            % Check if this is a side-effecting function like print
+            is_side_effecting_function(FuncName);
+        _ ->
+            true  % Conservative: assume complex function calls have side effects
+    end;
+has_side_effects(#let_expr{}) -> true;  % Let expressions can have side effects in bindings
+has_side_effects(#if_expr{}) -> true;   % If expressions can have side effects in branches
+has_side_effects(#match_expr{}) -> true; % Match expressions can have side effects
+has_side_effects(#block_expr{}) -> true; % Block expressions can have side effects
+has_side_effects(_) -> false.  % Literals, identifiers, etc. are pure
+
+%% Check if a function name represents a side-effecting function
+is_side_effecting_function(print) -> true;
+is_side_effecting_function(println) -> true;
+is_side_effecting_function(fsm_send_safe) -> true;
+is_side_effecting_function(create_counter) -> true;
+is_side_effecting_function(_) -> false.
 
 %% Generate guard check instruction
 generate_guard_check_instruction(Location) ->

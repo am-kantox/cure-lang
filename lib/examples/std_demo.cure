@@ -164,9 +164,9 @@ module StdDemo do
     # Would be a built-in function  
     "3.14"  # Placeholder
 
-  defp print(message: String): String =
-    let _ = println(message)
-    message
+  # defp print(message: String): String =
+  #   let _ = println(message)
+  #   message
 end
 
 # Additional example showing mathematical operations
@@ -205,7 +205,6 @@ module MathDemo do
 
   defp float_to_string(f: Float): String = "0.0"  # Placeholder
   defp int_to_string(n: Int): String = "0"        # Placeholder
-  defp print(message: String): Unit = ok          # Placeholder
 end
 
 # String processing example
@@ -259,6 +258,5 @@ module StringDemo do
   defp string_empty(s: String): Bool = s == ""   # Placeholder  
   defp string_join(list: List(String), sep: String): String = ""  # Placeholder
   defp int_to_string(n: Int): String = "0"       # Placeholder
-  defp print(message: String): Unit = ok         # Placeholder
   defp length(list: List(T)): Int = 0            # Placeholder
 end
