@@ -1,6 +1,3 @@
-# Cure Standard Library Demo - Working Version
-# Simplified syntax to match current parser capabilities
-
 module StdDemo do
   export [main/0, demo_list_ops/0, demo_result_ops/0]
 
@@ -10,7 +7,7 @@ module StdDemo do
     result1 + result2
     
   def demo_list_ops(): Int =
-    let numbers = [1, 2, 3, 4, 5]
+    let numbers = 123
     let first = 1
     let sum = 15
     sum
@@ -18,25 +15,7 @@ module StdDemo do
   def demo_result_ops(): Int =
     let x = 10
     let y = 2
-    let result = x / y
-    5
+    let result = 5
+    result
     
 end
-
-# Simplified Math Demo
-module MathDemo do
-  export [demo_math/0]
-
-  def demo_math(): Int =
-    let x = 5
-    let y = 3
-    let result = x + y
-    result
-
-end
-
-# Main execution
-def main() =
-  let demo_result = StdDemo.main()
-  let math_result = MathDemo.demo_math()
-  demo_result + math_result
