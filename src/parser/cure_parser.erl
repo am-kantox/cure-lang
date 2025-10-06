@@ -715,18 +715,45 @@ parse_type_def(State) ->
     {NameToken, State2} = expect(State1, identifier),
     Name = binary_to_atom(get_token_value(NameToken), utf8),
     
-    % TODO: Parse type parameters
-    {_, State3} = expect(State2, '='),
-    {TypeExpr, State4} = parse_type(State3),
+    % Parse type parameters if present: type MyType(T, U) = ...
+    {TypeParams, State3} = case match_token(State2, '(') of
+        true ->
+            {_, State2a} = expect(State2, '('),
+            {Params, State2b} = parse_type_parameter_names(State2a, []),
+            {_, State2c} = expect(State2b, ')'),
+            {Params, State2c};
+        false ->
+            {[], State2}
+    end,
+    
+    {_, State4} = expect(State3, '='),
+    {TypeExpr, State5} = parse_type(State4),
     
     Location = get_token_location(NameToken),
     TypeDef = #type_def{
         name = Name,
-        params = [],
+        params = TypeParams,
         definition = TypeExpr,
         location = Location
     },
-    {TypeDef, State4}.
+    {TypeDef, State5}.
+
+%% Parse type parameter names (for type definitions)
+parse_type_parameter_names(State, Acc) ->
+    case match_token(State, ')') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {Token, State1} = expect(State, identifier),
+            ParamName = binary_to_atom(get_token_value(Token), utf8),
+            case match_token(State1, ',') of
+                true ->
+                    {_, State2} = expect(State1, ','),
+                    parse_type_parameter_names(State2, [ParamName | Acc]);
+                false ->
+                    {lists:reverse([ParamName | Acc]), State1}
+            end
+    end.
 
 %% Parse type expressions (simplified for now)
 parse_type(State) ->
@@ -846,6 +873,8 @@ get_expr_location(#identifier_expr{location = Loc}) -> Loc;
 get_expr_location(#binary_op_expr{location = Loc}) -> Loc;
 get_expr_location(#unary_op_expr{location = Loc}) -> Loc;
 get_expr_location(#function_call_expr{location = Loc}) -> Loc;
+get_expr_location(#list_expr{location = Loc}) -> Loc;
+get_expr_location(#tuple_expr{location = Loc}) -> Loc;
 get_expr_location(#if_expr{location = Loc}) -> Loc;
 get_expr_location(#let_expr{location = Loc}) -> Loc;
 get_expr_location(#block_expr{location = Loc}) -> Loc;
@@ -1008,6 +1037,8 @@ parse_primary_expression(State) ->
             {Expr, State2} = parse_expression(State1),
             {_, State3} = expect(State2, ')'),
             {Expr, State3};
+        '{' ->
+            parse_tuple_expression(State);
         _ ->
             Token = current_token(State),
             throw({parse_error, {unexpected_token_in_expression, get_token_type(Token)}, 0, 0})
@@ -1157,6 +1188,36 @@ parse_let_expression(State) ->
     },
     {LetExpr, State4}.
 
+%% Parse tuple expression {1, 2, 3}
+parse_tuple_expression(State) ->
+    {_, State1} = expect(State, '{'),
+    Location = get_token_location(current_token(State)),
+    
+    {Elements, State2} = parse_tuple_elements(State1, []),
+    {_, State3} = expect(State2, '}'),
+    
+    TupleExpr = #tuple_expr{
+        elements = Elements,
+        location = Location
+    },
+    {TupleExpr, State3}.
+
+%% Parse comma-separated tuple elements
+parse_tuple_elements(State, Acc) ->
+    case match_token(State, '}') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {Expr, State1} = parse_expression(State),
+            case match_token(State1, ',') of
+                true ->
+                    {_, State2} = expect(State1, ','),
+                    parse_tuple_elements(State2, [Expr | Acc]);
+                false ->
+                    {lists:reverse([Expr | Acc]), State1}
+            end
+    end.
+
 %% Parse list literal [1, 2, 3]
 parse_list_literal(State) ->
     {_, State1} = expect(State, '['),
@@ -1258,20 +1319,31 @@ parse_match_clauses(State, Acc) ->
             parse_match_clauses(State1, [Clause | Acc])
     end.
 
-%% Parse single match clause: pattern -> body
+%% Parse single match clause: pattern -> body or pattern when guard -> body
 parse_match_clause(State) ->
     {Pattern, State1} = parse_pattern(State),
-    {_, State2} = expect(State1, '->'),
-    {Body, State3} = parse_expression(State2),
+    
+    % Check if there's a guard clause
+    {Guard, State2} = case match_token(State1, 'when') of
+        true ->
+            {_, State1a} = expect(State1, 'when'),
+            {GuardExpr, State1b} = parse_expression(State1a),
+            {GuardExpr, State1b};
+        false ->
+            {undefined, State1}
+    end,
+    
+    {_, State3} = expect(State2, '->'),
+    {Body, State4} = parse_expression(State3),
     
     Location = get_pattern_location(Pattern),
     Clause = #match_clause{
         pattern = Pattern,
-        guard = undefined,  % Guards not implemented yet
+        guard = Guard,
         body = Body,
         location = Location
     },
-    {Clause, State3}.
+    {Clause, State4}.
 
 %% Parse patterns
 parse_pattern(State) ->
@@ -1318,6 +1390,8 @@ parse_pattern(State) ->
             end;
         '[' ->
             parse_list_pattern(State);
+        '{' ->
+            parse_tuple_pattern(State);
         number ->
             {Token, State1} = expect(State, number),
             Value = get_token_value(Token),
@@ -1492,6 +1566,47 @@ parse_list_pattern(State) ->
             end
     end.
 
+%% Parse tuple pattern {a, b, c}
+parse_tuple_pattern(State) ->
+    {_, State1} = expect(State, '{'),
+    Location = get_token_location(current_token(State)),
+    
+    case match_token(State1, '}') of
+        true ->
+            % Empty tuple {}
+            {_, State2} = expect(State1, '}'),
+            Pattern = #tuple_pattern{
+                elements = [],
+                location = Location
+            },
+            {Pattern, State2};
+        false ->
+            {FirstPattern, State2} = parse_pattern(State1),
+            {RestPatterns, State3} = parse_tuple_pattern_list(State2, []),
+            {_, State4} = expect(State3, '}'),
+            Pattern = #tuple_pattern{
+                elements = [FirstPattern | RestPatterns],
+                location = Location
+            },
+            {Pattern, State4}
+    end.
+
+%% Parse comma-separated tuple pattern list
+parse_tuple_pattern_list(State, Acc) ->
+    case match_token(State, '}') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            case match_token(State, ',') of
+                true ->
+                    {_, State1} = expect(State, ','),
+                    {Pattern, State2} = parse_pattern(State1),
+                    parse_tuple_pattern_list(State2, [Pattern | Acc]);
+                false ->
+                    {lists:reverse(Acc), State}
+            end
+    end.
+
 %% Parse comma-separated pattern list
 parse_pattern_list(State, Acc) ->
     case match_token(State, ']') of
@@ -1512,6 +1627,7 @@ parse_pattern_list(State, Acc) ->
 get_pattern_location(#identifier_pattern{location = Loc}) -> Loc;
 get_pattern_location(#literal_pattern{location = Loc}) -> Loc;
 get_pattern_location(#list_pattern{location = Loc}) -> Loc;
+get_pattern_location(#tuple_pattern{location = Loc}) -> Loc;
 get_pattern_location(#record_pattern{location = Loc}) -> Loc;
 get_pattern_location(#wildcard_pattern{location = Loc}) -> Loc;
 get_pattern_location(_) -> #location{line = 0, column = 0, file = undefined}.

@@ -1,0 +1,38 @@
+# Extended Syntax Features Demo
+# Demonstrates the newly implemented syntax features in Cure
+
+module ExtendedSyntaxDemo do
+  # Type definitions with parameters
+  type Optional(T) = T
+  type Pair(A, B) = A
+  
+  # Import with function arity specifications
+  import Std [map/2, filter/2, abs/1]
+  import Std.Math [sin/1, cos/1] 
+  
+  export [demo_guards/0, demo_tuples/0]
+
+  # Function with guards in pattern matching
+  def demo_guards(x: Int): String =
+    match x do
+      n when n > 0 -> "positive"
+      n when n < 0 -> "negative" 
+      _ -> "zero"
+    end
+
+  # Function with tuple expressions and patterns
+  def demo_tuples(): String =
+    let point = {3, 4}
+    match point do
+      {x, y} when x > 0 and y > 0 -> "first_quadrant"
+      {x, y} -> "other_quadrant"
+    end
+
+  # Complex guard expressions
+  def classify_pair(pair: {Int, Int}): String =
+    match pair do
+      {a, b} when a > 0 and b > 0 -> "both_positive"
+      {a, b} when a < 0 or b < 0 -> "at_least_one_negative"
+      _ -> "mixed"
+    end
+end

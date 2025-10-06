@@ -164,7 +164,7 @@ module StdDemo do
     # Would be a built-in function  
     "3.14"  # Placeholder
 
-  defp print(message: String): String
+  defp print(message: String): String =
     let _ = println(message)
     message
 end
