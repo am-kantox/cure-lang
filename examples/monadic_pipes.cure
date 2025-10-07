@@ -1,0 +1,327 @@
+# Monadic Pipes Examples in Cure
+# Demonstrates pipe operators with Result/Option types and function composition
+
+module MonadicPipes do
+  export [demo_all/0, pipeline_demo/1, validation_demo/1, async_pipeline/1]
+
+  # Import standard types
+  import Std [Result, Option, List]
+
+  # Custom types for examples
+  record User do
+    id: Nat
+    name: String
+    email: String
+    age: Nat
+  end
+
+  record ProcessedUser do
+    id: Nat
+    normalized_name: String
+    domain: String
+    age_group: String
+  end
+
+  type ValidationError = InvalidEmail | InvalidAge | InvalidName | NetworkError
+
+  # === BASIC PIPE OPERATIONS ===
+
+  # Simple function composition with pipes
+  def transform_number(n: Int): Int =
+    n
+    |> add_ten()
+    |> multiply_by_two()
+    |> subtract_five()
+
+  defp add_ten(x: Int): Int = x + 10
+  defp multiply_by_two(x: Int): Int = x * 2
+  defp subtract_five(x: Int): Int = x - 5
+
+  # === RESULT MONADIC PIPES ===
+
+  # Chain operations that can fail, short-circuiting on error
+  def safe_math_pipeline(x: Float): Result(Float, String) =
+    Ok(x)
+    |> bind(fn(n) -> safe_sqrt(n) end)
+    |> bind(fn(n) -> safe_divide(n, 2.0) end)
+    |> bind(fn(n) -> safe_log(n) end)
+    |> map(fn(n) -> n * 100.0 end)
+
+  defp safe_sqrt(x: Float): Result(Float, String) =
+    if x >= 0.0 then Ok(sqrt(x))
+    else Error("Cannot take square root of negative number")
+
+  defp safe_divide(x: Float, y: Float): Result(Float, String) =
+    if y != 0.0 then Ok(x / y)
+    else Error("Division by zero")
+
+  defp safe_log(x: Float): Result(Float, String) =
+    if x > 0.0 then Ok(log(x))
+    else Error("Cannot take logarithm of non-positive number")
+
+  # === USER PROCESSING PIPELINE ===
+
+  def process_user(raw_user: {String, String, String, String}): Result(ProcessedUser, ValidationError) =
+    raw_user
+    |> parse_user()
+    |> bind(validate_user)
+    |> bind(enrich_user)
+    |> map(normalize_user)
+
+  defp parse_user(raw: {String, String, String, String}): Result(User, ValidationError) =
+    match raw do
+      {id_str, name, email, age_str} ->
+        case {parse_nat(id_str), parse_nat(age_str)} do
+          {Some(id), Some(age)} -> Ok(User{id: id, name: name, email: email, age: age})
+          _ -> Error(InvalidAge)
+        end
+    end
+
+  defp validate_user(user: User): Result(User, ValidationError) =
+    user
+    |> validate_email()
+    |> bind(validate_age)
+    |> bind(validate_name)
+
+  defp validate_email(user: User): Result(User, ValidationError) =
+    if contains(user.email, "@") && contains(user.email, ".")
+    then Ok(user)
+    else Error(InvalidEmail)
+
+  defp validate_age(user: User): Result(User, ValidationError) =
+    if user.age >= 13 && user.age <= 120
+    then Ok(user)
+    else Error(InvalidAge)
+
+  defp validate_name(user: User): Result(User, ValidationError) =
+    if length(user.name) >= 2 && length(user.name) <= 50
+    then Ok(user)
+    else Error(InvalidName)
+
+  defp enrich_user(user: User): Result(User, ValidationError) =
+    # Simulate external API call that might fail
+    if user.age > 100
+    then Error(NetworkError)
+    else Ok(user)
+
+  defp normalize_user(user: User): ProcessedUser =
+    ProcessedUser{
+      id: user.id,
+      normalized_name: to_title_case(user.name),
+      domain: extract_domain(user.email),
+      age_group: classify_age(user.age)
+    }
+
+  # === OPTION MONADIC PIPES ===
+
+  def find_and_process(users: List(User), id: Nat): Option(String) =
+    users
+    |> find_user_by_id(id)
+    |> bind(fn(user) -> get_user_profile(user) end)
+    |> bind(fn(profile) -> format_profile(profile) end)
+    |> map(fn(formatted) -> "Profile: " ++ formatted end)
+
+  defp find_user_by_id(users: List(User), id: Nat): Option(User) =
+    match users do
+      [] -> None
+      [user | rest] when user.id == id -> Some(user)
+      [_ | rest] -> find_user_by_id(rest, id)
+    end
+
+  defp get_user_profile(user: User): Option(String) =
+    if user.age >= 18
+    then Some(user.name ++ " - Adult")
+    else Some(user.name ++ " - Minor")
+
+  defp format_profile(profile: String): Option(String) =
+    if length(profile) > 0
+    then Some("[" ++ profile ++ "]")
+    else None
+
+  # === LIST PROCESSING PIPES ===
+
+  def pipeline_demo(numbers: List(Int)): List(Int) =
+    numbers
+    |> filter(fn(x) -> x > 0 end)
+    |> map(fn(x) -> x * 2 end)
+    |> filter(fn(x) -> x < 100 end)
+    |> sort()
+    |> take(5)
+
+  def validation_demo(raw_data: List({String, String, String, String})): {List(ProcessedUser), List(ValidationError)} =
+    let results = raw_data
+      |> map(process_user)
+    
+    let successes = results
+      |> filter_map(fn(r) -> 
+          match r do
+            Ok(user) -> Some(user)
+            Error(_) -> None
+          end
+         end)
+    
+    let errors = results
+      |> filter_map(fn(r) ->
+          match r do
+            Ok(_) -> None
+            Error(err) -> Some(err)
+          end
+         end)
+    
+    {successes, errors}
+
+  # === ASYNC PIPELINE SIMULATION ===
+
+  type AsyncResult(T) = Pending | Complete(Result(T, String))
+
+  def async_pipeline(input: String): AsyncResult(String) =
+    input
+    |> async_fetch()
+    |> async_bind(async_validate)
+    |> async_bind(async_transform)
+    |> async_bind(async_store)
+
+  defp async_fetch(input: String): AsyncResult(String) =
+    # Simulate async operation
+    if length(input) > 0
+    then Complete(Ok("fetched: " ++ input))
+    else Complete(Error("Empty input"))
+
+  defp async_validate(data: String): AsyncResult(String) =
+    if contains(data, "fetched:")
+    then Complete(Ok(data))
+    else Complete(Error("Invalid data format"))
+
+  defp async_transform(data: String): AsyncResult(String) =
+    Complete(Ok(to_upper(data)))
+
+  defp async_store(data: String): AsyncResult(String) =
+    Complete(Ok("stored: " ++ data))
+
+  defp async_bind(async_val: AsyncResult(T), f: T -> AsyncResult(U)): AsyncResult(U) =
+    match async_val do
+      Pending -> Pending
+      Complete(Ok(val)) -> f(val)
+      Complete(Error(err)) -> Complete(Error(err))
+    end
+
+  # === COMPLEX PIPELINE COMPOSITION ===
+
+  def complex_data_pipeline(raw_data: List(String)): Result(String, String) =
+    raw_data
+    |> validate_input()
+    |> bind(fn(data) ->
+        data
+        |> map(parse_json_like)
+        |> sequence()  # Convert List(Result(T, E)) to Result(List(T), E)
+       end)
+    |> bind(fn(parsed) ->
+        parsed
+        |> filter(fn(item) -> item.score > 50 end)
+        |> sort_by_score()
+        |> take_top_results(10)
+        |> aggregate_results()
+       end)
+
+  defp validate_input(data: List(String)): Result(List(String), String) =
+    if length(data) == 0
+    then Error("Empty input data")
+    else if length(data) > 1000
+    then Error("Too much data")
+    else Ok(data)
+
+  record DataItem do
+    name: String
+    score: Int
+  end
+
+  defp parse_json_like(item: String): Result(DataItem, String) =
+    # Simplified JSON-like parsing
+    if contains(item, ":")
+    then Ok(DataItem{name: "parsed", score: 75})
+    else Error("Invalid format: " ++ item)
+
+  defp sort_by_score(items: List(DataItem)): Result(List(DataItem), String) =
+    Ok(sort_by(items, fn(item) -> item.score end))
+
+  defp take_top_results(items: List(DataItem), n: Nat): Result(List(DataItem), String) =
+    Ok(take(items, n))
+
+  defp aggregate_results(items: List(DataItem)): Result(String, String) =
+    let total_score = fold(items, 0, fn(item, acc) -> acc + item.score end)
+    let avg_score = total_score / length(items)
+    Ok("Processed " ++ show(length(items)) ++ " items, average score: " ++ show(avg_score))
+
+  # === UTILITY FUNCTIONS ===
+
+  defp sequence(results: List(Result(T, E))): Result(List(T), E) =
+    match results do
+      [] -> Ok([])
+      [Ok(x) | rest] -> 
+        match sequence(rest) do
+          Ok(xs) -> Ok(x :: xs)
+          Error(e) -> Error(e)
+        end
+      [Error(e) | _] -> Error(e)
+    end
+
+  defp to_title_case(s: String): String = s  # Simplified implementation
+  defp extract_domain(email: String): String = "example.com"  # Simplified
+  defp classify_age(age: Nat): String =
+    if age < 18 then "Minor"
+    else if age < 65 then "Adult"
+    else "Senior"
+
+  # === DEMONSTRATION FUNCTION ===
+
+  def demo_all(): Unit =
+    print("=== Basic Pipe Operations ===")
+    print("Transform 5: " ++ show(transform_number(5)))  # 5 -> 15 -> 30 -> 25
+    
+    print("\n=== Safe Math Pipeline ===")
+    match safe_math_pipeline(16.0) do
+      Ok(result) -> print("Math result: " ++ show(result))
+      Error(err) -> print("Math error: " ++ err)
+    end
+    
+    match safe_math_pipeline(-4.0) do
+      Ok(result) -> print("Math result: " ++ show(result))
+      Error(err) -> print("Math error: " ++ err)
+    end
+    
+    print("\n=== User Processing Pipeline ===")
+    let valid_user = {"1", "John Doe", "john@example.com", "25"}
+    let invalid_user = {"2", "X", "invalid-email", "150"}
+    
+    match process_user(valid_user) do
+      Ok(user) -> print("Processed user: " ++ user.normalized_name)
+      Error(err) -> print("User processing error: " ++ show(err))
+    end
+    
+    match process_user(invalid_user) do
+      Ok(user) -> print("Processed user: " ++ user.normalized_name)
+      Error(err) -> print("User processing error: " ++ show(err))
+    end
+    
+    print("\n=== List Pipeline ===")
+    let numbers = [1, -2, 3, 45, 67, 89, 123, 4, 5]
+    let processed = pipeline_demo(numbers)
+    print("Processed numbers: " ++ show(processed))
+    
+    print("\n=== Async Pipeline Simulation ===")
+    match async_pipeline("test data") do
+      Complete(Ok(result)) -> print("Async result: " ++ result)
+      Complete(Error(err)) -> print("Async error: " ++ err)
+      Pending -> print("Still pending...")
+    end
+    
+    print("\n=== Complex Data Pipeline ===")
+    let sample_data = ["item1:value1", "item2:value2", "invalid"]
+    match complex_data_pipeline(sample_data) do
+      Ok(result) -> print("Pipeline result: " ++ result)
+      Error(err) -> print("Pipeline error: " ++ err)
+    end
+    
+    ok
+
+end

@@ -1,0 +1,11 @@
+module BasicTypesDemo do
+  export [main/0]
+
+  def main(): Int =
+    let numbers = [1, 2, 3, 4, 5]
+    let coordinates = {10, 20}
+    let mixed = {"hello", 123, 3.14}
+    let x = 42
+    x + 10
+
+end

@@ -1,0 +1,19 @@
+module BasicPatternMatching do
+  export [main/0, test_numbers/0, test_simple/1]
+
+  # Simple function without complex conditions
+  def test_simple(n: Int): Int =
+    n + 10
+
+  def test_numbers(): Int =
+    let result1 = test_simple(5)
+    let result2 = test_simple(0)
+    result1 + result2
+
+  def main(): Int =
+    let _ = print("=== Basic Operations ===")
+    let numbers_result = test_numbers()
+    let _ = print("Numbers processed")
+    numbers_result
+
+end

@@ -1,0 +1,9 @@
+module MinimalWorking do
+  export [main/0]
+
+  def main(): Int =
+    let x = 5
+    let y = 10
+    x + y
+
+end
