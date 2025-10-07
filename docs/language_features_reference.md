@@ -1,7 +1,7 @@
 # Cure Language Features Reference
 
-**Version**: Enhanced Multi-line Expression Support  
-**Last Updated**: October 4, 2025
+**Version**: Complete Language Feature Coverage  
+**Last Updated**: October 7, 2025
 
 ## Core Language Syntax
 
@@ -103,7 +103,11 @@ result = input
 - `String`: Text strings
 - `Bool`: Boolean values (`true`, `false`)
 - `Atom`: Atomic values (`:atom_name`)
+- `Binary`: Byte sequences
 - `Unit`: Unit type for functions with no return value
+- `Nat`: Natural numbers (Int >= 0)
+- `Pos`: Positive integers (Int > 0)
+- `Pid`: Process identifier
 
 ### Dependent Types
 ```cure
@@ -126,6 +130,7 @@ None                # Absent optional value
 - Arithmetic: `+`, `-`, `*`, `/`, `%`
 - Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`
 - String: `++` (concatenation)
+- List: `::` (cons operator)
 - Pipe: `|>` (function composition)
 
 ### Unary Operators
@@ -155,11 +160,134 @@ None                # Absent optional value
 ["a", "b", "c"]      # List of strings
 ```
 
+### Tuples
+```cure
+{}                    # Empty tuple (Unit)
+{42}                  # Single element tuple
+{1, "hello", true}    # Multi-element tuple
+{:ok, "success"}      # Tagged tuple
+{:error, "failed"}    # Error tuple
+```
+
 ### Atoms
 ```cure
 :atom_name
 :increment
 :ok
+```
+
+## Process-Oriented Programming
+
+### Process Definitions
+```cure
+# Process function
+process counter_server(initial: Int) do
+  def loop(count: Int) do
+    receive do
+      {:increment} -> loop(count + 1)
+      {:decrement} -> loop(count - 1)
+      {:get, from: Pid} -> 
+        send(from, {:count, count})
+        loop(count)
+      {:stop} -> :ok
+    end
+  end
+  
+  loop(initial)
+end
+
+# Spawn a process
+let counter = spawn(counter_server, [0])
+```
+
+### Message Passing
+```cure
+# Send message to process
+send(counter, {:increment})
+send(counter, {:get, self()})
+
+# Receive messages
+receive do
+  {:count, value} -> print("Count: " ++ show(value))
+  {:error, msg} -> print("Error: " ++ msg)
+end
+```
+
+## Finite State Machines
+
+```cure
+# FSM definition
+fsm tcp_connection do
+  # State declarations
+  states: [Closed, Listen, SynSent, Established]
+  
+  # Initial state
+  initial: Closed
+  
+  # State definitions with transitions
+  state Closed do
+    event(:listen) -> Listen
+    event(:connect) -> SynSent
+  end
+  
+  state Listen do
+    event(:syn_received) -> SynSent
+    event(:close) -> Closed
+  end
+  
+  state Established do
+    event(:fin_received) -> Closed
+    event({:data, payload: Binary}) -> Established
+  end
+end
+
+# Using FSM
+let conn = fsm_spawn(tcp_connection)
+fsm_send(conn, :listen)
+```
+
+## Records and Dependent Types
+
+### Record Definitions
+```cure
+record Person do
+  name: String
+  age: Nat
+  email: String
+end
+
+# Creating records
+let person = Person{name: "Alice", age: 30, email: "alice@example.com"}
+
+# Pattern matching on records
+match person do
+  Person{name: name, age: age} when age >= 18 ->
+    "Hello, adult #{name}!"
+  Person{name: name} ->
+    "Hello, young #{name}!"
+end
+```
+
+### Dependent Types
+```cure
+# Length-indexed types
+Vector(T, n: Nat)      # Fixed-length vector
+List(T, n: Nat)        # List with known length
+Range(min: Int, max: Int)  # Integer range type
+
+# Matrix with dimension checking
+record Matrix(rows: Nat, cols: Nat, T) do
+  data: Vector(Vector(T, cols), rows)
+end
+
+# Refinement types
+type NonEmptyList(T) = List(T, n) when n > 0
+
+def head(list: NonEmptyList(T)): T =
+  match list do
+    [x|_] -> x
+    # No need for empty case - type system guarantees non-empty
+  end
 ```
 
 ## Advanced Features
@@ -187,12 +315,34 @@ processed = data
   |> collect_results()
 ```
 
-### Pattern Matching with Guards (Future)
+### Case Expressions
+```cure
+# Case expression (alternative to match)
+case expression do
+  Ok(value) -> handle_success(value)
+  Error(msg) -> handle_error(msg)
+end
+
+case list do
+  [] -> "empty"
+  [x] -> "single: " ++ show(x)
+  [x | rest] -> "head: " ++ show(x)
+end
+```
+
+### Pattern Matching with Guards
 ```cure
 match value do
   x when x > 0 -> "positive"
   x when x < 0 -> "negative"
   _ -> "zero"
+end
+
+# Guards in case expressions
+case number do
+  n when n > 100 -> "large"
+  n when n > 10 -> "medium" 
+  _ -> "small"
 end
 ```
 
@@ -256,6 +406,52 @@ else
 end
 ```
 
+## Type System Features
+
+### Pi Types (Dependent Functions)
+```cure
+# Function types that depend on their arguments
+def replicate(n: Nat, x: T): List(T, n) = 
+  if n == 0 then [] else x :: replicate(n-1, x)
+```
+
+### Sigma Types (Dependent Pairs)
+```cure
+# Pairs where the second type depends on the first value
+{x: Nat, Vector(Int, x)}  # Pair of number and vector of that length
+```
+
+### Refinement Types
+```cure
+# Types with predicates
+{x: Int | x > 0}          # Positive integers
+{x: List(T) | length(x) > 0}  # Non-empty lists
+```
+
+### Indexed Types
+```cure
+# Types parameterized by values
+Vector(T, n: Nat)         # Vector of type T with length n
+Matrix(rows: Nat, cols: Nat, T)  # Matrix with compile-time dimensions
+```
+
+## Compilation and Runtime
+
+### Compilation Pipeline
+1. **Source** → **Tokens** (Lexer)
+2. **Tokens** → **AST** (Parser) 
+3. **AST** → **Typed AST** (Type Checker)
+4. **Typed AST** → **Core IR** (Desugaring)
+5. **Core IR** → **BEAM Bytecode** (Code Generator)
+
+### BEAM Integration
+- **Processes**: Map to BEAM processes
+- **FSMs**: Compile to gen_statem behaviors
+- **Pattern Matching**: Use BEAM's efficient matching
+- **Tail Calls**: Leverage BEAM's tail call optimization
+- **Hot Code Loading**: Support BEAM's code upgrade mechanisms
+- **Distribution**: Transparent distribution across nodes
+
 ---
 
-This reference covers all currently implemented language features as demonstrated by the successful parsing of the `std_demo.cure` file.
+This reference covers all currently implemented and planned language features, providing a comprehensive overview of Cure's capabilities including dependent types, process-oriented programming, and finite state machines.

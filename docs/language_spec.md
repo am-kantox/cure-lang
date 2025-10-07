@@ -25,6 +25,7 @@ Atom                   # Interned symbols (like Elixir atoms)
 Bool                   # true | false
 String                 # UTF-8 strings
 Binary                 # Byte sequences
+Unit                   # Unit type for functions with no meaningful return
 
 # Dependent types
 Nat                    # Natural numbers (Int >= 0)
@@ -53,6 +54,11 @@ def length(list: List(T)) -> Nat =
 
 # Function with constraints
 def safe_divide(x: Int, y: Int) -> Int when y != 0 = x / y
+
+# Function with Unit return type
+def print_message(msg: String): Unit =
+  print("Message: " ++ msg)
+  ok
 ```
 
 ### Process Definitions
@@ -148,6 +154,32 @@ import List [map/2, filter/2]
 let result = Math.add(5, 3)
 ```
 
+### Lambda Expressions and Pipe Operators
+
+```cure
+# Lambda expressions
+let double = fn(x) -> x * 2 end
+let add = fn(x, y) -> x + y end
+
+# Multi-line lambda
+let safe_divide = fn(x, y) ->
+  if y == 0 then error("Division by zero")
+  else ok(x / y)
+  end
+end
+
+# Pipe operator for function composition
+let result = input
+  |> validate_input()
+  |> process_data()
+  |> format_output()
+
+# Lambda with pipe
+let processed = numbers
+  |> filter(fn(x) -> x > 0 end)
+  |> map(fn(x) -> x * 2 end)
+```
+
 ### Data Types and Records
 
 ```cure
@@ -211,15 +243,20 @@ def head(list: NonEmptyList(T)): T =
 ## Grammar (EBNF-like)
 
 ```ebnf
+# Top-level program structure
 program ::= module_def | item*
 
 module_def ::= 'module' IDENTIFIER 'do' export_list? item* 'end'
 
 export_list ::= 'export' '[' export_item (',' export_item)* ']'
+export_item ::= IDENTIFIER '/' INTEGER
 
-item ::= function_def | type_def | fsm_def | process_def | import_def
+# Top-level items
+item ::= function_def | type_def | record_def | fsm_def | process_def 
+       | import_def | let_binding
 
-function_def ::= 'def' IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
+# Function definitions
+function_def ::= ('def' | 'defp') IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
 
 param_list ::= param (',' param)*
 param ::= IDENTIFIER ':' type
@@ -228,11 +265,138 @@ type_annotation ::= '->' type | ':' type
 
 constraint ::= 'when' expr
 
-type ::= primitive_type | dependent_type | function_type | union_type
+# Type definitions
+type_def ::= 'type' IDENTIFIER type_params? '=' type_expr
+record_def ::= 'record' IDENTIFIER type_params? 'do' field_list 'end'
 
-expr ::= literal | identifier | function_call | match_expr | if_expr | ...
+type_params ::= '(' type_param (',' type_param)* ')'
+type_param ::= IDENTIFIER | IDENTIFIER ':' type
 
-# ... more grammar rules
+field_list ::= field*
+field ::= IDENTIFIER ':' type
+
+# FSM definitions
+fsm_def ::= 'fsm' IDENTIFIER 'do' fsm_body 'end'
+fsm_body ::= fsm_clause*
+fsm_clause ::= 'states' ':' '[' state_list ']'
+            | 'initial' ':' IDENTIFIER
+            | state_def
+
+state_list ::= IDENTIFIER (',' IDENTIFIER)*
+state_def ::= 'state' IDENTIFIER 'do' transition* 'end'
+transition ::= 'event' '(' pattern ')' '->' IDENTIFIER
+
+# Process definitions
+process_def ::= 'process' IDENTIFIER '(' param_list? ')' 'do' process_body 'end'
+process_body ::= item* expr
+
+# Import definitions
+import_def ::= 'import' IDENTIFIER import_list?
+import_list ::= '[' IDENTIFIER (',' IDENTIFIER)* ']'
+
+# Let bindings
+let_binding ::= 'let' IDENTIFIER '=' expr
+
+# Types
+type ::= primitive_type | compound_type | dependent_type | function_type 
+       | union_type | refinement_type
+
+primitive_type ::= 'Int' | 'Float' | 'Atom' | 'Bool' | 'String' | 'Binary'
+                 | 'Nat' | 'Pos' | 'Pid'
+
+compound_type ::= IDENTIFIER type_args?
+                | '[' type ']'  # List type
+                | '{' type (',' type)* '}'  # Tuple type
+
+dependent_type ::= IDENTIFIER '(' type_arg (',' type_arg)* ')'
+type_arg ::= type | expr
+
+function_type ::= '(' param_list ')' '->' type
+
+union_type ::= type ('|' type)+
+
+refinement_type ::= type 'when' expr
+                  | '{' IDENTIFIER ':' type '|' expr '}'
+
+# Expressions
+expr ::= literal | identifier | function_call | match_expr | if_expr 
+       | case_expr | receive_expr | record_expr | list_expr | tuple_expr 
+       | binary_op | unary_op | lambda_expr | spawn_expr | send_expr | fsm_expr
+
+literal ::= INTEGER | FLOAT | STRING | ATOM | BOOLEAN
+
+identifier ::= IDENTIFIER | qualified_identifier
+qualified_identifier ::= IDENTIFIER '.' IDENTIFIER
+
+function_call ::= expr '(' arg_list? ')'
+arg_list ::= expr (',' expr)*
+
+# Pattern matching
+match_expr ::= 'match' expr 'do' match_clause* 'end'
+match_clause ::= pattern guard? '->' expr
+pattern ::= literal | identifier | constructor_pattern | list_pattern 
+          | tuple_pattern | record_pattern | wildcard
+constructor_pattern ::= IDENTIFIER pattern_args?
+pattern_args ::= '(' pattern (',' pattern)* ')'
+list_pattern ::= '[' ']' | '[' pattern (',' pattern)* ']' 
+               | '[' pattern '|' pattern ']'
+tuple_pattern ::= '{' pattern (',' pattern)* '}'
+record_pattern ::= IDENTIFIER '{' field_pattern (',' field_pattern)* '}'
+field_pattern ::= IDENTIFIER ':' pattern | IDENTIFIER
+wildcard ::= '_'
+guard ::= 'when' expr
+
+# Conditional expressions
+if_expr ::= 'if' expr 'then' expr 'else' expr
+case_expr ::= 'case' expr 'of' case_clause* 'end'
+case_clause ::= pattern guard? '->' expr
+
+# Process communication
+receive_expr ::= 'receive' 'do' receive_clause* 'end'
+receive_clause ::= pattern guard? '->' expr
+
+spawn_expr ::= 'spawn' '(' IDENTIFIER ',' '[' arg_list? ']' ')'
+send_expr ::= 'send' '(' expr ',' expr ')'
+
+# FSM operations
+fsm_expr ::= 'fsm_spawn' '(' IDENTIFIER ')'
+           | 'fsm_send' '(' expr ',' expr ')'
+
+# Data structures
+record_expr ::= IDENTIFIER '{' field_assign (',' field_assign)* '}'
+field_assign ::= IDENTIFIER ':' expr
+
+list_expr ::= '[' ']' | '[' expr (',' expr)* ']'
+
+tuple_expr ::= '{' expr (',' expr)* '}'
+
+# Operators
+binary_op ::= expr binary_operator expr
+unary_op ::= unary_operator expr
+
+binary_operator ::= '+' | '-' | '*' | '/' | '==' | '!=' | '<' | '>' 
+                  | '<=' | '>=' | '&&' | '||' | '::' | '++' | '|>'
+unary_operator ::= '-' | '!'
+
+# Lambda expressions
+lambda_expr ::= 'fn' '(' param_list? ')' '->' expr ('end')?
+              | 'fn' '(' param_list? ')' '->' expr_block 'end'
+
+expr_block ::= expr+
+
+# String interpolation
+string_interpolation ::= '"' string_part* '"'
+string_part ::= STRING_CHARS | '#{' expr '}'
+
+# Lexical tokens
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+INTEGER ::= [0-9]+
+FLOAT ::= [0-9]+ '.' [0-9]+
+STRING ::= '"' ([^"\\] | '\\' .)* '"'
+ATOM ::= ':' IDENTIFIER | ':"' ([^"\\] | '\\' .)* '"'
+BOOLEAN ::= 'true' | 'false'
+COMMENT ::= '#' [^\n]*
+WHITESPACE ::= [ \t\n\r]+
 ```
 
 ## Type System
