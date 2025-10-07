@@ -1301,6 +1301,59 @@ compile_pattern(#record_pattern{name = RecordName, fields = Fields, location = L
             {Instructions, State1}
     end;
 
+%% Constructor pattern - for Result/Option types like Ok(value), Error(reason), etc.
+compile_pattern(#constructor_pattern{name = ConstructorName, args = Args, location = Location}, FailLabel, State) ->
+    % Check if this is a Result/Option type (both uppercase and lowercase)
+    case is_constructor_type(ConstructorName) of
+        true ->
+            case Args of
+                undefined ->
+                    % Constructor with no arguments (like None)
+                    ConstructorMatchInstr = #beam_instr{
+                        op = match_constructor,
+                        args = [ConstructorName, 0, FailLabel],
+                        location = Location
+                    },
+                    {[ConstructorMatchInstr], State};
+                [] ->
+                    % Constructor with empty argument list (like None())
+                    ConstructorMatchInstr = #beam_instr{
+                        op = match_constructor,
+                        args = [ConstructorName, 0, FailLabel],
+                        location = Location
+                    },
+                    {[ConstructorMatchInstr], State};
+                [SingleArg] ->
+                    % Constructor with single argument (like Ok(value), Error(reason))
+                    ConstructorMatchInstr = #beam_instr{
+                        op = match_constructor,
+                        args = [ConstructorName, 1, FailLabel],
+                        location = Location
+                    },
+                    
+                    % Compile the argument pattern
+                    {ArgInstr, State1} = compile_pattern(SingleArg, FailLabel, State),
+                    
+                    Instructions = [ConstructorMatchInstr] ++ ArgInstr,
+                    {Instructions, State1};
+                _ ->
+                    % Multiple arguments - not typical for Result/Option but handle it
+                    ConstructorMatchInstr = #beam_instr{
+                        op = match_constructor,
+                        args = [ConstructorName, length(Args), FailLabel],
+                        location = Location
+                    },
+                    
+                    % Compile all argument patterns
+                    {ArgInstrs, State1} = compile_pattern_elements(Args, FailLabel, State),
+                    
+                    Instructions = [ConstructorMatchInstr] ++ ArgInstrs,
+                    {Instructions, State1}
+            end;
+        false ->
+            {error, {unknown_constructor_pattern, ConstructorName}, State}
+    end;
+
 compile_pattern(Pattern, _FailLabel, State) ->
     {error, {unsupported_pattern, Pattern}, State}.
 
@@ -1346,3 +1399,14 @@ is_result_or_option_type('Error') -> true;
 is_result_or_option_type('Some') -> true;
 is_result_or_option_type('None') -> true;
 is_result_or_option_type(_) -> false.
+
+%% Check if a constructor name represents a valid Result/Option constructor (both cases)
+is_constructor_type('Ok') -> true;
+is_constructor_type('Error') -> true;
+is_constructor_type('Some') -> true;
+is_constructor_type('None') -> true;
+is_constructor_type(ok) -> true;
+is_constructor_type(error) -> true;
+is_constructor_type(some) -> true;
+is_constructor_type(none) -> true;
+is_constructor_type(_) -> false.

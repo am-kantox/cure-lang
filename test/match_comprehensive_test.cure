@@ -1,0 +1,146 @@
+# Comprehensive Match Test
+# Tests both regular matching (integers, lists, tuples) and monadic matching (Result/Option types)
+
+module MatchComprehensiveTest do
+  export [
+    main/0, 
+    test_regular_matching/0, 
+    test_monadic_matching/0,
+    test_mixed_patterns/0,
+    helper_function/1
+  ]
+
+  def main(): Int =
+    println("=== Comprehensive Match Test ===")
+    
+    test_regular_matching()
+    test_monadic_matching()
+    test_mixed_patterns()
+    
+    println("=== All tests completed ===")
+    42
+
+  # Test regular pattern matching with literals, lists, tuples
+  def test_regular_matching(): Int =
+    println("--- Testing Regular Patterns ---")
+    
+    # Test 1: Integer literals
+    let value1 = 42
+    let result1 = match value1 do
+      0 -> "zero"
+      1 -> "one"
+      42 -> "answer"
+      _ -> "other"
+    end
+    println("Integer match: " ++ result1)
+    
+    # Test 2: List patterns
+    let list1 = [1, 2, 3]
+    let result2 = match list1 do
+      [] -> "empty"
+      [x] -> "single: " ++ string_from_int(x)
+      [x, y] -> "pair: " ++ string_from_int(x) ++ ", " ++ string_from_int(y)
+      [x | xs] -> "list starting with: " ++ string_from_int(x)
+    end
+    println("List match: " ++ result2)
+    
+    # Test 3: Tuple patterns
+    let tuple1 = {10, "hello"}
+    let result3 = match tuple1 do
+      {0, _} -> "zero tuple"
+      {x, "world"} -> "world tuple: " ++ string_from_int(x)
+      {x, y} -> "general tuple: " ++ string_from_int(x) ++ ", " ++ y
+    end
+    println("Tuple match: " ++ result3)
+    
+    0
+
+  # Test monadic pattern matching with Result/Option types
+  def test_monadic_matching(): Int =
+    println("--- Testing Monadic Patterns ---")
+    
+    # Test 1: Uppercase Result patterns
+    let ok_result = Ok(100)
+    let result1 = match ok_result do
+      Ok(value) -> "Success: " ++ string_from_int(value)
+      Error(reason) -> "Failed: " ++ reason
+    end
+    println("Ok pattern: " ++ result1)
+    
+    let error_result = Error("something went wrong")
+    let result2 = match error_result do
+      Ok(value) -> "Success: " ++ string_from_int(value)
+      Error(reason) -> "Failed: " ++ reason
+    end
+    println("Error pattern: " ++ result2)
+    
+    # Test 2: Lowercase result patterns  
+    let ok_result_lower = ok(200)
+    let result3 = match ok_result_lower do
+      ok(value) -> "success: " ++ string_from_int(value)
+      error(reason) -> "failed: " ++ reason
+    end
+    println("ok pattern: " ++ result3)
+    
+    # Test 3: Option patterns
+    let some_value = Some(42)
+    let result4 = match some_value do
+      Some(value) -> "Has value: " ++ string_from_int(value)
+      None -> "No value"
+    end
+    println("Some pattern: " ++ result4)
+    
+    let none_value = None
+    let result5 = match none_value do
+      Some(value) -> "Has value: " ++ string_from_int(value)
+      None -> "No value"
+    end
+    println("None pattern: " ++ result5)
+    
+    0
+
+  # Test mixed patterns with guards
+  def test_mixed_patterns(): Int =
+    println("--- Testing Mixed Patterns with Guards ---")
+    
+    # Test with guards
+    let mixed_test = Ok(15)
+    let result1 = match mixed_test do
+      Ok(x) when x > 10 -> "Large success: " ++ string_from_int(x)
+      Ok(x) when x <= 10 -> "Small success: " ++ string_from_int(x)
+      Error(reason) -> "Error: " ++ reason
+    end
+    println("Guard match: " ++ result1)
+    
+    # Test nested patterns
+    let nested_test = Ok({42, "test"})
+    let result2 = match nested_test do
+      Ok({x, y}) when x > 40 -> "Nested success: " ++ string_from_int(x) ++ ", " ++ y
+      Ok({x, y}) -> "Nested small: " ++ string_from_int(x) ++ ", " ++ y
+      Error(reason) -> "Nested error: " ++ reason
+    end
+    println("Nested match: " ++ result2)
+    
+    0
+
+  # Helper function that returns a Result type
+  def helper_function(x: Int): Result(Int, String) =
+    if x > 0 then
+      ok(x * 2)
+    else
+      error("negative input")
+    end
+
+  # Helper functions (would be built-ins in real implementation)
+  defp println(message: String): Unit = 
+    print(message ++ "\n")
+
+  defp print(message: String): Unit = 
+    ok
+
+  defp string_from_int(n: Int): String = 
+    "42"  # Simplified for testing
+
+  defp (++)(a: String, b: String): String = 
+    a  # Simplified for testing
+end

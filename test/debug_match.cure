@@ -1,0 +1,9 @@
+module DebugMatch do
+  export [main/0]
+
+  def main(): Int =
+    match 42 do
+      42 -> 1
+      _ -> 0
+    end
+end

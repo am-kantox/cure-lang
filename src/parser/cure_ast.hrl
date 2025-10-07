@@ -286,3 +286,49 @@
     pattern :: pattern(),
     location :: location()
 }).
+
+%% Constructor pattern (for Result, Option, etc.)
+-record(constructor_pattern, {
+    name :: atom(),                 % Ok, Error, Some, None, etc.
+    args :: [pattern()] | undefined, % Arguments to the constructor
+    location :: location()
+}).
+
+%% Type definitions for use throughout the AST
+-type location() :: #location{}.
+-type expr() :: #literal_expr{} |
+               #identifier_expr{} |
+               #function_call_expr{} |
+               #match_expr{} |
+               #if_expr{} |
+               #let_expr{} |
+               #binary_op_expr{} |
+               #unary_op_expr{} |
+               #list_expr{} |
+               #tuple_expr{} |
+               #record_expr{} |
+               #lambda_expr{}.
+
+-type pattern() :: #wildcard_pattern{} |
+                  #literal_pattern{} |
+                  #identifier_pattern{} |
+                  #list_pattern{} |
+                  #tuple_pattern{} |
+                  #record_pattern{} |
+                  #constructor_pattern{}.
+
+-type type_expr() :: #primitive_type{} |
+                    #dependent_type{} |
+                    #function_type{} |
+                    #union_type{} |
+                    #list_type{} |
+                    #tuple_type{}.
+
+-type match_clause() :: #match_clause{}.
+-type binding() :: #binding{}.
+-type field_expr() :: #field_expr{}.
+-type field_pattern() :: #field_pattern{}.
+-type param() :: #param{} | atom().  % Record param or simple atom
+-type type_param() :: #type_param{}.
+-type state_def() :: #state_def{}.
+-type transition() :: #transition{}.

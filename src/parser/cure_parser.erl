@@ -827,6 +827,10 @@ parse_type_parameter(State) ->
 parse_expression(State) ->
     parse_expression_or_block(State).
 
+%% Parse single expression without block detection (for match clause bodies)
+parse_single_expression(State) ->
+    parse_binary_expression(State, 0).
+
 %% Parse expression or block of expressions
 parse_expression_or_block(State) ->
     % Try to parse as a block first (multiple expressions)
@@ -1334,7 +1338,7 @@ parse_match_clause(State) ->
     end,
     
     {_, State3} = expect(State2, '->'),
-    {Body, State4} = parse_expression(State3),
+    {Body, State4} = parse_single_expression(State3),
     
     Location = get_pattern_location(Pattern),
     Clause = #match_clause{
@@ -1361,24 +1365,31 @@ parse_pattern(State) ->
                     },
                     {Pattern, State1};
                 _ ->
-                    % Check if it's a constructor pattern like Ok(value)
+                    % Check if it's a constructor pattern like Ok(value), ok(value), etc.
                     case match_token(State1, '(') of
-                        true when Name =:= 'Ok'; Name =:= 'Error'; Name =:= 'Some' ->
+                        true when Name =:= 'Ok'; Name =:= 'Error'; Name =:= 'Some'; 
+                                  Name =:= ok; Name =:= error; Name =:= some; Name =:= none ->
                             {_, State2} = expect(State1, '('),
                             {InnerPattern, State3} = parse_pattern(State2),
                             {_, State4} = expect(State3, ')'),
                             
-                            % For now, represent as a record pattern
-                            Pattern = #record_pattern{
+                            % Use constructor pattern for Result/Option types
+                            Pattern = #constructor_pattern{
                                 name = Name,
-                                fields = [#field_pattern{
-                                    name = value,
-                                    pattern = InnerPattern,
-                                    location = Location
-                                }],
+                                args = [InnerPattern],
                                 location = Location
                             },
                             {Pattern, State4};
+                        true when Name =:= 'None'; Name =:= none ->
+                            % None can have no arguments
+                            {_, State2} = expect(State1, '('),
+                            {_, State3} = expect(State2, ')'),
+                            Pattern = #constructor_pattern{
+                                name = Name,
+                                args = [],
+                                location = Location
+                            },
+                            {Pattern, State3};
                         false ->
                             % Simple identifier pattern
                             Pattern = #identifier_pattern{
@@ -1427,19 +1438,16 @@ parse_pattern(State) ->
                     {_, State2} = expect(State1, '('),
                     {InnerPattern, State3} = parse_pattern(State2),
                     {_, State4} = expect(State3, ')'),
-                    Pattern = #record_pattern{
+                    Pattern = #constructor_pattern{
                         name = 'Ok',
-                        fields = [#field_pattern{
-                            name = value,
-                            pattern = InnerPattern,
-                            location = Location
-                        }],
+                        args = [InnerPattern],
                         location = Location
                     },
                     {Pattern, State4};
                 false ->
-                    Pattern = #identifier_pattern{
+                    Pattern = #constructor_pattern{
                         name = 'Ok',
+                        args = undefined,
                         location = Location
                     },
                     {Pattern, State1}
@@ -1452,19 +1460,16 @@ parse_pattern(State) ->
                     {_, State2} = expect(State1, '('),
                     {InnerPattern, State3} = parse_pattern(State2),
                     {_, State4} = expect(State3, ')'),
-                    Pattern = #record_pattern{
+                    Pattern = #constructor_pattern{
                         name = 'Error',
-                        fields = [#field_pattern{
-                            name = value,
-                            pattern = InnerPattern,
-                            location = Location
-                        }],
+                        args = [InnerPattern],
                         location = Location
                     },
                     {Pattern, State4};
                 false ->
-                    Pattern = #identifier_pattern{
+                    Pattern = #constructor_pattern{
                         name = 'Error',
+                        args = undefined,
                         location = Location
                     },
                     {Pattern, State1}
@@ -1477,19 +1482,16 @@ parse_pattern(State) ->
                     {_, State2} = expect(State1, '('),
                     {InnerPattern, State3} = parse_pattern(State2),
                     {_, State4} = expect(State3, ')'),
-                    Pattern = #record_pattern{
+                    Pattern = #constructor_pattern{
                         name = 'Some',
-                        fields = [#field_pattern{
-                            name = value,
-                            pattern = InnerPattern,
-                            location = Location
-                        }],
+                        args = [InnerPattern],
                         location = Location
                     },
                     {Pattern, State4};
                 false ->
-                    Pattern = #identifier_pattern{
+                    Pattern = #constructor_pattern{
                         name = 'Some',
+                        args = undefined,
                         location = Location
                     },
                     {Pattern, State1}
@@ -1502,19 +1504,60 @@ parse_pattern(State) ->
                     {_, State2} = expect(State1, '('),
                     {InnerPattern, State3} = parse_pattern(State2),
                     {_, State4} = expect(State3, ')'),
-                    Pattern = #record_pattern{
+                    Pattern = #constructor_pattern{
                         name = 'None',
-                        fields = [#field_pattern{
-                            name = value,
-                            pattern = InnerPattern,
-                            location = Location
-                        }],
+                        args = [InnerPattern],
                         location = Location
                     },
                     {Pattern, State4};
                 false ->
-                    Pattern = #identifier_pattern{
+                    Pattern = #constructor_pattern{
                         name = 'None',
+                        args = undefined,
+                        location = Location
+                    },
+                    {Pattern, State1}
+            end;
+        'ok' ->
+            {Token, State1} = expect(State, 'ok'),
+            Location = get_token_location(Token),
+            case match_token(State1, '(') of
+                true ->
+                    {_, State2} = expect(State1, '('),
+                    {InnerPattern, State3} = parse_pattern(State2),
+                    {_, State4} = expect(State3, ')'),
+                    Pattern = #constructor_pattern{
+                        name = ok,
+                        args = [InnerPattern],
+                        location = Location
+                    },
+                    {Pattern, State4};
+                false ->
+                    Pattern = #constructor_pattern{
+                        name = ok,
+                        args = undefined,
+                        location = Location
+                    },
+                    {Pattern, State1}
+            end;
+        'error' ->
+            {Token, State1} = expect(State, 'error'),
+            Location = get_token_location(Token),
+            case match_token(State1, '(') of
+                true ->
+                    {_, State2} = expect(State1, '('),
+                    {InnerPattern, State3} = parse_pattern(State2),
+                    {_, State4} = expect(State3, ')'),
+                    Pattern = #constructor_pattern{
+                        name = error,
+                        args = [InnerPattern],
+                        location = Location
+                    },
+                    {Pattern, State4};
+                false ->
+                    Pattern = #constructor_pattern{
+                        name = error,
+                        args = undefined,
                         location = Location
                     },
                     {Pattern, State1}
@@ -1630,6 +1673,7 @@ get_pattern_location(#list_pattern{location = Loc}) -> Loc;
 get_pattern_location(#tuple_pattern{location = Loc}) -> Loc;
 get_pattern_location(#record_pattern{location = Loc}) -> Loc;
 get_pattern_location(#wildcard_pattern{location = Loc}) -> Loc;
+get_pattern_location(#constructor_pattern{location = Loc}) -> Loc;
 get_pattern_location(_) -> #location{line = 0, column = 0, file = undefined}.
 
 %% Parse constructor expressions like Ok(value), Error("msg")

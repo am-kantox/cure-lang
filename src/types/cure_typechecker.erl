@@ -589,6 +589,13 @@ convert_pattern_to_tuple(#record_pattern{name = Name, fields = Fields, location 
     {record_pattern, Name, ConvertedFields, Location};
 convert_pattern_to_tuple(#wildcard_pattern{location = Location}) ->
     {wildcard_pattern, Location};
+convert_pattern_to_tuple(#constructor_pattern{name = Name, args = Args, location = Location}) ->
+    ConvertedArgs = case Args of
+        undefined -> undefined;
+        [] -> [];
+        ArgList -> [convert_pattern_to_tuple(Arg) || Arg <- ArgList]
+    end,
+    {constructor_pattern, Name, ConvertedArgs, Location};
 convert_pattern_to_tuple(Pattern) ->
     Pattern.
 

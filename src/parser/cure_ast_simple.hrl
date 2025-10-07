@@ -294,3 +294,10 @@
     pattern,
     location
 }).
+
+%% Constructor pattern (for Result, Option, etc.)
+-record(constructor_pattern, {
+    name,    % Ok, Error, Some, None, ok, error, etc.
+    args,    % Arguments to the constructor (list or undefined)
+    location
+}).

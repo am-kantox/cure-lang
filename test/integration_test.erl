@@ -245,7 +245,7 @@ test_let_expressions() ->
             
             % Check body is a binary operation
             case Body of
-                #binary_op_expr{operator = '+'} -> ok;
+                #binary_op_expr{op = '+'} -> ok;
                 _ -> throw({unexpected_let_body, Body})
             end;
         _ ->
@@ -273,8 +273,8 @@ test_pattern_matching() ->
     % Check match structure
     case MatchExpr of
         #match_expr{
-            expression = Expr,
-            clauses = Clauses
+            expr = Expr,
+            patterns = Patterns
         } ->
             % Check we're matching on 'list' identifier
             case Expr of
@@ -282,8 +282,8 @@ test_pattern_matching() ->
                 _ -> throw({unexpected_match_expr, Expr})
             end,
             
-            % Check we have two clauses
-            2 = length(Clauses),
+            % Check we have two patterns
+            2 = length(Patterns),
             ok;
         _ ->
             throw({unexpected_match_expr, MatchExpr})
@@ -306,7 +306,7 @@ test_arithmetic_operations() ->
     
     % Check arithmetic structure (should be nested binary operations)
     case ArithExpr of
-        #binary_op_expr{operator = '-'} -> ok;
+        #binary_op_expr{op = '-'} -> ok;
         _ -> throw({unexpected_arithmetic_expr, ArithExpr})
     end,
     
