@@ -10,7 +10,7 @@
          trim/1, to_upper/1, to_lower/1, contains/2, starts_with/2, ends_with/2, string_join/2,
          string_empty/1, int_to_string/1, float_to_string/1, string_to_int/1, string_to_float/1,
          print/1, println/1, fsm_create/2, fsm_send_safe/2, create_counter/1, list_to_string/1,
-         join_ints/2]).
+         join_ints/2, is_monad/1, pipe/2]).
 
                            % Result and Option types
 
@@ -61,6 +61,14 @@ is_ok(_) ->
 is_error({'Error', _}) ->
   true;
 is_error(_) ->
+  false.
+
+%% Helper: check if value is a Result (Ok/Error)
+is_monad({'Ok', _}) ->
+  true;
+is_monad({'Error', _}) ->
+  true;
+is_monad(_) ->
   false.
 
 is_some({'Some', _}) ->
@@ -127,6 +135,29 @@ or_else(_F, {'Ok', _} = Ok) ->
   Ok;
 or_else(F, {'Error', _Reason}) ->
   F().
+
+%% Monadic-style pipe helper implementing the specified rules
+%% pipe(LHO, RHO) where RHO is a function to call with the (possibly unwrapped) LHO
+pipe({'Error', _} = Err, _RHO) ->
+  Err; % Rule 1: propagate error
+pipe({'Ok', V}, RHO) when is_function(RHO) ->
+  % Rule 2: unwrap Ok(V), call RHO(V), wrap unless already a monad
+  try
+    Res = RHO(V),
+    case is_monad(Res) of
+      true -> Res;
+      false -> {'Ok', Res}
+    end
+  catch Error:Reason -> {'Error', {pipe_runtime_error, Error, Reason}} end;
+pipe(LHO, RHO) when is_function(RHO) ->
+  % Rule 3: pass non-monad LHO to RHO, wrap unless already a monad
+  try
+    Res = RHO(LHO),
+    case is_monad(Res) of
+      true -> Res;
+      false -> {'Ok', Res}
+    end
+  catch Error:Reason -> {'Error', {pipe_runtime_error, Error, Reason}} end.
 
 %% ============================================================================
 %% List Operations

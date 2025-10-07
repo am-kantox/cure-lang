@@ -95,7 +95,9 @@ create_runtime_state() ->
         create_counter => {external, cure_std, create_counter, 1},
         list_to_string => {external, cure_std, list_to_string, 1},
         join_ints => {external, cure_std, join_ints, 2},
-        map_ok => {external, cure_std, map_ok, 2}
+        map_ok => {external, cure_std, map_ok, 2},
+        is_monad => {external, cure_std, is_monad, 1},
+        pipe => {external, cure_std, pipe, 2}
     },
     #runtime_state{globals = GlobalFunctions}.
 
@@ -427,6 +429,38 @@ execute_instruction(Instruction, State) ->
                     {ok, State#runtime_state{stack = RestStack}};
                 [] ->
                     {error, stack_underflow}
+            end;
+            
+        #{op := monadic_pipe_call, args := [Arity]} ->
+            % Monadic pipe call: [Function, PipedValue, Args...] -> Result
+            % Uses cure_std:pipe/2 to implement monadic pipe semantics
+            case pop_call_args(Arity + 1, State#runtime_state.stack) of
+                {ok, [FunctionRef | [PipedValue | Args]], RestStack} ->
+                    % Create a lambda that will call the function with the piped value and args
+                    Lambda = fun(UnwrappedValue) ->
+                        case FunctionRef of
+                            {function_ref, FuncName} ->
+                                case call_function(FuncName, [UnwrappedValue | Args], State) of
+                                    {ok, Result, _NewState} -> Result;
+                                    {error, _Reason} -> throw(function_call_failed)
+                                end;
+                            Function when is_function(Function) ->
+                                apply(Function, [UnwrappedValue | Args]);
+                            _ ->
+                                throw(invalid_function_reference)
+                        end
+                    end,
+                    
+                    % Use cure_std:pipe/2 to handle the monadic pipe operation
+                    case call_function(pipe, [PipedValue, Lambda], State) of
+                        {ok, Result, NewState} ->
+                            FinalStack = [Result | RestStack],
+                            {ok, NewState#runtime_state{stack = FinalStack}};
+                        {error, Reason} ->
+                            {error, Reason}
+                    end;
+                {error, Reason} ->
+                    {error, Reason}
             end;
             
         _ ->

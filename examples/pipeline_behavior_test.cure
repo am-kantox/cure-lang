@@ -1,0 +1,45 @@
+# Simple Pipeline Behavior Test
+# Tests the three core rules of the pipeline operator
+
+module PipelineBehaviorTest do
+  export [main/0, double/1, add_five/1, always_error/1]
+
+  def main(): Int =
+    println("Testing Pipeline Behavior...")
+    
+    # Test Rule 1: Error propagation
+    println("Rule 1 Test: error propagation")
+    let error_result = error("test error") |> double
+    println("Should propagate error")
+    
+    # Test Rule 2: Ok unwrapping
+    println("Rule 2 Test: ok unwrapping")
+    let ok_result = ok(10) |> double
+    println("Should unwrap and double: ok(20)")
+    
+    # Test Rule 3: Non-monad wrapping
+    println("Rule 3 Test: non-monad wrapping")  
+    let plain_result = 15 |> double
+    println("Should wrap result: ok(30)")
+    
+    # Test chaining
+    println("Chaining test")
+    let chain_result = 5 |> double |> add_five
+    println("Should chain and wrap: ok(15)")
+    
+    # Test error in chain
+    println("Error in chain test")
+    let error_chain = ok(5) |> always_error |> double
+    println("Should stop at error")
+    
+    42
+
+  def double(x: Int): Int =
+    x * 2
+
+  def add_five(x: Int): Int =
+    x + 5
+    
+  def always_error(x: Int) =
+    error("This function always fails")
+end

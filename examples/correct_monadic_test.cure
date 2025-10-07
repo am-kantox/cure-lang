@@ -10,8 +10,8 @@ module MonadicTest do
     println("=== Test 2: Pattern matching ===")
     let result2 = 3 |> double
     match result2 do
-      Ok(value) -> println("Pattern match success")
-      Error(reason) -> println("Pattern match error")
+      ok(value) -> println("Pattern match success")
+      error(reason) -> println("Pattern match error")
     end
     
     println("=== Test 3: Chaining ===")
