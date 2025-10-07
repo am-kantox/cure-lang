@@ -831,6 +831,97 @@ parse_expression(State) ->
 parse_single_expression(State) ->
     parse_binary_expression(State, 0).
 
+%% Parse expression for match clause body - allows blocks but stops at next match clause
+parse_match_clause_body(State) ->
+    % Parse like a normal expression but with match-aware block detection
+    {FirstExpr, State1} = parse_binary_expression(State, 0),
+    
+    % Check if there's a continuation, but be careful about match clause boundaries
+    case is_match_body_continuation(State1) of
+        true ->
+            % Parse as a block but stop at match clause patterns
+            {RestExprs, State2} = parse_match_body_sequence(State1, []),
+            Location = get_expr_location(FirstExpr),
+            BlockExpr = #block_expr{
+                expressions = [FirstExpr | RestExprs],
+                location = Location
+            },
+            {BlockExpr, State2};
+        false ->
+            % Single expression
+            {FirstExpr, State1}
+    end.
+
+%% Check if we should continue parsing as a block in match clause body
+is_match_body_continuation(State) ->
+    case get_token_type(current_token(State)) of
+        'let' -> true;  % let expressions can continue
+        identifier -> 
+            % Only continue if this doesn't look like a match pattern
+            % Check if this identifier could be the start of a new match clause
+            not is_likely_match_pattern(State);
+        number -> true;   % Numbers can continue as expressions
+        string -> true;   % Strings can continue as expressions
+        '(' -> true;      % Parenthesized expressions can continue
+        '[' -> true;      % List expressions can continue
+        '{' -> true;      % Tuple expressions can continue
+        _ -> false
+    end.
+
+%% Check if the current token sequence looks like a match pattern
+is_likely_match_pattern(State) ->
+    case get_token_type(current_token(State)) of
+        identifier ->
+            Token = current_token(State),
+            Name = case get_token_value(Token) of
+                Binary when is_binary(Binary) -> binary_to_atom(Binary, utf8);
+                Atom when is_atom(Atom) -> Atom;
+                _ -> '_unknown_token_value_'
+            end,
+            % Check if it's a constructor or could be followed by ->
+            is_constructor_name(Name) orelse looks_like_pattern_start(State);
+        'Ok' -> true;
+        'Error' -> true;
+        'Some' -> true;
+        'None' -> true;
+        'ok' -> true;
+        'error' -> true;
+        number -> true;  % literal patterns
+        string -> true;  % literal patterns
+        atom -> true;    % literal patterns
+        '[' -> true;     % list patterns
+        '{' -> true;     % tuple patterns
+        _ -> false
+    end.
+
+%% Check if a name is a constructor
+is_constructor_name('Ok') -> true;
+is_constructor_name('Error') -> true;
+is_constructor_name('Some') -> true;
+is_constructor_name('None') -> true;
+is_constructor_name(ok) -> true;
+is_constructor_name(error) -> true;
+is_constructor_name(some) -> true;
+is_constructor_name(none) -> true;
+is_constructor_name('_') -> true;  % wildcard
+is_constructor_name(_) -> false.
+
+%% Look ahead to see if this looks like pattern -> body
+looks_like_pattern_start(State) ->
+    % This is a simplified heuristic - we'd need lookahead to be sure
+    % For now, assume single identifiers at the start of a line could be patterns
+    false.  % Conservative approach - don't assume it's a pattern
+
+%% Parse sequence of expressions in match clause body
+parse_match_body_sequence(State, Acc) ->
+    case is_match_body_continuation(State) of
+        true ->
+            {Expr, State1} = parse_binary_expression(State, 0),
+            parse_match_body_sequence(State1, [Expr | Acc]);
+        false ->
+            {lists:reverse(Acc), State}
+    end.
+
 %% Parse expression or block of expressions
 parse_expression_or_block(State) ->
     % Try to parse as a block first (multiple expressions)
@@ -855,10 +946,14 @@ parse_expression_or_block(State) ->
 %% Check if we should continue parsing as a block
 is_block_continuation(State) ->
     % Check if next token starts a new expression or statement
-    case get_token_type(current_token(State)) of
-        'let' -> true;
-        identifier -> true;  % Could be function call
-        _ -> false
+    case current_token(State) of
+        eof -> false;
+        Token ->
+            case get_token_type(Token) of
+                'let' -> true;
+                identifier -> true;  % Could be function call
+                _ -> false
+            end
     end.
 
 %% Parse sequence of expressions in a block
@@ -935,7 +1030,11 @@ get_operator_info(_) -> undefined.
 
 %% Parse primary expressions
 parse_primary_expression(State) ->
-    case get_token_type(current_token(State)) of
+    case current_token(State) of
+        eof ->
+            throw({parse_error, unexpected_end_of_input, 0, 0});
+        Token ->
+            case get_token_type(Token) of
         identifier ->
             parse_identifier_or_call(State);
         '-' ->
@@ -1044,8 +1143,8 @@ parse_primary_expression(State) ->
         '{' ->
             parse_tuple_expression(State);
         _ ->
-            Token = current_token(State),
             throw({parse_error, {unexpected_token_in_expression, get_token_type(Token)}, 0, 0})
+            end
     end.
 
 %% Parse identifier or function call
@@ -1338,7 +1437,7 @@ parse_match_clause(State) ->
     end,
     
     {_, State3} = expect(State2, '->'),
-    {Body, State4} = parse_single_expression(State3),
+    {Body, State4} = parse_match_clause_body(State3),
     
     Location = get_pattern_location(Pattern),
     Clause = #match_clause{
@@ -1367,29 +1466,52 @@ parse_pattern(State) ->
                 _ ->
                     % Check if it's a constructor pattern like Ok(value), ok(value), etc.
                     case match_token(State1, '(') of
-                        true when Name =:= 'Ok'; Name =:= 'Error'; Name =:= 'Some'; 
+                        true when Name =:= 'Ok'; Name =:= 'Error'; Name =:= 'Some'; Name =:= 'None';
                                   Name =:= ok; Name =:= error; Name =:= some; Name =:= none ->
                             {_, State2} = expect(State1, '('),
-                            {InnerPattern, State3} = parse_pattern(State2),
-                            {_, State4} = expect(State3, ')'),
-                            
-                            % Use constructor pattern for Result/Option types
-                            Pattern = #constructor_pattern{
+                            % Handle None/none with optional arguments
+                            case Name =:= 'None' orelse Name =:= none of
+                                true ->
+                                    % None can have no arguments - check if closing paren immediately
+                                    case match_token(State2, ')') of
+                                        true ->
+                                            {_, State3} = expect(State2, ')'),
+                                            Pattern = #constructor_pattern{
+                                                name = Name,
+                                                args = [],
+                                                location = Location
+                                            },
+                                            {Pattern, State3};
+                                        false ->
+                                            % None with argument (shouldn't happen but handle gracefully)
+                                            {InnerPattern, State3} = parse_pattern(State2),
+                                            {_, State4} = expect(State3, ')'),
+                                            Pattern = #constructor_pattern{
+                                                name = Name,
+                                                args = [InnerPattern],
+                                                location = Location
+                                            },
+                                            {Pattern, State4}
+                                    end;
+                                false ->
+                                    % Other constructors require an argument
+                                    {InnerPattern, State3} = parse_pattern(State2),
+                                    {_, State4} = expect(State3, ')'),
+                                    Pattern = #constructor_pattern{
+                                        name = Name,
+                                        args = [InnerPattern],
+                                        location = Location
+                                    },
+                                    {Pattern, State4}
+                            end;
+                        true ->
+                            % Not a known constructor pattern, treat as function call pattern or tuple
+                            % For now, just treat as identifier (could extend for function patterns)
+                            Pattern = #identifier_pattern{
                                 name = Name,
-                                args = [InnerPattern],
                                 location = Location
                             },
-                            {Pattern, State4};
-                        true when Name =:= 'None'; Name =:= none ->
-                            % None can have no arguments
-                            {_, State2} = expect(State1, '('),
-                            {_, State3} = expect(State2, ')'),
-                            Pattern = #constructor_pattern{
-                                name = Name,
-                                args = [],
-                                location = Location
-                            },
-                            {Pattern, State3};
+                            {Pattern, State1};
                         false ->
                             % Simple identifier pattern
                             Pattern = #identifier_pattern{
@@ -1751,7 +1873,12 @@ parse_statement_sequence(State, Acc) ->
 
 %% Check if we're at the end of a function body
 is_end_of_body(State) ->
-    case get_token_type(current_token(State)) of
+    CurrentToken = current_token(State),
+    TokenType = case CurrentToken of
+        eof -> eof;
+        Token -> get_token_type(Token)
+    end,
+    case TokenType of
         eof -> true;
         'end' -> true;
         'else' -> true;

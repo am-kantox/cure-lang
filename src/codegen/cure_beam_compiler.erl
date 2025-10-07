@@ -140,6 +140,9 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         match_tagged_tuple -> compile_match_tagged_tuple(Args, NewContext);
         match_result_tuple -> compile_match_result_tuple(Args, NewContext);
         match_list -> compile_match_list(Args, NewContext);
+        match_constructor -> compile_match_constructor(Args, NewContext);
+        match_literal -> compile_match_literal(Args, NewContext);
+        match_any -> compile_match_any(Args, NewContext);
         advance_field -> compile_advance_field(Args, NewContext);
         bind_var -> compile_bind_var(Args, NewContext);
         pattern_fail -> compile_pattern_fail(Args, NewContext);
@@ -467,6 +470,75 @@ compile_bind_var([VarName], Context) ->
             NewVariables = maps:put(VarName, VarForm, NewContext#compile_context.variables),
             FinalContext = NewContext#compile_context{variables = NewVariables},
             {ok, [MatchForm], push_stack(VarForm, FinalContext)};
+        Error ->
+            Error
+    end.
+
+%% Constructor pattern matching (for Result/Option types like Ok(value), Error(reason))
+compile_match_constructor([ConstructorName, ArgCount, _FailLabel], Context) ->
+    case pop_stack(Context) of
+        {Value, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Generate case expression that matches constructor patterns
+            % Constructor patterns are represented as tuples: {'Ok', Value}, {'Error', Reason}, etc.
+            case ArgCount of
+                0 ->
+                    % Constructor with no arguments like None
+                    ConstructorCaseExpr = {'case', Line, Value, [
+                        {clause, Line, [{atom, Line, ConstructorName}], [], [{atom, Line, match_success}]},
+                        {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
+                    ]},
+                    {ok, [], push_stack(ConstructorCaseExpr, NewContext)};
+                1 ->
+                    % Constructor with single argument like Ok(value), Error(reason)
+                    % Use underscore variables to avoid unsafe variable warnings
+                    ConstructorCaseExpr = {'case', Line, Value, [
+                        {clause, Line, 
+                         [{tuple, Line, [{atom, Line, ConstructorName}, {var, Line, '_'}]}], 
+                         [], 
+                         [{atom, Line, match_success}]},
+                        {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
+                    ]},
+                    {ok, [], push_stack(ConstructorCaseExpr, NewContext)};
+                _ ->
+                    % Constructor with multiple arguments
+                    ArgVars = [{var, Line, list_to_atom("_Arg" ++ integer_to_list(I))} || I <- lists:seq(1, ArgCount)],
+                    ConstructorCaseExpr = {'case', Line, Value, [
+                        {clause, Line, 
+                         [{tuple, Line, [{atom, Line, ConstructorName} | ArgVars]}], 
+                         [], 
+                         [{atom, Line, match_success}]},
+                        {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
+                    ]},
+                    {ok, [], push_stack(ConstructorCaseExpr, NewContext)}
+            end;
+        Error ->
+            Error
+    end.
+
+%% Literal pattern matching
+compile_match_literal([LiteralValue, _FailLabel], Context) ->
+    case pop_stack(Context) of
+        {Value, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Generate case expression that matches literal values
+            LiteralForm = compile_value_to_form(LiteralValue, Line),
+            LiteralCaseExpr = {'case', Line, Value, [
+                {clause, Line, [LiteralForm], [], [{atom, Line, match_success}]},
+                {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
+            ]},
+            {ok, [], push_stack(LiteralCaseExpr, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% Wildcard pattern matching (matches anything)
+compile_match_any([], Context) ->
+    case pop_stack(Context) of
+        {_Value, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Wildcard always matches - just return match_success
+            {ok, [], push_stack({atom, Line, match_success}, NewContext)};
         Error ->
             Error
     end.

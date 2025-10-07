@@ -1,0 +1,13 @@
+module TestMatchHelper do
+  export [main/0]
+
+  def main(): Int =
+    helper()
+
+  def helper(): Int =
+    let x = 42
+    match x do
+      42 -> 1
+      _ -> 0
+    end
+end

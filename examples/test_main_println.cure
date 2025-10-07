@@ -1,0 +1,7 @@
+module TestMainPrintln do
+  export [main/0]
+
+  def main(): Int =
+    let _ = println("Hello")
+    42
+end

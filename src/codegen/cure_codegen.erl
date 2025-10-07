@@ -153,7 +153,12 @@ compile_function(#function_def{} = Function, Options) ->
         optimization_level = proplists:get_value(optimize, Options, 0),
         type_info = cure_typechecker:builtin_env()
     },
-    compile_function_impl(Function, State);
+    case compile_function_impl(Function, State) of
+        {ok, CompiledFunction, _NewState} ->
+            {ok, CompiledFunction};
+        {error, Reason} ->
+            {error, Reason}
+    end;
 
 compile_function(AST, _Options) ->
     {error, {not_a_function, AST}}.
@@ -997,6 +1002,19 @@ compile_item(#module_def{} = Module, Options) ->
     compile_module(Module, Options);
 compile_item(#function_def{} = Function, Options) ->
     compile_function(Function, Options);
+%% Handle tuple-based AST format
+compile_item({function_def, Name, Params, _RetType, _Constraint, Body, Location}, Options) ->
+    % Convert tuple format to record format
+    Function = #function_def{
+        name = Name,
+        params = Params,
+        body = Body,
+        location = Location
+    },
+    compile_function(Function, Options);
+compile_item({module_def, Name, Imports, Exports, Items, Location}, Options) ->
+    % Already handled in compile_module/2
+    compile_module({module_def, Name, Imports, Exports, Items, Location}, Options);
 compile_item(Item, _Options) ->
     {error, {unsupported_item, Item}}.
 

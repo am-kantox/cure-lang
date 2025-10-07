@@ -1,0 +1,11 @@
+module TestMainMatchSimple do
+  export [main/0]
+
+  def main(): Int =
+    let result = Ok(42)
+    match result do
+      Ok(value) -> value
+      Error(_) -> 0
+      _ -> -1
+    end
+end
