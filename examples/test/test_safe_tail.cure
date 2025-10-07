@@ -1,0 +1,29 @@
+# Test safe_tail function with SMT solver support
+# This function should work now with our enhanced dependent type system
+
+# Basic dependent types that should work
+def safe_head(list: List(T, n)) -> T when n > 0 =
+  match list do
+    [x|_] -> x
+  end
+
+def safe_length(list: List(T, n)) = n
+
+# This is the advanced function requiring SMT solver
+# Pattern [_|xs] -> xs should infer that xs has length m where m == n - 1
+def safe_tail(list: List(T, n)) -> List(T, m) when m == n - 1 =
+  match list do
+    [_|xs] -> xs
+  end
+
+# Test function that should fail - nonsafe_tail with wrong constraint
+def nonsafe_tail(list: List(T, n)) -> List(T, m) when m > n =
+  match list do
+    [_|xs] -> xs  # This should fail: tail cannot be longer than original
+  end
+
+# Safe version with explicit constraint that tail is shorter
+def safe_tail_explicit(list: List(T, n)) -> List(T, m) when m < n =
+  match list do
+    [_|xs] -> xs
+  end

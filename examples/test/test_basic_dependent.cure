@@ -1,0 +1,9 @@
+# Test basic dependent types that should work without SMT solver
+
+# Basic function that works
+def safe_head(list: List(T, n)) -> T when n > 0 =
+  match list do
+    [x|_] -> x
+  end
+
+def safe_length(list: List(T, n)) = n
