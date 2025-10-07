@@ -1,0 +1,5 @@
+def test_literal(x) = match x do
+  0 -> "zero"
+  42 -> "answer"
+  _ -> "other"
+end

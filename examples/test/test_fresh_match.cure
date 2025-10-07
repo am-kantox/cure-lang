@@ -1,0 +1,4 @@
+def test_patterns(result) = match result do
+  Ok(value) -> value
+  Error(msg) -> 0
+end
