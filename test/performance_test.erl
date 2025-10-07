@@ -4,7 +4,7 @@
 -export([run/0]).
 
 -include("../src/parser/cure_ast.hrl").
--include("../src/types/cure_types.hrl").
+-include("../src/types/cure_type_optimizer.hrl").
 
 %% Run all performance tests
 run() ->

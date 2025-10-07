@@ -154,7 +154,7 @@ test_option_monadic_operations() ->
     % Test bind_some with None value - should propagate None
     NoneValue2 = cure_std:none(),
     MaybeSqrtNoneResult = case NoneValue2 of
-        {'Some', X} -> cure_std:some(math:sqrt(X));
+        {'Some', Y} -> cure_std:some(math:sqrt(Y));
         'None' -> cure_std:none()
     end,
     ?assertEqual('None', MaybeSqrtNoneResult),
@@ -162,7 +162,7 @@ test_option_monadic_operations() ->
     % Test bind_some with function that returns None
     SomeValue3 = cure_std:some(-5),
     NegativeSqrtOptionResult = case SomeValue3 of
-        {'Some', X} when X >= 0 -> cure_std:some(math:sqrt(X));
+        {'Some', Z} when Z >= 0 -> cure_std:some(math:sqrt(Z));
         {'Some', _} -> cure_std:none();
         'None' -> cure_std:none()
     end,
@@ -170,9 +170,9 @@ test_option_monadic_operations() ->
     
     % Test chaining option operations
     ChainOptionResult = case cure_std:some(25) of
-        {'Some', X} -> 
-            case cure_std:some(math:sqrt(X)) of
-                {'Some', Y} -> cure_std:map_option(cure_std:some(Y), fun(Z) -> Z + 2 end);
+        {'Some', A} -> 
+            case cure_std:some(math:sqrt(A)) of
+                {'Some', B} -> cure_std:map_option(cure_std:some(B), fun(C) -> C + 2 end);
                 'None' -> 'None'
             end;
         'None' -> 'None'
