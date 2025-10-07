@@ -561,10 +561,13 @@ infer_match_clauses([FirstClause | RestClauses], MatchType, Env) ->
 
 infer_pattern_type({list_pattern, Elements, Tail, _Location} = Pattern, MatchType, Env) ->
     % For list patterns, create environment with pattern variables and length constraints
-    case infer_list_pattern_elements(Elements, Tail, Env, []) of
+    case infer_list_pattern_elements(Elements, Tail, MatchType, Env, []) of
         {ok, PatternEnv, Constraints} ->
-            % Add length constraints from SMT solver
+            % Add length constraints from SMT solver for dependent types
             LengthConstraints = case MatchType of
+                {dependent_type, 'List', [TypeParam, LengthParam]} ->
+                    % Generate SMT constraints for pattern matching on dependent lists
+                    cure_smt_solver:infer_pattern_length_constraint(Pattern, extract_length_var(LengthParam));
                 {list_type, _ElemType, {dependent_length, LengthVar}} ->
                     cure_smt_solver:infer_pattern_length(Pattern, cure_smt_solver:variable_term(LengthVar));
                 _ -> []
@@ -584,20 +587,31 @@ infer_pattern_type(_Pattern, _MatchType, Env) ->
     % For other patterns, return env unchanged for now
     {ok, Env, []}.
 
-infer_list_pattern_elements([], undefined, Env, Constraints) ->
+infer_list_pattern_elements([], undefined, _MatchType, Env, Constraints) ->
     {ok, Env, Constraints};
-infer_list_pattern_elements([], Tail, Env, Constraints) ->
-    % Handle tail pattern
-    case infer_pattern_type(Tail, {list_type, new_type_var(), undefined}, Env) of
+infer_list_pattern_elements([], Tail, MatchType, Env, Constraints) ->
+    % Handle tail pattern - preserve dependent type structure for lists
+    TailType = case MatchType of
+        {dependent_type, 'List', [TypeParam, LengthParam]} ->
+            % Create new dependent type for tail with reduced length
+            NewLengthVar = create_derived_length_var(LengthParam, "tail"),
+            {dependent_type, 'List', [TypeParam, #type_param{value = {identifier_expr, NewLengthVar, undefined}}]};
+        _ ->
+            {list_type, new_type_var(), undefined}
+    end,
+    case infer_pattern_type(Tail, TailType, Env) of
         {ok, NewEnv, TailConstraints} ->
             {ok, NewEnv, Constraints ++ TailConstraints};
         Error -> Error
     end;
-infer_list_pattern_elements([Element | RestElements], Tail, Env, Constraints) ->
-    ElemType = new_type_var(),
+infer_list_pattern_elements([Element | RestElements], Tail, MatchType, Env, Constraints) ->
+    ElemType = case MatchType of
+        {dependent_type, 'List', [TypeParam, _]} -> extract_type_param_value(TypeParam);
+        _ -> new_type_var()
+    end,
     case infer_pattern_type(Element, ElemType, Env) of
         {ok, NewEnv, ElemConstraints} ->
-            infer_list_pattern_elements(RestElements, Tail, NewEnv, Constraints ++ ElemConstraints);
+            infer_list_pattern_elements(RestElements, Tail, MatchType, NewEnv, Constraints ++ ElemConstraints);
         Error -> Error
     end.
 
@@ -621,7 +635,7 @@ solve_constraints(Constraints) ->
 
 solve_constraints([], Subst) -> {ok, Subst};
 solve_constraints(Constraints, Subst) when length(Constraints) > 0 ->
-    % Temporarily use simple constraint solving to restore basic functionality
+    % Temporarily use simple constraint solving while debugging dependent types
     solve_constraints_simple(Constraints, Subst).
 
 solve_constraints_simple([], Subst) -> {ok, Subst};
@@ -766,3 +780,19 @@ type_to_string({dependent_type, Name, _Params}) ->
     atom_to_list(Name);  % Simplified
 type_to_string(Type) ->
     io_lib:format("~p", [Type]).
+
+%% Helper functions for dependent type pattern matching
+extract_length_var(#type_param{value = {identifier_expr, VarName, _}}) ->
+    VarName;
+extract_length_var(_) ->
+    unknown_length.
+
+extract_type_param_value(#type_param{value = Value}) ->
+    Value;
+extract_type_param_value(Value) ->
+    Value.
+
+create_derived_length_var(#type_param{value = {identifier_expr, BaseVar, _}}, Suffix) ->
+    list_to_atom(atom_to_list(BaseVar) ++ "_" ++ Suffix);
+create_derived_length_var(_, Suffix) ->
+    list_to_atom("derived_" ++ Suffix).

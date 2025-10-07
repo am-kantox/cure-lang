@@ -1,0 +1,2 @@
+# Test safe_length function - should return n
+def safe_length(list: List(T, n)) = n

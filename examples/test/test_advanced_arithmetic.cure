@@ -1,0 +1,5 @@
+def safe_double(list: List(T, n)) -> List(T, m) when m == n * 2 = 
+  list
+
+def safe_add_one(list: List(T, n)) -> List(T, m) when m == n + 1 =
+  list

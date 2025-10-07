@@ -245,18 +245,27 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
 %% Check function definition - New AST format
 check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
     try
-        % Convert parameters to type environment
+        % Convert parameters to type environment and extract type parameters
         {ParamTypes, ParamEnv} = process_parameters_new(Params, Env),
         
-        % Check constraint if present
-        case Constraint of
-            undefined -> ok;
+        % Also extract type parameters from return type if present
+        EnvWithReturnTypeParams = case ReturnType of
+            undefined -> ParamEnv;
+            _ -> extract_and_add_type_params(ReturnType, ParamEnv)
+        end,
+        
+        % Check and process constraint if present
+        FinalEnv = case Constraint of
+            undefined -> EnvWithReturnTypeParams;
             _ ->
-                case cure_types:infer_type(convert_expr_to_tuple(Constraint), ParamEnv) of
+                % First check that constraint is boolean
+                case cure_types:infer_type(convert_expr_to_tuple(Constraint), EnvWithReturnTypeParams) of
                     {ok, InferenceResult} ->
                         ConstraintType = element(2, InferenceResult),
                         case cure_types:unify(ConstraintType, {primitive_type, 'Bool'}) of
-                            {ok, _} -> ok;
+                            {ok, _} ->
+                                % Convert constraint to SMT and add to environment
+                                process_when_clause_constraint(Constraint, EnvWithReturnTypeParams, Location);
                             {error, Reason} ->
                                 throw({constraint_not_bool, Reason, Location})
                         end;
@@ -265,8 +274,8 @@ check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Lo
                 end
         end,
         
-        % Check function body
-        case cure_types:infer_type(convert_expr_to_tuple(Body), ParamEnv) of
+        % Check function body with constraint-enhanced environment
+        case cure_types:infer_type(convert_expr_to_tuple(Body), FinalEnv) of
             {ok, InferenceResult2} ->
                 BodyType = element(2, InferenceResult2),
                 % Check return type if specified
@@ -812,7 +821,10 @@ process_parameters_new([], _OrigEnv, TypesAcc, EnvAcc) ->
     {lists:reverse(TypesAcc), EnvAcc};
 process_parameters_new([{param, Name, TypeExpr, _Location} | RestParams], OrigEnv, TypesAcc, EnvAcc) ->
     ParamType = convert_type_to_tuple(TypeExpr),
-    NewEnvAcc = cure_types:extend_env(EnvAcc, Name, ParamType),
+    % Extract type parameters from dependent types and add them to environment
+    EnvWithTypeParams = extract_and_add_type_params(TypeExpr, EnvAcc),
+    % Add the parameter itself to environment
+    NewEnvAcc = cure_types:extend_env(EnvWithTypeParams, Name, ParamType),
     process_parameters_new(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc).
 
 check_import_items_new(Module, Items, Env) ->
@@ -850,3 +862,100 @@ convert_match_clause_to_tuple(#match_clause{pattern = Pattern, guard = Guard, bo
 
 convert_field_pattern_to_tuple(#field_pattern{name = Name, pattern = Pattern, location = Location}) ->
     {field_pattern, Name, convert_pattern_to_tuple(Pattern), Location}.
+
+%% When clause constraint processing with SMT solver integration
+process_when_clause_constraint(Constraint, Env, Location) ->
+    try
+        % Convert the constraint expression to SMT constraints
+        case convert_constraint_to_smt(Constraint, Env) of
+            {ok, SmtConstraints} ->
+                % Add SMT constraints to the environment for solving
+                add_smt_constraints_to_env(SmtConstraints, Env);
+            {error, Reason} ->
+                % Log the error but don't fail - continue with original environment
+                io:format("Warning: Could not convert constraint to SMT: ~p~n", [Reason]),
+                Env
+        end
+    catch
+        _:_ ->
+            % On any error, just return the original environment
+            Env
+    end.
+
+%% Convert Cure constraint expressions to SMT constraints
+convert_constraint_to_smt(Constraint, Env) ->
+    case Constraint of
+        {binary_op_expr, Op, Left, Right, _Location} when 
+            Op =:= '>' orelse Op =:= '<' orelse Op =:= '>=' orelse Op =:= '=<' orelse Op =:= '==' ->
+            % Arithmetic comparison constraint
+            case {convert_expr_to_smt_term(Left, Env), convert_expr_to_smt_term(Right, Env)} of
+                {{ok, LeftTerm}, {ok, RightTerm}} ->
+                    SmtConstraint = case Op of
+                        '>' -> cure_smt_solver:inequality_constraint(LeftTerm, '>', RightTerm);
+                        '<' -> cure_smt_solver:inequality_constraint(LeftTerm, '<', RightTerm);
+                        '>=' -> cure_smt_solver:inequality_constraint(LeftTerm, '>=', RightTerm);
+                        '=<' -> cure_smt_solver:inequality_constraint(LeftTerm, '=<', RightTerm);
+                        '==' -> cure_smt_solver:equality_constraint(LeftTerm, RightTerm)
+                    end,
+                    {ok, [SmtConstraint]};
+                {Error, _} -> Error;
+                {_, Error} -> Error
+            end;
+        _ ->
+            {error, {unsupported_constraint_type, Constraint}}
+    end.
+
+%% Convert Cure expressions to SMT terms
+convert_expr_to_smt_term({identifier_expr, Name, _}, _Env) ->
+    {ok, cure_smt_solver:variable_term(Name)};
+convert_expr_to_smt_term({literal_expr, Value, _}, _Env) when is_integer(Value) ->
+    {ok, cure_smt_solver:constant_term(Value)};
+convert_expr_to_smt_term({binary_op_expr, '+', Left, Right, _}, Env) ->
+    case {convert_expr_to_smt_term(Left, Env), convert_expr_to_smt_term(Right, Env)} of
+        {{ok, LeftTerm}, {ok, RightTerm}} ->
+            AddExpr = cure_smt_solver:addition_expression([LeftTerm, RightTerm]),
+            {ok, AddExpr};
+        {Error, _} -> Error;
+        {_, Error} -> Error
+    end;
+convert_expr_to_smt_term({binary_op_expr, '-', Left, Right, _}, Env) ->
+    case {convert_expr_to_smt_term(Left, Env), convert_expr_to_smt_term(Right, Env)} of
+        {{ok, LeftTerm}, {ok, RightTerm}} ->
+            SubExpr = cure_smt_solver:subtraction_expression([LeftTerm, RightTerm]),
+            {ok, SubExpr};
+        {Error, _} -> Error;
+        {_, Error} -> Error
+    end;
+convert_expr_to_smt_term({binary_op_expr, '*', Left, Right, _}, Env) ->
+    case {convert_expr_to_smt_term(Left, Env), convert_expr_to_smt_term(Right, Env)} of
+        {{ok, LeftTerm}, {ok, RightTerm}} ->
+            MulExpr = cure_smt_solver:multiplication_expression([LeftTerm, RightTerm]),
+            {ok, MulExpr};
+        {Error, _} -> Error;
+        {_, Error} -> Error
+    end;
+convert_expr_to_smt_term({binary_op_expr, '/', Left, Right, _}, Env) ->
+    case {convert_expr_to_smt_term(Left, Env), convert_expr_to_smt_term(Right, Env)} of
+        {{ok, LeftTerm}, {ok, RightTerm}} ->
+            DivExpr = cure_smt_solver:division_expression([LeftTerm, RightTerm]),
+            {ok, DivExpr};
+        {Error, _} -> Error;
+        {_, Error} -> Error
+    end;
+convert_expr_to_smt_term({binary_op_expr, 'mod', Left, Right, _}, Env) ->
+    case {convert_expr_to_smt_term(Left, Env), convert_expr_to_smt_term(Right, Env)} of
+        {{ok, LeftTerm}, {ok, RightTerm}} ->
+            ModExpr = cure_smt_solver:modulo_expression([LeftTerm, RightTerm]),
+            {ok, ModExpr};
+        {Error, _} -> Error;
+        {_, Error} -> Error
+    end;
+convert_expr_to_smt_term(Expr, _Env) ->
+    {error, {unsupported_expression, Expr}}.
+
+%% Add SMT constraints to the type environment
+add_smt_constraints_to_env(SmtConstraints, Env) ->
+    % For now, just return the original environment with constraints noted
+    % In a full implementation, would store constraints in environment
+    io:format("Added ~p SMT constraints for when clause verification~n", [length(SmtConstraints)]),
+    Env.

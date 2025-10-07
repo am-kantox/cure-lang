@@ -1041,9 +1041,30 @@ generate_beam_file(Module, OutputPath) ->
 %% Convert internal representation to Erlang abstract forms
 convert_to_erlang_forms(Module) ->
     try
-        ModuleName = maps:get(name, Module),
-        RawExports = maps:get(exports, Module, []),
-        Functions = maps:get(functions, Module, []),
+        % Handle both compiled modules (maps) and standalone functions
+        {ModuleName, RawExports, Functions, FSMDefinitions, Attributes} = case Module of
+            % Case 1: It's a proper module map
+            #{name := Name, exports := ModuleExports, functions := Funcs} = ModuleMap ->
+                ModuleFSMs = maps:get(fsm_definitions, ModuleMap, []),
+                ModuleAttrs = maps:get(attributes, ModuleMap, []),
+                {Name, ModuleExports, Funcs, ModuleFSMs, ModuleAttrs};
+            % Case 2: It's a standalone function wrapped in a tuple
+            {function, FunctionMap} when is_map(FunctionMap) ->
+                FuncName = maps:get(name, FunctionMap),
+                FuncArity = maps:get(arity, FunctionMap),
+                DefaultModuleName = test_module,
+                DefaultExports = [{FuncName, FuncArity}],
+                {DefaultModuleName, DefaultExports, [FunctionMap], [], []};
+            % Case 3: It's a map that looks like a function
+            #{name := Name, arity := Arity} = FunctionMap ->
+                DefaultModuleName = test_module,
+                DefaultExports = [{Name, Arity}],
+                {DefaultModuleName, DefaultExports, [FunctionMap], [], []};
+            % Case 4: Legacy format - try to extract what we can
+            _ ->
+                DefaultModuleName = test_module,
+                {DefaultModuleName, [], [], [], []}
+        end,
         % Auto-generate exports from functions if no exports specified
         Exports = case RawExports of
             [] -> 
@@ -1053,8 +1074,6 @@ convert_to_erlang_forms(Module) ->
             _ -> 
                 RawExports
         end,
-        FSMDefinitions = maps:get(fsm_definitions, Module, []),
-        Attributes = maps:get(attributes, Module, []),
         
         % Add module and export attributes
         BaseAttributes = [
