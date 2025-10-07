@@ -451,38 +451,42 @@ compile_binary_op(#binary_op_expr{op = Op, left = Left, right = Right,
                                  location = Location}, State) ->
     case Op of
         '|>' ->
-            % Pipe operator: Left |> Right becomes Right(Left)
+            % Monadic pipe operator: Left |> Right with automatic ok() wrapping and error propagation
+            % The first argument is wrapped with ok(arg), then each pipe operation:
+            % - If Left is Ok(value), unwrap and call Right(value), return Ok(result) or Error(reason)
+            % - If Left is Error(reason), propagate error without calling Right
             {LeftInstructions, State1} = compile_expression(Left, State),
             
-            % Right should be a function call where Left becomes the first argument
+            % Create monadic pipe instruction
             case Right of
                 #function_call_expr{function = Function, args = Args} ->
                     % Compile function and original args
                     {FuncInstructions, State2} = compile_expression(Function, State1),
                     {ArgInstructions, State3} = compile_expressions(Args, State2),
                     
-                    % Create call with Left as first argument
-                    CallInstruction = #beam_instr{
-                        op = call,
+                    % Create monadic pipe with function call
+                    MonadicPipeInstruction = #beam_instr{
+                        op = monadic_pipe_call,
                         args = [length(Args) + 1], % +1 for the piped value
                         location = Location
                     },
                     
-                    % Instructions: Function, Left, Args..., Call (correct stack order)
-                    Instructions = FuncInstructions ++ LeftInstructions ++ ArgInstructions ++ [CallInstruction],
+                    % Instructions: Function, Left, Args..., MonadicPipe (correct stack order)
+                    Instructions = FuncInstructions ++ LeftInstructions ++ ArgInstructions ++ [MonadicPipeInstruction],
                     {Instructions, State3};
                 _ ->
                     % Right is just a function, call it with Left as argument
                     {RightInstructions, State2} = compile_expression(Right, State1),
                     
-                    CallInstruction = #beam_instr{
-                        op = call,
+                    % Create monadic pipe with simple function
+                    MonadicPipeInstruction = #beam_instr{
+                        op = monadic_pipe_call,
                         args = [1], % One argument (the piped value)
                         location = Location
                     },
                     
-                    % Instructions: Function, Left, Call (correct stack order)
-                    Instructions = RightInstructions ++ LeftInstructions ++ [CallInstruction],
+                    % Instructions: Function, Left, MonadicPipe (correct stack order)
+                    Instructions = RightInstructions ++ LeftInstructions ++ [MonadicPipeInstruction],
                     {Instructions, State2}
             end;
         _ ->

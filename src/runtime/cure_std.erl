@@ -10,7 +10,9 @@
          trim/1, to_upper/1, to_lower/1, contains/2, starts_with/2, ends_with/2, string_join/2,
          string_empty/1, int_to_string/1, float_to_string/1, string_to_int/1, string_to_float/1,
          print/1, println/1, fsm_create/2, fsm_send_safe/2, create_counter/1, list_to_string/1,
-         join_ints/2]).    % Result and Option types
+         join_ints/2]).
+
+                           % Result and Option types
 
     % Option operations
 

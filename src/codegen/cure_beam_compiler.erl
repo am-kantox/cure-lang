@@ -133,6 +133,7 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         store_local -> compile_store_local(Args, NewContext);
         binary_op -> compile_binary_op(Args, NewContext);
         call -> compile_call(Args, NewContext);
+        monadic_pipe_call -> compile_monadic_pipe_call(Args, NewContext);
         make_list -> compile_make_list(Args, NewContext);
         make_tuple -> compile_make_tuple(Args, NewContext);
         make_lambda -> compile_make_lambda(Args, NewContext);
@@ -209,6 +210,40 @@ compile_binary_op([Operator], Context) ->
             Line = NewContext#compile_context.line,
             OpForm = compile_binary_operator(Operator, Left, Right, Line),
             {ok, [], push_stack(OpForm, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% Compile monadic pipe calls with automatic Result handling
+compile_monadic_pipe_call([Arity], Context) ->
+    case pop_n_from_stack(Arity + 1, Context) of  % +1 for function itself
+        {Elements, NewContext} ->
+            % With corrected instruction order (Function first, then Args),
+            % the stack has Function at bottom, Args on top
+            % After popping, we get [Function, Arg1, Arg2, ...] (no need to reverse)
+            case Elements of
+                [] -> 
+                    {error, {empty_elements_for_call, Arity}};
+                [Function | Args] when length(Args) =:= Arity ->
+                    Line = NewContext#compile_context.line,
+                    
+                    % Create a monadic pipe operation that:
+                    % 1. Wraps the first argument (piped value) with ok() if it's not already a Result
+                    % 2. Checks if it's Ok(value) or Error(reason)
+                    % 3. If Ok(value), unwrap and call function with unwrapped value + other args
+                    % 4. If Error(reason), propagate error without calling function
+                    
+                    case Args of
+                        [PipedValue | RestArgs] ->
+                            % Generate the monadic pipe logic
+                            MonadicPipeForm = generate_monadic_pipe_form(Function, PipedValue, RestArgs, Line),
+                            {ok, [], push_stack(MonadicPipeForm, NewContext)};
+                        [] ->
+                            {error, {no_piped_value_for_monadic_pipe}}
+                    end;
+                _ ->
+                    {error, {wrong_arity, Arity, length(Elements)}}
+            end;
         Error ->
             Error
     end.
@@ -944,3 +979,52 @@ apply_param_mapping_to_clause({clause, Line, Patterns, Guards, Body}, ParamMappi
     MappedGuards = [apply_param_mapping_to_expr(G, ParamMapping) || G <- Guards],
     MappedBody = [apply_param_mapping_to_expr(B, ParamMapping) || B <- Body],
     {clause, Line, MappedPatterns, MappedGuards, MappedBody}.
+
+%% ============================================================================
+%% Monadic Pipe Operation Generation
+%% ============================================================================
+
+%% Generate monadic pipe operation form
+%% This creates Erlang code that implements the monadic pipe behavior:
+%% 1. Wrap the piped value with ok() if it's not already a Result
+%% 2. Use cure_std:and_then to chain the operation monadically
+generate_monadic_pipe_form(Function, PipedValue, RestArgs, Line) ->
+    % First, wrap the piped value with ok()
+    WrappedValue = {call, Line, 
+                   {remote, Line, {atom, Line, cure_std}, {atom, Line, ok}}, 
+                   [PipedValue]},
+    
+    % Create a lambda function that wraps the target function
+    % This lambda will receive the unwrapped value and call the target function
+    LambdaVar = {var, Line, 'X'},
+    LambdaCallArgs = [LambdaVar | RestArgs],
+    
+    % Create the function call inside the lambda
+    LambdaCall = case Function of
+        {atom, _, FuncName} ->
+            case is_stdlib_function(FuncName) of
+                true ->
+                    {call, Line, {remote, Line, {atom, Line, cure_std}, Function}, LambdaCallArgs};
+                false ->
+                    {call, Line, Function, LambdaCallArgs}
+            end;
+        _ ->
+            {call, Line, Function, LambdaCallArgs}
+    end,
+    
+    % For monadic pipe, we need to wrap the result in a Result type
+    % Since the functions expect raw values but pipe chain expects Results
+    WrappedCall = {call, Line, 
+                  {remote, Line, {atom, Line, cure_std}, {atom, Line, ok}}, 
+                  [LambdaCall]},
+    
+    % Create the lambda function
+    LambdaFunction = {'fun', Line, {clauses, [
+        {clause, Line, [LambdaVar], [], [WrappedCall]}
+    ]}},
+    
+    % Use cure_std:and_then to chain the operations monadically
+    % Note: and_then expects (Function, Result) order according to cure_std.erl
+    {call, Line,
+     {remote, Line, {atom, Line, cure_std}, {atom, Line, and_then}},
+     [LambdaFunction, WrappedValue]}.
