@@ -123,11 +123,17 @@ check_function(#function_def{name = Name, params = Params, return_type = ReturnT
         % Convert parameters to type environment
         {ParamTypes, ParamEnv} = process_parameters(Params, Env),
         
+        % Also extract type parameters from return type
+        EnvWithReturnTypeParams = case ReturnType of
+            undefined -> ParamEnv;
+            _ -> extract_and_add_type_params(ReturnType, ParamEnv)
+        end,
+        
         % Check constraint if present
         case Constraint of
             undefined -> ok;
             _ ->
-                case cure_types:infer_type(convert_expr_to_tuple(Constraint), ParamEnv) of
+                case cure_types:infer_type(convert_expr_to_tuple(Constraint), EnvWithReturnTypeParams) of
                     {ok, InferenceResult} ->
                         ConstraintType = element(2, InferenceResult),
                         case cure_types:unify(ConstraintType, {primitive_type, 'Bool'}) of
@@ -141,7 +147,7 @@ check_function(#function_def{name = Name, params = Params, return_type = ReturnT
         end,
         
         % Check function body
-        case cure_types:infer_type(convert_expr_to_tuple(Body), ParamEnv) of
+        case cure_types:infer_type(convert_expr_to_tuple(Body), EnvWithReturnTypeParams) of
             {ok, InferenceResult2} ->
                 BodyType = element(2, InferenceResult2),
                 % Check return type if specified
@@ -500,7 +506,12 @@ process_parameters([], _OrigEnv, TypesAcc, EnvAcc) ->
     {lists:reverse(TypesAcc), EnvAcc};
 process_parameters([#param{name = Name, type = TypeExpr} | RestParams], OrigEnv, TypesAcc, EnvAcc) ->
     ParamType = convert_type_to_tuple(TypeExpr),
-    NewEnvAcc = cure_types:extend_env(EnvAcc, Name, ParamType),
+    
+    % Extract type parameters from dependent types and add them to environment
+    EnvWithTypeParams = extract_and_add_type_params(TypeExpr, EnvAcc),
+    
+    % Add the parameter itself to environment
+    NewEnvAcc = cure_types:extend_env(EnvWithTypeParams, Name, ParamType),
     process_parameters(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc).
 
 check_exports([], _Items) -> ok;
@@ -696,6 +707,37 @@ format_error_type(constraint_not_bool) -> "Function constraint must be a boolean
 format_error_type(constraint_inference_failed) -> "Failed to infer type of function constraint";
 format_error_type(missing_return_type_for_def_erl) -> "def_erl functions must have explicit return type annotation";
 format_error_type(ErrorType) -> atom_to_list(ErrorType).
+
+%% Extract type parameters from dependent types and add them to environment
+extract_and_add_type_params(TypeExpr, Env) ->
+    extract_type_params_helper(TypeExpr, Env).
+
+extract_type_params_helper(#dependent_type{params = Params}, Env) ->
+    lists:foldl(fun(#type_param{value = Value}, AccEnv) ->
+        extract_type_param_value(Value, AccEnv)
+    end, Env, Params);
+extract_type_params_helper(#list_type{element_type = ElemType, length = LengthExpr}, Env) ->
+    % Handle list types with length expressions
+    Env1 = extract_type_params_helper(ElemType, Env),
+    case LengthExpr of
+        undefined -> Env1;
+        _ -> extract_type_param_value(LengthExpr, Env1)
+    end;
+extract_type_params_helper(_, Env) ->
+    Env.
+
+extract_type_param_value(#identifier_expr{name = Name}, Env) ->
+    % Add identifier as a length parameter (typically numeric for dependent types)
+    cure_types:extend_env(Env, Name, {primitive_type, 'Int'});
+extract_type_param_value(#primitive_type{name = Name}, Env) ->
+    % Type parameter like T - add to environment as type variable
+    TypeVar = cure_types:new_type_var(Name),
+    cure_types:extend_env(Env, Name, TypeVar);
+extract_type_param_value(TypeExpr, Env) when is_record(TypeExpr, dependent_type) ->
+    extract_type_params_helper(TypeExpr, Env);
+extract_type_param_value(_, Env) ->
+    % Other expressions (literals, complex expressions) don't introduce type parameters
+    Env.
 
 %% Dependent type checking helpers
 check_dependent_constraint(_Constraint, Value, Type) ->

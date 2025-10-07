@@ -813,15 +813,96 @@ parse_type_parameters(State, Acc) ->
 
 %% Parse single type parameter
 parse_type_parameter(State) ->
-    {Type, State1} = parse_type(State),
-    Location = get_expr_location(Type),
-    
-    Param = #type_param{
-        name = undefined,
-        value = Type,
-        location = Location
-    },
-    {Param, State1}.
+    % Check if this looks like a value parameter first
+    case current_token(State) of
+        Token when is_record(Token, token) ->
+            case get_token_type(Token) of
+                identifier ->
+                    Name = get_token_value(Token),
+                    case is_binary(Name) of
+                        true ->
+                            AtomName = binary_to_atom(Name, utf8),
+                            % Check if it's a lowercase identifier (likely value parameter)
+                            case is_lowercase_identifier(AtomName) of
+                                true ->
+                                    % Parse as expression
+                                    {Expr, State1} = parse_expression(State),
+                                    ExprLocation = get_expr_location(Expr),
+                                    Param = #type_param{
+                                        name = undefined,
+                                        value = Expr,
+                                        location = ExprLocation
+                                    },
+                                    {Param, State1};
+                                false ->
+                                    % Parse as type
+                                    {Type, State1} = parse_type(State),
+                                    Location = get_expr_location(Type),
+                                    Param = #type_param{
+                                        name = undefined,
+                                        value = Type,
+                                        location = Location
+                                    },
+                                    {Param, State1}
+                            end;
+                        false ->
+                            % Not a binary name, parse as type
+                            {Type, State1} = parse_type(State),
+                            Location = get_expr_location(Type),
+                            Param = #type_param{
+                                name = undefined,
+                                value = Type,
+                                location = Location
+                            },
+                            {Param, State1}
+                    end;
+                _ ->
+                    % Not an identifier, try to parse as type first
+                    try
+                        {Type, State1} = parse_type(State),
+                        Location = get_expr_location(Type),
+                        Param = #type_param{
+                            name = undefined,
+                            value = Type,
+                            location = Location
+                        },
+                        {Param, State1}
+                    catch
+                        throw:{parse_error, expected_type, _, _} ->
+                            % If type parsing fails, try parsing as expression
+                            {Expr, State2} = parse_expression(State),
+                            ExprLocation = get_expr_location(Expr),
+                            ExprParam = #type_param{
+                                name = undefined,
+                                value = Expr,
+                                location = ExprLocation
+                            },
+                            {ExprParam, State2}
+                    end
+            end;
+        _ ->
+            % Not a token record, fallback to original logic
+            try
+                {Type, State1} = parse_type(State),
+                Location = get_expr_location(Type),
+                Param = #type_param{
+                    name = undefined,
+                    value = Type,
+                    location = Location
+                },
+                {Param, State1}
+            catch
+                throw:{parse_error, expected_type, _, _} ->
+                    {Expr, State2} = parse_expression(State),
+                    ExprLocation = get_expr_location(Expr),
+                    ExprParam = #type_param{
+                        name = undefined,
+                        value = Expr,
+                        location = ExprLocation
+                    },
+                    {ExprParam, State2}
+            end
+    end.
 
 %% Parse expressions with operator precedence
 parse_expression(State) ->
@@ -905,6 +986,15 @@ is_constructor_name(some) -> true;
 is_constructor_name(none) -> true;
 is_constructor_name('_') -> true;  % wildcard
 is_constructor_name(_) -> false.
+
+%% Check if identifier starts with lowercase letter (likely value parameter)
+is_lowercase_identifier(Atom) when is_atom(Atom) ->
+    AtomStr = atom_to_list(Atom),
+    case AtomStr of
+        [FirstChar|_] when FirstChar >= $a, FirstChar =< $z -> true;
+        _ -> false
+    end;
+is_lowercase_identifier(_) -> false.
 
 %% Look ahead to see if this looks like pattern -> body
 looks_like_pattern_start(State) ->

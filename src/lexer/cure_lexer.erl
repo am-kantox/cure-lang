@@ -92,6 +92,7 @@ keywords() ->
         <<"match">> => 'match',
         <<"when">> => 'when',
         <<"let">> => 'let',
+        <<"in">> => 'in',
         <<"module">> => 'module',
         <<"import">> => 'import',
         <<"export">> => 'export',

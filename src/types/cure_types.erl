@@ -370,6 +370,17 @@ infer_expr({list_expr, Elements, Location}, Env) ->
             end
     end;
 
+infer_expr({match_expr, MatchExpr, Patterns, Location}, Env) ->
+    case infer_expr(MatchExpr, Env) of
+        {ok, MatchType, MatchConstraints} ->
+            case infer_match_clauses(Patterns, MatchType, Env) of
+                {ok, ResultType, ClauseConstraints} ->
+                    {ok, ResultType, MatchConstraints ++ ClauseConstraints};
+                Error -> Error
+            end;
+        Error -> Error
+    end;
+
 infer_expr(Expr, _Env) ->
     {error, {unsupported_expression, Expr}}.
 
@@ -409,6 +420,34 @@ infer_binary_op('==', LeftType, RightType, Location, Constraints) ->
         location = Location
     },
     {ok, ?TYPE_BOOL, Constraints ++ [EqualityConstraint]};
+
+infer_binary_op('>', LeftType, RightType, Location, Constraints) ->
+    NumConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
+        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
+    ],
+    {ok, ?TYPE_BOOL, Constraints ++ NumConstraints};
+
+infer_binary_op('<', LeftType, RightType, Location, Constraints) ->
+    NumConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
+        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
+    ],
+    {ok, ?TYPE_BOOL, Constraints ++ NumConstraints};
+
+infer_binary_op('>=', LeftType, RightType, Location, Constraints) ->
+    NumConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
+        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
+    ],
+    {ok, ?TYPE_BOOL, Constraints ++ NumConstraints};
+
+infer_binary_op('=<', LeftType, RightType, Location, Constraints) ->
+    NumConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
+        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
+    ],
+    {ok, ?TYPE_BOOL, Constraints ++ NumConstraints};
 
 infer_binary_op(Op, _LeftType, _RightType, Location, _Constraints) ->
     {error, {unsupported_binary_operator, Op, Location}}.
@@ -467,6 +506,91 @@ infer_list_elements([Elem | RestElems], ElemType, Env, Constraints) ->
             },
             NewConstraints = Constraints ++ ElemConstraints ++ [UnifyConstraint],
             infer_list_elements(RestElems, ElemType, Env, NewConstraints);
+        Error -> Error
+    end.
+
+infer_match_clauses([], _MatchType, _Env) ->
+    % No patterns - should not happen in valid code
+    {error, no_match_patterns};
+infer_match_clauses([{match_clause, Pattern, Guard, Body, _Location}], MatchType, Env) ->
+    % Single pattern - infer its type and body type
+    case infer_pattern_type(Pattern, MatchType, Env) of
+        {ok, PatternEnv, PatternConstraints} ->
+            % Check guard if present
+            GuardConstraints = case Guard of
+                undefined -> [];
+                _ ->
+                    case infer_expr(Guard, PatternEnv) of
+                        {ok, GuardType, GConstraints} ->
+                            BoolConstraint = #type_constraint{
+                                left = GuardType,
+                                op = '=',
+                                right = ?TYPE_BOOL,
+                                location = undefined
+                            },
+                            GConstraints ++ [BoolConstraint];
+                        {error, _} -> []
+                    end
+            end,
+            % Infer body type in pattern environment
+            case infer_expr(Body, PatternEnv) of
+                {ok, BodyType, BodyConstraints} ->
+                    AllConstraints = PatternConstraints ++ GuardConstraints ++ BodyConstraints,
+                    {ok, BodyType, AllConstraints};
+                Error -> Error
+            end;
+        Error -> Error
+    end;
+infer_match_clauses([FirstClause | RestClauses], MatchType, Env) ->
+    % Multiple patterns - all must return the same type
+    case infer_match_clauses([FirstClause], MatchType, Env) of
+        {ok, FirstType, FirstConstraints} ->
+            case infer_match_clauses(RestClauses, MatchType, Env) of
+                {ok, RestType, RestConstraints} ->
+                    UnifyConstraint = #type_constraint{
+                        left = FirstType,
+                        op = '=',
+                        right = RestType,
+                        location = undefined
+                    },
+                    {ok, FirstType, FirstConstraints ++ RestConstraints ++ [UnifyConstraint]};
+                Error -> Error
+            end;
+        Error -> Error
+    end.
+
+infer_pattern_type({list_pattern, Elements, Tail, _Location}, MatchType, Env) ->
+    % For list patterns, create environment with pattern variables
+    case infer_list_pattern_elements(Elements, Tail, Env, []) of
+        {ok, PatternEnv, Constraints} ->
+            {ok, PatternEnv, Constraints};
+        Error -> Error
+    end;
+infer_pattern_type({identifier_pattern, Name, _Location}, MatchType, Env) ->
+    % Add identifier to environment with the match type
+    NewEnv = extend_env(Env, Name, MatchType),
+    {ok, NewEnv, []};
+infer_pattern_type({wildcard_pattern, _Location}, _MatchType, Env) ->
+    % Wildcard doesn't bind any variables
+    {ok, Env, []};
+infer_pattern_type(_Pattern, _MatchType, Env) ->
+    % For other patterns, return env unchanged for now
+    {ok, Env, []}.
+
+infer_list_pattern_elements([], undefined, Env, Constraints) ->
+    {ok, Env, Constraints};
+infer_list_pattern_elements([], Tail, Env, Constraints) ->
+    % Handle tail pattern
+    case infer_pattern_type(Tail, {list_type, new_type_var(), undefined}, Env) of
+        {ok, NewEnv, TailConstraints} ->
+            {ok, NewEnv, Constraints ++ TailConstraints};
+        Error -> Error
+    end;
+infer_list_pattern_elements([Element | RestElements], Tail, Env, Constraints) ->
+    ElemType = new_type_var(),
+    case infer_pattern_type(Element, ElemType, Env) of
+        {ok, NewEnv, ElemConstraints} ->
+            infer_list_pattern_elements(RestElements, Tail, NewEnv, Constraints ++ ElemConstraints);
         Error -> Error
     end.
 
