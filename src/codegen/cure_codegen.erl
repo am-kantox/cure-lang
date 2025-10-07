@@ -1267,21 +1267,39 @@ compile_pattern(#list_pattern{elements = Elements, tail = Tail, location = Locat
     Instructions = [ListMatchInstr] ++ ElementInstr ++ TailInstr,
     {Instructions, State2};
 
-%% Record pattern
+%% Record pattern - special handling for Result/Option types
 compile_pattern(#record_pattern{name = RecordName, fields = Fields, location = Location}, FailLabel, State) ->
-    % First, match that it's the correct record type (represented as tagged tuple)
-    % In Erlang, records are represented as {RecordName, Field1, Field2, ...}
-    RecordMatchInstr = #beam_instr{
-        op = match_tagged_tuple,
-        args = [RecordName, length(Fields), FailLabel],
-        location = Location
-    },
-    
-    % Compile field patterns
-    {FieldInstr, State1} = compile_record_field_patterns(Fields, FailLabel, State),
-    
-    Instructions = [RecordMatchInstr] ++ FieldInstr,
-    {Instructions, State1};
+    % Check if this is a Result/Option type that should be treated as a tagged tuple
+    case is_result_or_option_type(RecordName) of
+        true ->
+            % These are represented as simple tuples: {'Ok', Value}, {'Error', Reason}, etc.
+            % Generate tuple pattern matching instead of record matching
+            RecordMatchInstr = #beam_instr{
+                op = match_result_tuple,
+                args = [RecordName, length(Fields), FailLabel],
+                location = Location
+            },
+            
+            % Compile field patterns
+            {FieldInstr, State1} = compile_record_field_patterns(Fields, FailLabel, State),
+            
+            Instructions = [RecordMatchInstr] ++ FieldInstr,
+            {Instructions, State1};
+        false ->
+            % Traditional record pattern for actual records
+            % In Erlang, records are represented as {RecordName, Field1, Field2, ...}
+            RecordMatchInstr = #beam_instr{
+                op = match_tagged_tuple,
+                args = [RecordName, length(Fields), FailLabel],
+                location = Location
+            },
+            
+            % Compile field patterns
+            {FieldInstr, State1} = compile_record_field_patterns(Fields, FailLabel, State),
+            
+            Instructions = [RecordMatchInstr] ++ FieldInstr,
+            {Instructions, State1}
+    end;
 
 compile_pattern(Pattern, _FailLabel, State) ->
     {error, {unsupported_pattern, Pattern}, State}.
@@ -1317,3 +1335,14 @@ compile_pattern_elements_impl([Element | Rest], Acc, FailLabel, State) ->
         {error, Reason, ErrorState} ->
             {error, Reason, ErrorState}
     end.
+
+%% ============================================================================
+%% Helper Functions for Pattern Compilation
+%% ============================================================================
+
+%% Check if a record name represents a Result or Option type that uses tuple representation
+is_result_or_option_type('Ok') -> true;
+is_result_or_option_type('Error') -> true;
+is_result_or_option_type('Some') -> true;
+is_result_or_option_type('None') -> true;
+is_result_or_option_type(_) -> false.

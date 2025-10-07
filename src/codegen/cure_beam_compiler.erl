@@ -138,6 +138,7 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         make_tuple -> compile_make_tuple(Args, NewContext);
         make_lambda -> compile_make_lambda(Args, NewContext);
         match_tagged_tuple -> compile_match_tagged_tuple(Args, NewContext);
+        match_result_tuple -> compile_match_result_tuple(Args, NewContext);
         match_list -> compile_match_list(Args, NewContext);
         advance_field -> compile_advance_field(Args, NewContext);
         bind_var -> compile_bind_var(Args, NewContext);
@@ -388,11 +389,45 @@ compile_match_tagged_tuple([Tag, FieldCount, _FailLabel], Context) ->
                 {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
             ]},
             {ok, [], push_stack(MatchForm, NewContext)};
+            Error ->
+            Error
+    end.
+
+%% Result tuple matching (for Result/Option types like {'Ok', value}, {'Error', reason})
+compile_match_result_tuple([Tag, FieldCount, _FailLabel], Context) ->
+    % This matches Result/Option types which use simple tuple format: {'Ok', Value}, {'Error', Reason}
+    io:format("DEBUG: compile_match_result_tuple called with Tag=~p, FieldCount=~p~n", [Tag, FieldCount]),
+    case pop_stack(Context) of
+        {Value, NewContext} ->
+            Line = NewContext#compile_context.line,
+            
+            % FIXED VERSION: Generate proper case expression for Result pattern matching
+            % The key insight is that we need to generate the complete case expression
+            % that properly matches the tuple structure and binds variables correctly
+            ResultCaseExpr = {'case', Line, Value, [
+                % Ok(value) -> extract the value and return it
+                {clause, Line, 
+                 [{tuple, Line, [{atom, Line, 'Ok'}, {var, Line, 'Value'}]}], 
+                 [], 
+                 [{var, Line, 'Value'}]},
+                % Error(reason) -> propagate the error by calling error(reason)
+                {clause, Line, 
+                 [{tuple, Line, [{atom, Line, 'Error'}, {var, Line, 'Reason'}]}], 
+                 [], 
+                 [{call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, error}}, [{var, Line, 'Reason'}]}]},
+                % Fallback for other values - function clause error
+                {clause, Line, 
+                 [{var, Line, '_Other'}], 
+                 [], 
+                 [{call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, error}}, [{atom, Line, function_clause}]}]}
+            ]},
+            
+            {ok, [], push_stack(ResultCaseExpr, NewContext)};
         Error ->
             Error
     end.
 
-%% List pattern matching  
+%% List pattern matching
 compile_match_list([ElementCount, HasTail, _FailLabel], Context) ->
     case pop_stack(Context) of
         {Value, NewContext} ->
