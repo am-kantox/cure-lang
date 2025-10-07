@@ -1,0 +1,49 @@
+# Complete Monadic Pipe Test
+module MonadicTest do
+  export [main/0, double/1, add_ten/1, failing_function/1]
+
+  def main(): Int =
+    println("=== Test 1: Basic pipe ===")
+    let result1 = 5 |> double
+    println(result1)
+    
+    println("=== Test 2: Pattern matching ===")
+    let result2 = 3 |> double
+    match result2 do
+      Ok(value) -> println("Pattern match success")
+      Error(reason) -> println("Pattern match error")
+    end
+    
+    println("=== Test 3: Chaining ===")
+    let result3 = 3 |> double |> add_ten
+    println(result3)
+    
+    println("=== Test 4: Error propagation ===")
+    let result4 = 60 |> failing_function |> double
+    println(result4)
+    
+    println("=== Test 5: Ok value input ===")
+    let ok_val = ok(20)
+    let result5 = ok_val |> double
+    println(result5)
+    
+    println("=== Test 6: Error input ===")
+    let error_val = error("test error")
+    let result6 = error_val |> double
+    println(result6)
+    
+    println("=== All tests completed ===")
+    42
+    
+  def double(x: Int): Int =
+    x * 2
+    
+  def add_ten(x: Int): Int =
+    x + 10
+    
+  def failing_function(x: Int): Result(Int, String) =
+    if x > 50 then
+      error("Value too large")
+    else
+      ok(x + 5)
+end

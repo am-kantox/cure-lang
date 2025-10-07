@@ -1,0 +1,88 @@
+// Comprehensive test for monadic pipe operator with full three-case behavior
+
+// Test helper functions
+def double(x):
+    x * 2
+
+def add_ten(x):
+    x + 10
+
+def failing_function(x):
+    if x > 50 then
+        error("Value too large")
+    else
+        x + 5
+
+def maybe_divide(x, y):
+    if y == 0 then
+        error("Division by zero")
+    else
+        ok(x / y)
+
+// Test main function
+def main():
+    // Test 1: Basic pipe with regular value (Case 3: direct value wrapping)
+    println("=== Test 1: Basic pipe with regular value ===")
+    let result1 = 5 |> double
+    println(result1)  // Should be {'Ok', 10}
+    
+    // Test 2: Pattern matching on pipe results
+    println("=== Test 2: Pattern matching on pipe results ===")
+    let result2 = 3 |> double
+    match result2 do
+        Ok(value) -> println(join_ints("Success: ", value))
+        Error(reason) -> println(reason)
+    end
+    
+    // Test 3: Chaining multiple pipes (Case 2: Ok unwrapping)
+    println("=== Test 3: Chaining multiple pipes ===") 
+    let result3 = 3 |> double |> add_ten
+    println(result3)  // Should be {'Ok', 16}
+    
+    // Test 4: Error propagation (Case 1: error propagation)
+    println("=== Test 4: Error propagation ===")
+    let result4 = 60 |> failing_function |> double
+    println(result4)  // Should be {'Error', "Value too large"}
+    
+    // Test 5: Mixed Result and regular values
+    println("=== Test 5: Mixed Result and regular values ===")
+    let ok_result = ok(20)
+    let result5 = ok_result |> double
+    println(result5)  // Should be {'Ok', 40}
+    
+    // Test 6: Error input propagation
+    println("=== Test 6: Error input propagation ===")
+    let error_result = error("Initial error")
+    let result6 = error_result |> double |> add_ten
+    println(result6)  // Should be {'Error', "Initial error"}
+    
+    // Test 7: Function returning Result
+    println("=== Test 7: Function returning Result ===")
+    let result7 = 10 |> maybe_divide(2)
+    println(result7)  // Should be {'Ok', 5.0}
+    
+    // Test 8: Chained Result-returning functions
+    println("=== Test 8: Chained Result-returning functions ===")
+    let result8 = 20 |> maybe_divide(4) |> double
+    match result8 do
+        Ok(value) -> println(join_ints("Final result: ", value))
+        Error(reason) -> println(reason)
+    end
+    
+    // Test 9: Error in Result-returning function chain
+    println("=== Test 9: Error in Result-returning function chain ===")
+    let result9 = 20 |> maybe_divide(0) |> double
+    match result9 do
+        Ok(value) -> println(join_ints("Unexpected success: ", value))
+        Error(reason) -> println(reason)  // Should print "Division by zero"
+    end
+    
+    // Test 10: Complex chaining with mixed functions
+    println("=== Test 10: Complex chaining with mixed functions ===")
+    let result10 = 8 |> double |> maybe_divide(4) |> add_ten
+    match result10 do
+        Ok(value) -> println(join_ints("Complex chain result: ", value))
+        Error(reason) -> println(reason)
+    end
+    
+    println("=== All tests completed ===")

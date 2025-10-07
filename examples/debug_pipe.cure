@@ -1,0 +1,11 @@
+# Debug Monadic Pipe
+module DebugPipe do
+  export [main/0, double/1]
+
+  def main(): Int =
+    let result = 5 |> double
+    42
+    
+  def double(x: Int): Int =
+    x * 2
+end

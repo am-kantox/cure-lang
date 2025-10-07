@@ -1,0 +1,13 @@
+# Simple Result pattern test without pipes
+module SimpleResult do
+  export [main/0, test_result_pattern/0]
+
+  def main(): Int =
+    test_result_pattern()
+
+  def test_result_pattern(): Int =
+    let result = ok(42) in
+    match result do
+      Ok(value) -> value
+    end
+end

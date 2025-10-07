@@ -1,0 +1,50 @@
+# Simple Monadic Pipe Test
+# Just testing the basic functionality without complex cases
+
+module SimplePipeTest do
+  export [main/0, double/1]
+
+  def main(): Int =
+    let _ = print("=== Simple Monadic Pipe Test ===")
+    
+    # Test 1: Simple value -> should wrap in Ok
+    let _ = print("Test: 5 |> double")
+    let result1 = 5 |> double
+    let _ = match result1 do
+      Ok(value) -> 
+        let _ = print("Success: ")
+        print(value)
+      Error(reason) ->
+        let _ = print("Error: ")
+        print(reason)
+    end
+    
+    # Test 2: ok(value) -> should unwrap and rewrap
+    let _ = print("\\nTest: ok(7) |> double")
+    let result2 = ok(7) |> double
+    let _ = match result2 do
+      Ok(value) -> 
+        let _ = print("Success: ")
+        print(value)
+      Error(reason) ->
+        let _ = print("Error: ")
+        print(reason)
+    end
+        
+    # Test 3: error -> should propagate
+    let _ = print("\\nTest: error('test') |> double")
+    let result3 = error("test") |> double
+    let _ = match result3 do
+      Ok(value) -> 
+        let _ = print("Success: ")
+        print(value)
+      Error(reason) ->
+        let _ = print("Error: ")
+        print(reason)
+    end
+    
+    42
+    
+  def double(x: Int): Int =
+    x * 2
+end

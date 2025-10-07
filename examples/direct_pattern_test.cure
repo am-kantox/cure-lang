@@ -1,0 +1,9 @@
+-- Direct pattern matching test
+-- Let's create a function that directly tests pattern matching with Results
+
+def test_direct_pattern(result: Result<Int, String>) -> String do
+    case result of
+        {'Ok', value} -> "Got value: " ++ int_to_string(value)
+        {'Error', reason} -> "Got error: " ++ reason
+    end
+end

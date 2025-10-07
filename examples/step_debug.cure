@@ -1,0 +1,17 @@
+# Step by step debugging
+module StepDebug do
+  export [main/0, double/1]
+
+  def main(): Int =
+    let _ = print("Starting test")
+    let result = 5 |> double
+    let _ = print("Got result, trying to print it...")
+    let _ = match result do
+      Ok(value) -> print("Success")
+      Error(reason) -> print("Error") 
+    end
+    42
+    
+  def double(x: Int): Int =
+    x * 2
+end

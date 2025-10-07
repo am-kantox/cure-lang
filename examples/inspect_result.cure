@@ -1,0 +1,18 @@
+# Inspect pipe result structure
+module InspectResult do
+  export [main/0, double/1, inspect_value/1]
+
+  def main(): Int =
+    let _ = print("=== Inspecting Pipe Result ===")
+    let result = 5 |> double
+    let _ = print("About to inspect result...")
+    let _ = inspect_value(result)
+    42
+    
+  def double(x: Int): Int =
+    x * 2
+    
+  def inspect_value(value) =
+    let _ = print("Value received by inspect_value")
+    print("Type inspection complete")
+end

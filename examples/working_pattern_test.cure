@@ -1,0 +1,15 @@
+# Working Pattern Test based on inspect_result.cure
+module WorkingPattern do
+  export [main/0, double/1]
+
+  def main(): Int =
+    let result = 5 |> double
+    let _ = pass_through_ok(result)
+    42
+    
+  def double(x: Int): Int =
+    x * 2
+    
+  def pass_through_ok(result: Any): Any =
+    result
+end

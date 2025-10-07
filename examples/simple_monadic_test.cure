@@ -1,0 +1,51 @@
+// Simple test for monadic pipe operator
+
+def double(x):
+    x * 2
+
+def add_ten(x):
+    x + 10
+
+def failing_function(x):
+    if x > 50 then
+        error("Value too large")
+    else
+        x + 5
+
+def main():
+    // Test 1: Basic pipe with regular value
+    println("=== Test 1: Basic pipe ===")
+    let result1 = 5 |> double
+    println(result1)
+    
+    // Test 2: Pattern matching on pipe results
+    println("=== Test 2: Pattern matching ===")
+    let result2 = 3 |> double
+    match result2 do
+        Ok(value) -> println("Success")
+        Error(reason) -> println("Error")
+    end
+    
+    // Test 3: Chaining multiple pipes
+    println("=== Test 3: Chaining ===") 
+    let result3 = 3 |> double |> add_ten
+    println(result3)
+    
+    // Test 4: Error propagation
+    println("=== Test 4: Error propagation ===")
+    let result4 = 60 |> failing_function |> double
+    println(result4)
+    
+    // Test 5: Mixed Result values
+    println("=== Test 5: Mixed Results ===")
+    let ok_result = ok(20)
+    let result5 = ok_result |> double
+    println(result5)
+    
+    // Test 6: Error input propagation
+    println("=== Test 6: Error input ===")
+    let error_result = error("Initial error")
+    let result6 = error_result |> double |> add_ten
+    println(result6)
+    
+    println("=== All tests completed ===")

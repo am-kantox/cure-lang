@@ -1,0 +1,66 @@
+# Test Enhanced Monadic Pipe Operator with Proper Chaining
+# Tests all three behaviors:
+# 1. error(reason) → propagate error (no function call)
+# 2. ok(value) → unwrap, call function, wrap result if not already monad  
+# 3. neither → pass to function, wrap result if not already monad
+
+module EnhancedPipeTest do
+  export [main/0, double/1, add_ten/1, result_double/1, make_error/1]
+
+  def main(): Int =
+    let _ = print("=== Enhanced Monadic Pipe Operator Test ===")
+    
+    # Test 1: Regular value → function (should wrap in ok())
+    let _ = print("\\nTest 1: Regular value → function")
+    let _ = print("5 |> double")
+    let result1 = 5 |> double
+    # Expected: {'Ok', 10}
+    
+    # Test 2: ok(value) → function (should unwrap, call, wrap)
+    let _ = print("\\nTest 2: ok(value) → function") 
+    let _ = print("ok(7) |> double")
+    let result2 = ok(7) |> double
+    # Expected: {'Ok', 14}
+    
+    # Test 3: error(reason) → function (should propagate error)
+    let _ = print("\\nTest 3: error(reason) → function")
+    let _ = print("error('test') |> double")
+    let result3 = error("test") |> double
+    # Expected: {'Error', 'test'} - double should NOT be called
+    
+    # Test 4: Chaining regular functions (should work now)
+    let _ = print("\\nTest 4: Chaining regular functions")
+    let _ = print("3 |> double |> add_ten")
+    let result4 = 3 |> double |> add_ten
+    # Expected: {'Ok', 16} - 3 → 6 → 16
+    
+    # Test 5: ok(value) → result_function (monad → monad)
+    let _ = print("\\nTest 5: ok(value) → result_function")
+    let _ = print("ok(5) |> result_double")
+    let result5 = ok(5) |> result_double
+    # Expected: {'Ok', 10} - unwrap 5, call result_double, return its result
+    
+    # Test 6: Error propagation in chain
+    let _ = print("\\nTest 6: Error propagation in chain")
+    let _ = print("error('chain_test') |> double |> add_ten")
+    let result6 = error("chain_test") |> double |> add_ten
+    # Expected: {'Error', 'chain_test'} - no functions called
+    
+    let _ = print("\\n=== All tests completed ===")
+    42
+    
+  # Regular function - takes regular value, returns regular value
+  def double(x: Int): Int =
+    x * 2
+    
+  def add_ten(x: Int): Int =
+    x + 10
+    
+  # Result-returning function - takes regular value, returns Result
+  def result_double(x: Int) =
+    ok(x * 2)
+    
+  # Error-making function for testing
+  def make_error(x: Int) =
+    error("Made an error")
+end
