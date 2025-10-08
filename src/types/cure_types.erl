@@ -2,6 +2,8 @@
 %% Dependent type system with constraint solving and inference
 -module(cure_types).
 
+-include("../parser/cure_ast_simple.hrl").
+
 -export([
     % Type operations
     new_type_var/0, new_type_var/1,
@@ -43,7 +45,7 @@
     constraints :: [term()]
 }).
 
--record(type_param, {name, bound = any, value}).
+% type_param record is defined in cure_ast_simple.hrl
 
 -record(type_constraint, {
     left :: type_expr(),
@@ -208,9 +210,28 @@ unify_impl({list_type, Elem1, Len1}, {list_type, Elem2, Len2}, Subst) ->
         Error -> Error
     end;
 
+%% Direct Vector to Vector unification with strict length checking (MUST come before generic dependent_type)
+unify_impl({dependent_type, 'Vector', Params1},
+          {dependent_type, 'Vector', Params2}, Subst) ->
+    case {extract_vector_params(Params1), extract_vector_params(Params2)} of
+        {{ok, Elem1, Len1}, {ok, Elem2, Len2}} ->
+            case unify_impl(Elem1, Elem2, Subst) of
+                {ok, Subst1} ->
+                    % Strict length checking for Vector types
+                    unify_lengths_strict(Len1, Len2, Subst1);
+                Error -> Error
+            end;
+        {{error, Reason}, _} ->
+            {error, {invalid_vector_params_left, Reason}};
+        {_, {error, Reason}} ->
+            {error, {invalid_vector_params_right, Reason}}
+    end;
+
+%% Generic dependent type unification (AFTER specific Vector case)
 unify_impl({dependent_type, Name1, Params1}, 
           {dependent_type, Name2, Params2}, Subst) 
     when Name1 =:= Name2, length(Params1) =:= length(Params2) ->
+    io:format("DEBUG: Generic dependent_type unification called for ~p~n", [Name1]),
     unify_type_params(Params1, Params2, Subst);
 
 %% Bridge unification between list_type and dependent List types
@@ -357,6 +378,23 @@ unify_lengths(Len1, Len2, Subst) when Len1 =/= undefined, Len2 =/= undefined ->
     end;
 unify_lengths(_, _, Subst) -> {ok, Subst}.
 
+%% Strict length unification for Vector types - no undefined allowed
+unify_lengths_strict(Len1, Len2, Subst) ->
+    case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
+        {{ok, N}, {ok, N}} when is_integer(N) ->
+            {ok, Subst};  % Same evaluated length
+        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
+            {error, {length_mismatch, N1, N2}};  % Different evaluated lengths
+        _Other ->
+            % For Vector types, require exact structural equality
+            case expr_equal(Len1, Len2) of
+                true -> 
+                    {ok, Subst};
+                false -> 
+                    {error, {vector_dimension_mismatch, Len1, Len2}}
+            end
+    end.
+
 unify_type_params([], [], Subst) -> {ok, Subst};
 unify_type_params([#type_param{value = V1}|T1], 
                  [#type_param{value = V2}|T2], Subst) ->
@@ -401,10 +439,17 @@ extract_vector_params([#type_param{name = length, value = Length},
                      #type_param{name = elem_type, value = ElemType}]) ->
     {ok, ElemType, Length};
 extract_vector_params([Param1, Param2]) ->
-    % Try to extract without checking names as fallback
-    Value1 = safe_extract_param_value(Param1),
-    Value2 = safe_extract_param_value(Param2),
-    {ok, Value1, Value2};
+    % Handle compiled tuple format: {type_param, name, bound, value}
+    % or old format: {type_param, name, value, bound}
+    case extract_param_info(Param1, Param2) of
+        {ok, ElemType, Length} -> 
+            {ok, ElemType, Length};
+        {error, _} ->
+            % Fallback: assume first is elem_type, second is length
+            ElemType = safe_extract_param_value(Param1),
+            Length = safe_extract_param_value(Param2),
+            {ok, ElemType, Length}
+    end;
 extract_vector_params([Param]) ->
     % Single parameter, assume it's element type
     Value = safe_extract_param_value(Param),
@@ -425,7 +470,24 @@ constraints_compatible(Constraints1, Constraints2) ->
     % In full implementation, would check logical compatibility
     Constraints1 =:= Constraints2.
 
-%% Safe parameter value extraction
+%% Extract parameter info from tuple format
+extract_param_info(Param1, Param2) ->
+    case {get_tuple_param_info(Param1), get_tuple_param_info(Param2)} of
+        {{elem_type, ElemType}, {length, Length}} ->
+            {ok, ElemType, Length};
+        {{length, Length}, {elem_type, ElemType}} ->
+            {ok, ElemType, Length};
+        _ ->
+            {error, cannot_extract}
+    end.
+
+%% Get parameter name and value from AST record format
+get_tuple_param_info(#type_param{name = Name, value = Value}) ->
+    {Name, Value};
+get_tuple_param_info(_Other) ->
+    {unknown, undefined}.
+
+%% Safe parameter value extraction for AST record format
 safe_extract_param_value(#type_param{value = undefined}) ->
     new_type_var();  % Create a fresh type variable for undefined values
 safe_extract_param_value(#type_param{value = Value}) ->
@@ -1241,9 +1303,14 @@ check_vector_operation_validity([Param1, Param2]) ->
         {{ok, _, _}, {ok, _, _}} ->
             ok;
         _ ->
-            % Also check for any explicit vector types even if dimensions can't be evaluated
+            % Strict checking for any Vector types - reject if we can't verify dimensions match
             case is_vector_function_type(Param1, Param2) of
-                true -> {error, {potential_dimension_mismatch, Param1, Param2}};
+                true -> 
+                    % For Vector types, we need to be able to verify dimension compatibility
+                    case can_verify_vector_dimensions_match(Param1, Param2) of
+                        true -> ok;
+                        false -> {error, {unverifiable_vector_dimensions, Param1, Param2}}
+                    end;
                 false -> ok
             end
     end;
@@ -1251,6 +1318,22 @@ check_vector_operation_validity(_Params) -> ok.
 
 is_vector_function_type({dependent_type, 'Vector', _}, {dependent_type, 'Vector', _}) -> true;
 is_vector_function_type(_, _) -> false.
+
+can_verify_vector_dimensions_match(Vec1, Vec2) ->
+    case {extract_vector_dimensions(Vec1), extract_vector_dimensions(Vec2)} of
+        {{ok, _, Dim1}, {ok, _, Dim2}} when is_integer(Dim1), is_integer(Dim2) ->
+            Dim1 =:= Dim2;  % Can verify and they match
+        {{ok, _, Dim1}, {ok, _, Dim2}} when is_integer(Dim1), is_integer(Dim2) ->
+            false;  % Can verify but they don't match  
+        _ ->
+            % Try to extract and compare length expressions directly
+            case {extract_vector_params(Vec1), extract_vector_params(Vec2)} of
+                {{ok, _, Len1}, {ok, _, Len2}} ->
+                    expr_equal(Len1, Len2);  % Structural comparison
+                _ ->
+                    false  % Can't verify - assume they don't match for safety
+            end
+    end.
 
 extract_vector_dimensions({dependent_type, 'Vector', Params}) ->
     case extract_vector_params(Params) of
@@ -1270,9 +1353,14 @@ extract_vector_dimensions(_Type) ->
 %% Enhanced occurs checking for dependent types
 check_dependent_occurs(#type_var{id = Id}, {dependent_type, _Name, Params}) ->
     lists:any(fun(#type_param{value = Value}) ->
-        occurs_check_impl(Id, Value)
+        occurs_check_impl(Id, Value) orelse
+        case Value of
+            #type_var{id = Id} -> true;  % Direct match
+            _ -> false
+        end
     end, Params);
 check_dependent_occurs(#type_var{id = Id}, {list_type, ElemType, _LenExpr}) ->
     occurs_check_impl(Id, ElemType);
-check_dependent_occurs(_Var, _Type) ->
-    false.
+check_dependent_occurs(Var, Type) ->
+    % Fallback to standard occurs check if no specific dependent type handling
+    occurs_check(Var, Type).
