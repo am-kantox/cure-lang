@@ -957,6 +957,7 @@ is_likely_match_pattern(State) ->
         atom -> true;    % literal patterns
         '[' -> true;     % list patterns
         '{' -> true;     % tuple patterns
+        '_' -> true;     % wildcard pattern
         _ -> false
     end.
 
@@ -986,6 +987,27 @@ looks_like_pattern_start(State) ->
     % This is a simplified heuristic - we'd need lookahead to be sure
     % For now, assume single identifiers at the start of a line could be patterns
     false.  % Conservative approach - don't assume it's a pattern
+
+%% Check if there should be a body expression after a let binding
+is_let_body_continuation(State) ->
+    case get_token_type(current_token(State)) of
+        % These tokens suggest there's a body expression
+        identifier -> true;   % Variable or function call
+        number -> true;       % Literal
+        string -> true;       % Literal
+        '(' -> true;          % Parenthesized expression
+        '[' -> true;          % List
+        '{' -> true;          % Tuple
+        'if' -> true;         % if expression
+        'match' -> true;      % match expression
+        'let' -> true;        % nested let expression
+        'fn' -> true;         % lambda
+        % These tokens suggest end of let expression
+        'end' -> false;       % End of match/if/etc
+        eof -> false;         % End of input
+        _ -> false            % Conservative: assume no body
+    end.
+
 
 %% Parse sequence of expressions in match clause body
 parse_match_body_sequence(State, Acc) ->
@@ -1340,9 +1362,8 @@ parse_let_expression(State) ->
     {_, State1} = expect(State, 'let'),
     {BindingVar, State2} = expect(State1, identifier),
     {_, State3} = expect(State2, '='),
-    {Value, State4} = parse_binary_expression(State3, 0),  % Parse only single expression, not block
+    {Value, State4} = parse_binary_expression(State3, 0),  % Parse binding value
     
-    % For now, let expressions without 'in' - just return the binding and continue
     VarName = binary_to_atom(get_token_value(BindingVar), utf8),
     Location = get_token_location(BindingVar),
     
@@ -1358,13 +1379,40 @@ parse_let_expression(State) ->
         location = Location
     },
     
-    % Simple let without body for now - return as identifier
-    LetExpr = #let_expr{
-        bindings = [Binding],
-        body = #identifier_expr{name = VarName, location = Location},
-        location = Location
-    },
-    {LetExpr, State4}.
+    % Check if there's an explicit 'in' keyword or if we should parse the next expression as body
+    case match_token(State4, 'in') of
+        true ->
+            % Explicit let...in syntax
+            {_, State5} = expect(State4, 'in'),
+            {Body, State6} = parse_expression(State5),
+            LetExpr = #let_expr{
+                bindings = [Binding],
+                body = Body,
+                location = Location
+            },
+            {LetExpr, State6};
+        false ->
+            % Implicit let syntax - next expression is the body
+            % Check if there's another expression that could be the body
+            case is_let_body_continuation(State4) of
+                true ->
+                    {Body, State5} = parse_expression(State4),
+                    LetExpr = #let_expr{
+                        bindings = [Binding],
+                        body = Body,
+                        location = Location
+                    },
+                    {LetExpr, State5};
+                false ->
+                    % No body, just return the binding variable
+                    LetExpr = #let_expr{
+                        bindings = [Binding],
+                        body = #identifier_expr{name = VarName, location = Location},
+                        location = Location
+                    },
+                    {LetExpr, State4}
+            end
+    end.
 
 %% Parse tuple expression {1, 2, 3}
 parse_tuple_expression(State) ->
