@@ -912,26 +912,11 @@ parse_expression(State) ->
 parse_single_expression(State) ->
     parse_binary_expression(State, 0).
 
-%% Parse expression for match clause body - allows blocks but stops at next match clause
+%% Parse expression for match clause body - parse single expression only
 parse_match_clause_body(State) ->
-    % Parse like a normal expression but with match-aware block detection
-    {FirstExpr, State1} = parse_binary_expression(State, 0),
-    
-    % Check if there's a continuation, but be careful about match clause boundaries
-    case is_match_body_continuation(State1) of
-        true ->
-            % Parse as a block but stop at match clause patterns
-            {RestExprs, State2} = parse_match_body_sequence(State1, []),
-            Location = get_expr_location(FirstExpr),
-            BlockExpr = #block_expr{
-                expressions = [FirstExpr | RestExprs],
-                location = Location
-            },
-            {BlockExpr, State2};
-        false ->
-            % Single expression
-            {FirstExpr, State1}
-    end.
+    % Parse a single expression for the match clause body
+    % Don't try to parse blocks or sequences - keep it simple
+    parse_binary_expression(State, 0).
 
 %% Check if we should continue parsing as a block in match clause body
 is_match_body_continuation(State) ->

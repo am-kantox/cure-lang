@@ -6,21 +6,25 @@ This document summarizes the pattern matching improvements made to the Cure prog
 
 ## Issue Resolution Status
 
-### ✅ Issue #1: 3+ Clause Matches - RESOLVED (Workaround)
+### ✅ Issue #1: 3+ Clause Matches - COMPLETELY FIXED
 **Problem**: Parser fails with `{unexpected_token_in_pattern,'->'}` for match expressions with 3 or more clauses.
 
-**Status**: Resolved with **nested 2-clause approach**
+**Status**: **COMPLETELY FIXED** - No workarounds needed!
 
-**Working Workaround**:
+**Root Cause**: The `parse_match_clause_body()` function had overly complex logic trying to detect block continuations and match clause boundaries, causing it to misinterpret tokens from subsequent clauses.
+
+**Solution**: Simplified `parse_match_clause_body()` to parse single expressions only, eliminating the boundary detection issues.
+
+**Working Direct Syntax** (any number of clauses):
 ```cure
-def three_way_match(x: Int): Int =
+def many_clause_match(x: Int): Int =
   match x do
-    0 -> 10
-    _ -> 
-      match x do
-        1 -> 20
-        _ -> 30
-      end
+    0 -> 1000
+    1 -> 2000 
+    2 -> 3000
+    3 -> 4000
+    4 -> 5000
+    _ -> 9999
   end
 ```
 
@@ -99,7 +103,7 @@ def test_three_way(x: Int): Int =
 
 ## Current Limitations
 
-1. **Parser Limitation**: Direct 3+ clause syntax still fails at parsing level
+1. ~~**Parser Limitation**: Direct 3+ clause syntax still fails at parsing level~~ **FIXED!**
 2. **Variable Pattern Bindings**: May need further refinement (under investigation)
 3. **Guard Compilation**: While guards are parsed, full guard compilation integration needs testing
 4. **Complex Pattern Runtime**: List patterns, tuple patterns, and constructor patterns need runtime testing
@@ -126,13 +130,13 @@ end
 ## Testing Status
 
 ✅ **Runtime Execution**: Fixed and working
-✅ **Basic Pattern Matching**: Working (2 clauses)
+✅ **Basic Pattern Matching**: Working (any number of clauses)
 ✅ **Literal Patterns**: Working  
 ✅ **Wildcard Patterns**: Working
+✅ **3+ Clause Matches**: Working directly (no nesting required)
 🔍 **Variable Patterns**: Partially working (needs investigation)
-✅ **Nested Patterns**: Working (3+ clauses via nesting)
 🔍 **Complex Patterns**: Parser-supported, runtime testing needed
-🔍 **Guards**: Parser-supported, runtime testing needed
+🔍 **Guards**: Parser-supported, guard compilation needs fixes
 
 ## Compilation and Execution
 
