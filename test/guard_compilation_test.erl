@@ -254,7 +254,7 @@ test_fsm_guard_compilation() ->
     },
     
     % Test guard evaluation in FSM context
-    MockState = #{
+    _MockState = #{
         current_state => 'OldState',
         data => #{count => 5},
         event_data => undefined

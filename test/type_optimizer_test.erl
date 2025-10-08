@@ -317,7 +317,7 @@ test_optimization_framework() ->
 test_configuration_levels() ->
     % Test different optimization levels
     Config0 = cure_type_optimizer:set_optimization_level(0),
-    Config1 = cure_type_optimizer:set_optimization_level(1),
+    _Config1 = cure_type_optimizer:set_optimization_level(1),
     Config2 = cure_type_optimizer:set_optimization_level(2),
     Config3 = cure_type_optimizer:set_optimization_level(3),
     

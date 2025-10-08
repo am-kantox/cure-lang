@@ -132,7 +132,7 @@ test_import_complex() ->
     ?assertEqual(11, length(Items)),
     
     % Check some specific items
-    [Sin, Cos, Tan, Atan2, Pow, Log2, Pi, E, Factorial, Gcd, Lcm] = Items,
+    [Sin, _Cos, _Tan, Atan2, _Pow, _Log2, Pi, E, Factorial, _Gcd, Lcm] = Items,
     ?assertMatch(#function_import{name = sin, arity = 1}, Sin),
     ?assertMatch(#function_import{name = atan2, arity = 2}, Atan2),
     ?assertEqual('PI', Pi),

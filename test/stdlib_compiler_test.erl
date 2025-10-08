@@ -12,8 +12,7 @@ run() ->
     io:format("Running Standard Library Compiler Integration tests...~n"),
     test_function_call_compilation(),
     test_capitalized_function_calls(),
-    % Note: monadic function chains are now handled by Std.Core module
-    % test_monadic_function_chains(),
+    test_monadic_function_chains(),
     test_safe_div_compilation(),
     io:format("All stdlib compiler integration tests passed!~n").
 
@@ -23,7 +22,7 @@ test_function_call_compilation() ->
     
     % Test that we can compile code that uses the new functions
     % We'll create a simple Cure program that uses these functions
-    CureCode = "
+    _CureCode = "
     module test_module
 
     def test_ok_function(x: Int): Result[Int, String] =

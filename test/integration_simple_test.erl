@@ -13,7 +13,10 @@ run() ->
         fun test_lexer_parser_pipeline/0,
         fun test_basic_type_checking/0,
         fun test_code_generation_basic/0,
-        fun test_fsm_basic_functionality/0
+        fun test_fsm_basic_functionality/0,
+        fun test_error_handling/0,
+        fun test_pipeline_performance/0,
+        fun test_memory_usage/0
     ],
     
     Results = [run_test(Test) || Test <- Tests],

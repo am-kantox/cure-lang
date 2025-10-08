@@ -12,9 +12,8 @@ run() ->
     io:format("Running Cure Standard Library tests...~n"),
     test_capitalized_alias_functions(),
     test_safe_div_function(),
-    % Note: monadic operations (map_ok, bind_ok, map_some, bind_some) are now handled by Std.Core module
-    % test_result_monadic_operations(),
-    % test_option_monadic_operations(),
+    test_result_monadic_operations(),
+    test_option_monadic_operations(),
     test_remaining_functions(),
     io:format("All standard library tests passed!~n").
 
@@ -71,7 +70,7 @@ test_safe_div_function() ->
     
     % Test division of zero by non-zero
     ValidDivResult4 = cure_std:safe_divide(0, 5),
-    ?assertMatch({'Ok', 0.0}, ValidDivResult4),
+    ?assertMatch({'Ok', +0.0}, ValidDivResult4),
     
     io:format("✓ safe_div function test passed~n").
 

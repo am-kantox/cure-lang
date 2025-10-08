@@ -243,7 +243,7 @@ test_adaptive_optimization() ->
 %% Test feedback integration with optimization system
 test_feedback_integration() ->
     % Test complete feedback loop
-    TestAST = create_profile_test_ast(),
+    _TestAST = create_profile_test_ast(),
     TestContext = create_test_opt_context(),
     
     % Test that we can extract optimization data
@@ -323,23 +323,23 @@ create_profile_test_ast() ->
     ].
 
 %% Test helper functions
-analyze_test_call_patterns(AST) ->
+analyze_test_call_patterns(_AST) ->
     #{test_func => #{calls => [helper_func], frequency => 1},
       helper_func => #{calls => [], frequency => 0}}.
 
-estimate_test_execution_frequencies(AST, CallPatterns) ->
+estimate_test_execution_frequencies(_AST, _CallPatterns) ->
     #{test_func => 50, helper_func => 25}.
 
-identify_test_hot_paths(AST, ExecutionFreqs) ->
+identify_test_hot_paths(_AST, _ExecutionFreqs) ->
     [[test_func, helper_func]].
 
-analyze_test_memory_patterns(AST) ->
+analyze_test_memory_patterns(_AST) ->
     #{test_func => #{total_accesses => 15, read_operations => 10, write_operations => 5}}.
 
-collect_test_type_usage(AST) ->
+collect_test_type_usage(_AST) ->
     #{{primitive_type, integer} => 2}.
 
-identify_test_specialization_opportunities(ExecutionFreqs, TypeUsage) ->
+identify_test_specialization_opportunities(_ExecutionFreqs, _TypeUsage) ->
     #{test_func => #{frequency => 150, benefit => 2.5}}.
 
 create_test_existing_optimizations() ->
@@ -351,7 +351,7 @@ create_test_existing_optimizations() ->
         beam_generation => #{}
     }.
 
-generate_test_adaptive_specializations(Opportunities, ExistingOptimizations) ->
+generate_test_adaptive_specializations(_Opportunities, _ExistingOptimizations) ->
     [#{function_name => test_func, specialization_type => adaptive, runtime_frequency => 150, specialization_benefit => 2.5}].
 
 test_enhance_existing_specialization() ->
@@ -364,16 +364,16 @@ test_enhance_existing_specialization() ->
         enhancement_timestamp => erlang:system_time(millisecond)
     }.
 
-identify_test_hot_path_opportunities(HotPaths, ExecutionFreqs) ->
+identify_test_hot_path_opportunities(_HotPaths, _ExecutionFreqs) ->
     [{[main, compute, helper], #{frequency => 160, potential => 2.5}}].
 
-generate_test_hot_path_optimizations(HotPathOpportunities, ProfileCollector) ->
+generate_test_hot_path_optimizations(_HotPathOpportunities, _ProfileCollector) ->
     [#{type => specialized_codegen, path => [main, compute, helper], benefit => 2.5, frequency => 160}].
 
-identify_test_memory_opportunities(MemoryPatterns) ->
+identify_test_memory_opportunities(_MemoryPatterns) ->
     #{func_a => #{access_pattern => #{total_accesses => 50}, potential => 1.8}}.
 
-generate_test_adaptive_memory_layouts(MemoryOpportunities, ExistingOptimizations) ->
+generate_test_adaptive_memory_layouts(_MemoryOpportunities, _ExistingOptimizations) ->
     [#{layout_type => cache_optimized, function => func_a, benefit => 1.8}].
 
 create_test_feedback_data() ->
@@ -407,7 +407,7 @@ init_test_performance_metrics() ->
         adaptation_count => 0
     }.
 
-generate_test_performance_optimizations(Priorities, PerformanceTargets) ->
+generate_test_performance_optimizations(_Priorities, _PerformanceTargets) ->
     [#{optimization_type => specialization_performance, estimated_benefit => 1.2}].
 
 create_test_adaptive_context() ->
@@ -419,7 +419,7 @@ create_test_adaptive_context() ->
         performance_targets => init_test_performance_targets()
     }.
 
-collect_test_runtime_profiles(TestAST, AdaptiveContext) ->
+collect_test_runtime_profiles(TestAST, _AdaptiveContext) ->
     #{
         call_patterns => analyze_test_call_patterns(TestAST),
         execution_frequencies => #{test_func => 100, helper_func => 50},
@@ -429,7 +429,7 @@ collect_test_runtime_profiles(TestAST, AdaptiveContext) ->
         profile_timestamp => erlang:system_time(millisecond)
     }.
 
-analyze_test_optimization_opportunities(ProfileData) ->
+analyze_test_optimization_opportunities(_ProfileData) ->
     #{
         specialization => #{test_func => #{frequency => 100, benefit => 2.0}},
         hot_path => [{[test_func, helper_func], #{frequency => 50, potential => 1.8}}],

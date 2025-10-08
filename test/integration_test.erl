@@ -17,7 +17,9 @@ run() ->
         fun test_dependent_types_basic/0,
         fun test_let_expressions/0,
         fun test_pattern_matching/0,
-        fun test_arithmetic_operations/0
+        fun test_arithmetic_operations/0,
+        fun test_full_compilation_pipeline/0,
+        fun test_compilation_error_handling/0
     ],
     
     Results = [run_test(Test) || Test <- Tests],

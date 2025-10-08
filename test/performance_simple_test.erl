@@ -13,7 +13,9 @@ run() ->
         fun test_lexer_performance_simple/0,
         fun test_type_checker_performance_simple/0,
         fun test_codegen_performance_simple/0,
-        fun test_fsm_runtime_performance_simple/0
+        fun test_fsm_runtime_performance_simple/0,
+        fun test_memory_usage_performance/0,
+        fun test_benchmark_operations/0
     ],
     
     Results = [run_performance_test(Test) || Test <- Tests],
@@ -140,6 +142,39 @@ test_fsm_runtime_performance_simple() ->
     
     TotalEvents = FSMCount * EventsPerFSM,
     io:format("  ✓ Processed ~w events across ~w FSMs~n", [TotalEvents, FSMCount]).
+
+%% Test 5: Memory usage performance
+test_memory_usage_performance() ->
+    io:format("✓ Testing memory usage performance...~n"),
+    
+    % Test memory usage of lexer operation
+    LexerOperation = fun() ->
+        Program = lists:flatten([integer_to_list(N) ++ " " || N <- lists:seq(1, 100)]),
+        {ok, _Tokens} = cure_lexer:scan(Program),
+        ok
+    end,
+    
+    {_Result, MemoryDelta} = measure_memory_usage(LexerOperation),
+    
+    io:format("  ✓ Lexer operation memory delta: ~w bytes~n", [MemoryDelta]).
+
+%% Test 6: Benchmark operations performance
+test_benchmark_operations() ->
+    io:format("✓ Testing benchmark operations...~n"),
+    
+    % Benchmark a simple parsing operation
+    ParseOperation = fun() ->
+        {ok, _Tokens} = cure_lexer:scan("42"),
+        ok
+    end,
+    
+    BenchmarkResult = benchmark_operation(ParseOperation, 10),
+    
+    AvgTime = maps:get(average, BenchmarkResult),
+    MaxTime = maps:get(max, BenchmarkResult),
+    MinTime = maps:get(min, BenchmarkResult),
+    
+    io:format("  ✓ Parse benchmark: avg=~w μs, max=~w μs, min=~w μs~n", [AvgTime, MaxTime, MinTime]).
 
 %% Helper functions
 

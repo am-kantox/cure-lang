@@ -60,7 +60,7 @@ test_literal_patterns() ->
     {ok, AST} = cure_parser:parse_file("test_temp_literal.cure"),
     
     % Verify AST structure
-    [{function_def, test_literal, [Param], _, _, MatchExpr, _}] = AST,
+    [{function_def, test_literal, [_Param], _, _, MatchExpr, _}] = AST,
     
     #match_expr{
         expr = #identifier_expr{name = x},

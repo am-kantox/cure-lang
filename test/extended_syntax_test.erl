@@ -2,8 +2,25 @@
 %% Tests guards in pattern matching and type parameters
 -module(extended_syntax_test).
 
+-export([run/0]).
+
 -include_lib("eunit/include/eunit.hrl").
 -include("../src/parser/cure_ast_simple.hrl").
+
+%% Run all extended syntax tests
+run() ->
+    io:format("Running Extended Syntax tests...~n"),
+    setup(),
+    try
+        guards_in_match_test(),
+        type_parameters_test(), 
+        import_arity_test(),
+        complex_guards_test(),
+        std_demo_parsing_test(),
+        io:format("All extended syntax tests passed!~n")
+    after
+        teardown(ok)
+    end.
 
 %% Helper functions for testing
 setup() ->
@@ -97,7 +114,7 @@ import_arity_test() ->
     ?assertMatch(#module_def{}, Module),
     
     % Extract the imports
-    [StdImport, MathImport, TypesImport] = Module#module_def.items,
+    [StdImport, _MathImport, TypesImport] = Module#module_def.items,
     
     % Check Std import with arity specifications
     ?assertMatch(#import_def{module = 'Std'}, StdImport),

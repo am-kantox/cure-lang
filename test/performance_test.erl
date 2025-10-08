@@ -194,7 +194,7 @@ generate_large_program(FunctionCount) ->
 %% Generate exports list
 generate_exports(Count) ->
     Exports = [io_lib:format("func~w/1", [N]) || N <- lists:seq(1, Count)],
-    string:join(Exports, ", ").
+    string_join(Exports, ", ").
 
 %% Generate a single function
 generate_function(N) ->
