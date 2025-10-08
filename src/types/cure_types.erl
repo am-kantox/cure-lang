@@ -164,10 +164,10 @@ unify_impl(T, T, Subst) ->
     {ok, Subst};
 
 %% Handle unification with undefined
-unify_impl(undefined, Type, Subst) ->
+unify_impl(undefined, _Type, Subst) ->
     % undefined can unify with any type
     {ok, Subst};
-unify_impl(Type, undefined, Subst) ->
+unify_impl(_Type, undefined, Subst) ->
     % any type can unify with undefined
     {ok, Subst};
 
@@ -606,7 +606,7 @@ infer_expr({list_expr, Elements, Location}, Env) ->
             end
     end;
 
-infer_expr({match_expr, MatchExpr, Patterns, Location}, Env) ->
+infer_expr({match_expr, MatchExpr, Patterns, _Location}, Env) ->
     case infer_expr(MatchExpr, Env) of
         {ok, MatchType, MatchConstraints} ->
             case infer_match_clauses(Patterns, MatchType, Env) of
@@ -801,7 +801,7 @@ infer_pattern_type({list_pattern, Elements, Tail, _Location} = Pattern, MatchTyp
         {ok, PatternEnv, Constraints} ->
             % Add length constraints from SMT solver for dependent types
             LengthConstraints = case MatchType of
-                {dependent_type, 'List', [TypeParam, LengthParam]} ->
+                {dependent_type, 'List', [_TypeParam, LengthParam]} ->
                     % Generate SMT constraints for pattern matching on dependent lists
                     cure_smt_solver:infer_pattern_length_constraint(Pattern, extract_length_var(LengthParam));
                 {list_type, _ElemType, {dependent_length, LengthVar}} ->
@@ -892,6 +892,15 @@ solve_constraints_simple([Constraint | RestConstraints], Subst) ->
         Error -> Error
     end.
 
+%% These functions are for future SMT solver integration
+-compile({nowarn_unused_function, [{solve_type_constraints, 2},
+                                  {partition_constraints, 1},
+                                  {partition_constraints, 3},
+                                  {solve_arithmetic_constraints, 2},
+                                  {convert_to_smt_constraints, 1},
+                                  {convert_type_constraint_to_smt, 1},
+                                  {convert_type_to_smt_term, 1},
+                                  {merge_substitutions, 2}]}).
 solve_type_constraints([], Subst) -> {ok, Subst};
 solve_type_constraints([Constraint | RestConstraints], Subst) ->
     case solve_constraint(Constraint, Subst) of
@@ -938,7 +947,7 @@ partition_constraints([C | Rest], TypeConstraints, ArithConstraints) ->
 
 solve_arithmetic_constraints([], _TypeSubst) ->
     {ok, #{}};
-solve_arithmetic_constraints(ArithmeticConstraints, TypeSubst) ->
+solve_arithmetic_constraints(ArithmeticConstraints, _TypeSubst) ->
     % Convert type constraints to SMT constraints and solve
     case convert_to_smt_constraints(ArithmeticConstraints) of
         {ok, SmtConstraints} ->
@@ -985,7 +994,7 @@ merge_substitutions(Subst1, Subst2) ->
 %% Convert SMT constraints back to type constraints
 convert_smt_to_type_constraint(SmtConstraint) ->
     case SmtConstraint of
-        {smt_constraint, Type, Left, Op, Right, Location} ->
+        {smt_constraint, _Type, Left, Op, Right, Location} ->
             #type_constraint{
                 left = convert_smt_term_to_type(Left),
                 op = Op,

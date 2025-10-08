@@ -269,7 +269,7 @@ test_matrix_dimension_errors(Env, Matrix2x3Type) ->
             test_matrix_constraint_solving(Env, Matrix2x3Type)
     end.
 
-test_matrix_constraint_solving(Env, Matrix2x3Type) ->
+test_matrix_constraint_solving(_Env, _Matrix2x3Type) ->
     % The type system should generate constraints that make invalid multiplies fail
     % For now, we'll assume this works if the basic type structure is correct
     make_result("Matrix dimension checking", true, 
@@ -286,7 +286,7 @@ test_refinement_types() ->
         
         % NonZeroFloat = Float when x != 0.0
         NonZeroFloatType = {refined_type, {primitive_type, 'Float'},
-                           fun(X) -> element(2, X) =/= 0.0 end},
+                           fun(X) -> element(2, X) =/= +0.0 end},
         
         % Test safe_divide: (Float, NonZeroFloat) -> Float
         SafeDivideType = {function_type, 
@@ -353,20 +353,20 @@ test_gadts() ->
         % Define Expr GADT
         % type Expr(T) = IntLit(Int): Expr(Int) | BoolLit(Bool): Expr(Bool) | ...
         
-        ExprIntType = {gadt_constructor, 'IntLit', 
+        _ExprIntType = {gadt_constructor, 'IntLit', 
                       [{primitive_type, 'Int'}], 
                       {dependent_type, 'Expr', [
                           #type_param{name = result_type, value = {primitive_type, 'Int'}}
                       ]}},
         
-        ExprBoolType = {gadt_constructor, 'BoolLit',
+        _ExprBoolType = {gadt_constructor, 'BoolLit',
                        [{primitive_type, 'Bool'}],
                        {dependent_type, 'Expr', [
                            #type_param{name = result_type, value = {primitive_type, 'Bool'}}
                        ]}},
         
         % Add(Expr(Int), Expr(Int)): Expr(Int)
-        ExprAddType = {gadt_constructor, 'Add',
+        _ExprAddType = {gadt_constructor, 'Add',
                       [{dependent_type, 'Expr', [#type_param{name = result_type, value = {primitive_type, 'Int'}}]},
                        {dependent_type, 'Expr', [#type_param{name = result_type, value = {primitive_type, 'Int'}}]}],
                       {dependent_type, 'Expr', [
@@ -607,8 +607,8 @@ test_smt_constraint_solving() ->
     io:format("Testing SMT constraint solving...~n"),
     try
         % Test basic constraint solving - use cure_types records
-        TypeVar1 = cure_types:new_type_var(),
-        TypeVar2 = cure_types:new_type_var(),
+        _TypeVar1 = cure_types:new_type_var(),
+        _TypeVar2 = cure_types:new_type_var(),
         
         % Create simple constraints for testing
         Constraints = [],  % Simplified for now since we don't have direct access to constraint records
@@ -852,13 +852,13 @@ test_higher_order_dependent_functions() ->
 test_dependent_pattern_matching() ->
     io:format("Testing pattern matching with dependent types...~n"),
     try
-        Env = cure_types:new_env(),
+        _Env = cure_types:new_env(),
         
         % Pattern match on Vector(T, n) with length constraints
-        Vec3Type = create_vector_type({primitive_type, 'Float'}, 3),
+        _Vec3Type = create_vector_type({primitive_type, 'Float'}, 3),
         
         % Pattern: [x, y, z] should match Vector(Float, 3)
-        ListPattern = {list_pattern, [
+        _ListPattern = {list_pattern, [
             {identifier_pattern, x, undefined},
             {identifier_pattern, y, undefined}, 
             {identifier_pattern, z, undefined}
@@ -956,13 +956,4 @@ has_length_constraint(Type, ExpectedLength) ->
         _ -> false
     end.
 
-extract_length_var({type_param, _, _, {identifier_expr, Var, _}}) -> Var;
-extract_length_var(_) -> undefined.
-
-extract_type_param_value(#type_param{value = Value}) -> Value;
-extract_type_param_value(Value) -> Value.
-
-create_derived_length_var(#type_param{value = {identifier_expr, BaseVar, _}}, Suffix) ->
-    list_to_atom(atom_to_list(BaseVar) ++ "_" ++ Suffix);
-create_derived_length_var(_, Suffix) ->
-    list_to_atom("derived_" ++ Suffix).
+% Helper functions removed as they were unused in this test
