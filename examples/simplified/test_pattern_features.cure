@@ -1,0 +1,35 @@
+# Test 1: Literal pattern matching
+def test_literal_42(): Int =
+  match 42 do
+    42 -> 100
+    _ -> 0
+  end
+
+# Test 2: Wildcard pattern matching  
+def test_wildcard(): Int =
+  match 999 do
+    42 -> 0
+    _ -> 200
+  end
+
+# Test 3: Variable pattern matching
+def test_variable(): Int = 
+  match 123 do
+    x -> x
+    _ -> 0
+  end
+
+# Test 4: Nested match (3+ clauses workaround)
+def test_nested(): Int =
+  match 1 do
+    0 -> 10
+    _ ->
+      match 1 do
+        1 -> 20
+        _ -> 30
+      end
+  end
+
+# Main test - should return 443 (100+200+123+20)
+def main(): Int = 
+  test_literal_42() + test_wildcard() + test_variable() + test_nested()

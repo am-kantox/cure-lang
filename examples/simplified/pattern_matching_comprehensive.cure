@@ -1,0 +1,40 @@
+module PatternMatchingComprehensive do
+  export [main/0, test_literals/0, test_strings/0, test_variables/0]
+
+  # Test literal pattern matching
+  def test_literals(): Int =
+    let result1 = match 42 do
+      42 -> 1
+      _ -> 0
+    end
+    let result2 = match 0 do
+      0 -> 10
+      _ -> 20
+    end
+    result1 + result2  # Should be 11
+
+  # Test string pattern matching
+  def test_strings(): Int =
+    let result = match "hello" do
+      "hello" -> 100
+      _ -> 200
+    end
+    result  # Should be 100
+
+  # Test variable binding in patterns
+  def test_variables(): Int =
+    let x = 5
+    let result = match x do
+      5 -> 50
+      _ -> 99
+    end
+    result  # Should be 50
+
+  # Test multiple different match expressions
+  def main(): Int =
+    let literal_result = test_literals()     # 11
+    let string_result = test_strings()       # 100  
+    let variable_result = test_variables()   # 50
+    literal_result + string_result + variable_result  # Should be 161
+
+end

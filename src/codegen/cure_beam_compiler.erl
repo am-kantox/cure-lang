@@ -152,6 +152,7 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         pop -> compile_pop(Args, NewContext);
         execute_and_discard -> compile_execute_and_discard(Args, NewContext);
         return -> compile_return(Args, NewContext);
+        make_case -> compile_make_case(Args, NewContext);
         _ -> {error, {unsupported_instruction, Op}}
     end.
 
@@ -549,6 +550,18 @@ compile_pattern_fail([], Context) ->
     % Generate a function clause error
     FailForm = {call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, error}}, [{atom, Line, function_clause}]},
     {ok, [FailForm], Context}.
+
+%% Make case expression - create proper Erlang case from compiled clauses
+compile_make_case([CaseClauses], Context) ->
+    case pop_stack(Context) of
+        {ExprValue, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Create a case expression with the given clauses
+            CaseExpr = {'case', Line, ExprValue, CaseClauses},
+            {ok, [], push_stack(CaseExpr, NewContext)};
+        Error ->
+            Error
+    end.
 
 %% ============================================================================
 %% Helper Functions

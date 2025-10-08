@@ -1,0 +1,55 @@
+# Comprehensive Pattern Matching Test Suite
+# This file demonstrates all working pattern matching features in Cure
+
+def test_literal_patterns(): Int =
+  match 42 do
+    42 -> 100
+    _ -> 0
+  end
+
+def test_wildcard_patterns(): Int =
+  match 999 do
+    42 -> 0
+    _ -> 200
+  end
+
+def test_variable_patterns(): Int =
+  match 123 do
+    x -> x
+    _ -> 0
+  end
+
+# Test nested 2-clause matches (workaround for 3+ clauses)
+def test_three_way_match(x: Int): Int =
+  match x do
+    0 -> 10
+    _ -> 
+      match x do
+        1 -> 20
+        _ -> 30
+      end
+  end
+
+# Test four-way match using nested approach
+def test_four_way_match(x: Int): Int =
+  match x do
+    0 -> 100
+    _ ->
+      match x do
+        1 -> 200
+        _ ->
+          match x do
+            2 -> 300
+            _ -> 400
+          end
+      end
+  end
+
+# Main function to run all tests
+def main(): Int =
+  let test1 = test_literal_patterns() in   # Should be 100
+  let test2 = test_wildcard_patterns() in  # Should be 200  
+  let test3 = test_variable_patterns() in  # Should be 123
+  let test4 = test_three_way_match(1) in   # Should be 20
+  let test5 = test_four_way_match(2) in    # Should be 300
+  test1 + test2 + test3 + test4 + test5    # Should be 100+200+123+20+300 = 743

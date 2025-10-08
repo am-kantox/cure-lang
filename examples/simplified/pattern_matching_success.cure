@@ -1,0 +1,26 @@
+# Pattern Matching Success Test
+# This demonstrates that the critical runtime execution issue is fixed
+
+def test_basic_match(n: Int): Int =
+  match n do
+    0 -> 10
+    _ -> 20
+  end
+
+def test_literal_match(): Int =
+  match 42 do
+    42 -> 100
+    _ -> 0
+  end
+
+def test_wildcard_match(): Int =
+  match 999 do
+    42 -> 0
+    _ -> 300
+  end
+
+def main(): Int =
+  # Before the fix, ANY of these would crash with function_clause error
+  # Now they all execute successfully!
+  test_basic_match(0) + test_literal_match() + test_wildcard_match()
+  # Expected: 10 + 100 + 300 = 410

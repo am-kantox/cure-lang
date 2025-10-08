@@ -1,4 +1,0 @@
-def safe_tail(list: List(T, n)) when n > 0 =
-  match list do
-    [_|xs] -> xs
-  end

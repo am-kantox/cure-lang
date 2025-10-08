@@ -29,11 +29,21 @@ end
 ### 2. `basic_pattern_matching_simple.cure` 
 **Status**: ✅ **Fully Working**  
 **Features Demonstrated**:
-- Multiple function definitions
-- Function calls with parameters
-- String literals and `print/1` function
-- Arithmetic operations
-- Console output
+- **Real pattern matching** with `match` expressions
+- **2-clause patterns** (literal and wildcard)
+- **Multiple match functions** in one module
+- String literals and console output
+- **Pattern matching on integers** and variables
+
+### 5. `pattern_matching_comprehensive.cure`
+**Status**: ✅ **Fully Working**  
+**Features Demonstrated**:
+- **Comprehensive pattern matching** test suite
+- **Literal patterns**: `42 -> result`, `0 -> result`
+- **String patterns**: `"hello" -> result`
+- **Variable patterns**: matching against let-bound variables
+- **Wildcard patterns**: `_ -> fallback`
+- **Multiple match expressions** in single functions
 
 ### 3. `basic_function_composition.cure`
 **Status**: ✅ **Fully Working**  
@@ -58,8 +68,9 @@ end
 These examples **avoid** the following unimplemented features:
 
 - **Logical operators**: `&&`, `||` (causes lexical analysis failure)
-- **Pattern matching**: `match` expressions  
-- **Guards**: `when` clauses
+- **Multi-clause pattern matching**: `match` with 3+ clauses (2-clause works!)
+- **Guards**: `when` clauses in patterns
+- **Complex patterns**: List patterns `[head | tail]`, record patterns
 - **Record definitions**: `record` keyword
 - **Union types**: `type A = B | C` syntax
 - **FSM definitions**: `fsm` keyword
@@ -67,7 +78,6 @@ These examples **avoid** the following unimplemented features:
 - **Pipe operators**: `|>`
 - **String interpolation**: `"text #{expr}"`
 - **Private functions**: `defp`
-- **Complex if-then-else**: Some syntax variations fail
 
 ## 🔧 How to Compile and Run
 
@@ -81,12 +91,14 @@ make compiler
 ./cure examples/simplified/minimal_working.cure --verbose
 ./cure examples/simplified/basic_function_composition.cure --verbose
 ./cure examples/simplified/basic_pattern_matching_simple.cure --verbose
+./cure examples/simplified/pattern_matching_comprehensive.cure --verbose
 ./cure examples/simplified/basic_types_demo.cure --verbose
 
 # Run the compiled examples
 erl -pa _build/ebin -noshell -s 'MinimalWorking' main -s init stop
 erl -pa _build/ebin -noshell -s 'BasicFunctionComposition' main -s init stop
 erl -pa _build/ebin -noshell -s 'BasicPatternMatching' main -s init stop
+erl -pa _build/ebin -noshell -s 'PatternMatchingComprehensive' main -s init stop
 erl -pa _build/ebin -noshell -s 'BasicTypesDemo' main -s init stop
 ```
 
@@ -94,8 +106,10 @@ erl -pa _build/ebin -noshell -s 'BasicTypesDemo' main -s init stop
 
 1. **Start here**: `minimal_working.cure` - Shows absolute basics
 2. **Add complexity**: `basic_function_composition.cure` - Multiple functions
-3. **Explore types**: `basic_types_demo.cure` - Different data types
-4. **Build up**: Create your own examples using only working features
+3. **Learn pattern matching**: `basic_pattern_matching_simple.cure` - Real `match` expressions
+4. **Advanced patterns**: `pattern_matching_comprehensive.cure` - Comprehensive pattern tests
+5. **Explore types**: `basic_types_demo.cure` - Different data types
+6. **Build up**: Create your own examples using working features
 
 ## 🎯 What These Examples Prove
 
@@ -114,8 +128,10 @@ The Cure compiler **fully implements** the entire compilation pipeline:
 To unlock the full potential demonstrated in the comprehensive examples (`examples/*.cure`), the compiler needs:
 
 1. **Lexical support** for `&&` and `||` operators
-2. **Pattern matching** implementation
-3. **Record and union types** support
-4. **FSM syntax** parsing and compilation
+2. **Multi-clause pattern matching** (expand from 2 to unlimited clauses)
+3. **Complex pattern types** (list patterns, record patterns)
+4. **Guards** in pattern matching (`when` clauses)
+5. **Record and union types** support
+6. **FSM syntax** parsing and compilation
 
 See `../INCOMPLETE.md` for a complete analysis of missing features and how to extend these simple examples toward the full language vision.

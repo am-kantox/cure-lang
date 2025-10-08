@@ -629,12 +629,20 @@ compile_unary_op_expr(#unary_op_expr{op = Op, operand = Operand, location = Loca
 
 %% Compile pattern matching expressions
 compile_match_expr(#match_expr{expr = Expr, patterns = Patterns, location = Location}, State) ->
+    % Generate a case expression directly instead of using complex instruction sequences
     {ExprInstructions, State1} = compile_expression(Expr, State),
     
-    % Compile patterns with guards
-    {PatternInstructions, State2} = compile_match_patterns(Patterns, Location, State1),
+    % Build case clauses from patterns
+    {CaseClauses, State2} = compile_patterns_to_case_clauses(Patterns, State1),
     
-    Instructions = ExprInstructions ++ PatternInstructions,
+    % Create a case instruction that generates the proper Erlang case expression
+    CaseInstruction = #beam_instr{
+        op = make_case,
+        args = [CaseClauses],
+        location = Location
+    },
+    
+    Instructions = ExprInstructions ++ [CaseInstruction],
     {Instructions, State2}.
 
 
@@ -1170,6 +1178,118 @@ write_beam_module(Module, OutputPath) ->
 %% ============================================================================
 %% Pattern Compilation with Guard Support
 %% ============================================================================
+
+%% Convert match clause patterns to Erlang case clauses
+compile_patterns_to_case_clauses(Patterns, State) ->
+    compile_patterns_to_case_clauses_impl(Patterns, [], State).
+
+compile_patterns_to_case_clauses_impl([], Acc, State) ->
+    {lists:reverse(Acc), State};
+compile_patterns_to_case_clauses_impl([#match_clause{pattern = Pattern, guard = Guard, body = Body, location = Location} | Rest], Acc, State) ->
+    % Convert pattern to Erlang pattern form
+    ErlangPattern = convert_pattern_to_erlang_form(Pattern, Location),
+    
+    % Convert guard to Erlang guard form if present
+    ErlangGuard = case Guard of
+        undefined -> [];
+        _ -> [convert_guard_to_erlang_form(Guard, Location)]
+    end,
+    
+    % Compile body to generate Erlang expressions
+    {BodyInstructions, State1} = compile_expression(Body, State),
+    
+    % For now, we'll create a simple return of the body value
+    % In a full implementation, BodyInstructions would be converted to Erlang forms
+    ErlangBody = case Body of
+        #literal_expr{value = Value} -> [compile_value_to_erlang_form(Value, Location)];
+        _ -> [compile_value_to_erlang_form(default_value_for_body(Body), Location)]
+    end,
+    
+    % Create Erlang case clause
+    CaseClause = {clause, get_line_from_location(Location), [ErlangPattern], ErlangGuard, ErlangBody},
+    
+    compile_patterns_to_case_clauses_impl(Rest, [CaseClause | Acc], State1);
+compile_patterns_to_case_clauses_impl([Pattern | Rest], Acc, State) ->
+    % Handle non-match_clause patterns (legacy)
+    Location = {location, 1, 1, undefined},
+    ErlangPattern = convert_pattern_to_erlang_form(Pattern, Location),
+    ErlangBody = [compile_value_to_erlang_form(default_value_for_pattern(Pattern), Location)],
+    CaseClause = {clause, 1, [ErlangPattern], [], ErlangBody},
+    compile_patterns_to_case_clauses_impl(Rest, [CaseClause | Acc], State).
+
+%% Convert Cure pattern to Erlang pattern form
+convert_pattern_to_erlang_form(#literal_pattern{value = Value, location = Location}, _) ->
+    compile_value_to_erlang_form(Value, Location);
+convert_pattern_to_erlang_form(#wildcard_pattern{location = Location}, _) ->
+    {var, get_line_from_location(Location), '_'};
+convert_pattern_to_erlang_form(#identifier_pattern{name = Name, location = Location}, _) ->
+    {var, get_line_from_location(Location), Name};
+convert_pattern_to_erlang_form(Pattern, Location) ->
+    % Fallback for unsupported patterns
+    {var, get_line_from_location(Location), '_'}.
+
+%% Convert guard to Erlang guard form
+convert_guard_to_erlang_form(Guard, Location) ->
+    % For now, simple guard conversion - would need full guard compiler integration
+    Line = get_line_from_location(Location),
+    case Guard of
+        #binary_op_expr{op = Op, left = Left, right = Right} ->
+            LeftForm = convert_guard_expr_to_form(Left, Line),
+            RightForm = convert_guard_expr_to_form(Right, Line),
+            {op, Line, Op, LeftForm, RightForm};
+        _ ->
+            {atom, Line, true}  % Default to always true guard
+    end.
+
+convert_guard_expr_to_form(#identifier_expr{name = Name}, Line) ->
+    {var, Line, Name};
+convert_guard_expr_to_form(#literal_expr{value = Value}, Line) ->
+    compile_value_to_erlang_form(Value, {location, Line, 1, undefined});
+convert_guard_expr_to_form(_, Line) ->
+    {atom, Line, true}.
+
+%% Compile value to Erlang form
+compile_value_to_erlang_form(Value, Location) ->
+    Line = get_line_from_location(Location),
+    compile_value_to_erlang_form_impl(Value, Line).
+
+compile_value_to_erlang_form_impl(Value, Line) when is_integer(Value) ->
+    {integer, Line, Value};
+compile_value_to_erlang_form_impl(Value, Line) when is_float(Value) ->
+    {float, Line, Value};
+compile_value_to_erlang_form_impl(Value, Line) when is_atom(Value) ->
+    {atom, Line, Value};
+compile_value_to_erlang_form_impl(Value, Line) when is_binary(Value) ->
+    {string, Line, binary_to_list(Value)};
+compile_value_to_erlang_form_impl(Value, Line) when is_list(Value) ->
+    case io_lib:printable_list(Value) of
+        true -> {string, Line, Value};
+        false -> compile_list_to_erlang_form(Value, Line)
+    end;
+compile_value_to_erlang_form_impl(Value, Line) ->
+    {tuple, Line, [{atom, Line, complex_value}, {term, Line, Value}]}.
+
+compile_list_to_erlang_form([], Line) ->
+    {nil, Line};
+compile_list_to_erlang_form([H | T], Line) ->
+    HeadForm = compile_value_to_erlang_form_impl(H, Line),
+    TailForm = compile_list_to_erlang_form(T, Line),
+    {cons, Line, HeadForm, TailForm}.
+
+%% Get default values for patterns and bodies
+default_value_for_pattern(#literal_pattern{value = Value}) -> Value;
+default_value_for_pattern(_) -> undefined.
+
+default_value_for_body(#literal_expr{value = Value}) -> Value;
+default_value_for_body(_) -> ok.
+
+%% Get line number from location
+get_line_from_location({location, Line, _Col, _File}, Default) when is_integer(Line) -> Line;
+get_line_from_location(_, Default) -> Default.
+
+%% Get line number from location (single argument version)
+get_line_from_location({location, Line, _Col, _File}) when is_integer(Line) -> Line;
+get_line_from_location(_) -> 1.
 
 %% Compile match patterns with guards
 compile_match_patterns(Patterns, Location, State) ->

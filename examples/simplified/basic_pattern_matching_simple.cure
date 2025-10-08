@@ -1,19 +1,25 @@
 module BasicPatternMatching do
-  export [main/0, test_numbers/0, test_simple/1]
+  export [main/0, describe_zero_or_other/1, describe_small_numbers/1]
 
-  # Simple function without complex conditions
-  def test_simple(n: Int): Int =
-    n + 10
+  # Simple binary match - zero or not zero
+  def describe_zero_or_other(n: Int): String =
+    match n do
+      0 -> "zero"
+      _ -> "not zero"
+    end
 
-  def test_numbers(): Int =
-    let result1 = test_simple(5)
-    let result2 = test_simple(0)
-    result1 + result2
+  # Another binary match for demonstration
+  def describe_small_numbers(n: Int): String =
+    match n do
+      1 -> "one"
+      _ -> "not one"
+    end
 
   def main(): Int =
-    let _ = print("=== Basic Operations ===")
-    let numbers_result = test_numbers()
-    let _ = print("Numbers processed")
-    numbers_result
+    let _ = print("=== Basic Pattern Matching ===")
+    let result1 = describe_zero_or_other(0)
+    let result2 = describe_small_numbers(1)
+    let _ = print("Pattern matching successful")
+    42
 
 end
