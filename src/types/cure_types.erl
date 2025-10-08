@@ -15,12 +15,18 @@
     
     % Type inference
     infer_type/2, infer_type/3,
+    infer_dependent_type/2,
     
     % Type checking
     check_type/3, check_type/4,
+    is_well_formed_type/1,
+    
+    % Pattern matching
+    infer_pattern_type/3,
     
     % Constraint solving
     solve_constraints/1, solve_constraints/2,
+    check_dependent_constraint/3,
     
     % Utility functions
     substitute/2, normalize_type/1,
@@ -113,6 +119,17 @@ occurs_check_impl(Id, {list_type, ElemType, LenExpr}) ->
         undefined -> false;
         _ -> occurs_check_impl(Id, LenExpr)
     end;
+occurs_check_impl(Id, {refined_type, BaseType, _Predicate}) ->
+    occurs_check_impl(Id, BaseType);
+occurs_check_impl(Id, {gadt_constructor, _, Args, ReturnType}) ->
+    lists:any(fun(Arg) -> occurs_check_impl(Id, Arg) end, Args) orelse
+    occurs_check_impl(Id, ReturnType);
+occurs_check_impl(Id, {proof_type, _, BaseType, _Predicate}) ->
+    occurs_check_impl(Id, BaseType);
+occurs_check_impl(Id, {liquid_type, _, BaseType, _Constraints, _Context}) ->
+    occurs_check_impl(Id, BaseType);
+occurs_check_impl(_Id, undefined) ->
+    false;  % undefined contains no type variables
 occurs_check_impl(_, _) -> false.
 
 %% Type Environment Operations
@@ -146,10 +163,23 @@ unify(Type1, Type2, Subst) ->
 unify_impl(T, T, Subst) -> 
     {ok, Subst};
 
+%% Handle unification with undefined
+unify_impl(undefined, Type, Subst) ->
+    % undefined can unify with any type
+    {ok, Subst};
+unify_impl(Type, undefined, Subst) ->
+    % any type can unify with undefined
+    {ok, Subst};
+
 unify_impl(Var = #type_var{id = Id}, Type, Subst) ->
     case occurs_check(Var, Type) of
         true -> {error, {occurs_check_failed, Var, Type}};
-        false -> {ok, maps:put(Id, Type, Subst)}
+        false ->
+            % Additional check for dependent types containing the variable
+            case check_dependent_occurs(Var, Type) of
+                true -> {error, {occurs_check_failed, Var, Type}};
+                false -> {ok, maps:put(Id, Type, Subst)}
+            end
     end;
 
 unify_impl(Type, Var = #type_var{}, Subst) ->
@@ -183,6 +213,122 @@ unify_impl({dependent_type, Name1, Params1},
     when Name1 =:= Name2, length(Params1) =:= length(Params2) ->
     unify_type_params(Params1, Params2, Subst);
 
+%% Bridge unification between list_type and dependent List types
+unify_impl({list_type, Elem1, Len1}, 
+          {dependent_type, 'List', Params2}, Subst) ->
+    case extract_list_params(Params2) of
+        {ok, Elem2, Len2} ->
+            case unify_impl(Elem1, Elem2, Subst) of
+                {ok, Subst1} ->
+                    unify_lengths(Len1, Len2, Subst1);
+                Error -> Error
+            end;
+        {error, Reason} ->
+            {error, {invalid_list_params, Reason}}
+    end;
+
+unify_impl({dependent_type, 'List', Params1}, 
+          {list_type, Elem2, Len2}, Subst) ->
+    case extract_list_params(Params1) of
+        {ok, Elem1, Len1} ->
+            case unify_impl(Elem1, Elem2, Subst) of
+                {ok, Subst1} ->
+                    unify_lengths(Len1, Len2, Subst1);
+                Error -> Error
+            end;
+        {error, Reason} ->
+            {error, {invalid_list_params, Reason}}
+    end;
+
+%% Bridge unification for Vector types (similar to List)
+unify_impl({list_type, Elem1, Len1}, 
+          {dependent_type, 'Vector', Params2}, Subst) ->
+    case extract_vector_params(Params2) of
+        {ok, Elem2, Len2} ->
+            case unify_impl(Elem1, Elem2, Subst) of
+                {ok, Subst1} ->
+                    unify_lengths(Len1, Len2, Subst1);
+                Error -> Error
+            end;
+        {error, Reason} ->
+            {error, {invalid_vector_params, Reason}}
+    end;
+
+unify_impl({dependent_type, 'Vector', Params1}, 
+          {list_type, Elem2, Len2}, Subst) ->
+    case extract_vector_params(Params1) of
+        {ok, Elem1, Len1} ->
+            case unify_impl(Elem1, Elem2, Subst) of
+                {ok, Subst1} ->
+                    unify_lengths(Len1, Len2, Subst1);
+                Error -> Error
+            end;
+        {error, Reason} ->
+            {error, {invalid_vector_params, Reason}}
+    end;
+
+%% Support for refined types
+unify_impl({refined_type, BaseType1, Predicate1}, 
+          {refined_type, BaseType2, Predicate2}, Subst) ->
+    case unify_impl(BaseType1, BaseType2, Subst) of
+        {ok, Subst1} ->
+            % For now, assume compatible predicates if base types unify
+            % In full implementation, would check predicate compatibility
+            case predicates_compatible(Predicate1, Predicate2) of
+                true -> {ok, Subst1};
+                false -> {error, {predicate_incompatible, Predicate1, Predicate2}}
+            end;
+        Error -> Error
+    end;
+
+%% Allow refined types to unify with their base types
+unify_impl({refined_type, BaseType, _Predicate}, Type, Subst) ->
+    unify_impl(BaseType, Type, Subst);
+
+unify_impl(Type, {refined_type, BaseType, _Predicate}, Subst) ->
+    unify_impl(Type, BaseType, Subst);
+
+%% Support for phantom types - they unify if their base types match
+unify_impl({phantom_type, Name1}, {phantom_type, Name2}, Subst)
+    when Name1 =:= Name2 ->
+    {ok, Subst};
+
+%% Support for GADT constructors
+unify_impl({gadt_constructor, Name1, Args1, ReturnType1}, 
+          {gadt_constructor, Name2, Args2, ReturnType2}, Subst)
+    when Name1 =:= Name2, length(Args1) =:= length(Args2) ->
+    case unify_lists(Args1, Args2, Subst) of
+        {ok, Subst1} ->
+            unify_impl(ReturnType1, ReturnType2, Subst1);
+        Error -> Error
+    end;
+
+%% Support for proof types - check base type and predicate compatibility
+unify_impl({proof_type, Name1, BaseType1, Predicate1},
+          {proof_type, Name2, BaseType2, Predicate2}, Subst)
+    when Name1 =:= Name2 ->
+    case unify_impl(BaseType1, BaseType2, Subst) of
+        {ok, Subst1} ->
+            case predicates_compatible(Predicate1, Predicate2) of
+                true -> {ok, Subst1};
+                false -> {error, {proof_predicate_incompatible, Predicate1, Predicate2}}
+            end;
+        Error -> Error
+    end;
+
+%% Support for liquid types
+unify_impl({liquid_type, Name1, BaseType1, Constraints1, _Context1},
+          {liquid_type, Name2, BaseType2, Constraints2, _Context2}, Subst)
+    when Name1 =:= Name2 ->
+    case unify_impl(BaseType1, BaseType2, Subst) of
+        {ok, Subst1} ->
+            case constraints_compatible(Constraints1, Constraints2) of
+                true -> {ok, Subst1};
+                false -> {error, {liquid_constraints_incompatible, Constraints1, Constraints2}}
+            end;
+        Error -> Error
+    end;
+
 unify_impl(Type1, Type2, _Subst) ->
     {error, {unification_failed, Type1, Type2}}.
 
@@ -196,11 +342,18 @@ unify_lists([H1|T1], [H2|T2], Subst) ->
 
 unify_lengths(undefined, undefined, Subst) -> {ok, Subst};
 unify_lengths(Len1, Len2, Subst) when Len1 =/= undefined, Len2 =/= undefined ->
-    % For now, just check if they're the same expression
-    % In a full implementation, we'd need constraint solving here
-    case expr_equal(Len1, Len2) of
-        true -> {ok, Subst};
-        false -> {error, {length_mismatch, Len1, Len2}}
+    % Enhanced length checking with evaluation
+    case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
+        {{ok, N}, {ok, N}} when is_integer(N) ->
+            {ok, Subst};  % Same evaluated length
+        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
+            {error, {length_mismatch, N1, N2}};  % Different evaluated lengths
+        _ ->
+            % Fall back to structural comparison
+            case expr_equal(Len1, Len2) of
+                true -> {ok, Subst};
+                false -> {error, {length_mismatch, Len1, Len2}}
+            end
     end;
 unify_lengths(_, _, Subst) -> {ok, Subst}.
 
@@ -216,6 +369,69 @@ unify_type_params([#type_param{value = V1}|T1],
 expr_equal(Expr1, Expr2) ->
     % Simplified structural equality - would need full expression comparison
     Expr1 =:= Expr2.
+
+%% Helper functions for dependent type parameter extraction
+extract_list_params([]) -> {error, missing_params};
+extract_list_params([#type_param{name = elem_type, value = ElemType}]) ->
+    {ok, ElemType, undefined};
+extract_list_params([#type_param{name = elem_type, value = ElemType},
+                   #type_param{name = length, value = Length}]) ->
+    {ok, ElemType, Length};
+extract_list_params([#type_param{name = length, value = Length},
+                   #type_param{name = elem_type, value = ElemType}]) ->
+    {ok, ElemType, Length};
+extract_list_params([Param1, Param2]) ->
+    % Try to extract without checking names as fallback
+    Value1 = safe_extract_param_value(Param1),
+    Value2 = safe_extract_param_value(Param2),
+    {ok, Value1, Value2};
+extract_list_params([Param]) ->
+    % Single parameter, assume it's element type
+    Value = safe_extract_param_value(Param),
+    {ok, Value, undefined};
+extract_list_params(_) -> {error, invalid_list_params}.
+
+extract_vector_params([]) -> {error, missing_params};
+extract_vector_params([#type_param{name = elem_type, value = ElemType}]) ->
+    {ok, ElemType, undefined};
+extract_vector_params([#type_param{name = elem_type, value = ElemType},
+                     #type_param{name = length, value = Length}]) ->
+    {ok, ElemType, Length};
+extract_vector_params([#type_param{name = length, value = Length},
+                     #type_param{name = elem_type, value = ElemType}]) ->
+    {ok, ElemType, Length};
+extract_vector_params([Param1, Param2]) ->
+    % Try to extract without checking names as fallback
+    Value1 = safe_extract_param_value(Param1),
+    Value2 = safe_extract_param_value(Param2),
+    {ok, Value1, Value2};
+extract_vector_params([Param]) ->
+    % Single parameter, assume it's element type
+    Value = safe_extract_param_value(Param),
+    {ok, Value, undefined};
+extract_vector_params(_) -> {error, invalid_vector_params}.
+
+%% Predicate compatibility checking (simplified)
+predicates_compatible(Pred1, Pred2) when is_function(Pred1), is_function(Pred2) ->
+    % For now, assume all predicates are compatible
+    % In full implementation, would analyze predicate relationships
+    true;
+predicates_compatible(Pred, Pred) -> true;  % Same predicate
+predicates_compatible(_, _) -> true.  % Default to compatible for now
+
+%% Constraint compatibility for liquid types
+constraints_compatible(Constraints1, Constraints2) ->
+    % For now, simple structural equality
+    % In full implementation, would check logical compatibility
+    Constraints1 =:= Constraints2.
+
+%% Safe parameter value extraction
+safe_extract_param_value(#type_param{value = undefined}) ->
+    new_type_var();  % Create a fresh type variable for undefined values
+safe_extract_param_value(#type_param{value = Value}) ->
+    Value;
+safe_extract_param_value(Value) ->
+    Value.  % Handle cases where it's not a type_param record
 
 %% Apply substitution to types
 apply_substitution(#type_var{id = Id}, Subst) ->
@@ -241,6 +457,26 @@ apply_substitution({dependent_type, Name, Params}, Subst) ->
     {dependent_type, Name,
      [P#type_param{value = apply_substitution(P#type_param.value, Subst)} 
       || P <- Params]};
+
+apply_substitution({refined_type, BaseType, Predicate}, Subst) ->
+    {refined_type, apply_substitution(BaseType, Subst), Predicate};
+
+apply_substitution({gadt_constructor, Name, Args, ReturnType}, Subst) ->
+    {gadt_constructor, Name,
+     [apply_substitution(Arg, Subst) || Arg <- Args],
+     apply_substitution(ReturnType, Subst)};
+
+apply_substitution({proof_type, Name, BaseType, Predicate}, Subst) ->
+    {proof_type, Name, apply_substitution(BaseType, Subst), Predicate};
+
+apply_substitution({liquid_type, Name, BaseType, Constraints, Context}, Subst) ->
+    {liquid_type, Name, apply_substitution(BaseType, Subst), Constraints, Context};
+
+apply_substitution({phantom_type, Name}, _Subst) ->
+    {phantom_type, Name};
+
+apply_substitution(undefined, _Subst) ->
+    undefined;  % undefined remains undefined
 
 apply_substitution(Type, _Subst) ->
     Type.
@@ -619,6 +855,16 @@ infer_list_pattern_elements([Element | RestElements], Tail, MatchType, Env, Cons
 check_type(Expr, ExpectedType, Env) ->
     check_type(Expr, ExpectedType, Env, []).
 
+check_type(undefined, ExpectedType, _Env, _Constraints) ->
+    % For undefined expressions, validate type structure and check for dimension consistency
+    case is_well_formed_type(ExpectedType) of
+        true ->
+            case check_dimension_consistency(ExpectedType) of
+                ok -> ok;
+                Error -> Error
+            end;
+        false -> {error, {malformed_type, ExpectedType}}
+    end;
 check_type(Expr, ExpectedType, Env, Constraints) ->
     case infer_type(Expr, Env, Constraints) of
         {ok, #inference_result{type = InferredType}} ->
@@ -656,6 +902,16 @@ solve_type_constraints([Constraint | RestConstraints], Subst) ->
 
 solve_constraint(#type_constraint{left = Left, op = '=', right = Right}, Subst) ->
     unify(Left, Right, Subst);
+solve_constraint(#type_constraint{left = Left, op = 'length_eq', right = Right}, Subst) ->
+    % Handle length equality constraints for dependent types
+    solve_length_constraint(Left, Right, Subst);
+solve_constraint(#type_constraint{left = Left, op = Op, right = Right}, Subst) 
+    when Op =:= '<:' orelse Op =:= '>:' ->
+    % Handle subtyping constraints
+    solve_subtype_constraint(Left, Op, Right, Subst);
+solve_constraint(#type_constraint{left = Left, op = 'elem_of', right = Right}, Subst) ->
+    % Handle element membership constraints
+    solve_element_constraint(Left, Right, Subst);
 solve_constraint(#type_constraint{op = Op}, _Subst) ->
     % For now, accept arithmetic constraints without solving them
     % This preserves basic dependent type functionality
@@ -796,3 +1052,218 @@ create_derived_length_var(#type_param{value = {identifier_expr, BaseVar, _}}, Su
     list_to_atom(atom_to_list(BaseVar) ++ "_" ++ Suffix);
 create_derived_length_var(_, Suffix) ->
     list_to_atom("derived_" ++ Suffix).
+
+%% Type well-formedness checking
+is_well_formed_type({primitive_type, Name}) 
+    when Name =:= 'Int' orelse Name =:= 'Float' orelse Name =:= 'String' orelse 
+         Name =:= 'Bool' orelse Name =:= 'Atom' orelse Name =:= 'Nat' ->
+    true;
+is_well_formed_type(#type_var{}) -> true;
+is_well_formed_type({function_type, Params, Return}) ->
+    lists:all(fun is_well_formed_type/1, Params) andalso is_well_formed_type(Return);
+is_well_formed_type({list_type, ElemType, _LengthExpr}) ->
+    is_well_formed_type(ElemType);
+is_well_formed_type({dependent_type, Name, Params}) when is_atom(Name) ->
+    lists:all(fun is_well_formed_type_param/1, Params);
+is_well_formed_type({refined_type, BaseType, _Predicate}) ->
+    is_well_formed_type(BaseType);
+is_well_formed_type({phantom_type, Name}) when is_atom(Name) -> true;
+is_well_formed_type({gadt_constructor, Name, Args, ReturnType}) when is_atom(Name) ->
+    lists:all(fun is_well_formed_type/1, Args) andalso is_well_formed_type(ReturnType);
+is_well_formed_type({proof_type, Name, BaseType, _Predicate}) when is_atom(Name) ->
+    is_well_formed_type(BaseType);
+is_well_formed_type({liquid_type, Name, BaseType, _Constraints, _Context}) when is_atom(Name) ->
+    is_well_formed_type(BaseType);
+is_well_formed_type({type_var, Id}) when is_integer(Id) ->
+    true;  % Type variable with ID
+is_well_formed_type({type_var, {id, Id}}) when is_integer(Id) ->
+    true;  % Type variable with tuple-form ID
+is_well_formed_type(_) -> false.
+
+is_well_formed_type_param(#type_param{value = Value}) ->
+    is_well_formed_type(Value) orelse is_well_formed_expr(Value) orelse is_type_var(Value);
+is_well_formed_type_param(_) -> false.
+
+%% Expression well-formedness (simplified)
+is_well_formed_expr({literal_expr, Value, _Location}) 
+    when is_integer(Value) orelse is_float(Value) orelse is_atom(Value) orelse is_list(Value) ->
+    true;
+is_well_formed_expr({identifier_expr, Name, _Location}) when is_atom(Name) -> true;
+is_well_formed_expr({binary_op_expr, Op, Left, Right, _Location}) 
+    when is_atom(Op) ->
+    is_well_formed_expr(Left) andalso is_well_formed_expr(Right);
+is_well_formed_expr(_) -> true.  % Simplified for now
+
+%% Dependent constraint checking
+check_dependent_constraint(Constraint, Value, _Env) ->
+    case Constraint of
+        Pred when is_function(Pred, 1) ->
+            try
+                case Pred(Value) of
+                    true -> ok;
+                    false -> {error, {constraint_violation, Constraint, Value}}
+                end
+            catch
+                _:_ -> {error, {constraint_evaluation_failed, Constraint, Value}}
+            end;
+        _ ->
+            {error, {unsupported_constraint, Constraint}}
+    end.
+
+%% Dependent type inference for specific patterns
+infer_dependent_type(Expr, Env) ->
+    case infer_type(Expr, Env) of
+        {ok, Result} ->
+            Type = element(2, Result),
+            enhance_with_dependent_info(Type, Expr, Env);
+        Error -> Error
+    end.
+
+enhance_with_dependent_info({list_type, ElemType, LenExpr}, {list_expr, Elements, _}, _Env) ->
+    ActualLength = length(Elements),
+    case LenExpr of
+        {literal_expr, ActualLength, _} ->
+            % Convert to dependent List type
+            {ok, {dependent_type, 'List', [
+                #type_param{name = elem_type, value = ElemType},
+                #type_param{name = length, value = {literal_expr, ActualLength, undefined}}
+            ]}};
+        _ ->
+            {ok, {list_type, ElemType, {literal_expr, ActualLength, undefined}}}
+    end;
+enhance_with_dependent_info(Type, _Expr, _Env) ->
+    {ok, Type}.
+
+%% Enhanced constraint solving functions
+solve_length_constraint(Left, Right, Subst) ->
+    % Try to solve length equations by evaluating expressions
+    case {evaluate_length_expr(Left), evaluate_length_expr(Right)} of
+        {{ok, N}, {ok, N}} when is_integer(N) ->
+            {ok, Subst};  % Same length, constraint satisfied
+        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
+            {error, {length_mismatch, N1, N2}};
+        _ ->
+            % Can't evaluate, use unification
+            unify(Left, Right, Subst)
+    end.
+
+solve_subtype_constraint(Subtype, Op, Supertype, Subst) ->
+    case Op of
+        '<:' ->
+            % Subtype <: Supertype
+            check_subtype_relation(Subtype, Supertype, Subst);
+        '>:' ->
+            % Supertype >: Subtype (reversed)
+            check_subtype_relation(Supertype, Subtype, Subst)
+    end.
+
+solve_element_constraint(Element, Collection, Subst) ->
+    % For now, just ensure types are compatible
+    case Collection of
+        {list_type, ElemType, _} ->
+            unify(Element, ElemType, Subst);
+        {dependent_type, 'List', Params} ->
+            case extract_list_params(Params) of
+                {ok, ElemType, _} ->
+                    unify(Element, ElemType, Subst);
+                _ ->
+                    {ok, Subst}
+            end;
+        _ ->
+            {ok, Subst}
+    end.
+
+evaluate_length_expr({literal_expr, N, _}) when is_integer(N) ->
+    {ok, N};
+evaluate_length_expr({binary_op_expr, '+', Left, Right, _}) ->
+    case {evaluate_length_expr(Left), evaluate_length_expr(Right)} of
+        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2) ->
+            {ok, N1 + N2};
+        _ -> {error, cannot_evaluate}
+    end;
+evaluate_length_expr({binary_op_expr, '-', Left, Right, _}) ->
+    case {evaluate_length_expr(Left), evaluate_length_expr(Right)} of
+        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2) ->
+            {ok, N1 - N2};
+        _ -> {error, cannot_evaluate}
+    end;
+evaluate_length_expr(_) ->
+    {error, cannot_evaluate}.
+
+check_subtype_relation(Subtype, Supertype, Subst) ->
+    % Simplified subtyping rules
+    case {Subtype, Supertype} of
+        {Same, Same} ->
+            {ok, Subst};
+        {{refined_type, BaseType, _}, SuperType} ->
+            % Refined type is subtype of its base type
+            check_subtype_relation(BaseType, SuperType, Subst);
+        {{dependent_type, 'List', Params1}, {dependent_type, 'List', Params2}} ->
+            % Covariant in element type if lengths match
+            case {extract_list_params(Params1), extract_list_params(Params2)} of
+                {{ok, Elem1, Len1}, {ok, Elem2, Len2}} ->
+                    case solve_length_constraint(Len1, Len2, Subst) of
+                        {ok, Subst1} ->
+                            check_subtype_relation(Elem1, Elem2, Subst1);
+                        Error -> Error
+                    end;
+                _ -> {ok, Subst}
+            end;
+        _ ->
+            % Try unification as fallback
+            case unify(Subtype, Supertype, Subst) of
+                {ok, NewSubst} -> {ok, NewSubst};
+                {error, _} -> {error, {subtype_violation, Subtype, Supertype}}
+            end
+    end.
+
+%% Check dimension consistency for function types involving dependent types
+check_dimension_consistency({function_type, Params, _ReturnType}) ->
+    case check_vector_operation_validity(Params) of
+        ok -> ok;
+        Error -> Error
+    end;
+check_dimension_consistency(_Type) -> ok.
+
+check_vector_operation_validity([Param1, Param2]) ->
+    case {extract_vector_dimensions(Param1), extract_vector_dimensions(Param2)} of
+        {{ok, _ElemType1, Dim1}, {ok, _ElemType2, Dim2}} when is_integer(Dim1), is_integer(Dim2), Dim1 =/= Dim2 ->
+            {error, {dimension_mismatch, Dim1, Dim2}};
+        {{ok, _, _}, {ok, _, _}} ->
+            ok;
+        _ ->
+            % Also check for any explicit vector types even if dimensions can't be evaluated
+            case is_vector_function_type(Param1, Param2) of
+                true -> {error, {potential_dimension_mismatch, Param1, Param2}};
+                false -> ok
+            end
+    end;
+check_vector_operation_validity(_Params) -> ok.
+
+is_vector_function_type({dependent_type, 'Vector', _}, {dependent_type, 'Vector', _}) -> true;
+is_vector_function_type(_, _) -> false.
+
+extract_vector_dimensions({dependent_type, 'Vector', Params}) ->
+    case extract_vector_params(Params) of
+        {ok, ElemType, LengthExpr} ->
+            case evaluate_length_expr(LengthExpr) of
+                {ok, N} when is_integer(N) ->
+                    {ok, ElemType, N};
+                _ ->
+                    {ok, ElemType, unknown}
+            end;
+        _ ->
+            {error, invalid_vector}
+    end;
+extract_vector_dimensions(_Type) ->
+    {error, not_a_vector}.
+
+%% Enhanced occurs checking for dependent types
+check_dependent_occurs(#type_var{id = Id}, {dependent_type, _Name, Params}) ->
+    lists:any(fun(#type_param{value = Value}) ->
+        occurs_check_impl(Id, Value)
+    end, Params);
+check_dependent_occurs(#type_var{id = Id}, {list_type, ElemType, _LenExpr}) ->
+    occurs_check_impl(Id, ElemType);
+check_dependent_occurs(_Var, _Type) ->
+    false.
