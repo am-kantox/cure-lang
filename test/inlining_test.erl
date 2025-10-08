@@ -70,8 +70,8 @@ test_inline_preserves_semantics_simple() ->
     Inlined = cure_type_optimizer:inlining_pass(AST, Ctx),
 
     %% Type check before and after
-    {ok, _Env, #typecheck_result{success = true}} = cure_typechecker:check_function(get_function(AST, main)),
-    {ok, _Env2, #typecheck_result{success = true}} = cure_typechecker:check_function(get_function(Inlined, main)),
+    {ok, _Env, _Result1} = cure_typechecker:check_function(get_function(AST, main)),
+    {ok, _Env2, _Result2} = cure_typechecker:check_function(get_function(Inlined, main)),
 
     io:format("✓ Semantic equivalence (types) test passed~n").
 
@@ -145,8 +145,8 @@ test_inline_report_and_limits() ->
     AST = sample_ast_many_calls(),
     Config = #optimization_config{
         enable_inlining = true,
-        max_inline_size = 5,
-        max_inlines_per_function = 2
+        inline_threshold = 5,
+        max_specializations = 2
     },
     Ctx = cure_type_optimizer:initialize_optimization_context(Config),
     Inlined = cure_type_optimizer:inlining_pass(AST, Ctx),
@@ -309,7 +309,7 @@ sample_ast_with_match() ->
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
             body = #match_expr{expr = #identifier_expr{name = xs}, patterns = [
-                #match_clause{pattern = #list_pattern{elements = [#identifier_pattern{name = h}], tail = _}, guard = undefined, body = #identifier_expr{name = h}},
+                #match_clause{pattern = #list_pattern{elements = [#identifier_pattern{name = h}], tail = undefined}, guard = undefined, body = #identifier_expr{name = h}},
                 #match_clause{pattern = #list_pattern{elements = [], tail = undefined}, guard = undefined, body = #literal_expr{value = 0}}
             ]},
             location = #location{line = 1, column = 1}

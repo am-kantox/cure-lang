@@ -70,13 +70,13 @@ test_basic_polymorphic_function() ->
         case F#function_def.name of
             'identity_Int' ->
                 ?assertMatch(#primitive_type{name = 'Int'}, 
-                            hd(F#function_def.params)#param.type);
+                            (hd(F#function_def.params))#param.type);
             'identity_String' ->
                 ?assertMatch(#primitive_type{name = 'String'}, 
-                            hd(F#function_def.params)#param.type);
+                            (hd(F#function_def.params))#param.type);
             'identity_Bool' ->
                 ?assertMatch(#primitive_type{name = 'Bool'}, 
-                            hd(F#function_def.params)#param.type);
+                            (hd(F#function_def.params))#param.type);
             _ -> ok
         end
     end, IdentityFunctions),
@@ -513,7 +513,7 @@ test_monomorphization_optimization() ->
     % Configure optimization thresholds
     Config = #optimization_config{
         enable_monomorphization = true,
-        monomorphization_threshold = 3,  % Only monomorphize if used 3+ times
+        specialization_threshold = 3,  % Only specialize if used 3+ times
         max_specializations = 5
     },
     Context = cure_type_optimizer:initialize_optimization_context(Config),
