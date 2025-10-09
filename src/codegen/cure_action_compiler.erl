@@ -514,10 +514,10 @@ simplify_action({sequence, Actions, Location}) ->
         [Single] -> simplify_action(Single);
         _ -> {sequence, SimplifiedActions, Location}
     end;
-simplify_action({increment, Variable, {literal, 0, _}, _Location}) ->
+simplify_action({increment, _Variable, {literal, 0, _}, _Location}) ->
     % Increment by zero is a no-op
     undefined;
-simplify_action({decrement, Variable, {literal, 0, _}, _Location}) ->
+simplify_action({decrement, _Variable, {literal, 0, _}, _Location}) ->
     % Decrement by zero is a no-op
     undefined;
 simplify_action(Action) ->
@@ -540,7 +540,7 @@ simplify_action_sequence(Actions) ->
 %% ============================================================================
 
 %% Analyze action safety comprehensively
-analyze_action_safety(Action, State) ->
+analyze_action_safety(Action, _State) ->
     try
         case is_action_safe(Action) of
             true ->

@@ -345,26 +345,9 @@ compile_function_impl(
     catch
         error:CompileReason:Stack ->
             {error, {function_compilation_failed, Name, CompileReason, Stack}}
-    end;
-% Legacy function definition support (without constraint field)
-compile_function_impl(
-    #function_def{
-        name = Name,
-        params = Params,
-        body = Body,
-        location = Location
-    },
-    State
-) ->
-    % Convert to new format with undefined constraint
-    NewFunction = #function_def{
-        name = Name,
-        params = Params,
-        body = Body,
-        constraint = undefined,
-        location = Location
-    },
-    compile_function_impl(NewFunction, State).
+    end.
+% NOTE: Legacy function definition support (without constraint field) is now
+% handled by the main clause above since the pattern will match with constraint = undefined
 
 %% Compile Erlang function (def_erl)
 %% For def_erl functions, we generate a simple function that directly contains the raw Erlang code
@@ -1177,9 +1160,8 @@ compile_item({function_def, Name, Params, _RetType, _Constraint, Body, Location}
         location = Location
     },
     compile_function(Function, Options);
-compile_item({module_def, Name, Imports, Exports, Items, Location}, Options) ->
-    % Already handled in compile_module/2
-    compile_module({module_def, Name, Imports, Exports, Items, Location}, Options);
+% NOTE: {module_def, ...} tuple pattern is already handled by compile_module/2
+% which is called from the clause above
 compile_item(Item, _Options) ->
     {error, {unsupported_item, Item}}.
 
@@ -1298,7 +1280,7 @@ convert_functions_to_forms([Function | RestFunctions], Line, Acc) ->
     case convert_function_to_form(Function, Line) of
         {ok, Form, NextLine} ->
             convert_functions_to_forms(RestFunctions, NextLine, [Form | Acc]);
-        {error, Reason} ->
+        {error, _Reason} ->
             % Skip invalid functions for now
             convert_functions_to_forms(RestFunctions, Line + 1, Acc)
     end.
@@ -1380,7 +1362,7 @@ compile_patterns_to_case_clauses_impl(
         end,
 
     % Compile body to generate Erlang expressions
-    {BodyInstructions, State1} = compile_expression(Body, State),
+    {_BodyInstructions, State1} = compile_expression(Body, State),
 
     % For now, we'll create a simple return of the body value
     % In a full implementation, BodyInstructions would be converted to Erlang forms
@@ -1410,7 +1392,7 @@ convert_pattern_to_erlang_form(#wildcard_pattern{location = Location}, _) ->
     {var, get_line_from_location(Location), '_'};
 convert_pattern_to_erlang_form(#identifier_pattern{name = Name, location = Location}, _) ->
     {var, get_line_from_location(Location), Name};
-convert_pattern_to_erlang_form(Pattern, Location) ->
+convert_pattern_to_erlang_form(_Pattern, Location) ->
     % Fallback for unsupported patterns
     {var, get_line_from_location(Location), '_'}.
 
@@ -1471,298 +1453,298 @@ default_value_for_body(#literal_expr{value = Value}) -> Value;
 default_value_for_body(_) -> ok.
 
 %% Get line number from location
-get_line_from_location({location, Line, _Col, _File}, Default) when is_integer(Line) -> Line;
-get_line_from_location(_, Default) -> Default.
+% get_line_from_location({location, Line, _Col, _File}, _Default) when is_integer(Line) -> Line;
+% get_line_from_location(_, Default) -> Default.
 
 %% Get line number from location (single argument version)
 get_line_from_location({location, Line, _Col, _File}) when is_integer(Line) -> Line;
 get_line_from_location(_) -> 1.
 
 %% Compile match patterns with guards
-compile_match_patterns(Patterns, Location, State) ->
-    compile_match_patterns_impl(Patterns, [], Location, State).
-
-compile_match_patterns_impl([], Acc, _Location, State) ->
-    {lists:flatten(lists:reverse(Acc)), State};
-compile_match_patterns_impl([Pattern | Rest], Acc, Location, State) ->
-    case compile_match_pattern(Pattern, Location, State) of
-        {ok, Instructions, NewState} ->
-            compile_match_patterns_impl(Rest, [Instructions | Acc], Location, NewState);
-        {error, Reason} ->
-            {error, Reason}
-    end.
+% compile_match_patterns(Patterns, Location, State) ->
+%     compile_match_patterns_impl(Patterns, [], Location, State).
+% 
+% compile_match_patterns_impl([], Acc, _Location, State) ->
+%     {lists:flatten(lists:reverse(Acc)), State};
+% compile_match_patterns_impl([Pattern | Rest], Acc, Location, State) ->
+%     case compile_match_pattern(Pattern, Location, State) of
+%         {ok, Instructions, NewState} ->
+%             compile_match_patterns_impl(Rest, [Instructions | Acc], Location, NewState);
+%         {error, Reason} ->
+%             {error, Reason}
+%     end.
 
 %% Compile a single match pattern with optional guard
-compile_match_pattern(
-    #match_clause{pattern = Pattern, guard = Guard, body = Body, location = Location},
-    _OverrideLocation,
-    State
-) ->
-    % Generate labels for control flow
-    {FailLabel, State1} = new_label(State),
-    {SuccessLabel, State2} = new_label(State1),
-
-    % Compile pattern matching
-    {PatternInstr, State3} = compile_pattern(Pattern, FailLabel, State2),
-
-    % Compile guard if present
-    case Guard of
-        undefined ->
-            % No guard, compile body directly
-            {BodyInstr, State4} = compile_expression(Body, State3),
-
-            % Assemble instructions
-            Instructions =
-                PatternInstr ++ BodyInstr ++
-                    [
-                        #beam_instr{op = jump, args = [SuccessLabel], location = Location},
-                        #beam_instr{op = label, args = [FailLabel], location = Location},
-                        #beam_instr{op = pattern_fail, args = [], location = Location},
-                        #beam_instr{op = label, args = [SuccessLabel], location = Location}
-                    ],
-
-            {ok, Instructions, State4};
-        _ ->
-            case cure_guard_compiler:compile_guard(Guard, State3) of
-                {ok, GuardCode, GuardState} ->
-                    GuardFailInstr = #beam_instr{
-                        op = jump_if_false,
-                        args = [FailLabel],
-                        location = Location
-                    },
-
-                    % Compile body
-                    {BodyInstr, State5} = compile_expression(Body, GuardState),
-
-                    % Assemble instructions
-                    Instructions =
-                        PatternInstr ++ GuardCode ++ [GuardFailInstr] ++ BodyInstr ++
-                            [
-                                #beam_instr{op = jump, args = [SuccessLabel], location = Location},
-                                #beam_instr{op = label, args = [FailLabel], location = Location},
-                                #beam_instr{op = pattern_fail, args = [], location = Location},
-                                #beam_instr{op = label, args = [SuccessLabel], location = Location}
-                            ],
-
-                    {ok, Instructions, State5};
-                {error, GuardReason} ->
-                    {error, GuardReason}
-            end
-    end;
-compile_match_pattern(Pattern, Location, State) ->
-    % Handle non-clause patterns (backward compatibility)
-    {FailLabel, State1} = new_label(State),
-    {PatternInstr, State2} = compile_pattern(Pattern, FailLabel, State1),
-
-    Instructions =
-        PatternInstr ++
-            [
-                #beam_instr{op = label, args = [FailLabel], location = Location},
-                #beam_instr{op = pattern_fail, args = [], location = Location}
-            ],
-
-    {ok, Instructions, State2}.
+% compile_match_pattern(
+%     #match_clause{pattern = Pattern, guard = Guard, body = Body, location = Location},
+%     _OverrideLocation,
+%     State
+% ) ->
+%     % Generate labels for control flow
+%     {FailLabel, State1} = new_label(State),
+%     {SuccessLabel, State2} = new_label(State1),
+% 
+%     % Compile pattern matching
+%     {PatternInstr, State3} = compile_pattern(Pattern, FailLabel, State2),
+% 
+%     % Compile guard if present
+%     case Guard of
+%         undefined ->
+%             % No guard, compile body directly
+%             {BodyInstr, State4} = compile_expression(Body, State3),
+% 
+%             % Assemble instructions
+%             Instructions =
+%                 PatternInstr ++ BodyInstr ++
+%                     [
+%                         #beam_instr{op = jump, args = [SuccessLabel], location = Location},
+%                         #beam_instr{op = label, args = [FailLabel], location = Location},
+%                         #beam_instr{op = pattern_fail, args = [], location = Location},
+%                         #beam_instr{op = label, args = [SuccessLabel], location = Location}
+%                     ],
+% 
+%             {ok, Instructions, State4};
+%         _ ->
+%             case cure_guard_compiler:compile_guard(Guard, State3) of
+%                 {ok, GuardCode, GuardState} ->
+%                     GuardFailInstr = #beam_instr{
+%                         op = jump_if_false,
+%                         args = [FailLabel],
+%                         location = Location
+%                     },
+% 
+%                     % Compile body
+%                     {BodyInstr, State5} = compile_expression(Body, GuardState),
+% 
+%                     % Assemble instructions
+%                     Instructions =
+%                         PatternInstr ++ GuardCode ++ [GuardFailInstr] ++ BodyInstr ++
+%                             [
+%                                 #beam_instr{op = jump, args = [SuccessLabel], location = Location},
+%                                 #beam_instr{op = label, args = [FailLabel], location = Location},
+%                                 #beam_instr{op = pattern_fail, args = [], location = Location},
+%                                 #beam_instr{op = label, args = [SuccessLabel], location = Location}
+%                             ],
+% 
+%                     {ok, Instructions, State5};
+%                 {error, GuardReason} ->
+%                     {error, GuardReason}
+%             end
+%     end;
+% compile_match_pattern(Pattern, Location, State) ->
+%     % Handle non-clause patterns (backward compatibility)
+%     {FailLabel, State1} = new_label(State),
+%     {PatternInstr, State2} = compile_pattern(Pattern, FailLabel, State1),
+% 
+%     Instructions =
+%         PatternInstr ++
+%             [
+%                 #beam_instr{op = label, args = [FailLabel], location = Location},
+%                 #beam_instr{op = pattern_fail, args = [], location = Location}
+%             ],
+% 
+%     {ok, Instructions, State2}.
 
 %% Compile individual patterns
-compile_pattern(#literal_pattern{value = Value, location = Location}, FailLabel, State) ->
-    Instructions = [
-        #beam_instr{op = match_literal, args = [Value, FailLabel], location = Location}
-    ],
-    {Instructions, State};
-compile_pattern(#identifier_pattern{name = Name, location = Location}, _FailLabel, State) ->
-    {VarRef, State1} = new_temp_var(State),
-    NewVars = maps:put(Name, {local, VarRef}, State#codegen_state.local_vars),
-
-    Instructions = [
-        #beam_instr{op = bind_var, args = [VarRef], location = Location}
-    ],
-
-    {Instructions, State1#codegen_state{local_vars = NewVars}};
-compile_pattern(#wildcard_pattern{location = Location}, _FailLabel, State) ->
-    Instructions = [
-        #beam_instr{op = match_any, args = [], location = Location}
-    ],
-    {Instructions, State};
-compile_pattern(#tuple_pattern{elements = Elements, location = Location}, FailLabel, State) ->
-    % Match tuple structure first
-    TupleMatchInstr = #beam_instr{
-        op = match_tuple,
-        args = [length(Elements), FailLabel],
-        location = Location
-    },
-
-    % Compile element patterns
-    {ElementInstr, State1} = compile_pattern_elements(Elements, FailLabel, State),
-
-    Instructions = [TupleMatchInstr] ++ ElementInstr,
-    {Instructions, State1};
-compile_pattern(
-    #list_pattern{elements = Elements, tail = Tail, location = Location}, FailLabel, State
-) ->
-    % Match list structure
-    ListMatchInstr = #beam_instr{
-        op = match_list,
-        args = [length(Elements), Tail =/= undefined, FailLabel],
-        location = Location
-    },
-
-    % Compile element patterns
-    {ElementInstr, State1} = compile_pattern_elements(Elements, FailLabel, State),
-
-    % Compile tail pattern if present
-    {TailInstr, State2} =
-        case Tail of
-            undefined -> {[], State1};
-            _ -> compile_pattern(Tail, FailLabel, State1)
-        end,
-
-    Instructions = [ListMatchInstr] ++ ElementInstr ++ TailInstr,
-    {Instructions, State2};
-%% Record pattern - special handling for Result/Option types
-compile_pattern(
-    #record_pattern{name = RecordName, fields = Fields, location = Location}, FailLabel, State
-) ->
-    % Check if this is a Result/Option type that should be treated as a tagged tuple
-    case is_result_or_option_type(RecordName) of
-        true ->
-            % These are represented as simple tuples: {'Ok', Value}, {'Error', Reason}, etc.
-            % Generate tuple pattern matching instead of record matching
-            RecordMatchInstr = #beam_instr{
-                op = match_result_tuple,
-                args = [RecordName, length(Fields), FailLabel],
-                location = Location
-            },
-
-            % Compile field patterns
-            {FieldInstr, State1} = compile_record_field_patterns(Fields, FailLabel, State),
-
-            Instructions = [RecordMatchInstr] ++ FieldInstr,
-            {Instructions, State1};
-        false ->
-            % Traditional record pattern for actual records
-            % In Erlang, records are represented as {RecordName, Field1, Field2, ...}
-            RecordMatchInstr = #beam_instr{
-                op = match_tagged_tuple,
-                args = [RecordName, length(Fields), FailLabel],
-                location = Location
-            },
-
-            % Compile field patterns
-            {FieldInstr, State1} = compile_record_field_patterns(Fields, FailLabel, State),
-
-            Instructions = [RecordMatchInstr] ++ FieldInstr,
-            {Instructions, State1}
-    end;
-%% Constructor pattern - for Result/Option types like Ok(value), Error(reason), etc.
-compile_pattern(
-    #constructor_pattern{name = ConstructorName, args = Args, location = Location}, FailLabel, State
-) ->
-    % Check if this is a Result/Option type (both uppercase and lowercase)
-    case is_constructor_type(ConstructorName) of
-        true ->
-            case Args of
-                undefined ->
-                    % Constructor with no arguments (like None)
-                    ConstructorMatchInstr = #beam_instr{
-                        op = match_constructor,
-                        args = [ConstructorName, 0, FailLabel],
-                        location = Location
-                    },
-                    {[ConstructorMatchInstr], State};
-                [] ->
-                    % Constructor with empty argument list (like None())
-                    ConstructorMatchInstr = #beam_instr{
-                        op = match_constructor,
-                        args = [ConstructorName, 0, FailLabel],
-                        location = Location
-                    },
-                    {[ConstructorMatchInstr], State};
-                [SingleArg] ->
-                    % Constructor with single argument (like Ok(value), Error(reason))
-                    ConstructorMatchInstr = #beam_instr{
-                        op = match_constructor,
-                        args = [ConstructorName, 1, FailLabel],
-                        location = Location
-                    },
-
-                    % Compile the argument pattern
-                    {ArgInstr, State1} = compile_pattern(SingleArg, FailLabel, State),
-
-                    Instructions = [ConstructorMatchInstr] ++ ArgInstr,
-                    {Instructions, State1};
-                _ ->
-                    % Multiple arguments - not typical for Result/Option but handle it
-                    ConstructorMatchInstr = #beam_instr{
-                        op = match_constructor,
-                        args = [ConstructorName, length(Args), FailLabel],
-                        location = Location
-                    },
-
-                    % Compile all argument patterns
-                    {ArgInstrs, State1} = compile_pattern_elements(Args, FailLabel, State),
-
-                    Instructions = [ConstructorMatchInstr] ++ ArgInstrs,
-                    {Instructions, State1}
-            end;
-        false ->
-            {error, {unknown_constructor_pattern, ConstructorName}, State}
-    end;
-compile_pattern(Pattern, _FailLabel, State) ->
-    {error, {unsupported_pattern, Pattern}, State}.
+% compile_pattern(#literal_pattern{value = Value, location = Location}, FailLabel, State) ->
+%     Instructions = [
+%         #beam_instr{op = match_literal, args = [Value, FailLabel], location = Location}
+%     ],
+%     {Instructions, State};
+% compile_pattern(#identifier_pattern{name = Name, location = Location}, _FailLabel, State) ->
+%     {VarRef, State1} = new_temp_var(State),
+%     NewVars = maps:put(Name, {local, VarRef}, State#codegen_state.local_vars),
+% 
+%     Instructions = [
+%         #beam_instr{op = bind_var, args = [VarRef], location = Location}
+%     ],
+% 
+%     {Instructions, State1#codegen_state{local_vars = NewVars}};
+% compile_pattern(#wildcard_pattern{location = Location}, _FailLabel, State) ->
+%     Instructions = [
+%         #beam_instr{op = match_any, args = [], location = Location}
+%     ],
+%     {Instructions, State};
+% compile_pattern(#tuple_pattern{elements = Elements, location = Location}, FailLabel, State) ->
+%     % Match tuple structure first
+%     TupleMatchInstr = #beam_instr{
+%         op = match_tuple,
+%         args = [length(Elements), FailLabel],
+%         location = Location
+%     },
+% 
+%     % Compile element patterns
+%     {ElementInstr, State1} = compile_pattern_elements(Elements, FailLabel, State),
+% 
+%     Instructions = [TupleMatchInstr] ++ ElementInstr,
+%     {Instructions, State1};
+% compile_pattern(
+%     #list_pattern{elements = Elements, tail = Tail, location = Location}, FailLabel, State
+% ) ->
+%     % Match list structure
+%     ListMatchInstr = #beam_instr{
+%         op = match_list,
+%         args = [length(Elements), Tail =/= undefined, FailLabel],
+%         location = Location
+%     },
+% 
+%     % Compile element patterns
+%     {ElementInstr, State1} = compile_pattern_elements(Elements, FailLabel, State),
+% 
+%     % Compile tail pattern if present
+%     {TailInstr, State2} =
+%         case Tail of
+%             undefined -> {[], State1};
+%             _ -> compile_pattern(Tail, FailLabel, State1)
+%         end,
+% 
+%     Instructions = [ListMatchInstr] ++ ElementInstr ++ TailInstr,
+%     {Instructions, State2};
+% %% Record pattern - special handling for Result/Option types
+% compile_pattern(
+%     #record_pattern{name = RecordName, fields = Fields, location = Location}, FailLabel, State
+% ) ->
+%     % Check if this is a Result/Option type that should be treated as a tagged tuple
+%     case is_result_or_option_type(RecordName) of
+%         true ->
+%             % These are represented as simple tuples: {'Ok', Value}, {'Error', Reason}, etc.
+%             % Generate tuple pattern matching instead of record matching
+%             RecordMatchInstr = #beam_instr{
+%                 op = match_result_tuple,
+%                 args = [RecordName, length(Fields), FailLabel],
+%                 location = Location
+%             },
+% 
+%             % Compile field patterns
+%             {FieldInstr, State1} = compile_record_field_patterns(Fields, FailLabel, State),
+% 
+%             Instructions = [RecordMatchInstr] ++ FieldInstr,
+%             {Instructions, State1};
+%         false ->
+%             % Traditional record pattern for actual records
+%             % In Erlang, records are represented as {RecordName, Field1, Field2, ...}
+%             RecordMatchInstr = #beam_instr{
+%                 op = match_tagged_tuple,
+%                 args = [RecordName, length(Fields), FailLabel],
+%                 location = Location
+%             },
+% 
+%             % Compile field patterns
+%             {FieldInstr, State1} = compile_record_field_patterns(Fields, FailLabel, State),
+% 
+%             Instructions = [RecordMatchInstr] ++ FieldInstr,
+%             {Instructions, State1}
+%     end;
+% %% Constructor pattern - for Result/Option types like Ok(value), Error(reason), etc.
+% compile_pattern(
+%     #constructor_pattern{name = ConstructorName, args = Args, location = Location}, FailLabel, State
+% ) ->
+%     % Check if this is a Result/Option type (both uppercase and lowercase)
+%     case is_constructor_type(ConstructorName) of
+%         true ->
+%             case Args of
+%                 undefined ->
+%                     % Constructor with no arguments (like None)
+%                     ConstructorMatchInstr = #beam_instr{
+%                         op = match_constructor,
+%                         args = [ConstructorName, 0, FailLabel],
+%                         location = Location
+%                     },
+%                     {[ConstructorMatchInstr], State};
+%                 [] ->
+%                     % Constructor with empty argument list (like None())
+%                     ConstructorMatchInstr = #beam_instr{
+%                         op = match_constructor,
+%                         args = [ConstructorName, 0, FailLabel],
+%                         location = Location
+%                     },
+%                     {[ConstructorMatchInstr], State};
+%                 [SingleArg] ->
+%                     % Constructor with single argument (like Ok(value), Error(reason))
+%                     ConstructorMatchInstr = #beam_instr{
+%                         op = match_constructor,
+%                         args = [ConstructorName, 1, FailLabel],
+%                         location = Location
+%                     },
+% 
+%                     % Compile the argument pattern
+%                     {ArgInstr, State1} = compile_pattern(SingleArg, FailLabel, State),
+% 
+%                     Instructions = [ConstructorMatchInstr] ++ ArgInstr,
+%                     {Instructions, State1};
+%                 _ ->
+%                     % Multiple arguments - not typical for Result/Option but handle it
+%                     ConstructorMatchInstr = #beam_instr{
+%                         op = match_constructor,
+%                         args = [ConstructorName, length(Args), FailLabel],
+%                         location = Location
+%                     },
+% 
+%                     % Compile all argument patterns
+%                     {ArgInstrs, State1} = compile_pattern_elements(Args, FailLabel, State),
+% 
+%                     Instructions = [ConstructorMatchInstr] ++ ArgInstrs,
+%                     {Instructions, State1}
+%             end;
+%         false ->
+%             {error, {unknown_constructor_pattern, ConstructorName}, State}
+%     end;
+% compile_pattern(Pattern, _FailLabel, State) ->
+%     {error, {unsupported_pattern, Pattern}, State}.
 
 %% Compile pattern elements (for tuples and lists)
-compile_pattern_elements(Elements, FailLabel, State) ->
-    compile_pattern_elements_impl(Elements, [], FailLabel, State).
-
-%% Compile record field patterns
-compile_record_field_patterns(Fields, FailLabel, State) ->
-    compile_record_field_patterns_impl(Fields, [], FailLabel, State).
-
-compile_record_field_patterns_impl([], Acc, _FailLabel, State) ->
-    {lists:flatten(lists:reverse(Acc)), State};
-compile_record_field_patterns_impl(
-    [#field_pattern{name = _FieldName, pattern = Pattern} | Rest], Acc, FailLabel, State
-) ->
-    % For record patterns, we assume positional field matching
-    % The field order must match the record definition
-    case compile_pattern(Pattern, FailLabel, State) of
-        {Instructions, NewState} ->
-            % Add instruction to advance to next field position
-            FieldInstr =
-                Instructions ++ [#beam_instr{op = advance_field, args = [], location = undefined}],
-            compile_record_field_patterns_impl(Rest, [FieldInstr | Acc], FailLabel, NewState);
-        {error, Reason, ErrorState} ->
-            {error, Reason, ErrorState}
-    end.
-
-compile_pattern_elements_impl([], Acc, _FailLabel, State) ->
-    {lists:flatten(lists:reverse(Acc)), State};
-compile_pattern_elements_impl([Element | Rest], Acc, FailLabel, State) ->
-    case compile_pattern(Element, FailLabel, State) of
-        {Instructions, NewState} ->
-            compile_pattern_elements_impl(Rest, [Instructions | Acc], FailLabel, NewState);
-        {error, Reason, ErrorState} ->
-            {error, Reason, ErrorState}
-    end.
+% compile_pattern_elements(Elements, FailLabel, State) ->
+%     compile_pattern_elements_impl(Elements, [], FailLabel, State).
+% 
+% %% Compile record field patterns
+% compile_record_field_patterns(Fields, FailLabel, State) ->
+%     compile_record_field_patterns_impl(Fields, [], FailLabel, State).
+% 
+% compile_record_field_patterns_impl([], Acc, _FailLabel, State) ->
+%     {lists:flatten(lists:reverse(Acc)), State};
+% compile_record_field_patterns_impl(
+%     [#field_pattern{name = _FieldName, pattern = Pattern} | Rest], Acc, FailLabel, State
+% ) ->
+%     % For record patterns, we assume positional field matching
+%     % The field order must match the record definition
+%     case compile_pattern(Pattern, FailLabel, State) of
+%         {Instructions, NewState} ->
+%             % Add instruction to advance to next field position
+%             FieldInstr =
+%                 Instructions ++ [#beam_instr{op = advance_field, args = [], location = undefined}],
+%             compile_record_field_patterns_impl(Rest, [FieldInstr | Acc], FailLabel, NewState);
+%         {error, Reason, ErrorState} ->
+%             {error, Reason, ErrorState}
+%     end.
+% 
+% compile_pattern_elements_impl([], Acc, _FailLabel, State) ->
+%     {lists:flatten(lists:reverse(Acc)), State};
+% compile_pattern_elements_impl([Element | Rest], Acc, FailLabel, State) ->
+%     case compile_pattern(Element, FailLabel, State) of
+%         {Instructions, NewState} ->
+%             compile_pattern_elements_impl(Rest, [Instructions | Acc], FailLabel, NewState);
+%         {error, Reason, ErrorState} ->
+%             {error, Reason, ErrorState}
+%     end.
 
 %% ============================================================================
 %% Helper Functions for Pattern Compilation
 %% ============================================================================
 
 %% Check if a record name represents a Result or Option type that uses tuple representation
-is_result_or_option_type('Ok') -> true;
-is_result_or_option_type('Error') -> true;
-is_result_or_option_type('Some') -> true;
-is_result_or_option_type('None') -> true;
-is_result_or_option_type(_) -> false.
-
-%% Check if a constructor name represents a valid Result/Option constructor (both cases)
-is_constructor_type('Ok') -> true;
-is_constructor_type('Error') -> true;
-is_constructor_type('Some') -> true;
-is_constructor_type('None') -> true;
-is_constructor_type(ok) -> true;
-is_constructor_type(error) -> true;
-is_constructor_type(some) -> true;
-is_constructor_type(none) -> true;
-is_constructor_type(_) -> false.
+% is_result_or_option_type('Ok') -> true;
+% is_result_or_option_type('Error') -> true;
+% is_result_or_option_type('Some') -> true;
+% is_result_or_option_type('None') -> true;
+% is_result_or_option_type(_) -> false.
+% 
+% %% Check if a constructor name represents a valid Result/Option constructor (both cases)
+% is_constructor_type('Ok') -> true;
+% is_constructor_type('Error') -> true;
+% is_constructor_type('Some') -> true;
+% is_constructor_type('None') -> true;
+% is_constructor_type(ok) -> true;
+% is_constructor_type(error) -> true;
+% is_constructor_type(some) -> true;
+% is_constructor_type(none) -> true;
+% is_constructor_type(_) -> false.

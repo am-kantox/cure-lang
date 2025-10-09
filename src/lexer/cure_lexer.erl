@@ -219,17 +219,6 @@ skip_line_comment(<<_, Rest/binary>>) ->
 skip_line_comment(<<>>) ->
     {comment, <<>>}.
 
-%% Scan string literal
-scan_string(<<$", Rest/binary>>, Column, Acc) ->
-    {binary_to_list(Acc), Rest, Column + 1};
-scan_string(<<$\\, C, Rest/binary>>, Column, Acc) ->
-    Escaped = escape_char(C),
-    scan_string(Rest, Column + 2, <<Acc/binary, Escaped>>);
-scan_string(<<C, Rest/binary>>, Column, Acc) ->
-    scan_string(Rest, Column + 1, <<Acc/binary, C>>);
-scan_string(<<>>, Column, _Acc) ->
-    throw({lexer_error, unterminated_string, Column, Column}).
-
 %% Handle escape sequences
 escape_char($n) -> $\n;
 escape_char($t) -> $\t;

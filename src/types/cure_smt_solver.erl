@@ -74,7 +74,7 @@
 -type smt_constraint() :: #smt_constraint{}.
 -type smt_term() :: #smt_term{}.
 -type smt_expression() :: #smt_expression{}.
--type smt_context() :: #smt_context{}.
+% -type smt_context() :: #smt_context{}.
 -type proof_term() :: #proof_term{}.
 -type location() :: term().
 
@@ -229,7 +229,7 @@ list_pattern_length_constraint(Pattern, LengthVar) ->
 %% When matching [_|xs] -> xs, the tail xs has length n-1 where n is original list length
 -spec infer_tail_length_constraint(term(), atom(), atom()) -> [smt_constraint()].
 infer_tail_length_constraint(
-    {cons_pattern, _, {identifier_pattern, TailVar, _}, _},
+    {cons_pattern, _, {identifier_pattern, _TailVar, _}, _},
     OriginalLengthVar,
     TailLengthVar
 ) ->
@@ -246,7 +246,7 @@ infer_tail_length_constraint(
         )
     ];
 infer_tail_length_constraint(
-    {list_pattern, [_], {identifier_pattern, TailVar, _}, _},
+    {list_pattern, [_], {identifier_pattern, _TailVar, _}, _},
     OriginalLengthVar,
     TailLengthVar
 ) ->
@@ -978,28 +978,28 @@ is_valid_proof_rule(Rule, Premises, Conclusion) ->
     end.
 
 %% Check arithmetic addition rule: if n = k, then m = n + c implies m = k + c
-check_arithmetic_addition_rule(Premises, Conclusion) ->
+check_arithmetic_addition_rule(Premises, _Conclusion) ->
     % Simplified check - in full implementation would verify the arithmetic
     length(Premises) >= 1.
 
 %% Check arithmetic subtraction rule: if n = k, then m = n - c implies m = k - c
-check_arithmetic_subtraction_rule(Premises, Conclusion) ->
+check_arithmetic_subtraction_rule(Premises, _Conclusion) ->
     length(Premises) >= 1.
 
 %% Check arithmetic multiplication rule
-check_arithmetic_multiplication_rule(Premises, Conclusion) ->
+check_arithmetic_multiplication_rule(Premises, _Conclusion) ->
     length(Premises) >= 1.
 
 %% Check arithmetic division rule
-check_arithmetic_division_rule(Premises, Conclusion) ->
+check_arithmetic_division_rule(Premises, _Conclusion) ->
     length(Premises) >= 1.
 
 %% Check arithmetic modulo rule
-check_arithmetic_modulo_rule(Premises, Conclusion) ->
+check_arithmetic_modulo_rule(Premises, _Conclusion) ->
     length(Premises) >= 1.
 
 %% Check arithmetic evaluation rule: if terms evaluate to values, comparison is decidable
-check_arithmetic_evaluation_rule(Premises, Conclusion) ->
+check_arithmetic_evaluation_rule(_Premises, Conclusion) ->
     % Check that conclusion is a comparison and premises provide necessary values
     case Conclusion#smt_constraint.type of
         % Simplified check
@@ -1009,15 +1009,15 @@ check_arithmetic_evaluation_rule(Premises, Conclusion) ->
     end.
 
 %% Check transitivity rule: if a = b and b = c, then a = c
-check_transitivity_rule(Premises, Conclusion) ->
+check_transitivity_rule(Premises, _Conclusion) ->
     length(Premises) =:= 2.
 
 %% Check symmetry rule: if a = b, then b = a
-check_symmetry_rule(Premises, Conclusion) ->
+check_symmetry_rule(Premises, _Conclusion) ->
     length(Premises) =:= 1.
 
 %% Check reflexivity rule: a = a is always true
-check_reflexivity_rule(Premises, Conclusion) ->
+check_reflexivity_rule(_Premises, Conclusion) ->
     case Conclusion of
         #smt_constraint{type = equality, left = Left, right = Right} ->
             term_equal(Left, Right);

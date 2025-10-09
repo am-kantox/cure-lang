@@ -1014,122 +1014,11 @@ parse_type_parameter(State) ->
 parse_expression(State) ->
     parse_expression_or_block(State).
 
-%% Parse single expression without block detection (for match clause bodies)
-parse_single_expression(State) ->
-    parse_binary_expression(State, 0).
-
 %% Parse expression for match clause body - parse single expression only
 parse_match_clause_body(State) ->
     % Parse a single expression for the match clause body
     % Don't try to parse blocks or sequences - keep it simple
     parse_binary_expression(State, 0).
-
-%% Check if we should continue parsing as a block in match clause body
-is_match_body_continuation(State) ->
-    case get_token_type(current_token(State)) of
-        % let expressions can continue
-        'let' ->
-            true;
-        identifier ->
-            % Only continue if this doesn't look like a match pattern
-            % Check if this identifier could be the start of a new match clause
-            not is_likely_match_pattern(State);
-        % Numbers can continue as expressions
-        number ->
-            true;
-        % Strings can continue as expressions
-        string ->
-            true;
-        % Parenthesized expressions can continue
-        '(' ->
-            true;
-        % List expressions can continue
-        '[' ->
-            true;
-        % Tuple expressions can continue
-        '{' ->
-            true;
-        _ ->
-            false
-    end.
-
-%% Check if the current token sequence looks like a match pattern
-is_likely_match_pattern(State) ->
-    case get_token_type(current_token(State)) of
-        identifier ->
-            Token = current_token(State),
-            Name =
-                case get_token_value(Token) of
-                    Binary when is_binary(Binary) -> binary_to_atom(Binary, utf8);
-                    Atom when is_atom(Atom) -> Atom;
-                    _ -> '_unknown_token_value_'
-                end,
-            % Check if it's a constructor or could be followed by ->
-            is_constructor_name(Name) orelse looks_like_pattern_start(State);
-        'Ok' ->
-            true;
-        'Error' ->
-            true;
-        'Some' ->
-            true;
-        'None' ->
-            true;
-        'ok' ->
-            true;
-        'error' ->
-            true;
-        % literal patterns
-        number ->
-            true;
-        % literal patterns
-        string ->
-            true;
-        % literal patterns
-        atom ->
-            true;
-        % list patterns
-        '[' ->
-            true;
-        % tuple patterns
-        '{' ->
-            true;
-        % wildcard pattern
-        '_' ->
-            true;
-        _ ->
-            false
-    end.
-
-%% Check if a name is a constructor
-is_constructor_name('Ok') -> true;
-is_constructor_name('Error') -> true;
-is_constructor_name('Some') -> true;
-is_constructor_name('None') -> true;
-is_constructor_name(ok) -> true;
-is_constructor_name(error) -> true;
-is_constructor_name(some) -> true;
-is_constructor_name(none) -> true;
-% wildcard
-is_constructor_name('_') -> true;
-is_constructor_name(_) -> false.
-
-%% Check if identifier starts with lowercase letter (likely value parameter)
-is_lowercase_identifier(Atom) when is_atom(Atom) ->
-    AtomStr = atom_to_list(Atom),
-    case AtomStr of
-        [FirstChar | _] when FirstChar >= $a, FirstChar =< $z -> true;
-        _ -> false
-    end;
-is_lowercase_identifier(_) ->
-    false.
-
-%% Look ahead to see if this looks like pattern -> body
-looks_like_pattern_start(State) ->
-    % This is a simplified heuristic - we'd need lookahead to be sure
-    % For now, assume single identifiers at the start of a line could be patterns
-
-    % Conservative approach - don't assume it's a pattern
-    false.
 
 %% Parse let value expression that stops at 'in' keyword
 parse_let_value_expression(State) ->
@@ -1151,7 +1040,7 @@ parse_let_value_binary_rest(State, Left, MinPrec) ->
                     {Left, State};
                 'as' ->
                     % Special handling for type annotation in let context
-                    {Prec, _Assoc} = get_operator_info('as'),
+                    {Prec, _} = get_operator_info('as'),
                     case Prec >= MinPrec of
                         true ->
                             {_, State1} = expect(State, 'as'),
@@ -1225,16 +1114,6 @@ is_let_body_continuation(State) ->
         eof -> false;
         % Conservative: assume no body
         _ -> false
-    end.
-
-%% Parse sequence of expressions in match clause body
-parse_match_body_sequence(State, Acc) ->
-    case is_match_body_continuation(State) of
-        true ->
-            {Expr, State1} = parse_binary_expression(State, 0),
-            parse_match_body_sequence(State1, [Expr | Acc]);
-        false ->
-            {lists:reverse(Acc), State}
     end.
 
 %% Parse expression or block of expressions
@@ -1314,7 +1193,7 @@ parse_binary_rest(State, Left, MinPrec) ->
             case get_token_type(Token) of
                 'as' ->
                     % Special handling for type annotation
-                    {Prec, Assoc} = get_operator_info('as'),
+                    {Prec, _} = get_operator_info('as'),
                     case Prec >= MinPrec of
                         true ->
                             {_, State1} = expect(State, 'as'),

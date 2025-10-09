@@ -178,9 +178,10 @@
     max_depth :: integer()
 }).
 
--type recursive_type() :: #recursive_type{}.
--type mu_type() :: #mu_type{}.
--type cycle_detection() :: #cycle_detection{}.
+% COMMENTED OUT UNUSED TYPES
+% -type recursive_type() :: #recursive_type{}.
+% -type mu_type() :: #mu_type{}.
+% -type cycle_detection() :: #cycle_detection{}.
 
 %% Higher-kinded types definitions
 -record(kind, {
@@ -233,42 +234,44 @@
 
 -type kind() :: #kind{}.
 -type type_constructor() :: #type_constructor{}.
--type higher_kinded_type() :: #higher_kinded_type{}.
--type type_family() :: #type_family{}.
+% COMMENTED OUT UNUSED TYPES
+% -type higher_kinded_type() :: #higher_kinded_type{}.
+% -type type_family() :: #type_family{}.
 -type type_family_equation() :: #type_family_equation{}.
 -type constraint() :: #constraint{}.
 
-%% Complex dependent type relationship records
--record(dependent_relation, {
-    type1 :: type_expr(),
-    type2 :: type_expr(),
-    relation :: dependent_relation_type(),
-    predicate :: fun((term(), term()) -> boolean()) | term(),
-    location :: location()
-}).
+% Complex dependent type relationship records - UNUSED TYPES COMMENTED OUT
+% -record(dependent_relation, {
+%     type1 :: type_expr(),
+%     type2 :: type_expr(),
+%     relation :: dependent_relation_type(),
+%     predicate :: fun((term(), term()) -> boolean()) | term(),
+%     location :: location()
+% }).
+%
+% -record(type_invariant, {
+%     type :: type_expr(),
+%     invariant :: fun((type_expr()) -> boolean()) | term(),
+%     description :: string(),
+%     location :: location()
+% }).
+%
+% -record(variance_constraint, {
+%     type_constructor :: atom(),
+%     parameter_position :: integer(),
+%     variance :: covariant | contravariant | invariant,
+%     location :: location()
+% }).
 
--record(type_invariant, {
-    type :: type_expr(),
-    invariant :: fun((type_expr()) -> boolean()) | term(),
-    description :: string(),
-    location :: location()
-}).
-
--record(variance_constraint, {
-    type_constructor :: atom(),
-    parameter_position :: integer(),
-    variance :: covariant | contravariant | invariant,
-    location :: location()
-}).
-
--type dependent_relation_type() ::
-    implies
-    | equivalent
-    | bounds
-    | subtype_of
-    | compatible_with
-    | dimension_match
-    | length_preserving.
+% COMMENTED OUT UNUSED TYPE
+% -type dependent_relation_type() ::
+%     implies
+%     | equivalent
+%     | bounds
+%     | subtype_of
+%     | compatible_with
+%     | dimension_match
+%     | length_preserving.
 
 %% Built-in types
 -define(TYPE_INT, {primitive_type, 'Int'}).
@@ -1480,23 +1483,6 @@ extract_length_var(_) ->
 
 extract_type_param_value(#type_param{value = Value}) ->
     Value;
-% Handle records with different field orders or names (for recursive types)
-extract_type_param_value({type_param, _Name, Value}) ->
-    Value;
-extract_type_param_value({type_param, _Name, Value, _Other}) ->
-    Value;
-extract_type_param_value({type_param, _Name, _Other, Value}) ->
-    Value;
-% Handle records with 'name' field (for recursive type tests)
-extract_type_param_value(Param) when is_record(Param, type_param) ->
-    % If it has a 'value' field, use that, otherwise try element extraction
-    try
-        % Assuming value is 3rd element
-        element(3, Param)
-    catch
-        % Fallback to the param itself
-        _:_ -> Param
-    end;
 % Fallback for other formats
 extract_type_param_value(Value) ->
     Value.
@@ -1912,7 +1898,7 @@ attempt_satisfy_predicate(Predicate, Subst) ->
             {ok, Subst}
     end.
 
-add_conditional_constraint(Left, Right, Relation, Subst) ->
+add_conditional_constraint(_Left, _Right, _Relation, Subst) ->
     % Store conditional constraint for later resolution
     % For now, accept the constraint and continue
     {ok, Subst}.
@@ -2061,7 +2047,7 @@ check_dependent_type_properties(Name, Params, Properties, Subst) ->
             {ok, Subst}
     end.
 
-check_function_type_properties(ParamTypes, ReturnType, Properties, Subst) ->
+check_function_type_properties(ParamTypes, _ReturnType, Properties, Subst) ->
     case Properties of
         [{arity, ExpectedArity}] ->
             ActualArity = length(ParamTypes),
@@ -2180,7 +2166,7 @@ bidirectional_infer_impl({identifier_expr, Name, Location}, ExpectedType, Env, C
         undefined ->
             % Create fresh type variable if not found
             FreshVar = new_type_var(Name),
-            NewEnv = extend_env(Env, Name, FreshVar),
+            _NewEnv = extend_env(Env, Name, FreshVar),
             Step = {inference_step, fresh_variable, Name, FreshVar, Location},
 
             case ExpectedType of
@@ -2443,7 +2429,7 @@ constraint_propagation(Constraints, InitialSubst) ->
         {ok, SortedConstraints} ->
             % Propagate constraints in dependency order
             propagate_constraints_ordered(SortedConstraints, InitialSubst, []);
-        {error, Reason} ->
+        {error, _Reason} ->
             % Fall back to simple propagation if cycle detected
             simple_constraint_propagation(Constraints, InitialSubst)
     end.
@@ -2507,13 +2493,13 @@ propagate_single_constraint(#type_constraint{left = Left, op = '=', right = Righ
             if
                 NewLeft =/= Left orelse NewRight =/= Right ->
                     % Constraint was modified by substitution
-                    UpdatedC = C#type_constraint{left = NewLeft, right = NewRight},
+                    _UpdatedC = C#type_constraint{left = NewLeft, right = NewRight},
                     {unchanged, Subst};
                 true ->
                     {unchanged, Subst}
             end
     end;
-propagate_single_constraint(C, Subst) ->
+propagate_single_constraint(_C, Subst) ->
     % For non-equality constraints, just apply substitution
     {unchanged, Subst}.
 
@@ -2554,7 +2540,7 @@ local_type_inference(Expr, InferredType, Env) ->
             {ok, InferredType, []}
     end.
 
-improve_list_type_inference(Elements, {list_type, ElemType, LenExpr}, Env, Location) ->
+improve_list_type_inference(Elements, {list_type, ElemType, LenExpr}, Env, _Location) ->
     % Try to infer more specific element type
     case Elements of
         [] ->
@@ -2888,7 +2874,7 @@ create_recursive_type(Name, Params, Definition, Location) ->
     end.
 
 %% Unfold a recursive type one level
-unfold_recursive_type(RecType = #recursive_type{name = Name, definition = Def}) ->
+unfold_recursive_type(RecType = #recursive_type{name = _Name, definition = _Def}) ->
     unfold_recursive_type(RecType, 1).
 
 unfold_recursive_type(RecType = #recursive_type{name = Name, definition = Def}, MaxDepth) ->
@@ -3006,7 +2992,7 @@ occurs_check_recursive(Var, Type) ->
 
 %% Detect cycles in type definitions
 detect_cycles(
-    Type, State = #cycle_detection{visited = Visited, stack = Stack, max_depth = MaxDepth}
+    Type, State = #cycle_detection{visited = _Visited, stack = Stack, max_depth = MaxDepth}
 ) ->
     case length(Stack) >= MaxDepth of
         true -> {error, max_depth_exceeded};
@@ -3044,7 +3030,7 @@ detect_cycles_impl({list_type, ElemType, LenExpr}, State) ->
         {ok, State1} -> {ok, State1};
         Error -> Error
     end;
-detect_cycles_impl(#mu_type{var = Var, body = Body}, State) ->
+detect_cycles_impl(#mu_type{var = _Var, body = Body}, State) ->
     % μ-types create their own scope
     detect_cycles_impl(Body, State);
 detect_cycles_impl(_Type, State) ->
@@ -3210,7 +3196,7 @@ contains_free_var_impl({list_type, ElemType, LenExpr}, Var) ->
 contains_free_var_impl(_, _) ->
     false.
 
-check_productivity(RecType = #recursive_type{name = Name, definition = Def}) ->
+check_productivity(_RecType = #recursive_type{name = Name, definition = Def}) ->
     % Check that the recursive type is productive (terminates in finite steps)
 
     % Max depth 5
@@ -3219,7 +3205,7 @@ check_productivity(RecType = #recursive_type{name = Name, definition = Def}) ->
         {non_productive, Reason} -> {error, {non_productive, Reason}}
     end.
 
-analyze_productivity(Definition, Name, MaxDepth) when MaxDepth =< 0 ->
+analyze_productivity(_Definition, _Name, MaxDepth) when MaxDepth =< 0 ->
     {non_productive, max_depth_reached};
 analyze_productivity({recursive_type_ref, Name}, Name, _MaxDepth) ->
     {non_productive, immediate_recursion};
@@ -3305,7 +3291,7 @@ occurs_check_in_recursive_def_impl(Id, {list_type, ElemType, LenExpr}) ->
 occurs_check_in_recursive_def_impl(_, _) ->
     false.
 
-occurs_check_in_mu_body(Var = #type_var{id = Id}, MuVar, Body) ->
+occurs_check_in_mu_body(_Var = #type_var{id = Id}, MuVar, Body) ->
     case contains_free_var(Body, MuVar) of
         true -> occurs_check_in_recursive_def_impl(Id, Body);
         false -> false
@@ -3439,7 +3425,7 @@ create_type_constructor(Name, Kind, Params, Definition, Location) ->
 %% Apply a type constructor to arguments
 apply_type_constructor(TypeConstructor, Args, Location) ->
     case TypeConstructor of
-        #type_constructor{kind = Kind, params = Params} ->
+        #type_constructor{kind = _Kind, params = Params} ->
             RequiredArity = length(Params),
             ProvidedArity = length(Args),
 
@@ -3566,7 +3552,7 @@ is_saturated_type(Type) ->
 
 %% Helper functions for higher-kinded types
 
-infer_dependent_type_kind(Name, Params, KindEnv) ->
+infer_dependent_type_kind(Name, Params, _KindEnv) ->
     case {Name, length(Params)} of
         {'List', 1} ->
             {ok, #kind{
@@ -3641,7 +3627,7 @@ is_base_kind({ok, Kind}) ->
 is_base_kind(_) ->
     false.
 
-check_type_constructor_validity(Name, Kind, Params, Definition) ->
+check_type_constructor_validity(_Name, Kind, Params, Definition) ->
     % Check that the number of parameters matches the kind arity
     case {kind_arity(Kind), length(Params)} of
         {Arity, Arity} ->

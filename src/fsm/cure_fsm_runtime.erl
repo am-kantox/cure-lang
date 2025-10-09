@@ -450,7 +450,7 @@ apply_guard_bif(_, _) -> false.
 is_truthy(false) -> false;
 is_truthy(undefined) -> false;
 is_truthy(0) -> false;
-is_truthy(0.0) -> false;
+is_truthy(+0.0) -> false;
 is_truthy([]) -> false;
 is_truthy(_) -> true.
 
@@ -565,7 +565,7 @@ execute_action_instruction(#{op := binary_op, args := [Op]}, Context) ->
     end;
 execute_action_instruction(#{op := emit_event, args := [Event, HasData]}, Context) ->
     Stack = maps:get(stack, Context, []),
-    State = maps:get(state, Context),
+    _State = maps:get(state, Context),
 
     {EventData, NewStack} =
         case HasData of

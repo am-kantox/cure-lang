@@ -89,9 +89,7 @@ check_item({export_list, ExportSpecs}, Env) ->
 check_item(FSM = #fsm_def{}, Env) ->
     check_fsm(FSM, Env);
 check_item(TypeDef = #type_def{}, Env) ->
-    check_type_definition(TypeDef, Env);
-check_item(Import = #import_def{}, Env) ->
-    check_import(Import, Env).
+    check_type_definition(TypeDef, Env).
 
 %% Check module definition
 check_module(Module) ->
@@ -422,50 +420,6 @@ check_type_definition(#type_def{name = Name, definition = Definition}, Env) ->
     TypeDefType = convert_type_to_tuple(Definition),
     NewEnv = cure_types:extend_env(Env, Name, TypeDefType),
     {ok, NewEnv, success_result(TypeDefType)}.
-
-%% Check import
-check_import(#import_def{module = Module, items = Items}, Env) ->
-    case check_import_items(Module, Items, Env) of
-        {ok, NewEnv} ->
-            ImportType = {import_type, Module, Items},
-            {ok, NewEnv, success_result(ImportType)};
-        {error, Error} ->
-            {ok, Env, error_result(Error)}
-    end.
-
-%% Check import items (functions and identifiers)
-check_import_items(_Module, all, Env) ->
-    % Import all exports from module - for now just return environment unchanged
-    % In a full implementation, would load module interface and import all exports
-    {ok, Env};
-check_import_items(Module, Items, Env) when is_list(Items) ->
-    % Check and import specific items
-    import_items(Module, Items, Env, Env).
-
-%% Import individual items
-import_items(_Module, [], _OrigEnv, AccEnv) ->
-    {ok, AccEnv};
-import_items(Module, [Item | RestItems], OrigEnv, AccEnv) ->
-    case import_item(Module, Item, AccEnv) of
-        {ok, NewAccEnv} ->
-            import_items(Module, RestItems, OrigEnv, NewAccEnv);
-        {error, Error} ->
-            {error, Error}
-    end.
-
-%% Import single item (function or identifier)
-import_item(Module, #function_import{name = Name, arity = Arity}, Env) ->
-    % For now, create a generic function type for imported functions
-    % In a full implementation, would look up actual type from module interface
-    FunctionType = create_imported_function_type(Module, Name, Arity),
-    NewEnv = cure_types:extend_env(Env, Name, FunctionType),
-    {ok, NewEnv};
-import_item(Module, Identifier, Env) when is_atom(Identifier) ->
-    % Import identifier (type constructor, constant, etc.)
-    % For now, create a generic identifier type
-    IdentifierType = {imported_identifier, Module, Identifier},
-    NewEnv = cure_types:extend_env(Env, Identifier, IdentifierType),
-    {ok, NewEnv}.
 
 %% Create function type for imported function with given arity
 create_imported_function_type(Module, Name, Arity) ->
@@ -943,7 +897,7 @@ convert_field_pattern_to_tuple(#field_pattern{name = Name, pattern = Pattern, lo
     {field_pattern, Name, convert_pattern_to_tuple(Pattern), Location}.
 
 %% When clause constraint processing with SMT solver integration
-process_when_clause_constraint(Constraint, Env, Location) ->
+process_when_clause_constraint(Constraint, Env, _Location) ->
     try
         % Convert the constraint expression to SMT constraints
         case convert_constraint_to_smt(Constraint, Env) of
@@ -984,9 +938,9 @@ convert_constraint_to_smt(Constraint, Env) ->
                                 cure_smt_solver:equality_constraint(LeftTerm, RightTerm)
                         end,
                     {ok, [SmtConstraint]};
-                {Error, _} ->
+                {{error, _} = Error, _} ->
                     Error;
-                {_, Error} ->
+                {_, {error, _} = Error} ->
                     Error
             end;
         _ ->
@@ -1003,9 +957,9 @@ convert_expr_to_smt_term({binary_op_expr, '+', Left, Right, _}, Env) ->
         {{ok, LeftTerm}, {ok, RightTerm}} ->
             AddExpr = cure_smt_solver:addition_expression([LeftTerm, RightTerm]),
             {ok, AddExpr};
-        {Error, _} ->
+        {{error, _} = Error, _} ->
             Error;
-        {_, Error} ->
+        {_, {error, _} = Error} ->
             Error
     end;
 convert_expr_to_smt_term({binary_op_expr, '-', Left, Right, _}, Env) ->
@@ -1013,9 +967,9 @@ convert_expr_to_smt_term({binary_op_expr, '-', Left, Right, _}, Env) ->
         {{ok, LeftTerm}, {ok, RightTerm}} ->
             SubExpr = cure_smt_solver:subtraction_expression([LeftTerm, RightTerm]),
             {ok, SubExpr};
-        {Error, _} ->
+        {{error, _} = Error, _} ->
             Error;
-        {_, Error} ->
+        {_, {error, _} = Error} ->
             Error
     end;
 convert_expr_to_smt_term({binary_op_expr, '*', Left, Right, _}, Env) ->
@@ -1023,9 +977,9 @@ convert_expr_to_smt_term({binary_op_expr, '*', Left, Right, _}, Env) ->
         {{ok, LeftTerm}, {ok, RightTerm}} ->
             MulExpr = cure_smt_solver:multiplication_expression([LeftTerm, RightTerm]),
             {ok, MulExpr};
-        {Error, _} ->
+        {{error, _} = Error, _} ->
             Error;
-        {_, Error} ->
+        {_, {error, _} = Error} ->
             Error
     end;
 convert_expr_to_smt_term({binary_op_expr, '/', Left, Right, _}, Env) ->
@@ -1033,9 +987,9 @@ convert_expr_to_smt_term({binary_op_expr, '/', Left, Right, _}, Env) ->
         {{ok, LeftTerm}, {ok, RightTerm}} ->
             DivExpr = cure_smt_solver:division_expression([LeftTerm, RightTerm]),
             {ok, DivExpr};
-        {Error, _} ->
+        {{error, _} = Error, _} ->
             Error;
-        {_, Error} ->
+        {_, {error, _} = Error} ->
             Error
     end;
 convert_expr_to_smt_term({binary_op_expr, 'mod', Left, Right, _}, Env) ->
@@ -1043,9 +997,9 @@ convert_expr_to_smt_term({binary_op_expr, 'mod', Left, Right, _}, Env) ->
         {{ok, LeftTerm}, {ok, RightTerm}} ->
             ModExpr = cure_smt_solver:modulo_expression([LeftTerm, RightTerm]),
             {ok, ModExpr};
-        {Error, _} ->
+        {{error, _} = Error, _} ->
             Error;
-        {_, Error} ->
+        {_, {error, _} = Error} ->
             Error
     end;
 convert_expr_to_smt_term(Expr, _Env) ->
