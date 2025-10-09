@@ -153,6 +153,8 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         execute_and_discard -> compile_execute_and_discard(Args, NewContext);
         return -> compile_return(Args, NewContext);
         make_case -> compile_make_case(Args, NewContext);
+        to_string -> compile_to_string(Args, NewContext);
+        concat_strings -> compile_concat_strings(Args, NewContext);
         _ -> {error, {unsupported_instruction, Op}}
     end.
 
@@ -310,6 +312,39 @@ compile_make_tuple([Count], Context) ->
             % Build tuple from elements
             TupleForm = {tuple, Line, Elements},
             {ok, [], push_stack(TupleForm, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% Convert top of stack to string using stdlib functions
+compile_to_string([], Context) ->
+    case pop_stack(Context) of
+        {Value, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Determine conversion based on value type at compile-time if possible
+            % Fallback to erlang:io_lib:format for unknown types
+            ToStringForm = {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, string_any}}, [Value]},
+            {ok, [], push_stack(ToStringForm, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% Concatenate N strings from stack using stdlib string_join
+compile_concat_strings([Count], Context) ->
+    case pop_n_from_stack(Count, Context) of
+        {Elements, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Build io_lib:format("~s~s~s...", Elements) or use cure_std:string_join
+            % We'll generate a left-fold of string_join with empty string
+            Empty = {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, string_empty}}, []},
+            ConcatForm = lists:foldl(
+                fun(Elem, Acc) ->
+                    {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, string_join}}, [Acc, Elem]}
+                end,
+                Empty,
+                Elements
+            ),
+            {ok, [], push_stack(ConcatForm, NewContext)};
         Error ->
             Error
     end.
@@ -634,6 +669,7 @@ is_stdlib_function(list_to_string) -> true;
 is_stdlib_function(join_ints) -> true;
 is_stdlib_function(string_empty) -> true;
 is_stdlib_function(string_join) -> true;
+is_stdlib_function(string_any) -> true;
 is_stdlib_function(_) -> false.
 
 %% Get function arity for stdlib functions
@@ -675,8 +711,9 @@ get_function_arity(int_to_string) -> 1;
 get_function_arity(float_to_string) -> 1;
 get_function_arity(list_to_string) -> 1;
 get_function_arity(join_ints) -> 2;
-get_function_arity(string_empty) -> 1;
+get_function_arity(string_empty) -> 0;
 get_function_arity(string_join) -> 2;
+get_function_arity(string_any) -> 1;
 get_function_arity(_) -> 0.
 
 %% Compile binary operators

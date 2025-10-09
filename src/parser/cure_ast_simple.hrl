@@ -52,6 +52,21 @@
     location
 }).
 
+%% Record definition
+-record(record_def, {
+    name,
+    fields,
+    location
+}).
+
+%% Record field definition
+-record(record_field_def, {
+    name,
+    type,
+    default_value,  % optional
+    location
+}).
+
 %% FSM definition
 -record(fsm_def, {
     name,
@@ -209,6 +224,12 @@
 -record(lambda_expr, {
     params,
     body,
+    location
+}).
+
+%% String interpolation expressions
+-record(string_interpolation_expr, {
+    parts,   % List of {string_part, String} | {expr, Expression}
     location
 }).
 

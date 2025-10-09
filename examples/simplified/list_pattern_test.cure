@@ -1,0 +1,11 @@
+module ListPatternTest do
+  export [main/0]
+
+  def main(): Int = 
+    let numbers = [1, 2, 3, 4, 5] in
+    match numbers do
+      [head | tail] -> head
+      [] -> 0
+      _ -> -1
+    end
+end

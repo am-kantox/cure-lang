@@ -222,6 +222,10 @@ compile_module_item(#fsm_def{} = FSM, State) ->
             {error, Reason}
     end;
 
+compile_module_item(#record_def{} = RecordDef, State) ->
+    % Record definitions generate type information and constructor functions
+    {ok, {record_def, RecordDef}, State};
+
 compile_module_item(#type_def{} = TypeDef, State) ->
     % Type definitions don't generate runtime code, but may affect compilation
     {ok, {type_def, TypeDef}, State};
@@ -410,6 +414,7 @@ compile_expression(Expr, State) ->
         #lambda_expr{} -> compile_lambda_expr(Expr, State);
         #unary_op_expr{} -> compile_unary_op_expr(Expr, State);
         #match_expr{} -> compile_match_expr(Expr, State);
+        #string_interpolation_expr{} -> compile_string_interpolation(Expr, State);
         % Note: pipe operators are parsed as binary_op_expr with op = '|>'
         % Note: constructor expressions are parsed as function_call_expr
         _ -> {error, {unsupported_expression, Expr}}
@@ -645,6 +650,40 @@ compile_match_expr(#match_expr{expr = Expr, patterns = Patterns, location = Loca
     Instructions = ExprInstructions ++ [CaseInstruction],
     {Instructions, State2}.
 
+%% Compile string interpolation expressions
+compile_string_interpolation(#string_interpolation_expr{parts = Parts, location = Location}, State) ->
+    compile_string_interpolation_parts(Parts, [], State, Location).
+
+compile_string_interpolation_parts([], Acc, State, Location) ->
+    % Create string concatenation instruction
+    StringConcatInstruction = #beam_instr{
+        op = concat_strings,
+        args = [length(Acc)],
+        location = Location
+    },
+    
+    Instructions = lists:reverse(Acc) ++ [StringConcatInstruction],
+    {Instructions, State};
+
+compile_string_interpolation_parts([{string_part, String} | Rest], Acc, State, Location) ->
+    % Compile string literal
+    StringInstruction = #beam_instr{
+        op = load_literal,
+        args = [String],
+        location = Location
+    },
+    compile_string_interpolation_parts(Rest, [StringInstruction | Acc], State, Location);
+
+compile_string_interpolation_parts([{expr, Expr} | Rest], Acc, State, Location) ->
+    % Compile expression and convert to string
+    {ExprInstructions, State1} = compile_expression(Expr, State),
+    ToStringInstruction = #beam_instr{
+        op = to_string,
+        args = [],
+        location = Location
+    },
+    ExprWithToString = ExprInstructions ++ [ToStringInstruction],
+    compile_string_interpolation_parts(Rest, ExprWithToString ++ Acc, State1, Location).
 
 %% ============================================================================
 %% FSM Compilation

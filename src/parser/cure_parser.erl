@@ -154,6 +154,8 @@ parse_item(State) ->
             parse_function(State);
         def_erl ->
             parse_erlang_function(State);
+        record ->
+            parse_record_def(State);
         fsm ->
             parse_fsm(State);
         type ->
@@ -274,6 +276,8 @@ parse_module_item(State) ->
             parse_function(State);
         def_erl ->
             parse_erlang_function(State);
+        record ->
+            parse_record_def(State);
         fsm ->
             parse_fsm(State);
         type ->
@@ -426,6 +430,50 @@ parse_parameter(State) ->
         location = Location
     },
     {Param, State2}.
+
+%% Parse record definition: record Name do field: Type end
+parse_record_def(State) ->
+    {_, State1} = expect(State, record),
+    {NameToken, State2} = expect(State1, identifier),
+    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    {_, State3} = expect(State2, do),
+    
+    {Fields, State4} = parse_record_fields(State3, []),
+    {_, State5} = expect(State4, 'end'),
+    
+    Location = get_token_location(NameToken),
+    Record = #record_def{
+        name = Name,
+        fields = Fields,
+        location = Location
+    },
+    {Record, State5}.
+
+%% Parse record fields
+parse_record_fields(State, Acc) ->
+    case match_token(State, 'end') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {Field, State1} = parse_record_field(State),
+            parse_record_fields(State1, [Field | Acc])
+    end.
+
+%% Parse single record field: name: Type
+parse_record_field(State) ->
+    {NameToken, State1} = expect(State, identifier),
+    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    {_, State2} = expect(State1, ':'),
+    {Type, State3} = parse_type(State2),
+    
+    Location = get_token_location(NameToken),
+    Field = #record_field_def{
+        name = Name,
+        type = Type,
+        default_value = undefined,
+        location = Location
+    },
+    {Field, State3}.
 
 %% Parse FSM definition
 parse_fsm(State) ->
@@ -1074,6 +1122,7 @@ get_expr_location(#tuple_expr{location = Loc}) -> Loc;
 get_expr_location(#if_expr{location = Loc}) -> Loc;
 get_expr_location(#let_expr{location = Loc}) -> Loc;
 get_expr_location(#block_expr{location = Loc}) -> Loc;
+get_expr_location(#string_interpolation_expr{location = Loc}) -> Loc;
 get_expr_location(#primitive_type{location = Loc}) -> Loc;
 get_expr_location(#dependent_type{location = Loc}) -> Loc;
 get_expr_location(_) -> #location{line = 0, column = 0, file = undefined}.
@@ -1185,6 +1234,10 @@ parse_primary_expression(State) ->
                 location = Location
             },
             {Expr, State1};
+        interpolation_start ->
+            parse_string_interpolation(State);
+        string_part ->
+            parse_string_interpolation(State);
         atom ->
             {Token, State1} = expect(State, atom),
             Value = get_token_value(Token),
@@ -2317,3 +2370,45 @@ token_to_string(Token) ->
         atom -> atom_to_list(get_token_value(Token));
         _ -> atom_to_list(get_token_value(Token))
     end.
+
+%% Parse string interpolation
+parse_string_interpolation(State) ->
+    parse_string_interpolation_parts(State, []).
+
+parse_string_interpolation_parts(State, Acc) ->
+    Token = current_token(State),
+    case get_token_type(Token) of
+        string_part ->
+            % String part
+            {Token, State1} = expect(State, string_part),
+            Value = get_token_value(Token),
+            Part = {string_part, Value},
+            parse_string_interpolation_parts(State1, [Part | Acc]);
+        interpolation_start ->
+            % Start of interpolation - skip the start token and parse expression
+            {_, State1} = expect(State, interpolation_start),
+            {Expr, State2} = parse_interpolation_expression(State1),
+            Part = {expr, Expr},
+            parse_string_interpolation_parts(State2, [Part | Acc]);
+        interpolation_mid ->
+            % Middle of interpolation - skip the mid token and parse expression
+            {_, State1} = expect(State, interpolation_mid),
+            {Expr, State2} = parse_interpolation_expression(State1),
+            Part = {expr, Expr},
+            parse_string_interpolation_parts(State2, [Part | Acc]);
+        interpolation_end ->
+            % End of interpolation
+            {Token, State1} = expect(State, interpolation_end),
+            Location = get_token_location(Token),
+            Expr = #string_interpolation_expr{
+                parts = lists:reverse(Acc),
+                location = Location
+            },
+            {Expr, State1};
+        _ ->
+            throw({parse_error, {unexpected_token_in_interpolation, get_token_type(Token)}, 0, 0})
+    end.
+
+%% Parse expression inside interpolation
+parse_interpolation_expression(State) ->
+    parse_binary_expression(State, 0).

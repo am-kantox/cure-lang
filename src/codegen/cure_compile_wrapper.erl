@@ -69,29 +69,48 @@ compile_source_file(SourceFile, Options) ->
 create_module_ast(AST, SourceFile) ->
     try
         case AST of
-            % Case 1: Already a module structure
-            [{module_def, Name, Imports, Exports, Items, Location}] ->
-                {ok, {module_def, Name, Imports, Exports, Items, Location}};
+            % Case 1: Parsed module structure (already correct format) 
+            [{module_def, Name, Exports, Items, Location}] ->
+                % This is the format from parser: {module_def, Name, ExportList, Items, Location}
+                % Convert to codegen format: {module_def, Name, Imports, Exports, Items, Location}
+                ConvertedExports = convert_parsed_exports(Exports),
+                {ok, {module_def, Name, [], ConvertedExports, Items, Location}};
             
             % Case 2: List of functions (bare functions without module wrapper)
             Items when is_list(Items) ->
-                % Extract function names for exports
-                Exports = extract_exports(Items),
-                ModuleName = get_module_name_from_file(SourceFile),
-                ModuleAST = {module_def, ModuleName, [], {export_list, Exports, {location, 1, 1, undefined}}, Items, {location, 1, 1, undefined}},
-                {ok, ModuleAST};
+                % Check if first item is a module_def (different arity)
+                case Items of
+                    [{module_def, Name, Exports, ModuleItems, Location}] ->
+                        % Handle parsed module with different arity
+                        ConvertedExports = convert_parsed_exports(Exports),
+                        {ok, {module_def, Name, [], ConvertedExports, ModuleItems, Location}};
+                    _ ->
+                        % Regular list of items - create wrapper module
+                        ExportSpecs = extract_exports(Items),
+                        ModuleName = get_module_name_from_file(SourceFile),
+                        ModuleAST = {module_def, ModuleName, [], {export_list, ExportSpecs, {location, 1, 1, undefined}}, Items, {location, 1, 1, undefined}},
+                        {ok, ModuleAST}
+                end;
             
             % Case 3: Single item
             Item ->
-                Exports = extract_exports([Item]),
+                ExportSpecs = extract_exports([Item]),
                 ModuleName = get_module_name_from_file(SourceFile),
-                ModuleAST = {module_def, ModuleName, [], {export_list, Exports, {location, 1, 1, undefined}}, [Item], {location, 1, 1, undefined}},
+                ModuleAST = {module_def, ModuleName, [], {export_list, ExportSpecs, {location, 1, 1, undefined}}, [Item], {location, 1, 1, undefined}},
                 {ok, ModuleAST}
         end
     catch
         _:CreateReason ->
             {error, {invalid_ast_structure, AST, CreateReason}}
     end.
+
+%% Convert parsed export format to codegen expected format
+convert_parsed_exports(Exports) when is_list(Exports) ->
+    % Parser returns list of export_spec records directly
+    {export_list, Exports, {location, 1, 1, undefined}};
+convert_parsed_exports(Exports) ->
+    % Already in correct format
+    Exports.
 
 %% Extract module name from file path
 get_module_name_from_file(FilePath) ->

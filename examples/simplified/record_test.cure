@@ -1,0 +1,10 @@
+module RecordTest do
+  export [main/0]
+
+  record Person do
+    name: String
+    age: Int
+  end
+
+  def main(): Int = 42
+end
