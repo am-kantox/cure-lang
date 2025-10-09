@@ -237,6 +237,7 @@ is_guard_bif('trunc') -> true;
 is_guard_bif('round') -> true;
 is_guard_bif('size') -> true;
 is_guard_bif('length') -> true;
+is_guard_bif('string_length') -> true;
 is_guard_bif('hd') -> true;
 is_guard_bif('tl') -> true;
 is_guard_bif('element') -> true;

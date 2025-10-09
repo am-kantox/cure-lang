@@ -166,6 +166,7 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         call -> compile_call(Args, NewContext);
         monadic_pipe_call -> compile_monadic_pipe_call(Args, NewContext);
         make_list -> compile_make_list(Args, NewContext);
+        make_cons -> compile_make_cons(Args, NewContext);
         make_tuple -> compile_make_tuple(Args, NewContext);
         make_lambda -> compile_make_lambda(Args, NewContext);
         match_tagged_tuple -> compile_match_tagged_tuple(Args, NewContext);
@@ -343,6 +344,21 @@ compile_make_list([Count], Context) ->
             Error
     end.
 
+%% Create cons cell from stack elements [head | tail]
+compile_make_cons([HeadCount], Context) ->
+    % Pop HeadCount + 1 elements (head elements + tail)
+    case pop_n_from_stack(HeadCount + 1, Context) of
+        {Elements, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Last element is the tail, others are head elements
+            {HeadElements, [Tail]} = lists:split(HeadCount, Elements),
+            % Build cons structure: [H1, H2, ... | Tail]
+            ConsForm = build_cons_from_elements_and_tail(HeadElements, Tail, Line),
+            {ok, [], push_stack(ConsForm, NewContext)};
+        Error ->
+            Error
+    end.
+
 %% Create tuple from stack elements
 compile_make_tuple([Count], Context) ->
     case pop_n_from_stack(Count, Context) of
@@ -450,17 +466,27 @@ compile_return([], Context) ->
     end.
 
 %% Lambda creation
-compile_make_lambda([_LambdaName, ParamNames, _BodyInstructions, Arity], Context) ->
+compile_make_lambda([_LambdaName, ParamNames, BodyInstructions, _Arity], Context) ->
     Line = Context#compile_context.line,
-    % Create a simple anonymous function reference for now
-    % In a full implementation, this would compile the body instructions to a proper lambda
-    ParamVars = [{var, Line, Param} || Param <- ParamNames],
-    LambdaForm =
-        {'fun', Line,
-            {clauses, [
-                {clause, Line, ParamVars, [], [{atom, Line, lambda_body}]}
-            ]}},
-    {ok, [], push_stack(LambdaForm, Context)}.
+    % Create a new context for lambda body with parameter bindings
+    LambdaContext = Context#compile_context{
+        variables = create_param_variables(ParamNames, Line),
+        stack = []
+    },
+    % Compile the lambda body instructions in the isolated context
+    case compile_instructions_to_forms(BodyInstructions, LambdaContext) of
+        {ok, BodyForms, _BodyContext} ->
+            ParamVars = [{var, Line, Param} || Param <- ParamNames],
+            % Create a proper anonymous function with compiled body
+            LambdaForm =
+                {'fun', Line,
+                    {clauses, [
+                        {clause, Line, ParamVars, [], BodyForms}
+                    ]}},
+            {ok, [], push_stack(LambdaForm, Context)};
+        {error, Reason} ->
+            {error, {lambda_body_compilation_failed, Reason}}
+    end.
 
 %% Tagged tuple matching (for records like Ok(value), Error(msg))
 compile_match_tagged_tuple([Tag, FieldCount, _FailLabel], Context) ->
@@ -931,6 +957,14 @@ build_cons_list([Element], Line) ->
     {cons, Line, Element, {nil, Line}};
 build_cons_list([H | T], Line) ->
     {cons, Line, H, build_cons_list(T, Line)}.
+
+%% Build cons structure from head elements and tail [H1, H2, ... | Tail]
+build_cons_from_elements_and_tail([], Tail, _Line) ->
+    Tail;
+build_cons_from_elements_and_tail([H], Tail, Line) ->
+    {cons, Line, H, Tail};
+build_cons_from_elements_and_tail([H | RestElements], Tail, Line) ->
+    {cons, Line, H, build_cons_from_elements_and_tail(RestElements, Tail, Line)}.
 
 %% Build list pattern for pattern matching
 build_list_pattern([], Tail, _Line) ->

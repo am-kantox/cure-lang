@@ -49,6 +49,7 @@
     name,
     params,
     definition,
+    constraint,
     location
 }).
 
@@ -198,6 +199,20 @@
 %% List expressions
 -record(list_expr, {
     elements,
+    location
+}).
+
+%% Cons expressions [head | tail]
+-record(cons_expr, {
+    elements,  % List of head elements
+    tail,      % Tail expression
+    location
+}).
+
+%% Type annotation expressions (expr as Type)
+-record(type_annotation_expr, {
+    expr,      % Expression being annotated
+    type,      % Type annotation
     location
 }).
 

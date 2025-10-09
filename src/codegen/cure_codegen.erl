@@ -434,12 +434,14 @@ compile_expression(Expr, State) ->
         #if_expr{} -> compile_if_expr(Expr, State);
         #let_expr{} -> compile_let_expr(Expr, State);
         #list_expr{} -> compile_list_expr(Expr, State);
+        #cons_expr{} -> compile_cons_expr(Expr, State);
         #tuple_expr{} -> compile_tuple_expr(Expr, State);
         #block_expr{} -> compile_block_expr(Expr, State);
         #lambda_expr{} -> compile_lambda_expr(Expr, State);
         #unary_op_expr{} -> compile_unary_op_expr(Expr, State);
         #match_expr{} -> compile_match_expr(Expr, State);
         #string_interpolation_expr{} -> compile_string_interpolation(Expr, State);
+        #type_annotation_expr{} -> compile_type_annotation(Expr, State);
         % Note: pipe operators are parsed as binary_op_expr with op = '|>'
         % Note: constructor expressions are parsed as function_call_expr
         _ -> {error, {unsupported_expression, Expr}}
@@ -610,6 +612,11 @@ compile_if_expr(
 
     {Instructions, State5}.
 
+%% Compile type annotations (just compile the expression, ignore the type)
+compile_type_annotation(#type_annotation_expr{expr = Expr, type = _Type}, State) ->
+    % Type annotations are compile-time only, so just compile the expression
+    compile_expression(Expr, State).
+
 %% Compile let expressions
 compile_let_expr(#let_expr{bindings = Bindings, body = Body, location = _Location}, State) ->
     {BindingInstructions, State1} = compile_bindings(Bindings, State),
@@ -630,6 +637,26 @@ compile_list_expr(#list_expr{elements = Elements, location = Location}, State) -
 
     Instructions = ElementInstructions ++ [ListInstruction],
     {Instructions, State1}.
+
+%% Compile cons expressions [head | tail]
+compile_cons_expr(#cons_expr{elements = Elements, tail = Tail, location = Location}, State) ->
+    % Compile head elements
+    {ElementInstructions, State1} = compile_expressions(Elements, State),
+
+    % Compile tail
+    {TailInstructions, State2} = compile_expression(Tail, State1),
+
+    % Generate cons instruction
+    ConsInstruction = #beam_instr{
+        op = make_cons,
+        % Number of head elements
+        args = [length(Elements)],
+        location = Location
+    },
+
+    % Instructions: Elements first, then tail, then cons operation
+    Instructions = ElementInstructions ++ TailInstructions ++ [ConsInstruction],
+    {Instructions, State2}.
 
 %% Compile tuple expressions
 compile_tuple_expr(#tuple_expr{elements = Elements, location = Location}, State) ->
@@ -914,7 +941,11 @@ compile_expressions(Expressions, State) ->
     compile_expressions(Expressions, State, []).
 
 compile_expressions([], State, Acc) ->
-    {lists:reverse(lists:flatten(Acc)), State};
+    % The accumulator is built in reverse order, so we need to reverse it
+    % But the instructions within each expression should maintain their order
+    ReversedAcc = lists:reverse(Acc),
+    Flattened = lists:flatten(ReversedAcc),
+    {Flattened, State};
 compile_expressions([Expr | RestExprs], State, Acc) ->
     {Instructions, NewState} = compile_expression(Expr, State),
     compile_expressions(RestExprs, NewState, [Instructions | Acc]).

@@ -324,28 +324,58 @@ parse_function(State) ->
                 end
         end,
 
-    {Constraint, State7} =
+    % Reorder constraint and return type parsing for syntax: when constraint -> return_type
+    {Constraint, State7, ReturnType2} =
         case match_token(State6, 'when') of
             true ->
                 {_, State6a} = expect(State6, 'when'),
-                parse_expression(State6a);
+                {ConstraintExpr, State6b} = parse_expression(State6a),
+                % Check for -> return_type after when clause
+                case match_token(State6b, '->') of
+                    true ->
+                        {_, State6c} = expect(State6b, '->'),
+                        {RetType, State6d} = parse_type(State6c),
+                        {ConstraintExpr, State6d, RetType};
+                    false ->
+                        {ConstraintExpr, State6b, ReturnType}
+                end;
             false ->
-                {undefined, State6}
+                {undefined, State6, ReturnType}
         end,
 
-    {_, State8} = expect(State7, '='),
-    {Body, State9} = parse_function_body(State8),
+    % Support both = syntax and do...end syntax
+    {Body, State10} =
+        case match_token(State7, do) of
+            true ->
+                % do...end syntax
+                {_, State8} = expect(State7, do),
+                {FuncBody, State9} = parse_function_body(State8),
+                {_, State10_do} = expect(State9, 'end'),
+                {FuncBody, State10_do};
+            false ->
+                % = syntax
+                {_, State8} = expect(State7, '='),
+                {FuncBody, State9} = parse_function_body(State8),
+                {FuncBody, State9}
+        end,
+
+    % Use the correct return type (ReturnType2 if set, otherwise ReturnType)
+    FinalReturnType =
+        case ReturnType2 of
+            undefined -> ReturnType;
+            _ -> ReturnType2
+        end,
 
     Location = get_token_location(DefToken),
     Function = #function_def{
         name = Name,
         params = Params,
-        return_type = ReturnType,
+        return_type = FinalReturnType,
         constraint = Constraint,
         body = Body,
         location = Location
     },
-    {Function, State9}.
+    {Function, State10}.
 
 %% Parse Erlang function definition
 parse_erlang_function(State) ->
@@ -795,14 +825,26 @@ parse_type_def(State) ->
     {_, State4} = expect(State3, '='),
     {TypeExpr, State5} = parse_type(State4),
 
+    % Parse optional when clause: when length(T) == n
+    {Constraint, State6} =
+        case match_token(State5, 'when') of
+            true ->
+                {_, State5a} = expect(State5, 'when'),
+                {ConstraintExpr, State5b} = parse_expression(State5a),
+                {ConstraintExpr, State5b};
+            false ->
+                {undefined, State5}
+        end,
+
     Location = get_token_location(NameToken),
     TypeDef = #type_def{
         name = Name,
         params = TypeParams,
         definition = TypeExpr,
+        constraint = Constraint,
         location = Location
     },
-    {TypeDef, State5}.
+    {TypeDef, State6}.
 
 %% Parse type parameter names (for type definitions)
 parse_type_parameter_names(State, Acc) ->
@@ -812,12 +854,33 @@ parse_type_parameter_names(State, Acc) ->
         false ->
             {Token, State1} = expect(State, identifier),
             ParamName = binary_to_atom(get_token_value(Token), utf8),
-            case match_token(State1, ',') of
+
+            % Check if this is a named parameter with type annotation: "n: Nat"
+            {FinalParam, State2} =
+                case match_token(State1, ':') of
+                    true ->
+                        % Named parameter with type annotation
+                        {_, State1a} = expect(State1, ':'),
+                        {TypeExpr, State1b} = parse_type(State1a),
+                        % Create a type_param record for named parameters
+                        Location = get_token_location(Token),
+                        TypeParam = #type_param{
+                            name = ParamName,
+                            value = TypeExpr,
+                            location = Location
+                        },
+                        {TypeParam, State1b};
+                    false ->
+                        % Simple parameter name
+                        {ParamName, State1}
+                end,
+
+            case match_token(State2, ',') of
                 true ->
-                    {_, State2} = expect(State1, ','),
-                    parse_type_parameter_names(State2, [ParamName | Acc]);
+                    {_, State3} = expect(State2, ','),
+                    parse_type_parameter_names(State3, [FinalParam | Acc]);
                 false ->
-                    {lists:reverse([ParamName | Acc]), State1}
+                    {lists:reverse([FinalParam | Acc]), State2}
             end
     end.
 
@@ -857,8 +920,47 @@ parse_type(State) ->
                 location = Location
             },
             {Type, State1};
+        fn ->
+            parse_function_type(State);
         _ ->
             throw({parse_error, expected_type, 0, 0})
+    end.
+
+%% Parse function type: fn(T1, T2) -> ReturnType
+parse_function_type(State) ->
+    {FnToken, State1} = expect(State, fn),
+    {_, State2} = expect(State1, '('),
+
+    % Parse parameter types
+    {ParamTypes, State3} = parse_function_param_types(State2, []),
+    {_, State4} = expect(State3, ')'),
+    {_, State5} = expect(State4, '->'),
+
+    % Parse return type
+    {ReturnType, State6} = parse_type(State5),
+
+    Location = get_token_location(FnToken),
+    FunctionType = #function_type{
+        params = ParamTypes,
+        return_type = ReturnType,
+        location = Location
+    },
+    {FunctionType, State6}.
+
+%% Parse function parameter types
+parse_function_param_types(State, Acc) ->
+    case match_token(State, ')') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {ParamType, State1} = parse_type(State),
+            case match_token(State1, ',') of
+                true ->
+                    {_, State2} = expect(State1, ','),
+                    parse_function_param_types(State2, [ParamType | Acc]);
+                false ->
+                    {lists:reverse([ParamType | Acc]), State1}
+            end
     end.
 
 %% Parse type parameters
@@ -879,94 +981,32 @@ parse_type_parameters(State, Acc) ->
 
 %% Parse single type parameter
 parse_type_parameter(State) ->
-    % Check if this looks like a value parameter first
-    case current_token(State) of
-        Token when is_record(Token, token) ->
-            case get_token_type(Token) of
-                identifier ->
-                    Name = get_token_value(Token),
-                    case is_binary(Name) of
-                        true ->
-                            AtomName = binary_to_atom(Name, utf8),
-                            % Check if it's a lowercase identifier (likely value parameter)
-                            case is_lowercase_identifier(AtomName) of
-                                true ->
-                                    % Parse as expression
-                                    {Expr, State1} = parse_expression(State),
-                                    ExprLocation = get_expr_location(Expr),
-                                    Param = #type_param{
-                                        name = undefined,
-                                        value = Expr,
-                                        location = ExprLocation
-                                    },
-                                    {Param, State1};
-                                false ->
-                                    % Parse as type
-                                    {Type, State1} = parse_type(State),
-                                    Location = get_expr_location(Type),
-                                    Param = #type_param{
-                                        name = undefined,
-                                        value = Type,
-                                        location = Location
-                                    },
-                                    {Param, State1}
-                            end;
-                        false ->
-                            % Not a binary name, parse as type
-                            {Type, State1} = parse_type(State),
-                            Location = get_expr_location(Type),
-                            Param = #type_param{
-                                name = undefined,
-                                value = Type,
-                                location = Location
-                            },
-                            {Param, State1}
-                    end;
-                _ ->
-                    % Not an identifier, try to parse as type first
-                    try
-                        {Type, State1} = parse_type(State),
-                        Location = get_expr_location(Type),
-                        Param = #type_param{
-                            name = undefined,
-                            value = Type,
-                            location = Location
-                        },
-                        {Param, State1}
-                    catch
-                        throw:{parse_error, expected_type, _, _} ->
-                            % If type parsing fails, try parsing as expression
-                            {Expr, State2} = parse_expression(State),
-                            ExprLocation = get_expr_location(Expr),
-                            ExprParam = #type_param{
-                                name = undefined,
-                                value = Expr,
-                                location = ExprLocation
-                            },
-                            {ExprParam, State2}
-                    end
-            end;
-        _ ->
-            % Not a token record, fallback to original logic
+    % Try expression parsing first, then fallback to type parsing
+    try
+        {Expr, State1} = parse_expression(State),
+        ExprLocation = get_expr_location(Expr),
+        Param = #type_param{
+            name = undefined,
+            value = Expr,
+            location = ExprLocation
+        },
+        {Param, State1}
+    catch
+        throw:{parse_error, _, _, _} ->
+            % If expression parsing fails, try type parsing
             try
-                {Type, State1} = parse_type(State),
-                Location = get_expr_location(Type),
-                Param = #type_param{
+                {Type, State2} = parse_type(State),
+                TypeLocation = get_expr_location(Type),
+                TypeParam = #type_param{
                     name = undefined,
                     value = Type,
-                    location = Location
+                    location = TypeLocation
                 },
-                {Param, State1}
+                {TypeParam, State2}
             catch
-                throw:{parse_error, expected_type, _, _} ->
-                    {Expr, State2} = parse_expression(State),
-                    ExprLocation = get_expr_location(Expr),
-                    ExprParam = #type_param{
-                        name = undefined,
-                        value = Expr,
-                        location = ExprLocation
-                    },
-                    {ExprParam, State2}
+                throw:{parse_error, _, _, _} ->
+                    % If both fail, give a better error
+                    throw({parse_error, {expected_type_parameter}, 0, 0})
             end
     end.
 
@@ -1091,6 +1131,67 @@ looks_like_pattern_start(State) ->
     % Conservative approach - don't assume it's a pattern
     false.
 
+%% Parse let value expression that stops at 'in' keyword
+parse_let_value_expression(State) ->
+    parse_let_value_binary_expression(State, 0).
+
+parse_let_value_binary_expression(State, MinPrec) ->
+    {Left, State1} = parse_primary_expression(State),
+    parse_let_value_binary_rest(State1, Left, MinPrec).
+
+parse_let_value_binary_rest(State, Left, MinPrec) ->
+    case current_token(State) of
+        eof ->
+            {Left, State};
+        Token ->
+            TokenType = get_token_type(Token),
+            % Stop parsing at 'in' keyword only
+            case TokenType of
+                'in' ->
+                    {Left, State};
+                'as' ->
+                    % Special handling for type annotation in let context
+                    {Prec, _Assoc} = get_operator_info('as'),
+                    case Prec >= MinPrec of
+                        true ->
+                            {_, State1} = expect(State, 'as'),
+                            {TypeExpr, State2} = parse_type(State1),
+                            Location = get_token_location(Token),
+                            TypeAnnotation = #type_annotation_expr{
+                                expr = Left,
+                                type = TypeExpr,
+                                location = Location
+                            },
+                            parse_let_value_binary_rest(State2, TypeAnnotation, MinPrec);
+                        false ->
+                            {Left, State}
+                    end;
+                _ ->
+                    case get_operator_info(TokenType) of
+                        {Prec, Assoc} when Prec >= MinPrec ->
+                            {_, State1} = expect(State, TokenType),
+                            NextMinPrec =
+                                case Assoc of
+                                    left -> Prec + 1;
+                                    right -> Prec
+                                end,
+                            {Right, State2} = parse_let_value_binary_expression(
+                                State1, NextMinPrec
+                            ),
+                            Location = get_token_location(Token),
+                            BinOp = #binary_op_expr{
+                                op = TokenType,
+                                left = Left,
+                                right = Right,
+                                location = Location
+                            },
+                            parse_let_value_binary_rest(State2, BinOp, MinPrec);
+                        _ ->
+                            {Left, State}
+                    end
+            end
+    end.
+
 %% Check if there should be a body expression after a let binding
 is_let_body_continuation(State) ->
     case get_token_type(current_token(State)) of
@@ -1189,6 +1290,8 @@ get_expr_location(#binary_op_expr{location = Loc}) -> Loc;
 get_expr_location(#unary_op_expr{location = Loc}) -> Loc;
 get_expr_location(#function_call_expr{location = Loc}) -> Loc;
 get_expr_location(#list_expr{location = Loc}) -> Loc;
+get_expr_location(#cons_expr{location = Loc}) -> Loc;
+get_expr_location(#type_annotation_expr{location = Loc}) -> Loc;
 get_expr_location(#tuple_expr{location = Loc}) -> Loc;
 get_expr_location(#if_expr{location = Loc}) -> Loc;
 get_expr_location(#let_expr{location = Loc}) -> Loc;
@@ -1208,25 +1311,45 @@ parse_binary_rest(State, Left, MinPrec) ->
         eof ->
             {Left, State};
         Token ->
-            case get_operator_info(get_token_type(Token)) of
-                {Prec, Assoc} when Prec >= MinPrec ->
-                    {_, State1} = expect(State, get_token_type(Token)),
-                    NextMinPrec =
-                        case Assoc of
-                            left -> Prec + 1;
-                            right -> Prec
-                        end,
-                    {Right, State2} = parse_binary_expression(State1, NextMinPrec),
-                    Location = get_token_location(Token),
-                    BinOp = #binary_op_expr{
-                        op = get_token_type(Token),
-                        left = Left,
-                        right = Right,
-                        location = Location
-                    },
-                    parse_binary_rest(State2, BinOp, MinPrec);
+            case get_token_type(Token) of
+                'as' ->
+                    % Special handling for type annotation
+                    {Prec, Assoc} = get_operator_info('as'),
+                    case Prec >= MinPrec of
+                        true ->
+                            {_, State1} = expect(State, 'as'),
+                            {TypeExpr, State2} = parse_type(State1),
+                            Location = get_token_location(Token),
+                            TypeAnnotation = #type_annotation_expr{
+                                expr = Left,
+                                type = TypeExpr,
+                                location = Location
+                            },
+                            parse_binary_rest(State2, TypeAnnotation, MinPrec);
+                        false ->
+                            {Left, State}
+                    end;
                 _ ->
-                    {Left, State}
+                    case get_operator_info(get_token_type(Token)) of
+                        {Prec, Assoc} when Prec >= MinPrec ->
+                            {_, State1} = expect(State, get_token_type(Token)),
+                            NextMinPrec =
+                                case Assoc of
+                                    left -> Prec + 1;
+                                    right -> Prec
+                                end,
+                            {Right, State2} = parse_binary_expression(State1, NextMinPrec),
+                            Location = get_token_location(Token),
+                            BinOp = #binary_op_expr{
+                                op = get_token_type(Token),
+                                left = Left,
+                                right = Right,
+                                location = Location
+                            },
+                            parse_binary_rest(State2, BinOp, MinPrec);
+                        _ ->
+                            {Left, State}
+                    end
             end
     end.
 
@@ -1238,6 +1361,7 @@ get_operator_info('/') -> {20, left};
 get_operator_info('%') -> {20, left};
 get_operator_info('++') -> {15, right};
 get_operator_info('|>') -> {1, left};
+get_operator_info('as') -> {2, left};
 get_operator_info('<') -> {5, left};
 get_operator_info('>') -> {5, left};
 get_operator_info('<=') -> {5, left};
@@ -1499,8 +1623,8 @@ parse_let_expression(State) ->
     {_, State1} = expect(State, 'let'),
     {BindingVar, State2} = expect(State1, identifier),
     {_, State3} = expect(State2, '='),
-    % Parse binding value
-    {Value, State4} = parse_binary_expression(State3, 0),
+    % Parse binding value - use primary expression to avoid consuming 'in'
+    {Value, State4} = parse_let_value_expression(State3),
 
     VarName = binary_to_atom(get_token_value(BindingVar), utf8),
     Location = get_token_location(BindingVar),
@@ -1582,7 +1706,7 @@ parse_tuple_elements(State, Acc) ->
             end
     end.
 
-%% Parse list literal [1, 2, 3]
+%% Parse list literal [1, 2, 3] or [head | tail]
 parse_list_literal(State) ->
     {_, State1} = expect(State, '['),
     Location = get_token_location(current_token(State)),
@@ -1590,25 +1714,48 @@ parse_list_literal(State) ->
     {Elements, State2} = parse_expression_list(State1, []),
     {_, State3} = expect(State2, ']'),
 
-    ListExpr = #list_expr{
-        elements = Elements,
-        location = Location
-    },
-    {ListExpr, State3}.
+    % Check if this is a cons expression
+    case Elements of
+        [{cons, ConsElements, TailExpr}] ->
+            % Create a cons expression
+            ConsExpr = #cons_expr{
+                elements = ConsElements,
+                tail = TailExpr,
+                location = Location
+            },
+            {ConsExpr, State3};
+        _ ->
+            % Regular list expression
+            ListExpr = #list_expr{
+                elements = Elements,
+                location = Location
+            },
+            {ListExpr, State3}
+    end.
 
-%% Parse comma-separated expression list
+%% Parse comma-separated expression list (with support for cons syntax)
 parse_expression_list(State, Acc) ->
     case match_token(State, ']') of
         true ->
             {lists:reverse(Acc), State};
         false ->
             {Expr, State1} = parse_expression(State),
-            case match_token(State1, ',') of
+            case match_token(State1, '|') of
                 true ->
-                    {_, State2} = expect(State1, ','),
-                    parse_expression_list(State2, [Expr | Acc]);
+                    % Handle cons syntax [head | tail] in expression context
+                    {_, State2} = expect(State1, '|'),
+                    {TailExpr, State3} = parse_expression(State2),
+                    % Create a special cons list expression
+                    ConsElements = lists:reverse([Expr | Acc]),
+                    {[{cons, ConsElements, TailExpr}], State3};
                 false ->
-                    {lists:reverse([Expr | Acc]), State1}
+                    case match_token(State1, ',') of
+                        true ->
+                            {_, State2} = expect(State1, ','),
+                            parse_expression_list(State2, [Expr | Acc]);
+                        false ->
+                            {lists:reverse([Expr | Acc]), State1}
+                    end
             end
     end.
 
@@ -2123,24 +2270,32 @@ parse_function_body(State) ->
 parse_statement_sequence(State, Acc) ->
     {Stmt, State1} = parse_expression(State),
 
-    % Check if this is the last statement or if there are more
-    case is_end_of_body(State1) of
+    % Check for comma separator or end of body
+    case match_token(State1, ',') of
         true ->
-            % This is the last statement - return it or wrap in block
-            case Acc of
-                [] ->
-                    {Stmt, State1};
-                _ ->
-                    Location = get_expr_location(Stmt),
-                    Block = #block_expr{
-                        expressions = lists:reverse([Stmt | Acc]),
-                        location = Location
-                    },
-                    {Block, State1}
-            end;
+            % Comma-separated statement - consume comma and continue
+            {_, State2} = expect(State1, ','),
+            parse_statement_sequence(State2, [Stmt | Acc]);
         false ->
-            % More statements follow
-            parse_statement_sequence(State1, [Stmt | Acc])
+            % Check if this is the last statement or if there are more
+            case is_end_of_body(State1) of
+                true ->
+                    % This is the last statement - return it or wrap in block
+                    case Acc of
+                        [] ->
+                            {Stmt, State1};
+                        _ ->
+                            Location = get_expr_location(Stmt),
+                            Block = #block_expr{
+                                expressions = lists:reverse([Stmt | Acc]),
+                                location = Location
+                            },
+                            {Block, State1}
+                    end;
+                false ->
+                    % More statements follow (without comma)
+                    parse_statement_sequence(State1, [Stmt | Acc])
+            end
     end.
 
 %% Check if we're at the end of a function body
