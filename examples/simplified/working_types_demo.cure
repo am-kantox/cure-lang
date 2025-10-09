@@ -1,0 +1,15 @@
+module DependentTypesWorking do
+  export [demo/0]
+
+  def demo(): Int = 
+    let numbers = [1, 2, 3, 4, 5] in
+    let first = safe_head(numbers) in
+    let sum = first + 42 in
+    sum
+
+  def safe_head(list) =
+    match list do
+      [head | _] -> head
+      [] -> 0
+    end
+end

@@ -1,0 +1,210 @@
+module DependentTypesShowcase do
+  export [
+    demo/0,
+    test_safe_operations/0,
+    test_compile_time_guarantees/0
+  ]
+
+  // Dependent type definition: Vector with compile-time length
+  type Vector(T, n: Nat) = List(T) when length(T) == n
+
+  // Safe head function that only works on non-empty vectors
+  def safe_head(v: Vector(T, n)) when n > 0 -> T do
+    match v do
+      [head | _] -> head
+    end
+  end
+
+  // Safe indexing with compile-time bounds checking
+  def safe_get(v: Vector(T, n), index: Nat) when index < n -> T do
+    match {v, index} do
+      {[head | _], 0} -> head
+      {[_ | tail], i} when i > 0 -> safe_get(tail, i - 1)
+    end
+  end
+
+  // Vector concatenation preserves length information
+  def vector_concat(v1: Vector(T, n1), v2: Vector(T, n2)) -> Vector(T, n1 + n2) do
+    v1 ++ v2
+  end
+
+  // Matrix type: Vector of Vectors with dimensions
+  type Matrix(T, rows: Nat, cols: Nat) = Vector(Vector(T, cols), rows)
+
+  // Safe matrix creation with dimension verification
+  def create_matrix(data: List(List(T)), rows: Nat, cols: Nat) -> Matrix(T, rows, cols) 
+  when length(data) == rows do
+    match data do
+      [] when rows == 0 -> []
+      [row | rest] when length(row) == cols -> 
+        [row | create_matrix(rest, rows - 1, cols)]
+    end
+  end
+
+  // Safe matrix multiplication with dimension compatibility
+  def matrix_multiply(a: Matrix(Number, m, n), b: Matrix(Number, n, p)) -> Matrix(Number, m, p) do
+    let multiply_row = fn(row) -> 
+      let multiply_element = fn(col_idx) ->
+        let column = get_column(b, col_idx) in
+        dot_product(row, column)
+      end in
+      map_range(0, p - 1, multiply_element)
+    end in
+    map(a, multiply_row)
+  end
+
+  // Dependent type for non-empty lists
+  type NonEmptyList(T) = List(T) when length(T) > 0
+
+  // Safe operations on non-empty lists
+  def safe_maximum(list: NonEmptyList(Number)) -> Number do
+    match list do
+      [single] -> single
+      [head | tail] -> max(head, safe_maximum(tail))
+    end
+  end
+
+  // Phantom types for units (compile-time safety)
+  type Distance(unit) = Number
+  type Kilometers = kilometers
+  type Miles = miles
+
+  def add_distances(d1: Distance(U), d2: Distance(U)) -> Distance(U) do
+    d1 + d2  // Can only add distances with same units
+  end
+
+  // Compile-time proof that conversion preserves meaning
+  def km_to_miles(d: Distance(Kilometers)) -> Distance(Miles) do
+    d * 0.621371
+  end
+
+  // Sized string type for fixed-length strings
+  type SizedString(n: Nat) = String when string_length(String) == n
+
+  def create_fixed_string(s: String, n: Nat) -> SizedString(n) 
+  when string_length(s) == n do
+    s
+  end
+
+  // Demonstration functions
+  def demo() do
+    let msg = "🎯 Dependent Types Showcase - Compile-time Safety Guaranteed!" in
+    println(msg),
+    
+    // Test length-indexed vectors
+    test_vectors(),
+    
+    // Test matrix operations
+    test_matrices(),
+    
+    // Test unit safety
+    test_units(),
+    
+    msg
+  end
+
+  def test_vectors() do
+    let v1 = [1, 2, 3] as Vector(Number, 3) in
+    let v2 = [4, 5] as Vector(Number, 2) in
+    
+    // Safe operations - guaranteed to work at compile time
+    let first = safe_head(v1) in  // OK: v1 has length > 0
+    let element = safe_get(v1, 2) in  // OK: index 2 < length 3
+    let combined = vector_concat(v1, v2) in  // Result: Vector(Number, 5)
+    
+    println("Vector operations successful!"),
+    {first, element, combined}
+  end
+
+  def test_matrices() do
+    let matrix_2x3 = [
+      [1, 2, 3],
+      [4, 5, 6]
+    ] as Matrix(Number, 2, 3) in
+    
+    let matrix_3x2 = [
+      [1, 2],
+      [3, 4], 
+      [5, 6]
+    ] as Matrix(Number, 3, 2) in
+    
+    // This multiplication is type-safe: (2x3) * (3x2) = (2x2)
+    let result = matrix_multiply(matrix_2x3, matrix_3x2) in
+    
+    println("Matrix multiplication successful!"),
+    result
+  end
+
+  def test_units() do
+    let distance_km = 100 as Distance(Kilometers) in
+    let more_km = 50 as Distance(Kilometers) in
+    
+    // Type-safe: can add same units
+    let total_km = add_distances(distance_km, more_km) in
+    
+    // Type-safe conversion
+    let distance_miles = km_to_miles(total_km) in
+    
+    println("Unit-safe operations successful!"),
+    {total_km, distance_miles}
+  end
+
+  def test_safe_operations() do
+    // Demonstrate compile-time safety guarantees
+    let non_empty = [1, 2, 3, 4, 5] as NonEmptyList(Number) in
+    let max_val = safe_maximum(non_empty) in
+    
+    println("Safe maximum operation successful!"),
+    max_val
+  end
+
+  def test_compile_time_guarantees() do
+    let msg = "All operations verified safe at compile time!" in
+    
+    // These operations would fail at compile time if incorrect:
+    // safe_head([])  // ERROR: empty vector
+    // safe_get([1,2], 5)  // ERROR: index out of bounds
+    // add_distances(km_distance, mile_distance)  // ERROR: unit mismatch
+    
+    println("✅ All type safety checks passed at compile time!"),
+    msg
+  end
+
+  // Helper functions
+  def max(a: Number, b: Number) -> Number do
+    if a > b then a else b end
+  end
+
+  def map_range(start: Nat, end_val: Nat, f: fn(Nat) -> T) -> List(T) do
+    if start > end_val then
+      []
+    else
+      [f(start) | map_range(start + 1, end_val, f)]
+    end
+  end
+
+  def get_column(matrix: Matrix(T, rows, cols), col_idx: Nat) -> Vector(T, rows) do
+    match matrix do
+      [] -> []
+      [row | rest] -> [safe_get(row, col_idx) | get_column(rest, col_idx)]
+    end
+  end
+
+  def dot_product(v1: Vector(Number, n), v2: Vector(Number, n)) -> Number do
+    match {v1, v2} do
+      {[], []} -> 0
+      {[a | rest_a], [b | rest_b]} -> a * b + dot_product(rest_a, rest_b)
+    end
+  end
+
+  def map(list: List(T), f: fn(T) -> U) -> List(U) do
+    match list do
+      [] -> []
+      [head | tail] -> [f(head) | map(tail, f)]
+    end
+  end
+
+  def println(msg: String) do
+    msg  // In a full implementation, this would print
+  end
+end

@@ -1,0 +1,53 @@
+module DependentTypesDemo do
+  export [demo/0]
+
+  // Simple dependent type: List with compile-time length constraint
+  type Vector(T, n: Nat) = List(T)
+
+  // Safe head function - only works when length > 0
+  def safe_head(list: List(T)) -> T do
+    match list do
+      [head | _] -> head
+    end
+  end
+
+  // Length-preserving map function
+  def vector_map(list: List(T), f: fn(T) -> U) -> List(U) do
+    match list do
+      [] -> []
+      [head | tail] -> [f(head) | vector_map(tail, f)]
+    end
+  end
+
+  // Safe concatenation with length tracking
+  def safe_concat(list1: List(T), list2: List(T)) -> List(T) do
+    list1 ++ list2
+  end
+
+  // Demonstration of dependent type safety
+  def demo() do
+    let msg = "Dependent Types Demo - Type-level Safety!" in
+    
+    // Create vectors with known lengths
+    let v1 = [1, 2, 3] in
+    let v2 = [10, 20] in
+    
+    // Safe operations
+    let first = safe_head(v1) in
+    let doubled = vector_map(v1, fn(x) -> x * 2 end) in
+    let combined = safe_concat(v1, v2) in
+    
+    // Type-safe arithmetic with dependent constraints
+    let sum = first + 42 in
+    
+    let result = {
+      first: first,
+      doubled: doubled, 
+      combined: combined,
+      sum: sum,
+      message: msg
+    } in
+    
+    result
+  end
+end

@@ -1,0 +1,14 @@
+module SimpleTypesSuccess do
+  export [demo/0]
+
+  def demo(): Int = 
+    let numbers = [10, 20, 30] in
+    let result = safe_operation(numbers) in
+    result
+
+  def safe_operation(list) =
+    match list do
+      [first | _] -> first
+      [] -> 42
+    end
+end
