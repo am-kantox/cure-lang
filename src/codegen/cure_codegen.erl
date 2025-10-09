@@ -154,8 +154,8 @@ compile_function(#function_def{} = Function, Options) ->
         type_info = cure_typechecker:builtin_env()
     },
     case compile_function_impl(Function, State) of
-        {ok, CompiledFunction, _NewState} ->
-            {ok, CompiledFunction};
+        {ok, CompiledFunction, NewState} ->
+            {ok, CompiledFunction, NewState};
         {error, Reason} ->
             {error, Reason}
     end;
