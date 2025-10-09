@@ -12,7 +12,7 @@ module Std.List do
     map/2, filter/2, reverse/1, append/2, concat/1, 
     
     # Folding and reducing
-    foldl/3, foldr/3, reduce/2, scan/3,
+    foldl/3, foldr/3, fold/3, reduce/2, scan/3,
     
     # List searching and finding
     find/2, find_index/2, elem/2, all/2, any/2,
@@ -107,6 +107,10 @@ module Std.List do
       [] -> acc
       [x | xs] -> f(x, foldr(xs, acc, f))
     end
+
+  # Alias for foldl for convenience
+  def fold(list: List(T), acc: U, f: T -> U -> U): U =
+    foldl(list, acc, f)
 
   def reduce(list: List(T, n), f: T -> T -> T): Option(T) when n > 0 =
     match list do

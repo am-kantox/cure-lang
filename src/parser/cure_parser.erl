@@ -324,10 +324,13 @@ parse_function(State) ->
                 end
         end,
 
-    % Reorder constraint and return type parsing for syntax: when constraint -> return_type
+    % Support both syntax orderings:
+    % 1. when constraint -> return_type (original)
+    % 2. -> return_type when constraint (new)
     {Constraint, State7, ReturnType2} =
         case match_token(State6, 'when') of
             true ->
+                % Original syntax: when constraint -> return_type
                 {_, State6a} = expect(State6, 'when'),
                 {ConstraintExpr, State6b} = parse_expression(State6a),
                 % Check for -> return_type after when clause
@@ -340,7 +343,16 @@ parse_function(State) ->
                         {ConstraintExpr, State6b, ReturnType}
                 end;
             false ->
-                {undefined, State6, ReturnType}
+                % Check if we have a return type already and there's a when clause after it
+                % New syntax: -> return_type when constraint
+                case (ReturnType =/= undefined) andalso match_token(State6, 'when') of
+                    true ->
+                        {_, State6a} = expect(State6, 'when'),
+                        {ConstraintExpr, State6b} = parse_expression(State6a),
+                        {ConstraintExpr, State6b, ReturnType};
+                    false ->
+                        {undefined, State6, ReturnType}
+                end
         end,
 
     % Support both = syntax and do...end syntax
@@ -884,15 +896,16 @@ parse_type_parameter_names(State, Acc) ->
             end
     end.
 
-%% Parse type expressions (simplified for now)
+%% Parse type expressions with enhanced dependent type support
 parse_type(State) ->
-    case get_token_type(current_token(State)) of
+    Token = current_token(State),
+    case get_token_type(Token) of
         identifier ->
-            {Token, State1} = expect(State, identifier),
-            Name = binary_to_atom(get_token_value(Token), utf8),
-            Location = get_token_location(Token),
+            {IdToken, State1} = expect(State, identifier),
+            Name = binary_to_atom(get_token_value(IdToken), utf8),
+            Location = get_token_location(IdToken),
 
-            % Check for parameterized type like List(T)
+            % Check for parameterized type like Vector(Float, 3) or List(T)
             case match_token(State1, '(') of
                 true ->
                     {_, State2} = expect(State1, '('),
@@ -906,6 +919,7 @@ parse_type(State) ->
                     },
                     {Type, State4};
                 false ->
+                    % Simple type name (could be a type variable or primitive type)
                     Type = #primitive_type{
                         name = Name,
                         location = Location
@@ -913,17 +927,51 @@ parse_type(State) ->
                     {Type, State1}
             end;
         'Unit' ->
-            {Token, State1} = expect(State, 'Unit'),
-            Location = get_token_location(Token),
+            {UnitToken, State1} = expect(State, 'Unit'),
+            Location = get_token_location(UnitToken),
             Type = #primitive_type{
                 name = 'Unit',
+                location = Location
+            },
+            {Type, State1};
+        % Support common type names that might not be tokenized as 'identifier'
+        'Int' ->
+            {IntToken, State1} = expect(State, 'Int'),
+            Location = get_token_location(IntToken),
+            Type = #primitive_type{
+                name = 'Int',
+                location = Location
+            },
+            {Type, State1};
+        'Float' ->
+            {FloatToken, State1} = expect(State, 'Float'),
+            Location = get_token_location(FloatToken),
+            Type = #primitive_type{
+                name = 'Float',
+                location = Location
+            },
+            {Type, State1};
+        'String' ->
+            {StringToken, State1} = expect(State, 'String'),
+            Location = get_token_location(StringToken),
+            Type = #primitive_type{
+                name = 'String',
+                location = Location
+            },
+            {Type, State1};
+        'Bool' ->
+            {BoolToken, State1} = expect(State, 'Bool'),
+            Location = get_token_location(BoolToken),
+            Type = #primitive_type{
+                name = 'Bool',
                 location = Location
             },
             {Type, State1};
         fn ->
             parse_function_type(State);
         _ ->
-            throw({parse_error, expected_type, 0, 0})
+            CurrentToken = current_token(State),
+            throw({parse_error, {expected_type_got, get_token_type(CurrentToken)}, 0, 0})
     end.
 
 %% Parse function type: fn(T1, T2) -> ReturnType
@@ -981,38 +1029,180 @@ parse_type_parameters(State, Acc) ->
 
 %% Parse single type parameter
 parse_type_parameter(State) ->
-    % Try expression parsing first, then fallback to type parsing
-    try
-        {Expr, State1} = parse_expression(State),
-        ExprLocation = get_expr_location(Expr),
-        Param = #type_param{
-            name = undefined,
-            value = Expr,
-            location = ExprLocation
-        },
-        {Param, State1}
-    catch
-        throw:{parse_error, _, _, _} ->
-            % If expression parsing fails, try type parsing
-            try
-                {Type, State2} = parse_type(State),
-                TypeLocation = get_expr_location(Type),
-                TypeParam = #type_param{
-                    name = undefined,
-                    value = Type,
-                    location = TypeLocation
+    Token = current_token(State),
+    case get_token_type(Token) of
+        % Handle numeric literals as type-level values
+        number ->
+            {NumberToken, State1} = expect(State, number),
+            Value = get_token_value(NumberToken),
+            Location = get_token_location(NumberToken),
+            Param = #type_param{
+                name = undefined,
+                value = #literal_expr{
+                    value = Value,
+                    location = Location
                 },
-                {TypeParam, State2}
+                location = Location
+            },
+            {Param, State1};
+        % Handle identifiers as type variables or types
+        identifier ->
+            % Check if this identifier is part of a larger expression (like n-1)
+            % by looking ahead to see if there's an operator
+            case match_operator_ahead(State) of
+                true ->
+                    % This identifier is part of an expression, parse the full expression
+                    try
+                        {Expr, StateExpr} = parse_type_parameter_expression(State),
+                        ExprLocation = get_expr_location(Expr),
+                        Param = #type_param{
+                            name = undefined,
+                            value = Expr,
+                            location = ExprLocation
+                        },
+                        {Param, StateExpr}
+                    catch
+                        throw:{parse_error, _, _, _} ->
+                            % Fall back to simple identifier handling
+                            {IdToken, StateId} = expect(State, identifier),
+                            Name = binary_to_atom(get_token_value(IdToken), utf8),
+                            Location = get_token_location(IdToken),
+                            TypeVar = #identifier_expr{
+                                name = Name,
+                                location = Location
+                            },
+                            FallbackParam = #type_param{
+                                name = undefined,
+                                value = TypeVar,
+                                location = Location
+                            },
+                            {FallbackParam, StateId}
+                    end;
+                false ->
+                    % Simple identifier case - could be type variable or parameterized type
+                    {IdToken, State1} = expect(State, identifier),
+                    Name = binary_to_atom(get_token_value(IdToken), utf8),
+                    Location = get_token_location(IdToken),
+
+                    % Check if this is a parameterized type (e.g., List(T) within another type)
+                    case match_token(State1, '(') of
+                        true ->
+                            % This is a parameterized type, parse it as such
+                            {_, State2} = expect(State1, '('),
+                            {Params, State3} = parse_type_parameters(State2, []),
+                            {_, State4} = expect(State3, ')'),
+
+                            Type = #dependent_type{
+                                name = Name,
+                                params = Params,
+                                location = Location
+                            },
+                            Param = #type_param{
+                                name = undefined,
+                                value = Type,
+                                location = Location
+                            },
+                            {Param, State4};
+                        false ->
+                            % This is either a type variable or a simple type
+                            % Create as type variable (identifier expression)
+                            TypeVar = #identifier_expr{
+                                name = Name,
+                                location = Location
+                            },
+                            Param = #type_param{
+                                name = undefined,
+                                value = TypeVar,
+                                location = Location
+                            },
+                            {Param, State1}
+                    end
+            end;
+        % Handle other cases by trying expression parsing for type parameters
+        _ ->
+            try
+                {Expr, State1} = parse_type_parameter_expression(State),
+                ExprLocation = get_expr_location(Expr),
+                Param = #type_param{
+                    name = undefined,
+                    value = Expr,
+                    location = ExprLocation
+                },
+                {Param, State1}
             catch
                 throw:{parse_error, _, _, _} ->
-                    % If both fail, give a better error
-                    throw({parse_error, {expected_type_parameter}, 0, 0})
+                    % If expression parsing fails, try type parsing
+                    try
+                        {Type, State2} = parse_type(State),
+                        TypeLocation = get_expr_location(Type),
+                        TypeParam = #type_param{
+                            name = undefined,
+                            value = Type,
+                            location = TypeLocation
+                        },
+                        {TypeParam, State2}
+                    catch
+                        throw:{parse_error, _, _, _} ->
+                            % If both fail, give a better error
+                            CurrentToken = current_token(State),
+                            throw(
+                                {parse_error,
+                                    {expected_type_parameter_got, get_token_type(CurrentToken)}, 0,
+                                    0}
+                            )
+                    end
             end
     end.
 
 %% Parse expressions with operator precedence
 parse_expression(State) ->
     parse_expression_or_block(State).
+
+%% Parse type parameter expressions - similar to parse_expression but stops at type parameter delimiters
+parse_type_parameter_expression(State) ->
+    parse_type_parameter_binary_expression(State, 0).
+
+parse_type_parameter_binary_expression(State, MinPrec) ->
+    {Left, State1} = parse_primary_expression(State),
+    parse_type_parameter_binary_rest(State1, Left, MinPrec).
+
+parse_type_parameter_binary_rest(State, Left, MinPrec) ->
+    case current_token(State) of
+        eof ->
+            {Left, State};
+        Token ->
+            TokenType = get_token_type(Token),
+            % Stop parsing at type parameter delimiters
+            case TokenType of
+                ',' ->
+                    {Left, State};
+                ')' ->
+                    {Left, State};
+                _ ->
+                    case get_operator_info(TokenType) of
+                        {Prec, Assoc} when Prec >= MinPrec ->
+                            {_, State1} = expect(State, TokenType),
+                            NextMinPrec =
+                                case Assoc of
+                                    left -> Prec + 1;
+                                    right -> Prec
+                                end,
+                            {Right, State2} = parse_type_parameter_binary_expression(
+                                State1, NextMinPrec
+                            ),
+                            Location = get_token_location(Token),
+                            BinOp = #binary_op_expr{
+                                op = TokenType,
+                                left = Left,
+                                right = Right,
+                                location = Location
+                            },
+                            parse_type_parameter_binary_rest(State2, BinOp, MinPrec);
+                        _ ->
+                            {Left, State}
+                    end
+            end
+    end.
 
 %% Parse expression for match clause body - parse single expression only
 parse_match_clause_body(State) ->
@@ -1436,9 +1626,10 @@ parse_identifier_or_call(State) ->
                     {QualifiedExpr, State3}
             end;
         false ->
-            % Simple identifier or function call
+            % Check for function call, record construction, or simple identifier
             case match_token(State1, '(') of
                 true ->
+                    % Function call
                     {_, State2} = expect(State1, '('),
                     {Args, State3} = parse_argument_list(State2, []),
                     {_, State4} = expect(State3, ')'),
@@ -1450,11 +1641,27 @@ parse_identifier_or_call(State) ->
                     },
                     {CallExpr, State4};
                 false ->
-                    Expr = #identifier_expr{
-                        name = Name,
-                        location = Location
-                    },
-                    {Expr, State1}
+                    % Check for record construction
+                    case match_token(State1, '{') of
+                        true ->
+                            % Record construction: RecordName{field: value, ...}
+                            {_, State2} = expect(State1, '{'),
+                            {Fields, State3} = parse_record_expr_fields(State2, []),
+                            {_, State4} = expect(State3, '}'),
+                            RecordExpr = #record_expr{
+                                name = Name,
+                                fields = Fields,
+                                location = Location
+                            },
+                            {RecordExpr, State4};
+                        false ->
+                            % Simple identifier
+                            Expr = #identifier_expr{
+                                name = Name,
+                                location = Location
+                            },
+                            {Expr, State1}
+                    end
             end
     end.
 
@@ -2537,3 +2744,50 @@ parse_string_interpolation_parts(State, Acc) ->
 %% Parse expression inside interpolation
 parse_interpolation_expression(State) ->
     parse_binary_expression(State, 0).
+
+%% Parse record expression fields (name: value pairs for record construction)
+parse_record_expr_fields(State, Acc) ->
+    case match_token(State, '}') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {FieldName, State1} = expect(State, identifier),
+            Name = binary_to_atom(get_token_value(FieldName), utf8),
+            Location = get_token_location(FieldName),
+
+            % Expect colon
+            {_, State2} = expect(State1, ':'),
+
+            % Parse field value
+            {Value, State3} = parse_expression(State2),
+
+            % Create field expression
+            Field = #field_expr{
+                name = Name,
+                value = Value,
+                location = Location
+            },
+
+            % Check if there are more fields
+            case match_token(State3, ',') of
+                true ->
+                    {_, State4} = expect(State3, ','),
+                    parse_record_expr_fields(State4, [Field | Acc]);
+                false ->
+                    {lists:reverse([Field | Acc]), State3}
+            end
+    end.
+
+%% Check if there's an operator token after the current identifier
+match_operator_ahead(State) ->
+    % Look at the next token after the current identifier
+    case State#parser_state.tokens of
+        [NextToken | _] ->
+            NextTokenType = get_token_type(NextToken),
+            case get_operator_info(NextTokenType) of
+                undefined -> false;
+                _ -> true
+            end;
+        [] ->
+            false
+    end.

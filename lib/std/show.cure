@@ -1,0 +1,140 @@
+# Cure Standard Library - Show Module
+# Provides string conversion functionality for all types
+
+module Std.Show do
+  import Std.Core [Result, Option, List]
+
+  export [
+    # Core show function
+    show/1,
+    
+    # Specialized show functions
+    show_int/1, show_float/1, show_string/1, show_bool/1, 
+    show_list/1, show_tuple/1, show_option/1, show_result/1
+  ]
+
+  # Main show function - converts any value to string representation
+  def show(value: T): String =
+    match value do
+      # Primitive types
+      x when is_integer(x) -> show_int(x)
+      x when is_float(x) -> show_float(x) 
+      x when is_string(x) -> show_string(x)
+      x when is_boolean(x) -> show_bool(x)
+      x when is_atom(x) -> atom_to_string(x)
+      
+      # Collections
+      x when is_list(x) -> show_list(x)
+      x when is_tuple(x) -> show_tuple(x)
+      
+      # Option types
+      'Some'(value) -> "Some(" ++ show(value) ++ ")"
+      'None'() -> "None"
+      
+      # Result types  
+      'Ok'(value) -> "Ok(" ++ show(value) ++ ")"
+      'Error'(reason) -> "Error(" ++ show(reason) ++ ")"
+      
+      # Fallback for unknown types
+      _ -> "<unknown>"
+    end
+
+  # Integer to string conversion
+  def show_int(n: Int): String =
+    integer_to_string(n)
+
+  # Float to string conversion  
+  def show_float(f: Float): String =
+    float_to_string(f)
+
+  # String representation (with quotes)
+  def show_string(s: String): String =
+    "\"" ++ s ++ "\""
+
+  # Boolean to string conversion
+  def show_bool(b: Bool): String =
+    if b then "true" else "false" end
+
+  # List to string conversion
+  def show_list(list: List(T)): String =
+    "[" ++ show_list_elements(list) ++ "]"
+
+  defp show_list_elements(list: List(T)): String =
+    match list do
+      [] -> ""
+      [x] -> show(x)
+      [x | xs] -> show(x) ++ ", " ++ show_list_elements(xs)
+    end
+
+  # Tuple to string conversion (handles various tuple sizes)
+  def show_tuple(tuple): String =
+    case tuple_size(tuple) of
+      0 -> "{}"
+      1 -> "{" ++ show(tuple_element(tuple, 0)) ++ "}"
+      2 -> "{" ++ show(tuple_element(tuple, 0)) ++ ", " ++ show(tuple_element(tuple, 1)) ++ "}"
+      3 -> "{" ++ show(tuple_element(tuple, 0)) ++ ", " ++ show(tuple_element(tuple, 1)) ++ ", " ++ show(tuple_element(tuple, 2)) ++ "}"
+      _ -> "{...}"  # For larger tuples, use ellipsis
+    end
+
+  # Option to string conversion  
+  def show_option(opt: Option(T)): String =
+    match opt do
+      'Some'(value) -> "Some(" ++ show(value) ++ ")"
+      'None'() -> "None"
+    end
+
+  # Result to string conversion
+  def show_result(result: Result(T, E)): String =
+    match result do
+      'Ok'(value) -> "Ok(" ++ show(value) ++ ")"
+      'Error'(error) -> "Error(" ++ show(error) ++ ")"
+    end
+
+  # Built-in functions for primitive conversions (these would be implemented in runtime)
+  defp integer_to_string(n: Int): String = 
+    # This would call the runtime integer_to_string function
+    erlang_bif('integer_to_list', [n])
+
+  defp float_to_string(f: Float): String = 
+    # This would call the runtime float_to_string function
+    erlang_bif('float_to_list', [f])
+
+  defp atom_to_string(a: Atom): String =
+    # This would call the runtime atom_to_string function
+    erlang_bif('atom_to_list', [a])
+
+  defp tuple_size(t): Int =
+    # This would call the runtime tuple_size function
+    erlang_bif('tuple_size', [t])
+
+  defp tuple_element(t, index: Int): T =
+    # This would call the runtime element function
+    erlang_bif('element', [index + 1, t])  # Erlang uses 1-based indexing
+
+  defp is_integer(x): Bool =
+    erlang_bif('is_integer', [x])
+
+  defp is_float(x): Bool =
+    erlang_bif('is_float', [x])
+
+  defp is_string(x): Bool =
+    erlang_bif('is_binary', [x])
+
+  defp is_boolean(x): Bool =
+    erlang_bif('is_boolean', [x])
+
+  defp is_atom(x): Bool =
+    erlang_bif('is_atom', [x])
+
+  defp is_list(x): Bool =
+    erlang_bif('is_list', [x])
+
+  defp is_tuple(x): Bool =
+    erlang_bif('is_tuple', [x])
+
+  # Built-in function interface (would be handled specially by compiler)
+  defp erlang_bif(name: String, args: List): T =
+    # This is a special form that the compiler would recognize
+    # and translate directly to Erlang BIF calls
+    __builtin_erlang_call__(name, args)
+end

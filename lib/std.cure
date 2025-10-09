@@ -32,11 +32,11 @@ module Std do
     map/2, filter/2, reverse/1, append/2, concat/1,
     
     # Folding and reducing
-    foldl/3, foldr/3, reduce/2,
+    foldl/3, foldr/3, fold/3, reduce/2,
     
     # List utilities
     find/2, elem/2, all/2, any/2,
-    take/2, drop/2, zip/2, unzip/1,
+    take/2, drop/2, zip/2, zip_with/3, unzip/1,
     
     # Safe operations
     safe_head/1, safe_tail/1, safe_nth/2
@@ -79,6 +79,12 @@ module Std do
     # String splitting
     split/2, words/1
   ]
+  
+  # Re-export Show functions
+  import Std.Show [
+    # String conversion
+    show/1
+  ]
 
   # Re-export FSM utilities
   import Std.FSM [
@@ -115,9 +121,9 @@ module Std do
     # List functions
     cons/2, head/1, tail/1, length/1, is_empty/1,
     map/2, filter/2, reverse/1, append/2, concat/1,
-    foldl/3, foldr/3, reduce/2,
+    foldl/3, foldr/3, fold/3, reduce/2,
     find/2, elem/2, all/2, any/2,
-    take/2, drop/2, zip/2, unzip/1,
+    take/2, drop/2, zip/2, zip_with/3, unzip/1,
     safe_head/1, safe_tail/1, safe_nth/2,
     
     # Math functions  
@@ -132,6 +138,9 @@ module Std do
     contains/2, starts_with/2, ends_with/2,
     string_slice/3, string_take/2, string_drop/2,
     split/2, words/1,
+    
+    # Show functions
+    show/1,
     
     # FSM functions
     fsm_create/2, fsm_start/1, fsm_stop_safe/1,

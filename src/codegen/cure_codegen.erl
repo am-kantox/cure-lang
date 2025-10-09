@@ -108,21 +108,27 @@ compile_module(ModuleAST) ->
 
 %% Support for new AST format
 compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) ->
+    io:format("DEBUG: Compiling module ~p with imports ~p~n", [Name, Imports]),
     % Using new AST format compilation path
     ConvertedExports = convert_exports_new(Exports, Items),
     State = #codegen_state{
         module_name = Name,
         exports = ConvertedExports,
         optimization_level = proplists:get_value(optimize, Options, 0),
-        type_info = cure_typechecker:builtin_env()
+        type_info = cure_typechecker:builtin_env(),
+        imported_functions = #{}
     },
 
     % Process imports first
     StateWithImports =
         case process_imports_new(Imports, State) of
-            {ok, ImportState} -> ImportState;
+            {ok, ImportState} ->
+                io:format("DEBUG: Import processing succeeded~n"),
+                ImportState;
             % Continue with basic state on import errors
-            {error, _} -> State
+            {error, Error} ->
+                io:format("DEBUG: Import processing failed: ~p~n", [Error]),
+                State
         end,
 
     case compile_module_items(Items, StateWithImports) of
@@ -131,16 +137,36 @@ compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) 
         {error, Reason} ->
             {error, Reason}
     end;
-compile_module(#module_def{name = Name, exports = Exports, items = Items} = _Module, Options) ->
+compile_module(#module_def{name = Name, exports = Exports, items = Items} = Module, Options) ->
+    io:format("DEBUG: Using old AST format path for module ~p~n", [Name]),
+    io:format("DEBUG: Module record: ~p~n", [Module]),
+    % Check if there are any imports in the items
+    Imports = [
+        Item
+     || Item <- Items, element(1, Item) =:= import_def orelse is_record(Item, import_def)
+    ],
+    io:format("DEBUG: Found imports: ~p~n", [Imports]),
     % Using old AST format compilation path
     State = #codegen_state{
         module_name = Name,
         exports = convert_exports(Exports),
         optimization_level = proplists:get_value(optimize, Options, 0),
-        type_info = cure_typechecker:builtin_env()
+        type_info = cure_typechecker:builtin_env(),
+        imported_functions = #{}
     },
 
-    case compile_module_items(Items, State) of
+    % Process imports from items list
+    StateWithImports =
+        case process_imports_new(Imports, State) of
+            {ok, ImportState} ->
+                io:format("DEBUG: Old path import processing succeeded~n"),
+                ImportState;
+            {error, Error} ->
+                io:format("DEBUG: Old path import processing failed: ~p~n", [Error]),
+                State
+        end,
+
+    case compile_module_items(Items, StateWithImports) of
         {ok, CompiledState} ->
             generate_beam_module(CompiledState);
         {error, Reason} ->
@@ -157,7 +183,8 @@ compile_function(#function_def{} = Function, Options) ->
     State = #codegen_state{
         module_name = test_module,
         optimization_level = proplists:get_value(optimize, Options, 0),
-        type_info = cure_typechecker:builtin_env()
+        type_info = cure_typechecker:builtin_env(),
+        imported_functions = #{}
     },
     case compile_function_impl(Function, State) of
         {ok, CompiledFunction, NewState} ->
@@ -386,11 +413,13 @@ create_param_bindings(Params) ->
 
 %% Generate BEAM function code
 generate_function_code(Name, Params, BodyInstructions, Location) ->
-    ParamList = [P#param.name || P <- Params],
+    % Filter out type parameters - only keep actual runtime parameters
+    RuntimeParams = filter_runtime_params(Params),
+    ParamList = [P#param.name || P <- RuntimeParams],
 
     #{
         name => Name,
-        arity => length(Params),
+        arity => length(RuntimeParams),
         params => ParamList,
         instructions => [
             #beam_instr{op = label, args = [function_start], location = Location}
@@ -425,6 +454,7 @@ compile_expression(Expr, State) ->
         #match_expr{} -> compile_match_expr(Expr, State);
         #string_interpolation_expr{} -> compile_string_interpolation(Expr, State);
         #type_annotation_expr{} -> compile_type_annotation(Expr, State);
+        #record_expr{} -> compile_record_expr(Expr, State);
         % Note: pipe operators are parsed as binary_op_expr with op = '|>'
         % Note: constructor expressions are parsed as function_call_expr
         _ -> {error, {unsupported_expression, Expr}}
@@ -443,13 +473,25 @@ compile_literal(#literal_expr{value = Value, location = Location}, State) ->
 compile_identifier(#identifier_expr{name = Name, location = Location}, State) ->
     case maps:get(Name, State#codegen_state.local_vars, undefined) of
         undefined ->
-            % Might be a global function or imported function
-            Instruction = #beam_instr{
-                op = load_global,
-                args = [Name],
-                location = Location
-            },
-            {[Instruction], State};
+            % Check if it's an imported function first
+            case find_imported_function(Name, State) of
+                {ok, ImportedFunction} ->
+                    % Create a function reference to the imported function
+                    Instruction = #beam_instr{
+                        op = load_imported_function,
+                        args = [Name, ImportedFunction],
+                        location = Location
+                    },
+                    {[Instruction], State};
+                not_found ->
+                    % Might be a global function
+                    Instruction = #beam_instr{
+                        op = load_global,
+                        args = [Name],
+                        location = Location
+                    },
+                    {[Instruction], State}
+            end;
         {param, ParamName} ->
             Instruction = #beam_instr{
                 op = load_param,
@@ -464,6 +506,23 @@ compile_identifier(#identifier_expr{name = Name, location = Location}, State) ->
                 location = Location
             },
             {[Instruction], State}
+    end.
+
+%% Find imported function by name (with any arity)
+find_imported_function(Name, State) ->
+    ImportedFunctions = State#codegen_state.imported_functions,
+    % Look for functions with this name, regardless of arity
+    MatchingFunctions = maps:filter(
+        fun({FuncName, _Arity}, _Data) -> FuncName =:= Name end,
+        ImportedFunctions
+    ),
+    case maps:size(MatchingFunctions) of
+        0 ->
+            not_found;
+        _ ->
+            % Return the first matching function
+            {_Key, FunctionData} = hd(maps:to_list(MatchingFunctions)),
+            {ok, FunctionData}
     end.
 
 %% Compile binary operations
@@ -653,6 +712,34 @@ compile_tuple_expr(#tuple_expr{elements = Elements, location = Location}, State)
 
     Instructions = ElementInstructions ++ [TupleInstruction],
     {Instructions, State1}.
+
+%% Compile record expressions
+compile_record_expr(#record_expr{name = RecordName, fields = Fields, location = Location}, State) ->
+    % Compile field values
+    {FieldInstructions, State1} = compile_record_field_exprs(Fields, State),
+
+    % Create field name list for the record construction
+    FieldNames = [Field#field_expr.name || Field <- Fields],
+
+    % Generate record construction instruction
+    RecordInstruction = #beam_instr{
+        op = make_record,
+        args = [RecordName, FieldNames, length(Fields)],
+        location = Location
+    },
+
+    Instructions = FieldInstructions ++ [RecordInstruction],
+    {Instructions, State1}.
+
+%% Compile record field expressions
+compile_record_field_exprs(Fields, State) ->
+    compile_record_field_exprs(Fields, State, []).
+
+compile_record_field_exprs([], State, Acc) ->
+    {lists:flatten(lists:reverse(Acc)), State};
+compile_record_field_exprs([#field_expr{value = Value} | Rest], State, Acc) ->
+    {ValueInstructions, State1} = compile_expression(Value, State),
+    compile_record_field_exprs(Rest, State1, [ValueInstructions | Acc]).
 
 %% Compile block expressions
 compile_block_expr(#block_expr{expressions = Expressions, location = _Location}, State) ->
@@ -1007,6 +1094,35 @@ new_label(State) ->
     NewState = State#codegen_state{label_counter = Counter + 1},
     {Label, NewState}.
 
+%% Filter out type parameters from function parameters
+%% Type parameters are compile-time only and shouldn't appear in runtime function signatures
+filter_runtime_params(Params) ->
+    lists:filter(
+        fun(#param{name = Name}) ->
+            % Keep parameter if it's NOT a type parameter
+            not is_likely_type_parameter(Name)
+        end,
+        Params
+    ).
+
+%% Check if a parameter name is likely a type parameter
+is_likely_type_parameter(ParamName) when is_atom(ParamName) ->
+    ParamStr = atom_to_list(ParamName),
+    case ParamStr of
+        % Single letter uppercase (T, U, V, etc.) - likely type parameters
+        [C] when C >= $A, C =< $Z -> true;
+        % Single letter lowercase that's commonly used for type-level values
+        "n" -> true;
+        "k" -> true;
+        "m" -> true;
+        "i" -> true;
+        "j" -> true;
+        % Other patterns
+        _ -> false
+    end;
+is_likely_type_parameter(_) ->
+    false.
+
 %% Check if expression has side effects and should not be discarded
 has_side_effects(#function_call_expr{function = Function}) ->
     case Function of
@@ -1056,6 +1172,9 @@ generate_beam_module(State) ->
     % Extract regular functions and FSM definitions
     RegularFunctions = [F || {function, F} <- State#codegen_state.functions],
     FSMDefinitions = [FSM || {fsm, FSM} <- State#codegen_state.functions],
+
+    % Extract function information for debugging if needed
+    % FunctionNames = [maps:get(name, F, unknown) || F <- RegularFunctions],
 
     % Extract FSM functions and flatten them
     FSMFunctions = lists:flatten([maps:get(functions, FSM, []) || FSM <- FSMDefinitions]),
@@ -1139,11 +1258,190 @@ convert_export_specs([_ | Rest]) ->
 %% Process imports for new AST format
 process_imports_new([], State) ->
     {ok, State};
-process_imports_new([{import_def, _Module, _Imports, _Location} | Rest], State) ->
-    % For now, just continue processing - full import resolution would need module loading
-    process_imports_new(Rest, State);
+process_imports_new([{import_def, Module, Imports, _Location} | Rest], State) ->
+    io:format("DEBUG: Processing import ~p with items ~p~n", [Module, Imports]),
+    case resolve_and_load_module(Module, Imports, State) of
+        {ok, NewState} ->
+            io:format("DEBUG: Successfully imported ~p~n", [Module]),
+            process_imports_new(Rest, NewState);
+        {error, Reason} ->
+            io:format("Warning: Failed to import ~p: ~p~n", [Module, Reason]),
+            % Continue with other imports
+            process_imports_new(Rest, State)
+    end;
+process_imports_new([#import_def{module = Module, items = Imports} | Rest], State) ->
+    case resolve_and_load_module(Module, Imports, State) of
+        {ok, NewState} ->
+            process_imports_new(Rest, NewState);
+        {error, Reason} ->
+            io:format("Warning: Failed to import ~p: ~p~n", [Module, Reason]),
+            process_imports_new(Rest, State)
+    end;
 process_imports_new([_ | Rest], State) ->
     process_imports_new(Rest, State).
+
+%% Resolve and load a module for import
+resolve_and_load_module(Module, Imports, State) ->
+    case find_module_file(Module) of
+        {ok, ModuleFile} ->
+            case compile_and_extract_functions(ModuleFile, Imports, State) of
+                {ok, ImportedFunctions, NewState} ->
+                    % Add imported functions to the state
+                    CurrentImports = State#codegen_state.imported_functions,
+                    UpdatedImports = maps:merge(CurrentImports, ImportedFunctions),
+                    FinalState = NewState#codegen_state{imported_functions = UpdatedImports},
+                    {ok, FinalState};
+                {error, Reason} ->
+                    {error, {compilation_failed, Module, Reason}}
+            end;
+        {error, Reason} ->
+            {error, {module_not_found, Module, Reason}}
+    end.
+
+%% Find module file based on module name
+find_module_file(Module) ->
+    ModuleStr = atom_to_list(Module),
+    % Convert module name to file path
+    % Std.List -> lib/std/list.cure
+    % Std -> lib/std.cure
+    case string:tokens(ModuleStr, ".") of
+        ["Std", SubModule] ->
+            SubModuleLower = string:to_lower(SubModule),
+            Path = "lib/std/" ++ SubModuleLower ++ ".cure",
+            case filelib:is_file(Path) of
+                true -> {ok, Path};
+                false -> {error, {file_not_found, Path}}
+            end;
+        ["Std"] ->
+            Path = "lib/std.cure",
+            case filelib:is_file(Path) of
+                true -> {ok, Path};
+                false -> {error, {file_not_found, Path}}
+            end;
+        _ ->
+            {error, {unsupported_module, Module}}
+    end.
+
+%% Compile module and extract requested functions
+compile_and_extract_functions(ModuleFile, Imports, State) ->
+    case cure_lexer:tokenize_file(ModuleFile) of
+        {ok, Tokens} ->
+            case cure_parser:parse(Tokens) of
+                {ok, AST} ->
+                    case extract_functions_from_ast(AST, Imports) of
+                        {ok, Functions} ->
+                            {ok, Functions, State};
+                        {error, Reason} ->
+                            {error, {function_extraction_failed, Reason}}
+                    end;
+                {error, ParseError} ->
+                    {error, {parse_error, ParseError}}
+            end;
+        {error, LexError} ->
+            {error, {lex_error, LexError}}
+    end.
+
+%% Extract functions from parsed AST based on import specifications
+extract_functions_from_ast(AST, all) ->
+    % Import all exported functions
+    case find_exported_functions(AST) of
+        {ok, Functions} -> {ok, Functions};
+        {error, Reason} -> {error, Reason}
+    end;
+extract_functions_from_ast(AST, Imports) when is_list(Imports) ->
+    % Import specific functions
+    case find_exported_functions(AST) of
+        {ok, AllFunctions} ->
+            RequestedFunctions = filter_requested_functions(AllFunctions, Imports),
+            {ok, RequestedFunctions};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Find all exported functions in an AST
+find_exported_functions(AST) ->
+    case AST of
+        [#module_def{items = Items, exports = Exports}] ->
+            extract_exported_function_bodies(Items, Exports);
+        [#module_def{items = Items}] ->
+            % No explicit exports, export all functions
+            extract_all_function_bodies(Items);
+        [{module_def, _Name, Exports, Items, _Location}] ->
+            extract_exported_function_bodies(Items, Exports);
+        Items when is_list(Items) ->
+            % List of items without module wrapper
+            extract_all_function_bodies(Items);
+        _ ->
+            {error, {unsupported_ast_format, AST}}
+    end.
+
+%% Extract function bodies for all functions
+extract_all_function_bodies(Items) ->
+    Functions = extract_function_bodies(Items, []),
+    {ok, Functions}.
+
+%% Extract function bodies for exported functions only
+extract_exported_function_bodies(Items, Exports) ->
+    AllFunctions = extract_function_bodies(Items, []),
+    ExportedFunctions = filter_by_exports(AllFunctions, Exports),
+    {ok, ExportedFunctions}.
+
+%% Extract function bodies from items
+extract_function_bodies([], Acc) ->
+    maps:from_list(lists:reverse(Acc));
+extract_function_bodies([#function_def{name = Name, params = Params, body = Body} | Rest], Acc) ->
+    Arity = length(Params),
+    FunctionKey = {Name, Arity},
+    FunctionData = #{name => Name, arity => Arity, params => Params, body => Body},
+    extract_function_bodies(Rest, [{FunctionKey, FunctionData} | Acc]);
+extract_function_bodies(
+    [{function_def, Name, Params, _RetType, _Constraint, Body, _Location} | Rest], Acc
+) ->
+    Arity = length(Params),
+    FunctionKey = {Name, Arity},
+    FunctionData = #{name => Name, arity => Arity, params => Params, body => Body},
+    extract_function_bodies(Rest, [{FunctionKey, FunctionData} | Acc]);
+extract_function_bodies([_ | Rest], Acc) ->
+    % Skip non-function items
+    extract_function_bodies(Rest, Acc).
+
+%% Filter functions by export list
+filter_by_exports(AllFunctions, []) ->
+    % No exports specified, return all
+    AllFunctions;
+filter_by_exports(AllFunctions, Exports) ->
+    ExportSet = export_list_to_set(Exports),
+    maps:filter(fun(Key, _Value) -> sets:is_element(Key, ExportSet) end, AllFunctions).
+
+%% Convert export list to set for efficient lookup
+export_list_to_set(Exports) ->
+    ExportTuples = lists:map(fun export_to_tuple/1, Exports),
+    sets:from_list(ExportTuples).
+
+export_to_tuple(#export_spec{name = Name, arity = Arity}) ->
+    {Name, Arity};
+export_to_tuple({export_spec, Name, Arity, _Location}) ->
+    {Name, Arity};
+export_to_tuple({Name, Arity}) ->
+    {Name, Arity}.
+
+%% Filter functions based on import specifications
+filter_requested_functions(AllFunctions, Imports) ->
+    RequestedKeys = import_list_to_keys(Imports),
+    maps:filter(fun(Key, _Value) -> lists:member(Key, RequestedKeys) end, AllFunctions).
+
+%% Convert import list to function keys
+import_list_to_keys(Imports) ->
+    lists:map(fun import_to_key/1, Imports).
+
+import_to_key(#function_import{name = Name, arity = Arity}) ->
+    {Name, Arity};
+import_to_key({function_import, Name, Arity, _Location}) ->
+    {Name, Arity};
+import_to_key(Name) when is_atom(Name) ->
+    % For plain atoms, we can't determine arity - this is a limitation
+    % We'll need to match by name only during resolution
+    {Name, any}.
 
 %% Compile individual items (for program compilation)
 compile_item(#module_def{} = Module, Options) ->
@@ -1214,17 +1512,24 @@ convert_to_erlang_forms(Module) ->
                     {DefaultModuleName, [], [], [], []}
             end,
         % Auto-generate exports from functions if no exports specified
+        % For BEAM generation, we need to include ALL functions (exported and local)
+        % The export list only controls external visibility
+        AllFunctionExports =
+            [
+                {maps:get(name, F), maps:get(arity, F)}
+             || F <- Functions,
+                maps:is_key(name, F) andalso maps:is_key(arity, F)
+            ],
+
         Exports =
             case RawExports of
                 [] ->
-                    % Extract {name, arity} from all functions
-                    [
-                        {maps:get(name, F), maps:get(arity, F)}
-                     || F <- Functions,
-                        maps:is_key(name, F) andalso maps:is_key(arity, F)
-                    ];
+                    % No explicit exports - export all functions
+                    AllFunctionExports;
                 _ ->
-                    RawExports
+                    % Use explicit exports for external visibility
+                    % but ensure all functions are included in BEAM
+                    lists:usort(RawExports ++ AllFunctionExports)
             end,
 
         % Add module and export attributes
@@ -1277,6 +1582,7 @@ convert_functions_to_forms(Functions, LineStart) ->
 convert_functions_to_forms([], _Line, Acc) ->
     lists:reverse(Acc);
 convert_functions_to_forms([Function | RestFunctions], Line, Acc) ->
+    FunctionName = maps:get(name, Function, unknown),
     case convert_function_to_form(Function, Line) of
         {ok, Form, NextLine} ->
             convert_functions_to_forms(RestFunctions, NextLine, [Form | Acc]);

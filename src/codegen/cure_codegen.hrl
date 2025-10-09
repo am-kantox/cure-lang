@@ -18,7 +18,8 @@
     label_counter = 0 :: integer(),
     constants = #{} :: map(),
     type_info = #{} :: map(),
-    optimization_level = 0 :: integer()
+    optimization_level = 0 :: integer(),
+    imported_functions = #{} :: map()  % Map of {Name, Arity} -> FunctionData
 }).
 
 %% Function compilation result

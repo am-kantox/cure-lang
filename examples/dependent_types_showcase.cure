@@ -104,13 +104,13 @@ module DependentTypesShowcase do
   end
 
   def test_vectors() do
-    let v1 = [1, 2, 3] as Vector(Number, 3) in
-    let v2 = [4, 5] as Vector(Number, 2) in
+    let v1 = [1, 2, 3] as Vector(Number, 3)
+    let v2 = [4, 5] as Vector(Number, 2)
     
     # Safe operations - guaranteed to work at compile time
-    let first = safe_head(v1) in  # OK: v1 has length > 0
-    let element = safe_get(v1, 2) in  # OK: index 2 < length 3
-    let combined = vector_concat(v1, v2) in  # Result: Vector(Number, 5)
+    let first = safe_head(v1)  # OK: v1 has length > 0
+    let element = safe_get(v1, 2)  # OK: index 2 < length 3
+    let combined = vector_concat(v1, v2)  # Result: Vector(Number, 5)
     
     println("Vector operations successful!"),
     {first, element, combined}
@@ -120,30 +120,30 @@ module DependentTypesShowcase do
     let matrix_2x3 = [
       [1, 2, 3],
       [4, 5, 6]
-    ] as Matrix(Number, 2, 3) in
+    ] as Matrix(Number, 2, 3)
     
     let matrix_3x2 = [
       [1, 2],
       [3, 4], 
       [5, 6]
-    ] as Matrix(Number, 3, 2) in
+    ] as Matrix(Number, 3, 2)
     
     # This multiplication is type-safe: (2x3) * (3x2) = (2x2)
-    let result = matrix_multiply(matrix_2x3, matrix_3x2) in
+    let result = matrix_multiply(matrix_2x3, matrix_3x2)
     
     println("Matrix multiplication successful!"),
     result
   end
 
   def test_units() do
-    let distance_km = 100 as Distance(Kilometers) in
-    let more_km = 50 as Distance(Kilometers) in
+    let distance_km = 100 as Distance(Kilometers)
+    let more_km = 50 as Distance(Kilometers)
     
     # Type-safe: can add same units
-    let total_km = add_distances(distance_km, more_km) in
+    let total_km = add_distances(distance_km, more_km)
     
     # Type-safe conversion
-    let distance_miles = km_to_miles(total_km) in
+    let distance_miles = km_to_miles(total_km)
     
     println("Unit-safe operations successful!"),
     {total_km, distance_miles}
@@ -151,15 +151,15 @@ module DependentTypesShowcase do
 
   def test_safe_operations() do
     # Demonstrate compile-time safety guarantees
-    let non_empty = [1, 2, 3, 4, 5] as NonEmptyList(Number) in
-    let max_val = safe_maximum(non_empty) in
+    let non_empty = [1, 2, 3, 4, 5] as NonEmptyList(Number)
+    let max_val = safe_maximum(non_empty)
     
     println("Safe maximum operation successful!"),
     max_val
   end
 
   def test_compile_time_guarantees() do
-    let msg = "All operations verified safe at compile time!" in
+    let msg = "All operations verified safe at compile time!"
     
     # These operations would fail at compile time if incorrect:
     # safe_head([])  # ERROR: empty vector

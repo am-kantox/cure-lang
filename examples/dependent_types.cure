@@ -114,7 +114,7 @@ module DependentTypes do
     matrix: Matrix(m, n, T), 
     row: Nat, 
     col: Nat
-  ): T when row < m && col < n =
+  ): T when row < m and col < n =
     # Type system ensures indices are within bounds
     let matrix_row = get_at(matrix.data, row)
     get_at(matrix_row, col)
@@ -125,7 +125,7 @@ module DependentTypes do
   type PositiveInt = Int when x > 0
   type NonZeroFloat = Float when x != 0.0
   type NonEmptyString = String when length(x) > 0
-  type ValidAge = Nat when x >= 0 && x <= 150
+  type ValidAge = Nat when x >= 0 and x <= 150
 
   # Safe operations using refinement types
   def safe_divide(x: Float, y: NonZeroFloat): Float =
@@ -216,7 +216,7 @@ module DependentTypes do
   # === LIQUID TYPES ===
 
   # Types with logical constraints
-  type ArrayIndex(arr: Array(T, n)) = Nat when i >= 0 && i < n
+  type ArrayIndex(arr: Array(T, n)) = Nat when i >= 0 and i < n
 
   def safe_array_access(arr: Array(T, n), idx: ArrayIndex(arr)): T =
     # No bounds checking needed - type system guarantees safety
