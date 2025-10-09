@@ -158,7 +158,7 @@ module Std do
     end)
     ok
 
-  def safe_main(main_fn: Unit -> Result(T, String)): T =
+  def safe_main(main_fn: fn(Unit) -> Result(T, String)): T =
     # Safe main function wrapper
     match main_fn() do
       Ok(result) -> result
@@ -167,11 +167,11 @@ module Std do
         error("Program failed")
     end
 
-  def benchmark(name: String, fn: Unit -> T): T =
+  def benchmark(name: String, func: fn(Unit) -> T): T =
     # Simple benchmarking utility
     print("Running benchmark: " ++ name)
     let start_time = current_time()
-    let result = fn()
+    let result = func()
     let end_time = current_time()
     let duration = end_time - start_time
     print("Benchmark '" ++ name ++ "' took: " ++ string_from_int(duration) ++ "ms")

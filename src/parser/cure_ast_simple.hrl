@@ -104,6 +104,7 @@
 -record(function_import, {
     name,
     arity,
+    alias,  % Optional alias name
     location
 }).
 

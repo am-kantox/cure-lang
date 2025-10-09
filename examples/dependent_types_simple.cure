@@ -4,31 +4,6 @@ module DependentTypes do
   # Import standard types
   import Std [List, Result]
   
-  # Local implementations for testing (normally would be imported)
-  def zip_with(xs, ys, f) =
-    match xs do
-      [] -> []
-      [x | xs_rest] ->
-        match ys do
-          [] -> []
-          [y | ys_rest] -> [f(x, y) | zip_with(xs_rest, ys_rest, f)]
-        end
-    end
-  
-  def fold(list, acc, f) =
-    match list do
-      [] -> acc
-      [x | xs] -> fold(xs, f(x, acc), f)
-    end
-  
-  def map(list, f) =
-    match list do
-      [] -> []
-      [x | xs] -> [f(x) | map(xs, f)]
-    end
-  
-  def show(value) = "<" ++ "value" ++ ">"
-
   # === LENGTH-INDEXED VECTORS ===
 
   # Vector type parameterized by length and element type
@@ -199,7 +174,7 @@ module DependentTypes do
   # === DEMONSTRATION FUNCTIONS ===
 
   def vector_operations(): Unit =
-    print("=== Vector Operations ===")
+    print("\n=== Vector Operations ===\n")
     
     let v1 = make_vec3(1.0, 2.0, 3.0)
     let v2 = make_vec3(4.0, 5.0, 6.0)
@@ -261,16 +236,14 @@ module DependentTypes do
   #   ok
 
   def demo_all(): Unit =
-    print("=== Dependent Types Demonstration ===")
+    print("=== Dependent Types Demonstration ===\n")
     
     # Demonstrate compile-time safety
-    print("All operations below are compile-time verified for safety!")
+    print("All operations below are compile-time verified for safety!\n")
     
     vector_operations()
     # matrix_operations()
     # safe_operations()
-    
-    print("\\n=== Expression Evaluation ===")
     
     # Type-safe expression evaluation
     # let expr1 = Add(IntLit(5), IntLit(3))
@@ -291,9 +264,6 @@ module DependentTypes do
     
     # This would be prevented at compile time:
     # let invalid = add_meters(distance_meters, distance_feet)  # TYPE ERROR!
-    
-    print("\\nAll dependent type examples completed successfully!")
-    print("The type system prevented numerous potential runtime errors!")
     
     ok
 

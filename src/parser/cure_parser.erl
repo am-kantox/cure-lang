@@ -223,21 +223,60 @@ parse_export_specs(State, Acc) ->
             end
     end.
 
-%% Parse single export spec (name/arity)
+%% Parse single export spec (name/arity or plain identifier)
 parse_export_spec(State) ->
-    {NameToken, State1} = expect(State, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
-    {_, State2} = expect(State1, '/'),
-    {ArityToken, State3} = expect(State2, number),
-    Arity = get_token_value(ArityToken),
-
+    % Allow certain keywords to be used as identifiers in export lists (same as imports)
+    {NameToken, State1} =
+        case get_token_type(current_token(State)) of
+            identifier -> expect(State, identifier);
+            'Ok' -> expect(State, 'Ok');
+            'Error' -> expect(State, 'Error');
+            'Some' -> expect(State, 'Some');
+            'None' -> expect(State, 'None');
+            'ok' -> expect(State, 'ok');
+            'error' -> expect(State, 'error');
+            'not' -> expect(State, 'not');
+            'and' -> expect(State, 'and');
+            'or' -> expect(State, 'or');
+            _ -> expect(State, identifier)
+        end,
+    Name =
+        case get_token_type(NameToken) of
+            identifier -> binary_to_atom(get_token_value(NameToken), utf8);
+            'Ok' -> 'Ok';
+            'Error' -> 'Error';
+            'Some' -> 'Some';
+            'None' -> 'None';
+            'ok' -> ok;
+            'error' -> error;
+            'not' -> 'not';
+            'and' -> 'and';
+            'or' -> 'or'
+        end,
     Location = get_token_location(NameToken),
-    Export = #export_spec{
-        name = Name,
-        arity = Arity,
-        location = Location
-    },
-    {Export, State3}.
+    
+    case match_token(State1, '/') of
+        true ->
+            % Function/arity specification
+            {_, State2} = expect(State1, '/'),
+            {ArityToken, State3} = expect(State2, number),
+            Arity = get_token_value(ArityToken),
+            
+            Export = #export_spec{
+                name = Name,
+                arity = Arity,
+                location = Location
+            },
+            {Export, State3};
+        false ->
+            % Plain identifier (type, constant, etc.)
+            Export = #export_spec{
+                name = Name,
+                arity = undefined,  % undefined indicates a non-function export
+                location = Location
+            },
+            {Export, State1}
+    end.
 
 %% Parse export statement as module item
 parse_export(State) ->
@@ -739,6 +778,9 @@ parse_import_item(State) ->
             'None' -> expect(State, 'None');
             'ok' -> expect(State, 'ok');
             'error' -> expect(State, 'error');
+            'not' -> expect(State, 'not');
+            'and' -> expect(State, 'and');
+            'or' -> expect(State, 'or');
             _ -> expect(State, identifier)
         end,
     Name =
@@ -749,7 +791,10 @@ parse_import_item(State) ->
             'Some' -> 'Some';
             'None' -> 'None';
             'ok' -> ok;
-            'error' -> error
+            'error' -> error;
+            'not' -> 'not';
+            'and' -> 'and';
+            'or' -> 'or'
         end,
     Location = get_token_location(Token),
 
@@ -760,15 +805,48 @@ parse_import_item(State) ->
             {ArityToken, State3} = expect(State2, number),
             Arity = get_token_value(ArityToken),
 
+            % Check for optional 'as' alias
+            {Alias, State4} =
+                case match_token(State3, 'as') of
+                    true ->
+                        {_, State3a} = expect(State3, 'as'),
+                        {AliasToken, State3b} = expect(State3a, identifier),
+                        AliasName = binary_to_atom(get_token_value(AliasToken), utf8),
+                        {AliasName, State3b};
+                    false ->
+                        {undefined, State3}
+                end,
+
             FunctionImport = #function_import{
                 name = Name,
                 arity = Arity,
+                alias = Alias,
                 location = Location
             },
-            {FunctionImport, State3};
+            {FunctionImport, State4};
         false ->
             % Plain identifier (e.g., type constructor, constant)
-            {Name, State1}
+            % Check for optional 'as' alias for plain identifiers too
+            {Alias, State2} =
+                case match_token(State1, 'as') of
+                    true ->
+                        {_, State1a} = expect(State1, 'as'),
+                        {AliasToken, State1b} = expect(State1a, identifier),
+                        AliasName = binary_to_atom(get_token_value(AliasToken), utf8),
+                        {AliasName, State1b};
+                    false ->
+                        {undefined, State1}
+                end,
+            
+            % If we have an alias, create a function import-like structure
+            case Alias of
+                undefined ->
+                    {Name, State2};
+                _ ->
+                    % Create alias import structure
+                    AliasImport = {aliased_import, Name, Alias, Location},
+                    {AliasImport, State2}
+            end
     end.
 
 %% Parse import statement
