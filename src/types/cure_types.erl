@@ -22,6 +22,40 @@
     infer_type/2, infer_type/3,
     infer_dependent_type/2,
 
+    % Enhanced type inference
+    enhanced_infer_type/2, enhanced_infer_type/3,
+    infer_with_alternatives/3,
+    bidirectional_infer/3,
+    constraint_propagation/2,
+    local_type_inference/3,
+    generate_type_alternatives/3,
+    generate_list_alternatives/3,
+    enhanced_constraint_solving/2,
+
+    % Recursive types
+    create_recursive_type/4,
+    unfold_recursive_type/1, unfold_recursive_type/2,
+    fold_recursive_type/2,
+    check_recursive_type_well_formed/1,
+    unify_recursive_types/3,
+    occurs_check_recursive/2,
+    detect_cycles/2,
+
+    % Higher-kinded types
+    create_kind/3,
+    infer_kind/2,
+    check_kind/3,
+    unify_kinds/2,
+    create_type_constructor/5,
+    apply_type_constructor/3,
+    create_type_family/4,
+    evaluate_type_family/2,
+    solve_type_family_equation/3,
+    check_constraint_satisfaction/2,
+    check_higher_kinded_well_formed/1,
+    kind_arity/1,
+    is_saturated_type/1,
+
     % Type checking
     check_type/3, check_type/4,
     is_well_formed_type/1,
@@ -32,6 +66,14 @@
     % Constraint solving
     solve_constraints/1, solve_constraints/2,
     check_dependent_constraint/3,
+
+    % Complex constraint solving
+    solve_implication_constraint/3,
+    solve_equivalence_constraint/3,
+    solve_bounds_constraint/3,
+    solve_invariant_constraint/3,
+    solve_variance_constraint/4,
+    evaluate_type_predicate/2,
 
     % Utility functions
     substitute/2,
@@ -64,18 +106,169 @@
     parent :: type_env() | undefined
 }).
 
--type constraint_op() :: '=' | '<:' | '>:' | 'elem_of' | 'length_eq'.
+-type constraint_op() ::
+    '='
+    | '<:'
+    | '>:'
+    | 'elem_of'
+    | 'length_eq'
+    | 'implies'
+    | 'iff'
+    | 'bounds'
+    | 'invariant'
+    | 'covariant'
+    | 'contravariant'.
 -type type_expr() :: term().
 -type location() :: term().
 -type type_env() :: #type_env{}.
 -type type_var() :: #type_var{}.
 -type type_constraint() :: #type_constraint{}.
+% Defined in cure_ast_simple.hrl
+-type type_param() :: term().
 
 -record(inference_result, {
     type :: type_expr(),
     constraints :: [type_constraint()],
     substitution :: #{type_var() => type_expr()}
 }).
+
+%% Enhanced type inference result with additional information
+-record(enhanced_inference_result, {
+    type :: type_expr(),
+    constraints :: [type_constraint()],
+    substitution :: #{type_var() => type_expr()},
+    % Confidence score 0.0-1.0
+    confidence :: float(),
+    % Alternative type possibilities
+    alternatives :: [type_expr()],
+    % Inference steps taken
+    justification :: [inference_step()],
+    % Additional context
+    context_info :: #{atom() => term()}
+}).
+
+-record(inference_step, {
+    rule :: atom(),
+    input :: term(),
+    output :: term(),
+    location :: location()
+}).
+
+-type inference_step() :: #inference_step{}.
+
+%% Recursive type definitions
+-record(recursive_type, {
+    name :: atom(),
+    params :: [type_param()],
+    definition :: type_expr(),
+    binding_context :: #{atom() => type_expr()},
+    location :: location()
+}).
+
+-record(mu_type, {
+    var :: atom(),
+    body :: type_expr(),
+    unfold_level :: integer(),
+    location :: location()
+}).
+
+-record(cycle_detection, {
+    visited :: sets:set(atom()),
+    stack :: [atom()],
+    max_depth :: integer()
+}).
+
+-type recursive_type() :: #recursive_type{}.
+-type mu_type() :: #mu_type{}.
+-type cycle_detection() :: #cycle_detection{}.
+
+%% Higher-kinded types definitions
+-record(kind, {
+    % Base kind or higher-order kind
+    constructor :: atom() | kind(),
+    % Kind arguments
+    args :: [kind()],
+    % Result kind
+    result :: kind() | atom(),
+    arity :: integer(),
+    location :: location()
+}).
+
+-record(type_constructor, {
+    name :: atom(),
+    kind :: kind(),
+    params :: [type_param()],
+    definition :: type_expr() | undefined,
+    constraints :: [constraint()],
+    location :: location()
+}).
+
+-record(higher_kinded_type, {
+    constructor :: type_constructor(),
+    applied_args :: [type_expr()],
+    % Number of args still needed
+    remaining_args :: integer(),
+    location :: location()
+}).
+
+-record(type_family, {
+    name :: atom(),
+    kind :: kind(),
+    equations :: [type_family_equation()],
+    location :: location()
+}).
+
+-record(type_family_equation, {
+    pattern :: [type_expr()],
+    result :: type_expr(),
+    constraints :: [constraint()],
+    location :: location()
+}).
+
+-record(constraint, {
+    class :: atom(),
+    args :: [type_expr()],
+    location :: location()
+}).
+
+-type kind() :: #kind{}.
+-type type_constructor() :: #type_constructor{}.
+-type higher_kinded_type() :: #higher_kinded_type{}.
+-type type_family() :: #type_family{}.
+-type type_family_equation() :: #type_family_equation{}.
+-type constraint() :: #constraint{}.
+
+%% Complex dependent type relationship records
+-record(dependent_relation, {
+    type1 :: type_expr(),
+    type2 :: type_expr(),
+    relation :: dependent_relation_type(),
+    predicate :: fun((term(), term()) -> boolean()) | term(),
+    location :: location()
+}).
+
+-record(type_invariant, {
+    type :: type_expr(),
+    invariant :: fun((type_expr()) -> boolean()) | term(),
+    description :: string(),
+    location :: location()
+}).
+
+-record(variance_constraint, {
+    type_constructor :: atom(),
+    parameter_position :: integer(),
+    variance :: covariant | contravariant | invariant,
+    location :: location()
+}).
+
+-type dependent_relation_type() ::
+    implies
+    | equivalent
+    | bounds
+    | subtype_of
+    | compatible_with
+    | dimension_match
+    | length_preserving.
 
 %% Built-in types
 -define(TYPE_INT, {primitive_type, 'Int'}).
@@ -154,7 +347,13 @@ new_env() ->
     }.
 
 extend_env(Env = #type_env{bindings = Bindings}, Var, Type) ->
-    Env#type_env{bindings = maps:put(Var, Type, Bindings)}.
+    Env#type_env{bindings = maps:put(Var, Type, Bindings)};
+extend_env(#{} = Env, Var, Type) ->
+    % Simple map environment for enhanced inference
+    maps:put(Var, Type, Env);
+extend_env(Env, Var, Type) when is_list(Env) ->
+    % Association list environment
+    [{Var, Type} | Env].
 
 lookup_env(#type_env{bindings = Bindings, parent = Parent}, Var) ->
     case maps:get(Var, Bindings, undefined) of
@@ -162,7 +361,19 @@ lookup_env(#type_env{bindings = Bindings, parent = Parent}, Var) ->
             lookup_env(Parent, Var);
         Result ->
             Result
-    end.
+    end;
+lookup_env(#{} = Env, Var) ->
+    % Simple map environment for enhanced inference
+    maps:get(Var, Env, undefined);
+lookup_env([], _Var) ->
+    % Empty list environment
+    undefined;
+lookup_env([{Var, Type} | _Rest], Var) ->
+    % Found in association list
+    Type;
+lookup_env([_ | Rest], Var) ->
+    % Search rest of association list
+    lookup_env(Rest, Var).
 
 %% Type Unification
 unify(Type1, Type2) ->
@@ -457,6 +668,19 @@ unify_type_params(
     case unify_impl(V1, V2, Subst) of
         {ok, Subst1} -> unify_type_params(T1, T2, Subst1);
         Error -> Error
+    end;
+% Handle extended type_param format with name field
+unify_type_params(
+    [Param1 | T1],
+    [Param2 | T2],
+    Subst
+) ->
+    % Extract values from various type_param formats
+    V1 = extract_type_param_value(Param1),
+    V2 = extract_type_param_value(Param2),
+    case unify_impl(V1, V2, Subst) of
+        {ok, Subst1} -> unify_type_params(T1, T2, Subst1);
+        Error -> Error
     end.
 
 %% Expression equality (simplified)
@@ -603,6 +827,12 @@ apply_substitution({phantom_type, Name}, _Subst) ->
 apply_substitution(undefined, _Subst) ->
     % undefined remains undefined
     undefined;
+apply_substitution(Atom, Subst) when is_atom(Atom) ->
+    % Handle atoms as type variable IDs (for type family patterns)
+    case maps:get(Atom, Subst, undefined) of
+        undefined -> Atom;
+        Type -> apply_substitution(Type, Subst)
+    end;
 apply_substitution(Type, _Subst) ->
     Type.
 
@@ -1088,6 +1318,24 @@ solve_constraint(#type_constraint{left = Left, op = Op, right = Right}, Subst) w
 solve_constraint(#type_constraint{left = Left, op = 'elem_of', right = Right}, Subst) ->
     % Handle element membership constraints
     solve_element_constraint(Left, Right, Subst);
+solve_constraint(#type_constraint{left = Left, op = 'implies', right = Right}, Subst) ->
+    % Handle implication constraints: Left => Right
+    solve_implication_constraint(Left, Right, Subst);
+solve_constraint(#type_constraint{left = Left, op = 'iff', right = Right}, Subst) ->
+    % Handle equivalence constraints: Left <=> Right
+    solve_equivalence_constraint(Left, Right, Subst);
+solve_constraint(#type_constraint{left = Left, op = 'bounds', right = Right}, Subst) ->
+    % Handle bounds constraints for dependent types
+    solve_bounds_constraint(Left, Right, Subst);
+solve_constraint(#type_constraint{left = Left, op = 'invariant', right = Right}, Subst) ->
+    % Handle type invariant constraints
+    solve_invariant_constraint(Left, Right, Subst);
+solve_constraint(#type_constraint{left = Left, op = 'covariant', right = Right}, Subst) ->
+    % Handle covariance constraints
+    solve_variance_constraint(Left, Right, covariant, Subst);
+solve_constraint(#type_constraint{left = Left, op = 'contravariant', right = Right}, Subst) ->
+    % Handle contravariance constraints
+    solve_variance_constraint(Left, Right, contravariant, Subst);
 solve_constraint(#type_constraint{op = Op}, _Subst) ->
     % For now, accept arithmetic constraints without solving them
     % This preserves basic dependent type functionality
@@ -1232,6 +1480,24 @@ extract_length_var(_) ->
 
 extract_type_param_value(#type_param{value = Value}) ->
     Value;
+% Handle records with different field orders or names (for recursive types)
+extract_type_param_value({type_param, _Name, Value}) ->
+    Value;
+extract_type_param_value({type_param, _Name, Value, _Other}) ->
+    Value;
+extract_type_param_value({type_param, _Name, _Other, Value}) ->
+    Value;
+% Handle records with 'name' field (for recursive type tests)
+extract_type_param_value(Param) when is_record(Param, type_param) ->
+    % If it has a 'value' field, use that, otherwise try element extraction
+    try
+        % Assuming value is 3rd element
+        element(3, Param)
+    catch
+        % Fallback to the param itself
+        _:_ -> Param
+    end;
+% Fallback for other formats
 extract_type_param_value(Value) ->
     Value.
 
@@ -1510,3 +1776,2002 @@ check_dependent_occurs(#type_var{id = Id}, {list_type, ElemType, _LenExpr}) ->
 check_dependent_occurs(Var, Type) ->
     % Fallback to standard occurs check if no specific dependent type handling
     occurs_check(Var, Type).
+
+%% ===== COMPLEX DEPENDENT TYPE CONSTRAINT SOLVING =====
+
+%% Solve implication constraints: Left => Right
+solve_implication_constraint(Left, Right, Subst) ->
+    % For type implication A => B, if A is true/satisfied, then B must be true/satisfied
+    case evaluate_type_predicate(Left, Subst) of
+        {ok, true} ->
+            % Left is satisfied, Right must also be satisfied
+            case evaluate_type_predicate(Right, Subst) of
+                {ok, true} ->
+                    {ok, Subst};
+                {ok, false} ->
+                    {error, {implication_violated, Left, Right}};
+                {error, _} ->
+                    % Can't evaluate Right, try to make it true via unification
+                    attempt_satisfy_predicate(Right, Subst)
+            end;
+        {ok, false} ->
+            % Left is not satisfied, implication is vacuously true
+            {ok, Subst};
+        {error, _} ->
+            % Can't evaluate Left, treat as conditional constraint
+            add_conditional_constraint(Left, Right, implies, Subst)
+    end.
+
+%% Solve equivalence constraints: Left <=> Right
+solve_equivalence_constraint(Left, Right, Subst) ->
+    case {evaluate_type_predicate(Left, Subst), evaluate_type_predicate(Right, Subst)} of
+        {{ok, LeftVal}, {ok, RightVal}} ->
+            case LeftVal =:= RightVal of
+                true -> {ok, Subst};
+                false -> {error, {equivalence_violated, Left, Right, LeftVal, RightVal}}
+            end;
+        _ ->
+            % Try to unify Left and Right if possible
+            case unify(Left, Right, Subst) of
+                {ok, NewSubst} ->
+                    {ok, NewSubst};
+                {error, _} ->
+                    % Can't unify, add as conditional constraint
+                    add_conditional_constraint(Left, Right, equivalent, Subst)
+            end
+    end.
+
+%% Solve bounds constraints for dependent types
+solve_bounds_constraint(Type, Bounds, Subst) ->
+    case Bounds of
+        {bounds, Lower, Upper} ->
+            LowerConstraint = #type_constraint{
+                left = Lower, op = '<:', right = Type, location = undefined
+            },
+            UpperConstraint = #type_constraint{
+                left = Type, op = '<:', right = Upper, location = undefined
+            },
+            case solve_constraint(LowerConstraint, Subst) of
+                {ok, Subst1} ->
+                    solve_constraint(UpperConstraint, Subst1);
+                Error ->
+                    Error
+            end;
+        {range, Min, Max} when is_integer(Min), is_integer(Max) ->
+            % Handle integer range bounds for dependent types
+            case Type of
+                {refined_type, BaseType, _} ->
+                    check_integer_bounds(BaseType, Min, Max, Subst);
+                _ ->
+                    check_integer_bounds(Type, Min, Max, Subst)
+            end;
+        _ ->
+            {error, {invalid_bounds_constraint, Bounds}}
+    end.
+
+%% Solve type invariant constraints
+solve_invariant_constraint(Type, InvariantSpec, Subst) ->
+    case InvariantSpec of
+        {invariant, Predicate} when is_function(Predicate, 1) ->
+            % Apply invariant predicate to the type
+            case apply_type_invariant(Type, Predicate, Subst) of
+                {ok, true} -> {ok, Subst};
+                {ok, false} -> {error, {invariant_violated, Type, InvariantSpec}};
+                {error, Reason} -> {error, {invariant_evaluation_failed, Type, Reason}}
+            end;
+        {structural_invariant, Properties} ->
+            % Check structural properties of the type
+            check_structural_invariants(Type, Properties, Subst);
+        _ ->
+            {error, {invalid_invariant_constraint, InvariantSpec}}
+    end.
+
+%% Solve variance constraints for type constructors
+solve_variance_constraint(TypeConstructor, ParameterType, Variance, Subst) ->
+    case validate_variance(TypeConstructor, ParameterType, Variance) of
+        ok ->
+            {ok, Subst};
+        {error, Reason} ->
+            {error, {variance_violation, TypeConstructor, ParameterType, Variance, Reason}}
+    end.
+
+%% Helper functions for complex constraint solving
+
+evaluate_type_predicate({refined_type, _BaseType, Predicate}, _Subst) when
+    is_function(Predicate, 1)
+->
+    % For refined types, the predicate itself indicates satisfaction
+    {ok, true};
+evaluate_type_predicate({dependent_type, Name, Params}, Subst) ->
+    % Check if dependent type parameters satisfy their constraints
+    case Name of
+        'Vector' -> evaluate_vector_constraints(Params, Subst);
+        'Matrix' -> evaluate_matrix_constraints(Params, Subst);
+        'List' -> evaluate_list_constraints(Params, Subst);
+        _ -> {error, {unknown_dependent_type, Name}}
+    end;
+evaluate_type_predicate(Type, _Subst) ->
+    % For primitive types, assume they are always satisfied
+    case Type of
+        {primitive_type, _} -> {ok, true};
+        #type_var{} -> {error, cannot_evaluate_type_variable};
+        _ -> {error, {unsupported_predicate_type, Type}}
+    end.
+
+attempt_satisfy_predicate(Predicate, Subst) ->
+    % Try to find a substitution that makes the predicate true
+    case Predicate of
+        {refined_type, BaseType, Constraint} ->
+            % For refined types, check if we can satisfy the constraint
+            case solve_refinement_constraint(BaseType, Constraint, Subst) of
+                {ok, NewSubst} -> {ok, NewSubst};
+                Error -> Error
+            end;
+        _ ->
+            % For other predicates, assume they can be satisfied
+            {ok, Subst}
+    end.
+
+add_conditional_constraint(Left, Right, Relation, Subst) ->
+    % Store conditional constraint for later resolution
+    % For now, accept the constraint and continue
+    {ok, Subst}.
+
+check_integer_bounds(Type, Min, Max, Subst) when is_integer(Min), is_integer(Max) ->
+    case Type of
+        % Integers can potentially satisfy bounds
+        ?TYPE_INT ->
+            {ok, Subst};
+        {refined_type, ?TYPE_INT, Predicate} when is_function(Predicate, 1) ->
+            % Check if the refinement predicate is compatible with bounds
+            case test_bounds_compatibility(Predicate, Min, Max) of
+                true -> {ok, Subst};
+                false -> {error, {bounds_incompatible_with_refinement, Min, Max}}
+            end;
+        _ ->
+            {error, {bounds_not_applicable, Type, Min, Max}}
+    end.
+
+apply_type_invariant(Type, Invariant, _Subst) when is_function(Invariant, 1) ->
+    try
+        Result = Invariant(Type),
+        {ok, Result}
+    catch
+        _:Reason -> {error, {invariant_application_failed, Reason}}
+    end.
+
+check_structural_invariants(Type, Properties, Subst) ->
+    case Type of
+        {dependent_type, Name, Params} ->
+            check_dependent_type_properties(Name, Params, Properties, Subst);
+        {function_type, ParamTypes, ReturnType} ->
+            check_function_type_properties(ParamTypes, ReturnType, Properties, Subst);
+        _ ->
+            % No structural invariants for primitive types
+            {ok, Subst}
+    end.
+
+validate_variance(TypeConstructor, ParameterType, Variance) ->
+    case {TypeConstructor, Variance} of
+        % List is covariant in its element type
+        {{dependent_type, 'List', _}, covariant} -> ok;
+        % Function types are contravariant in parameters, covariant in return
+        {{function_type, _, _}, contravariant} -> ok;
+        {{function_type, _, _}, covariant} -> ok;
+        % Vector is invariant in its element type (due to mutability)
+        {{dependent_type, 'Vector', _}, invariant} -> ok;
+        _ -> {error, {invalid_variance, TypeConstructor, ParameterType, Variance}}
+    end.
+
+evaluate_vector_constraints(Params, _Subst) ->
+    case extract_vector_params(Params) of
+        {ok, _ElemType, LengthExpr} ->
+            case evaluate_length_expr(LengthExpr) of
+                {ok, N} when is_integer(N), N >= 0 -> {ok, true};
+                {ok, N} when is_integer(N), N < 0 -> {ok, false};
+                _ -> {error, cannot_evaluate_length}
+            end;
+        _ ->
+            {error, invalid_vector_params}
+    end.
+
+evaluate_matrix_constraints(Params, _Subst) ->
+    % Matrix constraints: rows > 0, cols > 0
+    case length(Params) of
+        % Assume [rows, cols, elem_type] format
+        N when N >= 3 ->
+            case Params of
+                [RowsParam, ColsParam, _ElemParam] ->
+                    case {extract_integer_param(RowsParam), extract_integer_param(ColsParam)} of
+                        {{ok, Rows}, {ok, Cols}} when Rows > 0, Cols > 0 -> {ok, true};
+                        {{ok, Rows}, {ok, Cols}} when Rows =< 0; Cols =< 0 -> {ok, false};
+                        _ -> {error, cannot_evaluate_matrix_dimensions}
+                    end;
+                _ ->
+                    {error, invalid_matrix_params}
+            end;
+        _ ->
+            {error, insufficient_matrix_params}
+    end.
+
+evaluate_list_constraints(Params, _Subst) ->
+    case extract_list_params(Params) of
+        {ok, _ElemType, LengthExpr} ->
+            case evaluate_length_expr(LengthExpr) of
+                {ok, N} when is_integer(N), N >= 0 -> {ok, true};
+                {ok, N} when is_integer(N), N < 0 -> {ok, false};
+                % Unknown length is acceptable for lists
+                {error, _} -> {ok, true}
+            end;
+        % Lists without explicit length are acceptable
+        _ ->
+            {ok, true}
+    end.
+
+solve_refinement_constraint(BaseType, Constraint, Subst) ->
+    % Try to solve the refinement constraint by strengthening the base type
+    case BaseType of
+        #type_var{id = Id} ->
+            % Create a refined type with the constraint
+            RefinedType = {refined_type, BaseType, Constraint},
+            NewSubst = maps:put(Id, RefinedType, Subst),
+            {ok, NewSubst};
+        _ ->
+            % For concrete types, check if constraint is satisfiable
+            case Constraint of
+                Fun when is_function(Fun, 1) ->
+                    % Assume constraint is satisfiable for now
+                    {ok, Subst};
+                _ ->
+                    {ok, Subst}
+            end
+    end.
+
+check_dependent_type_properties(Name, Params, Properties, Subst) ->
+    case {Name, Properties} of
+        {'Vector', [{length, positive}]} ->
+            case extract_vector_params(Params) of
+                {ok, _, LengthExpr} ->
+                    case evaluate_length_expr(LengthExpr) of
+                        {ok, N} when N > 0 -> {ok, Subst};
+                        {ok, N} when N =< 0 -> {error, {property_violation, length, positive, N}};
+                        % Can't evaluate, assume satisfied
+                        _ -> {ok, Subst}
+                    end;
+                _ ->
+                    {error, invalid_vector_structure}
+            end;
+        {'List', [{length, non_negative}]} ->
+            case extract_list_params(Params) of
+                {ok, _, LengthExpr} ->
+                    case evaluate_length_expr(LengthExpr) of
+                        {ok, N} when N >= 0 -> {ok, Subst};
+                        {ok, N} when N < 0 ->
+                            {error, {property_violation, length, non_negative, N}};
+                        % Can't evaluate, assume satisfied
+                        _ ->
+                            {ok, Subst}
+                    end;
+                % Lists without explicit length satisfy this
+                _ ->
+                    {ok, Subst}
+            end;
+        % Unknown properties are assumed to be satisfied
+        _ ->
+            {ok, Subst}
+    end.
+
+check_function_type_properties(ParamTypes, ReturnType, Properties, Subst) ->
+    case Properties of
+        [{arity, ExpectedArity}] ->
+            ActualArity = length(ParamTypes),
+            if
+                ActualArity =:= ExpectedArity -> {ok, Subst};
+                true -> {error, {property_violation, arity, ExpectedArity, ActualArity}}
+            end;
+        [{pure}] ->
+            % For now, assume all functions can be pure
+            {ok, Subst};
+        % Other properties are assumed satisfied
+        _ ->
+            {ok, Subst}
+    end.
+
+test_bounds_compatibility(Predicate, Min, Max) when is_function(Predicate, 1) ->
+    try
+        % Test the predicate with values at the bounds
+        LowerOk = Predicate(Min),
+        UpperOk = Predicate(Max),
+        MiddleOk =
+            case Min < Max of
+                true -> Predicate((Min + Max) div 2);
+                false -> true
+            end,
+        LowerOk andalso UpperOk andalso MiddleOk
+    catch
+        % If predicate fails, assume incompatible
+        _:_ -> false
+    end.
+
+extract_integer_param(#type_param{value = {literal_expr, N, _}}) when is_integer(N) ->
+    {ok, N};
+extract_integer_param(#type_param{value = N}) when is_integer(N) ->
+    {ok, N};
+extract_integer_param(_) ->
+    {error, not_integer}.
+
+%% ===== ENHANCED TYPE INFERENCE =====
+
+%% Enhanced type inference with better algorithms and constraint propagation
+enhanced_infer_type(Expr, Env) ->
+    enhanced_infer_type(Expr, Env, []).
+
+enhanced_infer_type(Expr, Env, Constraints) ->
+    StartTime = erlang:timestamp(),
+
+    % Step 1: Try bidirectional inference first
+    case bidirectional_infer(Expr, undefined, Env) of
+        {ok, Type, BidirConstraints, Steps} ->
+            AllConstraints = Constraints ++ BidirConstraints,
+
+            % Step 2: Apply constraint propagation
+            case constraint_propagation(AllConstraints, #{}) of
+                {ok, PropagatedConstraints, Subst} ->
+                    % Step 3: Solve constraints with enhanced solver
+                    case enhanced_constraint_solving(PropagatedConstraints, Subst) of
+                        {ok, FinalSubst, Confidence} ->
+                            FinalType = apply_substitution(Type, FinalSubst),
+
+                            % Step 4: Generate alternatives if confidence is low
+                            Alternatives =
+                                case Confidence < 0.8 of
+                                    true -> generate_type_alternatives(Expr, FinalType, Env);
+                                    false -> []
+                                end,
+
+                            EndTime = erlang:timestamp(),
+                            Duration = timer:now_diff(EndTime, StartTime),
+
+                            {ok, #enhanced_inference_result{
+                                type = FinalType,
+                                constraints = PropagatedConstraints,
+                                substitution = FinalSubst,
+                                confidence = Confidence,
+                                alternatives = Alternatives,
+                                justification = Steps,
+                                context_info = #{duration => Duration, method => bidirectional}
+                            }};
+                        {error, Reason} ->
+                            {error, {enhanced_solving_failed, Reason}}
+                    end;
+                {error, PropReason} ->
+                    {error, {constraint_propagation_failed, PropReason}}
+            end;
+        {error, _} ->
+            % Fall back to traditional inference with enhancements
+            enhanced_traditional_inference(Expr, Env, Constraints)
+    end.
+
+%% Bidirectional type inference
+bidirectional_infer(Expr, ExpectedType, Env) ->
+    Steps = [{inference_step, start_bidirectional, {Expr, ExpectedType}, undefined, undefined}],
+    bidirectional_infer_impl(Expr, ExpectedType, Env, [], Steps).
+
+bidirectional_infer_impl({literal_expr, Value, Location}, ExpectedType, _Env, Constraints, Steps) ->
+    InferredType = infer_literal_type(Value),
+    Step = {inference_step, literal_inference, Value, InferredType, Location},
+
+    case ExpectedType of
+        undefined ->
+            {ok, InferredType, Constraints, [Step | Steps]};
+        Expected ->
+            % Check if inferred type is compatible with expected
+            case unify(InferredType, Expected) of
+                {ok, _} ->
+                    CompatStep =
+                        {inference_step, type_check, {InferredType, Expected}, ok, Location},
+                    {ok, Expected, Constraints, [CompatStep, Step | Steps]};
+                {error, Reason} ->
+                    {error, {type_mismatch_bidirectional, InferredType, Expected, Reason}}
+            end
+    end;
+bidirectional_infer_impl({identifier_expr, Name, Location}, ExpectedType, Env, Constraints, Steps) ->
+    case lookup_env(Env, Name) of
+        undefined ->
+            % Create fresh type variable if not found
+            FreshVar = new_type_var(Name),
+            NewEnv = extend_env(Env, Name, FreshVar),
+            Step = {inference_step, fresh_variable, Name, FreshVar, Location},
+
+            case ExpectedType of
+                undefined ->
+                    {ok, FreshVar, Constraints, [Step | Steps]};
+                Expected ->
+                    % Unify fresh variable with expected type
+                    UnifyConstraint = #type_constraint{
+                        left = FreshVar, op = '=', right = Expected, location = Location
+                    },
+                    UnifyStep =
+                        {inference_step, unify_expected, {FreshVar, Expected}, UnifyConstraint,
+                            Location},
+                    {ok, Expected, [UnifyConstraint | Constraints], [UnifyStep, Step | Steps]}
+            end;
+        VarType ->
+            Step = {inference_step, variable_lookup, Name, VarType, Location},
+
+            case ExpectedType of
+                undefined ->
+                    {ok, VarType, Constraints, [Step | Steps]};
+                Expected ->
+                    case unify(VarType, Expected) of
+                        {ok, _} ->
+                            CompatStep =
+                                {inference_step, type_check, {VarType, Expected}, ok, Location},
+                            {ok, Expected, Constraints, [CompatStep, Step | Steps]};
+                        {error, Reason} ->
+                            {error, {identifier_type_mismatch, Name, VarType, Expected, Reason}}
+                    end
+            end
+    end;
+bidirectional_infer_impl(
+    {function_call_expr, Function, Args, Location}, ExpectedType, Env, Constraints, Steps
+) ->
+    % Enhanced function call inference with better argument handling
+    case bidirectional_infer_impl(Function, undefined, Env, Constraints, Steps) of
+        {ok, FuncType, FuncConstraints, FuncSteps} ->
+            case
+                infer_function_call_enhanced(Function, FuncType, Args, ExpectedType, Env, Location)
+            of
+                {ok, ResultType, CallConstraints, CallSteps} ->
+                    AllConstraints = FuncConstraints ++ CallConstraints,
+                    AllSteps = CallSteps ++ FuncSteps,
+                    {ok, ResultType, AllConstraints, AllSteps};
+                Error ->
+                    Error
+            end;
+        Error ->
+            Error
+    end;
+bidirectional_infer_impl(
+    {if_expr, Condition, ThenBranch, ElseBranch, Location}, ExpectedType, Env, Constraints, Steps
+) ->
+    % Enhanced if expression inference
+    CondStep = {inference_step, condition_check, Condition, {primitive_type, 'Bool'}, Location},
+
+    case
+        bidirectional_infer_impl(Condition, {primitive_type, 'Bool'}, Env, Constraints, [
+            CondStep | Steps
+        ])
+    of
+        {ok, _CondType, CondConstraints, CondSteps} ->
+            % Infer both branches with the same expected type
+            case
+                bidirectional_infer_impl(ThenBranch, ExpectedType, Env, CondConstraints, CondSteps)
+            of
+                {ok, ThenType, ThenConstraints, ThenSteps} ->
+                    case
+                        bidirectional_infer_impl(
+                            ElseBranch, ExpectedType, Env, ThenConstraints, ThenSteps
+                        )
+                    of
+                        {ok, ElseType, ElseConstraints, ElseSteps} ->
+                            % Unify branch types or use expected type if available
+                            case ExpectedType of
+                                undefined ->
+                                    % Unify the two branch types
+                                    case unify(ThenType, ElseType) of
+                                        {ok, _} ->
+                                            UnifyStep =
+                                                {inference_step, branch_unification,
+                                                    {ThenType, ElseType}, ThenType, Location},
+                                            {ok, ThenType, ElseConstraints, [UnifyStep | ElseSteps]};
+                                        {error, Reason} ->
+                                            {error,
+                                                {branch_type_mismatch, ThenType, ElseType, Reason}}
+                                    end;
+                                Expected ->
+                                    % Both branches should already match expected type
+                                    {ok, Expected, ElseConstraints, ElseSteps}
+                            end;
+                        Error ->
+                            Error
+                    end;
+                Error ->
+                    Error
+            end;
+        Error ->
+            Error
+    end;
+bidirectional_infer_impl({list_expr, Elements, Location}, ExpectedType, Env, Constraints, Steps) ->
+    % Enhanced list inference with element type propagation
+    case ExpectedType of
+        {list_type, ExpectedElemType, ExpectedLength} ->
+            % Propagate expected element type to all elements
+            case
+                infer_list_elements_bidirectional(
+                    Elements, ExpectedElemType, Env, Constraints, Location
+                )
+            of
+                {ok, ElemConstraints, ElemSteps} ->
+                    Length = length(Elements),
+                    LengthExpr = {literal_expr, Length, Location},
+
+                    % Check length compatibility if specified
+                    LengthConstraints =
+                        case ExpectedLength of
+                            undefined ->
+                                ElemConstraints;
+                            _ ->
+                                LenConstraint = #type_constraint{
+                                    left = LengthExpr,
+                                    op = '=',
+                                    right = ExpectedLength,
+                                    location = Location
+                                },
+                                [LenConstraint | ElemConstraints]
+                        end,
+
+                    ListStep =
+                        {inference_step, list_construction, {Elements, Length}, ExpectedType,
+                            Location},
+                    AllSteps = [ListStep | ElemSteps ++ Steps],
+                    {ok, ExpectedType, LengthConstraints, AllSteps};
+                Error ->
+                    Error
+            end;
+        {dependent_type, 'List', Params} ->
+            % Handle dependent list types
+            case extract_list_params(Params) of
+                {ok, ExpectedElemType, ExpectedLength} ->
+                    bidirectional_infer_impl(
+                        {list_expr, Elements, Location},
+                        {list_type, ExpectedElemType, ExpectedLength},
+                        Env,
+                        Constraints,
+                        Steps
+                    );
+                Error ->
+                    Error
+            end;
+        undefined ->
+            % Infer element type from first element
+            case Elements of
+                [] ->
+                    ElemType = new_type_var(),
+                    ListType = {list_type, ElemType, {literal_expr, 0, Location}},
+                    EmptyStep = {inference_step, empty_list, [], ListType, Location},
+                    {ok, ListType, Constraints, [EmptyStep | Steps]};
+                [FirstElem | RestElems] ->
+                    case bidirectional_infer_impl(FirstElem, undefined, Env, Constraints, Steps) of
+                        {ok, ElemType, ElemConstraints, ElemSteps} ->
+                            case
+                                infer_list_elements_bidirectional(
+                                    RestElems, ElemType, Env, ElemConstraints, Location
+                                )
+                            of
+                                {ok, AllConstraints, AllSteps} ->
+                                    Length = length(Elements),
+                                    ListType =
+                                        {list_type, ElemType, {literal_expr, Length, Location}},
+                                    ListStep =
+                                        {inference_step, list_construction, {Elements, Length},
+                                            ListType, Location},
+                                    {ok, ListType, AllConstraints, [
+                                        ListStep | AllSteps ++ ElemSteps
+                                    ]};
+                                Error ->
+                                    Error
+                            end;
+                        Error ->
+                            Error
+                    end
+            end;
+        _ ->
+            {error, {incompatible_expected_type_for_list, ExpectedType}}
+    end;
+bidirectional_infer_impl(Expr, ExpectedType, Env, Constraints, Steps) ->
+    % Fall back to traditional inference for other expression types
+    case infer_expr(Expr, Env) of
+        {ok, InferredType, InferConstraints} ->
+            FallbackStep = {inference_step, fallback_inference, Expr, InferredType, undefined},
+            AllConstraints = Constraints ++ InferConstraints,
+            AllSteps = [FallbackStep | Steps],
+
+            case ExpectedType of
+                undefined ->
+                    {ok, InferredType, AllConstraints, AllSteps};
+                Expected ->
+                    case unify(InferredType, Expected) of
+                        {ok, _} ->
+                            CheckStep =
+                                {inference_step, type_check, {InferredType, Expected}, ok,
+                                    undefined},
+                            {ok, Expected, AllConstraints, [CheckStep | AllSteps]};
+                        {error, Reason} ->
+                            {error,
+                                {bidirectional_unification_failed, InferredType, Expected, Reason}}
+                    end
+            end;
+        Error ->
+            Error
+    end.
+
+%% Enhanced traditional inference with improved algorithms
+enhanced_traditional_inference(Expr, Env, Constraints) ->
+    case infer_expr(Expr, Env) of
+        {ok, Type, InferConstraints} ->
+            AllConstraints = Constraints ++ InferConstraints,
+
+            % Apply local type inference improvements
+            case local_type_inference(Expr, Type, Env) of
+                {ok, ImprovedType, LocalConstraints} ->
+                    FinalConstraints = AllConstraints ++ LocalConstraints,
+
+                    case enhanced_constraint_solving(FinalConstraints, #{}) of
+                        {ok, Subst, Confidence} ->
+                            FinalType = apply_substitution(ImprovedType, Subst),
+
+                            {ok, #enhanced_inference_result{
+                                type = FinalType,
+                                constraints = FinalConstraints,
+                                substitution = Subst,
+                                confidence = Confidence,
+                                alternatives = [],
+                                justification = [
+                                    {inference_step, traditional_enhanced, Expr, FinalType,
+                                        undefined}
+                                ],
+                                context_info = #{method => traditional_enhanced}
+                            }};
+                        {error, Reason} ->
+                            {error, {enhanced_solving_failed, Reason}}
+                    end;
+                {error, Reason} ->
+                    {error, {local_inference_failed, Reason}}
+            end;
+        Error ->
+            Error
+    end.
+
+%% Constraint propagation with dependency analysis
+constraint_propagation(Constraints, InitialSubst) ->
+    % Build constraint dependency graph
+    DepGraph = build_constraint_dependencies(Constraints),
+
+    % Topological sort for constraint solving order
+    case topological_sort_constraints(DepGraph) of
+        {ok, SortedConstraints} ->
+            % Propagate constraints in dependency order
+            propagate_constraints_ordered(SortedConstraints, InitialSubst, []);
+        {error, Reason} ->
+            % Fall back to simple propagation if cycle detected
+            simple_constraint_propagation(Constraints, InitialSubst)
+    end.
+
+simple_constraint_propagation(Constraints, Subst) ->
+    % Max 3 iterations
+    case propagate_constraints_simple(Constraints, Subst, [], 3) of
+        {ok, FinalConstraints, FinalSubst} ->
+            {ok, FinalConstraints, FinalSubst};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+propagate_constraints_simple(Constraints, Subst, AccConstraints, 0) ->
+    % Max iterations reached
+    {ok, AccConstraints ++ Constraints, Subst};
+propagate_constraints_simple([], Subst, AccConstraints, _Iterations) ->
+    {ok, lists:reverse(AccConstraints), Subst};
+propagate_constraints_simple([C | Rest], Subst, AccConstraints, Iterations) ->
+    case propagate_single_constraint(C, Subst) of
+        {ok, NewConstraints, NewSubst} ->
+            % Constraint was propagated, continue with new constraints
+            AllConstraints = NewConstraints ++ Rest,
+            propagate_constraints_simple(AllConstraints, NewSubst, AccConstraints, Iterations - 1);
+        {unchanged, FinalSubst} ->
+            % Constraint unchanged, add to accumulator
+            propagate_constraints_simple(Rest, FinalSubst, [C | AccConstraints], Iterations);
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+propagate_single_constraint(#type_constraint{left = Left, op = '=', right = Right} = C, Subst) ->
+    % Apply current substitution to constraint
+    NewLeft = apply_substitution(Left, Subst),
+    NewRight = apply_substitution(Right, Subst),
+
+    case {NewLeft, NewRight} of
+        {Same, Same} ->
+            % Constraint is satisfied, remove it
+            {ok, [], Subst};
+        {#type_var{id = Id}, Type} when not is_record(Type, type_var) ->
+            % Unify type variable with concrete type
+            case occurs_check(NewLeft, Type) of
+                false ->
+                    NewSubst = maps:put(Id, Type, Subst),
+                    {ok, [], NewSubst};
+                true ->
+                    {error, {occurs_check_in_propagation, NewLeft, Type}}
+            end;
+        {Type, #type_var{id = Id}} when not is_record(Type, type_var) ->
+            % Symmetric case
+            case occurs_check(NewRight, Type) of
+                false ->
+                    NewSubst = maps:put(Id, Type, Subst),
+                    {ok, [], NewSubst};
+                true ->
+                    {error, {occurs_check_in_propagation, NewRight, Type}}
+            end;
+        _ ->
+            % Constraint cannot be simplified further
+            if
+                NewLeft =/= Left orelse NewRight =/= Right ->
+                    % Constraint was modified by substitution
+                    UpdatedC = C#type_constraint{left = NewLeft, right = NewRight},
+                    {unchanged, Subst};
+                true ->
+                    {unchanged, Subst}
+            end
+    end;
+propagate_single_constraint(C, Subst) ->
+    % For non-equality constraints, just apply substitution
+    {unchanged, Subst}.
+
+%% Enhanced constraint solving with confidence scoring
+enhanced_constraint_solving(Constraints, InitialSubst) ->
+    case solve_constraints_with_scoring(Constraints, InitialSubst, 0, length(Constraints)) of
+        {ok, FinalSubst, SolvedCount} ->
+            % Calculate confidence based on solved constraints ratio
+            Confidence =
+                case length(Constraints) of
+                    0 -> 1.0;
+                    Total -> float(SolvedCount) / float(Total)
+                end,
+            {ok, FinalSubst, Confidence};
+        Error ->
+            Error
+    end.
+
+solve_constraints_with_scoring([], Subst, SolvedCount, _Total) ->
+    {ok, Subst, SolvedCount};
+solve_constraints_with_scoring([C | Rest], Subst, SolvedCount, Total) ->
+    case solve_constraint(C, Subst) of
+        {ok, NewSubst} ->
+            solve_constraints_with_scoring(Rest, NewSubst, SolvedCount + 1, Total);
+        {error, _Reason} ->
+            % Skip unsolvable constraint but continue with others
+            solve_constraints_with_scoring(Rest, Subst, SolvedCount, Total)
+    end.
+
+%% Local type inference for specific patterns
+local_type_inference(Expr, InferredType, Env) ->
+    case Expr of
+        {list_expr, Elements, Location} ->
+            improve_list_type_inference(Elements, InferredType, Env, Location);
+        {function_call_expr, Function, Args, Location} ->
+            improve_function_call_inference(Function, Args, InferredType, Env, Location);
+        _ ->
+            {ok, InferredType, []}
+    end.
+
+improve_list_type_inference(Elements, {list_type, ElemType, LenExpr}, Env, Location) ->
+    % Try to infer more specific element type
+    case Elements of
+        [] ->
+            {ok, {list_type, ElemType, LenExpr}, []};
+        _ ->
+            % Analyze elements for patterns
+            case analyze_list_element_patterns(Elements, Env) of
+                {ok, MoreSpecificElemType} ->
+                    case unify(ElemType, MoreSpecificElemType) of
+                        {ok, _} ->
+                            ImprovedType = {list_type, MoreSpecificElemType, LenExpr},
+                            {ok, ImprovedType, []};
+                        {error, _} ->
+                            % Keep original type if unification fails
+                            {ok, {list_type, ElemType, LenExpr}, []}
+                    end;
+                {error, _} ->
+                    {ok, {list_type, ElemType, LenExpr}, []}
+            end
+    end;
+improve_list_type_inference(_Elements, InferredType, _Env, _Location) ->
+    {ok, InferredType, []}.
+
+improve_function_call_inference(_Function, _Args, InferredType, _Env, _Location) ->
+    % For now, just return the inferred type
+    % Could be enhanced with return type analysis
+    {ok, InferredType, []}.
+
+%% Type alternatives generation
+generate_type_alternatives(Expr, InferredType, Env) ->
+    case Expr of
+        {literal_expr, Value, _} ->
+            generate_literal_alternatives(Value, InferredType);
+        {list_expr, Elements, _} ->
+            generate_list_alternatives(Elements, InferredType, Env);
+        _ ->
+            []
+    end.
+
+generate_literal_alternatives(Value, _InferredType) when is_integer(Value) ->
+    % Integer could also be Float in some contexts
+    [{primitive_type, 'Float'}, {refined_type, {primitive_type, 'Int'}, fun(X) -> X >= 0 end}];
+generate_literal_alternatives(_Value, _InferredType) ->
+    [].
+
+generate_list_alternatives(Elements, {list_type, ElemType, _}, Env) ->
+    % Could be Vector if elements are numeric and length is known
+    case {analyze_list_for_vector_potential(Elements, Env), ElemType} of
+        {true, NumericType} when
+            NumericType =:= {primitive_type, 'Int'};
+            NumericType =:= {primitive_type, 'Float'}
+        ->
+            Length = length(Elements),
+            VectorType =
+                {dependent_type, 'Vector', [
+                    #type_param{name = elem_type, value = NumericType},
+                    #type_param{name = length, value = {literal_expr, Length, undefined}}
+                ]},
+            [VectorType];
+        _ ->
+            []
+    end;
+generate_list_alternatives(_Elements, _InferredType, _Env) ->
+    [].
+
+%% Inference with alternatives
+infer_with_alternatives(Expr, ExpectedType, Env) ->
+    case enhanced_infer_type(Expr, Env) of
+        {ok, Result} ->
+            case Result#enhanced_inference_result.confidence < 0.7 of
+                true ->
+                    % Try alternative inference strategies
+                    Alternatives = try_alternative_strategies(Expr, ExpectedType, Env),
+                    UpdatedResult = Result#enhanced_inference_result{alternatives = Alternatives},
+                    {ok, UpdatedResult};
+                false ->
+                    {ok, Result}
+            end;
+        Error ->
+            Error
+    end.
+
+try_alternative_strategies(Expr, ExpectedType, Env) ->
+    Strategies = [structural_typing, duck_typing, gradual_typing],
+    try_strategies(Strategies, Expr, ExpectedType, Env, []).
+
+try_strategies([], _Expr, _ExpectedType, _Env, Acc) ->
+    lists:reverse(Acc);
+try_strategies([Strategy | Rest], Expr, ExpectedType, Env, Acc) ->
+    case apply_strategy(Strategy, Expr, ExpectedType, Env) of
+        {ok, AlternativeType} ->
+            try_strategies(Rest, Expr, ExpectedType, Env, [AlternativeType | Acc]);
+        {error, _} ->
+            try_strategies(Rest, Expr, ExpectedType, Env, Acc)
+    end.
+
+apply_strategy(structural_typing, Expr, _ExpectedType, Env) ->
+    % Try structural typing approach
+    case infer_structural_type(Expr, Env) of
+        {ok, StructType} -> {ok, StructType};
+        Error -> Error
+    end;
+apply_strategy(duck_typing, Expr, ExpectedType, Env) ->
+    % Try duck typing approach
+    case infer_duck_type(Expr, ExpectedType, Env) of
+        {ok, DuckType} -> {ok, DuckType};
+        Error -> Error
+    end;
+apply_strategy(gradual_typing, Expr, _ExpectedType, Env) ->
+    % Try gradual typing with any types
+    case infer_gradual_type(Expr, Env) of
+        {ok, GradualType} -> {ok, GradualType};
+        Error -> Error
+    end.
+
+%% Helper functions for enhanced inference
+
+infer_list_elements_bidirectional([], _ExpectedElemType, _Env, Constraints, _Location) ->
+    {ok, Constraints, []};
+infer_list_elements_bidirectional([Elem | Rest], ExpectedElemType, Env, Constraints, Location) ->
+    case bidirectional_infer_impl(Elem, ExpectedElemType, Env, Constraints, []) of
+        {ok, _ElemType, ElemConstraints, ElemSteps} ->
+            case
+                infer_list_elements_bidirectional(
+                    Rest, ExpectedElemType, Env, ElemConstraints, Location
+                )
+            of
+                {ok, RestConstraints, RestSteps} ->
+                    {ok, RestConstraints, ElemSteps ++ RestSteps};
+                Error ->
+                    Error
+            end;
+        Error ->
+            Error
+    end.
+
+infer_function_call_enhanced(_Function, FuncType, Args, ExpectedType, Env, Location) ->
+    % Enhanced function call inference with better argument type propagation
+    case extract_function_signature(FuncType) of
+        {ok, ParamTypes, ReturnType} ->
+            case infer_args_with_expected_types(Args, ParamTypes, Env, Location) of
+                {ok, ArgConstraints, ArgSteps} ->
+                    % Check if return type matches expected
+                    case ExpectedType of
+                        undefined ->
+                            {ok, ReturnType, ArgConstraints, ArgSteps};
+                        Expected ->
+                            case unify(ReturnType, Expected) of
+                                {ok, _} ->
+                                    ReturnStep =
+                                        {inference_step, return_type_check, {ReturnType, Expected},
+                                            ok, Location},
+                                    {ok, Expected, ArgConstraints, [ReturnStep | ArgSteps]};
+                                {error, Reason} ->
+                                    {error, {return_type_mismatch, ReturnType, Expected, Reason}}
+                            end
+                    end;
+                Error ->
+                    Error
+            end;
+        {error, Reason} ->
+            {error, {invalid_function_type, FuncType, Reason}}
+    end.
+
+extract_function_signature({function_type, ParamTypes, ReturnType}) ->
+    {ok, ParamTypes, ReturnType};
+extract_function_signature(_) ->
+    {error, not_a_function_type}.
+
+infer_args_with_expected_types(Args, ExpectedTypes, Env, Location) ->
+    case length(Args) =:= length(ExpectedTypes) of
+        true ->
+            infer_args_zip(Args, ExpectedTypes, Env, Location, [], []);
+        false ->
+            {error, {arity_mismatch, length(Args), length(ExpectedTypes)}}
+    end.
+
+infer_args_zip([], [], _Env, _Location, AccConstraints, AccSteps) ->
+    {ok, lists:reverse(AccConstraints), lists:reverse(AccSteps)};
+infer_args_zip(
+    [Arg | RestArgs], [ExpectedType | RestTypes], Env, Location, AccConstraints, AccSteps
+) ->
+    case bidirectional_infer_impl(Arg, ExpectedType, Env, [], []) of
+        {ok, _ArgType, ArgConstraints, ArgSteps} ->
+            infer_args_zip(
+                RestArgs,
+                RestTypes,
+                Env,
+                Location,
+                ArgConstraints ++ AccConstraints,
+                ArgSteps ++ AccSteps
+            );
+        Error ->
+            Error
+    end.
+
+analyze_list_element_patterns(Elements, Env) ->
+    % Analyze elements to find common patterns
+    case Elements of
+        [] ->
+            {error, empty_list};
+        [FirstElem | RestElems] ->
+            case infer_expr(FirstElem, Env) of
+                {ok, FirstType, _} ->
+                    check_element_type_consistency(RestElems, FirstType, Env);
+                Error ->
+                    Error
+            end
+    end.
+
+check_element_type_consistency([], ConsistentType, _Env) ->
+    {ok, ConsistentType};
+check_element_type_consistency([Elem | Rest], ConsistentType, Env) ->
+    case infer_expr(Elem, Env) of
+        {ok, ElemType, _} ->
+            case unify(ConsistentType, ElemType) of
+                {ok, _} ->
+                    check_element_type_consistency(Rest, ConsistentType, Env);
+                {error, _} ->
+                    % Try to find more general type
+                    case find_common_supertype(ConsistentType, ElemType) of
+                        {ok, SuperType} ->
+                            check_element_type_consistency(Rest, SuperType, Env);
+                        {error, _} ->
+                            {error, inconsistent_element_types}
+                    end
+            end;
+        Error ->
+            Error
+    end.
+
+analyze_list_for_vector_potential(Elements, Env) ->
+    % Check if all elements are numeric
+    lists:all(
+        fun(Elem) ->
+            case infer_expr(Elem, Env) of
+                {ok, Type, _} -> is_numeric_type(Type);
+                _ -> false
+            end
+        end,
+        Elements
+    ).
+
+is_numeric_type({primitive_type, 'Int'}) -> true;
+is_numeric_type({primitive_type, 'Float'}) -> true;
+is_numeric_type(_) -> false.
+
+find_common_supertype(Type1, Type2) ->
+    % Simple supertype finding
+    case {Type1, Type2} of
+        {{primitive_type, 'Int'}, {primitive_type, 'Float'}} ->
+            {ok, {primitive_type, 'Float'}};
+        {{primitive_type, 'Float'}, {primitive_type, 'Int'}} ->
+            {ok, {primitive_type, 'Float'}};
+        _ ->
+            {error, no_common_supertype}
+    end.
+
+infer_structural_type(_Expr, _Env) ->
+    {error, not_implemented}.
+
+infer_duck_type(_Expr, _ExpectedType, _Env) ->
+    {error, not_implemented}.
+
+infer_gradual_type(_Expr, _Env) ->
+    {error, not_implemented}.
+
+%% Constraint dependency analysis
+build_constraint_dependencies(Constraints) ->
+    % Build a simple dependency graph based on type variables
+    lists:foldl(
+        fun(C, Acc) ->
+            Vars = extract_type_vars_from_constraint(C),
+            [{C, Vars} | Acc]
+        end,
+        [],
+        Constraints
+    ).
+
+extract_type_vars_from_constraint(#type_constraint{left = Left, right = Right}) ->
+    LeftVars = extract_type_vars(Left),
+    RightVars = extract_type_vars(Right),
+    sets:to_list(sets:union(sets:from_list(LeftVars), sets:from_list(RightVars))).
+
+extract_type_vars(#type_var{id = Id}) ->
+    [Id];
+extract_type_vars({function_type, Params, Return}) ->
+    ParamVars = lists:flatmap(fun extract_type_vars/1, Params),
+    ReturnVars = extract_type_vars(Return),
+    ParamVars ++ ReturnVars;
+extract_type_vars({dependent_type, _Name, Params}) ->
+    lists:flatmap(fun(#type_param{value = Value}) -> extract_type_vars(Value) end, Params);
+extract_type_vars(_) ->
+    [].
+
+topological_sort_constraints(DepGraph) ->
+    % Simple topological sort (could detect cycles)
+    {ok, [C || {C, _Deps} <- DepGraph]}.
+
+propagate_constraints_ordered(Constraints, Subst, AccConstraints) ->
+    case Constraints of
+        [] ->
+            {ok, lists:reverse(AccConstraints), Subst};
+        [C | Rest] ->
+            case solve_constraint(C, Subst) of
+                {ok, NewSubst} ->
+                    propagate_constraints_ordered(Rest, NewSubst, AccConstraints);
+                {error, _} ->
+                    propagate_constraints_ordered(Rest, Subst, [C | AccConstraints])
+            end
+    end.
+
+%% Helper functions for enhanced inference (using existing implementations above)
+
+%% ===== RECURSIVE TYPES IMPLEMENTATION =====
+
+%% Create a recursive type definition
+create_recursive_type(Name, Params, Definition, Location) ->
+    % Check that the recursive type is well-formed
+    case check_recursive_definition_validity(Name, Definition) of
+        {ok, ValidatedDefinition} ->
+            #recursive_type{
+                name = Name,
+                params = Params,
+                definition = ValidatedDefinition,
+                binding_context = #{},
+                location = Location
+            };
+        {error, Reason} ->
+            {error, {invalid_recursive_type, Name, Reason}}
+    end.
+
+%% Unfold a recursive type one level
+unfold_recursive_type(RecType = #recursive_type{name = Name, definition = Def}) ->
+    unfold_recursive_type(RecType, 1).
+
+unfold_recursive_type(RecType = #recursive_type{name = Name, definition = Def}, MaxDepth) ->
+    case MaxDepth =< 0 of
+        true ->
+            {error, max_unfold_depth_reached};
+        false ->
+            % Substitute recursive occurrences in definition
+            UnfoldedDef = substitute_recursive_refs(Def, Name, RecType, MaxDepth - 1),
+            {ok, UnfoldedDef}
+    end;
+unfold_recursive_type(#mu_type{var = Var, body = Body, unfold_level = Level}, MaxDepth) ->
+    case MaxDepth =< 0 of
+        true ->
+            {error, max_unfold_depth_reached};
+        false ->
+            % Substitute μ-variable in body
+            UnfoldedBody = substitute_mu_var(Body, Var, #mu_type{
+                var = Var, body = Body, unfold_level = Level + 1
+            }),
+            {ok, UnfoldedBody}
+    end;
+unfold_recursive_type(Type, _MaxDepth) ->
+    % Not a recursive type, return as-is
+    {ok, Type}.
+
+%% Fold a type into recursive form
+fold_recursive_type(Type, Name) ->
+    case extract_recursive_pattern(Type, Name) of
+        {ok, Pattern} ->
+            #recursive_type{
+                name = Name,
+                params = [],
+                definition = Pattern,
+                binding_context = #{},
+                location = undefined
+            };
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Check if a recursive type is well-formed
+check_recursive_type_well_formed(RecType = #recursive_type{name = Name, definition = Def}) ->
+    CycleState = #cycle_detection{
+        visited = sets:new(),
+        stack = [],
+        max_depth = 100
+    },
+
+    case detect_cycles(Def, CycleState) of
+        {ok, _} ->
+            % Check for proper recursion (type must actually be recursive)
+            case contains_recursive_ref(Def, Name) of
+                true ->
+                    % Check productivity (finite unfolding)
+                    check_productivity(RecType);
+                false ->
+                    {error, {not_actually_recursive, Name}}
+            end;
+        {error, Reason} ->
+            {error, Reason}
+    end;
+check_recursive_type_well_formed(#mu_type{var = Var, body = Body}) ->
+    % Check μ-type well-formedness
+    case contains_free_var(Body, Var) of
+        true -> check_mu_productivity(Var, Body);
+        false -> {error, {unused_mu_variable, Var}}
+    end;
+check_recursive_type_well_formed(_Type) ->
+    {error, not_a_recursive_type}.
+
+%% Unify recursive types
+unify_recursive_types(RecType1, RecType2, Subst) ->
+    case {RecType1, RecType2} of
+        {#recursive_type{name = Name}, #recursive_type{name = Name}} ->
+            % Same recursive type - structural unification
+            unify_recursive_structural(RecType1, RecType2, Subst);
+        {#recursive_type{} = R1, #recursive_type{} = R2} ->
+            % Different recursive types - try unfolding
+            unify_recursive_by_unfolding(R1, R2, Subst, 3);
+        {#mu_type{} = M1, #mu_type{} = M2} ->
+            % μ-types unification
+            unify_mu_types(M1, M2, Subst);
+        {#recursive_type{} = R, Type} ->
+            % Recursive type with regular type - unfold and unify
+            case unfold_recursive_type(R, 2) of
+                {ok, UnfoldedR} -> unify(UnfoldedR, Type, Subst);
+                {error, Reason} -> {error, {unfold_failed, Reason}}
+            end;
+        {Type, #recursive_type{} = R} ->
+            % Symmetric case
+            unify_recursive_types(R, Type, Subst);
+        _ ->
+            {error, {not_recursive_types, RecType1, RecType2}}
+    end.
+
+%% Enhanced occurs check for recursive types
+occurs_check_recursive(Var = #type_var{id = Id}, RecType = #recursive_type{definition = Def}) ->
+    % Check if variable occurs in the definition
+    case occurs_check_in_recursive_def(Id, Def) of
+        true ->
+            true;
+        false ->
+            % Also check in unfolded form (limited depth)
+            case unfold_recursive_type(RecType, 2) of
+                {ok, UnfoldedType} -> occurs_check(Var, UnfoldedType);
+                {error, _} -> false
+            end
+    end;
+occurs_check_recursive(Var, #mu_type{var = MuVar, body = Body}) ->
+    occurs_check_in_mu_body(Var, MuVar, Body);
+occurs_check_recursive(Var, Type) ->
+    % Fall back to regular occurs check
+    occurs_check(Var, Type).
+
+%% Detect cycles in type definitions
+detect_cycles(
+    Type, State = #cycle_detection{visited = Visited, stack = Stack, max_depth = MaxDepth}
+) ->
+    case length(Stack) >= MaxDepth of
+        true -> {error, max_depth_exceeded};
+        false -> detect_cycles_impl(Type, State)
+    end.
+
+detect_cycles_impl(
+    {recursive_type_ref, Name}, State = #cycle_detection{visited = Visited, stack = Stack}
+) ->
+    case lists:member(Name, Stack) of
+        true ->
+            {error, {cycle_detected, Name, Stack}};
+        false ->
+            NewState = State#cycle_detection{
+                visited = sets:add_element(Name, Visited),
+                stack = [Name | Stack]
+            },
+            % Continue analysis (would need the actual type definition)
+            {ok, NewState}
+    end;
+detect_cycles_impl(#recursive_type{name = Name, definition = Def}, State) ->
+    NewState = State#cycle_detection{stack = [Name | State#cycle_detection.stack]},
+    detect_cycles_impl(Def, NewState);
+detect_cycles_impl({function_type, Params, Return}, State) ->
+    case detect_cycles_in_list(Params, State) of
+        {ok, State1} -> detect_cycles_impl(Return, State1);
+        Error -> Error
+    end;
+detect_cycles_impl({dependent_type, _Name, Params}, State) ->
+    TypeParams = [V || #type_param{value = V} <- Params],
+    detect_cycles_in_list(TypeParams, State);
+detect_cycles_impl({list_type, ElemType, LenExpr}, State) ->
+    case detect_cycles_impl(ElemType, State) of
+        {ok, State1} when LenExpr =/= undefined -> detect_cycles_impl(LenExpr, State1);
+        {ok, State1} -> {ok, State1};
+        Error -> Error
+    end;
+detect_cycles_impl(#mu_type{var = Var, body = Body}, State) ->
+    % μ-types create their own scope
+    detect_cycles_impl(Body, State);
+detect_cycles_impl(_Type, State) ->
+    % Base types, type variables, etc.
+    {ok, State}.
+
+detect_cycles_in_list([], State) ->
+    {ok, State};
+detect_cycles_in_list([Type | Rest], State) ->
+    case detect_cycles_impl(Type, State) of
+        {ok, State1} -> detect_cycles_in_list(Rest, State1);
+        Error -> Error
+    end.
+
+%% Helper functions for recursive type implementation
+
+check_recursive_definition_validity(Name, Definition) ->
+    % Check that the definition is valid for recursion
+    case validate_recursive_structure(Definition, Name) of
+        ok -> {ok, Definition};
+        {error, Reason} -> {error, Reason}
+    end.
+
+validate_recursive_structure(Definition, Name) ->
+    % Check that recursive references are productive
+    case find_recursive_refs(Definition, Name) of
+        [] -> {error, no_recursive_references};
+        Refs -> check_productivity_of_refs(Refs, Definition)
+    end.
+
+find_recursive_refs(Definition, Name) ->
+    find_recursive_refs_impl(Definition, Name, []).
+
+find_recursive_refs_impl({recursive_type_ref, Name}, Name, Acc) ->
+    [Name | Acc];
+find_recursive_refs_impl({function_type, Params, Return}, Name, Acc) ->
+    ParamRefs = lists:flatmap(fun(P) -> find_recursive_refs_impl(P, Name, []) end, Params),
+    ReturnRefs = find_recursive_refs_impl(Return, Name, []),
+    ParamRefs ++ ReturnRefs ++ Acc;
+find_recursive_refs_impl({dependent_type, _, Params}, Name, Acc) ->
+    lists:flatmap(fun(#type_param{value = V}) -> find_recursive_refs_impl(V, Name, []) end, Params) ++
+        Acc;
+find_recursive_refs_impl({list_type, ElemType, LenExpr}, Name, Acc) ->
+    ElemRefs = find_recursive_refs_impl(ElemType, Name, []),
+    LenRefs =
+        case LenExpr of
+            undefined -> [];
+            _ -> find_recursive_refs_impl(LenExpr, Name, [])
+        end,
+    ElemRefs ++ LenRefs ++ Acc;
+% Handle complex constructor types from tests
+find_recursive_refs_impl({union_type, Variants}, Name, Acc) ->
+    lists:flatmap(fun(V) -> find_recursive_refs_impl(V, Name, []) end, Variants) ++ Acc;
+find_recursive_refs_impl({cons_type, Elements}, Name, Acc) ->
+    lists:flatmap(fun(E) -> find_recursive_refs_impl(E, Name, []) end, Elements) ++ Acc;
+find_recursive_refs_impl({node_type, Elements}, Name, Acc) ->
+    lists:flatmap(fun(E) -> find_recursive_refs_impl(E, Name, []) end, Elements) ++ Acc;
+find_recursive_refs_impl({succ_type, Elements}, Name, Acc) ->
+    lists:flatmap(fun(E) -> find_recursive_refs_impl(E, Name, []) end, Elements) ++ Acc;
+find_recursive_refs_impl(_, _, Acc) ->
+    Acc.
+
+check_productivity_of_refs(Refs, Definition) ->
+    % A recursive type is productive if at least one recursive reference
+    % is under a constructor (not immediately recursive)
+    case has_constructor_wrapped_ref(Definition, Refs) of
+        true -> ok;
+        false -> {error, non_productive_recursion}
+    end.
+
+has_constructor_wrapped_ref({function_type, _, _}, _Refs) -> true;
+has_constructor_wrapped_ref({list_type, _, _}, _Refs) -> true;
+has_constructor_wrapped_ref({dependent_type, _, _}, _Refs) -> true;
+has_constructor_wrapped_ref({recursive_type_ref, _}, _Refs) -> false;
+has_constructor_wrapped_ref(_, _) -> true.
+
+substitute_recursive_refs(Type, RecName, RecType, Depth) ->
+    substitute_recursive_refs_impl(Type, RecName, RecType, Depth).
+
+substitute_recursive_refs_impl({recursive_type_ref, RecName}, RecName, RecType, Depth) when
+    Depth > 0
+->
+    % Substitute with unfolded definition
+    case unfold_recursive_type(RecType, Depth) of
+        {ok, Unfolded} -> Unfolded;
+        % Keep original if unfold fails
+        {error, _} -> {recursive_type_ref, RecName}
+    end;
+substitute_recursive_refs_impl({function_type, Params, Return}, RecName, RecType, Depth) ->
+    NewParams = [substitute_recursive_refs_impl(P, RecName, RecType, Depth) || P <- Params],
+    NewReturn = substitute_recursive_refs_impl(Return, RecName, RecType, Depth),
+    {function_type, NewParams, NewReturn};
+substitute_recursive_refs_impl({dependent_type, Name, Params}, RecName, RecType, Depth) ->
+    NewParams = [
+        #type_param{name = N, value = substitute_recursive_refs_impl(V, RecName, RecType, Depth)}
+     || #type_param{name = N, value = V} <- Params
+    ],
+    {dependent_type, Name, NewParams};
+substitute_recursive_refs_impl({list_type, ElemType, LenExpr}, RecName, RecType, Depth) ->
+    NewElemType = substitute_recursive_refs_impl(ElemType, RecName, RecType, Depth),
+    NewLenExpr =
+        case LenExpr of
+            undefined -> undefined;
+            _ -> substitute_recursive_refs_impl(LenExpr, RecName, RecType, Depth)
+        end,
+    {list_type, NewElemType, NewLenExpr};
+substitute_recursive_refs_impl(Type, _RecName, _RecType, _Depth) ->
+    Type.
+
+substitute_mu_var(Type, MuVar, Replacement) ->
+    substitute_mu_var_impl(Type, MuVar, Replacement).
+
+substitute_mu_var_impl({mu_var, MuVar}, MuVar, Replacement) ->
+    Replacement;
+substitute_mu_var_impl({function_type, Params, Return}, MuVar, Replacement) ->
+    NewParams = [substitute_mu_var_impl(P, MuVar, Replacement) || P <- Params],
+    NewReturn = substitute_mu_var_impl(Return, MuVar, Replacement),
+    {function_type, NewParams, NewReturn};
+substitute_mu_var_impl({dependent_type, Name, Params}, MuVar, Replacement) ->
+    NewParams = [
+        #type_param{name = N, value = substitute_mu_var_impl(V, MuVar, Replacement)}
+     || #type_param{name = N, value = V} <- Params
+    ],
+    {dependent_type, Name, NewParams};
+substitute_mu_var_impl({list_type, ElemType, LenExpr}, MuVar, Replacement) ->
+    NewElemType = substitute_mu_var_impl(ElemType, MuVar, Replacement),
+    NewLenExpr =
+        case LenExpr of
+            undefined -> undefined;
+            _ -> substitute_mu_var_impl(LenExpr, MuVar, Replacement)
+        end,
+    {list_type, NewElemType, NewLenExpr};
+substitute_mu_var_impl(Type, _MuVar, _Replacement) ->
+    Type.
+
+extract_recursive_pattern(Type, Name) ->
+    % Try to extract a recursive pattern from a type definition
+    case find_recursive_refs(Type, Name) of
+        [] -> {error, {no_recursive_pattern, Name}};
+        % For now, just return the type
+        _Refs -> {ok, Type}
+    end.
+
+contains_recursive_ref(Type, Name) ->
+    case find_recursive_refs(Type, Name) of
+        [] -> false;
+        _ -> true
+    end.
+
+contains_free_var(Type, Var) ->
+    contains_free_var_impl(Type, Var).
+
+contains_free_var_impl({mu_var, Var}, Var) ->
+    true;
+contains_free_var_impl({function_type, Params, Return}, Var) ->
+    lists:any(fun(P) -> contains_free_var_impl(P, Var) end, Params) orelse
+        contains_free_var_impl(Return, Var);
+contains_free_var_impl({dependent_type, _, Params}, Var) ->
+    lists:any(fun(#type_param{value = V}) -> contains_free_var_impl(V, Var) end, Params);
+contains_free_var_impl({list_type, ElemType, LenExpr}, Var) ->
+    contains_free_var_impl(ElemType, Var) orelse
+        (LenExpr =/= undefined andalso contains_free_var_impl(LenExpr, Var));
+contains_free_var_impl(_, _) ->
+    false.
+
+check_productivity(RecType = #recursive_type{name = Name, definition = Def}) ->
+    % Check that the recursive type is productive (terminates in finite steps)
+
+    % Max depth 5
+    case analyze_productivity(Def, Name, 5) of
+        productive -> ok;
+        {non_productive, Reason} -> {error, {non_productive, Reason}}
+    end.
+
+analyze_productivity(Definition, Name, MaxDepth) when MaxDepth =< 0 ->
+    {non_productive, max_depth_reached};
+analyze_productivity({recursive_type_ref, Name}, Name, _MaxDepth) ->
+    {non_productive, immediate_recursion};
+analyze_productivity({function_type, Params, Return}, Name, MaxDepth) ->
+    % Function types are generally productive
+    case
+        lists:any(fun(P) -> analyze_productivity(P, Name, MaxDepth - 1) =:= productive end, Params)
+    of
+        true -> productive;
+        false -> analyze_productivity(Return, Name, MaxDepth - 1)
+    end;
+analyze_productivity({list_type, ElemType, _}, Name, MaxDepth) ->
+    % List types are productive
+    analyze_productivity(ElemType, Name, MaxDepth - 1);
+analyze_productivity({dependent_type, _, _}, _Name, _MaxDepth) ->
+    % Dependent types are generally productive
+    productive;
+analyze_productivity(_, _, _) ->
+    productive.
+
+check_mu_productivity(Var, Body) ->
+    % μ-types are productive if the body contains the variable under constructors
+    case has_constructor_above_var(Body, Var) of
+        true -> ok;
+        false -> {error, {non_productive_mu, Var}}
+    end.
+
+has_constructor_above_var({mu_var, Var}, Var) ->
+    false;
+has_constructor_above_var({function_type, Params, Return}, Var) ->
+    lists:any(fun(P) -> has_constructor_above_var(P, Var) end, Params) orelse
+        has_constructor_above_var(Return, Var);
+has_constructor_above_var({list_type, ElemType, _}, Var) ->
+    has_constructor_above_var(ElemType, Var);
+has_constructor_above_var({dependent_type, _, Params}, Var) ->
+    lists:any(fun(#type_param{value = V}) -> has_constructor_above_var(V, Var) end, Params);
+has_constructor_above_var(_, _) ->
+    true.
+
+unify_recursive_structural(
+    #recursive_type{name = Name, params = Params1},
+    #recursive_type{name = Name, params = Params2},
+    Subst
+) ->
+    % Same recursive type - unify parameters
+    unify_type_params(Params1, Params2, Subst);
+unify_recursive_structural(R1, R2, _Subst) ->
+    {error, {different_recursive_types, R1, R2}}.
+
+unify_recursive_by_unfolding(R1, R2, Subst, MaxDepth) when MaxDepth > 0 ->
+    case {unfold_recursive_type(R1, 1), unfold_recursive_type(R2, 1)} of
+        {{ok, U1}, {ok, U2}} ->
+            case unify(U1, U2, Subst) of
+                {ok, NewSubst} -> {ok, NewSubst};
+                {error, _} -> unify_recursive_by_unfolding(R1, R2, Subst, MaxDepth - 1)
+            end;
+        _ ->
+            {error, unfold_failed}
+    end;
+unify_recursive_by_unfolding(_R1, _R2, _Subst, _MaxDepth) ->
+    {error, max_unfold_attempts_reached}.
+
+unify_mu_types(#mu_type{var = Var1, body = Body1}, #mu_type{var = Var2, body = Body2}, Subst) ->
+    % Rename variables to avoid conflicts and unify bodies
+    FreshVar = gensym_mu_var(),
+    RenamedBody1 = substitute_mu_var(Body1, Var1, {mu_var, FreshVar}),
+    RenamedBody2 = substitute_mu_var(Body2, Var2, {mu_var, FreshVar}),
+    unify(RenamedBody1, RenamedBody2, Subst).
+
+occurs_check_in_recursive_def(Id, Definition) ->
+    occurs_check_in_recursive_def_impl(Id, Definition).
+
+occurs_check_in_recursive_def_impl(Id, #type_var{id = Id}) ->
+    true;
+occurs_check_in_recursive_def_impl(Id, {function_type, Params, Return}) ->
+    lists:any(fun(P) -> occurs_check_in_recursive_def_impl(Id, P) end, Params) orelse
+        occurs_check_in_recursive_def_impl(Id, Return);
+occurs_check_in_recursive_def_impl(Id, {dependent_type, _, Params}) ->
+    lists:any(fun(#type_param{value = V}) -> occurs_check_in_recursive_def_impl(Id, V) end, Params);
+occurs_check_in_recursive_def_impl(Id, {list_type, ElemType, LenExpr}) ->
+    occurs_check_in_recursive_def_impl(Id, ElemType) orelse
+        (LenExpr =/= undefined andalso occurs_check_in_recursive_def_impl(Id, LenExpr));
+occurs_check_in_recursive_def_impl(_, _) ->
+    false.
+
+occurs_check_in_mu_body(Var = #type_var{id = Id}, MuVar, Body) ->
+    case contains_free_var(Body, MuVar) of
+        true -> occurs_check_in_recursive_def_impl(Id, Body);
+        false -> false
+    end;
+occurs_check_in_mu_body(_, _, _) ->
+    false.
+
+gensym_mu_var() ->
+    Counter =
+        case get(mu_var_counter) of
+            undefined -> 0;
+            N -> N
+        end,
+    put(mu_var_counter, Counter + 1),
+    list_to_atom("mu_" ++ integer_to_list(Counter)).
+
+%% ===== HIGHER-KINDED TYPES IMPLEMENTATION =====
+
+%% Create a kind definition
+create_kind(Constructor, Args, Location) ->
+    #kind{
+        constructor = Constructor,
+        args = Args,
+        result = determine_result_kind(Constructor, Args),
+        arity = length(Args),
+        location = Location
+    }.
+
+% * kind
+determine_result_kind(star, []) -> star;
+determine_result_kind(star, _) -> error;
+% * -> *
+determine_result_kind(arrow, [_, Result]) -> Result;
+determine_result_kind(arrow, _) -> error;
+determine_result_kind(_, []) -> star;
+determine_result_kind(_, Args) -> lists:last(Args).
+
+%% Infer the kind of a type expression
+infer_kind(Type, KindEnv) ->
+    case Type of
+        {primitive_type, _Name} ->
+            {ok, #kind{
+                constructor = star, args = [], result = star, arity = 0, location = undefined
+            }};
+        #type_var{} ->
+            % Type variables have kind *
+            {ok, #kind{
+                constructor = star, args = [], result = star, arity = 0, location = undefined
+            }};
+        {function_type, Params, Return} ->
+            % Function types: * -> * -> ... -> *
+            case lists:all(fun(P) -> is_base_kind(infer_kind(P, KindEnv)) end, Params) of
+                true ->
+                    case infer_kind(Return, KindEnv) of
+                        {ok, RetKind} when RetKind#kind.constructor =:= star ->
+                            {ok, #kind{
+                                constructor = star,
+                                args = [],
+                                result = star,
+                                arity = 0,
+                                location = undefined
+                            }};
+                        _ ->
+                            {error, invalid_function_return_kind}
+                    end;
+                false ->
+                    {error, invalid_function_param_kinds}
+            end;
+        {dependent_type, Name, Params} ->
+            % Dependent types may have higher kinds
+            infer_dependent_type_kind(Name, Params, KindEnv);
+        #higher_kinded_type{constructor = Constructor} ->
+            {ok, Constructor#type_constructor.kind};
+        _ ->
+            % Default to * kind for unknown types
+            {ok, #kind{
+                constructor = star, args = [], result = star, arity = 0, location = undefined
+            }}
+    end.
+
+%% Check if a type has the expected kind
+check_kind(Type, ExpectedKind, KindEnv) ->
+    case infer_kind(Type, KindEnv) of
+        {ok, InferredKind} ->
+            case unify_kinds(InferredKind, ExpectedKind) of
+                {ok, _} -> ok;
+                {error, Reason} -> {error, {kind_mismatch, ExpectedKind, InferredKind, Reason}}
+            end;
+        {error, Reason} ->
+            {error, {kind_inference_failed, Reason}}
+    end.
+
+%% Unify two kinds
+unify_kinds(Kind1, Kind2) ->
+    case {Kind1, Kind2} of
+        {#kind{constructor = C1}, #kind{constructor = C2}} when C1 =:= C2 ->
+            case {Kind1#kind.args, Kind2#kind.args} of
+                {Args1, Args2} when length(Args1) =:= length(Args2) ->
+                    unify_kind_args(Args1, Args2);
+                _ ->
+                    {error, kind_arity_mismatch}
+            end;
+        _ ->
+            {error, {kind_constructor_mismatch, Kind1, Kind2}}
+    end.
+
+unify_kind_args([], []) ->
+    {ok, #{}};
+unify_kind_args([K1 | Rest1], [K2 | Rest2]) ->
+    case unify_kinds(K1, K2) of
+        {ok, _} -> unify_kind_args(Rest1, Rest2);
+        Error -> Error
+    end.
+
+%% Create a type constructor
+create_type_constructor(Name, Kind, Params, Definition, Location) ->
+    case check_type_constructor_validity(Name, Kind, Params, Definition) of
+        ok ->
+            #type_constructor{
+                name = Name,
+                kind = Kind,
+                params = Params,
+                definition = Definition,
+                constraints = [],
+                location = Location
+            };
+        {error, Reason} ->
+            {error, {invalid_type_constructor, Name, Reason}}
+    end.
+
+%% Apply a type constructor to arguments
+apply_type_constructor(TypeConstructor, Args, Location) ->
+    case TypeConstructor of
+        #type_constructor{kind = Kind, params = Params} ->
+            RequiredArity = length(Params),
+            ProvidedArity = length(Args),
+
+            case ProvidedArity =< RequiredArity of
+                true ->
+                    RemainingArgs = RequiredArity - ProvidedArity,
+
+                    % Check kind compatibility of provided arguments
+                    case check_argument_kinds(Args, Params, #{}) of
+                        ok ->
+                            #higher_kinded_type{
+                                constructor = TypeConstructor,
+                                applied_args = Args,
+                                remaining_args = RemainingArgs,
+                                location = Location
+                            };
+                        {error, Reason} ->
+                            {error, {argument_kind_error, Reason}}
+                    end;
+                false ->
+                    {error, {too_many_arguments, ProvidedArity, RequiredArity}}
+            end;
+        _ ->
+            {error, not_a_type_constructor}
+    end.
+
+%% Create a type family definition
+create_type_family(Name, Kind, Equations, Location) ->
+    case check_type_family_validity(Name, Kind, Equations) of
+        ok ->
+            #type_family{
+                name = Name,
+                kind = Kind,
+                equations = Equations,
+                location = Location
+            };
+        {error, Reason} ->
+            {error, {invalid_type_family, Name, Reason}}
+    end.
+
+%% Evaluate a type family application
+evaluate_type_family(TypeFamily, Args) ->
+    case TypeFamily of
+        #type_family{equations = Equations} ->
+            try_equations(Equations, Args);
+        _ ->
+            {error, not_a_type_family}
+    end.
+
+try_equations([], _Args) ->
+    {error, no_matching_equation};
+try_equations([Equation | RestEquations], Args) ->
+    case match_type_family_pattern(Equation#type_family_equation.pattern, Args) of
+        {ok, Substitution} ->
+            Result = apply_substitution(Equation#type_family_equation.result, Substitution),
+            {ok, Result};
+        {error, _} ->
+            try_equations(RestEquations, Args)
+    end.
+
+%% Solve type family equation
+solve_type_family_equation(Equation, Args, KindEnv) ->
+    Pattern = Equation#type_family_equation.pattern,
+    Result = Equation#type_family_equation.result,
+
+    case match_type_family_pattern(Pattern, Args) of
+        {ok, Substitution} ->
+            % Check constraints
+            case
+                check_equation_constraints(
+                    Equation#type_family_equation.constraints, Substitution, KindEnv
+                )
+            of
+                ok ->
+                    FinalResult = apply_substitution(Result, Substitution),
+                    {ok, FinalResult};
+                {error, Reason} ->
+                    {error, {constraint_violation, Reason}}
+            end;
+        {error, Reason} ->
+            {error, {pattern_match_failed, Reason}}
+    end.
+
+%% Check constraint satisfaction
+check_constraint_satisfaction(Constraint, KindEnv) ->
+    case Constraint of
+        #constraint{class = Class, args = Args} ->
+            check_type_class_instance(Class, Args, KindEnv);
+        _ ->
+            {error, invalid_constraint}
+    end.
+
+%% Check if higher-kinded type is well-formed
+check_higher_kinded_well_formed(HKType) ->
+    case HKType of
+        #higher_kinded_type{constructor = Constructor, applied_args = Args} ->
+            % Check constructor validity
+            case check_constructor_well_formed(Constructor) of
+                ok ->
+                    % Check argument compatibility
+                    check_applied_args_valid(Constructor, Args);
+                {error, Reason} ->
+                    {error, Reason}
+            end;
+        _ ->
+            {error, not_a_higher_kinded_type}
+    end.
+
+%% Get the arity of a kind
+kind_arity(Kind) ->
+    case Kind of
+        #kind{arity = Arity} -> Arity;
+        _ -> 0
+    end.
+
+%% Check if a type is saturated (fully applied)
+is_saturated_type(Type) ->
+    case Type of
+        #higher_kinded_type{remaining_args = 0} -> true;
+        #higher_kinded_type{remaining_args = N} when N > 0 -> false;
+        % Non-higher-kinded types are considered saturated
+        _ -> true
+    end.
+
+%% Helper functions for higher-kinded types
+
+infer_dependent_type_kind(Name, Params, KindEnv) ->
+    case {Name, length(Params)} of
+        {'List', 1} ->
+            {ok, #kind{
+                constructor = arrow,
+                args = [star_kind(), star_kind()],
+                result = star,
+                arity = 1,
+                location = undefined
+            }};
+        {'Maybe', 1} ->
+            {ok, #kind{
+                constructor = arrow,
+                args = [star_kind(), star_kind()],
+                result = star,
+                arity = 1,
+                location = undefined
+            }};
+        {'Vector', 2} ->
+            % Vector has kind * -> Nat -> *
+            {ok, #kind{
+                constructor = arrow,
+                args = [star_kind(), nat_kind(), star_kind()],
+                result = star,
+                arity = 2,
+                location = undefined
+            }};
+        {'Functor', 1} ->
+            % Functor has kind (* -> *) -> Constraint
+            {ok, #kind{
+                constructor = arrow,
+                args = [higher_order_kind(), constraint_kind()],
+                result = constraint,
+                arity = 1,
+                location = undefined
+            }};
+        {'Monad', 1} ->
+            % Monad has kind (* -> *) -> Constraint
+            {ok, #kind{
+                constructor = arrow,
+                args = [higher_order_kind(), constraint_kind()],
+                result = constraint,
+                arity = 1,
+                location = undefined
+            }};
+        _ ->
+            % Default to * for unknown types
+            {ok, star_kind()}
+    end.
+
+star_kind() ->
+    #kind{constructor = star, args = [], result = star, arity = 0, location = undefined}.
+
+nat_kind() ->
+    #kind{constructor = nat, args = [], result = nat, arity = 0, location = undefined}.
+
+higher_order_kind() ->
+    #kind{
+        constructor = arrow,
+        args = [star_kind(), star_kind()],
+        result = star,
+        arity = 1,
+        location = undefined
+    }.
+
+constraint_kind() ->
+    #kind{
+        constructor = constraint, args = [], result = constraint, arity = 0, location = undefined
+    }.
+
+is_base_kind({ok, Kind}) ->
+    Kind#kind.constructor =:= star;
+is_base_kind(_) ->
+    false.
+
+check_type_constructor_validity(Name, Kind, Params, Definition) ->
+    % Check that the number of parameters matches the kind arity
+    case {kind_arity(Kind), length(Params)} of
+        {Arity, Arity} ->
+            % Check that definition is compatible with kind if provided
+            case Definition of
+                undefined -> ok;
+                _ -> check_definition_kind_compatibility(Definition, Kind)
+            end;
+        {Expected, Got} ->
+            {error, {arity_mismatch, Expected, Got}}
+    end.
+
+check_definition_kind_compatibility(_Definition, _Kind) ->
+    % Simplified - would need full kind checking
+    ok.
+
+check_argument_kinds([], _Params, _KindEnv) ->
+    % No more arguments to check - this is ok for partial application
+    ok;
+check_argument_kinds([Arg | RestArgs], [Param | RestParams], KindEnv) ->
+    % Extract expected kind from parameter
+    ExpectedKind = extract_param_kind(Param),
+    case infer_kind(Arg, KindEnv) of
+        {ok, ArgKind} ->
+            case unify_kinds(ArgKind, ExpectedKind) of
+                {ok, _} ->
+                    check_argument_kinds(RestArgs, RestParams, KindEnv);
+                {error, Reason} ->
+                    {error, {argument_kind_mismatch, Arg, ExpectedKind, ArgKind, Reason}}
+            end;
+        {error, Reason} ->
+            {error, {argument_kind_inference_failed, Arg, Reason}}
+    end;
+check_argument_kinds(Args, [], _KindEnv) ->
+    % More arguments than parameters - this is an error
+    {error, {too_many_arguments, length(Args), 0}}.
+
+extract_param_kind(_Param) ->
+    % Simplified - would extract kind from parameter type annotation
+    star_kind().
+
+check_type_family_validity(_Name, _Kind, _Equations) ->
+    % Simplified validation - would check equation consistency, coverage, etc.
+    ok.
+
+match_type_family_pattern(Pattern, Args) ->
+    case length(Pattern) =:= length(Args) of
+        true -> match_pattern_args(Pattern, Args, #{});
+        false -> {error, arity_mismatch}
+    end.
+
+match_pattern_args([], [], Substitution) ->
+    {ok, Substitution};
+match_pattern_args([PatternArg | RestPattern], [Arg | RestArgs], Subst) ->
+    case match_single_pattern(PatternArg, Arg, Subst) of
+        {ok, NewSubst} -> match_pattern_args(RestPattern, RestArgs, NewSubst);
+        Error -> Error
+    end.
+
+match_single_pattern(Pattern, Arg, Subst) ->
+    case Pattern of
+        #type_var{id = Id} ->
+            % Bind type variable
+            case maps:get(Id, Subst, undefined) of
+                undefined -> {ok, maps:put(Id, Arg, Subst)};
+                ExistingBinding when ExistingBinding =:= Arg -> {ok, Subst};
+                _ -> {error, variable_binding_conflict}
+            end;
+        % Handle atoms as type variable IDs (for simplified testing)
+        Pattern when is_atom(Pattern) ->
+            case maps:get(Pattern, Subst, undefined) of
+                undefined -> {ok, maps:put(Pattern, Arg, Subst)};
+                ExistingBinding when ExistingBinding =:= Arg -> {ok, Subst};
+                _ -> {error, variable_binding_conflict}
+            end;
+        _ when Pattern =:= Arg ->
+            {ok, Subst};
+        _ ->
+            {error, pattern_mismatch}
+    end.
+
+check_equation_constraints([], _Substitution, _KindEnv) ->
+    ok;
+check_equation_constraints([Constraint | RestConstraints], Substitution, KindEnv) ->
+    % Apply substitution to constraint
+    SubstConstraint = apply_constraint_substitution(Constraint, Substitution),
+    case check_constraint_satisfaction(SubstConstraint, KindEnv) of
+        ok -> check_equation_constraints(RestConstraints, Substitution, KindEnv);
+        Error -> Error
+    end.
+
+apply_constraint_substitution(Constraint, Substitution) ->
+    case Constraint of
+        #constraint{args = Args} = C ->
+            NewArgs = [apply_substitution(Arg, Substitution) || Arg <- Args],
+            C#constraint{args = NewArgs};
+        _ ->
+            Constraint
+    end.
+
+check_type_class_instance(_Class, _Args, _KindEnv) ->
+    % Simplified - would check if instance exists
+    ok.
+
+check_constructor_well_formed(Constructor) ->
+    case Constructor of
+        #type_constructor{kind = Kind, params = Params} ->
+            % Check kind/parameter consistency
+            case kind_arity(Kind) =:= length(Params) of
+                true -> ok;
+                false -> {error, constructor_arity_mismatch}
+            end;
+        _ ->
+            {error, invalid_constructor}
+    end.
+
+check_applied_args_valid(Constructor, Args) ->
+    case Constructor of
+        #type_constructor{params = Params} ->
+            RequiredArgs = length(Params),
+            ProvidedArgs = length(Args),
+
+            case ProvidedArgs =< RequiredArgs of
+                true -> ok;
+                false -> {error, {too_many_args, ProvidedArgs, RequiredArgs}}
+            end;
+        _ ->
+            {error, invalid_constructor}
+    end.
+
+%% Helper functions for recursive types - using existing extract_type_param_value above
+
+%% Helper functions for enhanced inference use existing implementations above

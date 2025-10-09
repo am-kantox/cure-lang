@@ -1,0 +1,133 @@
+-- Higher-Kinded Types Demonstration
+-- Shows advanced type-level computation and parameterization
+
+module HigherKindedTypesDemo
+
+-- Basic higher-kinded type definitions
+-- Kind signatures: * -> *
+type Functor f = {
+  fmap: forall a b. (a -> b) -> f a -> f b
+}
+
+type Monad m = {
+  return: forall a. a -> m a,
+  bind: forall a b. m a -> (a -> m b) -> m b
+}
+
+-- Container types with kind * -> *
+type Maybe a = Nothing | Just a
+type List a = Nil | Cons a (List a)
+type IO a = IOAction a
+
+-- Higher-kinded type class instances
+instance Functor Maybe where
+  fmap f Nothing = Nothing
+  fmap f (Just x) = Just (f x)
+
+instance Functor List where
+  fmap f Nil = Nil
+  fmap f (Cons x xs) = Cons (f x) (fmap f xs)
+
+instance Monad Maybe where
+  return x = Just x
+  bind Nothing _ = Nothing
+  bind (Just x) f = f x
+
+instance Monad List where
+  return x = Cons x Nil
+  bind Nil _ = Nil
+  bind (Cons x xs) f = append (f x) (bind xs f)
+
+-- Higher-order type constructors (kind (* -> *) -> * -> *)
+type Transformer t m a = t (m a)
+
+-- Example: StateT transformer
+type StateT s m a = State s -> m (Pair a (State s))
+
+-- Kind (* -> *) -> (* -> *) -> * -> *
+type ComposeT f g a = f (g a)
+
+-- Advanced kind: ((* -> *) -> * -> *) -> (* -> *) -> * -> *
+type MonadTransformer t m a = t m a
+
+-- Type families (type-level functions)
+type family Apply (f :: * -> *) (a :: *) :: * where
+  Apply List Int = List Int
+  Apply Maybe String = Maybe String
+  Apply (StateT s m) a = StateT s m a
+
+-- Kind polymorphism examples
+type Const a b = a  -- Kind * -> * -> *
+type Identity a = a  -- Kind * -> *
+
+-- Advanced higher-kinded patterns
+type Natural f g = forall x. f x -> g x
+type Fix f = f (Fix f)  -- Fixed-point combinator
+
+-- Type-level computation examples
+type family Length (xs :: List *) :: Nat where
+  Length Nil = Zero
+  Length (Cons _ xs) = Succ (Length xs)
+
+type family Map (f :: * -> *) (xs :: List *) :: List * where
+  Map f Nil = Nil
+  Map f (Cons x xs) = Cons (f x) (Map f xs)
+
+-- Constraint kinds for type classes
+constraint Eq a = {
+  eq: a -> a -> Bool
+}
+
+constraint Ord a = {
+  super: Eq a,
+  compare: a -> a -> Ordering
+}
+
+-- Rank-N types with higher-kinded constraints
+rankN :: forall f. Functor f => (forall a. a -> a) -> f Int -> f Int
+rankN id_func container = fmap id_func container
+
+-- Advanced monad transformer stack
+type AppStack a = StateT AppState (ReaderT Config (ExceptT Error IO)) a
+
+-- Demonstration functions
+demo_functor :: forall f a b. Functor f => (a -> b) -> f a -> f b
+demo_functor = fmap
+
+demo_monad :: forall m a b. Monad m => a -> (a -> m b) -> m b  
+demo_monad x f = bind (return x) f
+
+demo_compose :: forall f g a. Functor f, Functor g => (Int -> String) -> f (g Int) -> f (g String)
+demo_compose func nested = fmap (fmap func) nested
+
+-- Type-level programming with higher-kinded types
+type family Zip (f :: * -> *) (g :: * -> *) (a :: *) (b :: *) :: * -> * where
+  Zip List List a b = List (Pair a b)
+  Zip Maybe Maybe a b = Maybe (Pair a b)
+
+-- Advanced constraint solving
+type family Constraint (c :: * -> Constraint) (f :: * -> *) :: Constraint where
+  Constraint Eq f = forall a. Eq a => Eq (f a)
+  Constraint Ord f = forall a. Ord a => Ord (f a)
+
+-- Demonstration of complex type-level computation
+compute_types :: () -> ()
+compute_types _ = 
+  let
+    -- Test basic higher-kinded type usage
+    maybe_result : Maybe Int = Just 42
+    list_result : List String = Cons "hello" (Cons "world" Nil)
+    
+    -- Test functor operations
+    mapped_maybe = fmap (+ 1) maybe_result
+    mapped_list = fmap (++ "!") list_result
+    
+    -- Test monad operations  
+    chained_maybe = bind maybe_result (\x -> Just (x * 2))
+    chained_list = bind list_result (\s -> Cons (s ++ "1") (Cons (s ++ "2") Nil))
+    
+    -- Test higher-order composition
+    nested_structure : List (Maybe Int) = Cons (Just 1) (Cons Nothing (Cons (Just 3) Nil))
+    double_mapped = fmap (fmap (* 2)) nested_structure
+  in
+    ()
