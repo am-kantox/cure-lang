@@ -19,12 +19,15 @@
 %% Compile a single guard expression
 compile_guard(undefined, State) ->
     % No guard - always true
-    {ok, [#beam_instr{
-        op = load_literal,
-        args = [true],
-        location = undefined
-    }], State};
-
+    {ok,
+        [
+            #beam_instr{
+                op = load_literal,
+                args = [true],
+                location = undefined
+            }
+        ],
+        State};
 compile_guard(Guard, State) ->
     case is_guard_safe(Guard) of
         true ->
@@ -62,7 +65,6 @@ compile_guard_expr(#literal_expr{value = Value, location = Location}, State) ->
         location = Location
     },
     {ok, [Instruction], State};
-
 compile_guard_expr(#identifier_expr{name = Name, location = Location}, State) ->
     case resolve_variable(Name, State) of
         {ok, VarRef} ->
@@ -81,84 +83,86 @@ compile_guard_expr(#identifier_expr{name = Name, location = Location}, State) ->
             },
             {ok, [Instruction], State}
     end;
-
-compile_guard_expr(#binary_op_expr{op = Op, left = Left, right = Right, location = Location}, State) ->
+compile_guard_expr(
+    #binary_op_expr{op = Op, left = Left, right = Right, location = Location}, State
+) ->
     case is_guard_bif(Op) of
         true ->
             {ok, LeftInstr, State1} = compile_guard_expr(Left, State),
             {ok, RightInstr, State2} = compile_guard_expr(Right, State1),
-            
+
             GuardInstruction = #beam_instr{
                 op = guard_bif,
                 args = [Op, 2],
                 location = Location
             },
-            
+
             Instructions = LeftInstr ++ RightInstr ++ [GuardInstruction],
             {ok, Instructions, State2};
         false ->
             {error, {invalid_guard_op, Op}}
     end;
-
 compile_guard_expr(#unary_op_expr{op = Op, operand = Operand, location = Location}, State) ->
     case is_guard_bif(Op) of
         true ->
             {ok, OperandInstr, State1} = compile_guard_expr(Operand, State),
-            
+
             GuardInstruction = #beam_instr{
                 op = guard_bif,
                 args = [Op, 1],
                 location = Location
             },
-            
+
             Instructions = OperandInstr ++ [GuardInstruction],
             {ok, Instructions, State1};
         false ->
             {error, {invalid_guard_op, Op}}
     end;
-
-compile_guard_expr(#function_call_expr{function = #identifier_expr{name = Fun}, 
-                                      args = Args, location = Location}, State) ->
+compile_guard_expr(
+    #function_call_expr{
+        function = #identifier_expr{name = Fun},
+        args = Args,
+        location = Location
+    },
+    State
+) ->
     case is_guard_bif(Fun) of
         true ->
             {ok, ArgInstructions, State1} = compile_guard_expressions(Args, State),
-            
+
             GuardInstruction = #beam_instr{
                 op = guard_bif,
                 args = [Fun, length(Args)],
                 location = Location
             },
-            
+
             Instructions = ArgInstructions ++ [GuardInstruction],
             {ok, Instructions, State1};
         false ->
             {error, {invalid_guard_function, Fun}}
     end;
-
 compile_guard_expr(#tuple_expr{elements = Elements, location = Location}, State) ->
     {ok, ElementInstructions, State1} = compile_guard_expressions(Elements, State),
-    
+
     TupleInstruction = #beam_instr{
         op = make_tuple,
         args = [length(Elements)],
         location = Location
     },
-    
+
     Instructions = ElementInstructions ++ [TupleInstruction],
     {ok, Instructions, State1};
-
 compile_guard_expr(#list_expr{elements = Elements, location = Location}, State) ->
     {ok, ElementInstructions, State1} = compile_guard_expressions(Elements, State),
-    
+
     ListInstruction = #beam_instr{
         op = make_list,
         args = [length(Elements)],
         location = Location
     },
-    
+
     Instructions = ElementInstructions ++ [ListInstruction],
     {ok, Instructions, State1};
-
 compile_guard_expr(Expr, _State) ->
     {error, {unsupported_guard_expr, Expr}}.
 
@@ -263,117 +267,131 @@ optimize_guard(Guard) ->
     simplify_guard(OptimizedGuard).
 
 %% Constant folding for guard expressions
-constant_fold_guard(#binary_op_expr{op = Op, 
-                                   left = #literal_expr{value = L}, 
-                                   right = #literal_expr{value = R},
-                                   location = Location}) ->
+constant_fold_guard(#binary_op_expr{
+    op = Op,
+    left = #literal_expr{value = L},
+    right = #literal_expr{value = R},
+    location = Location
+}) ->
     try
-        Value = case Op of
-            '+' -> L + R;
-            '-' -> L - R;
-            '*' -> L * R;
-            '/' when R =/= 0 -> L / R;
-            'div' when R =/= 0 -> L div R;
-            'rem' when R =/= 0 -> L rem R;
-            '==' -> L == R;
-            '!=' -> L /= R;
-            '=:=' -> L =:= R;
-            '=/=' -> L =/= R;
-            '<' -> L < R;
-            '>' -> L > R;
-            '=<' -> L =< R;
-            '<=' -> L =< R;
-            '>=' -> L >= R;
-            'and' -> L and R;
-            'or' -> L or R;
-            'andalso' -> L andalso R;
-            'orelse' -> L orelse R;
-            'xor' -> L xor R;
-            'band' -> L band R;
-            'bor' -> L bor R;
-            'bxor' -> L bxor R;
-            'bsl' -> L bsl R;
-            'bsr' -> L bsr R;
-            _ -> throw(no_fold)
-        end,
+        Value =
+            case Op of
+                '+' -> L + R;
+                '-' -> L - R;
+                '*' -> L * R;
+                '/' when R =/= 0 -> L / R;
+                'div' when R =/= 0 -> L div R;
+                'rem' when R =/= 0 -> L rem R;
+                '==' -> L == R;
+                '!=' -> L /= R;
+                '=:=' -> L =:= R;
+                '=/=' -> L =/= R;
+                '<' -> L < R;
+                '>' -> L > R;
+                '=<' -> L =< R;
+                '<=' -> L =< R;
+                '>=' -> L >= R;
+                'and' -> L and R;
+                'or' -> L or R;
+                'andalso' -> L andalso R;
+                'orelse' -> L orelse R;
+                'xor' -> L xor R;
+                'band' -> L band R;
+                'bor' -> L bor R;
+                'bxor' -> L bxor R;
+                'bsl' -> L bsl R;
+                'bsr' -> L bsr R;
+                _ -> throw(no_fold)
+            end,
         #literal_expr{value = Value, location = Location}
     catch
-        _:_ -> 
+        _:_ ->
             % Keep original expression if folding fails
-            #binary_op_expr{op = Op, 
-                           left = constant_fold_guard(#literal_expr{value = L, location = Location}),
-                           right = constant_fold_guard(#literal_expr{value = R, location = Location}),
-                           location = Location}
+            #binary_op_expr{
+                op = Op,
+                left = constant_fold_guard(#literal_expr{value = L, location = Location}),
+                right = constant_fold_guard(#literal_expr{value = R, location = Location}),
+                location = Location
+            }
     end;
-
-constant_fold_guard(#unary_op_expr{op = Op, 
-                                  operand = #literal_expr{value = V},
-                                  location = Location}) ->
+constant_fold_guard(#unary_op_expr{
+    op = Op,
+    operand = #literal_expr{value = V},
+    location = Location
+}) ->
     try
-        Value = case Op of
-            '-' -> -V;
-            '+' -> +V;
-            'not' -> not V;
-            'bnot' -> bnot V;
-            'abs' -> abs(V);
-            'trunc' -> trunc(V);
-            'round' -> round(V);
-            _ -> throw(no_fold)
-        end,
+        Value =
+            case Op of
+                '-' -> -V;
+                '+' -> +V;
+                'not' -> not V;
+                'bnot' -> bnot V;
+                'abs' -> abs(V);
+                'trunc' -> trunc(V);
+                'round' -> round(V);
+                _ -> throw(no_fold)
+            end,
         #literal_expr{value = Value, location = Location}
     catch
-        _:_ -> 
-            #unary_op_expr{op = Op, 
-                          operand = #literal_expr{value = V, location = Location},
-                          location = Location}
+        _:_ ->
+            #unary_op_expr{
+                op = Op,
+                operand = #literal_expr{value = V, location = Location},
+                location = Location
+            }
     end;
-
 constant_fold_guard(#binary_op_expr{op = Op, left = Left, right = Right, location = Location}) ->
     OptLeft = constant_fold_guard(Left),
     OptRight = constant_fold_guard(Right),
     case {OptLeft, OptRight} of
         {#literal_expr{value = L}, #literal_expr{value = R}} ->
-            constant_fold_guard(#binary_op_expr{op = Op, 
-                                              left = #literal_expr{value = L, location = Location},
-                                              right = #literal_expr{value = R, location = Location},
-                                              location = Location});
+            constant_fold_guard(#binary_op_expr{
+                op = Op,
+                left = #literal_expr{value = L, location = Location},
+                right = #literal_expr{value = R, location = Location},
+                location = Location
+            });
         _ ->
             #binary_op_expr{op = Op, left = OptLeft, right = OptRight, location = Location}
     end;
-
 constant_fold_guard(#unary_op_expr{op = Op, operand = Operand, location = Location}) ->
     OptOperand = constant_fold_guard(Operand),
     case OptOperand of
         #literal_expr{value = V} ->
-            constant_fold_guard(#unary_op_expr{op = Op, 
-                                             operand = #literal_expr{value = V, location = Location},
-                                             location = Location});
+            constant_fold_guard(#unary_op_expr{
+                op = Op,
+                operand = #literal_expr{value = V, location = Location},
+                location = Location
+            });
         _ ->
             #unary_op_expr{op = Op, operand = OptOperand, location = Location}
     end;
-
 constant_fold_guard(Expr) ->
     Expr.
 
 %% Simplify guard expressions
-simplify_guard(#binary_op_expr{op = 'andalso', 
-                              left = #literal_expr{value = true}, 
-                              right = Right}) ->
+simplify_guard(#binary_op_expr{
+    op = 'andalso',
+    left = #literal_expr{value = true},
+    right = Right
+}) ->
     simplify_guard(Right);
-
-simplify_guard(#binary_op_expr{op = 'andalso', 
-                              left = #literal_expr{value = false}}) ->
+simplify_guard(#binary_op_expr{
+    op = 'andalso',
+    left = #literal_expr{value = false}
+}) ->
     #literal_expr{value = false, location = undefined};
-
-simplify_guard(#binary_op_expr{op = 'orelse', 
-                              left = #literal_expr{value = true}}) ->
+simplify_guard(#binary_op_expr{
+    op = 'orelse',
+    left = #literal_expr{value = true}
+}) ->
     #literal_expr{value = true, location = undefined};
-
-simplify_guard(#binary_op_expr{op = 'orelse', 
-                              left = #literal_expr{value = false}, 
-                              right = Right}) ->
+simplify_guard(#binary_op_expr{
+    op = 'orelse',
+    left = #literal_expr{value = false},
+    right = Right
+}) ->
     simplify_guard(Right);
-
 simplify_guard(Expr) ->
     Expr.
 

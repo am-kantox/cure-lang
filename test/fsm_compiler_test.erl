@@ -6,22 +6,32 @@
 
 %% Copied record definition from cure_codegen.erl since it's not exported
 -record(codegen_state, {
-    module_name,           % Current module being compiled
-    functions = [],        % Accumulated function definitions
-    exports = [],          % Export specifications
-    imports = [],          % Import specifications  
-    type_env,              % Type environment from type checker
-    options = [],          % Compilation options
-    temp_var_counter = 0,  % Counter for generating temporary variables
-    label_counter = 0,     % Counter for generating labels
-    current_function,      % Currently compiling function
-    local_vars = #{}       % Local variable mappings
+    % Current module being compiled
+    module_name,
+    % Accumulated function definitions
+    functions = [],
+    % Export specifications
+    exports = [],
+    % Import specifications
+    imports = [],
+    % Type environment from type checker
+    type_env,
+    % Compilation options
+    options = [],
+    % Counter for generating temporary variables
+    temp_var_counter = 0,
+    % Counter for generating labels
+    label_counter = 0,
+    % Currently compiling function
+    current_function,
+    % Local variable mappings
+    local_vars = #{}
 }).
 
 %% Test the complete FSM compilation pipeline
 run() ->
     io:format("=== Testing FSM Compiler Support ===~n"),
-    
+
     Tests = [
         fun test_basic_fsm_compilation/0,
         fun test_fsm_function_generation/0,
@@ -32,21 +42,21 @@ run() ->
         fun test_fsm_with_timeouts/0,
         fun test_end_to_end_compilation/0
     ],
-    
+
     Results = lists:map(fun run_test/1, Tests),
-    
+
     Passed = length([ok || ok <- Results]),
     Failed = length(Results) - Passed,
-    
+
     io:format("~nFSM Compiler Tests Summary:~n"),
     io:format("  Passed: ~w~n", [Passed]),
     io:format("  Failed: ~w~n", [Failed]),
-    
+
     case Failed of
         0 -> io:format("All FSM compiler tests passed!~n");
         _ -> io:format("Some FSM compiler tests failed.~n")
     end,
-    
+
     {ok, #{passed => Passed, failed => Failed}}.
 
 run_test(TestFun) ->
@@ -106,33 +116,33 @@ test_basic_fsm_compilation() ->
         ],
         location = #location{line = 1, column = 1, file = "test"}
     },
-    
+
     % Compile the FSM
     State = cure_codegen:new_state(),
     {ok, Result, NewState} = cure_codegen:compile_fsm_impl(FSMDef, State),
-    
+
     % Verify the result structure
     {fsm, CompiledFSM} = Result,
-    
+
     % Check that it's a proper FSM definition
     fsm_definition = maps:get(type, CompiledFSM),
     traffic_light = maps:get(name, CompiledFSM),
-    
+
     % Check that functions were generated
     Functions = maps:get(functions, CompiledFSM),
     true = is_list(Functions),
     true = length(Functions) > 0,
-    
+
     % Check that exports were added
     NewExports = NewState#codegen_state.exports,
     true = lists:member({traffic_light_spawn, 0}, NewExports),
     true = lists:member({traffic_light_send, 2}, NewExports),
-    
+
     ok.
 
 test_fsm_function_generation() ->
     Location = #location{line = 1, column = 1, file = "test"},
-    
+
     % Create a mock compiled FSM definition
     CompiledFSM = #{
         name => test_fsm,
@@ -141,31 +151,33 @@ test_fsm_function_generation() ->
         transitions => #{state1 => #{event1 => {state2, undefined, undefined}}},
         timeouts => #{}
     },
-    
+
     % Generate FSM functions
     Functions = cure_codegen:generate_fsm_functions(test_fsm, CompiledFSM, Location),
-    
+
     % Should generate 5 functions (spawn/0, spawn/1, send/2, state/1, stop/1, definition/0)
-    ExpectedFunctionCount = 6, % spawn generates 2 functions (arity 0 and 1)
+
+    % spawn generates 2 functions (arity 0 and 1)
+    ExpectedFunctionCount = 6,
     ActualFunctionCount = length(lists:flatten(Functions)),
     true = ActualFunctionCount >= ExpectedFunctionCount,
-    
+
     % Check function names are correct
     FlatFunctions = lists:flatten(Functions),
     FunctionNames = [maps:get(name, F) || F <- FlatFunctions],
-    
+
     true = lists:member(test_fsm_spawn, FunctionNames),
     true = lists:member(test_fsm_send, FunctionNames),
     true = lists:member(test_fsm_state, FunctionNames),
     true = lists:member(test_fsm_stop, FunctionNames),
     true = lists:member(test_fsm_definition, FunctionNames),
-    
+
     ok.
 
 test_fsm_registration() ->
     % Test the FSM registration system
     cure_fsm_runtime:clear_fsm_registry(),
-    
+
     % Create a test FSM definition
     TestDefinition = #{
         name => test_registration_fsm,
@@ -174,25 +186,25 @@ test_fsm_registration() ->
         transitions => #{},
         timeouts => #{}
     },
-    
+
     % Register the FSM
     ok = cure_fsm_runtime:register_fsm_type(test_registration_fsm, TestDefinition),
-    
+
     % Verify it was registered
     {ok, Retrieved} = cure_fsm_runtime:lookup_fsm_definition(test_registration_fsm),
     TestDefinition = Retrieved,
-    
+
     % Test that unregistered types return error
     {error, not_found} = cure_fsm_runtime:lookup_fsm_definition(nonexistent_fsm),
-    
+
     % Test getting all registered types
     RegisteredTypes = cure_fsm_runtime:get_registered_fsm_types(),
     true = lists:member(test_registration_fsm, RegisteredTypes),
-    
+
     % Clean up
     cure_fsm_runtime:unregister_fsm_type(test_registration_fsm),
     {error, not_found} = cure_fsm_runtime:lookup_fsm_definition(test_registration_fsm),
-    
+
     ok.
 
 test_generated_erlang_forms() ->
@@ -217,69 +229,69 @@ test_generated_erlang_forms() ->
         ],
         location = #location{line = 1, column = 1, file = "test"}
     },
-    
+
     ModuleDef = #module_def{
         name = test_form_module,
         exports = [],
         items = [FSMDef],
         location = #location{line = 1, column = 1, file = "test"}
     },
-    
+
     % Compile the module
     {ok, CompiledModule} = cure_codegen:compile_module(ModuleDef, []),
-    
+
     % Convert to Erlang forms
     {ok, Forms} = cure_codegen:convert_to_erlang_forms(CompiledModule),
-    
+
     % Verify the forms structure
     true = is_list(Forms),
     true = length(Forms) > 0,
-    
+
     % Check for module attribute
     ModuleAttr = lists:keyfind(module, 3, Forms),
     {attribute, _, module, test_form_module} = ModuleAttr,
-    
+
     % Check for exports attribute
     ExportAttr = lists:keyfind(export, 3, Forms),
     {attribute, _, export, Exports} = ExportAttr,
     true = is_list(Exports),
-    
+
     % Should have FSM-related exports
     true = lists:member({form_test_fsm_spawn, 0}, Exports),
-    
+
     % Check for on_load attribute (FSM registration)
     OnLoadAttr = lists:keyfind(on_load, 3, Forms),
     {attribute, _, on_load, {register_fsms, 0}} = OnLoadAttr,
-    
+
     % Check for register_fsms function
     RegisterFunc = lists:keyfind(register_fsms, 3, Forms),
     {function, _, register_fsms, 0, _Clauses} = RegisterFunc,
-    
+
     ok.
 
 test_fsm_module_attributes() ->
     % Test that FSM modules get proper attributes
     State = cure_codegen:new_state(),
-    
+
     % Add some FSM definitions to the state
     FSMDef1 = #{type => fsm_definition, name => fsm1, definition => #{}},
     FSMDef2 = #{type => fsm_definition, name => fsm2, definition => #{}},
-    
+
     StateWithFSMs = State#codegen_state{
         functions = [{fsm, FSMDef1}, {fsm, FSMDef2}]
     },
-    
+
     % Generate module attributes
     Attributes = cure_codegen:generate_module_attributes(StateWithFSMs),
-    
+
     % Should include FSM types attribute
     FSMTypesAttr = lists:keyfind(fsm_types, 1, Attributes),
     {fsm_types, FSMTypes} = FSMTypesAttr,
-    
+
     % Should list both FSM names
     true = lists:member(fsm1, FSMTypes),
     true = lists:member(fsm2, FSMTypes),
-    
+
     ok.
 
 test_multiple_fsms() ->
@@ -291,7 +303,7 @@ test_multiple_fsms() ->
         state_defs = [],
         location = #location{line = 1, column = 1, file = "test"}
     },
-    
+
     FSM2 = #fsm_def{
         name = multi_fsm_2,
         states = [x, y, z],
@@ -299,34 +311,34 @@ test_multiple_fsms() ->
         state_defs = [],
         location = #location{line = 2, column = 1, file = "test"}
     },
-    
+
     ModuleDef = #module_def{
         name = multi_fsm_module,
         exports = [],
         items = [FSM1, FSM2],
         location = #location{line = 1, column = 1, file = "test"}
     },
-    
+
     % Compile the module
     {ok, CompiledModule} = cure_codegen:compile_module(ModuleDef, []),
-    
+
     % Check that both FSMs were compiled
     FSMDefinitions = maps:get(fsm_definitions, CompiledModule),
     2 = length(FSMDefinitions),
-    
+
     % Check that functions were generated for both FSMs
     Functions = maps:get(functions, CompiledModule),
     FunctionNames = [maps:get(name, F) || F <- Functions],
-    
+
     % Should have functions for both FSMs
     true = lists:member(multi_fsm_1_spawn, FunctionNames),
     true = lists:member(multi_fsm_2_spawn, FunctionNames),
-    
+
     % Check exports include both FSMs
     Exports = maps:get(exports, CompiledModule),
     true = lists:member({multi_fsm_1_spawn, 0}, Exports),
     true = lists:member({multi_fsm_2_spawn, 0}, Exports),
-    
+
     ok.
 
 test_fsm_with_timeouts() ->
@@ -351,17 +363,17 @@ test_fsm_with_timeouts() ->
         ],
         location = #location{line = 1, column = 1, file = "test"}
     },
-    
+
     % Compile the FSM definition
     CompiledFSM = cure_fsm_runtime:compile_fsm_definition(FSMDef),
-    
+
     % Check that timeouts were compiled
     Timeouts = CompiledFSM#fsm_definition.timeouts,
     true = is_map(Timeouts),
-    
+
     % Should have timeout for waiting state
     {5000, done} = maps:get(waiting, Timeouts),
-    
+
     ok.
 
 test_end_to_end_compilation() ->
@@ -398,18 +410,18 @@ test_end_to_end_compilation() ->
         ],
         location = #location{line = 1, column = 1, file = "test"}
     },
-    
+
     ModuleDef = #module_def{
         name = e2e_test_module,
         exports = [],
         items = [FSMDef],
         location = #location{line = 1, column = 1, file = "test"}
     },
-    
+
     % Full compilation pipeline
     {ok, CompiledModule} = cure_codegen:compile_module(ModuleDef, []),
     {ok, Forms} = cure_codegen:convert_to_erlang_forms(CompiledModule),
-    
+
     % Try to compile the forms to BEAM (this would normally be done by cure_beam_compiler)
     try
         {ok, _ModuleName, _Binary} = compile:forms(Forms, [binary, return_errors]),

@@ -56,6 +56,17 @@ make clean && make all && make test  # Full rebuild and test cycle
 make shell                           # Interactive development
 ```
 
+### Code Formatting (IMPORTANT - Erlang Project)
+**This is an Erlang project - DO NOT use Elixir tools:**
+- ❌ DO NOT run `mix format` or `mix credo`
+- ✅ Use `rebar3 fmt` for code formatting
+- ✅ Use `erlfmt` for Erlang source formatting
+
+```bash
+rebar3 fmt              # Format all Erlang source files
+rebar3 fmt --check      # Check formatting without changes
+```
+
 ## Testing Structure
 
 Tests are organized by compiler component:

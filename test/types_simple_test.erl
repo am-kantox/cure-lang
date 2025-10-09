@@ -27,25 +27,25 @@ run() ->
 test_basic_type_inference() ->
     % Test literal type inference
     Env = cure_typechecker:builtin_env(),
-    
+
     % Integer literal
     IntLiteral = #literal_expr{value = 42, location = create_location(1, 1)},
     Result1 = cure_typechecker:check_expression(IntLiteral, Env),
     ?assertMatch(#typecheck_result{success = true}, Result1),
     ?assertMatch({primitive_type, 'Int'}, Result1#typecheck_result.type),
-    
+
     % String literal
     StringLiteral = #literal_expr{value = "hello", location = create_location(1, 1)},
     Result2 = cure_typechecker:check_expression(StringLiteral, Env),
     ?assertMatch(#typecheck_result{success = true}, Result2),
     ?assertMatch({primitive_type, 'String'}, Result2#typecheck_result.type),
-    
+
     % Boolean literal
     BoolLiteral = #literal_expr{value = true, location = create_location(1, 1)},
     Result3 = cure_typechecker:check_expression(BoolLiteral, Env),
     ?assertMatch(#typecheck_result{success = true}, Result3),
     ?assertMatch({primitive_type, 'Bool'}, Result3#typecheck_result.type),
-    
+
     io:format("✓ Basic type inference test passed~n").
 
 %% Test simple function type checking
@@ -54,7 +54,9 @@ test_simple_function_checking() ->
     Function = #function_def{
         name = add,
         params = [
-            #param{name = x, type = #primitive_type{name = 'Int'}, location = create_location(1, 1)},
+            #param{
+                name = x, type = #primitive_type{name = 'Int'}, location = create_location(1, 1)
+            },
             #param{name = y, type = #primitive_type{name = 'Int'}, location = create_location(1, 1)}
         ],
         return_type = #primitive_type{name = 'Int'},
@@ -67,16 +69,16 @@ test_simple_function_checking() ->
         },
         location = create_location(1, 1)
     },
-    
+
     Result = cure_typechecker:check_function(Function),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result),
-    
+
     io:format("✓ Simple function checking test passed~n").
 
 %% Test list type inference
 test_list_type_inference() ->
     Env = cure_typechecker:builtin_env(),
-    
+
     % Test list literal [1, 2, 3]
     ListExpr = #list_expr{
         elements = [
@@ -86,11 +88,11 @@ test_list_type_inference() ->
         ],
         location = create_location(1, 1)
     },
-    
+
     Result = cure_typechecker:check_expression(ListExpr, Env),
     ?assertMatch(#typecheck_result{success = true}, Result),
     ?assertMatch({list_type, {primitive_type, 'Int'}, _}, Result#typecheck_result.type),
-    
+
     io:format("✓ List type inference test passed~n").
 
 %% Test basic type unification
@@ -100,17 +102,17 @@ test_basic_unification() ->
     Type2 = {primitive_type, 'Int'},
     Result1 = cure_types:unify(Type1, Type2),
     ?assertMatch({ok, _}, Result1),
-    
+
     % Test unification failure
     Type3 = {primitive_type, 'String'},
     Result2 = cure_types:unify(Type1, Type3),
     ?assertMatch({error, _}, Result2),
-    
+
     % Test type variable unification
     TypeVar = cure_types:new_type_var(),
     Result3 = cure_types:unify(TypeVar, Type1),
     ?assertMatch({ok, _}, Result3),
-    
+
     io:format("✓ Basic unification test passed~n").
 
 %% Helper functions

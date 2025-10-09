@@ -41,56 +41,60 @@ run() ->
 run_all_tests() ->
     io:format("Running Action Compilation Test Suite~n"),
     io:format("=====================================~n~n"),
-    
-    Results = lists:map(fun({TestName, Description}) ->
-        io:format("~s: ~s~n", [TestName, Description]),
-        Result = try
-            case TestName of
-                basic_assignment_test -> test_basic_assignment();
-                increment_decrement_test -> test_increment_decrement();
-                field_update_test -> test_field_update();
-                emit_event_test -> test_emit_event();
-                function_call_test -> test_function_call();
-                conditional_action_test -> test_conditional_action();
-                action_sequence_test -> test_action_sequence();
-                binary_operations_test -> test_binary_operations();
-                log_action_test -> test_log_action();
-                state_access_test -> test_state_access();
-                event_data_access_test -> test_event_data_access();
-                current_state_access_test -> test_current_state_access();
-                action_safety_test -> test_action_safety();
-                action_optimization_test -> test_action_optimization();
-                parser_integration_test -> test_parser_integration();
-                fsm_runtime_integration_test -> test_fsm_runtime_integration();
-                error_handling_test -> test_error_handling();
-                _ -> {error, unknown_test}
+
+    Results = lists:map(
+        fun({TestName, Description}) ->
+            io:format("~s: ~s~n", [TestName, Description]),
+            Result =
+                try
+                    case TestName of
+                        basic_assignment_test -> test_basic_assignment();
+                        increment_decrement_test -> test_increment_decrement();
+                        field_update_test -> test_field_update();
+                        emit_event_test -> test_emit_event();
+                        function_call_test -> test_function_call();
+                        conditional_action_test -> test_conditional_action();
+                        action_sequence_test -> test_action_sequence();
+                        binary_operations_test -> test_binary_operations();
+                        log_action_test -> test_log_action();
+                        state_access_test -> test_state_access();
+                        event_data_access_test -> test_event_data_access();
+                        current_state_access_test -> test_current_state_access();
+                        action_safety_test -> test_action_safety();
+                        action_optimization_test -> test_action_optimization();
+                        parser_integration_test -> test_parser_integration();
+                        fsm_runtime_integration_test -> test_fsm_runtime_integration();
+                        error_handling_test -> test_error_handling();
+                        _ -> {error, unknown_test}
+                    end
+                catch
+                    Error:Reason:Stack ->
+                        {error, {Error, Reason, Stack}}
+                end,
+
+            case Result of
+                {ok, Details} ->
+                    io:format("  ✓ PASSED~n~p~n~n", [Details]),
+                    {TestName, passed, Details};
+                {error, ErrorReason} ->
+                    io:format("  ✗ FAILED: ~p~n~n", [ErrorReason]),
+                    {TestName, failed, ErrorReason}
             end
-        catch
-            Error:Reason:Stack ->
-                {error, {Error, Reason, Stack}}
         end,
-        
-        case Result of
-            {ok, Details} ->
-                io:format("  ✓ PASSED~n~p~n~n", [Details]),
-                {TestName, passed, Details};
-            {error, ErrorReason} ->
-                io:format("  ✗ FAILED: ~p~n~n", [ErrorReason]),
-                {TestName, failed, ErrorReason}
-        end
-    end, ?TEST_CASES),
-    
+        ?TEST_CASES
+    ),
+
     Passed = length([Result || {_, passed, _} = Result <- Results]),
     Failed = length([Result || {_, failed, _} = Result <- Results]),
     Total = length(Results),
-    
+
     io:format("Test Results: ~p/~p passed, ~p failed~n", [Passed, Total, Failed]),
-    
+
     case Failed of
-        0 -> 
+        0 ->
             io:format("All tests passed!~n"),
             ok;
-        _ -> 
+        _ ->
             io:format("Some tests failed.~n"),
             FailedTests = [Name || {Name, failed, _} <- Results],
             io:format("Failed tests: ~p~n", [FailedTests]),
@@ -106,7 +110,7 @@ test_basic_assignment() ->
     % Test action: counter = 42
     Location = #location{line = 1, column = 1, file = "test"},
     Action = {assign, counter, {literal, 42, Location}, Location},
-    
+
     case cure_action_compiler:compile_action(Action, #{}) of
         {ok, Instructions, _State} ->
             % Verify instructions contain assignment operations
@@ -125,18 +129,20 @@ test_basic_assignment() ->
 %% Test increment and decrement actions
 test_increment_decrement() ->
     Location = #location{line = 1, column = 1, file = "test"},
-    
+
     % Test increment: counter += 5
     IncrementAction = {increment, counter, {literal, 5, Location}, Location},
     case cure_action_compiler:compile_action(IncrementAction, #{}) of
         {ok, IncrInstructions, _} ->
-            % Test decrement: counter -= 3  
+            % Test decrement: counter -= 3
             DecrementAction = {decrement, counter, {literal, 3, Location}, Location},
             case cure_action_compiler:compile_action(DecrementAction, #{}) of
                 {ok, DecrInstructions, _} ->
                     {ok, {
-                        increment_ops, length(IncrInstructions),
-                        decrement_ops, length(DecrInstructions)
+                        increment_ops,
+                        length(IncrInstructions),
+                        decrement_ops,
+                        length(DecrInstructions)
                     }};
                 {error, Reason} ->
                     {error, {decrement_compilation_failed, Reason}}
@@ -149,7 +155,7 @@ test_increment_decrement() ->
 test_field_update() ->
     Location = #location{line = 1, column = 1, file = "test"},
     Action = {update, speed, {literal, 100, Location}, Location},
-    
+
     case cure_action_compiler:compile_action(Action, #{}) of
         {ok, Instructions, _State} ->
             % Verify field update operations
@@ -167,11 +173,11 @@ test_field_update() ->
 %% Test event emission actions
 test_emit_event() ->
     Location = #location{line = 1, column = 1, file = "test"},
-    
+
     % Test emit with data: emit(start_event, {some: data})
-    Action = {emit, {literal, start_event, Location}, 
-              {literal, #{some => data}, Location}, Location},
-    
+    Action =
+        {emit, {literal, start_event, Location}, {literal, #{some => data}, Location}, Location},
+
     case cure_action_compiler:compile_action(Action, #{}) of
         {ok, Instructions, _State} ->
             Ops = [maps:get(op, I) || I <- Instructions],
@@ -189,7 +195,7 @@ test_emit_event() ->
 test_function_call() ->
     Location = #location{line = 1, column = 1, file = "test"},
     Action = {call, length, [{state_var, items, Location}], Location},
-    
+
     case cure_action_compiler:compile_action(Action, #{}) of
         {ok, Instructions, _State} ->
             Ops = [maps:get(op, I) || I <- Instructions],
@@ -207,14 +213,13 @@ test_function_call() ->
 %% Test conditional if-then-else actions
 test_conditional_action() ->
     Location = #location{line = 1, column = 1, file = "test"},
-    
+
     % if counter > 10 then counter = 0 else counter += 1 end
-    Condition = {binary_op, '>', {state_var, counter, Location}, 
-                 {literal, 10, Location}, Location},
+    Condition = {binary_op, '>', {state_var, counter, Location}, {literal, 10, Location}, Location},
     ThenAction = {assign, counter, {literal, 0, Location}, Location},
     ElseAction = {increment, counter, {literal, 1, Location}, Location},
     Action = {if_then, Condition, ThenAction, ElseAction, Location},
-    
+
     case cure_action_compiler:compile_action(Action, #{}) of
         {ok, Instructions, _State} ->
             Ops = [maps:get(op, I) || I <- Instructions],
@@ -233,20 +238,21 @@ test_conditional_action() ->
 %% Test action sequences
 test_action_sequence() ->
     Location = #location{line = 1, column = 1, file = "test"},
-    
+
     Actions = [
         {assign, x, {literal, 1, Location}, Location},
         {assign, y, {literal, 2, Location}, Location},
-        {assign, z, {binary_op, '+', {state_var, x, Location}, 
-                     {state_var, y, Location}, Location}, Location}
+        {assign, z, {binary_op, '+', {state_var, x, Location}, {state_var, y, Location}, Location},
+            Location}
     ],
     SequenceAction = {sequence, Actions, Location},
-    
+
     case cure_action_compiler:compile_action(SequenceAction, #{}) of
         {ok, Instructions, _State} ->
             % Should have instructions for all three assignments plus operations
             InstructionCount = length(Instructions),
-            case InstructionCount >= 9 of  % Minimum expected instructions
+            % Minimum expected instructions
+            case InstructionCount >= 9 of
                 true ->
                     {ok, {sequence_compiled, InstructionCount}};
                 false ->
@@ -259,19 +265,19 @@ test_action_sequence() ->
 %% Test binary operations in actions
 test_binary_operations() ->
     Location = #location{line = 1, column = 1, file = "test"},
-    
+
     % Test various binary operations: result = x + y * 2
-    Value = {binary_op, '+', 
-             {state_var, x, Location},
-             {binary_op, '*', {state_var, y, Location}, 
-              {literal, 2, Location}, Location}, Location},
+    Value =
+        {binary_op, '+', {state_var, x, Location},
+            {binary_op, '*', {state_var, y, Location}, {literal, 2, Location}, Location}, Location},
     Action = {assign, result, Value, Location},
-    
+
     case cure_action_compiler:compile_action(Action, #{}) of
         {ok, Instructions, _State} ->
             Ops = [maps:get(op, I) || I <- Instructions],
             BinaryOps = [Op || Op <- Ops, Op =:= binary_op],
-            case length(BinaryOps) >= 2 of  % Should have at least 2 binary operations
+            % Should have at least 2 binary operations
+            case length(BinaryOps) >= 2 of
                 true ->
                     {ok, {binary_ops_compiled, length(BinaryOps), length(Instructions)}};
                 false ->
@@ -285,7 +291,7 @@ test_binary_operations() ->
 test_log_action() ->
     Location = #location{line = 1, column = 1, file = "test"},
     Action = {log, info, {literal, "FSM state changed", Location}, Location},
-    
+
     case cure_action_compiler:compile_action(Action, #{}) of
         {ok, Instructions, _State} ->
             Ops = [maps:get(op, I) || I <- Instructions],
@@ -302,7 +308,7 @@ test_log_action() ->
 %% Test state variable and field access
 test_state_access() ->
     Location = #location{line = 1, column = 1, file = "test"},
-    
+
     % Test state variable access
     VarAction = {assign, temp, {state_var, counter, Location}, Location},
     case cure_action_compiler:compile_action(VarAction, #{}) of
@@ -317,8 +323,9 @@ test_state_access() ->
                     HasFieldAccess = lists:member(load_state_field, FieldOps),
                     case HasVarAccess andalso HasFieldAccess of
                         true ->
-                            {ok, {state_access_compiled, var_ops, length(VarInstructions),
-                                  field_ops, length(FieldInstructions)}};
+                            {ok,
+                                {state_access_compiled, var_ops, length(VarInstructions), field_ops,
+                                    length(FieldInstructions)}};
                         false ->
                             {error, {missing_access_ops, HasVarAccess, HasFieldAccess}}
                     end;
@@ -333,7 +340,7 @@ test_state_access() ->
 test_event_data_access() ->
     Location = #location{line = 1, column = 1, file = "test"},
     Action = {assign, received_data, {event_data, Location}, Location},
-    
+
     case cure_action_compiler:compile_action(Action, #{}) of
         {ok, Instructions, _State} ->
             Ops = [maps:get(op, I) || I <- Instructions],
@@ -351,7 +358,7 @@ test_event_data_access() ->
 test_current_state_access() ->
     Location = #location{line = 1, column = 1, file = "test"},
     Action = {assign, prev_state, {current_state, Location}, Location},
-    
+
     case cure_action_compiler:compile_action(Action, #{}) of
         {ok, Instructions, _State} ->
             Ops = [maps:get(op, I) || I <- Instructions],
@@ -368,7 +375,7 @@ test_current_state_access() ->
 %% Test action safety analysis
 test_action_safety() ->
     Location = #location{line = 1, column = 1, file = "test"},
-    
+
     % Test safe action
     SafeAction = {assign, counter, {literal, 42, Location}, Location},
     case cure_action_compiler:analyze_action_safety(SafeAction, #{}) of
@@ -385,12 +392,12 @@ test_action_safety() ->
 %% Test action optimization passes
 test_action_optimization() ->
     Location = #location{line = 1, column = 1, file = "test"},
-    
+
     % Create an action that should be optimizable (constant folding)
-    OptimizableAction = {assign, result, 
-                        {binary_op, '+', {literal, 5, Location}, 
-                         {literal, 3, Location}, Location}, Location},
-    
+    OptimizableAction =
+        {assign, result, {binary_op, '+', {literal, 5, Location}, {literal, 3, Location}, Location},
+            Location},
+
     case cure_action_compiler:compile_action(OptimizableAction, #{optimization_level => 2}) of
         {ok, Instructions, State} ->
             % Check if optimization occurred
@@ -416,27 +423,28 @@ test_parser_integration() ->
                 {error, {tokenize_failed, Reason}}
         end
     end,
-    
+
     % Simple FSM with action
-    FSMCode = "fsm TestFSM do
-        states: [idle, active]
-        initial: idle
-        
-        state idle do
-            event(start) -> active do
-                counter = 1
-            end
-        end
-        
-        state active do
-            event(stop) -> idle do {
-                counter = 0;
-                log(info, \"Stopping\")
-            }
-            end
-        end
-    end",
-    
+    FSMCode =
+        "fsm TestFSM do\n"
+        "        states: [idle, active]\n"
+        "        initial: idle\n"
+        "        \n"
+        "        state idle do\n"
+        "            event(start) -> active do\n"
+        "                counter = 1\n"
+        "            end\n"
+        "        end\n"
+        "        \n"
+        "        state active do\n"
+        "            event(stop) -> idle do {\n"
+        "                counter = 0;\n"
+        "                log(info, \"Stopping\")\n"
+        "            }\n"
+        "            end\n"
+        "        end\n"
+        "    end",
+
     case TokenizeAndParse(FSMCode) of
         {ok, AST} ->
             % Check if the FSM contains action expressions
@@ -455,20 +463,20 @@ test_parser_integration() ->
 %% Test FSM runtime action execution
 test_fsm_runtime_integration() ->
     Location = #location{line = 1, column = 1, file = "test"},
-    
+
     % Create a simple compiled action
     Action = {assign, counter, {literal, 42, Location}, Location},
     case cure_action_compiler:compile_action(Action, #{}) of
         {ok, Instructions, _} ->
             CompiledAction = {compiled_action, Instructions},
-            
+
             % Create mock FSM state
             MockState = #fsm_state{
                 current_state = idle,
                 data = #{counter => 0},
                 event_data = undefined
             },
-            
+
             % Test action execution
             try
                 NewData = cure_fsm_runtime:execute_action(CompiledAction, MockState, undefined),
@@ -489,7 +497,7 @@ test_fsm_runtime_integration() ->
 %% Test error handling in action compilation
 test_error_handling() ->
     Location = #location{line = 1, column = 1, file = "test"},
-    
+
     % Test invalid action type
     InvalidAction = {invalid_action_type, something, Location},
     case cure_action_compiler:compile_action(InvalidAction, #{}) of
@@ -521,23 +529,34 @@ find_actions_in_ast(AST) ->
     end.
 
 %% Count actions in AST recursively
-count_actions_in_ast([], Count) -> Count;
+count_actions_in_ast([], Count) ->
+    Count;
 count_actions_in_ast(#fsm_def{state_defs = StateDefs}, Count) ->
-    lists:foldl(fun(StateDef, Acc) ->
-        count_actions_in_state_def(StateDef, Acc)
-    end, Count, StateDefs);
+    lists:foldl(
+        fun(StateDef, Acc) ->
+            count_actions_in_state_def(StateDef, Acc)
+        end,
+        Count,
+        StateDefs
+    );
 count_actions_in_ast([Item | Rest], Count) when is_list(Rest) ->
     NewCount = count_actions_in_ast(Item, Count),
     count_actions_in_ast(Rest, NewCount);
-count_actions_in_ast(_, Count) -> Count.
+count_actions_in_ast(_, Count) ->
+    Count.
 
 %% Count actions in state definition
 count_actions_in_state_def(#state_def{transitions = Transitions}, Count) ->
-    lists:foldl(fun(Transition, Acc) ->
-        case Transition of
-            #transition{action = undefined} -> Acc;
-            #transition{action = _Action} -> Acc + 1;
-            _ -> Acc
-        end
-    end, Count, Transitions);
-count_actions_in_state_def(_, Count) -> Count.
+    lists:foldl(
+        fun(Transition, Acc) ->
+            case Transition of
+                #transition{action = undefined} -> Acc;
+                #transition{action = _Action} -> Acc + 1;
+                _ -> Acc
+            end
+        end,
+        Count,
+        Transitions
+    );
+count_actions_in_state_def(_, Count) ->
+    Count.

@@ -114,7 +114,7 @@ lint:
 # Format code
 format:
 	@echo "Formatting Cure source code..."
-	# TODO: Add code formatting
+	rebar3 fmt
 
 # Compile a specific .cure file
 compile-file: compiler

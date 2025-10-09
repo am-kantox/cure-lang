@@ -7,25 +7,25 @@
     % FSM lifecycle
     fsm_spawn/1, fsm_spawn/2,
     fsm_stop/1,
-    
+
     % FSM operations
     fsm_send/2, fsm_send/3,
     fsm_state/1,
     fsm_info/1,
-    
+
     % FSM utilities
     fsm_is_alive/1,
     fsm_monitor/1,
     fsm_link/1,
-    
+
     % FSM synchronization
     fsm_call/2, fsm_call/3,
     fsm_wait_state/2, fsm_wait_state/3,
-    
+
     % FSM inspection (for debugging)
     fsm_history/1,
     fsm_dump_state/1,
-    
+
     % Integration functions
     register_fsm_builtins/1,
     register_module_fsms/1,
@@ -38,11 +38,16 @@
 
 %% Include FSM runtime records
 -record(fsm_definition, {
-    name,             % FSM type name
-    states,           % List of valid states
-    initial_state,    % Initial state
-    transitions,      % Transition table: #{State => #{Event => {Target, Guard, Action}}}
-    timeouts          % Timeout table: #{State => {Timeout, Event}}
+    % FSM type name
+    name,
+    % List of valid states
+    states,
+    % Initial state
+    initial_state,
+    % Transition table: #{State => #{Event => {Target, Guard, Action}}}
+    transitions,
+    % Timeout table: #{State => {Timeout, Event}}
+    timeouts
 }).
 
 %% ============================================================================
@@ -150,15 +155,15 @@ fsm_call(FSMPid, Event) ->
 fsm_call(FSMPid, Event, Timeout) when is_pid(FSMPid), is_integer(Timeout), Timeout > 0 ->
     % Send event asynchronously
     ok = fsm_send(FSMPid, Event),
-    
-    % Wait for state change or timeout
-    InitialState = case fsm_state(FSMPid) of
-        {ok, State} -> State;
-        {error, _} -> undefined
-    end,
-    
-    wait_for_state_change(FSMPid, InitialState, Timeout);
 
+    % Wait for state change or timeout
+    InitialState =
+        case fsm_state(FSMPid) of
+            {ok, State} -> State;
+            {error, _} -> undefined
+        end,
+
+    wait_for_state_change(FSMPid, InitialState, Timeout);
 fsm_call(FSM, _Event, _Timeout) ->
     {error, {invalid_fsm_pid, FSM}}.
 
@@ -168,14 +173,13 @@ fsm_wait_state(FSMPid, TargetState) ->
 
 fsm_wait_state(FSMPid, TargetState, Timeout) when is_pid(FSMPid), is_atom(TargetState) ->
     case fsm_state(FSMPid) of
-        {ok, TargetState} -> 
+        {ok, TargetState} ->
             {ok, TargetState};
         {ok, _OtherState} ->
             wait_for_target_state(FSMPid, TargetState, Timeout);
         {error, Reason} ->
             {error, Reason}
     end;
-
 fsm_wait_state(FSM, _TargetState, _Timeout) ->
     {error, {invalid_fsm_pid, FSM}}.
 
@@ -215,7 +219,7 @@ wait_for_state_change(FSMPid, InitialState, Timeout) ->
 
 wait_for_change_loop(FSMPid, InitialState, StartTime, Timeout) ->
     CurrentTime = erlang:system_time(millisecond),
-    
+
     if
         CurrentTime - StartTime >= Timeout ->
             {error, timeout};
@@ -240,7 +244,7 @@ wait_for_target_state(FSMPid, TargetState, Timeout) ->
 
 wait_for_target_loop(FSMPid, TargetState, StartTime, Timeout) ->
     CurrentTime = erlang:system_time(millisecond),
-    
+
     if
         CurrentTime - StartTime >= Timeout ->
             {error, timeout};
@@ -265,21 +269,23 @@ wait_for_target_loop(FSMPid, TargetState, StartTime, Timeout) ->
 
 register_fsm_builtins(TypeEnv) ->
     % Add FSM built-in functions to type environment
-    
+
     % fsm_spawn/1,2
     FSMSpawn1Type = {function_type, [{primitive_type, 'Atom'}], {fsm_type}},
     _FSMSpawn2Type = {function_type, [{primitive_type, 'Atom'}, {any_type}], {fsm_type}},
-    
+
     % fsm_send/2,3
     FSMSend2Type = {function_type, [{fsm_type}, {any_type}], {primitive_type, 'Atom'}},
     _FSMSend3Type = {function_type, [{fsm_type}, {any_type}, {any_type}], {primitive_type, 'Atom'}},
-    
+
     % fsm_state/1
-    FSMStateType = {function_type, [{fsm_type}], {union_type, [{primitive_type, 'Atom'}, {error_type}]}},
-    
+    FSMStateType =
+        {function_type, [{fsm_type}], {union_type, [{primitive_type, 'Atom'}, {error_type}]}},
+
     % fsm_stop/1
-    FSMStopType = {function_type, [{fsm_type}], {union_type, [{primitive_type, 'Atom'}, {error_type}]}},
-    
+    FSMStopType =
+        {function_type, [{fsm_type}], {union_type, [{primitive_type, 'Atom'}, {error_type}]}},
+
     % Register all built-in functions
     Functions = [
         {fsm_spawn, FSMSpawn1Type},
@@ -288,10 +294,14 @@ register_fsm_builtins(TypeEnv) ->
         {fsm_stop, FSMStopType}
         % TODO: Add types for all other functions
     ],
-    
-    lists:foldl(fun({Name, Type}, Env) ->
-        cure_types:extend_env(Env, Name, Type)
-    end, TypeEnv, Functions).
+
+    lists:foldl(
+        fun({Name, Type}, Env) ->
+            cure_types:extend_env(Env, Name, Type)
+        end,
+        TypeEnv,
+        Functions
+    ).
 
 %% ============================================================================
 %% Compiler Integration Functions
@@ -301,24 +311,28 @@ register_fsm_builtins(TypeEnv) ->
 
 register_module_fsms(ModuleAST) ->
     FSMDefs = extract_fsm_definitions(ModuleAST),
-    lists:foreach(fun(FSMDef) ->
-        CompiledDef = cure_fsm_runtime:compile_fsm_definition(FSMDef),
-        cure_fsm_runtime:register_fsm_definition(FSMDef#fsm_def.name, CompiledDef)
-    end, FSMDefs),
+    lists:foreach(
+        fun(FSMDef) ->
+            CompiledDef = cure_fsm_runtime:compile_fsm_definition(FSMDef),
+            cure_fsm_runtime:register_fsm_definition(FSMDef#fsm_def.name, CompiledDef)
+        end,
+        FSMDefs
+    ),
     ok.
 
 %% Extract FSM definitions from module AST
 extract_fsm_definitions(ModuleAST) when is_list(ModuleAST) ->
-    lists:filtermap(fun(Item) ->
-        case Item of
-            #fsm_def{} -> {true, Item};
-            _ -> false
-        end
-    end, ModuleAST);
-
+    lists:filtermap(
+        fun(Item) ->
+            case Item of
+                #fsm_def{} -> {true, Item};
+                _ -> false
+            end
+        end,
+        ModuleAST
+    );
 extract_fsm_definitions(#module_def{items = Items}) ->
     extract_fsm_definitions(Items);
-
 extract_fsm_definitions(_) ->
     [].
 

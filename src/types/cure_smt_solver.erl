@@ -7,23 +7,23 @@
     solve_constraints/1, solve_constraints/2,
     check_satisfiable/1,
     prove_constraint/2,
-    
+
     % Constraint construction
     new_constraint/3,
     arithmetic_constraint/3,
     equality_constraint/2,
     implication_constraint/2,
-    
+
     % Pattern matching inference
     infer_pattern_length/2,
     list_pattern_length_constraint/2,
     infer_tail_length_constraint/3,
     infer_pattern_length_constraint/2,
-    
+
     % Proof assistant
     generate_proof/2,
     check_proof/2,
-    
+
     % Utility functions
     constraint_to_string/1,
     variable_term/1,
@@ -87,7 +87,7 @@
 solve_constraints(Constraints) ->
     solve_constraints(Constraints, #{}).
 
--spec solve_constraints([smt_constraint()], #{atom() => term()}) -> 
+-spec solve_constraints([smt_constraint()], #{atom() => term()}) ->
     {sat, #{atom() => term()}} | unsat | unknown.
 solve_constraints(Constraints, InitialAssignment) ->
     Context = #smt_context{
@@ -106,7 +106,7 @@ check_satisfiable(Constraint) ->
     end.
 
 %% @doc Prove that a constraint follows from given assumptions
--spec prove_constraint([smt_constraint()], smt_constraint()) -> 
+-spec prove_constraint([smt_constraint()], smt_constraint()) ->
     {proved, proof_term()} | {disproved, proof_term()} | unknown.
 prove_constraint(Assumptions, Goal) ->
     % Try to prove Goal from Assumptions
@@ -176,7 +176,7 @@ implication_constraint(Premise, Conclusion) ->
 -spec infer_pattern_length(term(), smt_term()) -> [smt_constraint()].
 infer_pattern_length({list_pattern, Elements, Tail, _Location}, ListLengthVar) ->
     ElementCount = length(Elements),
-    
+
     case Tail of
         undefined ->
             % Fixed length pattern [a, b, c] means length = 3
@@ -189,7 +189,7 @@ infer_pattern_length({list_pattern, Elements, Tail, _Location}, ListLengthVar) -
             TailLengthVar = variable_term(list_to_atom(atom_to_list(TailVar) ++ "_length")),
             [
                 arithmetic_constraint(
-                    ListLengthVar, 
+                    ListLengthVar,
                     '=',
                     addition_expression([constant_term(ElementCount), TailLengthVar])
                 )
@@ -198,7 +198,6 @@ infer_pattern_length({list_pattern, Elements, Tail, _Location}, ListLengthVar) -
             % Other tail patterns - assume minimum length
             [inequality_constraint(ListLengthVar, '>=', constant_term(ElementCount))]
     end;
-
 %% Handle standard cons pattern [H|T] where H is single element
 infer_pattern_length({cons_pattern, _Head, Tail, _Location}, ListLengthVar) ->
     case Tail of
@@ -207,7 +206,7 @@ infer_pattern_length({cons_pattern, _Head, Tail, _Location}, ListLengthVar) ->
             TailLengthVar = variable_term(list_to_atom(atom_to_list(TailVar) ++ "_length")),
             [
                 arithmetic_constraint(
-                    ListLengthVar, 
+                    ListLengthVar,
                     '=',
                     addition_expression([constant_term(1), TailLengthVar])
                 )
@@ -216,7 +215,6 @@ infer_pattern_length({cons_pattern, _Head, Tail, _Location}, ListLengthVar) ->
             % [x|_] means length >= 1
             [inequality_constraint(ListLengthVar, '>=', constant_term(1))]
     end;
-
 %% Handle other pattern types
 infer_pattern_length(_, _) ->
     [].
@@ -224,17 +222,20 @@ infer_pattern_length(_, _) ->
 %% @doc Generate length constraints for list pattern matching
 -spec list_pattern_length_constraint(term(), atom()) -> smt_constraint().
 list_pattern_length_constraint(Pattern, LengthVar) ->
-    [Constraint|_] = infer_pattern_length(Pattern, variable_term(LengthVar)),
+    [Constraint | _] = infer_pattern_length(Pattern, variable_term(LengthVar)),
     Constraint.
 
 %% @doc Infer tail length constraint for safe_tail function
 %% When matching [_|xs] -> xs, the tail xs has length n-1 where n is original list length
 -spec infer_tail_length_constraint(term(), atom(), atom()) -> [smt_constraint()].
-infer_tail_length_constraint({cons_pattern, _, {identifier_pattern, TailVar, _}, _}, 
-                           OriginalLengthVar, TailLengthVar) ->
+infer_tail_length_constraint(
+    {cons_pattern, _, {identifier_pattern, TailVar, _}, _},
+    OriginalLengthVar,
+    TailLengthVar
+) ->
     % [_|xs] -> xs means xs_length = original_length - 1
     TailMinusOne = subtraction_expression([
-        variable_term(OriginalLengthVar), 
+        variable_term(OriginalLengthVar),
         constant_term(1)
     ]),
     [
@@ -244,11 +245,14 @@ infer_tail_length_constraint({cons_pattern, _, {identifier_pattern, TailVar, _},
             TailMinusOne
         )
     ];
-infer_tail_length_constraint({list_pattern, [_], {identifier_pattern, TailVar, _}, _}, 
-                               OriginalLengthVar, TailLengthVar) ->
-    % [_|tail] -> tail means tail_length = original_length - 1  
+infer_tail_length_constraint(
+    {list_pattern, [_], {identifier_pattern, TailVar, _}, _},
+    OriginalLengthVar,
+    TailLengthVar
+) ->
+    % [_|tail] -> tail means tail_length = original_length - 1
     TailMinusOne = subtraction_expression([
-        variable_term(OriginalLengthVar), 
+        variable_term(OriginalLengthVar),
         constant_term(1)
     ]),
     [
@@ -271,42 +275,55 @@ infer_pattern_length_constraint(Pattern, OriginalLengthVar) ->
             case Tail of
                 undefined ->
                     % [a, b, c] -> length must be exactly HeadCount
-                    [equality_constraint(
-                        variable_term(OriginalLengthVar),
-                        constant_term(HeadCount)
-                    )];
+                    [
+                        equality_constraint(
+                            variable_term(OriginalLengthVar),
+                            constant_term(HeadCount)
+                        )
+                    ];
                 {identifier_pattern, TailVar, _} ->
                     % [a, b | xs] -> xs_length = original_length - HeadCount
                     TailLengthVar = atom_to_list(TailVar) ++ "_length",
-                    [arithmetic_constraint(
-                        variable_term(list_to_atom(TailLengthVar)),
-                        '=',
-                        subtraction_expression([variable_term(OriginalLengthVar), constant_term(HeadCount)])
-                    )];
+                    [
+                        arithmetic_constraint(
+                            variable_term(list_to_atom(TailLengthVar)),
+                            '=',
+                            subtraction_expression([
+                                variable_term(OriginalLengthVar), constant_term(HeadCount)
+                            ])
+                        )
+                    ];
                 {wildcard_pattern, _} ->
                     % [a, b | _] -> length >= HeadCount (wildcard doesn't create constraints)
-                    [inequality_constraint(
-                        variable_term(OriginalLengthVar),
-                        '>=',
-                        constant_term(HeadCount)
-                    )]
+                    [
+                        inequality_constraint(
+                            variable_term(OriginalLengthVar),
+                            '>=',
+                            constant_term(HeadCount)
+                        )
+                    ]
             end;
         {cons_pattern, _Head, {identifier_pattern, TailVar, _}, _Location} ->
             % [x|xs] -> xs_length = original_length - 1
             TailLengthVar = atom_to_list(TailVar) ++ "_length",
-            [arithmetic_constraint(
-                variable_term(list_to_atom(TailLengthVar)),
-                '=',
-                subtraction_expression([variable_term(OriginalLengthVar), constant_term(1)])
-            )];
+            [
+                arithmetic_constraint(
+                    variable_term(list_to_atom(TailLengthVar)),
+                    '=',
+                    subtraction_expression([variable_term(OriginalLengthVar), constant_term(1)])
+                )
+            ];
         {cons_pattern, _Head, {wildcard_pattern, _}, _Location} ->
             % [x|_] -> length >= 1 (wildcard doesn't create tail constraints)
-            [inequality_constraint(
-                variable_term(OriginalLengthVar),
-                '>=',
-                constant_term(1)
-            )];
-        _ -> []
+            [
+                inequality_constraint(
+                    variable_term(OriginalLengthVar),
+                    '>=',
+                    constant_term(1)
+                )
+            ];
+        _ ->
+            []
     end.
 
 %% ============================================================================
@@ -316,19 +333,23 @@ infer_pattern_length_constraint(Pattern, OriginalLengthVar) ->
 %% Solve SMT context
 solve_context(Context, Assignment) ->
     case simplify_constraints(Context#smt_context.constraints) of
-        [] -> {sat, Assignment};
+        [] ->
+            {sat, Assignment};
         SimplifiedConstraints ->
             case check_inconsistency(SimplifiedConstraints) of
-                true -> unsat;
+                true ->
+                    unsat;
                 false ->
                     case find_unit_constraints(SimplifiedConstraints) of
-                        [] -> 
+                        [] ->
                             % No unit constraints, try case splitting
                             case_split_solve(SimplifiedConstraints, Assignment);
                         UnitConstraints ->
                             % Apply unit constraints and continue
                             NewAssignment = apply_unit_constraints(UnitConstraints, Assignment),
-                            RemainingConstraints = propagate_assignments(SimplifiedConstraints, NewAssignment),
+                            RemainingConstraints = propagate_assignments(
+                                SimplifiedConstraints, NewAssignment
+                            ),
                             solve_context(
                                 Context#smt_context{constraints = RemainingConstraints},
                                 NewAssignment
@@ -348,15 +369,18 @@ simplify_constraint(Constraint, Acc) ->
             Acc;
         #smt_constraint{type = equality, left = Left, op = '=', right = Right} ->
             case {Left, Right} of
-                {#smt_term{type = constant, value = V1}, 
-                 #smt_term{type = constant, value = V2}} ->
+                {#smt_term{type = constant, value = V1}, #smt_term{type = constant, value = V2}} ->
                     case V1 =:= V2 of
-                        true -> Acc;  % Remove tautology
-                        false -> [false_constraint() | Acc]  % Add contradiction
+                        % Remove tautology
+                        true -> Acc;
+                        % Add contradiction
+                        false -> [false_constraint() | Acc]
                     end;
-                _ -> [Constraint | Acc]
+                _ ->
+                    [Constraint | Acc]
             end;
-        _ -> [Constraint | Acc]
+        _ ->
+            [Constraint | Acc]
     end.
 
 %% Check for obvious inconsistencies
@@ -374,12 +398,15 @@ apply_unit_constraints(UnitConstraints, Assignment) ->
 %% Case splitting for DPLL-style solving
 case_split_solve(Constraints, Assignment) ->
     case choose_variable(Constraints) of
-        undefined -> unknown;  % No more variables to split on
+        % No more variables to split on
+        undefined ->
+            unknown;
         Var ->
             % Try positive assignment
             PositiveAssignment = Assignment#{Var => true},
             case solve_context(#smt_context{constraints = Constraints}, PositiveAssignment) of
-                {sat, Solution} -> {sat, Solution};
+                {sat, Solution} ->
+                    {sat, Solution};
                 _ ->
                     % Try negative assignment
                     NegativeAssignment = Assignment#{Var => false},
@@ -394,7 +421,8 @@ case_split_solve(Constraints, Assignment) ->
 %% Attempt to construct a proof
 attempt_proof(Context, Goal) ->
     case try_direct_proof(Context#smt_context.assumptions, Goal) of
-        {proved, Proof} -> {proved, Proof};
+        {proved, Proof} ->
+            {proved, Proof};
         failed ->
             case try_contradiction_proof(Context#smt_context.assumptions, Goal) of
                 {proved, Proof} -> {proved, Proof};
@@ -427,7 +455,8 @@ try_contradiction_proof(Assumptions, Goal) ->
                 rule = contradiction,
                 subproofs = []
             }};
-        _ -> failed
+        _ ->
+            failed
     end.
 
 %% Try various inference rules
@@ -445,7 +474,8 @@ try_arithmetic_inference(Assumptions, Goal) ->
             try_equality_inference(Assumptions, Left, Right);
         #smt_constraint{type = inequality} ->
             try_inequality_inference(Assumptions, Goal);
-        _ -> failed
+        _ ->
+            failed
     end.
 
 try_equality_inference(Assumptions, Left, Right) ->
@@ -456,21 +486,24 @@ try_equality_inference(Assumptions, Left, Right) ->
             try_solve_arithmetic_equality(Assumptions, Var, Right);
         {#smt_term{type = expression}, #smt_term{type = variable, value = Var}} ->
             try_solve_arithmetic_equality(Assumptions, Var, Left);
-        _ -> failed
+        _ ->
+            failed
     end.
 
 try_inequality_inference(Assumptions, Goal) ->
     #smt_constraint{left = Left, op = Op, right = Right} = Goal,
     case evaluate_arithmetic_comparison(Left, Op, Right, Assumptions) of
-        true -> 
+        true ->
             {proved, #proof_term{
                 conclusion = Goal,
                 premises = Assumptions,
                 rule = arithmetic_evaluation,
                 subproofs = []
             }};
-        false -> failed;
-        unknown -> failed
+        false ->
+            failed;
+        unknown ->
+            failed
     end.
 
 %% ============================================================================
@@ -557,7 +590,8 @@ apply_unit_constraint(#smt_constraint{type = equality, left = Left, right = Righ
             Assignment#{Var => Val};
         {#smt_term{type = constant, value = Val}, #smt_term{type = variable, value = Var}} ->
             Assignment#{Var => Val};
-        _ -> Assignment
+        _ ->
+            Assignment
     end;
 apply_unit_constraint(_, Assignment) ->
     Assignment.
@@ -567,7 +601,7 @@ choose_variable(Constraints) ->
     Variables = extract_variables(Constraints),
     case maps:keys(Variables) of
         [] -> undefined;
-        [Var|_] -> Var
+        [Var | _] -> Var
     end.
 
 propagate_assignments(Constraints, Assignment) ->
@@ -634,7 +668,8 @@ negate_constraint(Constraint) ->
         #smt_constraint{op = '>'} -> Constraint#smt_constraint{op = '=<'};
         #smt_constraint{op = '<='} -> Constraint#smt_constraint{op = '>'};
         #smt_constraint{op = '>='} -> Constraint#smt_constraint{op = '<'};
-        _ -> Constraint  % TODO: Handle other constraint types
+        % TODO: Handle other constraint types
+        _ -> Constraint
     end.
 
 %% Convert constraint to human-readable string
@@ -661,7 +696,7 @@ expression_to_string(#smt_expression{op = Op, args = Args}) ->
     ArgsStrs = [term_to_string(Arg) || Arg <- Args],
     "(" ++ string:join(ArgsStrs, " " ++ OpStr ++ " ") ++ ")".
 
-%% Generate proof term  
+%% Generate proof term
 generate_proof(Assumptions, Goal) ->
     case prove_constraint(Assumptions, Goal) of
         {proved, ProofTerm} -> {ok, ProofTerm};
@@ -670,14 +705,19 @@ generate_proof(Assumptions, Goal) ->
     end.
 
 %% Check proof validity
-check_proof(#proof_term{conclusion = Conclusion, premises = Premises, rule = Rule, subproofs = Subproofs}, Goal) ->
+check_proof(
+    #proof_term{conclusion = Conclusion, premises = Premises, rule = Rule, subproofs = Subproofs},
+    Goal
+) ->
     % Check that the conclusion matches the goal
     case constraint_equal(Conclusion, Goal) of
-        false -> {invalid, conclusion_mismatch};
+        false ->
+            {invalid, conclusion_mismatch};
         true ->
             % Check that the rule is valid
             case is_valid_proof_rule(Rule, Premises, Conclusion) of
-                false -> {invalid, invalid_rule};
+                false ->
+                    {invalid, invalid_rule};
                 true ->
                     % Recursively check subproofs
                     case check_subproofs(Subproofs) of
@@ -699,100 +739,127 @@ try_solve_arithmetic_equality(Assumptions, Var, Expression) ->
         #smt_term{type = expression, value = #smt_expression{op = '-', args = [Left, Right]}} ->
             % Handle m = n - 1 pattern
             case {Left, Right} of
-                {#smt_term{type = variable, value = SourceVar}, 
-                 #smt_term{type = constant, value = Offset}} when is_integer(Offset) ->
+                {#smt_term{type = variable, value = SourceVar}, #smt_term{
+                    type = constant, value = Offset
+                }} when is_integer(Offset) ->
                     % Look for constraint on SourceVar in assumptions
                     case find_variable_value(SourceVar, Assumptions) of
                         {found, Value} when is_integer(Value) ->
                             Result = Value - Offset,
-                            NewConstraint = equality_constraint(variable_term(Var), constant_term(Result)),
+                            NewConstraint = equality_constraint(
+                                variable_term(Var), constant_term(Result)
+                            ),
                             {proved, #proof_term{
                                 conclusion = NewConstraint,
                                 premises = Assumptions,
                                 rule = arithmetic_subtraction,
                                 subproofs = []
                             }};
-                        _ -> failed
+                        _ ->
+                            failed
                     end;
-                _ -> failed
+                _ ->
+                    failed
             end;
         #smt_term{type = expression, value = #smt_expression{op = '+', args = [Left, Right]}} ->
             % Handle m = n + 1 pattern
             case {Left, Right} of
-                {#smt_term{type = variable, value = SourceVar}, 
-                 #smt_term{type = constant, value = Offset}} when is_integer(Offset) ->
+                {#smt_term{type = variable, value = SourceVar}, #smt_term{
+                    type = constant, value = Offset
+                }} when is_integer(Offset) ->
                     case find_variable_value(SourceVar, Assumptions) of
                         {found, Value} when is_integer(Value) ->
                             Result = Value + Offset,
-                            NewConstraint = equality_constraint(variable_term(Var), constant_term(Result)),
+                            NewConstraint = equality_constraint(
+                                variable_term(Var), constant_term(Result)
+                            ),
                             {proved, #proof_term{
                                 conclusion = NewConstraint,
                                 premises = Assumptions,
                                 rule = arithmetic_addition,
                                 subproofs = []
                             }};
-                        _ -> failed
+                        _ ->
+                            failed
                     end;
-                _ -> failed
+                _ ->
+                    failed
             end;
         #smt_term{type = expression, value = #smt_expression{op = '*', args = [Left, Right]}} ->
             % Handle m = n * k pattern
             case {Left, Right} of
-                {#smt_term{type = variable, value = SourceVar}, 
-                 #smt_term{type = constant, value = Factor}} when is_integer(Factor) ->
+                {#smt_term{type = variable, value = SourceVar}, #smt_term{
+                    type = constant, value = Factor
+                }} when is_integer(Factor) ->
                     case find_variable_value(SourceVar, Assumptions) of
                         {found, Value} when is_integer(Value) ->
                             Result = Value * Factor,
-                            NewConstraint = equality_constraint(variable_term(Var), constant_term(Result)),
+                            NewConstraint = equality_constraint(
+                                variable_term(Var), constant_term(Result)
+                            ),
                             {proved, #proof_term{
                                 conclusion = NewConstraint,
                                 premises = Assumptions,
                                 rule = arithmetic_multiplication,
                                 subproofs = []
                             }};
-                        _ -> failed
+                        _ ->
+                            failed
                     end;
-                _ -> failed
+                _ ->
+                    failed
             end;
         #smt_term{type = expression, value = #smt_expression{op = '/', args = [Left, Right]}} ->
             % Handle m = n / k pattern
             case {Left, Right} of
-                {#smt_term{type = variable, value = SourceVar}, 
-                 #smt_term{type = constant, value = Divisor}} when is_integer(Divisor), Divisor =/= 0 ->
+                {#smt_term{type = variable, value = SourceVar}, #smt_term{
+                    type = constant, value = Divisor
+                }} when is_integer(Divisor), Divisor =/= 0 ->
                     case find_variable_value(SourceVar, Assumptions) of
                         {found, Value} when is_integer(Value) ->
-                            Result = Value div Divisor,  % Integer division
-                            NewConstraint = equality_constraint(variable_term(Var), constant_term(Result)),
+                            % Integer division
+                            Result = Value div Divisor,
+                            NewConstraint = equality_constraint(
+                                variable_term(Var), constant_term(Result)
+                            ),
                             {proved, #proof_term{
                                 conclusion = NewConstraint,
                                 premises = Assumptions,
                                 rule = arithmetic_division,
                                 subproofs = []
                             }};
-                        _ -> failed
+                        _ ->
+                            failed
                     end;
-                _ -> failed
+                _ ->
+                    failed
             end;
         #smt_term{type = expression, value = #smt_expression{op = 'mod', args = [Left, Right]}} ->
             % Handle m = n mod k pattern
             case {Left, Right} of
-                {#smt_term{type = variable, value = SourceVar}, 
-                 #smt_term{type = constant, value = Modulus}} when is_integer(Modulus), Modulus =/= 0 ->
+                {#smt_term{type = variable, value = SourceVar}, #smt_term{
+                    type = constant, value = Modulus
+                }} when is_integer(Modulus), Modulus =/= 0 ->
                     case find_variable_value(SourceVar, Assumptions) of
                         {found, Value} when is_integer(Value) ->
                             Result = Value rem Modulus,
-                            NewConstraint = equality_constraint(variable_term(Var), constant_term(Result)),
+                            NewConstraint = equality_constraint(
+                                variable_term(Var), constant_term(Result)
+                            ),
                             {proved, #proof_term{
                                 conclusion = NewConstraint,
                                 premises = Assumptions,
                                 rule = arithmetic_modulo,
                                 subproofs = []
                             }};
-                        _ -> failed
+                        _ ->
+                            failed
                     end;
-                _ -> failed
+                _ ->
+                    failed
             end;
-        _ -> failed
+        _ ->
+            failed
     end.
 
 %% Find the value of a variable in assumptions
@@ -801,13 +868,16 @@ find_variable_value(Var, Assumptions) ->
 
 find_variable_value_in_list(_Var, []) ->
     not_found;
-find_variable_value_in_list(Var, [#smt_constraint{type = equality, left = Left, op = '=', right = Right} | Rest]) ->
+find_variable_value_in_list(Var, [
+    #smt_constraint{type = equality, left = Left, op = '=', right = Right} | Rest
+]) ->
     case {Left, Right} of
         {#smt_term{type = variable, value = Var}, #smt_term{type = constant, value = Value}} ->
             {found, Value};
         {#smt_term{type = constant, value = Value}, #smt_term{type = variable, value = Var}} ->
             {found, Value};
-        _ -> find_variable_value_in_list(Var, Rest)
+        _ ->
+            find_variable_value_in_list(Var, Rest)
     end;
 find_variable_value_in_list(Var, [_ | Rest]) ->
     find_variable_value_in_list(Var, Rest).
@@ -817,7 +887,8 @@ evaluate_arithmetic_comparison(Left, Op, Right, Assumptions) ->
     case {evaluate_term(Left, Assumptions), evaluate_term(Right, Assumptions)} of
         {{value, LeftVal}, {value, RightVal}} when is_number(LeftVal), is_number(RightVal) ->
             apply_comparison_operator(LeftVal, Op, RightVal);
-        _ -> unknown
+        _ ->
+            unknown
     end.
 
 %% Evaluate a term given assumptions
@@ -838,7 +909,8 @@ evaluate_expression(#smt_expression{op = Op, args = Args}, Assumptions) ->
     case evaluate_terms(Args, Assumptions) of
         {all_values, Values} ->
             {value, apply_arithmetic_operator(Op, Values)};
-        _ -> unknown
+        _ ->
+            unknown
     end.
 
 %% Evaluate list of terms
@@ -874,16 +946,20 @@ apply_comparison_operator(_, _, _) -> unknown.
 %% Check if two constraints are equal
 constraint_equal(C1, C2) ->
     C1#smt_constraint.type =:= C2#smt_constraint.type andalso
-    C1#smt_constraint.op =:= C2#smt_constraint.op andalso
-    term_equal(C1#smt_constraint.left, C2#smt_constraint.left) andalso
-    term_equal(C1#smt_constraint.right, C2#smt_constraint.right).
+        C1#smt_constraint.op =:= C2#smt_constraint.op andalso
+        term_equal(C1#smt_constraint.left, C2#smt_constraint.left) andalso
+        term_equal(C1#smt_constraint.right, C2#smt_constraint.right).
 
 %% Check if two SMT terms are equal
-term_equal(undefined, undefined) -> true;
-term_equal(#smt_term{type = Type1, value = Value1}, 
-           #smt_term{type = Type2, value = Value2}) ->
+term_equal(undefined, undefined) ->
+    true;
+term_equal(
+    #smt_term{type = Type1, value = Value1},
+    #smt_term{type = Type2, value = Value2}
+) ->
     Type1 =:= Type2 andalso Value1 =:= Value2;
-term_equal(_, _) -> false.
+term_equal(_, _) ->
+    false.
 
 %% Check if a proof rule is valid
 is_valid_proof_rule(Rule, Premises, Conclusion) ->
@@ -897,7 +973,8 @@ is_valid_proof_rule(Rule, Premises, Conclusion) ->
         transitivity -> check_transitivity_rule(Premises, Conclusion);
         symmetry -> check_symmetry_rule(Premises, Conclusion);
         reflexivity -> check_reflexivity_rule(Premises, Conclusion);
-        _ -> false  % Unknown rule
+        % Unknown rule
+        _ -> false
     end.
 
 %% Check arithmetic addition rule: if n = k, then m = n + c implies m = k + c
@@ -905,7 +982,7 @@ check_arithmetic_addition_rule(Premises, Conclusion) ->
     % Simplified check - in full implementation would verify the arithmetic
     length(Premises) >= 1.
 
-%% Check arithmetic subtraction rule: if n = k, then m = n - c implies m = k - c  
+%% Check arithmetic subtraction rule: if n = k, then m = n - c implies m = k - c
 check_arithmetic_subtraction_rule(Premises, Conclusion) ->
     length(Premises) >= 1.
 
@@ -925,7 +1002,8 @@ check_arithmetic_modulo_rule(Premises, Conclusion) ->
 check_arithmetic_evaluation_rule(Premises, Conclusion) ->
     % Check that conclusion is a comparison and premises provide necessary values
     case Conclusion#smt_constraint.type of
-        inequality -> true;  % Simplified check
+        % Simplified check
+        inequality -> true;
         equality -> true;
         _ -> false
     end.
@@ -943,11 +1021,13 @@ check_reflexivity_rule(Premises, Conclusion) ->
     case Conclusion of
         #smt_constraint{type = equality, left = Left, right = Right} ->
             term_equal(Left, Right);
-        _ -> false
+        _ ->
+            false
     end.
 
 %% Check validity of all subproofs
-check_subproofs([]) -> true;
+check_subproofs([]) ->
+    true;
 check_subproofs([Proof | RestProofs]) ->
     case check_proof(Proof, Proof#proof_term.conclusion) of
         {valid, _} -> check_subproofs(RestProofs);

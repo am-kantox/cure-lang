@@ -7,14 +7,14 @@
     check_module/1, check_module/2,
     check_function/1, check_function/2,
     check_expression/2, check_expression/3,
-    
+
     % Built-in type constructors
     builtin_env/0,
-    
+
     % Dependent type helpers
     check_dependent_constraint/3,
     infer_dependent_type/2,
-    
+
     % Utility functions
     convert_type_to_tuple/1
 ]).
@@ -78,7 +78,9 @@ check_item({module_def, Name, Exports, Items, Location}, Env) ->
 check_item({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
     check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env);
 check_item({erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}, Env) ->
-    check_erlang_function_new({erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}, Env);
+    check_erlang_function_new(
+        {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}, Env
+    );
 check_item({import_def, Module, Items, Location}, Env) ->
     check_import_new({import_def, Module, Items, Location}, Env);
 check_item({export_list, ExportSpecs}, Env) ->
@@ -98,7 +100,7 @@ check_module(Module) ->
 check_module(#module_def{name = Name, exports = Exports, items = Items}, Env) ->
     % Create module-scoped environment
     ModuleEnv = cure_types:extend_env(Env, module, Name),
-    
+
     % Check all items in the module
     case check_items(Items, ModuleEnv, new_result()) of
         Result = #typecheck_result{success = true} ->
@@ -117,35 +119,49 @@ check_module(#module_def{name = Name, exports = Exports, items = Items}, Env) ->
 check_function(Function) ->
     check_function(Function, builtin_env()).
 
-check_function(#function_def{name = Name, params = Params, return_type = ReturnType, 
-                            constraint = Constraint, body = Body, location = Location}, Env) ->
+check_function(
+    #function_def{
+        name = Name,
+        params = Params,
+        return_type = ReturnType,
+        constraint = Constraint,
+        body = Body,
+        location = Location
+    },
+    Env
+) ->
     try
         % Convert parameters to type environment
         {ParamTypes, ParamEnv} = process_parameters(Params, Env),
-        
+
         % Also extract type parameters from return type
-        EnvWithReturnTypeParams = case ReturnType of
-            undefined -> ParamEnv;
-            _ -> extract_and_add_type_params(ReturnType, ParamEnv)
-        end,
-        
+        EnvWithReturnTypeParams =
+            case ReturnType of
+                undefined -> ParamEnv;
+                _ -> extract_and_add_type_params(ReturnType, ParamEnv)
+            end,
+
         % Check constraint if present
         case Constraint of
-            undefined -> ok;
+            undefined ->
+                ok;
             _ ->
-                case cure_types:infer_type(convert_expr_to_tuple(Constraint), EnvWithReturnTypeParams) of
+                case
+                    cure_types:infer_type(
+                        convert_expr_to_tuple(Constraint), EnvWithReturnTypeParams
+                    )
+                of
                     {ok, InferenceResult} ->
                         ConstraintType = element(2, InferenceResult),
                         case cure_types:unify(ConstraintType, {primitive_type, 'Bool'}) of
                             {ok, _} -> ok;
-                            {error, Reason} ->
-                                throw({constraint_not_bool, Reason, Location})
+                            {error, Reason} -> throw({constraint_not_bool, Reason, Location})
                         end;
                     {error, Reason} ->
                         throw({constraint_inference_failed, Reason, Location})
                 end
         end,
-        
+
         % Check function body
         case cure_types:infer_type(convert_expr_to_tuple(Body), EnvWithReturnTypeParams) of
             {ok, InferenceResult2} ->
@@ -167,9 +183,11 @@ check_function(#function_def{name = Name, params = Params, return_type = ReturnT
                                 {ok, NewEnv, success_result(FuncType)};
                             {error, UnifyReason} ->
                                 ErrorMsg = #typecheck_error{
-                                    message = "Function body type doesn't match declared return type",
+                                    message =
+                                        "Function body type doesn't match declared return type",
                                     location = Location,
-                                    details = {type_mismatch, ExpectedReturnType, BodyType, UnifyReason}
+                                    details =
+                                        {type_mismatch, ExpectedReturnType, BodyType, UnifyReason}
                                 },
                                 {ok, Env, error_result(ErrorMsg)}
                         end
@@ -193,8 +211,15 @@ check_function(#function_def{name = Name, params = Params, return_type = ReturnT
     end.
 
 %% Check FSM definition
-check_fsm(#fsm_def{name = Name, states = States, initial = Initial, 
-                  state_defs = StateDefs}, Env) ->
+check_fsm(
+    #fsm_def{
+        name = Name,
+        states = States,
+        initial = Initial,
+        state_defs = StateDefs
+    },
+    Env
+) ->
     % Verify initial state is in states list
     case lists:member(Initial, States) of
         false ->
@@ -220,13 +245,15 @@ check_fsm(#fsm_def{name = Name, states = States, initial = Initial,
 check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
     % Create module-scoped environment
     ModuleEnv = cure_types:extend_env(Env, module, Name),
-    
+
     % Process imports first to extend environment
-    ImportEnv = case process_imports(Imports, ModuleEnv) of
-        {ok, TempEnv} -> TempEnv;
-        {error, _} -> ModuleEnv  % Continue with original env on import errors
-    end,
-    
+    ImportEnv =
+        case process_imports(Imports, ModuleEnv) of
+            {ok, TempEnv} -> TempEnv;
+            % Continue with original env on import errors
+            {error, _} -> ModuleEnv
+        end,
+
     % Check all items in the module
     case check_items(Items, ImportEnv, new_result()) of
         Result = #typecheck_result{success = true} ->
@@ -247,33 +274,42 @@ check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Lo
     try
         % Convert parameters to type environment and extract type parameters
         {ParamTypes, ParamEnv} = process_parameters_new(Params, Env),
-        
+
         % Also extract type parameters from return type if present
-        EnvWithReturnTypeParams = case ReturnType of
-            undefined -> ParamEnv;
-            _ -> extract_and_add_type_params(ReturnType, ParamEnv)
-        end,
-        
+        EnvWithReturnTypeParams =
+            case ReturnType of
+                undefined -> ParamEnv;
+                _ -> extract_and_add_type_params(ReturnType, ParamEnv)
+            end,
+
         % Check and process constraint if present
-        FinalEnv = case Constraint of
-            undefined -> EnvWithReturnTypeParams;
-            _ ->
-                % First check that constraint is boolean
-                case cure_types:infer_type(convert_expr_to_tuple(Constraint), EnvWithReturnTypeParams) of
-                    {ok, InferenceResult} ->
-                        ConstraintType = element(2, InferenceResult),
-                        case cure_types:unify(ConstraintType, {primitive_type, 'Bool'}) of
-                            {ok, _} ->
-                                % Convert constraint to SMT and add to environment
-                                process_when_clause_constraint(Constraint, EnvWithReturnTypeParams, Location);
-                            {error, Reason} ->
-                                throw({constraint_not_bool, Reason, Location})
-                        end;
-                    {error, Reason} ->
-                        throw({constraint_inference_failed, Reason, Location})
-                end
-        end,
-        
+        FinalEnv =
+            case Constraint of
+                undefined ->
+                    EnvWithReturnTypeParams;
+                _ ->
+                    % First check that constraint is boolean
+                    case
+                        cure_types:infer_type(
+                            convert_expr_to_tuple(Constraint), EnvWithReturnTypeParams
+                        )
+                    of
+                        {ok, InferenceResult} ->
+                            ConstraintType = element(2, InferenceResult),
+                            case cure_types:unify(ConstraintType, {primitive_type, 'Bool'}) of
+                                {ok, _} ->
+                                    % Convert constraint to SMT and add to environment
+                                    process_when_clause_constraint(
+                                        Constraint, EnvWithReturnTypeParams, Location
+                                    );
+                                {error, Reason} ->
+                                    throw({constraint_not_bool, Reason, Location})
+                            end;
+                        {error, Reason} ->
+                            throw({constraint_inference_failed, Reason, Location})
+                    end
+            end,
+
         % Check function body with constraint-enhanced environment
         case cure_types:infer_type(convert_expr_to_tuple(Body), FinalEnv) of
             {ok, InferenceResult2} ->
@@ -295,9 +331,11 @@ check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Lo
                                 {ok, NewEnv, success_result(FuncType)};
                             {error, UnifyReason} ->
                                 ErrorMsg = #typecheck_error{
-                                    message = "Function body type doesn't match declared return type",
+                                    message =
+                                        "Function body type doesn't match declared return type",
                                     location = Location,
-                                    details = {type_mismatch, ExpectedReturnType, BodyType, UnifyReason}
+                                    details =
+                                        {type_mismatch, ExpectedReturnType, BodyType, UnifyReason}
                                 },
                                 {ok, Env, error_result(ErrorMsg)}
                         end
@@ -322,28 +360,30 @@ check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Lo
 
 %% Check Erlang function definition (def_erl) - New AST format
 %% For def_erl functions, we trust the type annotations and skip body type checking
-check_erlang_function_new({erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}, Env) ->
+check_erlang_function_new(
+    {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}, Env
+) ->
     try
-        % Convert parameters to type environment  
+        % Convert parameters to type environment
         {ParamTypes, ParamEnv} = process_parameters_new(Params, Env),
-        
+
         % Check constraint if present (same as regular functions)
         case Constraint of
-            undefined -> ok;
+            undefined ->
+                ok;
             _ ->
                 case cure_types:infer_type(convert_expr_to_tuple(Constraint), ParamEnv) of
                     {ok, InferenceResult} ->
                         ConstraintType = element(2, InferenceResult),
                         case cure_types:unify(ConstraintType, {primitive_type, 'Bool'}) of
                             {ok, _} -> ok;
-                            {error, Reason} ->
-                                throw({constraint_not_bool, Reason, Location})
+                            {error, Reason} -> throw({constraint_not_bool, Reason, Location})
                         end;
                     {error, Reason} ->
                         throw({constraint_inference_failed, Reason, Location})
                 end
         end,
-        
+
         % For def_erl functions, the return type MUST be specified (enforced by parser)
         % We trust the type annotation and don't check the Erlang body
         case ReturnType of
@@ -447,7 +487,8 @@ check_expression(Expr, Env, ExpectedType) ->
                     success_result(InferredType);
                 _ ->
                     case cure_types:unify(InferredType, ExpectedType) of
-                        {ok, _} -> success_result(InferredType);
+                        {ok, _} ->
+                            success_result(InferredType);
                         {error, Reason} ->
                             Error = #typecheck_error{
                                 message = "Expression type doesn't match expected type",
@@ -469,42 +510,48 @@ check_expression(Expr, Env, ExpectedType) ->
 %% Built-in type environment
 builtin_env() ->
     Env = cure_types:new_env(),
-    
+
     % Add primitive types
     Env1 = cure_types:extend_env(Env, 'Int', {primitive_type, 'Int'}),
     Env2 = cure_types:extend_env(Env1, 'Float', {primitive_type, 'Float'}),
     Env3 = cure_types:extend_env(Env2, 'String', {primitive_type, 'String'}),
     Env4 = cure_types:extend_env(Env3, 'Bool', {primitive_type, 'Bool'}),
     Env5 = cure_types:extend_env(Env4, 'Atom', {primitive_type, 'Atom'}),
-    
+
     % Add dependent types
     Env6 = cure_types:extend_env(Env5, 'Nat', {refined_type, 'Int', fun(N) -> N >= 0 end}),
     Env7 = cure_types:extend_env(Env6, 'Pos', {refined_type, 'Int', fun(N) -> N > 0 end}),
-    
+
     % Add built-in functions
-    % map : (A -> B) -> [A] -> [B]  
-    MapType = {function_type, 
-               [{function_type, [cure_types:new_type_var()], cure_types:new_type_var()},
-                {list_type, cure_types:new_type_var(), undefined}],
-               {list_type, cure_types:new_type_var(), undefined}},
+    % map : (A -> B) -> [A] -> [B]
+    MapType =
+        {function_type,
+            [
+                {function_type, [cure_types:new_type_var()], cure_types:new_type_var()},
+                {list_type, cure_types:new_type_var(), undefined}
+            ],
+            {list_type, cure_types:new_type_var(), undefined}},
     Env8 = cure_types:extend_env(Env7, map, MapType),
-    
+
     % filter : (A -> Bool) -> [A] -> [A]
-    FilterType = {function_type,
-                  [{function_type, [cure_types:new_type_var()], {primitive_type, 'Bool'}},
-                   {list_type, cure_types:new_type_var(), undefined}],
-                  {list_type, cure_types:new_type_var(), undefined}},
+    FilterType =
+        {function_type,
+            [
+                {function_type, [cure_types:new_type_var()], {primitive_type, 'Bool'}},
+                {list_type, cure_types:new_type_var(), undefined}
+            ],
+            {list_type, cure_types:new_type_var(), undefined}},
     Env9 = cure_types:extend_env(Env8, filter, FilterType),
-    
+
     % length : [A] -> Nat
-    LengthType = {function_type,
-                  [{list_type, cure_types:new_type_var(), undefined}],
-                  {refined_type, 'Int', fun(N) -> N >= 0 end}},
+    LengthType =
+        {function_type, [{list_type, cure_types:new_type_var(), undefined}],
+            {refined_type, 'Int', fun(N) -> N >= 0 end}},
     Env10 = cure_types:extend_env(Env9, length, LengthType),
-    
+
     % Add FSM built-in functions
     Env11 = cure_fsm_builtins:register_fsm_builtins(Env10),
-    
+
     Env11.
 
 %% Helper functions
@@ -515,15 +562,16 @@ process_parameters([], _OrigEnv, TypesAcc, EnvAcc) ->
     {lists:reverse(TypesAcc), EnvAcc};
 process_parameters([#param{name = Name, type = TypeExpr} | RestParams], OrigEnv, TypesAcc, EnvAcc) ->
     ParamType = convert_type_to_tuple(TypeExpr),
-    
+
     % Extract type parameters from dependent types and add them to environment
     EnvWithTypeParams = extract_and_add_type_params(TypeExpr, EnvAcc),
-    
+
     % Add the parameter itself to environment
     NewEnvAcc = cure_types:extend_env(EnvWithTypeParams, Name, ParamType),
     process_parameters(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc).
 
-check_exports([], _Items) -> ok;
+check_exports([], _Items) ->
+    ok;
 check_exports([#export_spec{name = Name, arity = Arity} | RestExports], Items) ->
     case find_function(Name, Items) of
         {ok, #function_def{params = Params}} ->
@@ -546,7 +594,8 @@ check_state_definitions(StateDefs, States) ->
     % Check that all defined states are in the states list
     DefinedStates = [Name || #state_def{name = Name} <- StateDefs],
     case lists:all(fun(State) -> lists:member(State, States) end, DefinedStates) of
-        true -> ok;
+        true ->
+            ok;
         false ->
             InvalidStates = DefinedStates -- States,
             {error, #typecheck_error{
@@ -564,12 +613,16 @@ convert_expr_to_tuple(#identifier_expr{name = Name, location = Location}) ->
 convert_expr_to_tuple(#binary_op_expr{op = Op, left = Left, right = Right, location = Location}) ->
     {binary_op_expr, Op, convert_expr_to_tuple(Left), convert_expr_to_tuple(Right), Location};
 convert_expr_to_tuple(#function_call_expr{function = Function, args = Args, location = Location}) ->
-    {function_call_expr, convert_expr_to_tuple(Function), 
-     [convert_expr_to_tuple(Arg) || Arg <- Args], Location};
-convert_expr_to_tuple(#if_expr{condition = Condition, then_branch = ThenBranch, 
-                              else_branch = ElseBranch, location = Location}) ->
+    {function_call_expr, convert_expr_to_tuple(Function),
+        [convert_expr_to_tuple(Arg) || Arg <- Args], Location};
+convert_expr_to_tuple(#if_expr{
+    condition = Condition,
+    then_branch = ThenBranch,
+    else_branch = ElseBranch,
+    location = Location
+}) ->
     {if_expr, convert_expr_to_tuple(Condition), convert_expr_to_tuple(ThenBranch),
-     convert_expr_to_tuple(ElseBranch), Location};
+        convert_expr_to_tuple(ElseBranch), Location};
 convert_expr_to_tuple(#let_expr{bindings = Bindings, body = Body, location = Location}) ->
     ConvertedBindings = [convert_binding_to_tuple(B) || B <- Bindings],
     {let_expr, ConvertedBindings, convert_expr_to_tuple(Body), Location};
@@ -599,10 +652,11 @@ convert_pattern_to_tuple(#literal_pattern{value = Value, location = Location}) -
     {literal_pattern, Value, Location};
 convert_pattern_to_tuple(#list_pattern{elements = Elements, tail = Tail, location = Location}) ->
     ConvertedElements = [convert_pattern_to_tuple(E) || E <- Elements],
-    ConvertedTail = case Tail of
-        undefined -> undefined;
-        _ -> convert_pattern_to_tuple(Tail)
-    end,
+    ConvertedTail =
+        case Tail of
+            undefined -> undefined;
+            _ -> convert_pattern_to_tuple(Tail)
+        end,
     {list_pattern, ConvertedElements, ConvertedTail, Location};
 convert_pattern_to_tuple(#record_pattern{name = Name, fields = Fields, location = Location}) ->
     ConvertedFields = [convert_field_pattern_to_tuple(F) || F <- Fields],
@@ -610,11 +664,12 @@ convert_pattern_to_tuple(#record_pattern{name = Name, fields = Fields, location 
 convert_pattern_to_tuple(#wildcard_pattern{location = Location}) ->
     {wildcard_pattern, Location};
 convert_pattern_to_tuple(#constructor_pattern{name = Name, args = Args, location = Location}) ->
-    ConvertedArgs = case Args of
-        undefined -> undefined;
-        [] -> [];
-        ArgList -> [convert_pattern_to_tuple(Arg) || Arg <- ArgList]
-    end,
+    ConvertedArgs =
+        case Args of
+            undefined -> undefined;
+            [] -> [];
+            ArgList -> [convert_pattern_to_tuple(Arg) || Arg <- ArgList]
+        end,
     {constructor_pattern, Name, ConvertedArgs, Location};
 convert_pattern_to_tuple(Pattern) ->
     Pattern.
@@ -648,8 +703,10 @@ convert_type_to_tuple(Type) ->
 
 convert_type_param_to_tuple(#type_param{value = Value}) ->
     case Value of
-        TypeExpr when is_record(TypeExpr, primitive_type);
-                      is_record(TypeExpr, dependent_type) ->
+        TypeExpr when
+            is_record(TypeExpr, primitive_type);
+            is_record(TypeExpr, dependent_type)
+        ->
             #type_param{value = convert_type_to_tuple(TypeExpr)};
         _ ->
             #type_param{value = Value}
@@ -686,8 +743,10 @@ add_error(Result = #typecheck_result{errors = Errors}, Error) ->
         errors = [Error | Errors]
     }.
 
-merge_results(Result1 = #typecheck_result{errors = E1, warnings = W1},
-              #typecheck_result{success = S2, errors = E2, warnings = W2}) ->
+merge_results(
+    Result1 = #typecheck_result{errors = E1, warnings = W1},
+    #typecheck_result{success = S2, errors = E2, warnings = W2}
+) ->
     Result1#typecheck_result{
         success = Result1#typecheck_result.success andalso S2,
         errors = E1 ++ E2,
@@ -712,19 +771,27 @@ get_expr_location(#list_expr{location = Loc}) -> Loc;
 get_expr_location(#block_expr{location = Loc}) -> Loc;
 get_expr_location(_) -> #location{line = 0, column = 0, file = undefined}.
 
-format_error_type(constraint_not_bool) -> "Function constraint must be a boolean expression";
-format_error_type(constraint_inference_failed) -> "Failed to infer type of function constraint";
-format_error_type(missing_return_type_for_def_erl) -> "def_erl functions must have explicit return type annotation";
-format_error_type(ErrorType) -> atom_to_list(ErrorType).
+format_error_type(constraint_not_bool) ->
+    "Function constraint must be a boolean expression";
+format_error_type(constraint_inference_failed) ->
+    "Failed to infer type of function constraint";
+format_error_type(missing_return_type_for_def_erl) ->
+    "def_erl functions must have explicit return type annotation";
+format_error_type(ErrorType) ->
+    atom_to_list(ErrorType).
 
 %% Extract type parameters from dependent types and add them to environment
 extract_and_add_type_params(TypeExpr, Env) ->
     extract_type_params_helper(TypeExpr, Env).
 
 extract_type_params_helper(#dependent_type{params = Params}, Env) ->
-    lists:foldl(fun(#type_param{value = Value}, AccEnv) ->
-        extract_type_param_value(Value, AccEnv)
-    end, Env, Params);
+    lists:foldl(
+        fun(#type_param{value = Value}, AccEnv) ->
+            extract_type_param_value(Value, AccEnv)
+        end,
+        Env,
+        Params
+    );
 extract_type_params_helper(#list_type{element_type = ElemType, length = LengthExpr}, Env) ->
     % Handle list types with length expressions
     Env1 = extract_type_params_helper(ElemType, Env),
@@ -759,7 +826,8 @@ check_dependent_constraint(_Constraint, Value, Type) ->
             catch
                 _:_ -> false
             end;
-        _ -> true
+        _ ->
+            true
     end.
 
 infer_dependent_type(Expr, Env) ->
@@ -788,7 +856,8 @@ extract_export_specs([{export_list, ExportSpecs}], _Items) ->
 extract_export_specs([_ | RestExports], Items) ->
     extract_export_specs(RestExports, Items).
 
-check_exports_new([], _Items) -> ok;
+check_exports_new([], _Items) ->
+    ok;
 check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) ->
     case find_function_new(Name, Items) of
         {ok, {function_def, _Name, Params, _ReturnType, _Constraint, _Body, _UnusedLocation}} ->
@@ -796,7 +865,9 @@ check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) 
                 true -> check_exports_new(RestExports, Items);
                 false -> {error, {export_arity_mismatch, Name, Arity, length(Params)}}
             end;
-        {ok, {erlang_function_def, _Name, Params, _ReturnType, _Constraint, _ErlangBody, _UnusedLocation}} ->
+        {ok,
+            {erlang_function_def, _Name, Params, _ReturnType, _Constraint, _ErlangBody,
+                _UnusedLocation}} ->
             case length(Params) =:= Arity of
                 true -> check_exports_new(RestExports, Items);
                 false -> {error, {export_arity_mismatch, Name, Arity, length(Params)}}
@@ -807,7 +878,9 @@ check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) 
 
 find_function_new(Name, [{function_def, Name, Params, ReturnType, Constraint, Body, Location} | _]) ->
     {ok, {function_def, Name, Params, ReturnType, Constraint, Body, Location}};
-find_function_new(Name, [{erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location} | _]) ->
+find_function_new(Name, [
+    {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location} | _
+]) ->
     {ok, {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}};
 find_function_new(Name, [_ | RestItems]) ->
     find_function_new(Name, RestItems);
@@ -819,7 +892,9 @@ process_parameters_new(Params, Env) ->
 
 process_parameters_new([], _OrigEnv, TypesAcc, EnvAcc) ->
     {lists:reverse(TypesAcc), EnvAcc};
-process_parameters_new([{param, Name, TypeExpr, _Location} | RestParams], OrigEnv, TypesAcc, EnvAcc) ->
+process_parameters_new(
+    [{param, Name, TypeExpr, _Location} | RestParams], OrigEnv, TypesAcc, EnvAcc
+) ->
     ParamType = convert_type_to_tuple(TypeExpr),
     % Extract type parameters from dependent types and add them to environment
     EnvWithTypeParams = extract_and_add_type_params(TypeExpr, EnvAcc),
@@ -853,12 +928,16 @@ import_item_new(Module, Identifier, Env) when is_atom(Identifier) ->
 convert_param_to_tuple({param, Name, TypeExpr, Location}) ->
     {param, Name, convert_type_to_tuple(TypeExpr), Location}.
 
-convert_match_clause_to_tuple(#match_clause{pattern = Pattern, guard = Guard, body = Body, location = Location}) ->
-    ConvertedGuard = case Guard of
-        undefined -> undefined;
-        _ -> convert_expr_to_tuple(Guard)
-    end,
-    {match_clause, convert_pattern_to_tuple(Pattern), ConvertedGuard, convert_expr_to_tuple(Body), Location}.
+convert_match_clause_to_tuple(#match_clause{
+    pattern = Pattern, guard = Guard, body = Body, location = Location
+}) ->
+    ConvertedGuard =
+        case Guard of
+            undefined -> undefined;
+            _ -> convert_expr_to_tuple(Guard)
+        end,
+    {match_clause, convert_pattern_to_tuple(Pattern), ConvertedGuard, convert_expr_to_tuple(Body),
+        Location}.
 
 convert_field_pattern_to_tuple(#field_pattern{name = Name, pattern = Pattern, location = Location}) ->
     {field_pattern, Name, convert_pattern_to_tuple(Pattern), Location}.
@@ -885,21 +964,30 @@ process_when_clause_constraint(Constraint, Env, Location) ->
 %% Convert Cure constraint expressions to SMT constraints
 convert_constraint_to_smt(Constraint, Env) ->
     case Constraint of
-        {binary_op_expr, Op, Left, Right, _Location} when 
-            Op =:= '>' orelse Op =:= '<' orelse Op =:= '>=' orelse Op =:= '=<' orelse Op =:= '==' ->
+        {binary_op_expr, Op, Left, Right, _Location} when
+            Op =:= '>' orelse Op =:= '<' orelse Op =:= '>=' orelse Op =:= '=<' orelse Op =:= '=='
+        ->
             % Arithmetic comparison constraint
             case {convert_expr_to_smt_term(Left, Env), convert_expr_to_smt_term(Right, Env)} of
                 {{ok, LeftTerm}, {ok, RightTerm}} ->
-                    SmtConstraint = case Op of
-                        '>' -> cure_smt_solver:inequality_constraint(LeftTerm, '>', RightTerm);
-                        '<' -> cure_smt_solver:inequality_constraint(LeftTerm, '<', RightTerm);
-                        '>=' -> cure_smt_solver:inequality_constraint(LeftTerm, '>=', RightTerm);
-                        '=<' -> cure_smt_solver:inequality_constraint(LeftTerm, '=<', RightTerm);
-                        '==' -> cure_smt_solver:equality_constraint(LeftTerm, RightTerm)
-                    end,
+                    SmtConstraint =
+                        case Op of
+                            '>' ->
+                                cure_smt_solver:inequality_constraint(LeftTerm, '>', RightTerm);
+                            '<' ->
+                                cure_smt_solver:inequality_constraint(LeftTerm, '<', RightTerm);
+                            '>=' ->
+                                cure_smt_solver:inequality_constraint(LeftTerm, '>=', RightTerm);
+                            '=<' ->
+                                cure_smt_solver:inequality_constraint(LeftTerm, '=<', RightTerm);
+                            '==' ->
+                                cure_smt_solver:equality_constraint(LeftTerm, RightTerm)
+                        end,
                     {ok, [SmtConstraint]};
-                {Error, _} -> Error;
-                {_, Error} -> Error
+                {Error, _} ->
+                    Error;
+                {_, Error} ->
+                    Error
             end;
         _ ->
             {error, {unsupported_constraint_type, Constraint}}
@@ -915,40 +1003,50 @@ convert_expr_to_smt_term({binary_op_expr, '+', Left, Right, _}, Env) ->
         {{ok, LeftTerm}, {ok, RightTerm}} ->
             AddExpr = cure_smt_solver:addition_expression([LeftTerm, RightTerm]),
             {ok, AddExpr};
-        {Error, _} -> Error;
-        {_, Error} -> Error
+        {Error, _} ->
+            Error;
+        {_, Error} ->
+            Error
     end;
 convert_expr_to_smt_term({binary_op_expr, '-', Left, Right, _}, Env) ->
     case {convert_expr_to_smt_term(Left, Env), convert_expr_to_smt_term(Right, Env)} of
         {{ok, LeftTerm}, {ok, RightTerm}} ->
             SubExpr = cure_smt_solver:subtraction_expression([LeftTerm, RightTerm]),
             {ok, SubExpr};
-        {Error, _} -> Error;
-        {_, Error} -> Error
+        {Error, _} ->
+            Error;
+        {_, Error} ->
+            Error
     end;
 convert_expr_to_smt_term({binary_op_expr, '*', Left, Right, _}, Env) ->
     case {convert_expr_to_smt_term(Left, Env), convert_expr_to_smt_term(Right, Env)} of
         {{ok, LeftTerm}, {ok, RightTerm}} ->
             MulExpr = cure_smt_solver:multiplication_expression([LeftTerm, RightTerm]),
             {ok, MulExpr};
-        {Error, _} -> Error;
-        {_, Error} -> Error
+        {Error, _} ->
+            Error;
+        {_, Error} ->
+            Error
     end;
 convert_expr_to_smt_term({binary_op_expr, '/', Left, Right, _}, Env) ->
     case {convert_expr_to_smt_term(Left, Env), convert_expr_to_smt_term(Right, Env)} of
         {{ok, LeftTerm}, {ok, RightTerm}} ->
             DivExpr = cure_smt_solver:division_expression([LeftTerm, RightTerm]),
             {ok, DivExpr};
-        {Error, _} -> Error;
-        {_, Error} -> Error
+        {Error, _} ->
+            Error;
+        {_, Error} ->
+            Error
     end;
 convert_expr_to_smt_term({binary_op_expr, 'mod', Left, Right, _}, Env) ->
     case {convert_expr_to_smt_term(Left, Env), convert_expr_to_smt_term(Right, Env)} of
         {{ok, LeftTerm}, {ok, RightTerm}} ->
             ModExpr = cure_smt_solver:modulo_expression([LeftTerm, RightTerm]),
             {ok, ModExpr};
-        {Error, _} -> Error;
-        {_, Error} -> Error
+        {Error, _} ->
+            Error;
+        {_, Error} ->
+            Error
     end;
 convert_expr_to_smt_term(Expr, _Env) ->
     {error, {unsupported_expression, Expr}}.

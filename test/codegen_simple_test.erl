@@ -8,9 +8,12 @@
 
 %% BEAM instruction record for testing
 -record(beam_instr, {
-    op,                    % Instruction opcode
-    args = [],             % Instruction arguments
-    location               % Source location for debugging
+    % Instruction opcode
+    op,
+    % Instruction arguments
+    args = [],
+    % Source location for debugging
+    location
 }).
 
 %% Run all simplified code generation tests
@@ -26,12 +29,12 @@ test_basic_expression_compilation() ->
     % Test literal compilation
     LiteralExpr = #literal_expr{value = 42, location = create_location(1, 1)},
     {Instructions, _State} = cure_codegen:compile_expression(LiteralExpr),
-    
+
     ?assert(length(Instructions) > 0),
     [Instruction] = Instructions,
     ?assertEqual(load_literal, Instruction#beam_instr.op),
     ?assertEqual([42], Instruction#beam_instr.args),
-    
+
     % Test binary operation compilation
     BinaryExpr = #binary_op_expr{
         op = '+',
@@ -39,10 +42,11 @@ test_basic_expression_compilation() ->
         right = #literal_expr{value = 2, location = create_location(1, 1)},
         location = create_location(1, 1)
     },
-    
+
     {BinaryInstructions, _BinaryState} = cure_codegen:compile_expression(BinaryExpr),
-    ?assert(length(BinaryInstructions) >= 3),  % load_literal, load_literal, binary_op
-    
+    % load_literal, load_literal, binary_op
+    ?assert(length(BinaryInstructions) >= 3),
+
     io:format("✓ Basic expression compilation test passed~n").
 
 %% Test simple function compilation
@@ -64,17 +68,17 @@ test_simple_function_compilation() ->
         },
         location = create_location(1, 1)
     },
-    
+
     % Compile function
     case cure_codegen:compile_function(Function) of
         {ok, {function, CompiledFunction}, _State} ->
             ?assertEqual(add, maps:get(name, CompiledFunction)),
             ?assertEqual(2, maps:get(arity, CompiledFunction)),
             ?assertEqual([x, y], maps:get(params, CompiledFunction)),
-            
+
             Instructions = maps:get(instructions, CompiledFunction),
             ?assert(length(Instructions) > 0),
-            
+
             io:format("✓ Simple function compilation test passed~n");
         {error, Reason} ->
             ?assert(false, {function_compilation_failed, Reason})
@@ -99,17 +103,18 @@ test_basic_let_expressions() ->
         },
         location = create_location(1, 1)
     },
-    
+
     % Compile the let expression
     {Instructions, _State} = cure_codegen:compile_expression(LetExpr),
-    
+
     % Verify instructions are generated correctly
     ?assert(length(Instructions) > 0),
-    
+
     % Check for proper variable binding instructions
     LoadInstructions = [I || I <- Instructions, I#beam_instr.op == load_literal],
-    ?assert(length(LoadInstructions) >= 2),  % Should load 5 and 1
-    
+    % Should load 5 and 1
+    ?assert(length(LoadInstructions) >= 2),
+
     io:format("✓ Basic let expressions test passed~n").
 
 %% Helper functions

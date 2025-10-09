@@ -8,13 +8,13 @@ run_all() ->
     io:format("========================================~n"),
     io:format("Cure Compiler Complete Test Suite~n"),
     io:format("========================================~n"),
-    
+
     % Run basic tests first
     BasicResult = run_basic_tests(),
-    
+
     % Run integration tests
     IntegrationResult = run_integration_tests(),
-    
+
     % Summarize all results
     case {BasicResult, IntegrationResult} of
         {ok, ok} ->
@@ -38,7 +38,7 @@ run_performance() ->
     io:format("========================================~n"),
     io:format("Cure Compiler Performance Tests~n"),
     io:format("========================================~n"),
-    
+
     try
         performance_simple_test:run()
     catch
@@ -56,36 +56,36 @@ run_basic_tests() ->
         {types_simple_test, "Type System & Inference"},
         {codegen_simple_test, "Code Generation & BEAM"}
     ],
-    
+
     Results = lists:map(fun run_test_suite/1, Tests),
-    
+
     io:format("~n----------------------------------------~n"),
     io:format("Basic Test Summary~n"),
     io:format("----------------------------------------~n"),
-    
+
     Passed = length([ok || ok <- Results]),
     Total = length(Results),
     Failed = Total - Passed,
-    
+
     io:format("Basic test suites: ~w~n", [Total]),
     io:format("Passed: ~w~n", [Passed]),
     io:format("Failed: ~w~n", [Failed]),
-    
+
     case Failed of
-        0 -> 
+        0 ->
             io:format("✓ All basic tests passed!~n"),
             ok;
-        _ -> 
+        _ ->
             io:format("❌ Some basic tests failed~n"),
             error
     end.
 
-%% Run integration test suites  
+%% Run integration test suites
 run_integration_tests() ->
     io:format("~n========================================~n"),
     io:format("Integration Tests~n"),
     io:format("========================================~n"),
-    
+
     try
         integration_simple_test:run()
     catch
@@ -100,7 +100,7 @@ run_integration_tests() ->
 run_test_suite({Module, Description}) ->
     io:format("~n[~s]~n", [Description]),
     io:format("----------------------------------------~n"),
-    
+
     try
         Module:run(),
         ok

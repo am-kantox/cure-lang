@@ -3,14 +3,22 @@
 -module(cure_cli).
 
 -export([
-    main/1,           % Main entry point for escript
-    compile_file/1,   % Compile a single .cure file
-    compile_file/2,   % Compile with options
-    compile_opts_to_codegen_opts/1,  %% Convert compile options to codegen options
-    get_module_info/1, %% Get module information from AST (simplified, for future use)
-    check_cure_installation/0, %% Utility function to check if we have a complete Cure installation
-    help/0,           % Show help information
-    version/0         % Show version information
+    % Main entry point for escript
+    main/1,
+    % Compile a single .cure file
+    compile_file/1,
+    % Compile with options
+    compile_file/2,
+    %% Convert compile options to codegen options
+    compile_opts_to_codegen_opts/1,
+    %% Get module information from AST (simplified, for future use)
+    get_module_info/1,
+    %% Utility function to check if we have a complete Cure installation
+    check_cure_installation/0,
+    % Show help information
+    help/0,
+    % Show version information
+    version/0
 ]).
 
 -include("parser/cure_ast_simple.hrl").
@@ -26,14 +34,22 @@
 
 %% Default options
 -record(compile_options, {
-    output_file = undefined,      % Output .beam file path
-    output_dir = "_build/ebin",   % Output directory
-    debug_info = true,            % Include debug information
-    warnings = true,              % Show warnings
-    verbose = false,              % Verbose output
-    type_check = true,            % Enable type checking
-    optimize = true,              % Enable optimizations
-    fsm_runtime = true            % Include FSM runtime
+    % Output .beam file path
+    output_file = undefined,
+    % Output directory
+    output_dir = "_build/ebin",
+    % Include debug information
+    debug_info = true,
+    % Show warnings
+    warnings = true,
+    % Verbose output
+    verbose = false,
+    % Enable type checking
+    type_check = true,
+    % Enable optimizations
+    optimize = true,
+    % Include FSM runtime
+    fsm_runtime = true
 }).
 
 %% ============================================================================
@@ -81,74 +97,57 @@ main(Args) ->
 %% Parse command line arguments
 parse_args([]) ->
     {error, "No input file specified"};
-
-parse_args(["--help"|_]) ->
+parse_args(["--help" | _]) ->
     {help};
-
-parse_args(["-h"|_]) ->
+parse_args(["-h" | _]) ->
     {help};
-
-parse_args(["--version"|_]) ->
+parse_args(["--version" | _]) ->
     {version};
-
-parse_args(["-v"|_]) ->
+parse_args(["-v" | _]) ->
     {version};
-
 parse_args(Args) ->
     parse_compile_args(Args, #compile_options{}, undefined).
 
 %% Parse compilation arguments
 parse_compile_args([], _Options, undefined) ->
     {error, "No input file specified"};
-
 parse_compile_args([], Options, Filename) ->
     {compile, Filename, Options};
-
 parse_compile_args(["-o", OutputFile | Rest], Options, Filename) ->
     NewOptions = Options#compile_options{output_file = OutputFile},
     parse_compile_args(Rest, NewOptions, Filename);
-
 parse_compile_args(["--output", OutputFile | Rest], Options, Filename) ->
     NewOptions = Options#compile_options{output_file = OutputFile},
     parse_compile_args(Rest, NewOptions, Filename);
-
 parse_compile_args(["-d", OutputDir | Rest], Options, Filename) ->
     NewOptions = Options#compile_options{output_dir = OutputDir},
     parse_compile_args(Rest, NewOptions, Filename);
-
 parse_compile_args(["--output-dir", OutputDir | Rest], Options, Filename) ->
     NewOptions = Options#compile_options{output_dir = OutputDir},
     parse_compile_args(Rest, NewOptions, Filename);
-
 parse_compile_args(["--verbose" | Rest], Options, Filename) ->
     NewOptions = Options#compile_options{verbose = true},
     parse_compile_args(Rest, NewOptions, Filename);
-
 parse_compile_args(["--no-debug" | Rest], Options, Filename) ->
     NewOptions = Options#compile_options{debug_info = false},
     parse_compile_args(Rest, NewOptions, Filename);
-
 parse_compile_args(["--no-warnings" | Rest], Options, Filename) ->
     NewOptions = Options#compile_options{warnings = false},
     parse_compile_args(Rest, NewOptions, Filename);
-
 parse_compile_args(["--no-type-check" | Rest], Options, Filename) ->
     NewOptions = Options#compile_options{type_check = false},
     parse_compile_args(Rest, NewOptions, Filename);
-
 parse_compile_args(["--no-optimize" | Rest], Options, Filename) ->
     NewOptions = Options#compile_options{optimize = false},
     parse_compile_args(Rest, NewOptions, Filename);
-
 parse_compile_args([Arg | Rest], Options, undefined) when not (hd(Arg) =:= $-) ->
     % This should be the input filename
     case filename:extension(Arg) of
-        ".cure" -> 
+        ".cure" ->
             parse_compile_args(Rest, Options, Arg);
-        _ -> 
+        _ ->
             {error, io_lib:format("Input file must have .cure extension: ~s", [Arg])}
     end;
-
 parse_compile_args([Arg | _Rest], _Options, _Filename) ->
     {error, io_lib:format("Unknown option: ~s", [Arg])}.
 
@@ -171,11 +170,13 @@ compile_file(Filename, Options) ->
 
 %% Implementation of file compilation
 compile_file_impl(Filename, Options) ->
-    if Options#compile_options.verbose ->
-        io:format("Compiling ~s...~n", [Filename]);
-    true -> ok
+    if
+        Options#compile_options.verbose ->
+            io:format("Compiling ~s...~n", [Filename]);
+        true ->
+            ok
     end,
-    
+
     try
         % Step 1: Read source file
         case file:read_file(Filename) of
@@ -195,18 +196,20 @@ compile_source(Filename, Source, Options) ->
     Pipeline = [
         {"Lexical Analysis", fun(Src) -> cure_lexer:tokenize(list_to_binary(Src)) end},
         {"Parsing", fun(Tokens) -> cure_parser:parse(Tokens) end},
-        {"Type Checking", fun(AST) -> 
+        {"Type Checking", fun(AST) ->
             case Options#compile_options.type_check of
                 true -> type_check_ast(AST);
                 false -> {ok, AST}
             end
         end},
-        {"Code Generation", fun(AST) -> 
-            if Options#compile_options.verbose ->
-                io:format("    AST structure: ~p~n", [AST]);
-            true -> ok
+        {"Code Generation", fun(AST) ->
+            if
+                Options#compile_options.verbose ->
+                    io:format("    AST structure: ~p~n", [AST]);
+                true ->
+                    ok
             end,
-            
+
             % Use the actual code generator
             CodegenOpts = compile_opts_to_codegen_opts(Options),
             case cure_codegen:compile_program(AST, CodegenOpts) of
@@ -234,7 +237,7 @@ compile_source(Filename, Source, Options) ->
             end
         end}
     ],
-    
+
     case run_pipeline(Pipeline, Source, Options) of
         {ok, {ModuleName, BeamBinary}} ->
             write_output(Filename, {ModuleName, BeamBinary}, Options);
@@ -242,9 +245,11 @@ compile_source(Filename, Source, Options) ->
             % Fallback for old format
             write_output(Filename, BeamBinary, Options);
         {error, Stage, Reason} ->
-            if Options#compile_options.verbose ->
-                io:format("Compilation failed at ~s: ~p~n", [Stage, Reason]);
-            true -> ok
+            if
+                Options#compile_options.verbose ->
+                    io:format("Compilation failed at ~s: ~p~n", [Stage, Reason]);
+                true ->
+                    ok
             end,
             {error, {compilation_stage_failed, Stage, Reason}}
     end.
@@ -252,13 +257,14 @@ compile_source(Filename, Source, Options) ->
 %% Run the compilation pipeline
 run_pipeline([], Result, _Options) ->
     {ok, Result};
-
 run_pipeline([{StageName, StageFunc} | RestStages], Input, Options) ->
-    if Options#compile_options.verbose ->
-        io:format("  ~s...~n", [StageName]);
-    true -> ok
+    if
+        Options#compile_options.verbose ->
+            io:format("  ~s...~n", [StageName]);
+        true ->
+            ok
     end,
-    
+
     case StageFunc(Input) of
         {ok, Output} ->
             run_pipeline(RestStages, Output, Options);
@@ -280,7 +286,7 @@ type_check_ast(AST) ->
                     {ok, _NewEnv, _Result} ->
                         io:format("Type checking successful~n"),
                         {ok, AST};
-                    {error, Reason} -> 
+                    {error, Reason} ->
                         io:format("Type checking error: ~p~n", [Reason]),
                         {error, Reason}
                 end;
@@ -290,7 +296,7 @@ type_check_ast(AST) ->
                     Result when is_tuple(Result) ->
                         % Check if it looks like a success result
                         case element(1, Result) of
-                            success_result -> 
+                            success_result ->
                                 io:format("Type checking successful~n"),
                                 {ok, AST};
                             _ ->
@@ -298,7 +304,7 @@ type_check_ast(AST) ->
                                 case tuple_size(Result) >= 2 of
                                     true ->
                                         case element(2, Result) of
-                                            true -> 
+                                            true ->
                                                 io:format("Type checking successful~n"),
                                                 {ok, AST};
                                             false ->
@@ -310,7 +316,7 @@ type_check_ast(AST) ->
                                         {error, type_check_failed}
                                 end
                         end;
-                    {error, Reason} -> 
+                    {error, Reason} ->
                         io:format("Type checking error: ~p~n", [Reason]),
                         {error, Reason}
                 end;
@@ -320,7 +326,7 @@ type_check_ast(AST) ->
                     Result when is_tuple(Result) ->
                         % Check if it looks like a success result
                         case element(1, Result) of
-                            success_result -> 
+                            success_result ->
                                 io:format("Type checking successful~n"),
                                 {ok, AST};
                             _ ->
@@ -328,7 +334,7 @@ type_check_ast(AST) ->
                                 case tuple_size(Result) >= 2 of
                                     true ->
                                         case element(2, Result) of
-                                            true -> 
+                                            true ->
                                                 io:format("Type checking successful~n"),
                                                 {ok, AST};
                                             false ->
@@ -340,7 +346,7 @@ type_check_ast(AST) ->
                                         {error, type_check_failed}
                                 end
                         end;
-                    {error, Reason} -> 
+                    {error, Reason} ->
                         io:format("Type checking error: ~p~n", [Reason]),
                         {error, Reason}
                 end
@@ -360,42 +366,47 @@ type_check_ast(AST) ->
 %% Convert compile options to codegen options
 compile_opts_to_codegen_opts(Options) ->
     CodegenOpts = [],
-    
-    CodegenOpts1 = case Options#compile_options.debug_info of
-        true -> [{debug_info, true} | CodegenOpts];
-        false -> CodegenOpts
-    end,
-    
-    CodegenOpts2 = case Options#compile_options.optimize of
-        true -> [{optimize, 1} | CodegenOpts1];
-        false -> CodegenOpts1
-    end,
-    
-    CodegenOpts3 = case Options#compile_options.warnings of
-        true -> [{warnings, true} | CodegenOpts2];
-        false -> CodegenOpts2
-    end,
-    
-    CodegenOpts4 = case Options#compile_options.fsm_runtime of
-        true -> [{fsm_integration, true} | CodegenOpts3];
-        false -> CodegenOpts3
-    end,
-    
+
+    CodegenOpts1 =
+        case Options#compile_options.debug_info of
+            true -> [{debug_info, true} | CodegenOpts];
+            false -> CodegenOpts
+        end,
+
+    CodegenOpts2 =
+        case Options#compile_options.optimize of
+            true -> [{optimize, 1} | CodegenOpts1];
+            false -> CodegenOpts1
+        end,
+
+    CodegenOpts3 =
+        case Options#compile_options.warnings of
+            true -> [{warnings, true} | CodegenOpts2];
+            false -> CodegenOpts2
+        end,
+
+    CodegenOpts4 =
+        case Options#compile_options.fsm_runtime of
+            true -> [{fsm_integration, true} | CodegenOpts3];
+            false -> CodegenOpts3
+        end,
+
     CodegenOpts4.
 
 %% Write output file
 write_output(InputFilename, BeamData, Options) ->
-    {OutputFile, BeamBinary} = case BeamData of
-        {ModuleName, Binary} ->
-            % Use module name for BEAM filename
-            {atom_to_list(ModuleName) ++ ".beam", Binary};
-        Binary when is_binary(Binary) ->
-            % Fallback to input filename
-            {determine_output_filename(InputFilename, Options), Binary}
-    end,
-    
+    {OutputFile, BeamBinary} =
+        case BeamData of
+            {ModuleName, Binary} ->
+                % Use module name for BEAM filename
+                {atom_to_list(ModuleName) ++ ".beam", Binary};
+            Binary when is_binary(Binary) ->
+                % Fallback to input filename
+                {determine_output_filename(InputFilename, Options), Binary}
+        end,
+
     OutputDir = Options#compile_options.output_dir,
-    
+
     % Ensure output directory exists
     case filelib:ensure_dir(filename:join(OutputDir, "dummy")) of
         ok ->
@@ -470,42 +481,31 @@ version() ->
 %% Format error messages for user display
 format_error({file_not_found, Filename}) ->
     io_lib:format("File not found: ~s", [Filename]);
-
 format_error({file_read_error, Filename, Reason}) ->
     io_lib:format("Could not read file ~s: ~p", [Filename, Reason]);
-
 format_error({file_write_error, Filename, Reason}) ->
     io_lib:format("Could not write file ~s: ~p", [Filename, Reason]);
-
 format_error({directory_create_error, Dir, Reason}) ->
     io_lib:format("Could not create directory ~s: ~p", [Dir, Reason]);
-
 format_error({compilation_stage_failed, Stage, Reason}) ->
     io_lib:format("~s failed: ~s", [Stage, format_compilation_error(Reason)]);
-
 format_error({compilation_failed, Error, Reason}) ->
     io_lib:format("Compilation failed: ~p:~p", [Error, Reason]);
-
 format_error(Reason) when is_list(Reason) ->
     Reason;
-
 format_error(Reason) ->
     io_lib:format("~p", [Reason]).
 
 %% Format compilation-specific errors
 format_compilation_error({lexer_error, Line, Message}) ->
     io_lib:format("Lexical error at line ~w: ~s", [Line, Message]);
-
 format_compilation_error({parser_error, Line, Message}) ->
     io_lib:format("Parse error at line ~w: ~s", [Line, Message]);
-
 format_compilation_error({type_error, Message}) ->
     io_lib:format("Type error: ~s", [Message]);
-
 format_compilation_error({type_errors, Errors}) ->
     ErrorStrings = [format_compilation_error(Error) || Error <- Errors],
     string:join(ErrorStrings, "; ");
-
 format_compilation_error(Reason) ->
     io_lib:format("~p", [Reason]).
 
@@ -522,7 +522,6 @@ get_module_info(AST) when is_tuple(AST) ->
         exports => [],
         type => module
     };
-
 get_module_info(_) ->
     #{
         name => undefined,
@@ -533,18 +532,21 @@ get_module_info(_) ->
 %% Utility function to check if we have a complete Cure installation
 check_cure_installation() ->
     RequiredModules = [cure_lexer, cure_parser, cure_typechecker, cure_codegen],
-    Missing = lists:filter(fun(Module) ->
-        case code:which(Module) of
-            non_existing -> true;
-            _ -> false
-        end
-    end, RequiredModules),
-    
+    Missing = lists:filter(
+        fun(Module) ->
+            case code:which(Module) of
+                non_existing -> true;
+                _ -> false
+            end
+        end,
+        RequiredModules
+    ),
+
     case Missing of
-        [] -> ok;
+        [] ->
+            ok;
         MissingModules ->
             io:format("Warning: Missing Cure compiler modules: ~p~n", [MissingModules]),
             io:format("Make sure to run 'make all' to build the complete compiler~n"),
             {error, {missing_modules, MissingModules}}
     end.
-

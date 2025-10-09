@@ -8,9 +8,12 @@
 
 %% BEAM instruction record for testing
 -record(beam_instr, {
-    op,                    % Instruction opcode
-    args = [],             % Instruction arguments
-    location               % Source location for debugging
+    % Instruction opcode
+    op,
+    % Instruction arguments
+    args = [],
+    % Source location for debugging
+    location
 }).
 
 %% Run all advanced code generation tests
@@ -77,26 +80,32 @@ test_nested_let_expressions() ->
         },
         location = create_location(1, 15)
     },
-    
+
     % Compile the nested let expression
     {Instructions, _State} = cure_codegen:compile_expression(NestedLetExpr),
-    
+
     % Verify instructions are generated correctly
     ?assert(length(Instructions) > 0),
-    
+
     % Check for proper variable binding instructions
     LoadInstructions = [I || I <- Instructions, I#beam_instr.op == load_literal],
-    ?assertEqual(4, length(LoadInstructions)),  % Should load 10, 5, 2, 1
-    
+    % Should load 10, 5, 2, 1
+    ?assertEqual(4, length(LoadInstructions)),
+
     % Check for variable binding operations
     BindInstructions = [I || I <- Instructions, I#beam_instr.op == bind_var],
-    ?assertEqual(3, length(BindInstructions)),  % Should bind x, y, z
-    
+    % Should bind x, y, z
+    ?assertEqual(3, length(BindInstructions)),
+
     % Check for arithmetic operations
-    ArithInstructions = [I || I <- Instructions, 
-                          lists:member(I#beam_instr.op, [binary_op, add_op, mult_op])],
-    ?assertEqual(3, length(ArithInstructions)),  % x+5, y*2, z+1
-    
+    ArithInstructions = [
+        I
+     || I <- Instructions,
+        lists:member(I#beam_instr.op, [binary_op, add_op, mult_op])
+    ],
+    % x+5, y*2, z+1
+    ?assertEqual(3, length(ArithInstructions)),
+
     io:format("✓ Nested let expressions test passed~n").
 
 %% Test complex function calls with multiple arguments and nesting
@@ -125,25 +134,27 @@ test_complex_function_calls() ->
         ],
         location = create_location(1, 1)
     },
-    
+
     % Compile the complex function call
     {Instructions, _State} = cure_codegen:compile_expression(ComplexCallExpr),
-    
+
     % Verify instruction structure
     ?assert(length(Instructions) > 0),
-    
+
     % Check for literal loads
     LoadInstructions = [I || I <- Instructions, I#beam_instr.op == load_literal],
-    ?assertEqual(5, length(LoadInstructions)),  % Should load 1, 2, 3, 4, 5
-    
+    % Should load 1, 2, 3, 4, 5
+    ?assertEqual(5, length(LoadInstructions)),
+
     % Check for function calls (should be in proper order)
     CallInstructions = [I || I <- Instructions, I#beam_instr.op == function_call],
-    ?assertEqual(4, length(CallInstructions)),  % qux, bar, baz, foo
-    
+    % qux, bar, baz, foo
+    ?assertEqual(4, length(CallInstructions)),
+
     % Verify call ordering (inner calls before outer calls)
     CallFunctions = [hd(I#beam_instr.args) || I <- CallInstructions],
     ?assertEqual(['qux', 'bar', 'baz', 'foo'], CallFunctions),
-    
+
     io:format("✓ Complex function calls test passed~n").
 
 %% Test let expressions containing function calls
@@ -182,22 +193,25 @@ test_let_with_function_calls() ->
         },
         location = create_location(1, 16)
     },
-    
+
     % Compile the expression
     {Instructions, _State} = cure_codegen:compile_expression(LetWithCallsExpr),
-    
+
     % Verify instruction generation
     ?assert(length(Instructions) > 0),
-    
+
     % Check for proper interleaving of loads, calls, and bindings
     LoadInstructions = [I || I <- Instructions, I#beam_instr.op == load_literal],
     CallInstructions = [I || I <- Instructions, I#beam_instr.op == function_call],
     BindInstructions = [I || I <- Instructions, I#beam_instr.op == bind_var],
-    
-    ?assertEqual(2, length(LoadInstructions)),  % 1, 2
-    ?assertEqual(3, length(CallInstructions)),  % foo, bar, baz
-    ?assertEqual(2, length(BindInstructions)),  % x, y
-    
+
+    % 1, 2
+    ?assertEqual(2, length(LoadInstructions)),
+    % foo, bar, baz
+    ?assertEqual(3, length(CallInstructions)),
+    % x, y
+    ?assertEqual(2, length(BindInstructions)),
+
     io:format("✓ Let with function calls test passed~n").
 
 %% Test deeply nested expressions with mixed let and function calls
@@ -213,7 +227,9 @@ test_deeply_nested_expressions() ->
                         #let_expr{
                             bindings = [
                                 #binding{
-                                    pattern = #identifier_pattern{name = b, location = create_location(1, 15)},
+                                    pattern = #identifier_pattern{
+                                        name = b, location = create_location(1, 15)
+                                    },
                                     value = #function_call_expr{
                                         function = create_identifier('g'),
                                         args = [create_literal_int(1)],
@@ -247,7 +263,9 @@ test_deeply_nested_expressions() ->
                             #let_expr{
                                 bindings = [
                                     #binding{
-                                        pattern = #identifier_pattern{name = d, location = create_location(2, 20)},
+                                        pattern = #identifier_pattern{
+                                            name = d, location = create_location(2, 20)
+                                        },
                                         value = #function_call_expr{
                                             function = create_identifier('i'),
                                             args = [create_literal_int(3)],
@@ -280,28 +298,39 @@ test_deeply_nested_expressions() ->
         },
         location = create_location(1, 38)
     },
-    
+
     % Compile the deeply nested expression
     {Instructions, State} = cure_codegen:compile_expression(DeeplyNestedExpr),
-    
+
     % Verify complex instruction generation
-    ?assert(length(Instructions) > 10),  % Should generate many instructions
-    
+
+    % Should generate many instructions
+    ?assert(length(Instructions) > 10),
+
     % Check instruction types
     LoadInstructions = [I || I <- Instructions, I#beam_instr.op == load_literal],
     CallInstructions = [I || I <- Instructions, I#beam_instr.op == function_call],
     BindInstructions = [I || I <- Instructions, I#beam_instr.op == bind_var],
-    ArithInstructions = [I || I <- Instructions, 
-                          lists:member(I#beam_instr.op, [binary_op, add_op, mult_op, sub_op])],
-    
-    ?assertEqual(4, length(LoadInstructions)),  % 1, 2, 3, 4, 1 (for final subtraction)
-    ?assertEqual(4, length(CallInstructions)),  % g, f, i, h
-    ?assertEqual(4, length(BindInstructions)),  % a, b, c, d
-    ?assertEqual(3, length(ArithInstructions)), % b+2, d*4, c-1
-    
+    ArithInstructions = [
+        I
+     || I <- Instructions,
+        lists:member(I#beam_instr.op, [binary_op, add_op, mult_op, sub_op])
+    ],
+
+    % 1, 2, 3, 4, 1 (for final subtraction)
+    ?assertEqual(4, length(LoadInstructions)),
+    % g, f, i, h
+    ?assertEqual(4, length(CallInstructions)),
+    % a, b, c, d
+    ?assertEqual(4, length(BindInstructions)),
+    % b+2, d*4, c-1
+    ?assertEqual(3, length(ArithInstructions)),
+
     % Verify scoping information in state
-    ?assert(maps:size(State) >= 0),  % Should track variable scopes
-    
+
+    % Should track variable scopes
+    ?assert(maps:size(State) >= 0),
+
     io:format("✓ Deeply nested expressions test passed~n").
 
 %% Test let expression variable scoping in code generation
@@ -325,29 +354,33 @@ test_let_expression_scoping() ->
                         location = create_location(1, 16)
                     }
                 ],
-                body = create_identifier('x'),  % This should refer to inner x (2)
+                % This should refer to inner x (2)
+                body = create_identifier('x'),
                 location = create_location(1, 29)
             },
-            right = create_identifier('x'),  % This should refer to outer x (1)
+            % This should refer to outer x (1)
+            right = create_identifier('x'),
             location = create_location(1, 32)
         },
         location = create_location(1, 9)
     },
-    
+
     % Compile with scoping
     {Instructions, State} = cure_codegen:compile_expression(ScopingExpr),
-    
+
     % Verify scoping is handled correctly in instructions
     ?assert(length(Instructions) > 0),
-    
+
     % Check variable reference instructions handle scoping
     VarRefInstructions = [I || I <- Instructions, I#beam_instr.op == load_var],
-    ?assertEqual(2, length(VarRefInstructions)),  % Two references to 'x'
-    
+    % Two references to 'x'
+    ?assertEqual(2, length(VarRefInstructions)),
+
     % Verify different variable scopes are distinguished
     VariableScopes = [I#beam_instr.args || I <- VarRefInstructions],
-    ?assertEqual(2, length(sets:to_list(sets:from_list(VariableScopes)))),  % Should be different
-    
+    % Should be different
+    ?assertEqual(2, length(sets:to_list(sets:from_list(VariableScopes)))),
+
     io:format("✓ Let expression scoping test passed~n").
 
 %% Test recursive function calls
@@ -373,12 +406,14 @@ test_recursive_function_calls() ->
                 left = create_identifier('n'),
                 right = #function_call_expr{
                     function = create_identifier('factorial'),
-                    args = [#binary_op_expr{
-                        op = '-',
-                        left = create_identifier('n'),
-                        right = create_literal_int(1),
-                        location = create_location(4, 20)
-                    }],
+                    args = [
+                        #binary_op_expr{
+                            op = '-',
+                            left = create_identifier('n'),
+                            right = create_literal_int(1),
+                            location = create_location(4, 20)
+                        }
+                    ],
                     location = create_location(4, 10)
                 },
                 location = create_location(4, 1)
@@ -387,22 +422,23 @@ test_recursive_function_calls() ->
         },
         location = create_location(1, 1)
     },
-    
+
     % Compile recursive function
     Result = cure_codegen:compile_function(RecursiveFunction),
     ?assertMatch({ok, {function, _CompiledFunction}, _State}, Result),
-    
+
     {ok, {function, CompiledFunction}, _State} = Result,
     Instructions = maps:get(instructions, CompiledFunction),
-    
+
     % Verify recursive call handling
     CallInstructions = [I || I <- Instructions, I#beam_instr.op == function_call],
-    ?assert(length(CallInstructions) >= 1),  % At least one recursive call
-    
+    % At least one recursive call
+    ?assert(length(CallInstructions) >= 1),
+
     % Check for tail call optimization opportunities
     TailCallInstructions = [I || I <- Instructions, I#beam_instr.op == tail_call],
     % May or may not be optimized depending on implementation
-    
+
     io:format("✓ Recursive function calls test passed~n").
 
 %% Test higher-order function calls (functions as arguments)
@@ -428,22 +464,22 @@ test_higher_order_function_calls() ->
         ],
         location = create_location(1, 1)
     },
-    
+
     % Compile higher-order function call
     {Instructions, _State} = cure_codegen:compile_expression(HigherOrderCall),
-    
+
     % Verify lambda compilation
     LambdaInstructions = [I || I <- Instructions, I#beam_instr.op == create_lambda],
     ?assertEqual(1, length(LambdaInstructions)),
-    
+
     % Verify list creation
     ListInstructions = [I || I <- Instructions, I#beam_instr.op == create_list],
     ?assertEqual(1, length(ListInstructions)),
-    
+
     % Verify higher-order call
     CallInstructions = [I || I <- Instructions, I#beam_instr.op == function_call],
     ?assertEqual(1, length(CallInstructions)),
-    
+
     io:format("✓ Higher-order function calls test passed~n").
 
 %% Test closure generation and capture
@@ -463,11 +499,15 @@ test_closure_generation() ->
                 #binding{
                     pattern = #identifier_pattern{name = f, location = create_location(2, 5)},
                     value = #lambda_expr{
-                        params = [#param{name = y, type = undefined, location = create_location(2, 17)}],
+                        params = [
+                            #param{name = y, type = undefined, location = create_location(2, 17)}
+                        ],
                         body = #binary_op_expr{
                             op = '+',
-                            left = create_identifier('x'),  % Captured variable
-                            right = create_identifier('y'), % Parameter
+                            % Captured variable
+                            left = create_identifier('x'),
+                            % Parameter
+                            right = create_identifier('y'),
                             location = create_location(2, 21)
                         },
                         location = create_location(2, 9)
@@ -484,22 +524,23 @@ test_closure_generation() ->
         },
         location = create_location(1, 13)
     },
-    
+
     % Compile closure expression
     {Instructions, State} = cure_codegen:compile_expression(ClosureExpr),
-    
+
     % Verify closure creation instructions
     ClosureInstructions = [I || I <- Instructions, I#beam_instr.op == create_closure],
     ?assertEqual(1, length(ClosureInstructions)),
-    
+
     % Verify variable capture
     CaptureInstructions = [I || I <- Instructions, I#beam_instr.op == capture_var],
-    ?assertEqual(1, length(CaptureInstructions)),  % Should capture x
-    
+    % Should capture x
+    ?assertEqual(1, length(CaptureInstructions)),
+
     % Verify closure call
     CallInstructions = [I || I <- Instructions, I#beam_instr.op == closure_call],
     ?assertEqual(1, length(CallInstructions)),
-    
+
     io:format("✓ Closure generation test passed~n").
 
 %% Test tail call optimization
@@ -543,21 +584,21 @@ test_tail_call_optimization() ->
         },
         location = create_location(1, 1)
     },
-    
+
     % Compile with tail call optimization
     Result = cure_codegen:compile_function(TailRecursiveFunction),
     ?assertMatch({ok, {function, _CompiledFunction}, _State}, Result),
-    
+
     {ok, {function, CompiledFunction}, _State} = Result,
     Instructions = maps:get(instructions, CompiledFunction),
-    
+
     % Check for tail call optimization
     TailCallInstructions = [I || I <- Instructions, I#beam_instr.op == tail_call],
     RegularCallInstructions = [I || I <- Instructions, I#beam_instr.op == function_call],
-    
+
     % Should prefer tail calls over regular calls in tail position
     ?assert(length(TailCallInstructions) >= length(RegularCallInstructions)),
-    
+
     io:format("✓ Tail call optimization test passed~n").
 
 %% Test let expression optimizations
@@ -575,13 +616,13 @@ test_let_expression_optimizations() ->
         body = create_identifier('x'),
         location = create_location(1, 13)
     },
-    
+
     % Compile with optimizations
     {Instructions, _State} = cure_codegen:compile_expression(SimpleLetExpr),
-    
+
     % Should be optimized to minimal instructions
     ?assert(length(Instructions) > 0),
-    
+
     % Test unused let binding optimization
     % let x = expensive_call() in 42  (x is unused, call might be eliminated)
     UnusedLetExpr = #let_expr{
@@ -599,14 +640,14 @@ test_let_expression_optimizations() ->
         body = create_literal_int(42),
         location = create_location(2, 30)
     },
-    
+
     % Compile with dead code elimination
     {UnusedInstructions, _UnusedState} = cure_codegen:compile_expression(UnusedLetExpr),
-    
+
     % Check if unused binding is optimized away (depends on purity analysis)
     CallInstructions = [I || I <- UnusedInstructions, I#beam_instr.op == function_call],
     % May or may not eliminate call depending on side effects analysis
-    
+
     io:format("✓ Let expression optimizations test passed~n").
 
 %% ============================================================================

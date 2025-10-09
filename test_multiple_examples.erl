@@ -5,7 +5,7 @@ run() ->
     io:format("=== Testing Multiple Cure Examples ===~n"),
     Examples = [
         "examples/simplified/minimal_success.cure",
-        "examples/simplified/basic_types_demo.cure", 
+        "examples/simplified/basic_types_demo.cure",
         "examples/simplified/test_operators.cure"
     ],
     test_examples(Examples, 1).
@@ -22,18 +22,20 @@ test_example_with_counter(File, Counter) ->
     try
         {ok, Tokens} = cure_lexer:tokenize_file(File),
         {ok, AST} = cure_parser:parse(Tokens),
-        
+
         % Extract exports
         Exports = extract_exports(AST),
-        
-        % Create module 
-        ModuleAST = {module_def, ModuleName, [], {export_list, Exports, {location, 1, 1, undefined}}, AST, {location, 1, 1, undefined}},
+
+        % Create module
+        ModuleAST =
+            {module_def, ModuleName, [], {export_list, Exports, {location, 1, 1, undefined}}, AST,
+                {location, 1, 1, undefined}},
         {ok, Module} = cure_codegen:compile_module(ModuleAST),
-        
+
         BeamFile = atom_to_list(ModuleName) ++ ".beam",
         {ok, {_ModName, _Path}} = cure_codegen:generate_beam_file(Module, BeamFile),
         {module, LoadedMod} = code:load_file(ModuleName),
-        
+
         % Try to run main/0 if it exists
         case erlang:function_exported(LoadedMod, main, 0) of
             true ->
@@ -42,7 +44,7 @@ test_example_with_counter(File, Counter) ->
             false ->
                 io:format("   ✓ ~s -> Compiled successfully (no main/0 function)~n", [File])
         end
-    catch 
+    catch
         Error:Reason:Stack ->
             io:format("   ✗ ~s -> Error: ~p:~p~n", [File, Error, Reason])
     end.

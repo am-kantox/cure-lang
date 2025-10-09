@@ -3,34 +3,82 @@
 -module(cure_std).
 
 %% Core utility functions
--export([ok/1, error/1, some/1, none/0, is_ok/1, is_error/1, is_some/1, is_none/1,
-         map_option/2, filter_option/2, get_option/2, map_ok/2, map_error/2, and_then/2, or_else/2,
-         map/2, filter/2, foldl/3, foldr/3, head/1, tail/1, length/1, reverse/1, find/2, abs/1,
-         sqrt/1, pi/0, safe_divide/2, safe_sqrt/1, gcd/2, factorial/1, string_concat/2, split/2,
-         trim/1, to_upper/1, to_lower/1, contains/2, starts_with/2, ends_with/2, string_join/2,
-         string_empty/1, int_to_string/1, float_to_string/1, string_to_int/1, string_to_float/1,
-         print/1, println/1, fsm_create/2, fsm_send_safe/2, create_counter/1, list_to_string/1,
-         join_ints/2, is_monad/1, pipe/2]).
+-export([
+    ok/1,
+    error/1,
+    some/1,
+    none/0,
+    is_ok/1,
+    is_error/1,
+    is_some/1,
+    is_none/1,
+    map_option/2,
+    filter_option/2,
+    get_option/2,
+    map_ok/2,
+    map_error/2,
+    and_then/2,
+    or_else/2,
+    map/2,
+    filter/2,
+    foldl/3,
+    foldr/3,
+    head/1,
+    tail/1,
+    length/1,
+    reverse/1,
+    find/2,
+    abs/1,
+    sqrt/1,
+    pi/0,
+    safe_divide/2,
+    safe_sqrt/1,
+    gcd/2,
+    factorial/1,
+    string_concat/2,
+    split/2,
+    trim/1,
+    to_upper/1,
+    to_lower/1,
+    contains/2,
+    starts_with/2,
+    ends_with/2,
+    string_join/2,
+    string_empty/1,
+    int_to_string/1,
+    float_to_string/1,
+    string_to_int/1,
+    string_to_float/1,
+    print/1,
+    println/1,
+    fsm_create/2,
+    fsm_send_safe/2,
+    create_counter/1,
+    list_to_string/1,
+    join_ints/2,
+    is_monad/1,
+    pipe/2
+]).
 
-                           % Result and Option types
+% Result and Option types
 
-    % Option operations
+% Option operations
 
-    % Result operations
+% Result operations
 
-    % List operations
+% List operations
 
-    % Math operations
+% Math operations
 
-    % String operations
+% String operations
 
-    % Type conversion
+% Type conversion
 
-    % IO operations
+% IO operations
 
-    % FSM operations
+% FSM operations
 
-    % Utility functions
+% Utility functions
 
 %% ============================================================================
 %% Result and Option Types Implementation
@@ -38,48 +86,48 @@
 
 %% Create Ok result
 ok(Value) ->
-  {'Ok', Value}.
+    {'Ok', Value}.
 
 %% Create Error result
 error(Reason) ->
-  {'Error', Reason}.
+    {'Error', Reason}.
 
 %% Create Some option
 some(Value) ->
-  {'Some', Value}.
+    {'Some', Value}.
 
 %% Create None option
 none() ->
-  'None'.
+    'None'.
 
 %% Type checking predicates
 is_ok({'Ok', _}) ->
-  true;
+    true;
 is_ok(_) ->
-  false.
+    false.
 
 is_error({'Error', _}) ->
-  true;
+    true;
 is_error(_) ->
-  false.
+    false.
 
 %% Helper: check if value is a Result (Ok/Error)
 is_monad({'Ok', _}) ->
-  true;
+    true;
 is_monad({'Error', _}) ->
-  true;
+    true;
 is_monad(_) ->
-  false.
+    false.
 
 is_some({'Some', _}) ->
-  true;
+    true;
 is_some(_) ->
-  false.
+    false.
 
 is_none('None') ->
-  true;
+    true;
 is_none(_) ->
-  false.
+    false.
 
 %% ============================================================================
 %% Option Operations
@@ -87,26 +135,26 @@ is_none(_) ->
 
 %% Map function over option value
 map_option(F, {'Some', Value}) ->
-  {'Some', F(Value)};
+    {'Some', F(Value)};
 map_option(_F, 'None') ->
-  'None'.
+    'None'.
 
 %% Filter option based on predicate
 filter_option(Pred, {'Some', Value}) ->
-  case Pred(Value) of
-    true ->
-      {'Some', Value};
-    false ->
-      'None'
-  end;
+    case Pred(Value) of
+        true ->
+            {'Some', Value};
+        false ->
+            'None'
+    end;
 filter_option(_Pred, 'None') ->
-  'None'.
+    'None'.
 
 %% Get option value with default
 get_option({'Some', Value}, _Default) ->
-  Value;
+    Value;
 get_option('None', Default) ->
-  Default.
+    Default.
 
 %% ============================================================================
 %% Result Operations
@@ -114,50 +162,55 @@ get_option('None', Default) ->
 
 %% Map function over Ok result
 map_ok(F, {'Ok', Value}) ->
-  {'Ok', F(Value)};
+    {'Ok', F(Value)};
 map_ok(_F, Error) ->
-  Error.
+    Error.
 
 %% Map function over Error result
 map_error(_F, {'Ok', _} = Ok) ->
-  Ok;
+    Ok;
 map_error(F, {'Error', Reason}) ->
-  {'Error', F(Reason)}.
+    {'Error', F(Reason)}.
 
 %% Chain results (flatMap)
 and_then(F, {'Ok', Value}) ->
-  F(Value);
+    F(Value);
 and_then(_F, Error) ->
-  Error.
+    Error.
 
 %% Use alternative on error
 or_else(_F, {'Ok', _} = Ok) ->
-  Ok;
+    Ok;
 or_else(F, {'Error', _Reason}) ->
-  F().
+    F().
 
 %% Monadic-style pipe helper implementing the specified rules
 %% pipe(LHO, RHO) where RHO is a function to call with the (possibly unwrapped) LHO
 pipe({'Error', _} = Err, _RHO) ->
-  Err; % Rule 1: propagate error
+    % Rule 1: propagate error
+    Err;
 pipe({'Ok', V}, RHO) when is_function(RHO) ->
-  % Rule 2: unwrap Ok(V), call RHO(V), wrap unless already a monad
-  try
-    Res = RHO(V),
-    case is_monad(Res) of
-      true -> Res;
-      false -> {'Ok', Res}
-    end
-  catch Error:Reason -> {'Error', {pipe_runtime_error, Error, Reason}} end;
+    % Rule 2: unwrap Ok(V), call RHO(V), wrap unless already a monad
+    try
+        Res = RHO(V),
+        case is_monad(Res) of
+            true -> Res;
+            false -> {'Ok', Res}
+        end
+    catch
+        Error:Reason -> {'Error', {pipe_runtime_error, Error, Reason}}
+    end;
 pipe(LHO, RHO) when is_function(RHO) ->
-  % Rule 3: pass non-monad LHO to RHO, wrap unless already a monad
-  try
-    Res = RHO(LHO),
-    case is_monad(Res) of
-      true -> Res;
-      false -> {'Ok', Res}
-    end
-  catch Error:Reason -> {'Error', {pipe_runtime_error, Error, Reason}} end.
+    % Rule 3: pass non-monad LHO to RHO, wrap unless already a monad
+    try
+        Res = RHO(LHO),
+        case is_monad(Res) of
+            true -> Res;
+            false -> {'Ok', Res}
+        end
+    catch
+        Error:Reason -> {'Error', {pipe_runtime_error, Error, Reason}}
+    end.
 
 %% ============================================================================
 %% List Operations
@@ -165,63 +218,63 @@ pipe(LHO, RHO) when is_function(RHO) ->
 
 %% Map function over list
 map(_F, []) ->
-  [];
+    [];
 map(F, [H | T]) ->
-  [F(H) | map(F, T)].
+    [F(H) | map(F, T)].
 
 %% Filter list based on predicate
 filter(_Pred, []) ->
-  [];
+    [];
 filter(Pred, [H | T]) ->
-  case Pred(H) of
-    true ->
-      [H | filter(Pred, T)];
-    false ->
-      filter(Pred, T)
-  end.
+    case Pred(H) of
+        true ->
+            [H | filter(Pred, T)];
+        false ->
+            filter(Pred, T)
+    end.
 
 %% Left fold over list
 foldl(_F, Acc, []) ->
-  Acc;
+    Acc;
 foldl(F, Acc, [H | T]) ->
-  foldl(F, F(H, Acc), T).
+    foldl(F, F(H, Acc), T).
 
 %% Right fold over list
 foldr(_F, Acc, []) ->
-  Acc;
+    Acc;
 foldr(F, Acc, [H | T]) ->
-  F(H, foldr(F, Acc, T)).
+    F(H, foldr(F, Acc, T)).
 
 %% Get head of list
 head([]) ->
-  erlang:error("Empty list");
+    erlang:error("Empty list");
 head([H | _]) ->
-  H.
+    H.
 
 %% Get tail of list
 tail([]) ->
-  [];
+    [];
 tail([_ | T]) ->
-  T.
+    T.
 
 %% Get length of list
 length(List) ->
-  erlang:length(List).
+    erlang:length(List).
 
 %% Reverse list
 reverse(List) ->
-  lists:reverse(List).
+    lists:reverse(List).
 
 %% Find element in list
 find(_Pred, []) ->
-  'None';
+    'None';
 find(Pred, [H | T]) ->
-  case Pred(H) of
-    true ->
-      {'Some', H};
-    false ->
-      find(Pred, T)
-  end.
+    case Pred(H) of
+        true ->
+            {'Some', H};
+        false ->
+            find(Pred, T)
+    end.
 
 %% ============================================================================
 %% Math Operations
@@ -229,45 +282,45 @@ find(Pred, [H | T]) ->
 
 %% Absolute value
 abs(N) when N < 0 ->
-  -N;
+    -N;
 abs(N) ->
-  N.
+    N.
 
 %% Square root
 sqrt(N) when N >= 0 ->
-  math:sqrt(N);
+    math:sqrt(N);
 sqrt(_) ->
-  erlang:error("Cannot take square root of negative number").
+    erlang:error("Cannot take square root of negative number").
 
 %% Pi constant
 pi() ->
-  math:pi().
+    math:pi().
 
 %% Safe division
 safe_divide(_X, 0) ->
-  {'Error', "Division by zero"};
+    {'Error', "Division by zero"};
 safe_divide(X, Y) ->
-  {'Ok', X / Y}.
+    {'Ok', X / Y}.
 
 %% Safe square root
 safe_sqrt(N) when N >= 0 ->
-  {'Ok', math:sqrt(N)};
+    {'Ok', math:sqrt(N)};
 safe_sqrt(_) ->
-  {'Error', "Cannot take square root of negative number"}.
+    {'Error', "Cannot take square root of negative number"}.
 
 %% Greatest common divisor
 gcd(A, 0) ->
-  erlang:abs(A);
+    erlang:abs(A);
 gcd(A, B) ->
-  gcd(B, A rem B).
+    gcd(B, A rem B).
 
 %% Factorial
 factorial(0) ->
-  1;
+    1;
 factorial(N) when N > 0 ->
-  N * factorial(N - 1);
+    N * factorial(N - 1);
 factorial(_) ->
-  erlang:error("Factorial of negative number").
+    erlang:error("Factorial of negative number").
 
 %% ============================================================================
 %% String Operations
@@ -275,49 +328,49 @@ factorial(_) ->
 
 %% Concatenate strings
 string_concat(S1, S2) ->
-  S1 ++ S2.
+    S1 ++ S2.
 
 %% Split string by separator
 split(String, Sep) ->
-  string:split(String, Sep, all).
+    string:split(String, Sep, all).
 
 %% Trim whitespace
 trim(String) ->
-  string:trim(String).
+    string:trim(String).
 
 %% Convert to uppercase
 to_upper(String) ->
-  string:uppercase(String).
+    string:uppercase(String).
 
 %% Convert to lowercase
 to_lower(String) ->
-  string:lowercase(String).
+    string:lowercase(String).
 
 %% Check if string contains substring
 contains(String, SubString) ->
-  string:find(String, SubString) =/= nomatch.
+    string:find(String, SubString) =/= nomatch.
 
 %% Check if string starts with prefix
 starts_with(String, Prefix) ->
-  string:prefix(String, Prefix) =/= nomatch.
+    string:prefix(String, Prefix) =/= nomatch.
 
 %% Check if string ends with suffix
 ends_with(String, Suffix) ->
-  erlang:length(String) >= erlang:length(Suffix) andalso lists:suffix(Suffix, String).
+    erlang:length(String) >= erlang:length(Suffix) andalso lists:suffix(Suffix, String).
 
 %% Join list of strings with separator
 string_join([], _Sep) ->
-  "";
+    "";
 string_join([H], _Sep) ->
-  H;
+    H;
 string_join([H | T], Sep) ->
-  H ++ Sep ++ string_join(T, Sep).
+    H ++ Sep ++ string_join(T, Sep).
 
 %% Check if string is empty
 string_empty([]) ->
-  true;
+    true;
 string_empty(_) ->
-  false.
+    false.
 
 %% ============================================================================
 %% Type Conversion
@@ -325,29 +378,29 @@ string_empty(_) ->
 
 %% Convert integer to string
 int_to_string(N) ->
-  integer_to_list(N).
+    integer_to_list(N).
 
 %% Convert float to string
 float_to_string(F) ->
-  io_lib:format("~.2f", [F]).
+    io_lib:format("~.2f", [F]).
 
 %% Convert string to integer
 string_to_int(S) ->
-  try
-    {'Ok', list_to_integer(S)}
-  catch
-    error:badarg ->
-      {'Error', "Invalid integer format"}
-  end.
+    try
+        {'Ok', list_to_integer(S)}
+    catch
+        error:badarg ->
+            {'Error', "Invalid integer format"}
+    end.
 
 %% Convert string to float
 string_to_float(S) ->
-  try
-    {'Ok', list_to_float(S)}
-  catch
-    error:badarg ->
-      {'Error', "Invalid float format"}
-  end.
+    try
+        {'Ok', list_to_float(S)}
+    catch
+        error:badarg ->
+            {'Error', "Invalid float format"}
+    end.
 
 %% ============================================================================
 %% IO Operations
@@ -355,13 +408,13 @@ string_to_float(S) ->
 
 %% Print without newline
 print(Message) ->
-  io:format("~ts", [Message]),
-  ok.
+    io:format("~ts", [Message]),
+    ok.
 
 %% Print with newline
 println(Message) ->
-  io:format("~ts~n", [Message]),
-  ok.
+    io:format("~ts~n", [Message]),
+    ok.
 
 %% ============================================================================
 %% FSM Operations (Simplified Implementation)
@@ -369,17 +422,17 @@ println(Message) ->
 
 %% Create FSM (simplified)
 fsm_create(_FSMType, _InitialState) ->
-  % In a real implementation, this would create an actual FSM process
-  {'Ok', make_ref()}.
+    % In a real implementation, this would create an actual FSM process
+    {'Ok', make_ref()}.
 
 %% Send message to FSM safely
 fsm_send_safe(_FSMRef, _Message) ->
-  % In a real implementation, this would send message to FSM process
-  {'Ok', ok}.
+    % In a real implementation, this would send message to FSM process
+    {'Ok', ok}.
 
 %% Create counter FSM
 create_counter(InitialValue) ->
-  fsm_create(counter, InitialValue).
+    fsm_create(counter, InitialValue).
 
 %% ============================================================================
 %% Utility Functions
@@ -387,12 +440,12 @@ create_counter(InitialValue) ->
 
 %% Convert list of integers to string representation
 list_to_string(List) ->
-  "[" ++ join_ints(List, ", ") ++ "]".
+    "[" ++ join_ints(List, ", ") ++ "]".
 
 %% Join integers with separator
 join_ints([], _Sep) ->
-  "";
+    "";
 join_ints([X], _Sep) ->
-  int_to_string(X);
+    int_to_string(X);
 join_ints([X | Rest], Sep) ->
-  int_to_string(X) ++ Sep ++ join_ints(Rest, Sep).
+    int_to_string(X) ++ Sep ++ join_ints(Rest, Sep).

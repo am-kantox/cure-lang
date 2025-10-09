@@ -45,7 +45,9 @@ test_inline_across_call_sites() ->
 
     Calls = find_function_calls_in_program(Inlined),
     %% small_add and tiny_helper should be removed from call sites
-    ?assertNot(lists:any(fun(C) -> lists:member(get_call_name(C), [small_add, tiny_helper]) end, Calls)),
+    ?assertNot(
+        lists:any(fun(C) -> lists:member(get_call_name(C), [small_add, tiny_helper]) end, Calls)
+    ),
 
     io:format("✓ Inline across call sites test passed~n").
 
@@ -166,11 +168,15 @@ sample_ast_small_functions() ->
     [
         #function_def{
             name = add,
-            params = [#param{name = x, type = #primitive_type{name = 'Int'}},
-                      #param{name = y, type = #primitive_type{name = 'Int'}}],
+            params = [
+                #param{name = x, type = #primitive_type{name = 'Int'}},
+                #param{name = y, type = #primitive_type{name = 'Int'}}
+            ],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #binary_op_expr{op = '+', left = #identifier_expr{name = x}, right = #identifier_expr{name = y}},
+            body = #binary_op_expr{
+                op = '+', left = #identifier_expr{name = x}, right = #identifier_expr{name = y}
+            },
             location = #location{line = 1, column = 1}
         },
         #function_def{
@@ -178,7 +184,10 @@ sample_ast_small_functions() ->
             params = [],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #function_call_expr{function = #identifier_expr{name = add}, args = [#literal_expr{value = 1}, #literal_expr{value = 2}]},
+            body = #function_call_expr{
+                function = #identifier_expr{name = add},
+                args = [#literal_expr{value = 1}, #literal_expr{value = 2}]
+            },
             location = #location{line = 2, column = 1}
         }
     ].
@@ -187,11 +196,15 @@ sample_ast_many_calls() ->
     [
         #function_def{
             name = small_add,
-            params = [#param{name = a, type = #primitive_type{name = 'Int'}},
-                      #param{name = b, type = #primitive_type{name = 'Int'}}],
+            params = [
+                #param{name = a, type = #primitive_type{name = 'Int'}},
+                #param{name = b, type = #primitive_type{name = 'Int'}}
+            ],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #binary_op_expr{op = '+', left = #identifier_expr{name = a}, right = #identifier_expr{name = b}},
+            body = #binary_op_expr{
+                op = '+', left = #identifier_expr{name = a}, right = #identifier_expr{name = b}
+            },
             location = #location{line = 1, column = 1}
         },
         #function_def{
@@ -207,10 +220,18 @@ sample_ast_many_calls() ->
             params = [],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #block_expr{expressions = [
-                #function_call_expr{function = #identifier_expr{name = small_add}, args = [#literal_expr{value = 1}, #literal_expr{value = 2}]},
-                #function_call_expr{function = #identifier_expr{name = tiny_helper}, args = [#literal_expr{value = 5}]}
-            ]},
+            body = #block_expr{
+                expressions = [
+                    #function_call_expr{
+                        function = #identifier_expr{name = small_add},
+                        args = [#literal_expr{value = 1}, #literal_expr{value = 2}]
+                    },
+                    #function_call_expr{
+                        function = #identifier_expr{name = tiny_helper},
+                        args = [#literal_expr{value = 5}]
+                    }
+                ]
+            },
             location = #location{line = 3, column = 1}
         }
     ].
@@ -222,11 +243,25 @@ sample_ast_small_and_large() ->
             params = [#param{name = x, type = #primitive_type{name = 'Int'}}],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #block_expr{expressions = [
-                #binary_op_expr{op = '+', left = #identifier_expr{name = x}, right = #literal_expr{value = 1}},
-                #binary_op_expr{op = '*', left = #identifier_expr{name = x}, right = #literal_expr{value = 2}},
-                #binary_op_expr{op = '-', left = #identifier_expr{name = x}, right = #literal_expr{value = 3}}
-            ]},
+            body = #block_expr{
+                expressions = [
+                    #binary_op_expr{
+                        op = '+',
+                        left = #identifier_expr{name = x},
+                        right = #literal_expr{value = 1}
+                    },
+                    #binary_op_expr{
+                        op = '*',
+                        left = #identifier_expr{name = x},
+                        right = #literal_expr{value = 2}
+                    },
+                    #binary_op_expr{
+                        op = '-',
+                        left = #identifier_expr{name = x},
+                        right = #literal_expr{value = 3}
+                    }
+                ]
+            },
             location = #location{line = 1, column = 1}
         },
         #function_def{
@@ -234,7 +269,9 @@ sample_ast_small_and_large() ->
             params = [],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #function_call_expr{function = #identifier_expr{name = big_function}, args = [#literal_expr{value = 10}]},
+            body = #function_call_expr{
+                function = #identifier_expr{name = big_function}, args = [#literal_expr{value = 10}]
+            },
             location = #location{line = 2, column = 1}
         }
     ].
@@ -254,7 +291,9 @@ sample_ast_with_side_effects() ->
             params = [],
             return_type = #primitive_type{name = 'Unit'},
             constraint = undefined,
-            body = #function_call_expr{function = #identifier_expr{name = print_once}, args = [#literal_expr{value = "hi"}]},
+            body = #function_call_expr{
+                function = #identifier_expr{name = print_once}, args = [#literal_expr{value = "hi"}]
+            },
             location = #location{line = 2, column = 1}
         }
     ].
@@ -266,9 +305,26 @@ sample_ast_recursive() ->
             params = [#param{name = n, type = #primitive_type{name = 'Int'}}],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #if_expr{condition = #binary_op_expr{op = '==', left = #identifier_expr{name = n}, right = #literal_expr{value = 0}},
-                            then_branch = #literal_expr{value = 1},
-                            else_branch = #binary_op_expr{op = '*', left = #identifier_expr{name = n}, right = #function_call_expr{function = #identifier_expr{name = factorial}, args = [#binary_op_expr{op = '-', left = #identifier_expr{name = n}, right = #literal_expr{value = 1}}]}}},
+            body = #if_expr{
+                condition = #binary_op_expr{
+                    op = '==', left = #identifier_expr{name = n}, right = #literal_expr{value = 0}
+                },
+                then_branch = #literal_expr{value = 1},
+                else_branch = #binary_op_expr{
+                    op = '*',
+                    left = #identifier_expr{name = n},
+                    right = #function_call_expr{
+                        function = #identifier_expr{name = factorial},
+                        args = [
+                            #binary_op_expr{
+                                op = '-',
+                                left = #identifier_expr{name = n},
+                                right = #literal_expr{value = 1}
+                            }
+                        ]
+                    }
+                }
+            },
             location = #location{line = 1, column = 1}
         },
         #function_def{
@@ -276,7 +332,9 @@ sample_ast_recursive() ->
             params = [],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #function_call_expr{function = #identifier_expr{name = factorial}, args = [#literal_expr{value = 5}]},
+            body = #function_call_expr{
+                function = #identifier_expr{name = factorial}, args = [#literal_expr{value = 5}]
+            },
             location = #location{line = 2, column = 1}
         }
     ].
@@ -288,7 +346,9 @@ sample_ast_hof() ->
             params = [#param{name = x, type = #primitive_type{name = 'Int'}}],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #binary_op_expr{op = '+', left = #identifier_expr{name = x}, right = #literal_expr{value = 1}},
+            body = #binary_op_expr{
+                op = '+', left = #identifier_expr{name = x}, right = #literal_expr{value = 1}
+            },
             location = #location{line = 1, column = 1}
         },
         #function_def{
@@ -296,7 +356,13 @@ sample_ast_hof() ->
             params = [],
             return_type = #primitive_type{name = 'List'},
             constraint = undefined,
-            body = #function_call_expr{function = #identifier_expr{name = map}, args = [#identifier_expr{name = inc}, #list_expr{elements = [#literal_expr{value = 1}, #literal_expr{value = 2}]}]},
+            body = #function_call_expr{
+                function = #identifier_expr{name = map},
+                args = [
+                    #identifier_expr{name = inc},
+                    #list_expr{elements = [#literal_expr{value = 1}, #literal_expr{value = 2}]}
+                ]
+            },
             location = #location{line = 2, column = 1}
         }
     ].
@@ -305,13 +371,28 @@ sample_ast_with_match() ->
     [
         #function_def{
             name = head_or_zero,
-            params = [#param{name = xs, type = #list_type{element_type = #primitive_type{name = 'Int'}}}],
+            params = [
+                #param{name = xs, type = #list_type{element_type = #primitive_type{name = 'Int'}}}
+            ],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #match_expr{expr = #identifier_expr{name = xs}, patterns = [
-                #match_clause{pattern = #list_pattern{elements = [#identifier_pattern{name = h}], tail = undefined}, guard = undefined, body = #identifier_expr{name = h}},
-                #match_clause{pattern = #list_pattern{elements = [], tail = undefined}, guard = undefined, body = #literal_expr{value = 0}}
-            ]},
+            body = #match_expr{
+                expr = #identifier_expr{name = xs},
+                patterns = [
+                    #match_clause{
+                        pattern = #list_pattern{
+                            elements = [#identifier_pattern{name = h}], tail = undefined
+                        },
+                        guard = undefined,
+                        body = #identifier_expr{name = h}
+                    },
+                    #match_clause{
+                        pattern = #list_pattern{elements = [], tail = undefined},
+                        guard = undefined,
+                        body = #literal_expr{value = 0}
+                    }
+                ]
+            },
             location = #location{line = 1, column = 1}
         },
         #function_def{
@@ -319,7 +400,10 @@ sample_ast_with_match() ->
             params = [],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #function_call_expr{function = #identifier_expr{name = head_or_zero}, args = [#list_expr{elements = [#literal_expr{value = 7}]}]},
+            body = #function_call_expr{
+                function = #identifier_expr{name = head_or_zero},
+                args = [#list_expr{elements = [#literal_expr{value = 7}]}]
+            },
             location = #location{line = 2, column = 1}
         }
     ].
@@ -328,10 +412,28 @@ sample_ast_with_let_body() ->
     [
         #function_def{
             name = add3,
-            params = [#param{name = a, type = #primitive_type{name = 'Int'}}, #param{name = b, type = #primitive_type{name = 'Int'}}, #param{name = c, type = #primitive_type{name = 'Int'}}],
+            params = [
+                #param{name = a, type = #primitive_type{name = 'Int'}},
+                #param{name = b, type = #primitive_type{name = 'Int'}},
+                #param{name = c, type = #primitive_type{name = 'Int'}}
+            ],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #let_expr{bindings = [#binding{pattern = #identifier_pattern{name = t}, value = #binary_op_expr{op = '+', left = #identifier_expr{name = a}, right = #identifier_expr{name = b}}}], body = #binary_op_expr{op = '+', left = #identifier_expr{name = t}, right = #identifier_expr{name = c}}},
+            body = #let_expr{
+                bindings = [
+                    #binding{
+                        pattern = #identifier_pattern{name = t},
+                        value = #binary_op_expr{
+                            op = '+',
+                            left = #identifier_expr{name = a},
+                            right = #identifier_expr{name = b}
+                        }
+                    }
+                ],
+                body = #binary_op_expr{
+                    op = '+', left = #identifier_expr{name = t}, right = #identifier_expr{name = c}
+                }
+            },
             location = #location{line = 1, column = 1}
         },
         #function_def{
@@ -339,7 +441,12 @@ sample_ast_with_let_body() ->
             params = [],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #function_call_expr{function = #identifier_expr{name = add3}, args = [#literal_expr{value = 1}, #literal_expr{value = 2}, #literal_expr{value = 3}]},
+            body = #function_call_expr{
+                function = #identifier_expr{name = add3},
+                args = [
+                    #literal_expr{value = 1}, #literal_expr{value = 2}, #literal_expr{value = 3}
+                ]
+            },
             location = #location{line = 2, column = 1}
         }
     ].
@@ -360,12 +467,15 @@ find_all_function_calls(#binary_op_expr{left = L, right = R}) ->
 find_all_function_calls(#block_expr{expressions = Es}) ->
     lists:append([find_all_function_calls(E) || E <- Es]);
 find_all_function_calls(#let_expr{bindings = Bs, body = B}) ->
-    lists:append([find_all_function_calls(X#binding.value) || X <- Bs]) ++ find_all_function_calls(B);
+    lists:append([find_all_function_calls(X#binding.value) || X <- Bs]) ++
+        find_all_function_calls(B);
 find_all_function_calls(#if_expr{condition = C, then_branch = T, else_branch = E}) ->
     find_all_function_calls(C) ++ find_all_function_calls(T) ++ find_all_function_calls(E);
 find_all_function_calls(#match_expr{expr = E, patterns = Ps}) ->
-    find_all_function_calls(E) ++ lists:append([find_all_function_calls(P#match_clause.body) || P <- Ps]);
-find_all_function_calls(_) -> [].
+    find_all_function_calls(E) ++
+        lists:append([find_all_function_calls(P#match_clause.body) || P <- Ps]);
+find_all_function_calls(_) ->
+    [].
 
 get_call_name(#function_call_expr{function = #identifier_expr{name = N}}) -> N;
 get_call_name(_) -> undefined.

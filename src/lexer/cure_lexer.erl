@@ -12,8 +12,6 @@
     column :: integer()
 }).
 
-
-
 %% Public API
 
 %% @doc Tokenize a string of Cure source code
@@ -127,20 +125,16 @@ keywords() ->
 %% Main scanning loop
 scan_tokens(<<>>, _Line, _Column, Acc) ->
     Acc;
-
 %% Skip whitespace except newlines
 scan_tokens(<<C, Rest/binary>>, Line, Column, Acc) when C =:= $\s; C =:= $\t; C =:= $\r ->
     scan_tokens(Rest, Line, Column + 1, Acc);
-
 %% Handle newlines
 scan_tokens(<<$\n, Rest/binary>>, Line, _Column, Acc) ->
     scan_tokens(Rest, Line + 1, 1, Acc);
-
 %% Skip comments (# to end of line)
 scan_tokens(<<$#, Rest/binary>>, Line, _Column, Acc) ->
     {_, NewRest} = skip_line_comment(Rest),
     scan_tokens(NewRest, Line + 1, 1, Acc);
-
 %% String literals - check for interpolation
 scan_tokens(<<$", Rest/binary>>, Line, Column, Acc) ->
     case scan_string_with_interpolation(Rest, Line, Column + 1, []) of
@@ -152,7 +146,6 @@ scan_tokens(<<$", Rest/binary>>, Line, Column, Acc) ->
             AllTokens = lists:reverse(Tokens) ++ Acc,
             scan_tokens(NewRest, NewLine, NewColumn, AllTokens)
     end;
-
 %% Atom literals (starting with :) - but check for :: first
 scan_tokens(<<$:, $:, Rest/binary>>, Line, Column, Acc) ->
     Token = #token{type = '::', value = '::', line = Line, column = Column},
@@ -167,28 +160,28 @@ scan_tokens(<<$:, Rest/binary>>, Line, Column, Acc) ->
             Token = #token{type = ':', value = ':', line = Line, column = Column},
             scan_tokens(Rest, Line, Column + 1, [Token | Acc])
     end;
-
 %% Numbers
 scan_tokens(<<C, Rest/binary>>, Line, Column, Acc) when C >= $0, C =< $9 ->
     {Number, NewRest, NewColumn} = scan_number(<<C, Rest/binary>>, Column, <<>>),
     Token = #token{type = number, value = Number, line = Line, column = Column},
     scan_tokens(NewRest, Line, NewColumn, [Token | Acc]);
-
 %% Identifiers and keywords
-scan_tokens(<<C, Rest/binary>>, Line, Column, Acc) 
-    when C >= $a, C =< $z; C >= $A, C =< $Z; C =:= $_ ->
+scan_tokens(<<C, Rest/binary>>, Line, Column, Acc) when
+    C >= $a, C =< $z; C >= $A, C =< $Z; C =:= $_
+->
     {Identifier, NewRest, NewColumn} = scan_identifier(<<C, Rest/binary>>, Column, <<>>),
-    TokenType = case maps:get(Identifier, keywords(), undefined) of
-        undefined -> identifier;
-        Keyword -> Keyword
-    end,
-    Value = case TokenType of
-        identifier -> Identifier;
-        _ -> TokenType
-    end,
+    TokenType =
+        case maps:get(Identifier, keywords(), undefined) of
+            undefined -> identifier;
+            Keyword -> Keyword
+        end,
+    Value =
+        case TokenType of
+            identifier -> Identifier;
+            _ -> TokenType
+        end,
     Token = #token{type = TokenType, value = Value, line = Line, column = Column},
     scan_tokens(NewRest, Line, NewColumn, [Token | Acc]);
-
 %% Two-character operators
 scan_tokens(<<C1, C2, Rest/binary>>, Line, Column, Acc) ->
     TwoChar = <<C1, C2>>,
@@ -200,7 +193,6 @@ scan_tokens(<<C1, C2, Rest/binary>>, Line, Column, Acc) ->
             Token = #token{type = Op, value = Op, line = Line, column = Column},
             scan_tokens(Rest, Line, Column + 2, [Token | Acc])
     end;
-
 %% Single character (including single-char operators)
 scan_tokens(Binary, Line, Column, Acc) ->
     scan_single_char(Binary, Line, Column, Acc).
@@ -249,44 +241,95 @@ escape_char(C) -> C.
 scan_string_with_interpolation(Binary, Line, Column, Acc) ->
     scan_string_with_interpolation(Binary, Line, Column, Acc, <<>>, false).
 
-scan_string_with_interpolation(<<$", Rest/binary>>, Line, Column, Acc, StringPart, HasInterpolation) ->
+scan_string_with_interpolation(
+    <<$", Rest/binary>>, Line, Column, Acc, StringPart, HasInterpolation
+) ->
     case HasInterpolation of
         false ->
             % Simple string without interpolation
             {simple_string, binary_to_list(StringPart), Rest, Line, Column + 1};
         true ->
             % Add final string part if any
-            FinalTokens = case StringPart of
-                <<>> -> Acc;
-                _ -> [#token{type = string_part, value = binary_to_list(StringPart), line = Line, column = Column} | Acc]
-            end,
+            FinalTokens =
+                case StringPart of
+                    <<>> ->
+                        Acc;
+                    _ ->
+                        [
+                            #token{
+                                type = string_part,
+                                value = binary_to_list(StringPart),
+                                line = Line,
+                                column = Column
+                            }
+                            | Acc
+                        ]
+                end,
             % Add end marker
-            EndToken = #token{type = interpolation_end, value = interpolation_end, line = Line, column = Column},
+            EndToken = #token{
+                type = interpolation_end, value = interpolation_end, line = Line, column = Column
+            },
             {interpolated_string, lists:reverse([EndToken | FinalTokens]), Rest, Line, Column + 1}
     end;
 scan_string_with_interpolation(<<$#, ${, Rest/binary>>, Line, Column, Acc, StringPart, _) ->
     % Start of interpolation
-    NewAcc = case StringPart of
-        <<>> -> Acc;
-        _ -> [#token{type = string_part, value = binary_to_list(StringPart), line = Line, column = Column} | Acc]
-    end,
+    NewAcc =
+        case StringPart of
+            <<>> ->
+                Acc;
+            _ ->
+                [
+                    #token{
+                        type = string_part,
+                        value = binary_to_list(StringPart),
+                        line = Line,
+                        column = Column
+                    }
+                    | Acc
+                ]
+        end,
     % Add interpolation start token if this is first interpolation
-    StartToken = case Acc of
-        [] -> #token{type = interpolation_start, value = interpolation_start, line = Line, column = Column};
-        _ -> #token{type = interpolation_mid, value = interpolation_mid, line = Line, column = Column}
-    end,
+    StartToken =
+        case Acc of
+            [] ->
+                #token{
+                    type = interpolation_start,
+                    value = interpolation_start,
+                    line = Line,
+                    column = Column
+                };
+            _ ->
+                #token{
+                    type = interpolation_mid,
+                    value = interpolation_mid,
+                    line = Line,
+                    column = Column
+                }
+        end,
     UpdatedAcc = [StartToken | NewAcc],
     % Scan the expression inside #{...}
-    {ExprTokens, NewRest, NewLine, NewColumn} = scan_interpolation_expr(Rest, Line, Column + 2, [], 1),
+    {ExprTokens, NewRest, NewLine, NewColumn} = scan_interpolation_expr(
+        Rest, Line, Column + 2, [], 1
+    ),
     AllTokens = ExprTokens ++ UpdatedAcc,
     scan_string_with_interpolation(NewRest, NewLine, NewColumn, AllTokens, <<>>, true);
-scan_string_with_interpolation(<<$\\, C, Rest/binary>>, Line, Column, Acc, StringPart, HasInterpolation) ->
+scan_string_with_interpolation(
+    <<$\\, C, Rest/binary>>, Line, Column, Acc, StringPart, HasInterpolation
+) ->
     Escaped = escape_char(C),
-    scan_string_with_interpolation(Rest, Line, Column + 2, Acc, <<StringPart/binary, Escaped>>, HasInterpolation);
-scan_string_with_interpolation(<<$\n, Rest/binary>>, Line, _Column, Acc, StringPart, HasInterpolation) ->
-    scan_string_with_interpolation(Rest, Line + 1, 1, Acc, <<StringPart/binary, $\n>>, HasInterpolation);
+    scan_string_with_interpolation(
+        Rest, Line, Column + 2, Acc, <<StringPart/binary, Escaped>>, HasInterpolation
+    );
+scan_string_with_interpolation(
+    <<$\n, Rest/binary>>, Line, _Column, Acc, StringPart, HasInterpolation
+) ->
+    scan_string_with_interpolation(
+        Rest, Line + 1, 1, Acc, <<StringPart/binary, $\n>>, HasInterpolation
+    );
 scan_string_with_interpolation(<<C, Rest/binary>>, Line, Column, Acc, StringPart, HasInterpolation) ->
-    scan_string_with_interpolation(Rest, Line, Column + 1, Acc, <<StringPart/binary, C>>, HasInterpolation);
+    scan_string_with_interpolation(
+        Rest, Line, Column + 1, Acc, <<StringPart/binary, C>>, HasInterpolation
+    );
 scan_string_with_interpolation(<<>>, Line, Column, _Acc, _StringPart, _HasInterpolation) ->
     throw({lexer_error, unterminated_string, Line, Column}).
 
@@ -327,17 +370,20 @@ scan_one_token(<<C, Rest/binary>>, Line, Column) when C >= $0, C =< $9 ->
     Token = #token{type = number, value = Number, line = Line, column = Column},
     {Token, NewRest, Line, NewColumn};
 %% Identifiers and keywords
-scan_one_token(<<C, Rest/binary>>, Line, Column) 
-    when C >= $a, C =< $z; C >= $A, C =< $Z; C =:= $_ ->
+scan_one_token(<<C, Rest/binary>>, Line, Column) when
+    C >= $a, C =< $z; C >= $A, C =< $Z; C =:= $_
+->
     {Identifier, NewRest, NewColumn} = scan_identifier(<<C, Rest/binary>>, Column, <<>>),
-    TokenType = case maps:get(Identifier, keywords(), undefined) of
-        undefined -> identifier;
-        Keyword -> Keyword
-    end,
-    Value = case TokenType of
-        identifier -> Identifier;
-        _ -> TokenType
-    end,
+    TokenType =
+        case maps:get(Identifier, keywords(), undefined) of
+            undefined -> identifier;
+            Keyword -> Keyword
+        end,
+    Value =
+        case TokenType of
+            identifier -> Identifier;
+            _ -> TokenType
+        end,
     Token = #token{type = TokenType, value = Value, line = Line, column = Column},
     {Token, NewRest, Line, NewColumn};
 %% Two-character operators
@@ -363,8 +409,9 @@ scan_one_token(<<>>, _Line, _Column) ->
     eof.
 
 %% Scan atom
-scan_atom(<<C, Rest/binary>>, Column, Acc) 
-    when C >= $a, C =< $z; C >= $A, C =< $Z; C >= $0, C =< $9; C =:= $_; C =:= $? ->
+scan_atom(<<C, Rest/binary>>, Column, Acc) when
+    C >= $a, C =< $z; C >= $A, C =< $Z; C >= $0, C =< $9; C =:= $_; C =:= $?
+->
     scan_atom(Rest, Column + 1, <<Acc/binary, C>>);
 scan_atom(Rest, Column, Acc) ->
     {binary_to_atom(Acc, utf8), Rest, Column}.
@@ -385,8 +432,9 @@ scan_float(Rest, Column, Acc) ->
     {binary_to_float(Acc), Rest, Column}.
 
 %% Scan identifier
-scan_identifier(<<C, Rest/binary>>, Column, Acc) 
-    when C >= $a, C =< $z; C >= $A, C =< $Z; C >= $0, C =< $9; C =:= $_; C =:= $? ->
+scan_identifier(<<C, Rest/binary>>, Column, Acc) when
+    C >= $a, C =< $z; C >= $A, C =< $Z; C >= $0, C =< $9; C =:= $_; C =:= $?
+->
     scan_identifier(Rest, Column + 1, <<Acc/binary, C>>);
 scan_identifier(Rest, Column, Acc) ->
     {Acc, Rest, Column}.

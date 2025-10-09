@@ -17,15 +17,17 @@
 %% Run a simple test
 run() ->
     io:format("Running simple type system test...~n"),
-    
+
     % Test builtin_env
     Env = cure_typechecker:builtin_env(),
     io:format("✓ Builtin env created: ~p~n", [element(1, Env)]),
-    
+
     % Test basic literal type inference
-    IntLiteral = #literal_expr{value = 42, location = #location{line = 1, column = 1, file = undefined}},
-    
-    try 
+    IntLiteral = #literal_expr{
+        value = 42, location = #location{line = 1, column = 1, file = undefined}
+    },
+
+    try
         Result = cure_typechecker:check_expression(IntLiteral, Env),
         io:format("✓ Expression check result: ~p~n", [Result]),
         case Result of
@@ -39,5 +41,5 @@ run() ->
             io:format("✗ Exception occurred: ~p:~p~n", [Error, Reason]),
             io:format("Stack: ~p~n", [Stack])
     end,
-    
+
     io:format("Simple test completed!~n").

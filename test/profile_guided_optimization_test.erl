@@ -18,34 +18,37 @@ run_profile_tests() ->
         fun test_adaptive_optimization/0,
         fun test_feedback_integration/0
     ],
-    
-    Results = lists:map(fun(Test) ->
-        TestName = extract_test_name(Test),
-        io:format("Running ~s... ", [TestName]),
-        try
-            Test(),
-            io:format("PASSED~n"),
-            ok
-        catch
-            Error:Reason:Stack ->
-                io:format("FAILED: ~p:~p~n", [Error, Reason]),
-                io:format("  Stack: ~p~n", [Stack]),
-                {error, Reason}
-        end
-    end, Tests),
-    
+
+    Results = lists:map(
+        fun(Test) ->
+            TestName = extract_test_name(Test),
+            io:format("Running ~s... ", [TestName]),
+            try
+                Test(),
+                io:format("PASSED~n"),
+                ok
+            catch
+                Error:Reason:Stack ->
+                    io:format("FAILED: ~p:~p~n", [Error, Reason]),
+                    io:format("  Stack: ~p~n", [Stack]),
+                    {error, Reason}
+            end
+        end,
+        Tests
+    ),
+
     Passed = length([ok || ok <- Results]),
     Failed = length(Results) - Passed,
-    
+
     io:format("~nProfile-guided Optimization Tests Summary:~n"),
     io:format("  Passed: ~w~n", [Passed]),
     io:format("  Failed: ~w~n", [Failed]),
-    
+
     case Failed of
         0 -> io:format("All profile-guided optimization tests passed!~n");
         _ -> io:format("Some profile-guided optimization tests failed.~n")
     end,
-    
+
     {ok, #{passed => Passed, failed => Failed}}.
 
 extract_test_name(Fun) ->
@@ -60,19 +63,19 @@ test_profile_framework() ->
     true = maps:is_key(execution_counts, ProfileCollector),
     true = maps:is_key(call_frequencies, ProfileCollector),
     true = maps:is_key(hot_paths, ProfileCollector),
-    
+
     % Test adaptive thresholds initialization
     AdaptiveThresholds = init_test_adaptive_thresholds(),
     true = is_map(AdaptiveThresholds),
     true = maps:is_key(hot_function_threshold, AdaptiveThresholds),
     true = maps:is_key(specialization_benefit_threshold, AdaptiveThresholds),
-    
+
     % Test performance targets initialization
     PerformanceTargets = init_test_performance_targets(),
     true = is_map(PerformanceTargets),
     true = maps:is_key(execution_time_target, PerformanceTargets),
     true = maps:is_key(memory_usage_target, PerformanceTargets),
-    
+
     io:format(" [Profile framework initialized] "),
     ok.
 
@@ -80,29 +83,29 @@ test_profile_framework() ->
 test_profile_collection() ->
     % Create sample AST for profiling
     SampleAST = create_profile_test_ast(),
-    
+
     % Test function call pattern analysis
     CallPatterns = analyze_test_call_patterns(SampleAST),
     true = is_map(CallPatterns),
     true = maps:size(CallPatterns) > 0,
-    
+
     % Test execution frequency estimation
     ExecutionFreqs = estimate_test_execution_frequencies(SampleAST, CallPatterns),
     true = is_map(ExecutionFreqs),
     true = maps:size(ExecutionFreqs) > 0,
-    
+
     % Test hot path identification
     HotPaths = identify_test_hot_paths(SampleAST, ExecutionFreqs),
     true = is_list(HotPaths),
-    
+
     % Test memory access pattern analysis
     MemoryPatterns = analyze_test_memory_patterns(SampleAST),
     true = is_map(MemoryPatterns),
-    
+
     % Test type usage collection
     RuntimeTypeUsage = collect_test_type_usage(SampleAST),
     true = is_map(RuntimeTypeUsage),
-    
+
     io:format(" [Runtime profiles collected] "),
     ok.
 
@@ -111,23 +114,27 @@ test_adaptive_specialization() ->
     % Create test data
     ExecutionFreqs = #{test_func => 150, helper_func => 75, util_func => 25},
     TypeUsage = #{{primitive_type, integer} => 10, {primitive_type, float} => 5},
-    
+
     % Test specialization opportunity identification
-    SpecializationOpportunities = identify_test_specialization_opportunities(ExecutionFreqs, TypeUsage),
+    SpecializationOpportunities = identify_test_specialization_opportunities(
+        ExecutionFreqs, TypeUsage
+    ),
     true = is_map(SpecializationOpportunities),
-    
+
     % Test adaptive specialization generation
     ExistingOptimizations = create_test_existing_optimizations(),
-    AdaptiveSpecializations = generate_test_adaptive_specializations(SpecializationOpportunities, ExistingOptimizations),
+    AdaptiveSpecializations = generate_test_adaptive_specializations(
+        SpecializationOpportunities, ExistingOptimizations
+    ),
     true = is_list(AdaptiveSpecializations),
     true = length(AdaptiveSpecializations) >= 0,
-    
+
     % Test specialization enhancement
     EnhancedSpec = test_enhance_existing_specialization(),
     true = is_map(EnhancedSpec),
     true = maps:is_key(function_name, EnhancedSpec),
     true = maps:is_key(specialization_type, EnhancedSpec),
-    
+
     io:format(" [Adaptive specialization working] "),
     ok.
 
@@ -136,52 +143,62 @@ test_hot_path_optimization() ->
     % Create test hot paths
     HotPaths = [[main, compute, helper], [process, validate]],
     ExecutionFreqs = #{main => 200, compute => 180, helper => 160, process => 100, validate => 90},
-    
+
     % Test hot path opportunity identification
     HotPathOpportunities = identify_test_hot_path_opportunities(HotPaths, ExecutionFreqs),
     true = is_list(HotPathOpportunities),
-    
+
     % Test dynamic hot path optimization generation
     ProfileCollector = init_test_profile_collector(),
-    HotPathOptimizations = generate_test_hot_path_optimizations(HotPathOpportunities, ProfileCollector),
+    HotPathOptimizations = generate_test_hot_path_optimizations(
+        HotPathOpportunities, ProfileCollector
+    ),
     true = is_list(HotPathOptimizations),
-    
+
     % Verify optimization types are assigned correctly
-    lists:foreach(fun(Optimization) ->
-        true = is_map(Optimization),
-        true = maps:is_key(type, Optimization),
-        true = maps:is_key(path, Optimization),
-        true = maps:is_key(benefit, Optimization)
-    end, HotPathOptimizations),
-    
+    lists:foreach(
+        fun(Optimization) ->
+            true = is_map(Optimization),
+            true = maps:is_key(type, Optimization),
+            true = maps:is_key(path, Optimization),
+            true = maps:is_key(benefit, Optimization)
+        end,
+        HotPathOptimizations
+    ),
+
     io:format(" [Hot path optimization working] "),
     ok.
 
 %% Test adaptive memory layout optimization
 test_memory_layout_adaptation() ->
     % Create test memory patterns
-    MemoryPatterns = #{ 
+    MemoryPatterns = #{
         func_a => #{total_accesses => 50, sequential_pattern => true, locality_score => 0.8},
         func_b => #{total_accesses => 25, sequential_pattern => false, locality_score => 0.3}
     },
-    
+
     % Test memory optimization opportunity identification
     MemoryOpportunities = identify_test_memory_opportunities(MemoryPatterns),
     true = is_map(MemoryOpportunities),
-    
+
     % Test adaptive memory layout generation
     ExistingOptimizations = create_test_existing_optimizations(),
-    AdaptiveLayouts = generate_test_adaptive_memory_layouts(MemoryOpportunities, ExistingOptimizations),
+    AdaptiveLayouts = generate_test_adaptive_memory_layouts(
+        MemoryOpportunities, ExistingOptimizations
+    ),
     true = is_list(AdaptiveLayouts),
-    
+
     % Verify layout types are assigned correctly
-    lists:foreach(fun(Layout) ->
-        true = is_map(Layout),
-        true = maps:is_key(layout_type, Layout),
-        true = maps:is_key(function, Layout),
-        true = maps:is_key(benefit, Layout)
-    end, AdaptiveLayouts),
-    
+    lists:foreach(
+        fun(Layout) ->
+            true = is_map(Layout),
+            true = maps:is_key(layout_type, Layout),
+            true = maps:is_key(function, Layout),
+            true = maps:is_key(benefit, Layout)
+        end,
+        AdaptiveLayouts
+    ),
+
     io:format(" [Memory layout adaptation working] "),
     ok.
 
@@ -189,27 +206,27 @@ test_memory_layout_adaptation() ->
 test_performance_feedback() ->
     % Create test feedback data
     FeedbackData = create_test_feedback_data(),
-    
+
     % Test performance feedback system creation
     FeedbackSystem = create_test_performance_feedback_system(FeedbackData),
     true = is_map(FeedbackSystem),
     true = maps:is_key(feedback_data, FeedbackSystem),
     true = maps:is_key(monitoring_enabled, FeedbackSystem),
     true = maps:is_key(adaptation_threshold, FeedbackSystem),
-    
+
     % Test performance metrics initialization
     PerformanceMetrics = init_test_performance_metrics(),
     true = is_map(PerformanceMetrics),
     true = maps:is_key(execution_time, PerformanceMetrics),
     true = maps:is_key(memory_usage, PerformanceMetrics),
     true = maps:is_key(throughput, PerformanceMetrics),
-    
+
     % Test performance optimization generation
     Priorities = [{specialization, test_opportunities}, {hot_path, test_opportunities}],
     PerformanceTargets = init_test_performance_targets(),
     PerformanceOpts = generate_test_performance_optimizations(Priorities, PerformanceTargets),
     true = is_list(PerformanceOpts),
-    
+
     io:format(" [Performance feedback integration working] "),
     ok.
 
@@ -218,25 +235,25 @@ test_adaptive_optimization() ->
     % Create test AST and context
     TestAST = create_profile_test_ast(),
     AdaptiveContext = create_test_adaptive_context(),
-    
+
     % Test profile data collection
     ProfileData = collect_test_runtime_profiles(TestAST, AdaptiveContext),
     true = is_map(ProfileData),
     true = maps:is_key(call_patterns, ProfileData),
     true = maps:is_key(execution_frequencies, ProfileData),
     true = maps:is_key(hot_paths, ProfileData),
-    
+
     % Test optimization opportunity analysis
     OptimizationOpportunities = analyze_test_optimization_opportunities(ProfileData),
     true = is_map(OptimizationOpportunities),
     true = maps:is_key(specialization, OptimizationOpportunities),
     true = maps:is_key(hot_path, OptimizationOpportunities),
     true = maps:is_key(memory, OptimizationOpportunities),
-    
+
     % Test priority calculation
     Priorities = maps:get(priorities, OptimizationOpportunities, []),
     true = is_list(Priorities),
-    
+
     io:format(" [Adaptive optimization pipeline working] "),
     ok.
 
@@ -245,23 +262,23 @@ test_feedback_integration() ->
     % Test complete feedback loop
     _TestAST = create_profile_test_ast(),
     TestContext = create_test_opt_context(),
-    
+
     % Test that we can extract optimization data
     OptimizationData = extract_test_optimization_data(TestContext),
     true = is_map(OptimizationData),
-    
+
     % Test adaptive context initialization
     ProfileCollector = init_test_profile_collector(),
     AdaptiveContext = init_test_adaptive_context(ProfileCollector, OptimizationData),
     true = is_map(AdaptiveContext),
     true = maps:is_key(profile_collector, AdaptiveContext),
     true = maps:is_key(existing_optimizations, AdaptiveContext),
-    
+
     % Test feedback system integration
     FeedbackData = create_test_feedback_data(),
     FeedbackSystem = create_test_performance_feedback_system(FeedbackData),
     true = maps:get(monitoring_enabled, FeedbackSystem),
-    
+
     io:format(" [Feedback integration working] "),
     ok.
 
@@ -324,8 +341,10 @@ create_profile_test_ast() ->
 
 %% Test helper functions
 analyze_test_call_patterns(_AST) ->
-    #{test_func => #{calls => [helper_func], frequency => 1},
-      helper_func => #{calls => [], frequency => 0}}.
+    #{
+        test_func => #{calls => [helper_func], frequency => 1},
+        helper_func => #{calls => [], frequency => 0}
+    }.
 
 estimate_test_execution_frequencies(_AST, _CallPatterns) ->
     #{test_func => 50, helper_func => 25}.
@@ -352,7 +371,14 @@ create_test_existing_optimizations() ->
     }.
 
 generate_test_adaptive_specializations(_Opportunities, _ExistingOptimizations) ->
-    [#{function_name => test_func, specialization_type => adaptive, runtime_frequency => 150, specialization_benefit => 2.5}].
+    [
+        #{
+            function_name => test_func,
+            specialization_type => adaptive,
+            runtime_frequency => 150,
+            specialization_benefit => 2.5
+        }
+    ].
 
 test_enhance_existing_specialization() ->
     #{
@@ -368,7 +394,14 @@ identify_test_hot_path_opportunities(_HotPaths, _ExecutionFreqs) ->
     [{[main, compute, helper], #{frequency => 160, potential => 2.5}}].
 
 generate_test_hot_path_optimizations(_HotPathOpportunities, _ProfileCollector) ->
-    [#{type => specialized_codegen, path => [main, compute, helper], benefit => 2.5, frequency => 160}].
+    [
+        #{
+            type => specialized_codegen,
+            path => [main, compute, helper],
+            benefit => 2.5,
+            frequency => 160
+        }
+    ].
 
 identify_test_memory_opportunities(_MemoryPatterns) ->
     #{func_a => #{access_pattern => #{total_accesses => 50}, potential => 1.8}}.

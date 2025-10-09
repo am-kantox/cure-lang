@@ -9,27 +9,27 @@
 %% Run all performance tests
 run() ->
     io:format("Running Performance tests...~n"),
-    
+
     Tests = [
         fun test_lexer_performance/0,
-        fun test_parser_performance/0,  
+        fun test_parser_performance/0,
         fun test_type_checker_performance/0,
         fun test_codegen_performance/0,
         fun test_fsm_runtime_performance/0,
         fun test_large_program_compilation/0
     ],
-    
+
     Results = [run_performance_test(Test) || Test <- Tests],
     Passed = length([ok || ok <- Results]),
     Total = length(Results),
-    
+
     io:format("Performance tests: ~w/~w passed~n", [Passed, Total]),
-    
+
     case Passed of
-        Total -> 
+        Total ->
             io:format("All performance tests passed!~n"),
             ok;
-        _ -> 
+        _ ->
             io:format("Some performance tests failed~n"),
             error
     end.
@@ -53,32 +53,37 @@ run_performance_test(TestFun) ->
 %% Test 1: Lexer performance with large input
 test_lexer_performance() ->
     io:format("✓ Testing lexer performance...~n"),
-    
+
     % Generate a large Cure program
-    LargeProgram = generate_large_program(1000),  % 1000 functions
-    
+
+    % 1000 functions
+    LargeProgram = generate_large_program(1000),
+
     % Time the lexing process
     {ok, Tokens} = cure_lexer:scan(LargeProgram),
-    
+
     % Verify we got a reasonable number of tokens
     TokenCount = length(Tokens),
-    true = TokenCount > 5000,  % Should have many tokens
-    
+    % Should have many tokens
+    true = TokenCount > 5000,
+
     io:format("  ✓ Lexed ~w tokens from large program~n", [TokenCount]).
 
 %% Test 2: Parser performance
 test_parser_performance() ->
     io:format("✓ Testing parser performance...~n"),
-    
-    % Generate medium-sized program  
-    Program = generate_medium_program(100),  % 100 functions
-    
+
+    % Generate medium-sized program
+
+    % 100 functions
+    Program = generate_medium_program(100),
+
     % Tokenize first
     {ok, Tokens} = cure_lexer:scan(Program),
-    
+
     % Time the parsing process
     {ok, AST} = cure_parser:parse(Tokens),
-    
+
     % Verify AST structure
     case AST of
         #module_def{items = Items} ->
@@ -88,107 +93,111 @@ test_parser_performance() ->
         _ ->
             throw({unexpected_ast_structure, AST})
     end,
-    
+
     io:format("  ✓ Parsed program with ~w functions~n", [length(AST#module_def.items)]).
 
 %% Test 3: Type checker performance
 test_type_checker_performance() ->
     io:format("✓ Testing type checker performance...~n"),
-    
+
     % Create program with complex type relationships
     Program = generate_type_heavy_program(),
-    
+
     {ok, Tokens} = cure_lexer:scan(Program),
     {ok, AST} = cure_parser:parse(Tokens),
-    
+
     % Time type checking
     TypeEnv = cure_typechecker:builtin_env(),
     {ok, _TypedAST} = cure_typechecker:check_module(AST, TypeEnv),
-    
+
     io:format("  ✓ Type checked complex program successfully~n").
 
 %% Test 4: Code generation performance
 test_codegen_performance() ->
     io:format("✓ Testing code generation performance...~n"),
-    
+
     % Simple program for code generation
     Program = generate_codegen_program(),
-    
+
     {ok, Tokens} = cure_lexer:scan(Program),
     {ok, AST} = cure_parser:parse(Tokens),
-    
+
     % Time code generation
     {ok, Instructions} = cure_codegen:compile_module(AST, #{}),
-    
+
     % Verify we got instructions
     InstructionCount = length(Instructions),
     true = InstructionCount > 0,
-    
+
     io:format("  ✓ Generated ~w BEAM instructions~n", [InstructionCount]).
 
 %% Test 5: FSM runtime performance
 test_fsm_runtime_performance() ->
     io:format("✓ Testing FSM runtime performance...~n"),
-    
+
     % Register a simple FSM type
     FSMType = test_counter_fsm,
     States = [zero, one, two],
     Transitions = [
         {zero, increment, one, undefined, undefined},
-        {one, increment, two, undefined, undefined}, 
+        {one, increment, two, undefined, undefined},
         {two, reset, zero, undefined, undefined}
     ],
-    
+
     ok = cure_fsm_runtime:register_fsm_type(FSMType, States, zero, Transitions),
-    
+
     % Create many FSM instances and send many events
     FSMCount = 100,
     EventCount = 1000,
-    
+
     % Spawn FSMs
     FSMs = [cure_fsm_runtime:spawn_fsm(FSMType) || _ <- lists:seq(1, FSMCount)],
-    
+
     % Send events to all FSMs
-    [begin
-        [cure_fsm_runtime:send_event(FSM, increment) || _ <- lists:seq(1, EventCount div 100)]
-     end || FSM <- FSMs],
-    
+    [
+        begin
+            [cure_fsm_runtime:send_event(FSM, increment) || _ <- lists:seq(1, EventCount div 100)]
+        end
+     || FSM <- FSMs
+    ],
+
     % Cleanup
     [cure_fsm_runtime:stop_fsm(FSM) || FSM <- FSMs],
-    
+
     io:format("  ✓ Processed ~w events across ~w FSMs~n", [EventCount, FSMCount]).
 
 %% Test 6: Large program compilation (end-to-end)
 test_large_program_compilation() ->
     io:format("✓ Testing large program compilation...~n"),
-    
+
     % Generate a large, complex program
     LargeProgram = generate_comprehensive_program(),
-    
+
     % Full compilation pipeline
     {ok, Tokens} = cure_lexer:scan(LargeProgram),
     {ok, AST} = cure_parser:parse(Tokens),
-    
+
     TypeEnv = cure_typechecker:builtin_env(),
     {ok, TypedAST} = cure_typechecker:check_module(AST, TypeEnv),
-    
+
     {ok, Instructions} = cure_codegen:compile_module(TypedAST, #{}),
-    
+
     % Verify comprehensive compilation
     InstructionCount = length(Instructions),
     true = InstructionCount > 100,
-    
+
     io:format("  ✓ Compiled large program to ~w instructions~n", [InstructionCount]).
 
 %% Helper functions to generate test programs
 
 %% Generate a large program with many functions
 generate_large_program(FunctionCount) ->
-    ModuleHeader = "module LargeTest do\n"
-                   "  export [" ++ generate_exports(FunctionCount) ++ "]\n\n",
-    
+    ModuleHeader =
+        "module LargeTest do\n"
+        "  export [" ++ generate_exports(FunctionCount) ++ "]\n\n",
+
     Functions = [generate_function(N) || N <- lists:seq(1, FunctionCount)],
-    
+
     ModuleHeader ++ lists:flatten(Functions) ++ "end\n".
 
 %% Generate exports list
@@ -205,22 +214,27 @@ generate_function(N) ->
         "    else~n"
         "      ~w~n"
         "    end~n~n",
-        [N, max(1, N-1), N]
+        [N, max(1, N - 1), N]
     ).
 
 %% Generate medium-sized program
 generate_medium_program(FunctionCount) ->
-    ModuleHeader = "module MediumTest do\n"
-                   "  export [main/0]\n\n",
-    
+    ModuleHeader =
+        "module MediumTest do\n"
+        "  export [main/0]\n\n",
+
     Functions = [generate_recursive_function(N) || N <- lists:seq(1, FunctionCount)],
-    
-    MainFunction = "  def main(): Int =\n"
-                   "    let results = [" ++ 
-                   string:join([io_lib:format("func~w(~w)", [N, N]) || N <- lists:seq(1, min(10, FunctionCount))], ", ") ++
-                   "]\n"
-                   "    sum(results)\n\n",
-    
+
+    MainFunction =
+        "  def main(): Int =\n"
+        "    let results = [" ++
+            string:join(
+                [io_lib:format("func~w(~w)", [N, N]) || N <- lists:seq(1, min(10, FunctionCount))],
+                ", "
+            ) ++
+            "]\n"
+            "    sum(results)\n\n",
+
     ModuleHeader ++ lists:flatten(Functions) ++ MainFunction ++ "end\n".
 
 %% Generate recursive function
@@ -238,36 +252,29 @@ generate_recursive_function(N) ->
 generate_type_heavy_program() ->
     "module TypeHeavy do\n"
     "  export [main/0]\n\n"
-    
     % Polymorphic functions
     "  def identity(x: T) -> T = x\n\n"
-    
     "  def compose(f: B -> C, g: A -> B, x: A): C = f(g(x))\n\n"
-    
     % Dependent types
     "  def safe_head(list: List(T, n)) -> T when n > 0 =\n"
     "    match list do\n"
     "      [x|_] -> x\n"
     "    end\n\n"
-    
     "  def safe_tail(list: List(T, n)) -> List(T, n-1) when n > 0 =\n"
     "    match list do\n"
     "      [_|xs] -> xs\n"
     "    end\n\n"
-    
     % Higher-order functions
     "  def map(f: A -> B, list: List(A)): List(B) =\n"
     "    match list do\n"
     "      [] -> []\n"
     "      [x|xs] -> [f(x) | map(f, xs)]\n"
     "    end\n\n"
-    
     "  def fold(f: A -> B -> A, acc: A, list: List(B)): A =\n"
     "    match list do\n"
     "      [] -> acc\n"
     "      [x|xs] -> fold(f, f(acc, x), xs)\n"
     "    end\n\n"
-    
     % Complex type combinations
     "  def complex_func(x: Int, y: List(String), z: Maybe(Bool)): Result(Int, String) =\n"
     "    match z do\n"
@@ -275,7 +282,6 @@ generate_type_heavy_program() ->
     "      Just(false) -> Error(\"false condition\")\n"
     "      Nothing -> Error(\"no condition\")\n"
     "    end\n\n"
-    
     "  def main(): Int = 42\n"
     "end\n".
 
@@ -283,7 +289,6 @@ generate_type_heavy_program() ->
 generate_codegen_program() ->
     "module CodegenTest do\n"
     "  export [main/0]\n\n"
-    
     % Arithmetic operations
     "  def arithmetic(x: Int, y: Int): Int =\n"
     "    let a = x + y\n"
@@ -291,22 +296,19 @@ generate_codegen_program() ->
     "    let c = x - y\n"
     "    let d = x / y\n"
     "    a + b + c + d\n\n"
-    
     % Function calls
     "  def factorial(n: Nat): Nat =\n"
     "    if n <= 1 then\n"
-    "      1\n" 
+    "      1\n"
     "    else\n"
     "      n * factorial(n - 1)\n"
     "    end\n\n"
-    
     % Pattern matching
     "  def list_length(list: List(T)): Nat =\n"
     "    match list do\n"
     "      [] -> 0\n"
     "      [_|xs] -> 1 + list_length(xs)\n"
     "    end\n\n"
-    
     % Let expressions
     "  def complex_let(): Int =\n"
     "    let x = 10\n"
@@ -314,7 +316,6 @@ generate_codegen_program() ->
     "    let z = arithmetic(x, y)\n"
     "    let w = factorial(5)\n"
     "    z + w\n\n"
-    
     "  def main(): Int = complex_let()\n"
     "end\n".
 
@@ -322,7 +323,6 @@ generate_codegen_program() ->
 generate_comprehensive_program() ->
     "module Comprehensive do\n"
     "  export [main/0]\n\n"
-    
     % Include FSM
     "  fsm StateMachine do\n"
     "    states: [Init, Processing, Complete, Error]\n"
@@ -346,7 +346,6 @@ generate_comprehensive_program() ->
     "      event(:reset) -> Init\n"
     "    end\n"
     "  end\n\n"
-    
     % Complex functions with various features
     "  def process_data(data: List(Int)): Result(Int, String) =\n"
     "    let machine = fsm_spawn(StateMachine)\n"
@@ -366,22 +365,18 @@ generate_comprehensive_program() ->
     "    \n"
     "    fsm_stop(machine)\n"
     "    result\n\n"
-    
     "  def square(x: Int): Int = x * x\n\n"
     "  def add(x: Int, y: Int): Int = x + y\n\n"
-    
     "  def map(f: A -> B, list: List(A)): List(B) =\n"
     "    match list do\n"
     "      [] -> []\n"
     "      [x|xs] -> [f(x) | map(f, xs)]\n"
     "    end\n\n"
-    
     "  def fold(f: A -> B -> A, acc: A, list: List(B)): A =\n"
     "    match list do\n"
     "      [] -> acc\n"
     "      [x|xs] -> fold(f, f(acc, x), xs)\n"
     "    end\n\n"
-    
     "  def main(): Int =\n"
     "    let test_data = [1, 2, 3, 4, 5]\n"
     "    match process_data(test_data) do\n"
@@ -392,5 +387,4 @@ generate_comprehensive_program() ->
 
 %% Utility function for string joining (if not available)
 string_join([], _Sep) -> "";
-string_join([H|T], Sep) ->
-    lists:foldl(fun(E, Acc) -> Acc ++ Sep ++ E end, H, T).
+string_join([H | T], Sep) -> lists:foldl(fun(E, Acc) -> Acc ++ Sep ++ E end, H, T).

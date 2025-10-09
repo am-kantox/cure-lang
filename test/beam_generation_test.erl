@@ -14,34 +14,37 @@ run_beam_tests() ->
         fun test_optimized_calling_conventions/0,
         fun test_specialized_opcodes/0
     ],
-    
-    Results = lists:map(fun(Test) ->
-        TestName = extract_test_name(Test),
-        io:format("Running ~s... ", [TestName]),
-        try
-            Test(),
-            io:format("PASSED~n"),
-            ok
-        catch
-            Error:Reason:Stack ->
-                io:format("FAILED: ~p:~p~n", [Error, Reason]),
-                io:format("  Stack: ~p~n", [Stack]),
-                {error, Reason}
-        end
-    end, Tests),
-    
+
+    Results = lists:map(
+        fun(Test) ->
+            TestName = extract_test_name(Test),
+            io:format("Running ~s... ", [TestName]),
+            try
+                Test(),
+                io:format("PASSED~n"),
+                ok
+            catch
+                Error:Reason:Stack ->
+                    io:format("FAILED: ~p:~p~n", [Error, Reason]),
+                    io:format("  Stack: ~p~n", [Stack]),
+                    {error, Reason}
+            end
+        end,
+        Tests
+    ),
+
     Passed = length([ok || ok <- Results]),
     Failed = length(Results) - Passed,
-    
+
     io:format("~nBEAM Generation Tests Summary:~n"),
     io:format("  Passed: ~w~n", [Passed]),
     io:format("  Failed: ~w~n", [Failed]),
-    
+
     case Failed of
         0 -> io:format("All BEAM generation tests passed!~n");
         _ -> io:format("Some BEAM generation tests failed.~n")
     end,
-    
+
     {ok, #{passed => Passed, failed => Failed}}.
 
 extract_test_name(Fun) ->
@@ -52,19 +55,20 @@ extract_test_name(Fun) ->
 test_beam_generation_framework() ->
     % Test that the BEAM generation pass is available in the type optimizer
     Exports = cure_type_optimizer:module_info(exports),
-    
+
     % Check that basic type-directed functions are exported or defined
-    true = lists:member({apply_beam_generation_pass, 2}, Exports) orelse
-           beam_generation_functionality_exists(),
-    
+    true =
+        lists:member({apply_beam_generation_pass, 2}, Exports) orelse
+            beam_generation_functionality_exists(),
+
     % Test basic BEAM instruction structure
     BeamInstr = test_beam_instruction(),
     true = is_beam_instruction_valid(BeamInstr),
-    
+
     % Test that type information can be extracted
     TypeInfo = test_type_info_extraction(),
     true = is_map(TypeInfo),
-    
+
     io:format(" [BEAM framework available] "),
     ok.
 
@@ -73,15 +77,15 @@ test_type_specific_instructions() ->
     % Test integer-specific instructions
     IntInstructions = generate_test_integer_instructions(),
     true = length(IntInstructions) > 0,
-    
+
     % Test float-specific instructions
     FloatInstructions = generate_test_float_instructions(),
     true = length(FloatInstructions) > 0,
-    
+
     % Test atom-specific instructions
     AtomInstructions = generate_test_atom_instructions(),
     true = length(AtomInstructions) > 0,
-    
+
     io:format(" [Type-specific instructions generated] "),
     ok.
 
@@ -90,15 +94,15 @@ test_optimized_calling_conventions() ->
     % Test fast calling convention for hot path functions
     FastConvention = create_test_calling_convention(fast_call),
     true = is_valid_calling_convention(FastConvention),
-    
+
     % Test optimized convention for moderate functions
     OptimizedConvention = create_test_calling_convention(optimized_call),
     true = is_valid_calling_convention(OptimizedConvention),
-    
+
     % Test register-based argument passing
     RegisterConvention = create_test_calling_convention(register_call),
     true = is_valid_calling_convention(RegisterConvention),
-    
+
     io:format(" [Optimized calling conventions created] "),
     ok.
 
@@ -106,16 +110,17 @@ test_optimized_calling_conventions() ->
 test_specialized_opcodes() ->
     % Test arithmetic opcodes
     ArithmeticOpcodes = generate_test_arithmetic_opcodes(),
-    true = length(ArithmeticOpcodes) >= 2, % At least integer and float operations
-    
+    % At least integer and float operations
+    true = length(ArithmeticOpcodes) >= 2,
+
     % Test comparison opcodes
     ComparisonOpcodes = generate_test_comparison_opcodes(),
     true = length(ComparisonOpcodes) >= 2,
-    
+
     % Test dispatch opcodes
     DispatchOpcodes = generate_test_dispatch_opcodes(),
     true = length(DispatchOpcodes) >= 1,
-    
+
     io:format(" [Specialized opcodes generated] "),
     ok.
 
@@ -144,14 +149,16 @@ test_beam_instruction() ->
 
 %% Check if BEAM instruction is valid
 is_beam_instruction_valid(Instr) ->
-    is_map(Instr) andalso 
-    maps:is_key(op, Instr) andalso 
-    maps:is_key(args, Instr).
+    is_map(Instr) andalso
+        maps:is_key(op, Instr) andalso
+        maps:is_key(args, Instr).
 
 %% Test type information extraction
 test_type_info_extraction() ->
     #{
-        function_types => #{test_func => {function_type, [{primitive_type, integer}], {primitive_type, integer}}},
+        function_types => #{
+            test_func => {function_type, [{primitive_type, integer}], {primitive_type, integer}}
+        },
         call_site_types => #{},
         specialized_functions => #{},
         monomorphic_instances => #{},
@@ -200,29 +207,59 @@ create_test_calling_convention(ConventionType) ->
 %% Check if calling convention is valid
 is_valid_calling_convention(Convention) ->
     is_map(Convention) andalso
-    maps:is_key(convention, Convention) andalso
-    maps:is_key(register_args, Convention) andalso
-    maps:is_key(inline_eligible, Convention).
+        maps:is_key(convention, Convention) andalso
+        maps:is_key(register_args, Convention) andalso
+        maps:is_key(inline_eligible, Convention).
 
 %% Generate test arithmetic opcodes
 generate_test_arithmetic_opcodes() ->
     [
-        #{pattern => {arithmetic, integer, '+'}, opcode => int_add_optimized, frequency => 10, optimization_benefit => 2.5},
-        #{pattern => {arithmetic, float, '+'}, opcode => float_add_optimized, frequency => 8, optimization_benefit => 3.0},
-        #{pattern => {arithmetic, integer, '*'}, opcode => int_mult_optimized, frequency => 5, optimization_benefit => 2.5}
+        #{
+            pattern => {arithmetic, integer, '+'},
+            opcode => int_add_optimized,
+            frequency => 10,
+            optimization_benefit => 2.5
+        },
+        #{
+            pattern => {arithmetic, float, '+'},
+            opcode => float_add_optimized,
+            frequency => 8,
+            optimization_benefit => 3.0
+        },
+        #{
+            pattern => {arithmetic, integer, '*'},
+            opcode => int_mult_optimized,
+            frequency => 5,
+            optimization_benefit => 2.5
+        }
     ].
 
 %% Generate test comparison opcodes
 generate_test_comparison_opcodes() ->
     [
-        #{pattern => {comparison, integer, '=='}, opcode => int_equal_optimized, frequency => 12, optimization_benefit => 2.0},
-        #{pattern => {comparison, float, '=='}, opcode => float_equal_optimized, frequency => 6, optimization_benefit => 2.5}
+        #{
+            pattern => {comparison, integer, '=='},
+            opcode => int_equal_optimized,
+            frequency => 12,
+            optimization_benefit => 2.0
+        },
+        #{
+            pattern => {comparison, float, '=='},
+            opcode => float_equal_optimized,
+            frequency => 6,
+            optimization_benefit => 2.5
+        }
     ].
 
 %% Generate test dispatch opcodes
 generate_test_dispatch_opcodes() ->
     [
-        #{pattern => {dispatch, pattern_match, integer}, opcode => dispatch_integer, frequency => 4, optimization_benefit => 4.0}
+        #{
+            pattern => {dispatch, pattern_match, integer},
+            opcode => dispatch_integer,
+            frequency => 4,
+            optimization_benefit => 4.0
+        }
     ].
 
 %% Test BEAM context creation

@@ -34,117 +34,147 @@ test_length_indexed_lists() ->
     % Test Vector(T, n) where n is the length
     VectorType3Int = create_vector_type('Int', 3),
     VectorType5String = create_vector_type('String', 5),
-    VectorTypeDynamic = create_vector_type('Int', 'N'),  % Parametric length
-    
+    % Parametric length
+    VectorTypeDynamic = create_vector_type('Int', 'N'),
+
     % Test creating a vector with correct length
     Vector3Elements = create_vector_expression([
         create_literal_int(1),
         create_literal_int(2),
         create_literal_int(3)
     ]),
-    
+
     % Should type-check successfully
     Env = cure_typechecker:builtin_env(),
     Result1 = cure_typechecker:check_expression_with_expected_type(
-        Vector3Elements, VectorType3Int, Env),
+        Vector3Elements, VectorType3Int, Env
+    ),
     ?assertMatch(#typecheck_result{success = true}, Result1),
-    
+
     % Test creating a vector with incorrect length
     Vector2Elements = create_vector_expression([
         create_literal_int(1),
         create_literal_int(2)
     ]),
-    
+
     % Should fail type-check (length mismatch: 2 ≠ 3)
     Result2 = cure_typechecker:check_expression_with_expected_type(
-        Vector2Elements, VectorType3Int, Env),
+        Vector2Elements, VectorType3Int, Env
+    ),
     ?assertMatch(#typecheck_result{success = false}, Result2),
-    ?assert(lists:any(fun(Error) ->
-        case Error of
-            {length_mismatch, Expected, Actual} -> 
-                Expected == 3 andalso Actual == 2;
-            _ -> false
-        end
-    end, Result2#typecheck_result.errors)),
-    
+    ?assert(
+        lists:any(
+            fun(Error) ->
+                case Error of
+                    {length_mismatch, Expected, Actual} ->
+                        Expected == 3 andalso Actual == 2;
+                    _ ->
+                        false
+                end
+            end,
+            Result2#typecheck_result.errors
+        )
+    ),
+
     % Test vector concatenation type checking
     ConcatExpr = create_vector_concat_expression(Vector3Elements, Vector2Elements),
-    ExpectedConcatType = create_vector_type('Int', 5),  % 3 + 2 = 5
-    
+    % 3 + 2 = 5
+    ExpectedConcatType = create_vector_type('Int', 5),
+
     Result3 = cure_typechecker:infer_expression_type(ConcatExpr, Env),
     ?assertMatch(#typecheck_result{success = true}, Result3),
     ?assertEqual(ExpectedConcatType, Result3#typecheck_result.type),
-    
+
     % Test parametric vector operations
     ParametricVectorFun = create_parametric_vector_function(),
     Result4 = cure_typechecker:check_function(ParametricVectorFun),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result4),
-    
+
     io:format("✓ Length-indexed lists test passed~n").
 
 %% Test refinement types (types with predicates)
 test_refinement_types() ->
     % Test {x: Int | x > 0} (positive integers)
-    PositiveIntType = create_refinement_type('Int', 
-        create_predicate_greater_than(create_identifier('x'), create_literal_int(0))),
-    
+    PositiveIntType = create_refinement_type(
+        'Int',
+        create_predicate_greater_than(create_identifier('x'), create_literal_int(0))
+    ),
+
     % Test {x: Int | x >= 0 && x <= 100} (bounded integers)
-    BoundedIntType = create_refinement_type('Int',
+    BoundedIntType = create_refinement_type(
+        'Int',
         create_and_predicate(
             create_predicate_greater_equal(create_identifier('x'), create_literal_int(0)),
             create_predicate_less_equal(create_identifier('x'), create_literal_int(100))
-        )),
-    
+        )
+    ),
+
     % Test {s: String | len(s) >= 3} (non-empty strings with minimum length)
-    NonEmptyStringType = create_refinement_type('String',
+    NonEmptyStringType = create_refinement_type(
+        'String',
         create_predicate_greater_equal(
             create_function_call(len, [create_identifier('s')]),
             create_literal_int(3)
-        )),
-    
+        )
+    ),
+
     Env = cure_typechecker:builtin_env(),
-    
+
     % Test positive literal assignment
     PositiveLiteral = create_literal_int(42),
     Result1 = cure_typechecker:check_expression_with_expected_type(
-        PositiveLiteral, PositiveIntType, Env),
+        PositiveLiteral, PositiveIntType, Env
+    ),
     ?assertMatch(#typecheck_result{success = true}, Result1),
-    
+
     % Test negative literal assignment (should fail)
     NegativeLiteral = create_literal_int(-5),
     Result2 = cure_typechecker:check_expression_with_expected_type(
-        NegativeLiteral, PositiveIntType, Env),
+        NegativeLiteral, PositiveIntType, Env
+    ),
     ?assertMatch(#typecheck_result{success = false}, Result2),
-    ?assert(lists:any(fun(Error) ->
-        case Error of
-            {refinement_violation, _Predicate, _Value} -> true;
-            _ -> false
-        end
-    end, Result2#typecheck_result.errors)),
-    
+    ?assert(
+        lists:any(
+            fun(Error) ->
+                case Error of
+                    {refinement_violation, _Predicate, _Value} -> true;
+                    _ -> false
+                end
+            end,
+            Result2#typecheck_result.errors
+        )
+    ),
+
     % Test bounded integer (valid case)
     BoundedLiteral = create_literal_int(50),
     Result3 = cure_typechecker:check_expression_with_expected_type(
-        BoundedLiteral, BoundedIntType, Env),
+        BoundedLiteral, BoundedIntType, Env
+    ),
     ?assertMatch(#typecheck_result{success = true}, Result3),
-    
+
     % Test bounded integer (out of bounds)
     OutOfBoundsLiteral = create_literal_int(150),
     Result4 = cure_typechecker:check_expression_with_expected_type(
-        OutOfBoundsLiteral, BoundedIntType, Env),
+        OutOfBoundsLiteral, BoundedIntType, Env
+    ),
     ?assertMatch(#typecheck_result{success = false}, Result4),
-    
+
     % Test string length refinement
-    ValidString = create_literal_string("Hello"),  % Length = 5 >= 3
+
+    % Length = 5 >= 3
+    ValidString = create_literal_string("Hello"),
     Result5 = cure_typechecker:check_expression_with_expected_type(
-        ValidString, NonEmptyStringType, Env),
+        ValidString, NonEmptyStringType, Env
+    ),
     ?assertMatch(#typecheck_result{success = true}, Result5),
-    
-    InvalidString = create_literal_string("Hi"),  % Length = 2 < 3
+
+    % Length = 2 < 3
+    InvalidString = create_literal_string("Hi"),
     Result6 = cure_typechecker:check_expression_with_expected_type(
-        InvalidString, NonEmptyStringType, Env),
+        InvalidString, NonEmptyStringType, Env
+    ),
     ?assertMatch(#typecheck_result{success = false}, Result6),
-    
+
     io:format("✓ Refinement types test passed~n").
 
 %% Test dependent function types
@@ -175,7 +205,7 @@ test_dependent_function_types() ->
         body = create_take_implementation(),
         location = create_location(1, 1)
     },
-    
+
     % Test function: replicate(n: Nat, x: T) -> List(T, n)
     ReplicateFunction = #function_def{
         name = replicate,
@@ -196,17 +226,17 @@ test_dependent_function_types() ->
         body = create_replicate_implementation(),
         location = create_location(3, 1)
     },
-    
+
     % Test type checking of dependent functions
     Result1 = cure_typechecker:check_function(TakeFunction),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result1),
-    
+
     Result2 = cure_typechecker:check_function(ReplicateFunction),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result2),
-    
+
     % Test calling dependent functions
     Env = cure_typechecker:builtin_env(),
-    
+
     % take([1,2,3,4,5], 3) should return List(Int, 3)
     TakeCall = #function_call_expr{
         function = create_identifier('take'),
@@ -216,12 +246,12 @@ test_dependent_function_types() ->
         ],
         location = create_location(5, 1)
     },
-    
+
     Result3 = cure_typechecker:infer_expression_type(TakeCall, Env),
     ?assertMatch(#typecheck_result{success = true}, Result3),
     ExpectedTakeResultType = create_vector_type('Int', 3),
     ?assertEqual(ExpectedTakeResultType, Result3#typecheck_result.type),
-    
+
     % replicate(4, "hello") should return List(String, 4)
     ReplicateCall = #function_call_expr{
         function = create_identifier('replicate'),
@@ -231,12 +261,12 @@ test_dependent_function_types() ->
         ],
         location = create_location(6, 1)
     },
-    
+
     Result4 = cure_typechecker:infer_expression_type(ReplicateCall, Env),
     ?assertMatch(#typecheck_result{success = true}, Result4),
     ExpectedReplicateResultType = create_vector_type('String', 4),
     ?assertEqual(ExpectedReplicateResultType, Result4#typecheck_result.type),
-    
+
     io:format("✓ Dependent function types test passed~n").
 
 %% Test type constraint validation
@@ -252,15 +282,17 @@ test_type_constraints_validation() ->
             },
             #param{
                 name = denominator,
-                type = create_refinement_type('Float', 
-                    create_predicate_not_equal(create_identifier('x'), create_literal_float(0.0))),
+                type = create_refinement_type(
+                    'Float',
+                    create_predicate_not_equal(create_identifier('x'), create_literal_float(0.0))
+                ),
                 location = create_location(1, 2)
             }
         ],
         return_type = #primitive_type{name = 'Float', location = create_location(1, 3)},
         constraint = create_constraint_expression(
             create_predicate_not_equal(
-                create_identifier('denominator'), 
+                create_identifier('denominator'),
                 create_literal_float(0.0)
             )
         ),
@@ -272,100 +304,120 @@ test_type_constraints_validation() ->
         },
         location = create_location(1, 1)
     },
-    
+
     % Should pass type checking with constraint
     Result1 = cure_typechecker:check_function(ConstrainedFunction),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result1),
-    
+
     % Test calling with valid arguments
     Env = cure_typechecker:builtin_env(),
     ValidCall = #function_call_expr{
         function = create_identifier('safe_divide'),
         args = [
             create_literal_float(10.0),
-            create_literal_float(2.0)  % Non-zero, satisfies constraint
+            % Non-zero, satisfies constraint
+            create_literal_float(2.0)
         ],
         location = create_location(4, 1)
     },
-    
+
     Result2 = cure_typechecker:check_expression(ValidCall, Env),
     ?assertMatch(#typecheck_result{success = true}, Result2),
-    
+
     % Test calling with invalid arguments (should be caught at compile time)
     InvalidCall = #function_call_expr{
         function = create_identifier('safe_divide'),
         args = [
             create_literal_float(10.0),
-            create_literal_float(0.0)  % Zero, violates constraint
+            % Zero, violates constraint
+            create_literal_float(0.0)
         ],
         location = create_location(5, 1)
     },
-    
+
     Result3 = cure_typechecker:check_expression(InvalidCall, Env),
     ?assertMatch(#typecheck_result{success = false}, Result3),
-    ?assert(lists:any(fun(Error) ->
-        case Error of
-            {constraint_violation, _} -> true;
-            _ -> false
-        end
-    end, Result3#typecheck_result.errors)),
-    
+    ?assert(
+        lists:any(
+            fun(Error) ->
+                case Error of
+                    {constraint_violation, _} -> true;
+                    _ -> false
+                end
+            end,
+            Result3#typecheck_result.errors
+        )
+    ),
+
     io:format("✓ Type constraints validation test passed~n").
 
 %% Test dependent record types
 test_dependent_record_types() ->
     % Test Buffer record with capacity and current size
     BufferType = create_dependent_record_type('Buffer', [
-        {capacity, create_refinement_type('Nat', 
-            create_predicate_greater_than(create_identifier('x'), create_literal_int(0)))},
+        {capacity,
+            create_refinement_type(
+                'Nat',
+                create_predicate_greater_than(create_identifier('x'), create_literal_int(0))
+            )},
         {data, create_vector_type('T', create_identifier('size'))},
-        {size, create_refinement_type('Nat',
-            create_and_predicate(
-                create_predicate_greater_equal(create_identifier('x'), create_literal_int(0)),
-                create_predicate_less_equal(create_identifier('x'), create_identifier('capacity'))
-            ))}
+        {size,
+            create_refinement_type(
+                'Nat',
+                create_and_predicate(
+                    create_predicate_greater_equal(create_identifier('x'), create_literal_int(0)),
+                    create_predicate_less_equal(
+                        create_identifier('x'), create_identifier('capacity')
+                    )
+                )
+            )}
     ]),
-    
+
     % Test creating a valid buffer
     ValidBuffer = create_record_expression('Buffer', [
         {capacity, create_literal_int(10)},
-        {data, create_vector_expression([
-            create_literal_string("a"),
-            create_literal_string("b"),
-            create_literal_string("c")
-        ])},
+        {data,
+            create_vector_expression([
+                create_literal_string("a"),
+                create_literal_string("b"),
+                create_literal_string("c")
+            ])},
         {size, create_literal_int(3)}
     ]),
-    
+
     Env = cure_typechecker:builtin_env(),
     Result1 = cure_typechecker:check_expression_with_expected_type(
-        ValidBuffer, BufferType, Env),
+        ValidBuffer, BufferType, Env
+    ),
     ?assertMatch(#typecheck_result{success = true}, Result1),
-    
+
     % Test creating invalid buffer (size > capacity)
     InvalidBuffer = create_record_expression('Buffer', [
         {capacity, create_literal_int(5)},
-        {data, create_vector_expression([
-            create_literal_string("a"),
-            create_literal_string("b"),
-            create_literal_string("c"),
-            create_literal_string("d"),
-            create_literal_string("e"),
-            create_literal_string("f"),
-            create_literal_string("g")
-        ])},
-        {size, create_literal_int(7)}  % 7 > 5 (capacity)
+        {data,
+            create_vector_expression([
+                create_literal_string("a"),
+                create_literal_string("b"),
+                create_literal_string("c"),
+                create_literal_string("d"),
+                create_literal_string("e"),
+                create_literal_string("f"),
+                create_literal_string("g")
+            ])},
+        % 7 > 5 (capacity)
+        {size, create_literal_int(7)}
     ]),
-    
+
     Result2 = cure_typechecker:check_expression_with_expected_type(
-        InvalidBuffer, BufferType, Env),
+        InvalidBuffer, BufferType, Env
+    ),
     ?assertMatch(#typecheck_result{success = false}, Result2),
-    
+
     % Test buffer operations
     BufferPushFunction = create_buffer_push_function(),
     Result3 = cure_typechecker:check_function(BufferPushFunction),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result3),
-    
+
     io:format("✓ Dependent record types test passed~n").
 
 %% Test bounded integers with range constraints
@@ -373,46 +425,57 @@ test_bounded_integers() ->
     % Test different bounded integer types
     ByteType = create_bounded_integer_type(0, 255),
     PercentType = create_bounded_integer_type(0, 100),
-    TemperatureType = create_bounded_integer_type(-273, 10000),  % Celsius
-    
+    % Celsius
+    TemperatureType = create_bounded_integer_type(-273, 10000),
+
     Env = cure_typechecker:builtin_env(),
-    
+
     % Test valid byte values
     ValidByte = create_literal_int(128),
     Result1 = cure_typechecker:check_expression_with_expected_type(
-        ValidByte, ByteType, Env),
+        ValidByte, ByteType, Env
+    ),
     ?assertMatch(#typecheck_result{success = true}, Result1),
-    
+
     % Test invalid byte value (out of range)
     InvalidByte = create_literal_int(300),
     Result2 = cure_typechecker:check_expression_with_expected_type(
-        InvalidByte, ByteType, Env),
+        InvalidByte, ByteType, Env
+    ),
     ?assertMatch(#typecheck_result{success = false}, Result2),
-    
+
     % Test arithmetic on bounded integers
     ByteAddition = #binary_op_expr{
         op = '+',
-        left = create_literal_int(100),  % Byte value
-        right = create_literal_int(50),  % Byte value
+        % Byte value
+        left = create_literal_int(100),
+        % Byte value
+        right = create_literal_int(50),
         location = create_location(1, 1)
     },
-    
+
     % Result should be checked for overflow
     Result3 = cure_typechecker:check_expression_with_expected_type(
-        ByteAddition, ByteType, Env),
-    ?assertMatch(#typecheck_result{success = true}, Result3),  % 100 + 50 = 150, within byte range
-    
+        ByteAddition, ByteType, Env
+    ),
+    % 100 + 50 = 150, within byte range
+    ?assertMatch(#typecheck_result{success = true}, Result3),
+
     ByteOverflow = #binary_op_expr{
         op = '+',
-        left = create_literal_int(200),  % Byte value
-        right = create_literal_int(100),  % Byte value
+        % Byte value
+        left = create_literal_int(200),
+        % Byte value
+        right = create_literal_int(100),
         location = create_location(2, 1)
     },
-    
+
     Result4 = cure_typechecker:check_expression_with_expected_type(
-        ByteOverflow, ByteType, Env),
-    ?assertMatch(#typecheck_result{success = false}, Result4),  % 200 + 100 = 300, overflow
-    
+        ByteOverflow, ByteType, Env
+    ),
+    % 200 + 100 = 300, overflow
+    ?assertMatch(#typecheck_result{success = false}, Result4),
+
     io:format("✓ Bounded integers test passed~n").
 
 %% Test capacity-constrained collections
@@ -420,32 +483,43 @@ test_capacity_constrained_collections() ->
     % Test BoundedList(T, MaxCapacity) type
     BoundedList10 = create_bounded_list_type('String', 10),
     BoundedList5 = create_bounded_list_type('Int', 5),
-    
+
     Env = cure_typechecker:builtin_env(),
-    
+
     % Test creating bounded list within capacity
-    SmallList = create_list_literal(["a", "b", "c"]),  % 3 elements, under capacity
+
+    % 3 elements, under capacity
+    SmallList = create_list_literal(["a", "b", "c"]),
     Result1 = cure_typechecker:check_expression_with_expected_type(
-        SmallList, BoundedList10, Env),
+        SmallList, BoundedList10, Env
+    ),
     ?assertMatch(#typecheck_result{success = true}, Result1),
-    
+
     % Test creating bounded list exceeding capacity
-    LargeList = create_list_literal([1, 2, 3, 4, 5, 6, 7]),  % 7 elements, exceeds capacity of 5
+
+    % 7 elements, exceeds capacity of 5
+    LargeList = create_list_literal([1, 2, 3, 4, 5, 6, 7]),
     Result2 = cure_typechecker:check_expression_with_expected_type(
-        LargeList, BoundedList5, Env),
+        LargeList, BoundedList5, Env
+    ),
     ?assertMatch(#typecheck_result{success = false}, Result2),
-    ?assert(lists:any(fun(Error) ->
-        case Error of
-            {capacity_exceeded, _MaxCapacity, _ActualSize} -> true;
-            _ -> false
-        end
-    end, Result2#typecheck_result.errors)),
-    
+    ?assert(
+        lists:any(
+            fun(Error) ->
+                case Error of
+                    {capacity_exceeded, _MaxCapacity, _ActualSize} -> true;
+                    _ -> false
+                end
+            end,
+            Result2#typecheck_result.errors
+        )
+    ),
+
     % Test bounded list operations
     BoundedListAppendFunction = create_bounded_list_append_function(),
     Result3 = cure_typechecker:check_function(BoundedListAppendFunction),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result3),
-    
+
     io:format("✓ Capacity-constrained collections test passed~n").
 
 %% Test state-dependent operations
@@ -455,7 +529,7 @@ test_state_dependent_operations() ->
         create_tagged_type('Open', create_primitive_type('FileHandle')),
         create_tagged_type('Closed', create_primitive_type('Unit'))
     ]),
-    
+
     % Function: read(file: File(Open)) -> String
     ReadFunction = #function_def{
         name = read_file,
@@ -471,7 +545,7 @@ test_state_dependent_operations() ->
         body = create_file_read_implementation(),
         location = create_location(1, 1)
     },
-    
+
     % Function: close(file: File(Open)) -> File(Closed)
     CloseFunction = #function_def{
         name = close_file,
@@ -487,15 +561,15 @@ test_state_dependent_operations() ->
         body = create_file_close_implementation(),
         location = create_location(3, 1)
     },
-    
+
     Result1 = cure_typechecker:check_function(ReadFunction),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result1),
-    
+
     Result2 = cure_typechecker:check_function(CloseFunction),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result2),
-    
+
     Env = cure_typechecker:builtin_env(),
-    
+
     % Test valid operation (reading from open file)
     OpenFile = create_tagged_value('Open', create_literal_string("file_handle_123")),
     ValidReadCall = #function_call_expr{
@@ -503,10 +577,10 @@ test_state_dependent_operations() ->
         args = [OpenFile],
         location = create_location(5, 1)
     },
-    
+
     Result3 = cure_typechecker:check_expression(ValidReadCall, Env),
     ?assertMatch(#typecheck_result{success = true}, Result3),
-    
+
     % Test invalid operation (reading from closed file)
     ClosedFile = create_tagged_value('Closed', create_unit_literal()),
     InvalidReadCall = #function_call_expr{
@@ -514,16 +588,21 @@ test_state_dependent_operations() ->
         args = [ClosedFile],
         location = create_location(6, 1)
     },
-    
+
     Result4 = cure_typechecker:check_expression(InvalidReadCall, Env),
     ?assertMatch(#typecheck_result{success = false}, Result4),
-    ?assert(lists:any(fun(Error) ->
-        case Error of
-            {state_mismatch, _Expected, _Actual} -> true;
-            _ -> false
-        end
-    end, Result4#typecheck_result.errors)),
-    
+    ?assert(
+        lists:any(
+            fun(Error) ->
+                case Error of
+                    {state_mismatch, _Expected, _Actual} -> true;
+                    _ -> false
+                end
+            end,
+            Result4#typecheck_result.errors
+        )
+    ),
+
     io:format("✓ State-dependent operations test passed~n").
 
 %% Test proof-carrying code patterns
@@ -549,12 +628,12 @@ test_proof_carrying_code() ->
         body = create_safe_head_implementation(),
         location = create_location(1, 1)
     },
-    
+
     Result1 = cure_typechecker:check_function(SafeHeadFunction),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result1),
-    
+
     Env = cure_typechecker:builtin_env(),
-    
+
     % Test with provably non-empty list
     NonEmptyList = create_list_literal([1, 2, 3]),
     ValidCall = #function_call_expr{
@@ -562,10 +641,10 @@ test_proof_carrying_code() ->
         args = [NonEmptyList],
         location = create_location(3, 1)
     },
-    
+
     Result2 = cure_typechecker:check_expression(ValidCall, Env),
     ?assertMatch(#typecheck_result{success = true}, Result2),
-    
+
     % Test with potentially empty list (should require runtime check or proof)
     PotentiallyEmptyList = create_identifier('unknown_list'),
     UncertainCall = #function_call_expr{
@@ -573,54 +652,62 @@ test_proof_carrying_code() ->
         args = [PotentiallyEmptyList],
         location = create_location(4, 1)
     },
-    
+
     Result3 = cure_typechecker:check_expression(UncertainCall, Env),
     ?assertMatch(#typecheck_result{success = false}, Result3),
-    ?assert(lists:any(fun(Error) ->
-        case Error of
-            {insufficient_proof, _Property} -> true;
-            _ -> false
-        end
-    end, Result3#typecheck_result.errors)),
-    
+    ?assert(
+        lists:any(
+            fun(Error) ->
+                case Error of
+                    {insufficient_proof, _Property} -> true;
+                    _ -> false
+                end
+            end,
+            Result3#typecheck_result.errors
+        )
+    ),
+
     io:format("✓ Proof-carrying code test passed~n").
 
 %% Test dependent type inference
 test_dependent_type_inference() ->
     % Test that the type system can infer dependent types
     Env = cure_typechecker:builtin_env(),
-    
+
     % Simple list literal should infer List(Int, 3)
     ListLiteral = create_list_literal([1, 2, 3]),
     Result1 = cure_typechecker:infer_expression_type(ListLiteral, Env),
     ?assertMatch(#typecheck_result{success = true}, Result1),
     ExpectedType = create_vector_type('Int', 3),
     ?assertEqual(ExpectedType, Result1#typecheck_result.type),
-    
+
     % Concatenation should infer combined length
     List1 = create_list_literal([1, 2]),
     List2 = create_list_literal([3, 4, 5]),
     ConcatExpr = create_concat_expression(List1, List2),
-    
+
     Result2 = cure_typechecker:infer_expression_type(ConcatExpr, Env),
     ?assertMatch(#typecheck_result{success = true}, Result2),
     ExpectedConcatType = create_vector_type('Int', 5),
     ?assertEqual(ExpectedConcatType, Result2#typecheck_result.type),
-    
+
     % Test arithmetic inference with bounded integers
-    BoundedValue1 = create_literal_int(50),  % Within byte range
-    BoundedValue2 = create_literal_int(30),  % Within byte range
+
+    % Within byte range
+    BoundedValue1 = create_literal_int(50),
+    % Within byte range
+    BoundedValue2 = create_literal_int(30),
     AdditionExpr = #binary_op_expr{
         op = '+',
         left = BoundedValue1,
         right = BoundedValue2,
         location = create_location(1, 1)
     },
-    
+
     % Should infer that result is 80, which fits in byte range
     Result3 = cure_typechecker:infer_expression_type(AdditionExpr, Env),
     ?assertMatch(#typecheck_result{success = true}, Result3),
-    
+
     io:format("✓ Dependent type inference test passed~n").
 
 %% ============================================================================
@@ -649,7 +736,9 @@ create_vector_type(ElementType, Length) ->
     #dependent_type{
         name = 'Vector',
         params = [
-            #type_param{value = #primitive_type{name = ElementType, location = create_location(1, 1)}},
+            #type_param{
+                value = #primitive_type{name = ElementType, location = create_location(1, 1)}
+            },
             #type_param{value = Length}
         ],
         location = create_location(1, 1)
@@ -658,7 +747,11 @@ create_vector_type(ElementType, Length) ->
 create_dependent_list_type(ElementType) ->
     #dependent_type{
         name = 'List',
-        params = [#type_param{value = #primitive_type{name = ElementType, location = create_location(1, 1)}}],
+        params = [
+            #type_param{
+                value = #primitive_type{name = ElementType, location = create_location(1, 1)}
+            }
+        ],
         location = create_location(1, 1)
     }.
 
@@ -705,8 +798,9 @@ create_vector_concat_expression(Left, Right) ->
     }.
 
 create_list_literal(Values) ->
-    Elements = [create_literal_int(V) || V <- Values, is_integer(V)] ++
-               [create_literal_string(V) || V <- Values, is_list(V)],
+    Elements =
+        [create_literal_int(V) || V <- Values, is_integer(V)] ++
+            [create_literal_string(V) || V <- Values, is_list(V)],
     #list_expr{elements = Elements, location = create_location(1, 1)}.
 
 create_type_variable(Name) ->
@@ -727,22 +821,28 @@ create_field_spec(Name, Type) ->
     #field_expr{name = Name, value = Type, location = create_location(1, 1)}.
 
 create_record_expression(Name, Fields) ->
-    FieldExprs = [#field_expr{name = FName, value = FValue, location = create_location(1, 1)} 
-                  || {FName, FValue} <- Fields],
+    FieldExprs = [
+        #field_expr{name = FName, value = FValue, location = create_location(1, 1)}
+     || {FName, FValue} <- Fields
+    ],
     #record_expr{name = Name, fields = FieldExprs, location = create_location(1, 1)}.
 
 create_bounded_integer_type(Min, Max) ->
-    create_refinement_type('Int',
+    create_refinement_type(
+        'Int',
         create_and_predicate(
             create_predicate_greater_equal(create_identifier('x'), create_literal_int(Min)),
             create_predicate_less_equal(create_identifier('x'), create_literal_int(Max))
-        )).
+        )
+    ).
 
 create_bounded_list_type(ElementType, MaxCapacity) ->
     #dependent_type{
         name = 'BoundedList',
         params = [
-            #type_param{value = #primitive_type{name = ElementType, location = create_location(1, 1)}},
+            #type_param{
+                value = #primitive_type{name = ElementType, location = create_location(1, 1)}
+            },
             #type_param{value = create_literal_int(MaxCapacity)}
         ],
         location = create_location(1, 1)
@@ -785,8 +885,12 @@ create_parametric_vector_function() ->
     #function_def{
         name = vector_map,
         params = [
-            #param{name = f, type = create_function_type(['T'], 'U'), location = create_location(1, 1)},
-            #param{name = vec, type = create_vector_type('T', 'N'), location = create_location(1, 2)}
+            #param{
+                name = f, type = create_function_type(['T'], 'U'), location = create_location(1, 1)
+            },
+            #param{
+                name = vec, type = create_vector_type('T', 'N'), location = create_location(1, 2)
+            }
         ],
         return_type = create_vector_type('U', 'N'),
         constraint = undefined,
@@ -811,7 +915,9 @@ create_buffer_push_function() ->
     #function_def{
         name = buffer_push,
         params = [
-            #param{name = buffer, type = create_identifier('Buffer'), location = create_location(1, 1)},
+            #param{
+                name = buffer, type = create_identifier('Buffer'), location = create_location(1, 1)
+            },
             #param{name = item, type = create_type_variable('T'), location = create_location(1, 2)}
         ],
         return_type = create_identifier('Buffer'),
@@ -824,7 +930,11 @@ create_bounded_list_append_function() ->
     #function_def{
         name = bounded_append,
         params = [
-            #param{name = list, type = create_bounded_list_type('T', 'N'), location = create_location(1, 1)},
+            #param{
+                name = list,
+                type = create_bounded_list_type('T', 'N'),
+                location = create_location(1, 1)
+            },
             #param{name = item, type = create_type_variable('T'), location = create_location(1, 2)}
         ],
         return_type = create_bounded_list_type('T', 'N'),

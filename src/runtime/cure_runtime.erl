@@ -28,7 +28,7 @@
 execute_module(CompiledModule) ->
     State = create_runtime_state(),
     StateWithModule = cure_runtime:load_module(CompiledModule, State),
-    
+
     % Look for main function and execute it
     case find_function(CompiledModule, main, 0) of
         {ok, _MainFunction} ->
@@ -42,10 +42,12 @@ run_program([]) ->
     {error, no_modules};
 run_program([FirstModule | RestModules]) ->
     State = create_runtime_state(),
-    
+
     % Load all modules into runtime state
-    StateWithModules = lists:foldl(fun cure_runtime:load_module/2, State, [FirstModule | RestModules]),
-    
+    StateWithModules = lists:foldl(fun cure_runtime:load_module/2, State, [
+        FirstModule | RestModules
+    ]),
+
     % Look for main function in any module
     case find_main_function([FirstModule | RestModules]) of
         {ok, _ModuleName, _MainFunction} ->
@@ -109,14 +111,18 @@ create_runtime_state() ->
 load_module(CompiledModule, State) ->
     ModuleName = maps:get(name, CompiledModule),
     Functions = maps:get(functions, CompiledModule, []),
-    
+
     % Add module functions to globals
-    ModuleFunctions = lists:foldl(fun(Function, Acc) ->
-        FuncName = maps:get(name, Function),
-        _Arity = maps:get(arity, Function),
-        maps:put(FuncName, {internal, ModuleName, Function}, Acc)
-    end, State#runtime_state.globals, Functions),
-    
+    ModuleFunctions = lists:foldl(
+        fun(Function, Acc) ->
+            FuncName = maps:get(name, Function),
+            _Arity = maps:get(arity, Function),
+            maps:put(FuncName, {internal, ModuleName, Function}, Acc)
+        end,
+        State#runtime_state.globals,
+        Functions
+    ),
+
     NewModules = maps:put(ModuleName, CompiledModule, State#runtime_state.modules),
     State#runtime_state{
         globals = ModuleFunctions,
@@ -126,9 +132,14 @@ load_module(CompiledModule, State) ->
 %% Find a function in a module
 find_function(CompiledModule, FuncName, Arity) ->
     Functions = maps:get(functions, CompiledModule, []),
-    case lists:filter(fun(F) -> 
-        maps:get(name, F) =:= FuncName andalso maps:get(arity, F) =:= Arity
-    end, Functions) of
+    case
+        lists:filter(
+            fun(F) ->
+                maps:get(name, F) =:= FuncName andalso maps:get(arity, F) =:= Arity
+            end,
+            Functions
+        )
+    of
         [] -> error;
         [Function | _] -> {ok, Function}
     end.
@@ -189,16 +200,16 @@ execute_function(FuncName, Args, State) ->
 execute_function(FuncName, Args, State, Function) ->
     Instructions = maps:get(instructions, Function, []),
     Params = maps:get(params, Function, []),
-    
+
     % Set up parameter bindings
     ParamBindings = create_param_bindings(Params, Args),
-    
+
     FunctionState = State#runtime_state{
         stack = [],
         params = ParamBindings,
         locals = #{}
     },
-    
+
     % Execute instructions
     case execute_instructions(Instructions, FunctionState) of
         {ok, Result, NewState} ->
@@ -214,14 +225,16 @@ create_param_bindings(Params, Args) ->
 create_param_bindings([], [], Acc) ->
     Acc;
 create_param_bindings([Param | RestParams], [Arg | RestArgs], Acc) ->
-    ParamName = case Param of
-        {param, Name, _Type, _Location} -> Name;
-        Name when is_atom(Name) -> Name;
-        _ -> unknown_param
-    end,
+    ParamName =
+        case Param of
+            {param, Name, _Type, _Location} -> Name;
+            Name when is_atom(Name) -> Name;
+            _ -> unknown_param
+        end,
     create_param_bindings(RestParams, RestArgs, maps:put(ParamName, Arg, Acc));
 create_param_bindings(_, _, Acc) ->
-    Acc. % Mismatched parameter/argument count
+    % Mismatched parameter/argument count
+    Acc.
 
 %% ============================================================================
 %% Instruction Execution
@@ -268,7 +281,6 @@ execute_instruction(Instruction, State) ->
         #{op := load_literal, args := [Value]} ->
             NewStack = [Value | State#runtime_state.stack],
             {ok, State#runtime_state{stack = NewStack}};
-            
         #{op := load_param, args := [ParamName]} ->
             case maps:get(ParamName, State#runtime_state.params, undefined) of
                 undefined ->
@@ -277,7 +289,6 @@ execute_instruction(Instruction, State) ->
                     NewStack = [Value | State#runtime_state.stack],
                     {ok, State#runtime_state{stack = NewStack}}
             end;
-            
         #{op := load_local, args := [VarName]} ->
             case maps:get(VarName, State#runtime_state.locals, undefined) of
                 undefined ->
@@ -286,7 +297,6 @@ execute_instruction(Instruction, State) ->
                     NewStack = [Value | State#runtime_state.stack],
                     {ok, State#runtime_state{stack = NewStack}}
             end;
-            
         #{op := store_local, args := [VarName]} ->
             case State#runtime_state.stack of
                 [Value | _RestStack] ->
@@ -298,12 +308,10 @@ execute_instruction(Instruction, State) ->
                 [] ->
                     {error, stack_underflow}
             end;
-            
         #{op := load_global, args := [FuncName]} ->
             % Push function reference onto stack
             NewStack = [{function_ref, FuncName} | State#runtime_state.stack],
             {ok, State#runtime_state{stack = NewStack}};
-            
         #{op := call, args := [Arity]} ->
             % Pop function and arguments from stack
             case pop_call_args(Arity + 1, State#runtime_state.stack) of
@@ -328,7 +336,6 @@ execute_instruction(Instruction, State) ->
                 {error, Reason} ->
                     {error, Reason}
             end;
-            
         #{op := binary_op, args := [Op]} ->
             case State#runtime_state.stack of
                 [Right, Left | RestStack] ->
@@ -342,7 +349,6 @@ execute_instruction(Instruction, State) ->
                 _ ->
                     {error, stack_underflow}
             end;
-            
         #{op := unary_op, args := [Op]} ->
             case State#runtime_state.stack of
                 [Operand | RestStack] ->
@@ -356,15 +362,17 @@ execute_instruction(Instruction, State) ->
                 [] ->
                     {error, stack_underflow}
             end;
-            
         #{op := make_list, args := Args} ->
             % Handle different possible args formats
-            Count = case Args of
-                [N] when is_integer(N) -> N;
-                N when is_integer(N) -> N;
-                [_] -> 10;  % Default fallback for debugging
-                _ -> 10     % Default fallback
-            end,
+            Count =
+                case Args of
+                    [N] when is_integer(N) -> N;
+                    N when is_integer(N) -> N;
+                    % Default fallback for debugging
+                    [_] -> 10;
+                    % Default fallback
+                    _ -> 10
+                end,
             case pop_n_items(Count, State#runtime_state.stack) of
                 {ok, Items, RestStack} ->
                     List = lists:reverse(Items),
@@ -373,7 +381,6 @@ execute_instruction(Instruction, State) ->
                 {error, Reason} ->
                     {error, Reason}
             end;
-            
         #{op := make_lambda, args := [_LambdaName, Params, BodyInstructions]} ->
             % Create a lambda function (simplified implementation)
             Lambda = fun(Args) ->
@@ -389,7 +396,6 @@ execute_instruction(Instruction, State) ->
             end,
             NewStack = [Lambda | State#runtime_state.stack],
             {ok, State#runtime_state{stack = NewStack}};
-            
         #{op := pattern_match, args := [_Patterns]} ->
             % Simplified pattern matching - just pop the value for now
             case State#runtime_state.stack of
@@ -399,7 +405,6 @@ execute_instruction(Instruction, State) ->
                 [] ->
                     {error, stack_underflow}
             end;
-            
         #{op := jump_if_false, args := [Label]} ->
             case State#runtime_state.stack of
                 [false | RestStack] ->
@@ -409,20 +414,16 @@ execute_instruction(Instruction, State) ->
                 [] ->
                     {error, stack_underflow}
             end;
-            
         #{op := jump, args := [Label]} ->
             {jump, Label, State};
-            
         #{op := label, args := [_Label]} ->
             % Labels are no-ops during execution
             {ok, State};
-            
         #{op := return, args := []} ->
             case State#runtime_state.stack of
                 [Result | _] -> {return, Result, State};
                 [] -> {return, ok, State}
             end;
-            
         #{op := pop, args := []} ->
             case State#runtime_state.stack of
                 [_ | RestStack] ->
@@ -430,7 +431,6 @@ execute_instruction(Instruction, State) ->
                 [] ->
                     {error, stack_underflow}
             end;
-            
         #{op := monadic_pipe_call, args := [Arity]} ->
             % Monadic pipe call: [Function, PipedValue, Args...] -> Result
             % Uses cure_std:pipe/2 to implement monadic pipe semantics
@@ -450,7 +450,7 @@ execute_instruction(Instruction, State) ->
                                 throw(invalid_function_reference)
                         end
                     end,
-                    
+
                     % Use cure_std:pipe/2 to handle the monadic pipe operation
                     case call_function(pipe, [PipedValue, Lambda], State) of
                         {ok, Result, NewState} ->
@@ -462,7 +462,6 @@ execute_instruction(Instruction, State) ->
                 {error, Reason} ->
                     {error, Reason}
             end;
-            
         _ ->
             {error, {unsupported_instruction, Instruction}}
     end.
@@ -487,21 +486,22 @@ pop_call_args(Count, Stack) ->
 %% Execute binary operations
 execute_binary_op(Op, Left, Right) ->
     try
-        Result = case Op of
-            '+' -> Left + Right;
-            '-' -> Left - Right;
-            '*' -> Left * Right;
-            '/' -> Left / Right;
-            '%' -> Left rem Right;
-            '++' -> Left ++ Right;
-            '==' -> Left =:= Right;
-            '!=' -> Left =/= Right;
-            '<' -> Left < Right;
-            '>' -> Left > Right;
-            '<=' -> Left =< Right;
-            '>=' -> Left >= Right;
-            _ -> throw({unsupported_binary_op, Op})
-        end,
+        Result =
+            case Op of
+                '+' -> Left + Right;
+                '-' -> Left - Right;
+                '*' -> Left * Right;
+                '/' -> Left / Right;
+                '%' -> Left rem Right;
+                '++' -> Left ++ Right;
+                '==' -> Left =:= Right;
+                '!=' -> Left =/= Right;
+                '<' -> Left < Right;
+                '>' -> Left > Right;
+                '<=' -> Left =< Right;
+                '>=' -> Left >= Right;
+                _ -> throw({unsupported_binary_op, Op})
+            end,
         {ok, Result}
     catch
         Error:Reason ->
@@ -511,12 +511,13 @@ execute_binary_op(Op, Left, Right) ->
 %% Execute unary operations
 execute_unary_op(Op, Operand) ->
     try
-        Result = case Op of
-            '-' -> -Operand;
-            '+' -> +Operand;
-            'not' -> not Operand;
-            _ -> throw({unsupported_unary_op, Op})
-        end,
+        Result =
+            case Op of
+                '-' -> -Operand;
+                '+' -> +Operand;
+                'not' -> not Operand;
+                _ -> throw({unsupported_unary_op, Op})
+            end,
         {ok, Result}
     catch
         Error:Reason ->

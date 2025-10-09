@@ -16,13 +16,13 @@
 -type program() :: [item()].
 
 %% Top-level items
--type item() :: 
-    module_def() | 
-    function_def() | 
-    erlang_function_def() |
-    type_def() | 
-    fsm_def() | 
-    import_def().
+-type item() ::
+    module_def()
+    | function_def()
+    | erlang_function_def()
+    | type_def()
+    | fsm_def()
+    | import_def().
 
 %% Module definition
 -record(module_def, {
@@ -50,7 +50,8 @@
     params :: [param()],
     return_type :: type_expr(),
     constraint :: expr() | undefined,
-    erlang_body :: string(),  % Raw Erlang code as string
+    % Raw Erlang code as string
+    erlang_body :: string(),
     location :: location()
 }).
 -type erlang_function_def() :: #erlang_function_def{}.
@@ -117,19 +118,19 @@
 -type param() :: #param{}.
 
 %% Expressions
--type expr() :: 
-    literal_expr() |
-    identifier_expr() |
-    function_call_expr() |
-    match_expr() |
-    if_expr() |
-    let_expr() |
-    binary_op_expr() |
-    unary_op_expr() |
-    list_expr() |
-    tuple_expr() |
-    record_expr() |
-    lambda_expr().
+-type expr() ::
+    literal_expr()
+    | identifier_expr()
+    | function_call_expr()
+    | match_expr()
+    | if_expr()
+    | let_expr()
+    | binary_op_expr()
+    | unary_op_expr()
+    | list_expr()
+    | tuple_expr()
+    | record_expr()
+    | lambda_expr().
 
 %% Literal expressions
 -record(literal_expr, {
@@ -248,13 +249,13 @@
 -type lambda_expr() :: #lambda_expr{}.
 
 %% Type expressions
--type type_expr() :: 
-    primitive_type() |
-    dependent_type() |
-    function_type() |
-    union_type() |
-    list_type() |
-    tuple_type().
+-type type_expr() ::
+    primitive_type()
+    | dependent_type()
+    | function_type()
+    | union_type()
+    | list_type()
+    | tuple_type().
 
 %% Primitive types
 -record(primitive_type, {
@@ -272,8 +273,10 @@
 -type dependent_type() :: #dependent_type{}.
 
 -record(type_param, {
-    name :: atom() | undefined,  % Named parameter
-    value :: type_expr() | expr(),  % Type or value parameter
+    % Named parameter
+    name :: atom() | undefined,
+    % Type or value parameter
+    value :: type_expr() | expr(),
     location :: location()
 }).
 -type type_param() :: #type_param{}.
@@ -296,7 +299,8 @@
 %% List types
 -record(list_type, {
     element_type :: type_expr(),
-    length :: expr() | undefined,  % For dependent typing
+    % For dependent typing
+    length :: expr() | undefined,
     location :: location()
 }).
 -type list_type() :: #list_type{}.
@@ -309,13 +313,13 @@
 -type tuple_type() :: #tuple_type{}.
 
 %% Patterns for pattern matching
--type pattern() :: 
-    wildcard_pattern() |
-    literal_pattern() |
-    identifier_pattern() |
-    list_pattern() |
-    tuple_pattern() |
-    record_pattern().
+-type pattern() ::
+    wildcard_pattern()
+    | literal_pattern()
+    | identifier_pattern()
+    | list_pattern()
+    | tuple_pattern()
+    | record_pattern().
 
 -record(wildcard_pattern, {
     location :: location()
@@ -371,18 +375,50 @@
 
 %% Export all type definitions
 -export_type([
-    program/0, item/0,
-    module_def/0, function_def/0, erlang_function_def/0, type_def/0, fsm_def/0, import_def/0,
-    state_def/0, transition/0,
-    export_spec/0, param/0,
-    expr/0, literal_expr/0, identifier_expr/0, function_call_expr/0,
-    match_expr/0, match_clause/0, if_expr/0, let_expr/0, binding/0,
-    binary_op_expr/0, unary_op_expr/0, list_expr/0, tuple_expr/0,
-    record_expr/0, field_expr/0, lambda_expr/0,
-    type_expr/0, primitive_type/0, dependent_type/0, type_param/0,
-    function_type/0, union_type/0, list_type/0, tuple_type/0,
-    pattern/0, wildcard_pattern/0, literal_pattern/0, identifier_pattern/0,
-    list_pattern/0, tuple_pattern/0, record_pattern/0, field_pattern/0,
+    program/0,
+    item/0,
+    module_def/0,
+    function_def/0,
+    erlang_function_def/0,
+    type_def/0,
+    fsm_def/0,
+    import_def/0,
+    state_def/0,
+    transition/0,
+    export_spec/0,
+    param/0,
+    expr/0,
+    literal_expr/0,
+    identifier_expr/0,
+    function_call_expr/0,
+    match_expr/0,
+    match_clause/0,
+    if_expr/0,
+    let_expr/0,
+    binding/0,
+    binary_op_expr/0,
+    unary_op_expr/0,
+    list_expr/0,
+    tuple_expr/0,
+    record_expr/0,
+    field_expr/0,
+    lambda_expr/0,
+    type_expr/0,
+    primitive_type/0,
+    dependent_type/0,
+    type_param/0,
+    function_type/0,
+    union_type/0,
+    list_type/0,
+    tuple_type/0,
+    pattern/0,
+    wildcard_pattern/0,
+    literal_pattern/0,
+    identifier_pattern/0,
+    list_pattern/0,
+    tuple_pattern/0,
+    record_pattern/0,
+    field_pattern/0,
     location/0
 ]).
 
@@ -399,8 +435,13 @@ new_module(Name, Exports, Items, Location) ->
     }.
 
 %% Create a function definition
--spec new_function(atom(), [param()], type_expr() | undefined, 
-                  expr() | undefined, expr()) -> function_def().
+-spec new_function(
+    atom(),
+    [param()],
+    type_expr() | undefined,
+    expr() | undefined,
+    expr()
+) -> function_def().
 new_function(Name, Params, ReturnType, Constraint, Body) ->
     #function_def{
         name = Name,
@@ -408,7 +449,8 @@ new_function(Name, Params, ReturnType, Constraint, Body) ->
         return_type = ReturnType,
         constraint = Constraint,
         body = Body,
-        location = #location{line = 0, column = 0}  % TODO: proper location
+        % TODO: proper location
+        location = #location{line = 0, column = 0}
     }.
 
 %% Create a type definition
@@ -418,7 +460,8 @@ new_type_def(Name, Params, Definition) ->
         name = Name,
         params = Params,
         definition = Definition,
-        location = #location{line = 0, column = 0}  % TODO: proper location
+        % TODO: proper location
+        location = #location{line = 0, column = 0}
     }.
 
 %% Create an FSM definition
@@ -429,7 +472,8 @@ new_fsm(Name, States, Initial, StateDefs) ->
         states = States,
         initial = Initial,
         state_defs = StateDefs,
-        location = #location{line = 0, column = 0}  % TODO: proper location
+        % TODO: proper location
+        location = #location{line = 0, column = 0}
     }.
 
 %% Create an expression with location

@@ -15,9 +15,12 @@
 
 %% BEAM instruction record for internal representation
 -record(beam_instr, {
-    op,                    % Instruction opcode
-    args = [],             % Instruction arguments
-    location               % Source location for debugging
+    % Instruction opcode
+    op,
+    % Instruction arguments
+    args = [],
+    % Source location for debugging
+    location
 }).
 
 %% Compilation context for instruction conversion
@@ -34,45 +37,65 @@
 %% ============================================================================
 
 %% Compile a function with instructions to proper Erlang form
-compile_function_to_erlang(#{name := Name, arity := Arity, params := Params, 
-                            instructions := Instructions}, StartLine) ->
+compile_function_to_erlang(
+    #{
+        name := Name,
+        arity := Arity,
+        params := Params,
+        instructions := Instructions
+    },
+    StartLine
+) ->
     Context = #compile_context{
         line = StartLine,
         variables = create_param_variables(Params, StartLine)
     },
-    
+
     case compile_instructions_to_forms(Instructions, Context) of
         {ok, Body, _FinalContext} ->
             ParamVars = [{var, StartLine, Param} || Param <- Params],
-            FunctionForm = {function, StartLine, Name, Arity, [
-                {clause, StartLine, ParamVars, [], Body}
-            ]},
+            FunctionForm =
+                {function, StartLine, Name, Arity, [
+                    {clause, StartLine, ParamVars, [], Body}
+                ]},
             {ok, FunctionForm, StartLine + 20};
         {error, Reason} ->
             {error, Reason}
     end;
-
 %% Compile an Erlang function (def_erl) to proper Erlang form
-compile_function_to_erlang(#{name := Name, arity := Arity, params := Params, 
-                            erlang_body := ErlangBody, is_erlang_function := true}, StartLine) ->
-    compile_erlang_function_to_erlang(#{name => Name, arity => Arity, params => Params, erlang_body => ErlangBody}, StartLine).
+compile_function_to_erlang(
+    #{
+        name := Name,
+        arity := Arity,
+        params := Params,
+        erlang_body := ErlangBody,
+        is_erlang_function := true
+    },
+    StartLine
+) ->
+    compile_erlang_function_to_erlang(
+        #{name => Name, arity => Arity, params => Params, erlang_body => ErlangBody}, StartLine
+    ).
 
 %% Compile an Erlang function with raw Erlang body
-compile_erlang_function_to_erlang(#{name := Name, arity := Arity, params := Params, erlang_body := ErlangBody}, StartLine) ->
+compile_erlang_function_to_erlang(
+    #{name := Name, arity := Arity, params := Params, erlang_body := ErlangBody}, StartLine
+) ->
     try
         % For def_erl functions, we need to parse the raw Erlang code
         % and insert it as the function body
         ParamVars = [{var, StartLine, Param} || Param <- Params],
-        
+
         % Create parameter mapping from uppercase to lowercase
         ParamMapping = create_param_mapping(Params),
-        
+
         % Parse the raw Erlang code to convert it to proper Erlang abstract syntax
         case parse_erlang_body(ErlangBody, StartLine, ParamMapping) of
             {ok, ParsedBody} ->
-                FunctionForm = {function, StartLine, Name, Arity, [
-                    {clause, StartLine, ParamVars, [], ParsedBody}
-                ]},
+                FunctionForm =
+                    {function, StartLine, Name, Arity, [
+                        {clause, StartLine, ParamVars, [], ParsedBody}
+                    ]},
                 {ok, FunctionForm, StartLine + 20};
             {error, ParseReason} ->
                 {error, {erlang_body_parse_failed, ParseReason}}
@@ -84,17 +107,25 @@ compile_erlang_function_to_erlang(#{name := Name, arity := Arity, params := Para
 
 %% Create mapping from uppercase variable names to parameter names
 create_param_mapping(Params) ->
-    lists:foldl(fun(Param, Acc) ->
-        % Map both uppercase and same-case versions
-        UpperParam = list_to_atom(string:uppercase(atom_to_list(Param))),
-        maps:put(UpperParam, Param, maps:put(Param, Param, Acc))
-    end, #{}, Params).
+    lists:foldl(
+        fun(Param, Acc) ->
+            % Map both uppercase and same-case versions
+            UpperParam = list_to_atom(string:uppercase(atom_to_list(Param))),
+            maps:put(UpperParam, Param, maps:put(Param, Param, Acc))
+        end,
+        #{},
+        Params
+    ).
 
 %% Create parameter variable mappings
 create_param_variables(Params, Line) ->
-    lists:foldl(fun(Param, Acc) ->
-        maps:put(Param, {var, Line, Param}, Acc)
-    end, #{}, Params).
+    lists:foldl(
+        fun(Param, Acc) ->
+            maps:put(Param, {var, Line, Param}, Acc)
+        end,
+        #{},
+        Params
+    ).
 
 %% Compile instructions to Erlang forms
 compile_instructions_to_forms(Instructions, Context) ->
@@ -102,12 +133,12 @@ compile_instructions_to_forms(Instructions, Context) ->
 
 compile_instructions_to_forms([], Context, Acc) ->
     Body = lists:reverse(Acc),
-    FinalBody = case Body of
-        [] -> [{atom, Context#compile_context.line, ok}];
-        _ -> Body
-    end,
+    FinalBody =
+        case Body of
+            [] -> [{atom, Context#compile_context.line, ok}];
+            _ -> Body
+        end,
     {ok, FinalBody, Context};
-
 compile_instructions_to_forms([Instruction | RestInstructions], Context, Acc) ->
     case compile_single_instruction(Instruction, Context) of
         {ok, Forms, NewContext} ->
@@ -124,7 +155,7 @@ compile_instructions_to_forms([Instruction | RestInstructions], Context, Acc) ->
 compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location}, Context) ->
     Line = get_line_from_location(Location, Context#compile_context.line),
     NewContext = Context#compile_context{line = Line},
-    
+
     case Op of
         load_literal -> compile_load_literal(Args, NewContext);
         load_param -> compile_load_param(Args, NewContext);
@@ -188,10 +219,10 @@ compile_load_local([VarName], Context) ->
 %% Load global function or variable - just push to stack, don't generate forms
 compile_load_global([Name], Context) ->
     Line = Context#compile_context.line,
-    
+
     % For now, just push the function name - we'll handle stdlib calls in call compilation
     Form = {atom, Line, Name},
-    
+
     {ok, [], push_stack(Form, Context)}.
 
 %% Store value in local variable
@@ -201,10 +232,10 @@ compile_store_local([VarName], Context) ->
             Line = NewContext#compile_context.line,
             VarForm = {var, Line, VarName},
             MatchForm = {match, Line, VarForm, Value},
-            
+
             NewVariables = maps:put(VarName, VarForm, NewContext#compile_context.variables),
             FinalContext = NewContext#compile_context{variables = NewVariables},
-            
+
             {ok, [MatchForm], push_stack(VarForm, FinalContext)};
         Error ->
             Error
@@ -223,27 +254,30 @@ compile_binary_op([Operator], Context) ->
 
 %% Compile monadic pipe calls with automatic Result handling
 compile_monadic_pipe_call([Arity], Context) ->
-    case pop_n_from_stack(Arity + 1, Context) of  % +1 for function itself
+    % +1 for function itself
+    case pop_n_from_stack(Arity + 1, Context) of
         {Elements, NewContext} ->
             % With corrected instruction order (Function first, then Args),
             % the stack has Function at bottom, Args on top
             % After popping, we get [Function, Arg1, Arg2, ...] (no need to reverse)
             case Elements of
-                [] -> 
+                [] ->
                     {error, {empty_elements_for_call, Arity}};
                 [Function | Args] when length(Args) =:= Arity ->
                     Line = NewContext#compile_context.line,
-                    
+
                     % Create a monadic pipe operation that:
                     % 1. Wraps the first argument (piped value) with ok() if it's not already a Result
                     % 2. Checks if it's Ok(value) or Error(reason)
                     % 3. If Ok(value), unwrap and call function with unwrapped value + other args
                     % 4. If Error(reason), propagate error without calling function
-                    
+
                     case Args of
                         [PipedValue | RestArgs] ->
                             % Generate the monadic pipe logic
-                            MonadicPipeForm = generate_monadic_pipe_form(Function, PipedValue, RestArgs, Line),
+                            MonadicPipeForm = generate_monadic_pipe_form(
+                                Function, PipedValue, RestArgs, Line
+                            ),
                             {ok, [], push_stack(MonadicPipeForm, NewContext)};
                         [] ->
                             {error, {no_piped_value_for_monadic_pipe}}
@@ -257,33 +291,38 @@ compile_monadic_pipe_call([Arity], Context) ->
 
 %% Compile function calls - just push result to stack, don't generate forms
 compile_call([Arity], Context) ->
-    case pop_n_from_stack(Arity + 1, Context) of  % +1 for function itself
+    % +1 for function itself
+    case pop_n_from_stack(Arity + 1, Context) of
         {Elements, NewContext} ->
             % With corrected instruction order (Function first, then Args),
             % the stack has Function at bottom, Args on top
             % After popping, we get [Function, Arg1, Arg2, ...] (no need to reverse)
             case Elements of
-                [] -> 
+                [] ->
                     {error, {empty_elements_for_call, Arity}};
                 [Function | Args] when length(Args) =:= Arity ->
                     Line = NewContext#compile_context.line,
-            
-                    CallForm = case Function of
-                {atom, _, FuncName} ->
-                    % Check if it's a stdlib function
-                    case is_stdlib_function(FuncName) of
-                        true ->
-                            % Remote call to stdlib
-                            {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, FuncName}}, Args};
-                        false ->
-                            % Local function call
-                            {call, Line, Function, Args}
-                    end;
-                _ ->
-                    % Complex function expression
-                    {call, Line, Function, Args}
-                    end,
-            
+
+                    CallForm =
+                        case Function of
+                            {atom, _, FuncName} ->
+                                % Check if it's a stdlib function
+                                case is_stdlib_function(FuncName) of
+                                    true ->
+                                        % Remote call to stdlib
+                                        {call, Line,
+                                            {remote, Line, {atom, Line, cure_std},
+                                                {atom, Line, FuncName}},
+                                            Args};
+                                    false ->
+                                        % Local function call
+                                        {call, Line, Function, Args}
+                                end;
+                            _ ->
+                                % Complex function expression
+                                {call, Line, Function, Args}
+                        end,
+
                     {ok, [], push_stack(CallForm, NewContext)};
                 _ ->
                     {error, {wrong_arity, Arity, length(Elements)}}
@@ -323,7 +362,10 @@ compile_to_string([], Context) ->
             Line = NewContext#compile_context.line,
             % Determine conversion based on value type at compile-time if possible
             % Fallback to erlang:io_lib:format for unknown types
-            ToStringForm = {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, string_any}}, [Value]},
+            ToStringForm =
+                {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, string_any}}, [
+                    Value
+                ]},
             {ok, [], push_stack(ToStringForm, NewContext)};
         Error ->
             Error
@@ -336,10 +378,13 @@ compile_concat_strings([Count], Context) ->
             Line = NewContext#compile_context.line,
             % Build io_lib:format("~s~s~s...", Elements) or use cure_std:string_join
             % We'll generate a left-fold of string_join with empty string
-            Empty = {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, string_empty}}, []},
+            Empty =
+                {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, string_empty}},
+                    []},
             ConcatForm = lists:foldl(
                 fun(Elem, Acc) ->
-                    {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, string_join}}, [Acc, Elem]}
+                    {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, string_join}},
+                        [Acc, Elem]}
                 end,
                 Empty,
                 Elements
@@ -410,9 +455,11 @@ compile_make_lambda([_LambdaName, ParamNames, _BodyInstructions, Arity], Context
     % Create a simple anonymous function reference for now
     % In a full implementation, this would compile the body instructions to a proper lambda
     ParamVars = [{var, Line, Param} || Param <- ParamNames],
-    LambdaForm = {'fun', Line, {clauses, [
-        {clause, Line, ParamVars, [], [{atom, Line, lambda_body}]}
-    ]}},
+    LambdaForm =
+        {'fun', Line,
+            {clauses, [
+                {clause, Line, ParamVars, [], [{atom, Line, lambda_body}]}
+            ]}},
     {ok, [], push_stack(LambdaForm, Context)}.
 
 %% Tagged tuple matching (for records like Ok(value), Error(msg))
@@ -423,44 +470,54 @@ compile_match_tagged_tuple([Tag, FieldCount, _FailLabel], Context) ->
         {Value, NewContext} ->
             Line = NewContext#compile_context.line,
             % Create a case expression to match the tagged tuple
-            MatchForm = {'case', Line, Value, [
-                {clause, Line, [{tuple, Line, [{atom, Line, Tag} | lists:duplicate(FieldCount, {var, Line, '_'})]}], [], [{atom, Line, match_success}]},
-                {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
-            ]},
+            MatchForm =
+                {'case', Line, Value, [
+                    {clause, Line,
+                        [
+                            {tuple, Line, [
+                                {atom, Line, Tag} | lists:duplicate(FieldCount, {var, Line, '_'})
+                            ]}
+                        ],
+                        [], [{atom, Line, match_success}]},
+                    {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
+                ]},
             {ok, [], push_stack(MatchForm, NewContext)};
-            Error ->
+        Error ->
             Error
     end.
 
 %% Result tuple matching (for Result/Option types like {'Ok', value}, {'Error', reason})
 compile_match_result_tuple([Tag, FieldCount, _FailLabel], Context) ->
     % This matches Result/Option types which use simple tuple format: {'Ok', Value}, {'Error', Reason}
-    io:format("DEBUG: compile_match_result_tuple called with Tag=~p, FieldCount=~p~n", [Tag, FieldCount]),
+    io:format("DEBUG: compile_match_result_tuple called with Tag=~p, FieldCount=~p~n", [
+        Tag, FieldCount
+    ]),
     case pop_stack(Context) of
         {Value, NewContext} ->
             Line = NewContext#compile_context.line,
-            
+
             % FIXED VERSION: Generate proper case expression for Result pattern matching
             % The key insight is that we need to generate the complete case expression
             % that properly matches the tuple structure and binds variables correctly
-            ResultCaseExpr = {'case', Line, Value, [
-                % Ok(value) -> extract the value and return it
-                {clause, Line, 
-                 [{tuple, Line, [{atom, Line, 'Ok'}, {var, Line, 'Value'}]}], 
-                 [], 
-                 [{var, Line, 'Value'}]},
-                % Error(reason) -> propagate the error by calling error(reason)
-                {clause, Line, 
-                 [{tuple, Line, [{atom, Line, 'Error'}, {var, Line, 'Reason'}]}], 
-                 [], 
-                 [{call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, error}}, [{var, Line, 'Reason'}]}]},
-                % Fallback for other values - function clause error
-                {clause, Line, 
-                 [{var, Line, '_Other'}], 
-                 [], 
-                 [{call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, error}}, [{atom, Line, function_clause}]}]}
-            ]},
-            
+            ResultCaseExpr =
+                {'case', Line, Value, [
+                    % Ok(value) -> extract the value and return it
+                    {clause, Line, [{tuple, Line, [{atom, Line, 'Ok'}, {var, Line, 'Value'}]}], [],
+                        [{var, Line, 'Value'}]},
+                    % Error(reason) -> propagate the error by calling error(reason)
+                    {clause, Line, [{tuple, Line, [{atom, Line, 'Error'}, {var, Line, 'Reason'}]}],
+                        [], [
+                            {call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, error}},
+                                [{var, Line, 'Reason'}]}
+                        ]},
+                    % Fallback for other values - function clause error
+                    {clause, Line, [{var, Line, '_Other'}], [], [
+                        {call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, error}}, [
+                            {atom, Line, function_clause}
+                        ]}
+                    ]}
+                ]},
+
             {ok, [], push_stack(ResultCaseExpr, NewContext)};
         Error ->
             Error
@@ -472,19 +529,21 @@ compile_match_list([ElementCount, HasTail, _FailLabel], Context) ->
         {Value, NewContext} ->
             Line = NewContext#compile_context.line,
             % Create pattern for list matching
-            Pattern = case HasTail of
-                true when ElementCount > 0 ->
-                    Elements = lists:duplicate(ElementCount, {var, Line, '_'}),
-                    TailVar = {var, Line, '_tail'},
-                    build_list_pattern(Elements, TailVar, Line);
-                false ->
-                    Elements = lists:duplicate(ElementCount, {var, Line, '_'}),
-                    build_list_pattern(Elements, {nil, Line}, Line)
-            end,
-            MatchForm = {'case', Line, Value, [
-                {clause, Line, [Pattern], [], [{atom, Line, match_success}]},
-                {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
-            ]},
+            Pattern =
+                case HasTail of
+                    true when ElementCount > 0 ->
+                        Elements = lists:duplicate(ElementCount, {var, Line, '_'}),
+                        TailVar = {var, Line, '_tail'},
+                        build_list_pattern(Elements, TailVar, Line);
+                    false ->
+                        Elements = lists:duplicate(ElementCount, {var, Line, '_'}),
+                        build_list_pattern(Elements, {nil, Line}, Line)
+                end,
+            MatchForm =
+                {'case', Line, Value, [
+                    {clause, Line, [Pattern], [], [{atom, Line, match_success}]},
+                    {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
+                ]},
             {ok, [], push_stack(MatchForm, NewContext)};
         Error ->
             Error
@@ -520,32 +579,39 @@ compile_match_constructor([ConstructorName, ArgCount, _FailLabel], Context) ->
             case ArgCount of
                 0 ->
                     % Constructor with no arguments like None
-                    ConstructorCaseExpr = {'case', Line, Value, [
-                        {clause, Line, [{atom, Line, ConstructorName}], [], [{atom, Line, match_success}]},
-                        {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
-                    ]},
+                    ConstructorCaseExpr =
+                        {'case', Line, Value, [
+                            {clause, Line, [{atom, Line, ConstructorName}], [], [
+                                {atom, Line, match_success}
+                            ]},
+                            {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
+                        ]},
                     {ok, [], push_stack(ConstructorCaseExpr, NewContext)};
                 1 ->
                     % Constructor with single argument like Ok(value), Error(reason)
                     % Use underscore variables to avoid unsafe variable warnings
-                    ConstructorCaseExpr = {'case', Line, Value, [
-                        {clause, Line, 
-                         [{tuple, Line, [{atom, Line, ConstructorName}, {var, Line, '_'}]}], 
-                         [], 
-                         [{atom, Line, match_success}]},
-                        {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
-                    ]},
+                    ConstructorCaseExpr =
+                        {'case', Line, Value, [
+                            {clause, Line,
+                                [{tuple, Line, [{atom, Line, ConstructorName}, {var, Line, '_'}]}],
+                                [], [{atom, Line, match_success}]},
+                            {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
+                        ]},
                     {ok, [], push_stack(ConstructorCaseExpr, NewContext)};
                 _ ->
                     % Constructor with multiple arguments
-                    ArgVars = [{var, Line, list_to_atom("_Arg" ++ integer_to_list(I))} || I <- lists:seq(1, ArgCount)],
-                    ConstructorCaseExpr = {'case', Line, Value, [
-                        {clause, Line, 
-                         [{tuple, Line, [{atom, Line, ConstructorName} | ArgVars]}], 
-                         [], 
-                         [{atom, Line, match_success}]},
-                        {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
-                    ]},
+                    ArgVars = [
+                        {var, Line, list_to_atom("_Arg" ++ integer_to_list(I))}
+                     || I <- lists:seq(1, ArgCount)
+                    ],
+                    ConstructorCaseExpr =
+                        {'case', Line, Value, [
+                            {clause, Line,
+                                [{tuple, Line, [{atom, Line, ConstructorName} | ArgVars]}], [], [
+                                    {atom, Line, match_success}
+                                ]},
+                            {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
+                        ]},
                     {ok, [], push_stack(ConstructorCaseExpr, NewContext)}
             end;
         Error ->
@@ -559,10 +625,11 @@ compile_match_literal([LiteralValue, _FailLabel], Context) ->
             Line = NewContext#compile_context.line,
             % Generate case expression that matches literal values
             LiteralForm = compile_value_to_form(LiteralValue, Line),
-            LiteralCaseExpr = {'case', Line, Value, [
-                {clause, Line, [LiteralForm], [], [{atom, Line, match_success}]},
-                {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
-            ]},
+            LiteralCaseExpr =
+                {'case', Line, Value, [
+                    {clause, Line, [LiteralForm], [], [{atom, Line, match_success}]},
+                    {clause, Line, [{var, Line, '_'}], [], [{atom, Line, match_fail}]}
+                ]},
             {ok, [], push_stack(LiteralCaseExpr, NewContext)};
         Error ->
             Error
@@ -583,7 +650,10 @@ compile_match_any([], Context) ->
 compile_pattern_fail([], Context) ->
     Line = Context#compile_context.line,
     % Generate a function clause error
-    FailForm = {call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, error}}, [{atom, Line, function_clause}]},
+    FailForm =
+        {call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, error}}, [
+            {atom, Line, function_clause}
+        ]},
     {ok, [FailForm], Context}.
 
 %% Make case expression - create proper Erlang case from compiled clauses
@@ -751,17 +821,37 @@ compile_binary_operator(Op, Left, Right, Line) ->
 is_builtin_function(Name) ->
     BuiltinFunctions = [
         % Arithmetic
-        '+', '-', '*', '/', 'div', 'rem',
-        % Comparison  
-        '==', '/=', '<', '>', '=<', '>=',
+        '+',
+        '-',
+        '*',
+        '/',
+        'div',
+        'rem',
+        % Comparison
+        '==',
+        '/=',
+        '<',
+        '>',
+        '=<',
+        '>=',
         % Boolean
-        'and', 'or', 'not',
+        'and',
+        'or',
+        'not',
         % List operations
-        'length', 'hd', 'tl',
+        'length',
+        'hd',
+        'tl',
         % FSM operations
-        'fsm_spawn', 'fsm_send', 'fsm_state', 'fsm_stop',
+        'fsm_spawn',
+        'fsm_send',
+        'fsm_state',
+        'fsm_stop',
         % Built-in functions
-        'map', 'filter', 'foldl', 'foldr'
+        'map',
+        'filter',
+        'foldl',
+        'foldr'
     ],
     lists:member(Name, BuiltinFunctions).
 
@@ -941,7 +1031,7 @@ parse_simple_erlang_expression(ErlangCode, Line, ParamMapping) ->
     try
         % Handle common cases that def_erl will use
         TrimmedCode = string:trim(ErlangCode),
-        
+
         case TrimmedCode of
             "length ( " ++ Rest ->
                 % Handle length(list) calls
@@ -955,9 +1045,11 @@ parse_simple_erlang_expression(ErlangCode, Line, ParamMapping) ->
                     {ok, Call} -> {ok, Call};
                     error -> parse_as_simple_term(TrimmedCode, Line, ParamMapping)
                 end;
-            _ when TrimmedCode =:= "42" orelse 
-                   TrimmedCode =:= "result" orelse
-                   TrimmedCode =:= "Result" ->
+            _ when
+                TrimmedCode =:= "42" orelse
+                    TrimmedCode =:= "result" orelse
+                    TrimmedCode =:= "Result"
+            ->
                 parse_as_simple_term(TrimmedCode, Line, ParamMapping);
             _ ->
                 % For more complex cases, parse as general Erlang code
@@ -990,10 +1082,11 @@ parse_remote_call(ModuleName, FuncName, Rest, Line, ParamMapping) ->
     case extract_args_from_call(Rest) of
         {ok, Args} ->
             ArgForms = [parse_simple_arg(Arg, Line, ParamMapping) || Arg <- Args],
-            Call = {call, Line, 
-                   {remote, Line, {atom, Line, list_to_atom(ModuleName)}, 
-                    {atom, Line, list_to_atom(FuncName)}}, 
-                   ArgForms},
+            Call =
+                {call, Line,
+                    {remote, Line, {atom, Line, list_to_atom(ModuleName)},
+                        {atom, Line, list_to_atom(FuncName)}},
+                    ArgForms},
             {ok, Call};
         error ->
             error
@@ -1017,10 +1110,12 @@ parse_simple_arg(Arg, Line) ->
 
 parse_simple_arg(Arg, Line, ParamMapping) ->
     case string:to_integer(Arg) of
-        {Int, []} -> {integer, Line, Int};
+        {Int, []} ->
+            {integer, Line, Int};
         _ ->
             case string:to_float(Arg) of
-                {Float, []} -> {float, Line, Float};
+                {Float, []} ->
+                    {float, Line, Float};
                 _ ->
                     % Treat as variable - check parameter mapping first
                     VarName = list_to_atom(Arg),
@@ -1039,16 +1134,16 @@ parse_as_simple_term(Term, Line) ->
 
 parse_as_simple_term(Term, Line, ParamMapping) ->
     case string:to_integer(Term) of
-        {Int, []} -> 
+        {Int, []} ->
             {ok, {integer, Line, Int}};
         _ ->
             case string:to_float(Term) of
-                {Float, []} -> 
+                {Float, []} ->
                     {ok, {float, Line, Float}};
                 _ ->
                     % Treat as variable name - check parameter mapping first
                     case Term of
-                        [C|_] when C >= $A, C =< $Z; C >= $a, C =< $z ->
+                        [C | _] when C >= $A, C =< $Z; C >= $a, C =< $z ->
                             VarName = list_to_atom(Term),
                             case maps:get(VarName, ParamMapping, undefined) of
                                 undefined ->
@@ -1071,16 +1166,17 @@ parse_general_erlang_code(ErlangCode, Line) ->
 parse_general_erlang_code(ErlangCode, Line, ParamMapping) ->
     try
         % Add a period if it doesn't end with one
-        CodeWithPeriod = case lists:last(ErlangCode) of
-            $. -> ErlangCode;
-            _ -> ErlangCode ++ "."
-        end,
-        
+        CodeWithPeriod =
+            case lists:last(ErlangCode) of
+                $. -> ErlangCode;
+                _ -> ErlangCode ++ "."
+            end,
+
         % Try to tokenize and parse the code
         case erl_scan:string(CodeWithPeriod, Line) of
             {ok, Tokens, _} ->
                 case erl_parse:parse_exprs(Tokens) of
-                    {ok, [Expr]} -> 
+                    {ok, [Expr]} ->
                         % Apply parameter mapping to the parsed expression
                         MappedExpr = apply_param_mapping_to_expr(Expr, ParamMapping),
                         {ok, MappedExpr};
@@ -1102,7 +1198,8 @@ parse_general_erlang_code(ErlangCode, Line, ParamMapping) ->
 
 %% Apply parameter mapping to Erlang expression AST
 apply_param_mapping_to_expr(Expr, ParamMapping) when map_size(ParamMapping) == 0 ->
-    Expr;  % No mapping needed
+    % No mapping needed
+    Expr;
 apply_param_mapping_to_expr({var, Line, VarName}, ParamMapping) ->
     case maps:get(VarName, ParamMapping, undefined) of
         undefined -> {var, Line, VarName};
@@ -1128,7 +1225,8 @@ apply_param_mapping_to_expr({match, Line, Left, Right}, ParamMapping) ->
     MappedRight = apply_param_mapping_to_expr(Right, ParamMapping),
     {match, Line, MappedLeft, MappedRight};
 apply_param_mapping_to_expr(Expr, _ParamMapping) ->
-    Expr.  % For literals and other forms, no mapping needed
+    % For literals and other forms, no mapping needed
+    Expr.
 
 %% Apply parameter mapping to case clause
 apply_param_mapping_to_clause({clause, Line, Patterns, Guards, Body}, ParamMapping) ->
@@ -1147,41 +1245,43 @@ apply_param_mapping_to_clause({clause, Line, Patterns, Guards, Body}, ParamMappi
 %% 2. Use cure_std:and_then to chain the operation monadically
 generate_monadic_pipe_form(Function, PipedValue, RestArgs, Line) ->
     % First, wrap the piped value with ok()
-    WrappedValue = {call, Line, 
-                   {remote, Line, {atom, Line, cure_std}, {atom, Line, ok}}, 
-                   [PipedValue]},
-    
+    WrappedValue =
+        {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, ok}}, [PipedValue]},
+
     % Create a lambda function that wraps the target function
     % This lambda will receive the unwrapped value and call the target function
     LambdaVar = {var, Line, 'X'},
     LambdaCallArgs = [LambdaVar | RestArgs],
-    
+
     % Create the function call inside the lambda
-    LambdaCall = case Function of
-        {atom, _, FuncName} ->
-            case is_stdlib_function(FuncName) of
-                true ->
-                    {call, Line, {remote, Line, {atom, Line, cure_std}, Function}, LambdaCallArgs};
-                false ->
-                    {call, Line, Function, LambdaCallArgs}
-            end;
-        _ ->
-            {call, Line, Function, LambdaCallArgs}
-    end,
-    
+    LambdaCall =
+        case Function of
+            {atom, _, FuncName} ->
+                case is_stdlib_function(FuncName) of
+                    true ->
+                        {call, Line, {remote, Line, {atom, Line, cure_std}, Function},
+                            LambdaCallArgs};
+                    false ->
+                        {call, Line, Function, LambdaCallArgs}
+                end;
+            _ ->
+                {call, Line, Function, LambdaCallArgs}
+        end,
+
     % For monadic pipe, we need to wrap the result in a Result type
     % Since the functions expect raw values but pipe chain expects Results
-    WrappedCall = {call, Line, 
-                  {remote, Line, {atom, Line, cure_std}, {atom, Line, ok}}, 
-                  [LambdaCall]},
-    
+    WrappedCall =
+        {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, ok}}, [LambdaCall]},
+
     % Create the lambda function
-    LambdaFunction = {'fun', Line, {clauses, [
-        {clause, Line, [LambdaVar], [], [WrappedCall]}
-    ]}},
-    
+    LambdaFunction =
+        {'fun', Line,
+            {clauses, [
+                {clause, Line, [LambdaVar], [], [WrappedCall]}
+            ]}},
+
     % Use cure_std:and_then to chain the operations monadically
     % Note: and_then expects (Function, Result) order according to cure_std.erl
-    {call, Line,
-     {remote, Line, {atom, Line, cure_std}, {atom, Line, and_then}},
-     [LambdaFunction, WrappedValue]}.
+    {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, and_then}}, [
+        LambdaFunction, WrappedValue
+    ]}.
