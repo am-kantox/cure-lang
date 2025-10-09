@@ -162,8 +162,8 @@ module Std do
     # Safe main function wrapper
     match main_fn() do
       Ok(result) -> result
-      Error(err) ->
-        print("Error: " ++ err)
+      Error(err) -> 
+        let _ = print("Error: " ++ err) in
         error("Program failed")
     end
 
