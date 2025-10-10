@@ -1,0 +1,21 @@
+module VectorTest do
+  export [test/0]
+
+  import Std [List, Result]
+  
+  # Simple function that should fail due to Vector dimension mismatch
+  def test(): Unit =
+    # Create vectors with different dimensions directly
+    let v3 = [1.0, 2.0, 3.0]
+    let v4 = [4.0, 5.0, 6.0, 7.0]
+    
+    # This should fail: cannot pass Vector(Float,3) and Vector(Float,4) to 
+    # a function expecting Vector(Float,n) and Vector(Float,n) with same n
+    let result = dot_product(v3, v4)
+    ok
+
+  # dot_product function - should require same dimensions
+  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
+    42.0  # Simplified implementation
+    
+end

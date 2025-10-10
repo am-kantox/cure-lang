@@ -134,9 +134,16 @@ compile_instructions_to_forms(Instructions, Context) ->
 compile_instructions_to_forms([], Context, Acc) ->
     Body = lists:reverse(Acc),
     FinalBody =
-        case Body of
-            [] -> [{atom, Context#compile_context.line, ok}];
-            _ -> Body
+        case {Body, Context#compile_context.stack} of
+            {[], []} ->
+                % No body and no stack - return ok
+                [{atom, Context#compile_context.line, ok}];
+            {[], [StackValue | _]} ->
+                % No body but value on stack - return the stack value
+                [StackValue];
+            {_, _} ->
+                % Has body - use the body (which should include stack values)
+                Body
         end,
     {ok, FinalBody, Context};
 compile_instructions_to_forms([Instruction | RestInstructions], Context, Acc) ->
@@ -266,8 +273,16 @@ compile_load_imported_function([Name, ImportedFunction], Context) ->
         end,
 
     % Create a fun reference: fun Std:Name/Arity
+    % Map quoted module names to their actual compiled module names
+    ModuleName = maps:get(module, ImportedFunction, 'Std'),
+    ActualModuleName =
+        case ModuleName of
+            'Std' -> 'Std';
+            Other -> Other
+        end,
     FunForm =
-        {'fun', Line, {function, {atom, Line, 'Std'}, {atom, Line, Name}, {integer, Line, Arity}}},
+        {'fun', Line,
+            {function, {atom, Line, ActualModuleName}, {atom, Line, Name}, {integer, Line, Arity}}},
 
     {ok, [], push_stack(FunForm, Context)}.
 
@@ -426,20 +441,20 @@ compile_call([Arity], Context) ->
                     CallForm =
                         case Function of
                             {atom, _, FuncName} ->
-                                % Check if it's a stdlib function
-                                case is_stdlib_function(FuncName) of
+                                % Check if it's a stdlib function that should go to cure_std
+                                case is_cure_std_function(FuncName) of
                                     true ->
-                                        % Remote call to stdlib
+                                        % Remote call to cure_std
                                         {call, Line,
                                             {remote, Line, {atom, Line, cure_std},
                                                 {atom, Line, FuncName}},
                                             Args};
                                     false ->
-                                        % Local function call
+                                        % Direct call (including imported functions)
                                         {call, Line, Function, Args}
                                 end;
                             _ ->
-                                % Complex function expression
+                                % Complex function expression (fun refs, etc.)
                                 {call, Line, Function, Args}
                         end,
 
@@ -846,50 +861,57 @@ compile_list_to_form([H | T], Line) ->
     TailForm = compile_list_to_form(T, Line),
     {cons, Line, HeadForm, TailForm}.
 
-%% Check if function is from standard library
-is_stdlib_function(ok) -> true;
-is_stdlib_function(error) -> true;
-is_stdlib_function(some) -> true;
-is_stdlib_function(none) -> true;
-is_stdlib_function('Ok') -> true;
-is_stdlib_function('Error') -> true;
-is_stdlib_function('Some') -> true;
-is_stdlib_function('None') -> true;
-is_stdlib_function(map_ok) -> true;
-is_stdlib_function(bind_ok) -> true;
-is_stdlib_function(map_error) -> true;
-is_stdlib_function(map_some) -> true;
-is_stdlib_function(bind_some) -> true;
-is_stdlib_function(safe_div) -> true;
-%% Commented out commonly overridden functions - prefer local implementations
-%is_stdlib_function(map) -> true;
-%is_stdlib_function(filter) -> true;
-%is_stdlib_function(foldl) -> true;
-is_stdlib_function(head) -> true;
-is_stdlib_function(tail) -> true;
-is_stdlib_function(length) -> true;
-is_stdlib_function(string_concat) -> true;
-is_stdlib_function(split) -> true;
-is_stdlib_function(trim) -> true;
-is_stdlib_function(to_upper) -> true;
-is_stdlib_function(contains) -> true;
-is_stdlib_function(starts_with) -> true;
-is_stdlib_function(abs) -> true;
-is_stdlib_function(sqrt) -> true;
-is_stdlib_function(pi) -> true;
-is_stdlib_function(fsm_create) -> true;
-is_stdlib_function(fsm_send_safe) -> true;
-is_stdlib_function(create_counter) -> true;
-is_stdlib_function(print) -> true;
-is_stdlib_function(println) -> true;
-is_stdlib_function(int_to_string) -> true;
-is_stdlib_function(float_to_string) -> true;
-is_stdlib_function(list_to_string) -> true;
-is_stdlib_function(join_ints) -> true;
-is_stdlib_function(string_empty) -> true;
-is_stdlib_function(string_join) -> true;
-is_stdlib_function(string_any) -> true;
-is_stdlib_function(_) -> false.
+%% Check if function should be routed to cure_std (not imported from Std module)
+is_cure_std_function(ok) -> true;
+is_cure_std_function(error) -> true;
+is_cure_std_function(some) -> true;
+is_cure_std_function(none) -> true;
+is_cure_std_function('Ok') -> true;
+is_cure_std_function('Error') -> true;
+is_cure_std_function('Some') -> true;
+is_cure_std_function('None') -> true;
+is_cure_std_function(map_ok) -> true;
+is_cure_std_function(bind_ok) -> true;
+is_cure_std_function(map_error) -> true;
+is_cure_std_function(map_some) -> true;
+is_cure_std_function(bind_some) -> true;
+is_cure_std_function(safe_div) -> true;
+is_cure_std_function(string_concat) -> true;
+is_cure_std_function(split) -> true;
+is_cure_std_function(trim) -> true;
+is_cure_std_function(to_upper) -> true;
+is_cure_std_function(contains) -> true;
+is_cure_std_function(starts_with) -> true;
+is_cure_std_function(abs) -> true;
+is_cure_std_function(sqrt) -> true;
+is_cure_std_function(pi) -> true;
+is_cure_std_function(fsm_create) -> true;
+is_cure_std_function(fsm_send_safe) -> true;
+is_cure_std_function(create_counter) -> true;
+is_cure_std_function(print) -> true;
+is_cure_std_function(println) -> true;
+is_cure_std_function(int_to_string) -> true;
+is_cure_std_function(float_to_string) -> true;
+is_cure_std_function(list_to_string) -> true;
+is_cure_std_function(join_ints) -> true;
+is_cure_std_function(string_empty) -> true;
+is_cure_std_function(string_join) -> true;
+is_cure_std_function(string_any) -> true;
+% Functions that should NOT be routed to cure_std (use imported versions)
+is_cure_std_function(map) -> false;
+is_cure_std_function(filter) -> false;
+is_cure_std_function(fold) -> false;
+is_cure_std_function(foldl) -> false;
+is_cure_std_function(zip_with) -> false;
+is_cure_std_function(head) -> false;
+is_cure_std_function(tail) -> false;
+is_cure_std_function(length) -> false;
+is_cure_std_function(show) -> false;
+is_cure_std_function(_) -> false.
+
+%% Check if function is from standard library (legacy function)
+is_stdlib_function(Function) ->
+    is_cure_std_function(Function).
 
 %% Check if a parameter name is likely a type parameter
 is_type_parameter(ParamName) when is_atom(ParamName) ->

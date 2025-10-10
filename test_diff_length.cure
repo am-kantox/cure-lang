@@ -1,0 +1,18 @@
+module TestDiffLength do
+  export [test/0]
+
+  # Function that requires same-length vectors
+  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
+    42.0
+
+  def test(): Unit =
+    # Different length vectors: 3 vs 4 
+    let v1 = [1.0, 2.0, 3.0]
+    let v2 = [4.0, 5.0, 6.0, 7.0] 
+    
+    # This should FAIL: Vector(Float, 3) + Vector(Float, 4)
+    let result = dot_product(v1, v2)
+    
+    ok
+
+end

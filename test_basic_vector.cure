@@ -1,0 +1,20 @@
+module TestBasicVector do
+  export [test_same_length/0, test_diff_length/0]
+
+  # Function requiring same-length vectors  
+  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
+    42.0
+
+  # Test with same-length vectors - should succeed
+  def test_same_length(): Float =
+    let v1 = [1.0, 2.0, 3.0]
+    let v2 = [4.0, 5.0, 6.0]
+    dot_product(v1, v2)
+
+  # Test with different-length vectors - should fail 
+  def test_diff_length(): Float =
+    let v1 = [1.0, 2.0, 3.0]
+    let v2 = [4.0, 5.0, 6.0, 7.0]
+    dot_product(v1, v2)
+
+end

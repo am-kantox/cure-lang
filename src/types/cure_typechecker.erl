@@ -169,14 +169,23 @@ check_function(
                     undefined ->
                         % Function type is inferred
                         FuncType = {function_type, ParamTypes, BodyType},
+                        io:format("DEBUG: Adding function ~p to env with inferred type: ~p~n", [
+                            Name, FuncType
+                        ]),
                         NewEnv = cure_types:extend_env(Env, Name, FuncType),
                         {ok, NewEnv, success_result(FuncType)};
                     _ ->
                         % Check body matches declared return type
                         ExpectedReturnType = convert_type_to_tuple(ReturnType),
+                        io:format("DEBUG: Function ~p - body type: ~p, expected: ~p~n", [
+                            Name, BodyType, ExpectedReturnType
+                        ]),
                         case cure_types:unify(BodyType, ExpectedReturnType) of
                             {ok, _} ->
                                 FuncType = {function_type, ParamTypes, ExpectedReturnType},
+                                io:format("DEBUG: Adding function ~p to env with type: ~p~n", [
+                                    Name, FuncType
+                                ]),
                                 NewEnv = cure_types:extend_env(Env, Name, FuncType),
                                 {ok, NewEnv, success_result(FuncType)};
                             {error, UnifyReason} ->
@@ -247,9 +256,28 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
     % Process imports first to extend environment
     ImportEnv =
         case process_imports(Imports, ModuleEnv) of
-            {ok, TempEnv} -> TempEnv;
+            {ok, TempEnv} ->
+                io:format("DEBUG: Import processing succeeded~n"),
+                % Add standard library function types if importing from Std
+                case
+                    lists:any(
+                        fun
+                            ({import_def, 'Std', _, _}) -> true;
+                            (_) -> false
+                        end,
+                        Imports
+                    )
+                of
+                    true ->
+                        io:format("DEBUG: Adding Std function types to environment~n"),
+                        add_std_function_types(TempEnv);
+                    false ->
+                        TempEnv
+                end;
             % Continue with original env on import errors
-            {error, _} -> ModuleEnv
+            {error, Error} ->
+                io:format("DEBUG: Import processing failed: ~p~n", [Error]),
+                ModuleEnv
         end,
 
     % Check all items in the module
@@ -269,6 +297,7 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
 
 %% Check function definition - New AST format
 check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
+    io:format("DEBUG: Type checking function ~p~n", [Name]),
     try
         % Convert parameters to type environment and extract type parameters
         {ParamTypes, ParamEnv} = process_parameters_new(Params, Env),
@@ -317,6 +346,9 @@ check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Lo
                     undefined ->
                         % Function type is inferred
                         FuncType = {function_type, ParamTypes, BodyType},
+                        io:format("DEBUG: Adding function ~p (new AST) with inferred type: ~p~n", [
+                            Name, FuncType
+                        ]),
                         NewEnv = cure_types:extend_env(Env, Name, FuncType),
                         {ok, NewEnv, success_result(FuncType)};
                     _ ->
@@ -325,6 +357,10 @@ check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Lo
                         case cure_types:unify(BodyType, ExpectedReturnType) of
                             {ok, _} ->
                                 FuncType = {function_type, ParamTypes, ExpectedReturnType},
+                                io:format(
+                                    "DEBUG: Adding function ~p (new AST) with explicit type: ~p~n",
+                                    [Name, FuncType]
+                                ),
                                 NewEnv = cure_types:extend_env(Env, Name, FuncType),
                                 {ok, NewEnv, success_result(FuncType)};
                             {error, UnifyReason} ->
@@ -339,6 +375,19 @@ check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Lo
                         end
                 end;
             {error, InferReason} ->
+                io:format("*** DEBUG: FUNCTION BODY INFERENCE FAILED ***~n"),
+                io:format("*** Function: ~p~n", [Name]),
+                io:format("*** Body: ~p~n", [Body]),
+                io:format("*** Error: ~p~n", [InferReason]),
+                io:format("*** Environment size: ~p functions~n", [
+                    map_size(
+                        case FinalEnv of
+                            #{} -> FinalEnv;
+                            _ -> #{}
+                        end
+                    )
+                ]),
+                io:format("DEBUG: Failed to infer function ~p body type: ~p~n", [Name, InferReason]),
                 ErrorMsg2 = #typecheck_error{
                     message = "Failed to infer function body type",
                     location = Location,
@@ -403,6 +452,57 @@ check_erlang_function_new(
             },
             {ok, Env, error_result(ThrownError)}
     end.
+
+%% Add basic function types for Std module functions
+add_std_function_types(Env) ->
+    % Add commonly used Std functions with their types
+    % Note: T, U, V are type variables
+    TVar = cure_types:new_type_var('T'),
+    UVar = cure_types:new_type_var('U'),
+    VVar = cure_types:new_type_var('V'),
+
+    % zip_with: (List(T), List(U), (T, U) -> V) -> List(V)
+    ZipWithType =
+        {function_type,
+            [
+                {list_type, TVar, undefined},
+                {list_type, UVar, undefined},
+                {function_type, [TVar, UVar], VVar}
+            ],
+            {list_type, VVar, undefined}},
+
+    % fold: (List(T), U, (T, U) -> U) -> U
+    FoldType =
+        {function_type,
+            [
+                {list_type, TVar, undefined},
+                UVar,
+                {function_type, [TVar, UVar], UVar}
+            ],
+            UVar},
+
+    % map: (List(T), (T -> U)) -> List(U)
+    MapType =
+        {function_type,
+            [
+                {list_type, TVar, undefined},
+                {function_type, [TVar], UVar}
+            ],
+            {list_type, UVar, undefined}},
+
+    % show: T -> String
+    ShowType = {function_type, [TVar], {primitive_type, 'String'}},
+
+    % print: String -> Unit
+    PrintType = {function_type, [{primitive_type, 'String'}], {primitive_type, 'Unit'}},
+
+    % Add all function types to environment
+    Env1 = cure_types:extend_env(Env, zip_with, ZipWithType),
+    Env2 = cure_types:extend_env(Env1, fold, FoldType),
+    Env3 = cure_types:extend_env(Env2, map, MapType),
+    Env4 = cure_types:extend_env(Env3, show, ShowType),
+    Env5 = cure_types:extend_env(Env4, print, PrintType),
+    Env5.
 
 %% Check import - New AST format
 check_import_new({import_def, Module, Items, _Location}, Env) ->
@@ -471,9 +571,10 @@ builtin_env() ->
     Env3 = cure_types:extend_env(Env2, 'String', {primitive_type, 'String'}),
     Env4 = cure_types:extend_env(Env3, 'Bool', {primitive_type, 'Bool'}),
     Env5 = cure_types:extend_env(Env4, 'Atom', {primitive_type, 'Atom'}),
+    Env5_1 = cure_types:extend_env(Env5, 'Unit', {primitive_type, 'Unit'}),
 
     % Add dependent types
-    Env6 = cure_types:extend_env(Env5, 'Nat', {refined_type, 'Int', fun(N) -> N >= 0 end}),
+    Env6 = cure_types:extend_env(Env5_1, 'Nat', {refined_type, 'Int', fun(N) -> N >= 0 end}),
     Env7 = cure_types:extend_env(Env6, 'Pos', {refined_type, 'Int', fun(N) -> N > 0 end}),
 
     % Add built-in functions
@@ -506,7 +607,13 @@ builtin_env() ->
     % Add FSM built-in functions
     Env11 = cure_fsm_builtins:register_fsm_builtins(Env10),
 
-    Env11.
+    % Add standard library function types
+    Env12 = add_std_function_types(Env11),
+
+    % Add constants
+    Env13 = cure_types:extend_env(Env12, ok, {primitive_type, 'Unit'}),
+
+    Env13.
 
 %% Helper functions
 process_parameters(Params, Env) ->
@@ -518,7 +625,8 @@ process_parameters([#param{name = Name, type = TypeExpr} | RestParams], OrigEnv,
     ParamType = convert_type_to_tuple(TypeExpr),
 
     % Extract type parameters from dependent types and add them to environment
-    EnvWithTypeParams = extract_and_add_type_params(TypeExpr, EnvAcc),
+    % but only add new type parameters, not ones that already exist
+    EnvWithTypeParams = extract_and_add_type_params_safe(TypeExpr, EnvAcc),
 
     % Add the parameter itself to environment
     NewEnvAcc = cure_types:extend_env(EnvWithTypeParams, Name, ParamType),
@@ -652,6 +760,12 @@ convert_type_to_tuple(#primitive_type{name = Name}) ->
 convert_type_to_tuple(#dependent_type{name = Name, params = Params}) ->
     ConvertedParams = [convert_type_param_to_tuple(P) || P <- Params],
     {dependent_type, Name, ConvertedParams};
+convert_type_to_tuple(#identifier_expr{name = Name}) when
+    Name =:= 'Float' orelse Name =:= 'Int' orelse Name =:= 'Bool' orelse
+        Name =:= 'String' orelse Name =:= 'Unit'
+->
+    % Convert primitive type identifiers to primitive_type tuples
+    {primitive_type, Name};
 convert_type_to_tuple(Type) ->
     Type.
 
@@ -662,6 +776,12 @@ convert_type_param_to_tuple(#type_param{value = Value}) ->
             is_record(TypeExpr, dependent_type)
         ->
             #type_param{value = convert_type_to_tuple(TypeExpr)};
+        #identifier_expr{name = Name} when
+            Name =:= 'Float' orelse Name =:= 'Int' orelse Name =:= 'Bool' orelse
+                Name =:= 'String' orelse Name =:= 'Unit'
+        ->
+            % Convert primitive type identifiers to primitive_type tuples
+            #type_param{value = {primitive_type, Name}};
         _ ->
             #type_param{value = Value}
     end.
@@ -738,6 +858,10 @@ format_error_type(ErrorType) ->
 extract_and_add_type_params(TypeExpr, Env) ->
     extract_type_params_helper(TypeExpr, Env).
 
+%% Safe version that doesn't override existing type parameter bindings
+extract_and_add_type_params_safe(TypeExpr, Env) ->
+    extract_type_params_helper_safe(TypeExpr, Env).
+
 extract_type_params_helper(#dependent_type{params = Params}, Env) ->
     lists:foldl(
         fun(#type_param{value = Value}, AccEnv) ->
@@ -756,6 +880,24 @@ extract_type_params_helper(#list_type{element_type = ElemType, length = LengthEx
 extract_type_params_helper(_, Env) ->
     Env.
 
+extract_type_params_helper_safe(#dependent_type{params = Params}, Env) ->
+    lists:foldl(
+        fun(#type_param{value = Value}, AccEnv) ->
+            extract_type_param_value_safe(Value, AccEnv)
+        end,
+        Env,
+        Params
+    );
+extract_type_params_helper_safe(#list_type{element_type = ElemType, length = LengthExpr}, Env) ->
+    % Handle list types with length expressions
+    Env1 = extract_type_params_helper_safe(ElemType, Env),
+    case LengthExpr of
+        undefined -> Env1;
+        _ -> extract_type_param_value_safe(LengthExpr, Env1)
+    end;
+extract_type_params_helper_safe(_, Env) ->
+    Env.
+
 extract_type_param_value(#identifier_expr{name = Name}, Env) ->
     % Add identifier as a length parameter (typically numeric for dependent types)
     cure_types:extend_env(Env, Name, {primitive_type, 'Int'});
@@ -766,6 +908,33 @@ extract_type_param_value(#primitive_type{name = Name}, Env) ->
 extract_type_param_value(TypeExpr, Env) when is_record(TypeExpr, dependent_type) ->
     extract_type_params_helper(TypeExpr, Env);
 extract_type_param_value(_, Env) ->
+    % Other expressions (literals, complex expressions) don't introduce type parameters
+    Env.
+
+extract_type_param_value_safe(#identifier_expr{name = Name}, Env) ->
+    % Only add identifier if it's not already in the environment
+    case cure_types:lookup_env(Env, Name) of
+        undefined ->
+            % Add identifier as a length parameter (typically numeric for dependent types)
+            cure_types:extend_env(Env, Name, {primitive_type, 'Int'});
+        _ExistingType ->
+            % Type parameter already exists, don't override it
+            Env
+    end;
+extract_type_param_value_safe(#primitive_type{name = Name}, Env) ->
+    % Only add type parameter if it's not already in the environment
+    case cure_types:lookup_env(Env, Name) of
+        undefined ->
+            % Type parameter like T - add to environment as type variable
+            TypeVar = cure_types:new_type_var(Name),
+            cure_types:extend_env(Env, Name, TypeVar);
+        _ExistingType ->
+            % Type parameter already exists, don't override it
+            Env
+    end;
+extract_type_param_value_safe(TypeExpr, Env) when is_record(TypeExpr, dependent_type) ->
+    extract_type_params_helper_safe(TypeExpr, Env);
+extract_type_param_value_safe(_, Env) ->
     % Other expressions (literals, complex expressions) don't introduce type parameters
     Env.
 

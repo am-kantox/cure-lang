@@ -78,7 +78,13 @@
     % Utility functions
     substitute/2,
     normalize_type/1,
-    type_to_string/1
+    type_to_string/1,
+
+    % DEBUG: Temporary exports for debugging vector param extraction
+    extract_vector_params/1,
+    extract_param_info/2,
+    get_tuple_param_info/1,
+    safe_extract_param_value/1
 ]).
 
 %% Type variable counter for generating unique type variables
@@ -420,14 +426,17 @@ unify_impl(
     {function_type, Params2, Return2},
     Subst
 ) ->
+    io:format("DEBUG: Function type unification - Params1: ~p, Params2: ~p~n", [Params1, Params2]),
     case length(Params1) =:= length(Params2) of
         false ->
             {error, {arity_mismatch, length(Params1), length(Params2)}};
         true ->
             case unify_lists(Params1, Params2, Subst) of
                 {ok, Subst1} ->
+                    io:format("DEBUG: Function parameter unification succeeded~n"),
                     unify_impl(Return1, Return2, Subst1);
                 Error ->
+                    io:format("DEBUG: Function parameter unification failed: ~p~n", [Error]),
                     Error
             end
     end;
@@ -444,18 +453,24 @@ unify_impl(
     {dependent_type, 'Vector', Params2},
     Subst
 ) ->
+    io:format("DEBUG: Vector unification - Params1: ~p, Params2: ~p~n", [Params1, Params2]),
     case {extract_vector_params(Params1), extract_vector_params(Params2)} of
         {{ok, Elem1, Len1}, {ok, Elem2, Len2}} ->
+            io:format("DEBUG: Vector lengths - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
             case unify_impl(Elem1, Elem2, Subst) of
                 {ok, Subst1} ->
                     % Strict length checking for Vector types
-                    unify_lengths_strict(Len1, Len2, Subst1);
+                    Result = unify_lengths_strict(Len1, Len2, Subst1),
+                    io:format("DEBUG: Vector dimension unification result: ~p~n", [Result]),
+                    Result;
                 Error ->
                     Error
             end;
         {{error, Reason}, _} ->
+            io:format("DEBUG: Failed to extract vector params (left): ~p~n", [Reason]),
             {error, {invalid_vector_params_left, Reason}};
         {_, {error, Reason}} ->
+            io:format("DEBUG: Failed to extract vector params (right): ~p~n", [Reason]),
             {error, {invalid_vector_params_right, Reason}}
     end;
 %% Generic dependent type unification (AFTER specific Vector case)
@@ -624,19 +639,34 @@ unify_lists([H1 | T1], [H2 | T2], Subst) ->
 unify_lengths(undefined, undefined, Subst) ->
     {ok, Subst};
 unify_lengths(Len1, Len2, Subst) when Len1 =/= undefined, Len2 =/= undefined ->
-    % Enhanced length checking with evaluation
-    case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
-        {{ok, N}, {ok, N}} when is_integer(N) ->
-            % Same evaluated length
-            {ok, Subst};
-        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
-            % Different evaluated lengths
-            {error, {length_mismatch, N1, N2}};
+    io:format("DEBUG: unify_lengths - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
+    case {Len1, Len2} of
+        % Handle type variables properly - they should unify with any concrete length
+        {TypeVar = #type_var{}, ConcreteLen} ->
+            io:format("DEBUG: (regular) Unifying type variable ~p with concrete length ~p~n", [
+                TypeVar, ConcreteLen
+            ]),
+            unify_impl(TypeVar, ConcreteLen, Subst);
+        {ConcreteLen, TypeVar = #type_var{}} ->
+            io:format("DEBUG: (regular) Unifying concrete length ~p with type variable ~p~n", [
+                ConcreteLen, TypeVar
+            ]),
+            unify_impl(ConcreteLen, TypeVar, Subst);
         _ ->
-            % Fall back to structural comparison
-            case expr_equal(Len1, Len2) of
-                true -> {ok, Subst};
-                false -> {error, {length_mismatch, Len1, Len2}}
+            % Enhanced length checking with evaluation
+            case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
+                {{ok, N}, {ok, N}} when is_integer(N) ->
+                    % Same evaluated length
+                    {ok, Subst};
+                {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
+                    % Different evaluated lengths
+                    {error, {length_mismatch, N1, N2}};
+                _ ->
+                    % Fall back to structural comparison
+                    case expr_equal(Len1, Len2) of
+                        true -> {ok, Subst};
+                        false -> {error, {length_mismatch, Len1, Len2}}
+                    end
             end
     end;
 unify_lengths(_, _, Subst) ->
@@ -644,20 +674,39 @@ unify_lengths(_, _, Subst) ->
 
 %% Strict length unification for Vector types - no undefined allowed
 unify_lengths_strict(Len1, Len2, Subst) ->
-    case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
-        {{ok, N}, {ok, N}} when is_integer(N) ->
-            % Same evaluated length
-            {ok, Subst};
-        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
-            % Different evaluated lengths
-            {error, {length_mismatch, N1, N2}};
-        _Other ->
-            % For Vector types, require exact structural equality
-            case expr_equal(Len1, Len2) of
-                true ->
+    io:format("DEBUG: unify_lengths_strict - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
+    case {Len1, Len2} of
+        % Handle type variables properly - they should unify with any concrete length
+        {TypeVar = #type_var{}, ConcreteLen} ->
+            io:format("DEBUG: Unifying type variable ~p with concrete length ~p~n", [
+                TypeVar, ConcreteLen
+            ]),
+            unify_impl(TypeVar, ConcreteLen, Subst);
+        {ConcreteLen, TypeVar = #type_var{}} ->
+            io:format("DEBUG: Unifying concrete length ~p with type variable ~p~n", [
+                ConcreteLen, TypeVar
+            ]),
+            unify_impl(ConcreteLen, TypeVar, Subst);
+        _ ->
+            % Both are concrete expressions - evaluate them
+            case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
+                {{ok, N}, {ok, N}} when is_integer(N) ->
+                    % Same evaluated length
+                    io:format("DEBUG: Same concrete lengths: ~p~n", [N]),
                     {ok, Subst};
-                false ->
-                    {error, {vector_dimension_mismatch, Len1, Len2}}
+                {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
+                    % Different evaluated lengths
+                    io:format("DEBUG: Different concrete lengths: ~p vs ~p~n", [N1, N2]),
+                    {error, {length_mismatch, N1, N2}};
+                _Other ->
+                    % Fall back to structural comparison
+                    io:format("DEBUG: Falling back to structural comparison~n"),
+                    case expr_equal(Len1, Len2) of
+                        true ->
+                            {ok, Subst};
+                        false ->
+                            {error, {vector_dimension_mismatch, Len1, Len2}}
+                    end
             end
     end.
 
@@ -780,8 +829,11 @@ extract_param_info(Param1, Param2) ->
             {error, cannot_extract}
     end.
 
-%% Get parameter name and value from AST record format
+%% Get parameter name and value from AST record format (covers both record and tuple formats)
 get_tuple_param_info(#type_param{name = Name, value = Value}) ->
+    {Name, Value};
+%% Handle raw tuple format: {type_param, Name, Value, Location}
+get_tuple_param_info({type_param, Name, Value, _Location}) ->
     {Name, Value};
 get_tuple_param_info(_Other) ->
     {unknown, undefined}.
@@ -791,6 +843,12 @@ safe_extract_param_value(#type_param{value = undefined}) ->
     % Create a fresh type variable for undefined values
     new_type_var();
 safe_extract_param_value(#type_param{value = Value}) ->
+    Value;
+%% Handle raw tuple format: {type_param, Name, Value, Location}
+safe_extract_param_value({type_param, _Name, undefined, _Location}) ->
+    % Create a fresh type variable for undefined values
+    new_type_var();
+safe_extract_param_value({type_param, _Name, Value, _Location}) ->
     Value;
 safe_extract_param_value(Value) ->
     % Handle cases where it's not a type_param record
@@ -897,20 +955,86 @@ infer_expr({binary_op_expr, Op, Left, Right, Location}, Env) ->
             Error
     end;
 infer_expr({function_call_expr, Function, Args, Location}, Env) ->
+    % Special debug output for dot_product calls
+    case Function of
+        {identifier_expr, dot_product, _} ->
+            io:format("\n*** DEBUG: DOT_PRODUCT CALL DETECTED ***~n"),
+            io:format("DEBUG: Function: ~p~n", [Function]),
+            io:format("DEBUG: Args: ~p~n", [Args]);
+        _ ->
+            ok
+    end,
+    io:format("DEBUG: Function call inference for ~p with args ~p~n", [Function, Args]),
     case infer_expr(Function, Env) of
         {ok, FuncType, FuncConstraints} ->
+            % Special debug for dot_product
+            case Function of
+                {identifier_expr, dot_product, _} ->
+                    io:format("*** DEBUG: dot_product function type: ~p~n", [FuncType]);
+                _ ->
+                    ok
+            end,
+            io:format("DEBUG: Function type: ~p~n", [FuncType]),
             case infer_args(Args, Env) of
                 {ok, ArgTypes, ArgConstraints} ->
-                    ReturnType = new_type_var(),
-                    ExpectedFuncType = {function_type, ArgTypes, ReturnType},
-                    UnifyConstraint = #type_constraint{
-                        left = FuncType,
-                        op = '=',
-                        right = ExpectedFuncType,
-                        location = Location
-                    },
-                    AllConstraints = FuncConstraints ++ ArgConstraints ++ [UnifyConstraint],
-                    {ok, ReturnType, AllConstraints};
+                    % Special debug for dot_product arguments
+                    case Function of
+                        {identifier_expr, dot_product, _} ->
+                            io:format("*** DEBUG: dot_product argument types: ~p~n", [ArgTypes]);
+                        _ ->
+                            ok
+                    end,
+                    io:format("DEBUG: Argument types: ~p~n", [ArgTypes]),
+
+                    % FIXED: Properly instantiate function type with shared type variables
+                    case instantiate_function_type(FuncType) of
+                        {ok, InstantiatedFuncType, InstantiationConstraints} ->
+                            io:format("*** DEBUG: Instantiated function type: ~p~n", [
+                                InstantiatedFuncType
+                            ]),
+                            case InstantiatedFuncType of
+                                {function_type, InstParamTypes, InstReturnType} ->
+                                    % Create constraints between instantiated param types and arg types
+                                    ParamConstraints = create_param_constraints(
+                                        InstParamTypes, ArgTypes, Location
+                                    ),
+                                    io:format("*** DEBUG: Parameter constraints: ~p~n", [
+                                        ParamConstraints
+                                    ]),
+                                    AllConstraints =
+                                        FuncConstraints ++ ArgConstraints ++
+                                            InstantiationConstraints ++ ParamConstraints,
+                                    {ok, InstReturnType, AllConstraints};
+                                _ ->
+                                    % Fallback to old method for non-function types
+                                    ReturnType = new_type_var(),
+                                    ExpectedFuncType = {function_type, ArgTypes, ReturnType},
+                                    UnifyConstraint = #type_constraint{
+                                        left = FuncType,
+                                        op = '=',
+                                        right = ExpectedFuncType,
+                                        location = Location
+                                    },
+                                    AllConstraints =
+                                        FuncConstraints ++ ArgConstraints ++ [UnifyConstraint],
+                                    {ok, ReturnType, AllConstraints}
+                            end;
+                        {error, Reason} ->
+                            io:format("*** DEBUG: Function type instantiation failed: ~p~n", [
+                                Reason
+                            ]),
+                            % Fallback to old method
+                            ReturnType = new_type_var(),
+                            ExpectedFuncType = {function_type, ArgTypes, ReturnType},
+                            UnifyConstraint = #type_constraint{
+                                left = FuncType,
+                                op = '=',
+                                right = ExpectedFuncType,
+                                location = Location
+                            },
+                            AllConstraints = FuncConstraints ++ ArgConstraints ++ [UnifyConstraint],
+                            {ok, ReturnType, AllConstraints}
+                    end;
                 Error ->
                     Error
             end;
@@ -984,6 +1108,28 @@ infer_expr({match_expr, MatchExpr, Patterns, _Location}, Env) ->
         Error ->
             Error
     end;
+infer_expr({lambda_expr, Params, Body, Location}, Env) ->
+    % Create type variables for parameters
+    ParamTypes = [new_type_var() || _ <- Params],
+
+    % Add parameters to environment
+    ParamPairs = lists:zip(Params, ParamTypes),
+    NewEnv = lists:foldl(
+        fun({{param, ParamName, _TypeExpr, _ParamLocation}, ParamType}, AccEnv) ->
+            extend_env(AccEnv, ParamName, ParamType)
+        end,
+        Env,
+        ParamPairs
+    ),
+
+    % Infer body type
+    case infer_expr(Body, NewEnv) of
+        {ok, BodyType, BodyConstraints} ->
+            LambdaType = {function_type, ParamTypes, BodyType},
+            {ok, LambdaType, BodyConstraints};
+        Error ->
+            Error
+    end;
 infer_expr(Expr, _Env) ->
     {error, {unsupported_expression, Expr}}.
 
@@ -994,24 +1140,133 @@ infer_literal_type(S) when is_list(S) -> ?TYPE_STRING;
 infer_literal_type(B) when is_boolean(B) -> ?TYPE_BOOL;
 infer_literal_type(A) when is_atom(A) -> ?TYPE_ATOM.
 
+%% Instantiate function type with fresh type variables while preserving sharing
+instantiate_function_type({function_type, ParamTypes, ReturnType}) ->
+    io:format("DEBUG: Instantiating function type with params: ~p~n", [ParamTypes]),
+    % Create a mapping from type variable names to fresh type variables
+    TypeVarMap = collect_type_variables(ParamTypes ++ [ReturnType]),
+    io:format("DEBUG: Type variable map: ~p~n", [TypeVarMap]),
+
+    % Instantiate parameter types with shared variables
+    InstParamTypes = [instantiate_type_with_map(PT, TypeVarMap) || PT <- ParamTypes],
+    InstReturnType = instantiate_type_with_map(ReturnType, TypeVarMap),
+
+    io:format("DEBUG: Instantiated params: ~p~n", [InstParamTypes]),
+    io:format("DEBUG: Instantiated return: ~p~n", [InstReturnType]),
+
+    {ok, {function_type, InstParamTypes, InstReturnType}, []};
+instantiate_function_type(Type) ->
+    % Not a function type, return as-is
+    {error, {not_function_type, Type}}.
+
+%% Collect all type variables in a list of types and create fresh mappings
+collect_type_variables(Types) ->
+    collect_type_variables(Types, #{}).
+
+collect_type_variables([], Map) ->
+    Map;
+collect_type_variables([Type | Rest], Map) ->
+    NewMap = collect_type_variables_in_type(Type, Map),
+    collect_type_variables(Rest, NewMap).
+
+%% Collect type variables in a single type
+collect_type_variables_in_type({dependent_type, _Name, Params}, Map) ->
+    lists:foldl(
+        fun(Param, AccMap) ->
+            case extract_type_param_value(Param) of
+                {identifier_expr, VarName, _} ->
+                    case maps:is_key(VarName, AccMap) of
+                        % Already have a mapping
+                        true -> AccMap;
+                        false -> maps:put(VarName, new_type_var(), AccMap)
+                    end;
+                _ ->
+                    AccMap
+            end
+        end,
+        Map,
+        Params
+    );
+collect_type_variables_in_type({function_type, ParamTypes, ReturnType}, Map) ->
+    Map1 = collect_type_variables(ParamTypes, Map),
+    collect_type_variables_in_type(ReturnType, Map1);
+collect_type_variables_in_type({list_type, ElemType, _Length}, Map) ->
+    collect_type_variables_in_type(ElemType, Map);
+collect_type_variables_in_type(_, Map) ->
+    Map.
+
+%% Instantiate a type using the type variable map
+instantiate_type_with_map({dependent_type, Name, Params}, Map) ->
+    InstParams = [instantiate_param_with_map(P, Map) || P <- Params],
+    {dependent_type, Name, InstParams};
+instantiate_type_with_map({function_type, ParamTypes, ReturnType}, Map) ->
+    InstParamTypes = [instantiate_type_with_map(PT, Map) || PT <- ParamTypes],
+    InstReturnType = instantiate_type_with_map(ReturnType, Map),
+    {function_type, InstParamTypes, InstReturnType};
+instantiate_type_with_map({list_type, ElemType, Length}, Map) ->
+    {list_type, instantiate_type_with_map(ElemType, Map), Length};
+instantiate_type_with_map(Type, _Map) ->
+    Type.
+
+%% Instantiate a type parameter using the map
+instantiate_param_with_map(Param, Map) ->
+    Value = extract_type_param_value(Param),
+    case Value of
+        {identifier_expr, VarName, Location} ->
+            case maps:get(VarName, Map, undefined) of
+                % Keep original if not found
+                undefined -> Param;
+                TypeVar -> update_param_value(Param, TypeVar)
+            end;
+        _ ->
+            Param
+    end.
+
+%% Update the value in a type parameter
+update_param_value(#type_param{name = Name, value = _OldValue} = Param, NewValue) ->
+    Param#type_param{value = NewValue};
+update_param_value({type_param, Name, _OldValue, Location}, NewValue) ->
+    {type_param, Name, NewValue, Location};
+update_param_value(Param, NewValue) ->
+    % Fallback - create new param structure
+    #type_param{name = undefined, value = NewValue}.
+
+%% Create constraints between instantiated parameter types and argument types
+create_param_constraints([], [], _Location) ->
+    [];
+create_param_constraints([ParamType | RestParams], [ArgType | RestArgs], Location) ->
+    Constraint = #type_constraint{
+        left = ParamType,
+        op = '=',
+        right = ArgType,
+        location = Location
+    },
+    [Constraint | create_param_constraints(RestParams, RestArgs, Location)];
+create_param_constraints(_, _, _) ->
+    % Arity mismatch - let unification handle this
+    [].
+
 infer_binary_op('+', LeftType, RightType, Location, Constraints) ->
+    ResultType = new_type_var(),
     NumConstraints = [
-        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
-        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
+        #type_constraint{left = LeftType, op = '=', right = RightType, location = Location},
+        #type_constraint{left = LeftType, op = '=', right = ResultType, location = Location}
     ],
-    {ok, ?TYPE_INT, Constraints ++ NumConstraints};
+    {ok, ResultType, Constraints ++ NumConstraints};
 infer_binary_op('-', LeftType, RightType, Location, Constraints) ->
+    ResultType = new_type_var(),
     NumConstraints = [
-        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
-        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
+        #type_constraint{left = LeftType, op = '=', right = RightType, location = Location},
+        #type_constraint{left = LeftType, op = '=', right = ResultType, location = Location}
     ],
-    {ok, ?TYPE_INT, Constraints ++ NumConstraints};
+    {ok, ResultType, Constraints ++ NumConstraints};
 infer_binary_op('*', LeftType, RightType, Location, Constraints) ->
+    ResultType = new_type_var(),
     NumConstraints = [
-        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
-        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
+        #type_constraint{left = LeftType, op = '=', right = RightType, location = Location},
+        #type_constraint{left = LeftType, op = '=', right = ResultType, location = Location}
     ],
-    {ok, ?TYPE_INT, Constraints ++ NumConstraints};
+    {ok, ResultType, Constraints ++ NumConstraints};
 infer_binary_op('==', LeftType, RightType, Location, Constraints) ->
     EqualityConstraint = #type_constraint{
         left = LeftType,
@@ -1044,6 +1299,13 @@ infer_binary_op('=<', LeftType, RightType, Location, Constraints) ->
         #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
     ],
     {ok, ?TYPE_BOOL, Constraints ++ NumConstraints};
+infer_binary_op('++', LeftType, RightType, Location, Constraints) ->
+    % String concatenation: both operands must be strings, result is string
+    StringConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = ?TYPE_STRING, location = Location},
+        #type_constraint{left = RightType, op = '=', right = ?TYPE_STRING, location = Location}
+    ],
+    {ok, ?TYPE_STRING, Constraints ++ StringConstraints};
 infer_binary_op(Op, _LeftType, _RightType, Location, _Constraints) ->
     {error, {unsupported_binary_operator, Op, Location}}.
 
@@ -1309,7 +1571,10 @@ solve_type_constraints([Constraint | RestConstraints], Subst) ->
     end.
 
 solve_constraint(#type_constraint{left = Left, op = '=', right = Right}, Subst) ->
-    unify(Left, Right, Subst);
+    io:format("DEBUG: Solving constraint ~p = ~p~n", [Left, Right]),
+    Result = unify(Left, Right, Subst),
+    io:format("DEBUG: Constraint result: ~p~n", [Result]),
+    Result;
 solve_constraint(#type_constraint{left = Left, op = 'length_eq', right = Right}, Subst) ->
     % Handle length equality constraints for dependent types
     solve_length_constraint(Left, Right, Subst);

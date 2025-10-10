@@ -19,8 +19,8 @@ module DependentTypes do
   # Safe vector operations - length checked at compile time
   def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
     # The type system guarantees v1 and v2 have the same length
-    zip_with(v1, v2, fn(x, y) -> x * y end)
-    |> fold(0.0, fn(x, acc) -> acc + x end)
+    let products = zip_with(v1, v2, fn(x, y) -> x * y end)
+    fold(products, 0.0, fn(x, acc) -> acc + x end)
 
   def vector_add(v1: Vector(Float, n), v2: Vector(Float, n)): Vector(Float, n) =
     # Type system ensures result has the same length as inputs
@@ -178,8 +178,9 @@ module DependentTypes do
     
     let v1 = make_vec3(1.0, 2.0, 3.0)
     let v2 = make_vec3(4.0, 5.0, 6.0)
+    let v3 = make_vec4(4.0, 5.0, 6.0, 7.0)
     
-    let dot_result = dot_product(v1, v2)
+    let dot_result = dot_product(v1, v3)
     print("Dot product: " ++ show(dot_result))  # 32.0
     
     let sum = vector_add(v1, v2)

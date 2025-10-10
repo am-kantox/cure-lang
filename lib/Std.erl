@@ -13,6 +13,18 @@ print(Value) ->
     ok.
 
 %% Show function - converts values to string representation
+show({'Ok', Value}) ->
+    % Handle Ok results by showing the inner value
+    show(Value);
+show({'Error', Reason}) ->
+    % Handle Error results
+    "Error(" ++ show(Reason) ++ ")";
+show({'Some', Value}) ->
+    % Handle Some options
+    "Some(" ++ show(Value) ++ ")";
+show('None') ->
+    % Handle None option
+    "None";
 show(Value) when is_atom(Value) ->
     atom_to_list(Value);
 show(Value) when is_integer(Value) ->

@@ -1,0 +1,12 @@
+module TestDirectSame do
+  export [test/0]
+
+  # Function that requires same-length vectors
+  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
+    42.0
+
+  # Test with direct function call - same lengths
+  def test(): Float =
+    dot_product([1.0, 2.0, 3.0], [4.0, 5.0, 6.0])
+
+end

@@ -1,0 +1,17 @@
+module TestVectorMismatch do
+  export [test/0]
+
+  # Simple function that requires two vectors of the same length
+  def add_vectors(v1: Vector(Float, n), v2: Vector(Float, n)): Vector(Float, n) =
+    v1  # Simplified - just return first vector
+
+  def test(): Unit =
+    let v3 = [1.0, 2.0, 3.0]  # Should be Vector(Float, 3)
+    let v4 = [1.0, 2.0, 3.0, 4.0]  # Should be Vector(Float, 4)
+    
+    # This should fail type checking: Vector(Float, 3) vs Vector(Float, 4)
+    let result = add_vectors(v3, v4)
+    
+    ok
+
+end
