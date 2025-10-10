@@ -5,7 +5,7 @@ module Std.Show do
   import Std.Core [Result, Option, List]
 
   export [
-    show/1,
+    show/1, print/1,
     show_int/1, show_float/1, show_string/1, show_bool/1, 
     show_list/1, show_tuple/1, show_option/1, show_result/1
   ]
@@ -128,6 +128,14 @@ module Std.Show do
 
   defp is_tuple(x): Bool =
     erlang_bif('is_tuple', [x])
+
+  # Print function - outputs value to stdout
+  # This function is automatically routed to cure_std:print/1 by the compiler
+  # when called as print/1 due to the function name being in is_cure_std_function/1
+  def print(value: T): Unit =
+    # The compiler intercepts calls to print/1 and routes them to cure_std:print/1
+    # This body will never actually be executed - it exists for type checking only
+    erlang_bif('error', [not_implemented])
 
   # Built-in function interface (would be handled specially by compiler)
   defp erlang_bif(name: String, args: List): T =

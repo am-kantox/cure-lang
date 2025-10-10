@@ -8,7 +8,7 @@ This directory contains the standard library for the Cure programming language. 
 
 The Cure standard library now has a **fully functional import system** with runtime verification:
 
-- **✅ Working `Std.erl` module** compiled to BEAM bytecode
+- **✅ Working standard library modules** with native Cure implementation
 - **✅ Function resolution** with intelligent arity detection
 - **✅ Runtime success** demonstrated in `dependent_types_simple.cure`
 - **✅ Essential functions** ready for production use
@@ -54,7 +54,7 @@ end
 
 The Cure standard library is organized into several modules:
 
-- **🚀 `Std.erl`** - **WORKING** minimal implementation with essential functions
+- **🚀 `std/show.cure`** - **WORKING** print and string display functions routing to cure_std
 - **`std.cure`** - Main module that re-exports commonly used functions
 - **`std/core.cure`** - Core types and fundamental operations  
 - **`std/list.cure`** - Comprehensive list operations with dependent types

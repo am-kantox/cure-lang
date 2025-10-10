@@ -29,7 +29,7 @@ The Cure compiler has reached advanced maturity with sophisticated type system f
 - **📦 Module Resolution**: Full `import Module [functions]` syntax with proper resolution
 - **🎯 Arity Detection**: Intelligent function arity resolution for 70+ standard library functions
 - **🔗 BEAM Integration**: Proper function reference generation and remote calls
-- **📚 Standard Library**: Working `Std.erl` module with core functions:
+- **📚 Standard Library**: Working native Cure standard library modules with core functions:
   - `print/1` - Output to console with proper formatting
   - `show/1` - Convert values to string representation (atoms, numbers, lists, tuples)
   - `map/2`, `fold/3`, `zip_with/3` - Essential list operations

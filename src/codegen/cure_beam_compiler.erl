@@ -877,13 +877,13 @@ is_cure_std_function(string_any) -> true;
 % Functions that should NOT be routed to cure_std (use imported versions)
 is_cure_std_function(map) -> false;
 is_cure_std_function(filter) -> false;
-is_cure_std_function(fold) -> false;
+is_cure_std_function(fold) -> true;
 is_cure_std_function(foldl) -> false;
-is_cure_std_function(zip_with) -> false;
+is_cure_std_function(zip_with) -> true;
 is_cure_std_function(head) -> false;
 is_cure_std_function(tail) -> false;
 is_cure_std_function(length) -> false;
-is_cure_std_function(show) -> false;
+is_cure_std_function(show) -> true;
 is_cure_std_function(_) -> false.
 
 %% Check if function is from standard library (legacy function)

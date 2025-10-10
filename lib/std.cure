@@ -83,7 +83,7 @@ module Std do
   # Re-export Show functions
   import Std.Show [
     # String conversion
-    show/1
+    show/1, print/1
   ]
 
   # Re-export FSM utilities
@@ -140,7 +140,7 @@ module Std do
     split/2, words/1,
     
     # Show functions
-    show/1,
+    show/1, print/1,
     
     # FSM functions
     fsm_create/2, fsm_start/1, fsm_stop_safe/1,
@@ -149,53 +149,4 @@ module Std do
     create_counter/1, create_toggle/1, create_timer/2
   ]
 
-  # Additional utility functions that combine multiple modules
-  def print_list(list: List(T)): Unit =
-    # Print each element of a list
-    map(list, fn(item) -> 
-      print(item) 
-      print("\n")
-    end)
-    ok
-
-  def safe_main(main_fn: fn(Unit) -> Result(T, String)): T =
-    # Safe main function wrapper
-    match main_fn() do
-      Ok(result) -> result
-      Error(err) -> 
-        let _ = print("Error: " ++ err) in
-        error("Program failed")
-    end
-
-  def benchmark(name: String, func: fn(Unit) -> T): T =
-    # Simple benchmarking utility
-    print("Running benchmark: " ++ name)
-    let start_time = current_time()
-    let result = func()
-    let end_time = current_time()
-    let duration = end_time - start_time
-    print("Benchmark '" ++ name ++ "' took: " ++ string_from_int(duration) ++ "ms")
-    result
-
-  def debug(value: T, label: String): T =
-    # Debug utility - prints value with label and returns it
-    print("DEBUG [" ++ label ++ "]: " ++ string_from_any(value))
-    value
-
-  # Helper functions (would be built-ins in real implementation)
-  defp print(message: Any): Unit = 
-    # Built-in print function
-    ok
-
-  defp current_time(): Int = 
-    # Built-in function to get current time
-    0
-
-  defp string_from_int(n: Int): String = 
-    # Built-in conversion from int to string
-    "0"
-
-  defp string_from_any(value: Any): String = 
-    # Built-in conversion from any value to string
-    "value"
 end

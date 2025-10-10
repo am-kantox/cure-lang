@@ -57,7 +57,10 @@
     list_to_string/1,
     join_ints/2,
     is_monad/1,
-    pipe/2
+    pipe/2,
+    zip_with/3,
+    fold/3,
+    show/1
 ]).
 
 % Result and Option types
@@ -449,3 +452,58 @@ join_ints([X], _Sep) ->
     int_to_string(X);
 join_ints([X | Rest], Sep) ->
     int_to_string(X) ++ Sep ++ join_ints(Rest, Sep).
+
+%% Zip two lists with a function
+zip_with([], [], _F) ->
+    [];
+zip_with([], _, _F) ->
+    [];
+zip_with(_, [], _F) ->
+    [];
+zip_with([X | Xs], [Y | Ys], F) ->
+    [F(X, Y) | zip_with(Xs, Ys, F)].
+
+%% Fold function with different argument order for Cure compatibility
+%% fold(List, InitialValue, Function)
+fold([], Acc, _F) ->
+    Acc;
+fold([H | T], Acc, F) ->
+    fold(T, F(H, Acc), F).
+
+%% Show function - converts values to string representation
+show({'Ok', Value}) ->
+    "Ok(" ++ show(Value) ++ ")";
+show({'Error', Reason}) ->
+    "Error(" ++ show(Reason) ++ ")";
+show({'Some', Value}) ->
+    "Some(" ++ show(Value) ++ ")";
+show('None') ->
+    "None";
+show(Value) when is_atom(Value) ->
+    atom_to_list(Value);
+show(Value) when is_integer(Value) ->
+    integer_to_list(Value);
+show(Value) when is_float(Value) ->
+    float_to_list(Value);
+show(Value) when is_list(Value) ->
+    "[" ++ string:join([show(Item) || Item <- Value], ", ") ++ "]";
+show(Value) when is_tuple(Value) ->
+    case tuple_size(Value) of
+        0 ->
+            "{}";
+        1 ->
+            "{" ++ show(element(1, Value)) ++ "}";
+        2 ->
+            "{" ++ show(element(1, Value)) ++ ", " ++ show(element(2, Value)) ++ "}";
+        3 ->
+            "{" ++ show(element(1, Value)) ++ ", " ++ show(element(2, Value)) ++ ", " ++
+                show(element(3, Value)) ++ "}";
+        4 ->
+            "{" ++ show(element(1, Value)) ++ ", " ++ show(element(2, Value)) ++ ", " ++
+                show(element(3, Value)) ++ ", " ++ show(element(4, Value)) ++ "}";
+        _ ->
+            "{" ++ show(element(1, Value)) ++ ", " ++ show(element(2, Value)) ++ ", " ++
+                show(element(3, Value)) ++ ", " ++ show(element(4, Value)) ++ ", ...}"
+    end;
+show(_Value) ->
+    "unknown".
