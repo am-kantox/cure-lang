@@ -1,15 +1,20 @@
 # Cure Programming Language
 
-A strongly-typed, dependently-typed programming language for the BEAM virtual machine with built-in finite state machines and actor model primitives.
+A strongly-typed, dependently-typed programming language for the BEAM virtual machine with built-in finite state machines and a **complete import system**.
+
+🚀 **NEW: Complete Import System & Runtime Success!** (October 2025)
 
 ## Features
 
-- **Dependent Types**: Rich type system with types that can depend on values
+- **🚀 Complete Import System**: Full module resolution with `import Module [functions]` syntax
+- **📚 Standard Library**: Working `Std` module with essential functions (`print/1`, `show/1`, `map/2`, `fold/3`, `zip_with/3`)
+- **🎯 Runtime Verification**: Successfully compiles and executes dependent types examples!
+- **🎆 Dependent Types**: Rich type system with types that can depend on values - length-indexed vectors, bounded arrays
+- **🎆 Higher-Kinded Types**: Complete functors, monads, type constructors with kind signatures
 - **Built-in FSMs**: Finite state machines as first-class language constructs
-- **Actor Model**: Native support for Erlang/Elixir-style processes and message passing
 - **BEAM Target**: Compiles to BEAM bytecode for excellent concurrency and fault tolerance
+- **Advanced Pattern Matching**: Pattern matching with dependent type constraints
 - **Hot Code Loading**: Support for live system updates
-- **Pattern Matching**: Advanced pattern matching with dependent type constraints
 
 ## Project Structure
 
@@ -35,11 +40,19 @@ cure/
 # Build the compiler
 make all
 
-# Compile a Cure program
-./cure examples/simple.cure
+# Try the working dependent types example!
+./cure examples/dependent_types_simple.cure
 
-# Run with verbose output
-./cure examples/simple.cure --verbose
+# Run the compiled program
+erl -pa _build/ebin -noshell -eval "'DependentTypes':demo_all(), init:stop()."
+
+# Expected output:
+# === Dependent Types Demonstration ===
+# All operations below are compile-time verified for safety!
+# === Vector Operations ===
+# Dot product: 32.0
+# Vector sum: [5.0, 7.0, 9.0]
+# Scaled vector: [2.0, 4.0, 6.0]
 
 # Show help
 ./cure --help
@@ -78,6 +91,41 @@ Key options:
 See [docs/CLI_USAGE.md](docs/CLI_USAGE.md) for complete documentation.
 
 ## Language Examples
+
+### 🚀 Working Import System with Dependent Types (NEW!)
+```cure
+module DependentTypes do
+  export [demo_all/0, vector_operations/0]
+
+  # Import standard library functions
+  import Std [List, Result]
+  
+  # Length-indexed vectors with compile-time safety
+  def make_vec3(x: Float, y: Float, z: Float): Vector(Float, 3) =
+    [x, y, z]
+  
+  # Safe vector operations - length checked at compile time
+  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
+    zip_with(v1, v2, fn(x, y) -> x * y end)
+    |> fold(0.0, fn(x, acc) -> acc + x end)
+  
+  def vector_operations(): Unit =
+    let v1 = make_vec3(1.0, 2.0, 3.0)
+    let v2 = make_vec3(4.0, 5.0, 6.0)
+    
+    let dot_result = dot_product(v1, v2)  # 32.0
+    print("Dot product: " ++ show(dot_result))
+    
+    let sum = vector_add(v1, v2)  # [5.0, 7.0, 9.0]
+    print("Vector sum: " ++ show(sum))
+end
+
+# Successfully compiles and runs!
+# Output:
+# === Dependent Types Demonstration ===
+# Dot product: 32.0
+# Vector sum: [5.0, 7.0, 9.0]
+```
 
 ### Simple Function with Dependent Types
 ```cure

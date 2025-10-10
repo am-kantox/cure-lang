@@ -1,6 +1,33 @@
 # Cure Language Examples
 
-This directory contains comprehensive examples demonstrating the core features of the Cure programming language. Each example file focuses on a specific aspect of the language and provides practical demonstrations.
+🚀 **NEW: Complete Import System & Runtime Success!** (October 2025)
+
+This directory contains comprehensive examples demonstrating the core features of the Cure programming language, including **working examples with full import system integration**. Each example file focuses on a specific aspect of the language and provides practical demonstrations.
+
+## 🎆 Featured Working Example: `dependent_types_simple.cure`
+
+**BREAKTHROUGH**: This example successfully compiles and runs with the complete import system!
+
+```bash
+# Compile and run
+./cure examples/dependent_types_simple.cure
+erl -pa _build/ebin -noshell -eval "'DependentTypes':demo_all(), init:stop()."
+
+# Output:
+=== Dependent Types Demonstration ===
+All operations below are compile-time verified for safety!
+=== Vector Operations ===
+Dot product: 32.0
+Vector sum: [5.0, 7.0, 9.0] 
+Scaled vector: [2.0, 4.0, 6.0]
+```
+
+**Features Demonstrated**:
+- ✅ **Working import system**: `import Std [List, Result]`
+- ✅ **Standard library functions**: `print/1`, `show/1`, `map/2`, `fold/3`, `zip_with/3`
+- ✅ **Dependent types**: Length-indexed vectors with compile-time safety
+- ✅ **Runtime execution**: Full end-to-end compilation and execution
+- ✅ **Type safety**: Vector operations validated at compile time
 
 ## Example Files
 
@@ -59,11 +86,16 @@ numbers
 |> sort()
 ```
 
-### 3. Dependent Types (`dependent_types.cure`)
+### 3. Dependent Types 🚀 **WORKING WITH IMPORT SYSTEM!**
+
+**🎆 `dependent_types_simple.cure`** - **BREAKTHROUGH**: Full compilation and runtime success!
+**🎆 `dependent_types.cure`** - Advanced dependent types demonstrations
 
 Demonstrates compile-time guarantees and type safety through dependent types:
 
-- **Length-Indexed Vectors**: Vectors with compile-time known lengths
+- **✅ Length-Indexed Vectors**: Vectors with compile-time known lengths (**WORKING!**)
+- **✅ Import System Integration**: Uses `import Std [List, Result]` (**WORKING!**)
+- **✅ Standard Library Functions**: `zip_with/3`, `fold/3`, `map/2`, `show/1`, `print/1` (**WORKING!**)
 - **Matrix Operations**: Dimension checking at compile time
 - **Refinement Types**: Types with predicates (`{x: Int | x > 0}`)
 - **Indexed Data Structures**: Binary trees with depth tracking
@@ -73,9 +105,21 @@ Demonstrates compile-time guarantees and type safety through dependent types:
 
 **Key Features Shown:**
 ```cure
-# Length-safe vector operations
-def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
-  # Type system guarantees same length
+# 🚀 WORKING: Length-safe vector operations with imports
+module DependentTypes do
+  import Std [List, Result]  # Working import system!
+  
+  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
+    # Type system guarantees same length
+    zip_with(v1, v2, fn(x, y) -> x * y end)
+    |> fold(0.0, fn(x, acc) -> acc + x end)
+  
+  def demo_all(): Unit =
+    let v1 = make_vec3(1.0, 2.0, 3.0)
+    let v2 = make_vec3(4.0, 5.0, 6.0)
+    let result = dot_product(v1, v2)
+    print("Dot product: " ++ show(result))  # Output: 32.0
+end
 
 # Matrix multiplication with dimension checking  
 def matrix_multiply(a: Matrix(m, n, T), b: Matrix(n, p, T)): Matrix(m, p, T) =
