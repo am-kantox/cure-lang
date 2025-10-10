@@ -1,0 +1,8 @@
+module Test do
+  export [identity/1, not/1]
+  
+  def identity(x: T): T = x
+  
+  def not(x: Bool): Bool =
+    if x then false else true end
+end

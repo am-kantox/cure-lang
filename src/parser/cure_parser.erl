@@ -344,8 +344,37 @@ parse_function(State) ->
             defp -> expect(State, defp)
         end,
 
-    {NameToken, State2} = expect(State1, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    % Allow certain keywords to be used as function names (same as export specs)
+    {NameToken, State2} =
+        case get_token_type(current_token(State1)) of
+            identifier -> expect(State1, identifier);
+            atom -> expect(State1, atom);
+            'Ok' -> expect(State1, 'Ok');
+            'Error' -> expect(State1, 'Error');
+            'Some' -> expect(State1, 'Some');
+            'None' -> expect(State1, 'None');
+            'ok' -> expect(State1, 'ok');
+            'error' -> expect(State1, 'error');
+            'not' -> expect(State1, 'not');
+            'and' -> expect(State1, 'and');
+            'or' -> expect(State1, 'or');
+            _ -> expect(State1, identifier)
+        end,
+    Name =
+        case get_token_type(NameToken) of
+            identifier -> binary_to_atom(get_token_value(NameToken), utf8);
+            % Already an atom from lexer
+            atom -> get_token_value(NameToken);
+            'Ok' -> 'Ok';
+            'Error' -> 'Error';
+            'Some' -> 'Some';
+            'None' -> 'None';
+            'ok' -> ok;
+            'error' -> error;
+            'not' -> 'not';
+            'and' -> 'and';
+            'or' -> 'or'
+        end,
 
     {_, State3} = expect(State2, '('),
     {Params, State4} = parse_parameters(State3, []),
@@ -435,8 +464,37 @@ parse_function(State) ->
 parse_erlang_function(State) ->
     {DefToken, State1} = expect(State, def_erl),
 
-    {NameToken, State2} = expect(State1, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    % Allow certain keywords to be used as function names (same as regular functions)
+    {NameToken, State2} =
+        case get_token_type(current_token(State1)) of
+            identifier -> expect(State1, identifier);
+            atom -> expect(State1, atom);
+            'Ok' -> expect(State1, 'Ok');
+            'Error' -> expect(State1, 'Error');
+            'Some' -> expect(State1, 'Some');
+            'None' -> expect(State1, 'None');
+            'ok' -> expect(State1, 'ok');
+            'error' -> expect(State1, 'error');
+            'not' -> expect(State1, 'not');
+            'and' -> expect(State1, 'and');
+            'or' -> expect(State1, 'or');
+            _ -> expect(State1, identifier)
+        end,
+    Name =
+        case get_token_type(NameToken) of
+            identifier -> binary_to_atom(get_token_value(NameToken), utf8);
+            % Already an atom from lexer
+            atom -> get_token_value(NameToken);
+            'Ok' -> 'Ok';
+            'Error' -> 'Error';
+            'Some' -> 'Some';
+            'None' -> 'None';
+            'ok' -> ok;
+            'error' -> error;
+            'not' -> 'not';
+            'and' -> 'and';
+            'or' -> 'or'
+        end,
 
     {_, State3} = expect(State2, '('),
     {Params, State4} = parse_parameters(State3, []),
@@ -982,9 +1040,38 @@ parse_type_parameter_names(State, Acc) ->
 
 %% Parse type expressions with enhanced dependent type support
 parse_type(State) ->
-    % Parse primary type and then handle arrow function types
+    % Parse primary type, then handle union types, then arrow function types
     {PrimaryType, State1} = parse_primary_type(State),
-    parse_type_with_arrows(State1, PrimaryType).
+    {UnionType, State2} = parse_type_with_unions(State1, PrimaryType),
+    parse_type_with_arrows(State2, UnionType).
+
+%% Parse type with union types (T | U | V)
+parse_type_with_unions(State, LeftType) ->
+    case match_token(State, '|') of
+        true ->
+            {_, State1} = expect(State, '|'),
+            {RightType, State2} = parse_primary_type(State1),
+            Location = get_type_location(LeftType),
+            
+            % Create or extend union type
+            UnionType = case LeftType of
+                #union_type{types = ExistingTypes} ->
+                    % Already a union type, add new variant
+                    LeftType#union_type{
+                        types = ExistingTypes ++ [RightType]
+                    };
+                _ ->
+                    % Create new union type with two variants
+                    #union_type{
+                        types = [LeftType, RightType],
+                        location = Location
+                    }
+            end,
+            % Continue parsing more union variants if present
+            parse_type_with_unions(State2, UnionType);
+        false ->
+            {LeftType, State}
+    end.
 
 %% Parse type with arrow function types (T -> U -> V)
 parse_type_with_arrows(State, LeftType) ->
@@ -1077,6 +1164,23 @@ parse_primary_type(State) ->
                 location = Location
             },
             {Type, State1};
+        % Type constructors for union types
+        'Ok' ->
+            {OkToken, State1} = expect(State, 'Ok'),
+            Location = get_token_location(OkToken),
+            parse_type_constructor('Ok', Location, State1);
+        'Error' ->
+            {ErrorToken, State1} = expect(State, 'Error'),
+            Location = get_token_location(ErrorToken),
+            parse_type_constructor('Error', Location, State1);
+        'Some' ->
+            {SomeToken, State1} = expect(State, 'Some'),
+            Location = get_token_location(SomeToken),
+            parse_type_constructor('Some', Location, State1);
+        'None' ->
+            {NoneToken, State1} = expect(State, 'None'),
+            Location = get_token_location(NoneToken),
+            parse_type_constructor('None', Location, State1);
         fn ->
             parse_function_type(State);
         '(' ->
@@ -1102,6 +1206,29 @@ parse_primary_type(State) ->
         _ ->
             CurrentToken = current_token(State),
             throw({parse_error, {expected_type_got, get_token_type(CurrentToken)}, 0, 0})
+    end.
+
+%% Parse type constructor (Ok, Error, Some, None) with optional parameters
+parse_type_constructor(Name, Location, State) ->
+    case match_token(State, '(') of
+        true ->
+            % Type constructor with parameters: Ok(T), Error(E)
+            {_, State1} = expect(State, '('),
+            {Params, State2} = parse_type_parameters(State1, []),
+            {_, State3} = expect(State2, ')'),
+            Type = #dependent_type{
+                name = Name,
+                params = Params,
+                location = Location
+            },
+            {Type, State3};
+        false ->
+            % Type constructor without parameters: None
+            Type = #primitive_type{
+                name = Name,
+                location = Location
+            },
+            {Type, State}
     end.
 
 %% Parse function type: fn(T1, T2) -> ReturnType

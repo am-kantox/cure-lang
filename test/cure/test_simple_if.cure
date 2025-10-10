@@ -1,0 +1,8 @@
+module Test do
+  export [simple/2]
+
+  type Ordering = Lt | Eq | Gt
+
+  def simple(x: T, y: T): Ordering =
+    if x < y then Lt else Eq end
+end

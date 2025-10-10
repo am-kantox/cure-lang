@@ -1,0 +1,5 @@
+module Test do
+  export [apply/2]
+  
+  def apply(f: T -> U, x: T): U = f(x)
+end

@@ -1,0 +1,37 @@
+module Std.Core do
+  export [
+    # Identity and composition
+    identity/1, compose/2, flip/1,
+    
+    # Boolean operations
+    not/1, and/2, or/2, xor/2
+  ]
+
+  # Type definitions for error handling
+  type Result(T, E) = Ok(T) | Error(E)
+  type Option(T) = Some(T) | None
+
+  # Identity function - returns its argument unchanged
+  def identity(x: T): T = x
+
+  # Function composition - (f ∘ g)(x) = f(g(x))
+  def compose(f: B -> C, g: A -> B): A -> C =
+    fn(x) -> f(g(x)) end
+
+  # Flip the order of arguments for a binary function
+  def flip(f: A -> B -> C): B -> A -> C =
+    fn(b, a) -> f(a, b) end
+
+  # Boolean operations
+  def not(x: Bool): Bool =
+    if x then false else true end
+
+  def and(x: Bool, y: Bool): Bool =
+    if x then y else false end
+
+  def or(x: Bool, y: Bool): Bool =
+    if x then true else y end
+
+  def xor(x: Bool, y: Bool): Bool =
+    if x then not(y) else y end
+end

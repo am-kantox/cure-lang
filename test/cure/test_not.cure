@@ -1,0 +1,6 @@
+module Test do
+  export [not/1]
+  
+  def not(x: Bool): Bool =
+    if x then false else true end
+end

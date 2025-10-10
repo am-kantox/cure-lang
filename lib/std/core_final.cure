@@ -1,0 +1,160 @@
+# Cure Standard Library - Core Module
+# Provides fundamental types and operations
+
+module Std.Core do
+  export [
+    # Identity and composition
+    identity/1, compose/2, flip/1,
+    
+    # Boolean operations
+    not/1, and/2, or/2, xor/2,
+    
+    # Comparison operations
+    eq/2, ne/2, lt/2, le/2, gt/2, ge/2, compare/2,
+    minimum/2, maximum/2, clamp/3,
+    
+    # Error handling
+    ok/1, error/1, is_ok/1, is_error/1,
+    map_ok/2, map_error/2, and_then/2,
+    
+    # Option/Maybe type operations
+    some/1, none/0, is_some/1, is_none/1,
+    map_option/2, flat_map_option/2, option_or/2,
+    
+    # Utility functions
+    const/1, apply/2, pipe/2
+  ]
+
+  # Type definitions for error handling - move to beginning
+  type Result(T, E) = Ok(T) | Error(E)
+  type Option(T) = Some(T) | None
+  # Ordering type for comparisons - define before use
+  type Ordering = Lt | Eq | Gt
+
+  # Identity function - returns its argument unchanged
+  def identity(x: T): T = x
+
+  # Function composition - (f ∘ g)(x) = f(g(x))
+  def compose(f: B -> C, g: A -> B): A -> C =
+    fn(x) -> f(g(x)) end
+
+  # Flip the order of arguments for a binary function
+  def flip(f: A -> B -> C): B -> A -> C =
+    fn(b, a) -> f(a, b) end
+
+  # Boolean operations
+  def not(x: Bool): Bool =
+    if x then false else true end
+
+  def and(x: Bool, y: Bool): Bool =
+    if x then y else false end
+
+  def or(x: Bool, y: Bool): Bool =
+    if x then true else y end
+
+  def xor(x: Bool, y: Bool): Bool =
+    if x then 
+      if y then false else true end 
+    else y end
+
+  # Comparison operations
+  def eq(x: T, y: T): Bool = x == y
+  def ne(x: T, y: T): Bool = x != y
+  def lt(x: T, y: T): Bool = x < y
+  def le(x: T, y: T): Bool = x <= y
+  def gt(x: T, y: T): Bool = x > y
+  def ge(x: T, y: T): Bool = x >= y
+
+  def compare(x: T, y: T): Ordering =
+    if x < y then Lt
+    else 
+      if x > y then Gt
+      else Eq
+      end
+    end
+
+  def minimum(x: T, y: T): T =
+    if x <= y then x else y end
+
+  def maximum(x: T, y: T): T =
+    if x >= y then x else y end
+
+  def clamp(value: T, min_val: T, max_val: T): T =
+    minimum(maximum(value, min_val), max_val)
+
+  # Result/Either type operations
+  def ok(value: T): Result(T, E) = Ok(value)
+  def error(err: E): Result(T, E) = Error(err)
+
+  def is_ok(result: Result(T, E)): Bool =
+    match result do
+      Ok(value) -> true
+      Error(err) -> false
+    end
+
+  def is_error(result: Result(T, E)): Bool =
+    match result do
+      Ok(value) -> false
+      Error(err) -> true
+    end
+
+  def map_ok(result: Result(T, E), f: T -> U): Result(U, E) =
+    match result do
+      Ok(value) -> Ok(f(value))
+      Error(err) -> Error(err)
+    end
+
+  def map_error(result: Result(T, E), f: E -> F): Result(T, F) =
+    match result do
+      Ok(value) -> Ok(value)
+      Error(err) -> Error(f(err))
+    end
+
+  def and_then(result: Result(T, E), f: T -> Result(U, E)): Result(U, E) =
+    match result do
+      Ok(value) -> f(value)
+      Error(err) -> Error(err)
+    end
+
+  # Option/Maybe type operations  
+  def some(value: T): Option(T) = Some(value)
+  def none(): Option(T) = None
+
+  def is_some(option: Option(T)): Bool =
+    match option do
+      Some(value) -> true
+      None -> false
+    end
+
+  def is_none(option: Option(T)): Bool =
+    match option do
+      Some(value) -> false
+      None -> true
+    end
+
+  def map_option(option: Option(T), f: T -> U): Option(U) =
+    match option do
+      Some(value) -> Some(f(value))
+      None -> None
+    end
+
+  def flat_map_option(option: Option(T), f: T -> Option(U)): Option(U) =
+    match option do
+      Some(value) -> f(value)
+      None -> None
+    end
+
+  def option_or(option: Option(T), default: T): T =
+    match option do
+      Some(value) -> value
+      None -> default
+    end
+
+  # Utility functions
+  def const(x: T): U -> T =
+    fn(y) -> x end
+
+  def apply(f: T -> U, x: T): U = f(x)
+
+  def pipe(x: T, f: T -> U): U = f(x)
+end

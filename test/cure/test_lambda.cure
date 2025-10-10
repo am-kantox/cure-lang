@@ -1,0 +1,6 @@
+module Test do
+  export [compose/2]
+  
+  def compose(f: B -> C, g: A -> B): A -> C =
+    fn(x) -> f(g(x)) end
+end

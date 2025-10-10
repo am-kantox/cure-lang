@@ -1,0 +1,12 @@
+module Test do
+  export [compare/2]
+
+  # Define Ordering type first
+  type Ordering = Lt | Eq | Gt
+
+  def compare(x: T, y: T): Ordering =
+    if x < y then Lt
+    else if x > y then Gt
+    else Eq
+    end
+end
