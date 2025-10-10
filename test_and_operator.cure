@@ -1,0 +1,10 @@
+module TestAndOperator do
+  def test_and(x: Bool, y: Bool): Bool =
+    x and y
+    
+  def test_and_in_match(list: List(T)): Bool =
+    match list do
+      [] -> true
+      [x | xs] -> predicate(x) and all(xs, predicate)
+    end
+end

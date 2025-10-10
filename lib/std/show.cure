@@ -5,10 +5,7 @@ module Std.Show do
   import Std.Core [Result, Option, List]
 
   export [
-    # Core show function
     show/1,
-    
-    # Specialized show functions
     show_int/1, show_float/1, show_string/1, show_bool/1, 
     show_list/1, show_tuple/1, show_option/1, show_result/1
   ]
@@ -68,12 +65,12 @@ module Std.Show do
 
   # Tuple to string conversion (handles various tuple sizes)
   def show_tuple(tuple): String =
-    case tuple_size(tuple) of
+    match tuple_size(tuple) do
       0 -> "{}"
       1 -> "{" ++ show(tuple_element(tuple, 0)) ++ "}"
       2 -> "{" ++ show(tuple_element(tuple, 0)) ++ ", " ++ show(tuple_element(tuple, 1)) ++ "}"
       3 -> "{" ++ show(tuple_element(tuple, 0)) ++ ", " ++ show(tuple_element(tuple, 1)) ++ ", " ++ show(tuple_element(tuple, 2)) ++ "}"
-      _ -> "{...}"  # For larger tuples, use ellipsis
+      _ -> "{...}"
     end
 
   # Option to string conversion  

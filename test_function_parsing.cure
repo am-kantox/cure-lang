@@ -1,0 +1,13 @@
+module TestFunctionParsing do
+  def simple_function() = 42
+  
+  def function_with_params(x: Int, y: Int) = x + y
+  
+  def function_with_return_type(x: Int): Int = x + 1
+  
+  def function_with_arrow_return(x: Int) -> Int = x + 1
+  
+  def function_with_constraint(x: Int) -> Int when x > 0 = x + 1
+  
+  def function_with_complex_type(list: List(T)) -> T = list
+end

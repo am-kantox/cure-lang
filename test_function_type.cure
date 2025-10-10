@@ -1,0 +1,5 @@
+module TestFunctionType do
+  def simple_higher_order(f: T -> U) = f
+  
+  def multiple_arrows(f: T -> T -> T) = f
+end

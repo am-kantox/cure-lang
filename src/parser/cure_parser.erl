@@ -172,8 +172,7 @@ parse_item(State) ->
 %% Parse module definition
 parse_module(State) ->
     {_, State1} = expect(State, module),
-    {NameToken, State2} = expect(State1, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    {Name, State2} = parse_module_name(State1),
     {_, State3} = expect(State2, do),
 
     {Exports, State4} =
@@ -229,6 +228,7 @@ parse_export_spec(State) ->
     {NameToken, State1} =
         case get_token_type(current_token(State)) of
             identifier -> expect(State, identifier);
+            atom -> expect(State, atom);
             'Ok' -> expect(State, 'Ok');
             'Error' -> expect(State, 'Error');
             'Some' -> expect(State, 'Some');
@@ -243,6 +243,8 @@ parse_export_spec(State) ->
     Name =
         case get_token_type(NameToken) of
             identifier -> binary_to_atom(get_token_value(NameToken), utf8);
+            % Already an atom from lexer
+            atom -> get_token_value(NameToken);
             'Ok' -> 'Ok';
             'Error' -> 'Error';
             'Some' -> 'Some';
@@ -254,14 +256,14 @@ parse_export_spec(State) ->
             'or' -> 'or'
         end,
     Location = get_token_location(NameToken),
-    
+
     case match_token(State1, '/') of
         true ->
             % Function/arity specification
             {_, State2} = expect(State1, '/'),
             {ArityToken, State3} = expect(State2, number),
             Arity = get_token_value(ArityToken),
-            
+
             Export = #export_spec{
                 name = Name,
                 arity = Arity,
@@ -272,7 +274,8 @@ parse_export_spec(State) ->
             % Plain identifier (type, constant, etc.)
             Export = #export_spec{
                 name = Name,
-                arity = undefined,  % undefined indicates a non-function export
+                % undefined indicates a non-function export
+                arity = undefined,
                 location = Location
             },
             {Export, State1}
@@ -772,6 +775,7 @@ parse_import_item(State) ->
     {Token, State1} =
         case get_token_type(current_token(State)) of
             identifier -> expect(State, identifier);
+            atom -> expect(State, atom);
             'Ok' -> expect(State, 'Ok');
             'Error' -> expect(State, 'Error');
             'Some' -> expect(State, 'Some');
@@ -786,6 +790,8 @@ parse_import_item(State) ->
     Name =
         case get_token_type(Token) of
             identifier -> binary_to_atom(get_token_value(Token), utf8);
+            % Already an atom from lexer
+            atom -> get_token_value(Token);
             'Ok' -> 'Ok';
             'Error' -> 'Error';
             'Some' -> 'Some';
@@ -837,7 +843,7 @@ parse_import_item(State) ->
                     false ->
                         {undefined, State1}
                 end,
-            
+
             % If we have an alias, create a function import-like structure
             case Alias of
                 undefined ->
@@ -976,6 +982,32 @@ parse_type_parameter_names(State, Acc) ->
 
 %% Parse type expressions with enhanced dependent type support
 parse_type(State) ->
+    % Parse primary type and then handle arrow function types
+    {PrimaryType, State1} = parse_primary_type(State),
+    parse_type_with_arrows(State1, PrimaryType).
+
+%% Parse type with arrow function types (T -> U -> V)
+parse_type_with_arrows(State, LeftType) ->
+    case match_token(State, '->') of
+        true ->
+            {_, State1} = expect(State, '->'),
+            % Right associative
+            {RightType, State2} = parse_type(State1),
+            Location = get_type_location(LeftType),
+
+            % Create function type: LeftType -> RightType
+            FunctionType = #function_type{
+                params = [LeftType],
+                return_type = RightType,
+                location = Location
+            },
+            {FunctionType, State2};
+        false ->
+            {LeftType, State}
+    end.
+
+%% Parse primary type expressions
+parse_primary_type(State) ->
     Token = current_token(State),
     case get_token_type(Token) of
         identifier ->
@@ -1047,6 +1079,26 @@ parse_type(State) ->
             {Type, State1};
         fn ->
             parse_function_type(State);
+        '(' ->
+            % Parenthesized type for grouping: (T -> U) -> V
+            {_, State1} = expect(State, '('),
+            {Type, State2} = parse_type(State1),
+            {_, State3} = expect(State2, ')'),
+            {Type, State3};
+        '{' ->
+            % Tuple type: {T, U, V}
+            {_, State1} = expect(State, '{'),
+            Location = get_token_location(current_token(State)),
+
+            % Parse tuple element types
+            {ElementTypes, State2} = parse_tuple_type_elements(State1, []),
+            {_, State3} = expect(State2, '}'),
+
+            Type = #tuple_type{
+                element_types = ElementTypes,
+                location = Location
+            },
+            {Type, State3};
         _ ->
             CurrentToken = current_token(State),
             throw({parse_error, {expected_type_got, get_token_type(CurrentToken)}, 0, 0})
@@ -1086,6 +1138,22 @@ parse_function_param_types(State, Acc) ->
                     parse_function_param_types(State2, [ParamType | Acc]);
                 false ->
                     {lists:reverse([ParamType | Acc]), State1}
+            end
+    end.
+
+%% Parse tuple type elements: {T, U, V}
+parse_tuple_type_elements(State, Acc) ->
+    case match_token(State, '}') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {ElementType, State1} = parse_type(State),
+            case match_token(State1, ',') of
+                true ->
+                    {_, State2} = expect(State1, ','),
+                    parse_tuple_type_elements(State2, [ElementType | Acc]);
+                false ->
+                    {lists:reverse([ElementType | Acc]), State1}
             end
     end.
 
@@ -1515,6 +1583,8 @@ get_operator_info('<=') -> {5, left};
 get_operator_info('>=') -> {5, left};
 get_operator_info('==') -> {5, left};
 get_operator_info('!=') -> {5, left};
+get_operator_info('and') -> {3, left};
+get_operator_info('or') -> {2, left};
 get_operator_info(_) -> undefined.
 
 %% Parse primary expressions
@@ -1585,11 +1655,28 @@ parse_primary_expression(State) ->
                     {Token, State1} = expect(State, atom),
                     Value = get_token_value(Token),
                     Location = get_token_location(Token),
-                    Expr = #literal_expr{
-                        value = Value,
-                        location = Location
-                    },
-                    {Expr, State1};
+                    % Check if this is a constructor atom like 'Some', 'None', etc.
+                    case Value of
+                        'Some' ->
+                            parse_atom_constructor_expression(State1, 'Some', Location);
+                        'None' ->
+                            parse_atom_constructor_expression(State1, 'None', Location);
+                        'Ok' ->
+                            parse_atom_constructor_expression(State1, 'Ok', Location);
+                        'Error' ->
+                            parse_atom_constructor_expression(State1, 'Error', Location);
+                        ok ->
+                            parse_atom_constructor_expression(State1, ok, Location);
+                        error ->
+                            parse_atom_constructor_expression(State1, error, Location);
+                        _ ->
+                            % Regular atom literal
+                            Expr = #literal_expr{
+                                value = Value,
+                                location = Location
+                            },
+                            {Expr, State1}
+                    end;
                 true ->
                     {Token, State1} = expect(State, true),
                     Location = get_token_location(Token),
@@ -2127,11 +2214,149 @@ parse_pattern(State) ->
             {Token, State1} = expect(State, atom),
             Value = get_token_value(Token),
             Location = get_token_location(Token),
-            Pattern = #literal_pattern{
-                value = Value,
-                location = Location
-            },
-            {Pattern, State1};
+            % Check if this is a constructor atom like 'Some', 'None', etc.
+            case Value of
+                'Some' ->
+                    case match_token(State1, '(') of
+                        true ->
+                            {_, State2} = expect(State1, '('),
+                            {InnerPattern, State3} = parse_pattern(State2),
+                            {_, State4} = expect(State3, ')'),
+                            Pattern = #constructor_pattern{
+                                name = 'Some',
+                                args = [InnerPattern],
+                                location = Location
+                            },
+                            {Pattern, State4};
+                        false ->
+                            Pattern = #constructor_pattern{
+                                name = 'Some',
+                                args = undefined,
+                                location = Location
+                            },
+                            {Pattern, State1}
+                    end;
+                'None' ->
+                    case match_token(State1, '(') of
+                        true ->
+                            {_, State2} = expect(State1, '('),
+                            case match_token(State2, ')') of
+                                true ->
+                                    % Empty constructor call: 'None'()
+                                    {_, State3} = expect(State2, ')'),
+                                    Pattern = #constructor_pattern{
+                                        name = 'None',
+                                        args = [],
+                                        location = Location
+                                    },
+                                    {Pattern, State3};
+                                false ->
+                                    % Constructor with argument: 'None'(value)
+                                    {InnerPattern, State3} = parse_pattern(State2),
+                                    {_, State4} = expect(State3, ')'),
+                                    Pattern = #constructor_pattern{
+                                        name = 'None',
+                                        args = [InnerPattern],
+                                        location = Location
+                                    },
+                                    {Pattern, State4}
+                            end;
+                        false ->
+                            Pattern = #constructor_pattern{
+                                name = 'None',
+                                args = undefined,
+                                location = Location
+                            },
+                            {Pattern, State1}
+                    end;
+                'Ok' ->
+                    case match_token(State1, '(') of
+                        true ->
+                            {_, State2} = expect(State1, '('),
+                            {InnerPattern, State3} = parse_pattern(State2),
+                            {_, State4} = expect(State3, ')'),
+                            Pattern = #constructor_pattern{
+                                name = 'Ok',
+                                args = [InnerPattern],
+                                location = Location
+                            },
+                            {Pattern, State4};
+                        false ->
+                            Pattern = #constructor_pattern{
+                                name = 'Ok',
+                                args = undefined,
+                                location = Location
+                            },
+                            {Pattern, State1}
+                    end;
+                'Error' ->
+                    case match_token(State1, '(') of
+                        true ->
+                            {_, State2} = expect(State1, '('),
+                            {InnerPattern, State3} = parse_pattern(State2),
+                            {_, State4} = expect(State3, ')'),
+                            Pattern = #constructor_pattern{
+                                name = 'Error',
+                                args = [InnerPattern],
+                                location = Location
+                            },
+                            {Pattern, State4};
+                        false ->
+                            Pattern = #constructor_pattern{
+                                name = 'Error',
+                                args = undefined,
+                                location = Location
+                            },
+                            {Pattern, State1}
+                    end;
+                ok ->
+                    case match_token(State1, '(') of
+                        true ->
+                            {_, State2} = expect(State1, '('),
+                            {InnerPattern, State3} = parse_pattern(State2),
+                            {_, State4} = expect(State3, ')'),
+                            Pattern = #constructor_pattern{
+                                name = ok,
+                                args = [InnerPattern],
+                                location = Location
+                            },
+                            {Pattern, State4};
+                        false ->
+                            Pattern = #constructor_pattern{
+                                name = ok,
+                                args = undefined,
+                                location = Location
+                            },
+                            {Pattern, State1}
+                    end;
+                error ->
+                    case match_token(State1, '(') of
+                        true ->
+                            {_, State2} = expect(State1, '('),
+                            {InnerPattern, State3} = parse_pattern(State2),
+                            {_, State4} = expect(State3, ')'),
+                            Pattern = #constructor_pattern{
+                                name = error,
+                                args = [InnerPattern],
+                                location = Location
+                            },
+                            {Pattern, State4};
+                        false ->
+                            Pattern = #constructor_pattern{
+                                name = error,
+                                args = undefined,
+                                location = Location
+                            },
+                            {Pattern, State1}
+                    end;
+                _ ->
+                    % Regular atom literal pattern
+                    Pattern = #literal_pattern{
+                        value = Value,
+                        location = Location
+                    },
+                    {Pattern, State1}
+            end;
         'Ok' ->
             {Token, State1} = expect(State, 'Ok'),
             Location = get_token_location(Token),
@@ -2378,6 +2603,12 @@ get_pattern_location(#wildcard_pattern{location = Loc}) -> Loc;
 get_pattern_location(#constructor_pattern{location = Loc}) -> Loc;
 get_pattern_location(_) -> #location{line = 0, column = 0, file = undefined}.
 
+%% Get type location
+get_type_location(#primitive_type{location = Loc}) -> Loc;
+get_type_location(#dependent_type{location = Loc}) -> Loc;
+get_type_location(#function_type{location = Loc}) -> Loc;
+get_type_location(_) -> #location{line = 0, column = 0, file = undefined}.
+
 %% Parse constructor expressions like Ok(value), Error("msg")
 parse_constructor_expression(State) ->
     {Token, State1} =
@@ -2424,6 +2655,32 @@ parse_constructor_expression(State) ->
                 location = Location
             },
             {Expr, State1}
+    end.
+
+%% Parse constructor expression from an atom token (for quoted atoms like 'Some')
+parse_atom_constructor_expression(State, ConstructorName, Location) ->
+    case match_token(State, '(') of
+        true ->
+            % Constructor with arguments: 'Some'(value) or 'None'()
+            {_, State1} = expect(State, '('),
+            {Args, State2} = parse_argument_list(State1, []),
+            {_, State3} = expect(State2, ')'),
+
+            % Represent as a function call
+            ConstructorExpr = #identifier_expr{name = ConstructorName, location = Location},
+            CallExpr = #function_call_expr{
+                function = ConstructorExpr,
+                args = Args,
+                location = Location
+            },
+            {CallExpr, State3};
+        false ->
+            % Constructor without argument: 'None'
+            Expr = #identifier_expr{
+                name = ConstructorName,
+                location = Location
+            },
+            {Expr, State}
     end.
 
 %% Parse function body (can be a sequence of statements)

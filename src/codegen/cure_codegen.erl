@@ -294,8 +294,18 @@ process_import_items(_Module, all, State) ->
     % Import all exports - no specific processing needed for code gen
     {ok, State};
 process_import_items(Module, Items, State) when is_list(Items) ->
+    % For Std module, automatically add core functions that are commonly used
+    ExtendedItems =
+        case Module of
+            'Std' ->
+                % Add commonly used functions that should be available from Std
+                CoreFunctions = [zip_with, fold, map, show, print],
+                Items ++ CoreFunctions;
+            _ ->
+                Items
+        end,
     % Process specific imported items
-    process_imported_items(Module, Items, State).
+    process_imported_items(Module, ExtendedItems, State).
 
 %% Process individual import items
 process_imported_items(_Module, [], State) ->
@@ -309,17 +319,144 @@ process_imported_items(Module, [Item | RestItems], State) ->
     end.
 
 %% Process single imported item
-process_imported_item(_Module, #function_import{name = _Name, arity = _Arity}, State) ->
+process_imported_item(Module, #function_import{name = Name, arity = Arity}, State) ->
     % Register function import for call resolution
-    % In a full implementation, would verify the function exists in the module
-    % and potentially generate import stubs or call wrappers
-    % ImportInfo = {imported_function, Module, Name, Arity},
-    % Could store this information in the state for later use during call compilation
-    {ok, State};
-process_imported_item(_Module, Identifier, State) when is_atom(Identifier) ->
+    ImportedFunctions = State#codegen_state.imported_functions,
+
+    % Create import info for the function
+    ImportInfo = #{
+        module => Module,
+        name => Name,
+        arity => Arity,
+        type => function
+    },
+
+    % Store in imported functions map
+    UpdatedImports = maps:put({Name, Arity}, ImportInfo, ImportedFunctions),
+    UpdatedState = State#codegen_state{imported_functions = UpdatedImports},
+
+    {ok, UpdatedState};
+process_imported_item(Module, Identifier, State) when is_atom(Identifier) ->
     % Register identifier import (type constructor, constant, etc.)
-    % In a full implementation, would handle identifier imports appropriately
-    {ok, State}.
+    % For function identifiers, try to resolve their actual arity
+    ImportedFunctions = State#codegen_state.imported_functions,
+
+    % Attempt to resolve the function arity based on common standard library functions
+    ResolvedArity = resolve_function_arity(Module, Identifier),
+
+    % Create import info for the identifier (could be a function, type, or constant)
+    ImportInfo = #{
+        module => Module,
+        name => Identifier,
+        arity => ResolvedArity,
+        type =>
+            case ResolvedArity of
+                unknown -> identifier;
+                _ -> function
+            end
+    },
+
+    % Store in imported functions map
+    % Use both identifier key and {Name, Arity} key if arity is known
+    UpdatedImports1 = maps:put(Identifier, ImportInfo, ImportedFunctions),
+    UpdatedImports2 =
+        case ResolvedArity of
+            unknown ->
+                UpdatedImports1;
+            _ ->
+                maps:put({Identifier, ResolvedArity}, ImportInfo, UpdatedImports1)
+        end,
+
+    UpdatedState = State#codegen_state{imported_functions = UpdatedImports2},
+
+    {ok, UpdatedState}.
+
+%% Resolve the arity of a function based on known standard library functions
+resolve_function_arity('Std', FunctionName) ->
+    case FunctionName of
+        % Core list functions
+        map -> 2;
+        filter -> 2;
+        fold -> 3;
+        foldl -> 3;
+        foldr -> 3;
+        zip_with -> 3;
+        zip -> 2;
+        head -> 1;
+        tail -> 1;
+        cons -> 2;
+        append -> 2;
+        reverse -> 1;
+        length -> 1;
+        is_empty -> 1;
+        concat -> 1;
+        find -> 2;
+        elem -> 2;
+        all -> 2;
+        any -> 2;
+        take -> 2;
+        drop -> 2;
+        unzip -> 1;
+        safe_head -> 1;
+        safe_tail -> 1;
+        safe_nth -> 2;
+        % Show and string functions
+        show -> 1;
+        print -> 1;
+        % Core functions
+        identity -> 1;
+        compose -> 2;
+        flip -> 1;
+        'not' -> 1;
+        'and' -> 2;
+        'or' -> 2;
+        'xor' -> 2;
+        % Comparison functions
+        eq -> 2;
+        ne -> 2;
+        lt -> 2;
+        le -> 2;
+        gt -> 2;
+        ge -> 2;
+        compare -> 2;
+        min -> 2;
+        max -> 2;
+        clamp -> 3;
+        % Result/Option functions
+        ok -> 1;
+        error -> 1;
+        some -> 1;
+        none -> 0;
+        is_ok -> 1;
+        is_error -> 1;
+        is_some -> 1;
+        is_none -> 1;
+        map_ok -> 2;
+        map_error -> 2;
+        and_then -> 2;
+        map_option -> 2;
+        flat_map_option -> 2;
+        option_or -> 2;
+        % Utility functions
+        const -> 1;
+        apply -> 2;
+        pipe -> 2;
+        % Math functions
+        abs -> 1;
+        sign -> 1;
+        round -> 1;
+        floor -> 1;
+        ceiling -> 1;
+        sqrt -> 1;
+        power -> 2;
+        safe_divide -> 2;
+        safe_sqrt -> 1;
+        % Default for unknown functions
+        _ -> unknown
+    end;
+resolve_function_arity(_Module, _FunctionName) ->
+    % For modules other than Std, we don't have arity information
+    unknown.
 
 %% ============================================================================
 %% Function Compilation
@@ -511,17 +648,28 @@ compile_identifier(#identifier_expr{name = Name, location = Location}, State) ->
 %% Find imported function by name (with any arity)
 find_imported_function(Name, State) ->
     ImportedFunctions = State#codegen_state.imported_functions,
-    % Look for functions with this name, regardless of arity
-    MatchingFunctions = maps:filter(
-        fun({FuncName, _Arity}, _Data) -> FuncName =:= Name end,
-        ImportedFunctions
-    ),
-    case maps:size(MatchingFunctions) of
-        0 ->
-            not_found;
-        _ ->
-            % Return the first matching function
-            {_Key, FunctionData} = hd(maps:to_list(MatchingFunctions)),
+
+    % First try to find by identifier name (for imports like "import Std [List, Result]")
+    case maps:get(Name, ImportedFunctions, undefined) of
+        undefined ->
+            % Look for functions with this name and specific arity
+            MatchingFunctions = maps:filter(
+                fun
+                    ({FuncName, _Arity}, _Data) -> FuncName =:= Name;
+                    (FuncName, _Data) when is_atom(FuncName) -> FuncName =:= Name
+                end,
+                ImportedFunctions
+            ),
+            case maps:size(MatchingFunctions) of
+                0 ->
+                    not_found;
+                _ ->
+                    % Return the first matching function
+                    {_Key, FunctionData} = hd(maps:to_list(MatchingFunctions)),
+                    {ok, FunctionData}
+            end;
+        FunctionData ->
+            % Found direct identifier match
             {ok, FunctionData}
     end.
 

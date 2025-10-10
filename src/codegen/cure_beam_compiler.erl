@@ -239,31 +239,37 @@ compile_load_global([Name], Context) ->
 
     {ok, [], push_stack(Form, Context)}.
 
-%% Load imported function - compile the function body directly and push to stack
+%% Load imported function - create a proper remote call reference
 compile_load_imported_function([Name, ImportedFunction], Context) ->
     Line = Context#compile_context.line,
 
-    % ImportedFunction contains the function data: #{name, arity, params, body}
-    case maps:get(body, ImportedFunction, undefined) of
-        undefined ->
-            % Fallback to regular function name
-            Form = {atom, Line, Name},
-            {ok, [], push_stack(Form, Context)};
-        Body ->
-            % Compile the imported function body as a lambda
-            Params = maps:get(params, ImportedFunction, []),
-            ParamNames = [P#param.name || P <- Params],
+    % Generate a fun reference to the Std module function
+    % This creates a proper function reference that the BEAM linter will accept
+    Arity =
+        case maps:get(arity, ImportedFunction, unknown) of
+            unknown ->
+                % For unknown arities, try some common defaults based on function name
+                case Name of
+                    show -> 1;
+                    print -> 1;
+                    map -> 2;
+                    fold -> 3;
+                    zip_with -> 3;
+                    % Default to arity 1 for most functions
+                    _ -> 1
+                end;
+            ActualArity when is_integer(ActualArity) ->
+                ActualArity;
+            _ ->
+                % Fallback default
+                1
+        end,
 
-            % Create a function expression that can be called
-            case compile_function_body_to_lambda(Body, ParamNames, Line) of
-                {ok, LambdaForm} ->
-                    {ok, [], push_stack(LambdaForm, Context)};
-                {error, Reason} ->
-                    % Fallback to function name
-                    Form = {atom, Line, Name},
-                    {ok, [], push_stack(Form, Context)}
-            end
-    end.
+    % Create a fun reference: fun Std:Name/Arity
+    FunForm =
+        {'fun', Line, {function, {atom, Line, 'Std'}, {atom, Line, Name}, {integer, Line, Arity}}},
+
+    {ok, [], push_stack(FunForm, Context)}.
 
 %% Compile function body to lambda form (simplified version)
 compile_function_body_to_lambda(Body, ParamNames, Line) ->

@@ -1,0 +1,3 @@
+module TestSimpleConstructor do
+  def simple_none() = 'None'()
+end

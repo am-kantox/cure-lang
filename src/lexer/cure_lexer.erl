@@ -147,6 +147,11 @@ scan_tokens(<<$", Rest/binary>>, Line, Column, Acc) ->
             AllTokens = lists:reverse(Tokens) ++ Acc,
             scan_tokens(NewRest, NewLine, NewColumn, AllTokens)
     end;
+%% Single-quoted atoms
+scan_tokens(<<$', Rest/binary>>, Line, Column, Acc) ->
+    {Atom, NewRest, NewColumn} = scan_quoted_atom(Rest, Column + 1, <<>>),
+    Token = #token{type = atom, value = Atom, line = Line, column = Column},
+    scan_tokens(NewRest, Line, NewColumn, [Token | Acc]);
 %% Atom literals (starting with :) - but check for :: first
 scan_tokens(<<$:, $:, Rest/binary>>, Line, Column, Acc) ->
     Token = #token{type = '::', value = '::', line = Line, column = Column},
@@ -405,6 +410,21 @@ scan_atom(<<C, Rest/binary>>, Column, Acc) when
     scan_atom(Rest, Column + 1, <<Acc/binary, C>>);
 scan_atom(Rest, Column, Acc) ->
     {binary_to_atom(Acc, utf8), Rest, Column}.
+
+%% Scan single-quoted atom
+scan_quoted_atom(<<$', Rest/binary>>, Column, Acc) ->
+    {binary_to_atom(Acc, utf8), Rest, Column + 1};
+scan_quoted_atom(<<$\\, C, Rest/binary>>, Column, Acc) ->
+    % Handle escape sequences in quoted atoms
+    Escaped = escape_char(C),
+    scan_quoted_atom(Rest, Column + 2, <<Acc/binary, Escaped>>);
+scan_quoted_atom(<<$\n, Rest/binary>>, Column, Acc) ->
+    % Allow newlines in quoted atoms
+    scan_quoted_atom(Rest, Column + 1, <<Acc/binary, $\n>>);
+scan_quoted_atom(<<C, Rest/binary>>, Column, Acc) ->
+    scan_quoted_atom(Rest, Column + 1, <<Acc/binary, C>>);
+scan_quoted_atom(<<>>, Column, _Acc) ->
+    throw({lexer_error, unterminated_quoted_atom, Column, Column}).
 
 %% Scan number (integers and floats)
 scan_number(<<C, Rest/binary>>, Column, Acc) when C >= $0, C =< $9 ->

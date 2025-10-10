@@ -1,0 +1,21 @@
+module Std.List do
+  import Std.Core [Result, Option, 'Some', 'None', 'Ok', 'Error']
+
+  export [
+    # List construction and basic operations
+    cons/2, head/1, tail/1, last/1, init/1, length/1, is_empty/1
+  ]
+
+  # Basic list operations
+  def cons(x: T, xs: List(T)): List(T) = [x | xs]
+
+  def head(list: List(T, n)) -> T when n > 0 =
+    match list do
+      [x | _] -> x
+    end
+
+  def tail(list: List(T, n)) -> List(T, n-1) when n > 0 =
+    match list do
+      [_ | xs] -> xs
+    end
+end

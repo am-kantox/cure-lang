@@ -5,31 +5,14 @@ module Std.List do
   import Std.Core [Result, Option, 'Some', 'None', 'Ok', 'Error']
 
   export [
-    # List construction and basic operations
     cons/2, head/1, tail/1, last/1, init/1, length/1, is_empty/1,
-    
-    # List transformation
     map/2, filter/2, reverse/1, append/2, concat/1, 
-    
-    # Folding and reducing
     foldl/3, foldr/3, fold/3, reduce/2, scan/3,
-    
-    # List searching and finding
     find/2, find_index/2, elem/2, all/2, any/2,
-    
-    # List slicing and manipulation
     take/2, drop/2, take_while/2, drop_while/2, split_at/2,
-    
-    # List zipping and unzipping
     zip/2, zip3/3, zip_with/3, unzip/1,
-    
-    # List sorting and ordering
     sort/1, sort_by/2, group_by/2,
-    
-    # Safe list operations that return Options
     safe_head/1, safe_tail/1, safe_last/1, safe_nth/2,
-    
-    # Length-preserving operations
     map_preserving_length/2, zip_same_length/2
   ]
 
@@ -149,8 +132,8 @@ module Std.List do
 
   def elem(list: List(T), element: T): Bool =
     match find(list, fn(x) -> x == element end) do
-      Some(_) -> true
-      None -> false
+      'Some'(_) -> true
+      'None'() -> false
     end
 
   def all(list: List(T), predicate: T -> Bool): Bool =
@@ -207,26 +190,34 @@ module Std.List do
 
   # Zipping and unzipping
   def zip(xs: List(T), ys: List(U)): List({T, U}) =
-    match xs, ys do
-      [], _ -> []
-      _, [] -> []
-      [x | xs_rest], [y | ys_rest] -> [{x, y} | zip(xs_rest, ys_rest)]
+    match {xs, ys} do
+      {[], _} -> []
+      {_, []} -> []
+      {[x | xs_rest], [y | ys_rest]} -> [{x, y} | zip(xs_rest, ys_rest)]
     end
 
   def zip3(xs: List(T), ys: List(U), zs: List(V)): List({T, U, V}) =
-    match xs, ys, zs do
-      [], _, _ -> []
-      _, [], _ -> []
-      _, _, [] -> []
-      [x | xs_rest], [y | ys_rest], [z | zs_rest] ->
+    match {xs, ys, zs} do
+      {[], _, _} -> []
+      {_, [], _} -> []
+      {_, _, []} -> []
+      {[x | xs_rest], [y | ys_rest], [z | zs_rest]} ->
         [{x, y, z} | zip3(xs_rest, ys_rest, zs_rest)]
     end
 
   def zip_with(xs: List(T), ys: List(U), f: T -> U -> V): List(V) =
-    map(zip(xs, ys), fn({x, y}) -> f(x, y) end)
+    map(zip(xs, ys), fn(pair) -> 
+      match pair do
+        {x, y} -> f(x, y)
+      end
+    end)
 
   def unzip(list: List({T, U})): {List(T), List(U)} =
-    foldr(list, {[], []}, fn({x, y}, {xs, ys}) -> {[x | xs], [y | ys]} end)
+    foldr(list, {[], []}, fn(pair, acc) -> 
+      match {pair, acc} do
+        {{x, y}, {xs, ys}} -> {[x | xs], [y | ys]}
+      end
+    end)
 
   # Sorting (simplified - would need proper comparison)
   def sort(list: List(T)): List(T) =
@@ -288,8 +279,8 @@ module Std.List do
     end
 
   def zip_same_length(xs: List(T, n), ys: List(U, n)): List({T, U}, n) =
-    match xs, ys do
-      [], [] -> []
-      [x | xs_rest], [y | ys_rest] -> [{x, y} | zip_same_length(xs_rest, ys_rest)]
+    match {xs, ys} do
+      {[], []} -> []
+      {[x | xs_rest], [y | ys_rest]} -> [{x, y} | zip_same_length(xs_rest, ys_rest)]
     end
 end

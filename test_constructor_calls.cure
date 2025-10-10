@@ -1,0 +1,7 @@
+module TestConstructorCalls do
+  def reduce(list: List(T, n), f: T -> T -> T): Option(T) when n > 0 =
+    match list do
+      [] -> 'None'()
+      [x | xs] -> 'Some'(foldl(xs, x, f))
+    end
+end

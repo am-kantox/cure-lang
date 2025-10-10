@@ -1,0 +1,6 @@
+module TestLambdaSyntax do
+  def length(list: List(T)): Nat =
+    foldl(list, 0, fn(_, acc) -> acc + 1 end)
+    
+  def another_function() = fn(x) -> x + 1 end
+end
