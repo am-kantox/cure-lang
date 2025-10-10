@@ -181,7 +181,7 @@ module DependentTypes do
     let v3 = make_vec4(4.0, 5.0, 6.0, 7.0)
     
     let dot_result = dot_product(v1, v3)
-    print("Dot product: " ++ show(dot_result))  # 32.0
+    print("Dot products: " ++ show(dot_result))  # 32.0
     
     let sum = vector_add(v1, v2)
     print("Vector sum: " ++ show(sum))  # [5.0, 7.0, 9.0]

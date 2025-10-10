@@ -427,8 +427,18 @@ compile_call([Arity], Context) ->
                                                 {atom, Line, FuncName}},
                                             Args};
                                     false ->
-                                        % Direct call (including imported functions)
-                                        {call, Line, Function, Args}
+                                        % Check if it's a function that should route to Cure standard library
+                                        case is_cure_stdlib_function(FuncName) of
+                                            {true, Module} ->
+                                                % Remote call to Cure standard library module
+                                                {call, Line,
+                                                    {remote, Line, {atom, Line, Module},
+                                                        {atom, Line, FuncName}},
+                                                    Args};
+                                            false ->
+                                                % Direct call (including imported functions)
+                                                {call, Line, Function, Args}
+                                        end
                                 end;
                             _ ->
                                 % Complex function expression (fun refs, etc.)
@@ -874,17 +884,34 @@ is_cure_std_function(join_ints) -> true;
 is_cure_std_function(string_empty) -> true;
 is_cure_std_function(string_join) -> true;
 is_cure_std_function(string_any) -> true;
-% Functions that should NOT be routed to cure_std (use imported versions)
+% Functions that should NOT be routed to cure_std (use imported versions from Cure std lib)
 is_cure_std_function(map) -> false;
 is_cure_std_function(filter) -> false;
-is_cure_std_function(fold) -> true;
+% Now implemented in Cure standard library
+is_cure_std_function(fold) -> false;
 is_cure_std_function(foldl) -> false;
-is_cure_std_function(zip_with) -> true;
+% Now implemented in Cure standard library
+is_cure_std_function(zip_with) -> false;
 is_cure_std_function(head) -> false;
 is_cure_std_function(tail) -> false;
 is_cure_std_function(length) -> false;
 is_cure_std_function(show) -> true;
 is_cure_std_function(_) -> false.
+
+%% Check if function should be routed to Cure standard library module
+%% Returns {true, ModuleName} or false
+is_cure_stdlib_function(zip_with) -> {true, 'Std.List'};
+is_cure_stdlib_function(fold) -> {true, 'Std.List'};
+is_cure_stdlib_function(map) -> {true, 'Std.List'};
+is_cure_stdlib_function(filter) -> {true, 'Std.List'};
+is_cure_stdlib_function(head) -> {true, 'Std.List'};
+is_cure_stdlib_function(tail) -> {true, 'Std.List'};
+is_cure_stdlib_function(length) -> {true, 'Std.List'};
+is_cure_stdlib_function(reverse) -> {true, 'Std.List'};
+is_cure_stdlib_function(find) -> {true, 'Std.List'};
+is_cure_stdlib_function(foldl) -> {true, 'Std.List'};
+is_cure_stdlib_function(foldr) -> {true, 'Std.List'};
+is_cure_stdlib_function(_) -> false.
 
 %% Check if function is from standard library (legacy function)
 is_stdlib_function(Function) ->

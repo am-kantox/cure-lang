@@ -10,6 +10,7 @@ LIB_DIR = lib
 TEST_DIR = test
 BUILD_DIR = _build
 EBIN_DIR = $(BUILD_DIR)/ebin
+LIB_EBIN_DIR = $(BUILD_DIR)/lib
 
 # Source files
 LEXER_SRC = $(wildcard $(SRC_DIR)/lexer/*.erl)
@@ -19,6 +20,9 @@ CODEGEN_SRC = $(wildcard $(SRC_DIR)/codegen/*.erl)
 FSM_SRC = $(wildcard $(SRC_DIR)/fsm/*.erl)
 RUNTIME_SRC = $(wildcard $(SRC_DIR)/runtime/*.erl)
 CLI_SRC = $(SRC_DIR)/cure_cli.erl
+
+# Cure standard library files
+CURE_STD_SRC = $(wildcard $(LIB_DIR)/*.cure $(LIB_DIR)/std/*.cure)
 
 # Test files (exclude problematic advanced tests for now)
 TEST_SRC = $(filter-out $(TEST_DIR)/dependent_types_advanced_test.erl $(TEST_DIR)/codegen_advanced_test.erl $(TEST_DIR)/fsm_advanced_test.erl $(TEST_DIR)/monomorphization_test.erl $(TEST_DIR)/inlining_test.erl, $(wildcard $(TEST_DIR)/*.erl))
@@ -31,13 +35,14 @@ PERFORMANCE_TESTS = $(TEST_DIR)/performance_test.erl
 ALL_SRC = $(LEXER_SRC) $(PARSER_SRC) $(TYPES_SRC) $(CODEGEN_SRC) $(FSM_SRC) $(RUNTIME_SRC) $(CLI_SRC)
 BEAM_FILES = $(patsubst $(SRC_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(ALL_SRC))
 TEST_BEAM_FILES = $(patsubst $(TEST_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(TEST_SRC))
+CURE_STD_BEAM_FILES = $(patsubst $(LIB_DIR)/%.cure,$(LIB_EBIN_DIR)/%.beam,$(CURE_STD_SRC))
 
 # Compiler options
 ERLC_OPTS = +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(EBIN_DIR)
 
-.PHONY: all clean test test-basic test-integration test-performance docs setup compiler tests compile-file
+.PHONY: all clean test test-basic test-integration test-performance docs setup compiler tests compile-file stdlib
 
-all: setup compiler
+all: setup compiler stdlib
 
 setup:
 	@mkdir -p $(BUILD_DIR)
@@ -48,9 +53,15 @@ setup:
 	@mkdir -p $(EBIN_DIR)/codegen
 	@mkdir -p $(EBIN_DIR)/fsm
 	@mkdir -p $(EBIN_DIR)/runtime
+	@mkdir -p $(LIB_EBIN_DIR)
+	@mkdir -p $(LIB_EBIN_DIR)/std
 
 compiler: $(BEAM_FILES)
 	@echo "Cure compiler built successfully"
+
+# Compile Cure standard library
+stdlib: compiler $(CURE_STD_BEAM_FILES)
+	@echo "Cure standard library compiled successfully"
 
 # Compile tests
 tests: compiler $(TEST_BEAM_FILES)
@@ -66,6 +77,16 @@ $(EBIN_DIR)/%.beam: $(SRC_DIR)/%.erl
 $(EBIN_DIR)/%.beam: $(TEST_DIR)/%.erl
 	@echo "Compiling test $<..."
 	$(ERLC) $(ERLC_OPTS) $<
+
+# Pattern rule for compiling Cure standard library files
+$(LIB_EBIN_DIR)/%.beam: $(LIB_DIR)/%.cure
+	@echo "Compiling Cure stdlib $<..."
+	@mkdir -p $(@D)
+	@if [ -f "cure" ]; then \
+		./cure "$<" -o "$@" --verbose; \
+	else \
+		echo "Warning: cure compiler not found, skipping $<"; \
+	fi
 
 # Clean build artifacts
 clean:

@@ -16,6 +16,8 @@ module DependentTypes do
   def make_vec4(x: Float, y: Float, z: Float, w: Float): Vector(Float, 4) =
     [x, y, z, w]
 
+  # def vec_len(vec: Vector(Float, n)): Int = n
+
   # Safe vector operations - length checked at compile time
   def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
     # The type system guarantees v1 and v2 have the same length
@@ -32,6 +34,9 @@ module DependentTypes do
     
     let dot_result = dot_product(v1, v2)
     print("Dot product: " ++ show(dot_result))  # 32.0
+
+    # let vec3_len = vec_len(v1)
+    # print("Vector length: " ++ show(vec3_len))
     
     ok
 
