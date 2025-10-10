@@ -550,25 +550,3 @@ test_kind_arity() ->
     end.
 
 %% ===== HELPER FUNCTIONS =====
-
-% Helper functions for testing if needed
-create_test_kind_env() ->
-    #{
-        'List' => #kind{
-            constructor = arrow,
-            args = [star_kind(), star_kind()],
-            result = star,
-            arity = 1,
-            location = undefined
-        },
-        'Maybe' => #kind{
-            constructor = arrow,
-            args = [star_kind(), star_kind()],
-            result = star,
-            arity = 1,
-            location = undefined
-        }
-    }.
-
-star_kind() ->
-    #kind{constructor = star, args = [], result = star, arity = 0, location = undefined}.

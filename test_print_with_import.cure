@@ -1,0 +1,10 @@
+module TestPrintWithImport do
+  export [test/0]
+
+  import Std [List, Result]
+
+  def test(): Unit =
+    print("Hello, World!")
+    ok
+
+end

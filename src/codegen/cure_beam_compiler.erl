@@ -246,69 +246,46 @@ compile_load_global([Name], Context) ->
 
     {ok, [], push_stack(Form, Context)}.
 
-%% Load imported function - create a proper remote call reference
+%% Load imported function - create proper function reference
 compile_load_imported_function([Name, ImportedFunction], Context) ->
     Line = Context#compile_context.line,
 
-    % Generate a fun reference to the Std module function
-    % This creates a proper function reference that the BEAM linter will accept
-    Arity =
-        case maps:get(arity, ImportedFunction, unknown) of
-            unknown ->
-                % For unknown arities, try some common defaults based on function name
-                case Name of
-                    show -> 1;
-                    print -> 1;
-                    map -> 2;
-                    fold -> 3;
-                    zip_with -> 3;
-                    % Default to arity 1 for most functions
-                    _ -> 1
-                end;
-            ActualArity when is_integer(ActualArity) ->
-                ActualArity;
-            _ ->
-                % Fallback default
-                1
-        end,
+    % Check if this is a stdlib function that should be routed to cure_std
+    case is_cure_std_function(Name) of
+        true ->
+            % For stdlib functions, just push the function name as atom
+            % This will be handled by compile_call to route to cure_std
+            Form = {atom, Line, Name},
+            {ok, [], push_stack(Form, Context)};
+        false ->
+            % For other imported functions, create a fun reference
+            Arity =
+                case maps:get(arity, ImportedFunction, unknown) of
+                    unknown ->
+                        % For unknown arities, try some common defaults
+                        case Name of
+                            show -> 1;
+                            map -> 2;
+                            fold -> 3;
+                            zip_with -> 3;
+                            % Default to arity 1 for most functions
+                            _ -> 1
+                        end;
+                    ActualArity when is_integer(ActualArity) ->
+                        ActualArity;
+                    _ ->
+                        1
+                end,
 
-    % Create a fun reference: fun Std:Name/Arity
-    % Map quoted module names to their actual compiled module names
-    ModuleName = maps:get(module, ImportedFunction, 'Std'),
-    ActualModuleName =
-        case ModuleName of
-            'Std' -> 'Std';
-            Other -> Other
-        end,
-    FunForm =
-        {'fun', Line,
-            {function, {atom, Line, ActualModuleName}, {atom, Line, Name}, {integer, Line, Arity}}},
+            % Create a fun reference for non-stdlib functions
+            ModuleName = maps:get(module, ImportedFunction, 'Std'),
+            FunForm =
+                {'fun', Line,
+                    {function, {atom, Line, ModuleName}, {atom, Line, Name},
+                        {integer, Line, Arity}}},
 
-    {ok, [], push_stack(FunForm, Context)}.
-
-%% Compile function body to lambda form (simplified version)
-compile_function_body_to_lambda(Body, ParamNames, Line) ->
-    try
-        % Create lambda variables
-        ParamVars = [{var, Line, Param} || Param <- ParamNames],
-
-        % For now, create a simple function reference
-        % In a full implementation, we would recursively compile the body
-        LambdaForm =
-            {'fun', Line,
-                {clauses, [
-                    {clause, Line, ParamVars, [], [compile_simple_body_form(Body, Line)]}
-                ]}},
-        {ok, LambdaForm}
-    catch
-        _:Reason ->
-            {error, {lambda_compilation_failed, Reason}}
+            {ok, [], push_stack(FunForm, Context)}
     end.
-
-%% Compile simple body form (placeholder)
-compile_simple_body_form(_Body, Line) ->
-    % For now, return a placeholder
-    {atom, Line, placeholder}.
 
 %% Compile guard BIF instructions
 compile_guard_bif([GuardOp | Args], Context) ->
@@ -325,7 +302,7 @@ compile_guard_bif([GuardOp | Args], Context) ->
 %% Compile guard check instructions (for constraint validation)
 compile_guard_check([CheckType], Context) ->
     case pop_stack(Context) of
-        {GuardResult, NewContext} ->
+        {_GuardResult, NewContext} ->
             Line = NewContext#compile_context.line,
             % For now, we'll assume guard checks always pass at runtime
             % In a full implementation, this would generate proper guard validation

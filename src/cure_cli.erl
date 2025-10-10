@@ -292,20 +292,20 @@ type_check_ast(AST) ->
             Items when is_list(Items) ->
                 % Multiple top-level items - check them as a program
                 case cure_typechecker:check_program(Items) of
-                    Result ->
-                        check_type_result(Result, AST);
                     {error, Reason} ->
                         io:format("Type checking error: ~p~n", [Reason]),
-                        {error, Reason}
+                        {error, Reason};
+                    Result ->
+                        check_type_result(Result, AST)
                 end;
             SingleItem ->
                 % Single non-module item - check as program with single item
                 case cure_typechecker:check_program([SingleItem]) of
-                    Result ->
-                        check_type_result(Result, AST);
                     {error, Reason} ->
                         io:format("Type checking error: ~p~n", [Reason]),
-                        {error, Reason}
+                        {error, Reason};
+                    Result ->
+                        check_type_result(Result, AST)
                 end
         end
     catch

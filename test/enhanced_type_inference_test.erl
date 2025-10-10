@@ -6,7 +6,6 @@
 %% Record definitions for enhanced type inference testing
 -record(type_var, {id}).
 -record(type_constraint, {left, op, right, location}).
--record(type_param, {name, value}).
 -record(enhanced_inference_result, {
     type,
     constraints = [],
@@ -16,7 +15,6 @@
     justification = [],
     context_info = #{}
 }).
--record(inference_step, {step_type, input, output, result, location}).
 
 %% Test exports
 -export([
@@ -186,7 +184,7 @@ test_constraint_propagation() ->
     InitialSubst = #{},
 
     case cure_types:constraint_propagation(Constraints, InitialSubst) of
-        {ok, FinalConstraints, FinalSubst} ->
+        {ok, _FinalConstraints, FinalSubst} ->
             % Should propagate TypeVar1 = Int and TypeVar2 = TypeVar1 -> TypeVar2 = Int
             case maps:get(var1, FinalSubst, undefined) of
                 undefined ->
@@ -218,7 +216,7 @@ test_complex_constraint_propagation() ->
     InitialSubst = #{},
 
     case cure_types:constraint_propagation(Constraints, InitialSubst) of
-        {ok, FinalConstraints, FinalSubst} ->
+        {ok, _FinalConstraints, FinalSubst} ->
             % Check that return_var was substituted
             case maps:get(return_var, FinalSubst, undefined) of
                 IntType -> ok;
@@ -426,20 +424,3 @@ test_alternative_strategies() ->
     end.
 
 %% ===== HELPER FUNCTIONS =====
-
-% Helper to check if a type is numeric
-is_numeric_type({primitive_type, 'Int'}) -> true;
-is_numeric_type({primitive_type, 'Float'}) -> true;
-is_numeric_type(_) -> false.
-
-% Helper to extract type variables from expressions
-extract_vars_from_expr({identifier_expr, Name, _}) ->
-    [Name];
-extract_vars_from_expr({function_call_expr, Func, Args, _}) ->
-    FuncVars = extract_vars_from_expr(Func),
-    ArgVars = lists:flatmap(fun extract_vars_from_expr/1, Args),
-    FuncVars ++ ArgVars;
-extract_vars_from_expr({list_expr, Elements, _}) ->
-    lists:flatmap(fun extract_vars_from_expr/1, Elements);
-extract_vars_from_expr(_) ->
-    [].

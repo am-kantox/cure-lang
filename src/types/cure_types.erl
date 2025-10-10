@@ -832,9 +832,6 @@ extract_param_info(Param1, Param2) ->
 %% Get parameter name and value from AST record format (covers both record and tuple formats)
 get_tuple_param_info(#type_param{name = Name, value = Value}) ->
     {Name, Value};
-%% Handle raw tuple format: {type_param, Name, Value, Location}
-get_tuple_param_info({type_param, Name, Value, _Location}) ->
-    {Name, Value};
 get_tuple_param_info(_Other) ->
     {unknown, undefined}.
 
@@ -843,12 +840,6 @@ safe_extract_param_value(#type_param{value = undefined}) ->
     % Create a fresh type variable for undefined values
     new_type_var();
 safe_extract_param_value(#type_param{value = Value}) ->
-    Value;
-%% Handle raw tuple format: {type_param, Name, Value, Location}
-safe_extract_param_value({type_param, _Name, undefined, _Location}) ->
-    % Create a fresh type variable for undefined values
-    new_type_var();
-safe_extract_param_value({type_param, _Name, Value, _Location}) ->
     Value;
 safe_extract_param_value(Value) ->
     % Handle cases where it's not a type_param record
@@ -1108,7 +1099,7 @@ infer_expr({match_expr, MatchExpr, Patterns, _Location}, Env) ->
         Error ->
             Error
     end;
-infer_expr({lambda_expr, Params, Body, Location}, Env) ->
+infer_expr({lambda_expr, Params, Body, _Location}, Env) ->
     % Create type variables for parameters
     ParamTypes = [new_type_var() || _ <- Params],
 
@@ -1212,7 +1203,7 @@ instantiate_type_with_map(Type, _Map) ->
 instantiate_param_with_map(Param, Map) ->
     Value = extract_type_param_value(Param),
     case Value of
-        {identifier_expr, VarName, Location} ->
+        {identifier_expr, VarName, _Location} ->
             case maps:get(VarName, Map, undefined) of
                 % Keep original if not found
                 undefined -> Param;
@@ -1223,11 +1214,9 @@ instantiate_param_with_map(Param, Map) ->
     end.
 
 %% Update the value in a type parameter
-update_param_value(#type_param{name = Name, value = _OldValue} = Param, NewValue) ->
+update_param_value(#type_param{name = _Name, value = _OldValue} = Param, NewValue) ->
     Param#type_param{value = NewValue};
-update_param_value({type_param, Name, _OldValue, Location}, NewValue) ->
-    {type_param, Name, NewValue, Location};
-update_param_value(Param, NewValue) ->
+update_param_value(_Param, NewValue) ->
     % Fallback - create new param structure
     #type_param{name = undefined, value = NewValue}.
 

@@ -1,0 +1,8 @@
+module TestPrint do
+  export [test/0]
+
+  def test(): Unit =
+    print("Hello, World!")
+    ok
+
+end

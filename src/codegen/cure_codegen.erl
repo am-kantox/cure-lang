@@ -299,7 +299,8 @@ process_import_items(Module, Items, State) when is_list(Items) ->
         case Module of
             'Std' ->
                 % Add commonly used functions that should be available from Std
-                CoreFunctions = [zip_with, fold, map, show, print],
+                % Note: print is handled as a global function and routes to cure_std
+                CoreFunctions = [zip_with, fold, map, show],
                 Items ++ CoreFunctions;
             _ ->
                 Items
@@ -402,7 +403,7 @@ resolve_function_arity('Std', FunctionName) ->
         safe_nth -> 2;
         % Show and string functions
         show -> 1;
-        print -> 1;
+        % Note: print is handled as global function routing to cure_std
         % Core functions
         identity -> 1;
         compose -> 2;
@@ -1417,14 +1418,6 @@ process_imports_new([{import_def, Module, Imports, _Location} | Rest], State) ->
             % Continue with other imports
             process_imports_new(Rest, State)
     end;
-process_imports_new([#import_def{module = Module, items = Imports} | Rest], State) ->
-    case resolve_and_load_module(Module, Imports, State) of
-        {ok, NewState} ->
-            process_imports_new(Rest, NewState);
-        {error, Reason} ->
-            io:format("Warning: Failed to import ~p: ~p~n", [Module, Reason]),
-            process_imports_new(Rest, State)
-    end;
 process_imports_new([_ | Rest], State) ->
     process_imports_new(Rest, State).
 
@@ -1511,11 +1504,6 @@ find_exported_functions(AST) ->
     case AST of
         [#module_def{items = Items, exports = Exports}] ->
             extract_exported_function_bodies(Items, Exports);
-        [#module_def{items = Items}] ->
-            % No explicit exports, export all functions
-            extract_all_function_bodies(Items);
-        [{module_def, _Name, Exports, Items, _Location}] ->
-            extract_exported_function_bodies(Items, Exports);
         Items when is_list(Items) ->
             % List of items without module wrapper
             extract_all_function_bodies(Items);
@@ -1542,13 +1530,6 @@ extract_function_bodies([#function_def{name = Name, params = Params, body = Body
     FunctionKey = {Name, Arity},
     FunctionData = #{name => Name, arity => Arity, params => Params, body => Body},
     extract_function_bodies(Rest, [{FunctionKey, FunctionData} | Acc]);
-extract_function_bodies(
-    [{function_def, Name, Params, _RetType, _Constraint, Body, _Location} | Rest], Acc
-) ->
-    Arity = length(Params),
-    FunctionKey = {Name, Arity},
-    FunctionData = #{name => Name, arity => Arity, params => Params, body => Body},
-    extract_function_bodies(Rest, [{FunctionKey, FunctionData} | Acc]);
 extract_function_bodies([_ | Rest], Acc) ->
     % Skip non-function items
     extract_function_bodies(Rest, Acc).
@@ -1567,8 +1548,6 @@ export_list_to_set(Exports) ->
     sets:from_list(ExportTuples).
 
 export_to_tuple(#export_spec{name = Name, arity = Arity}) ->
-    {Name, Arity};
-export_to_tuple({export_spec, Name, Arity, _Location}) ->
     {Name, Arity};
 export_to_tuple({Name, Arity}) ->
     {Name, Arity}.
@@ -1595,16 +1574,6 @@ import_to_key(Name) when is_atom(Name) ->
 compile_item(#module_def{} = Module, Options) ->
     compile_module(Module, Options);
 compile_item(#function_def{} = Function, Options) ->
-    compile_function(Function, Options);
-%% Handle tuple-based AST format
-compile_item({function_def, Name, Params, _RetType, _Constraint, Body, Location}, Options) ->
-    % Convert tuple format to record format
-    Function = #function_def{
-        name = Name,
-        params = Params,
-        body = Body,
-        location = Location
-    },
     compile_function(Function, Options);
 % NOTE: {module_def, ...} tuple pattern is already handled by compile_module/2
 % which is called from the clause above
@@ -1730,7 +1699,6 @@ convert_functions_to_forms(Functions, LineStart) ->
 convert_functions_to_forms([], _Line, Acc) ->
     lists:reverse(Acc);
 convert_functions_to_forms([Function | RestFunctions], Line, Acc) ->
-    FunctionName = maps:get(name, Function, unknown),
     case convert_function_to_form(Function, Line) of
         {ok, Form, NextLine} ->
             convert_functions_to_forms(RestFunctions, NextLine, [Form | Acc]);
