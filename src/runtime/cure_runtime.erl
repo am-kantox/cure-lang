@@ -1,3 +1,144 @@
+-moduledoc """
+# Cure Programming Language - Runtime Execution Engine
+
+The runtime execution engine interprets and executes BEAM instructions generated
+by the Cure compiler. It provides a complete execution environment for Cure
+programs with stack-based instruction processing, function calls, module loading,
+and integration with the Erlang standard library.
+
+## Features
+
+### Instruction Execution
+- **Stack-based VM**: Uses an execution stack for operand management
+- **BEAM Instructions**: Processes compiler-generated BEAM instructions
+- **Control Flow**: Supports jumps, labels, conditionals, and function calls
+- **Pattern Matching**: Handles pattern matching operations
+- **Lambda Functions**: Creates and executes anonymous functions
+
+### Function System
+- **Module Loading**: Loads compiled Cure modules into runtime state
+- **Function Resolution**: Resolves and calls both internal and external functions
+- **Parameter Binding**: Maps function parameters to argument values
+- **Standard Library**: Built-in integration with cure_std functions
+- **Global Functions**: Pre-loaded standard functions accessible from any context
+
+### Memory Management
+- **Runtime State**: Maintains execution state with stack, locals, and parameters
+- **Module Registry**: Tracks loaded modules and their functions
+- **Variable Scoping**: Separate scopes for parameters, local variables, and globals
+- **Stack Operations**: Efficient stack manipulation for all operations
+
+### Error Handling
+- **Instruction Errors**: Detailed error reporting for instruction execution
+- **Function Errors**: Comprehensive function call error handling
+- **Stack Errors**: Stack underflow and overflow detection
+- **External Errors**: Error propagation from external function calls
+
+## Runtime Architecture
+
+### Execution Model
+The runtime uses a stack-based execution model where:
+1. **Instructions** operate on an execution stack
+2. **Operands** are pushed/popped from the stack
+3. **Results** are left on the stack for subsequent operations
+4. **Functions** execute with isolated parameter and local variable scopes
+
+### State Management
+```erlang
+#runtime_state{
+    stack = [],      % Execution stack for operands
+    locals = #{},    % Local variables in current scope
+    params = #{},    % Function parameters
+    modules = #{},   % Loaded modules
+    globals = #{}    % Global function registry
+}
+```
+
+### Instruction Set
+Supported BEAM instruction types:
+- **Load Operations**: load_literal, load_param, load_local, load_global
+- **Store Operations**: store_local
+- **Arithmetic**: binary_op, unary_op with standard operators
+- **Control Flow**: jump, jump_if_false, label, return
+- **Function Calls**: call, monadic_pipe_call
+- **Data Structures**: make_list, make_lambda
+- **Stack Management**: pop, pattern_match
+
+## Usage Examples
+
+### Basic Program Execution
+```erlang
+%% Execute a compiled module
+{ok, CompiledModule} = cure_codegen:compile_module(ModuleAST),
+{ok, Result} = cure_runtime:execute_module(CompiledModule).
+
+%% Run a complete program with multiple modules
+{ok, Modules} = cure_codegen:compile_program(ProgramAST),
+{ok, Result} = cure_runtime:run_program(Modules).
+```
+
+### Function Calls
+```erlang
+State = cure_runtime:create_runtime_state(),
+{ok, Result, NewState} = cure_runtime:call_function(add, [5, 3], State).
+```
+
+### Module Loading
+```erlang
+State = cure_runtime:create_runtime_state(),
+StateWithModule = cure_runtime:load_module(CompiledModule, State).
+```
+
+## Integration
+
+### Cure Standard Library
+The runtime automatically loads and provides access to:
+- Result/Option monadic operations (ok, error, some, none)
+- List processing functions (map, filter, foldl, head, tail)
+- Mathematical functions (abs, sqrt, pi, safe_divide)
+- String operations (concat, split, trim, case conversion)
+- I/O functions (print, println)
+- FSM operations (fsm_create, fsm_send_safe)
+
+### External Function Calls
+Supports calling external Erlang functions with automatic error handling
+and result propagation back to the Cure execution environment.
+
+### Monadic Pipe Operations
+Native support for Cure's monadic pipe operator (|>) with automatic
+ok/error unwrapping and error propagation through cure_std:pipe/2.
+
+## Error Handling
+
+### Error Types
+- `{function_not_found, FuncName}` - Function resolution failures
+- `{external_function_error, Error, Reason}` - External function call errors
+- `{function_execution_error, FuncName, Reason}` - Internal function errors
+- `{parameter_not_found, ParamName}` - Parameter binding errors
+- `{local_variable_not_found, VarName}` - Local variable access errors
+- `stack_underflow` - Insufficient stack items for operation
+- `{unsupported_instruction, Instruction}` - Unknown instruction types
+- `{label_not_found, Label}` - Jump target resolution failures
+
+### Error Propagation
+Errors are propagated through the call stack with detailed context
+information including function names, instruction details, and stack state.
+
+## Performance Characteristics
+
+- **Instruction Execution**: O(1) for most instructions
+- **Function Resolution**: O(1) hash map lookup
+- **Stack Operations**: O(1) for push/pop, O(n) for multi-item operations
+- **Module Loading**: O(n) where n is the number of functions
+- **Memory Usage**: Linear in program size and call stack depth
+
+## Thread Safety
+
+The runtime state is designed for single-threaded execution within a process.
+Concurrent execution requires separate runtime state instances per thread.
+External function calls may interact with concurrent Erlang processes safely.
+"""
+
 %% Cure Programming Language - Runtime Execution Engine
 %% Interprets and executes generated BEAM instructions
 -module(cure_runtime).
@@ -24,7 +165,42 @@
 %% Main Execution Interface
 %% ============================================================================
 
-%% Execute a compiled module
+-doc """
+Executes a compiled Cure module by running its main/0 function.
+
+This is the primary entry point for executing standalone Cure modules.
+It creates a fresh runtime state, loads the module, and executes the
+main function if present.
+
+## Arguments
+- `CompiledModule` - Module compiled by cure_codegen:compile_module/1,2
+
+## Returns
+- `{ok, Result}` - Successfully executed with main function result
+- `{error, main_function_not_found}` - Module has no main/0 function
+- `{error, Reason}` - Execution error during main function
+
+## Example
+```erlang
+%% Compile and execute a module with main/0
+ModuleAST = parse_module("def main() = 42"),
+{ok, CompiledModule} = cure_codegen:compile_module(ModuleAST),
+{ok, 42} = cure_runtime:execute_module(CompiledModule).
+```
+
+## Main Function Requirements
+- Must be named `main`
+- Must have arity 0 (no parameters)
+- Should return the program's exit value or result
+- Will be executed in a fresh runtime environment
+
+## Runtime Environment
+The execution environment includes:
+- Clean runtime state with empty stack
+- Pre-loaded standard library functions
+- Module functions available for internal calls
+- Proper error handling and propagation
+"""
 execute_module(CompiledModule) ->
     State = create_runtime_state(),
     StateWithModule = cure_runtime:load_module(CompiledModule, State),
@@ -37,7 +213,41 @@ execute_module(CompiledModule) ->
             {error, main_function_not_found}
     end.
 
-%% Run a complete program (list of modules)
+-doc """
+Runs a complete Cure program consisting of multiple modules.
+
+This function loads all provided modules into the runtime and executes
+the first main/0 function found across all modules. This is used for
+multi-module Cure programs.
+
+## Arguments
+- `Modules` - List of compiled modules from cure_codegen:compile_program/1,2
+
+## Returns
+- `{ok, Result}` - Successfully executed with main function result
+- `{error, no_modules}` - Empty module list provided
+- `{error, main_function_not_found}` - No main/0 function in any module
+- `{error, Reason}` - Execution error during program execution
+
+## Example
+```erlang
+%% Compile and run a multi-module program
+ProgramAST = [Module1AST, Module2AST, MainModuleAST],
+{ok, Modules} = cure_codegen:compile_program(ProgramAST),
+{ok, Result} = cure_runtime:run_program(Modules).
+```
+
+## Module Loading Order
+1. All modules are loaded into the runtime state first
+2. Functions from all modules become available globally
+3. The first main/0 function found is executed
+4. Modules are searched in the order provided
+
+## Inter-module Dependencies
+- Functions from all loaded modules are available to each other
+- No explicit import/export checking at runtime
+- Name conflicts resolved by load order (later modules shadow earlier ones)
+"""
 run_program([]) ->
     {error, no_modules};
 run_program([FirstModule | RestModules]) ->
@@ -56,7 +266,58 @@ run_program([FirstModule | RestModules]) ->
             {error, main_function_not_found}
     end.
 
-%% Create initial runtime state
+-doc """
+Creates a fresh runtime state with pre-loaded standard library functions.
+
+This function initializes the runtime environment with all necessary
+components for executing Cure programs, including the complete standard
+library function registry.
+
+## Returns
+- `#runtime_state{}` - Fresh runtime state ready for execution
+
+## Example
+```erlang
+State = cure_runtime:create_runtime_state(),
+{ok, Result, NewState} = cure_runtime:call_function(print, ["Hello"], State).
+```
+
+## Pre-loaded Functions
+The runtime state includes immediate access to:
+
+### Monadic Operations
+- `ok/1`, `error/1` - Result type constructors
+- `some/1`, `none/0` - Option type constructors
+- `map_ok/2`, `pipe/2` - Monadic operations
+
+### List Processing
+- `map/2`, `filter/2`, `foldl/3` - Higher-order list functions
+- `head/1`, `tail/1`, `length/1` - Basic list operations
+- `find/2` - List searching
+
+### Mathematical Functions
+- `abs/1`, `sqrt/1`, `pi/0` - Basic math
+- `safe_divide/2`, `safe_sqrt/2` - Safe math operations
+- `gcd/2`, `factorial/1` - Extended math functions
+
+### String Operations
+- `string_concat/2`, `split/2`, `trim/1` - String manipulation
+- `to_upper/1`, `to_lower/1` - Case conversion
+- `contains/2`, `starts_with/2`, `ends_with/2` - String testing
+- `string_join/2`, `string_empty/1` - String utilities
+
+### I/O Functions
+- `print/1`, `println/1` - Console output
+- `int_to_string/1`, `float_to_string/1` - Type conversion
+
+### FSM Operations
+- `fsm_create/2`, `fsm_send_safe/2` - FSM management
+- `create_counter/1` - Counter FSM creation
+
+## Function Resolution
+All pre-loaded functions use external references to cure_std module
+functions, ensuring consistent behavior and implementation.
+"""
 create_runtime_state() ->
     GlobalFunctions = #{
         % Standard library functions from cure_std
@@ -107,7 +368,59 @@ create_runtime_state() ->
 %% Module Loading
 %% ============================================================================
 
-%% Load a compiled module into runtime state
+-doc """
+Loads a compiled module into the runtime state, making its functions available.
+
+This function integrates a compiled module into the runtime environment,
+registering all its functions in the global function registry and storing
+the module for future reference.
+
+## Arguments
+- `CompiledModule` - Module compiled by cure_codegen:compile_module/1,2
+- `State` - Current runtime state
+
+## Returns
+- `#runtime_state{}` - Updated runtime state with loaded module
+
+## Example
+```erlang
+State = cure_runtime:create_runtime_state(),
+{ok, Module} = cure_codegen:compile_module(ModuleAST),
+StateWithModule = cure_runtime:load_module(Module, State),
+
+%% Now module functions are available
+{ok, Result, _} = cure_runtime:call_function(my_function, [args], StateWithModule).
+```
+
+## Module Integration
+Loading a module performs the following operations:
+1. **Function Registration**: All module functions are added to globals
+2. **Name Resolution**: Functions become callable by name from any context
+3. **Module Storage**: Module definition is stored for introspection
+4. **Namespace Merging**: Functions are merged with existing global functions
+
+## Function Availability
+- All functions in the module become globally callable
+- Functions shadow previously loaded functions with same name
+- Both exported and non-exported functions are available (no visibility restrictions)
+- Functions can call other functions from the same or different loaded modules
+
+## Module Format
+Expected compiled module format:
+```erlang
+#{
+    name => ModuleName,
+    functions => [CompiledFunction, ...],
+    exports => [{FuncName, Arity}, ...],
+    attributes => [...]
+}
+```
+
+## Error Handling
+Module loading is designed to always succeed. Malformed modules may
+result in functions that cannot be executed, but loading itself will
+not fail.
+"""
 load_module(CompiledModule, State) ->
     ModuleName = maps:get(name, CompiledModule),
     Functions = maps:get(functions, CompiledModule, []),
@@ -160,7 +473,63 @@ find_main_function([Module | RestModules]) ->
 %% Function Execution
 %% ============================================================================
 
-%% Execute a function by name with arguments
+-doc """
+Calls a function by name with the provided arguments.
+
+This is the primary interface for invoking functions within the runtime.
+It handles both internal Cure functions and external Erlang functions,
+with automatic error handling and state management.
+
+## Arguments
+- `FuncName` - Function name (atom)
+- `Args` - List of arguments to pass to the function
+- `State` - Current runtime state
+
+## Returns
+- `{ok, Result, NewState}` - Function executed successfully
+- `{error, {function_not_found, FuncName}}` - Function not in registry
+- `{error, {external_function_error, Error, Reason}}` - External function failed
+- `{error, {function_execution_error, FuncName, Reason}}` - Internal function failed
+
+## Example
+```erlang
+State = cure_runtime:create_runtime_state(),
+
+%% Call standard library function
+{ok, Result, State1} = cure_runtime:call_function(abs, [-5], State),
+%% Result = 5
+
+%% Call user-defined function (after loading module)
+StateWithModule = cure_runtime:load_module(CompiledModule, State1),
+{ok, UserResult, State2} = cure_runtime:call_function(my_func, [1, 2], StateWithModule).
+```
+
+## Function Types
+
+### External Functions
+- Implemented in Erlang modules (typically cure_std)
+- Called using `apply/3` with automatic error catching
+- Standard library functions like print, map, abs, etc.
+- Maintain no internal state between calls
+
+### Internal Functions
+- Implemented in Cure with compiled BEAM instructions
+- Execute within isolated parameter/local variable scope
+- Can call other internal or external functions
+- Maintain stack-based execution model
+
+## Error Handling
+- Function resolution failures are reported with function name
+- External function errors include original Erlang error details
+- Internal function errors include execution context and stack trace
+- State is preserved across failed function calls
+
+## State Management
+- Global state (modules, globals) is preserved across calls
+- Function parameters and locals are isolated per call
+- Stack is managed automatically during execution
+- External functions cannot modify runtime state
+"""
 call_function(FuncName, Args, State) ->
     case maps:get(FuncName, State#runtime_state.globals, undefined) of
         undefined ->

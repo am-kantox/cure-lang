@@ -1,3 +1,132 @@
+-moduledoc """
+# Cure Programming Language - AST Definitions
+
+This module defines the Abstract Syntax Tree (AST) node types and structure for
+the Cure programming language. It provides comprehensive type definitions and
+helper functions for creating and manipulating AST nodes throughout the compilation
+pipeline.
+
+## Overview
+
+The Cure AST represents the complete syntactic structure of Cure programs including:
+- **Programs**: Collections of top-level items
+- **Modules**: Module definitions with exports and items
+- **Functions**: Function definitions with parameters, return types, and bodies
+- **Types**: User-defined types, primitives, and complex type expressions
+- **FSMs**: Finite state machine definitions with states and transitions
+- **Expressions**: All forms of expressions (literals, function calls, control flow)
+- **Patterns**: Pattern matching constructs
+- **Location Information**: Source position tracking for error reporting
+
+## AST Structure
+
+### Top-Level Items
+Programs consist of top-level items:
+- `module_def()` - Module definitions
+- `function_def()` - Regular function definitions
+- `erlang_function_def()` - Erlang interop functions
+- `type_def()` - User-defined type definitions
+- `fsm_def()` - Finite state machine definitions
+- `import_def()` - Import statements
+
+### Expression Types
+Expressions represent computations and values:
+- `literal_expr()` - Literals (numbers, strings, atoms)
+- `identifier_expr()` - Variable and function names
+- `function_call_expr()` - Function calls with arguments
+- `binary_op_expr()` - Binary operations (+, -, *, etc.)
+- `unary_op_expr()` - Unary operations (-, not)
+- `match_expr()` - Pattern matching expressions
+- `if_expr()` - Conditional expressions
+- `let_expr()` - Let bindings
+- `list_expr()` - List literals
+- `tuple_expr()` - Tuple literals
+- `record_expr()` - Record construction
+- `lambda_expr()` - Anonymous functions
+
+### Type System
+Type expressions represent Cure's type system:
+- `primitive_type()` - Built-in types (Int, String, Bool, etc.)
+- `dependent_type()` - Parameterized types with dependencies
+- `function_type()` - Function type signatures
+- `union_type()` - Union types (T | U)
+- `list_type()` - List types
+- `tuple_type()` - Tuple types
+- `type_param()` - Type parameters for generics
+
+### Pattern Matching
+Patterns for destructuring and matching:
+- `wildcard_pattern()` - Wildcard patterns (_)
+- `literal_pattern()` - Literal value patterns
+- `identifier_pattern()` - Variable binding patterns
+- `list_pattern()` - List destructuring patterns
+- `tuple_pattern()` - Tuple destructuring patterns
+- `record_pattern()` - Record field patterns
+- `constructor_pattern()` - Constructor patterns (Ok(x), Error(e))
+
+### FSM Support
+First-class finite state machine support:
+- `fsm_def()` - FSM type definitions
+- `state_def()` - Individual state definitions
+- `transition()` - State transitions with events, guards, and actions
+
+## Location Tracking
+
+All AST nodes include location information for:
+- **Error Reporting**: Precise source locations for compilation errors
+- **Debugging**: Source mapping for runtime errors
+- **IDE Support**: Language server integration
+- **Documentation**: API documentation generation
+
+## Usage Example
+
+```erlang
+%% Create a simple function definition
+Params = [#param{name = x, type = int_type(), location = Location}],
+Body = #literal_expr{value = 42, location = Location},
+Function = cure_ast:new_function(identity, Params, int_type(), undefined, Body).
+
+%% Create an FSM definition
+States = [idle, running, stopped],
+Initial = idle,
+StateDefs = [IdleState, RunningState, StoppedState],
+FSM = cure_ast:new_fsm(state_machine, States, Initial, StateDefs).
+```
+
+## Design Principles
+
+### Immutability
+AST nodes are immutable records that can be safely shared and transformed
+without side effects.
+
+### Composability
+Complex AST structures are built by composing simpler nodes, enabling
+modular construction and transformation.
+
+### Location Preservation
+Every AST node maintains source location information to support high-quality
+error messages and debugging.
+
+### Type Safety
+Erlang type specifications ensure AST node integrity and enable static
+analysis tools to verify AST manipulation code.
+
+## Integration
+
+This module integrates with:
+- **Parser**: Produces AST nodes from token streams
+- **Type Checker**: Analyzes and annotates AST with type information
+- **Compiler**: Transforms AST through various compilation phases
+- **Error Reporter**: Uses location information for error messages
+
+## Performance Considerations
+
+- **Memory Efficient**: Records are lightweight with minimal overhead
+- **Copy-on-Write**: Erlang's immutable data structures optimize memory usage
+- **Pattern Matching**: Efficient pattern matching on AST node types
+- **Location Sharing**: Location records can be shared between related nodes
+"""
+
 %% Cure Programming Language - AST Definitions
 %% Abstract Syntax Tree node definitions
 -module(cure_ast).
@@ -424,7 +553,25 @@
 
 %% Helper functions for creating AST nodes
 
-%% Create a module definition
+-doc """
+Creates a new module definition AST node.
+
+## Arguments
+- `Name` - Module name (atom)
+- `Exports` - List of export specifications
+- `Items` - List of top-level items in the module
+- `Location` - Source location information
+
+## Returns
+- `module_def()` - Module definition AST node
+
+## Example
+```erlang
+Exports = [#export_spec{name = hello, arity = 1, location = Loc}],
+Items = [FunctionDef],
+Module = cure_ast:new_module('MyModule', Exports, Items, Location).
+```
+"""
 -spec new_module(atom(), [export_spec()], [item()], location()) -> module_def().
 new_module(Name, Exports, Items, Location) ->
     #module_def{
@@ -434,7 +581,30 @@ new_module(Name, Exports, Items, Location) ->
         location = Location
     }.
 
-%% Create a function definition
+-doc """
+Creates a new function definition AST node.
+
+## Arguments
+- `Name` - Function name (atom)
+- `Params` - List of function parameters
+- `ReturnType` - Return type expression (undefined if not specified)
+- `Constraint` - Optional constraint expression for the function
+- `Body` - Function body expression
+
+## Returns
+- `function_def()` - Function definition AST node
+
+## Example
+```erlang
+Params = [#param{name = x, type = IntType, location = Loc}],
+Body = #literal_expr{value = 42, location = Loc},
+Function = cure_ast:new_function(identity, Params, IntType, undefined, Body).
+```
+
+## Note
+This helper function uses a default location. For proper location tracking,
+construct the record directly with accurate location information.
+"""
 -spec new_function(
     atom(),
     [param()],
@@ -453,7 +623,28 @@ new_function(Name, Params, ReturnType, Constraint, Body) ->
         location = #location{line = 0, column = 0}
     }.
 
-%% Create a type definition
+-doc """
+Creates a new type definition AST node.
+
+## Arguments
+- `Name` - Type name (atom)
+- `Params` - List of type parameter names
+- `Definition` - Type expression defining the type
+
+## Returns
+- `type_def()` - Type definition AST node
+
+## Example
+```erlang
+Params = [t],
+Definition = #union_type{types = [IntType, StringType], location = Loc},
+TypeDef = cure_ast:new_type_def('Maybe', Params, Definition).
+```
+
+## Note
+This helper function uses a default location. For proper location tracking,
+construct the record directly with accurate location information.
+"""
 -spec new_type_def(atom(), [atom()], type_expr()) -> type_def().
 new_type_def(Name, Params, Definition) ->
     #type_def{
@@ -464,7 +655,29 @@ new_type_def(Name, Params, Definition) ->
         location = #location{line = 0, column = 0}
     }.
 
-%% Create an FSM definition
+-doc """
+Creates a new FSM definition AST node.
+
+## Arguments
+- `Name` - FSM name (atom)
+- `States` - List of state names
+- `Initial` - Initial state name
+- `StateDefs` - List of state definitions with transitions
+
+## Returns
+- `fsm_def()` - FSM definition AST node
+
+## Example
+```erlang
+States = [idle, running, stopped],
+StateDefs = [IdleState, RunningState, StoppedState],
+FSM = cure_ast:new_fsm(counter, States, idle, StateDefs).
+```
+
+## Note
+This helper function uses a default location. For proper location tracking,
+construct the record directly with accurate location information.
+"""
 -spec new_fsm(atom(), [atom()], atom(), [state_def()]) -> fsm_def().
 new_fsm(Name, States, Initial, StateDefs) ->
     #fsm_def{
@@ -476,7 +689,32 @@ new_fsm(Name, States, Initial, StateDefs) ->
         location = #location{line = 0, column = 0}
     }.
 
-%% Create an expression with location
+-doc """
+Creates a new expression AST node with location information.
+
+## Arguments
+- `Type` - Expression type (literal, identifier, etc.)
+- `Data` - Expression data appropriate for the type
+- `Location` - Source location information
+
+## Returns
+- `expr()` - Expression AST node
+- `error({unknown_expr_type, Type, Data, Location})` - Unknown expression type
+
+## Supported Types
+- `literal` - Creates a literal expression from the value
+- `identifier` - Creates an identifier expression from the name
+
+## Example
+```erlang
+Literal = cure_ast:new_expr(literal, 42, Location),
+Identifier = cure_ast:new_expr(identifier, variable_name, Location).
+```
+
+## Note
+This is a limited helper function that only supports basic expression types.
+For complex expressions, construct the records directly.
+"""
 -spec new_expr(atom(), term(), location()) -> expr().
 new_expr(literal, Value, Location) ->
     #literal_expr{value = Value, location = Location};

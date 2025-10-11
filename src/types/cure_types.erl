@@ -1,3 +1,132 @@
+-moduledoc """
+# Cure Programming Language - Type System Core
+
+The core type system module implementing Cure's advanced dependent type system
+with constraint solving, type inference, and support for higher-kinded types.
+This module provides the foundational type operations that power Cure's static
+type checking and dependent type verification.
+
+## Key Features
+
+### Dependent Types
+- **Value Dependencies**: Types that depend on runtime values (e.g., `Vector(T, n)`)
+- **Constraint Solving**: SMT-based constraint solving for dependent type verification
+- **Type-Level Computation**: Evaluation of type expressions with value parameters
+
+### Advanced Type System
+- **Higher-Kinded Types**: Support for type constructors and type families
+- **Recursive Types**: μ-types with cycle detection and well-formedness checking
+- **Union Types**: Discriminated union types with exhaustiveness checking
+- **Generic Types**: Full parametric polymorphism with constraint-based inference
+
+### Type Inference Engine
+- **Bidirectional Inference**: Combines bottom-up and top-down type inference
+- **Constraint Generation**: Generates and solves complex type constraints
+- **Alternative Generation**: Provides multiple type possibilities with confidence scores
+- **Local Inference**: Context-aware type inference for improved accuracy
+
+### Unification Algorithm
+- **Robinson Unification**: Extended Robinson unification for dependent types
+- **Occurs Check**: Prevents infinite types with comprehensive cycle detection
+- **Constraint Propagation**: Propagates type constraints through unification
+- **Substitution Management**: Efficient substitution composition and application
+
+## Core Operations
+
+### Type Variables
+```erlang
+%% Create new type variables
+TVar1 = cure_types:new_type_var(),
+TVar2 = cure_types:new_type_var(custom_name).
+
+%% Check type variable properties
+true = cure_types:is_type_var(TVar1),
+false = cure_types:occurs_check(TVar1, IntType).
+```
+
+### Type Unification
+```erlang
+%% Unify two types
+{ok, Substitution} = cure_types:unify(Type1, Type2),
+{ok, Sub, Constraints} = cure_types:unify(Type1, Type2, Environment).
+```
+
+### Type Inference
+```erlang
+%% Basic type inference
+{ok, InferredType} = cure_types:infer_type(Expression, Environment),
+
+%% Enhanced inference with alternatives
+{ok, Result} = cure_types:enhanced_infer_type(Expression, Environment),
+Confidence = Result#enhanced_inference_result.confidence,
+Alternatives = Result#enhanced_inference_result.alternatives.
+```
+
+## Type Environment
+
+The type environment maintains variable bindings and constraints:
+- **Hierarchical Scoping**: Supports nested scopes with parent environments
+- **Constraint Accumulation**: Collects and manages type constraints
+- **Efficient Lookup**: Fast variable resolution with scope traversal
+
+```erlang
+%% Environment operations
+Env1 = cure_types:new_env(),
+Env2 = cure_types:extend_env(Env1, variable_name, VariableType),
+{ok, Type} = cure_types:lookup_env(Env2, variable_name).
+```
+
+## Constraint Solving
+
+Supports various constraint types:
+- **Equality**: `T = U`
+- **Subtyping**: `T <: U`
+- **Element Membership**: `x elem_of T`
+- **Length Constraints**: `length(xs) = n`
+- **Logical Constraints**: `implies`, `iff`
+- **Variance Constraints**: `covariant`, `contravariant`
+
+## Higher-Kinded Types
+
+```erlang
+%% Create type constructors
+ListKind = cure_types:create_kind('*', [], '*'),
+FunctorKind = cure_types:create_kind('->', [ListKind], ListKind),
+
+%% Type families
+Family = cure_types:create_type_family(map, [F, T], Dependencies, Constraints),
+Result = cure_types:evaluate_type_family(Family, Arguments).
+```
+
+## Performance Characteristics
+
+- **Type Inference**: O(n log n) for most expressions
+- **Unification**: O(n) for structural types, O(n²) worst case
+- **Constraint Solving**: Depends on constraint complexity, uses SMT solver
+- **Memory Usage**: Efficient substitution sharing reduces memory overhead
+
+## Integration
+
+This module integrates with:
+- **Type Checker**: Provides core type operations for checking
+- **SMT Solver**: Delegates complex constraint solving
+- **Type Optimizer**: Provides types for optimization decisions
+- **Parser**: Processes type annotations and expressions
+
+## Error Handling
+
+Returns structured errors for:
+- **Unification Failures**: Detailed mismatch information
+- **Constraint Violations**: Specific constraint failure reasons
+- **Infinite Types**: Occurs check violations
+- **Kind Errors**: Higher-kinded type mismatches
+
+## Thread Safety
+
+Type variables use a global counter that should be accessed safely in
+concurrent environments. The module is otherwise stateless and thread-safe.
+"""
+
 %% Cure Programming Language - Type System Core
 %% Dependent type system with constraint solving and inference
 -module(cure_types).
@@ -290,10 +419,47 @@
 -define(TYPE_NAT, {refined_type, 'Int', fun(N) -> N >= 0 end}).
 -define(TYPE_POS, {refined_type, 'Int', fun(N) -> N > 0 end}).
 
-%% Type variable generation
+-doc """
+Creates a new unique type variable without a specific name.
+
+This is a convenience function that calls new_type_var/1 with undefined name.
+
+## Returns
+- `type_var()` - A new unique type variable
+
+## Example
+```erlang
+TVar = cure_types:new_type_var(),
+true = cure_types:is_type_var(TVar).
+```
+
+## Note
+Uses a process dictionary counter to ensure uniqueness within a process.
+For concurrent use, external synchronization may be required.
+"""
 new_type_var() ->
     new_type_var(undefined).
 
+-doc """
+Creates a new unique type variable with an optional name.
+
+## Arguments
+- `Name` - Optional name for the type variable (atom() | undefined)
+
+## Returns
+- `type_var()` - A new unique type variable with the given name
+
+## Example
+```erlang
+TVar1 = cure_types:new_type_var(my_var),
+TVar2 = cure_types:new_type_var(undefined),
+true = TVar1#type_var.name =:= my_var.
+```
+
+## Note
+The name is primarily for debugging and error reporting. The unique ID
+ensures type variable identity regardless of name.
+"""
 new_type_var(Name) ->
     Counter =
         case get(?TYPE_VAR_COUNTER) of
@@ -307,10 +473,51 @@ new_type_var(Name) ->
         constraints = []
     }.
 
+-doc """
+Checks if a term is a type variable.
+
+## Arguments
+- `Term` - Any term to check
+
+## Returns
+- `true` - If the term is a type_var record
+- `false` - Otherwise
+
+## Example
+```erlang
+TVar = cure_types:new_type_var(),
+true = cure_types:is_type_var(TVar),
+false = cure_types:is_type_var(my_atom).
+```
+"""
 is_type_var(#type_var{}) -> true;
 is_type_var(_) -> false.
 
-%% Occurs check for infinite types
+-doc """
+Performs an occurs check to prevent infinite types during unification.
+
+The occurs check ensures that a type variable does not occur within
+the type it would be unified with, preventing infinite type structures.
+
+## Arguments
+- `TypeVar` - Type variable to check for
+- `Type` - Type expression to check within
+
+## Returns
+- `true` - If the type variable occurs in the type (would create infinite type)
+- `false` - If the unification would be safe
+
+## Example
+```erlang
+TVar = cure_types:new_type_var(),
+ListType = {list_type, TVar},
+true = cure_types:occurs_check(TVar, ListType),  % Would create infinite list
+false = cure_types:occurs_check(TVar, {primitive_type, 'Int'}).
+```
+
+## Note
+This is essential for preventing infinite types like `T = List(T)` during unification.
+"""
 occurs_check(#type_var{id = Id}, Type) ->
     occurs_check_impl(Id, Type).
 
@@ -347,7 +554,27 @@ occurs_check_impl(_Id, undefined) ->
 occurs_check_impl(_, _) ->
     false.
 
-%% Type Environment Operations
+-doc """
+Creates a new empty type environment.
+
+The type environment maintains variable bindings, constraints, and
+supports hierarchical scoping through parent environments.
+
+## Returns
+- `type_env()` - A new empty type environment
+
+## Example
+```erlang
+Env = cure_types:new_env(),
+Env2 = cure_types:extend_env(Env, x, {primitive_type, 'Int'}),
+{ok, Type} = cure_types:lookup_env(Env2, x).
+```
+
+## Features
+- **Hierarchical Scoping**: Supports nested environments
+- **Constraint Tracking**: Accumulates type constraints
+- **Efficient Lookup**: Fast variable resolution
+"""
 new_env() ->
     #type_env{
         bindings = #{},
@@ -355,6 +582,31 @@ new_env() ->
         parent = undefined
     }.
 
+-doc """
+Extends a type environment with a new variable binding.
+
+Supports multiple environment representations for different use cases.
+
+## Arguments
+- `Env` - Type environment (type_env(), map(), or list())
+- `Var` - Variable name (atom())
+- `Type` - Type expression to bind to the variable
+
+## Returns
+- Updated environment with the new binding
+
+## Supported Environment Types
+- **type_env()**: Full environment with constraints and parent scopes
+- **map()**: Simple map for lightweight inference
+- **list()**: Association list for basic scoping
+
+## Example
+```erlang
+Env1 = cure_types:new_env(),
+Env2 = cure_types:extend_env(Env1, x, {primitive_type, 'Int'}),
+Env3 = cure_types:extend_env(Env2, y, {primitive_type, 'String'}).
+```
+"""
 extend_env(Env = #type_env{bindings = Bindings}, Var, Type) ->
     Env#type_env{bindings = maps:put(Var, Type, Bindings)};
 extend_env(#{} = Env, Var, Type) ->
@@ -364,6 +616,30 @@ extend_env(Env, Var, Type) when is_list(Env) ->
     % Association list environment
     [{Var, Type} | Env].
 
+-doc """
+Looks up a variable binding in the type environment.
+
+Searches the current environment and parent environments if available.
+
+## Arguments
+- `Env` - Type environment (type_env(), map(), or list())
+- `Var` - Variable name to look up (atom())
+
+## Returns
+- `Type` - The type bound to the variable if found
+- `undefined` - If the variable is not bound in the environment
+
+## Scoping
+For type_env() records, searches parent environments if the variable
+is not found in the current scope.
+
+## Example
+```erlang
+Env = cure_types:extend_env(cure_types:new_env(), x, IntType),
+IntType = cure_types:lookup_env(Env, x),
+undefined = cure_types:lookup_env(Env, unbound_var).
+```
+"""
 lookup_env(#type_env{bindings = Bindings, parent = Parent}, Var) ->
     case maps:get(Var, Bindings, undefined) of
         undefined when Parent =/= undefined ->
@@ -384,10 +660,60 @@ lookup_env([_ | Rest], Var) ->
     % Search rest of association list
     lookup_env(Rest, Var).
 
-%% Type Unification
+-doc """
+Unifies two types using the Robinson unification algorithm.
+
+This is a convenience function that calls unify/3 with an empty substitution.
+
+## Arguments
+- `Type1` - First type expression to unify
+- `Type2` - Second type expression to unify
+
+## Returns
+- `{ok, Substitution}` - Successful unification with substitution map
+- `{error, Reason}` - Unification failure with detailed error
+
+## Example
+```erlang
+{ok, Subst} = cure_types:unify(IntType, IntType),
+{ok, Subst2} = cure_types:unify(TVar, IntType),
+{error, _} = cure_types:unify(IntType, StringType).
+```
+
+## Error Cases
+- Type mismatch (e.g., Int vs String)
+- Occurs check failure (infinite types)
+- Constraint violations
+"""
 unify(Type1, Type2) ->
     unify(Type1, Type2, #{}).
 
+-doc """
+Unifies two types with an existing substitution.
+
+Applies the existing substitution to both types before unification
+and composes the results.
+
+## Arguments
+- `Type1` - First type expression to unify
+- `Type2` - Second type expression to unify  
+- `Subst` - Existing substitution map to compose with
+
+## Returns
+- `{ok, NewSubstitution}` - Combined substitution after unification
+- `{error, Reason}` - Unification failure with detailed error
+
+## Example
+```erlang
+{ok, Subst1} = cure_types:unify(TVar1, IntType),
+{ok, Subst2} = cure_types:unify(TVar2, StringType, Subst1),
+%% Subst2 now contains bindings for both TVar1 and TVar2
+```
+
+## Substitution Composition
+The function applies the input substitution to both types before
+unification and composes the result with the input substitution.
+"""
 unify(Type1, Type2, Subst) ->
     unify_impl(
         apply_substitution(Type1, Subst),

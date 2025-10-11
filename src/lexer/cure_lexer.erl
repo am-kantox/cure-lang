@@ -1,6 +1,49 @@
-%% Cure Programming Language - Lexer
-%% Tokenizes Cure source code into a stream of tokens
 -module(cure_lexer).
+
+-moduledoc """
+# Cure Programming Language - Lexer
+
+The lexer module provides tokenization services for Cure source code, converting
+raw text into a structured stream of tokens for the parser. It supports all Cure
+language constructs including keywords, operators, literals, and comments.
+
+## Features
+
+- **Position Tracking**: Every token includes precise line and column information
+- **String Interpolation**: Support for `#{expr}` string interpolation syntax
+- **Multi-character Operators**: Recognition of operators like `->`, `|>`, `::`, etc.
+- **Comprehensive Literals**: Numbers, strings, atoms, and boolean values
+- **Keywords**: All Cure language keywords including FSM constructs
+- **Error Recovery**: Detailed error reporting with location information
+
+## Token Types
+
+The lexer recognizes the following token categories:
+
+- **Keywords**: `def`, `fsm`, `match`, `when`, etc.
+- **Identifiers**: Variable and function names
+- **Literals**: Numbers, strings, atoms, booleans
+- **Operators**: `+`, `->`, `|>`, `::`, `==`, etc.
+- **Delimiters**: `()`, `[]`, `{}`, `,`, `;`, etc.
+- **Comments**: Line comments starting with `#`
+
+## String Interpolation
+
+Supports string interpolation with `#{expression}` syntax:
+
+```cure
+"Hello #{name}!"  % Tokenized as interpolated string
+```
+
+## Error Handling
+
+All tokenization errors include precise location information:
+
+```erlang
+{error, {Reason, Line, Column}}
+```
+
+""".
 
 -export([tokenize/1, tokenize_file/1, token_type/1]).
 
@@ -14,7 +57,53 @@
 
 %% Public API
 
-%% @doc Tokenize a string of Cure source code
+-doc """
+Tokenize a string of Cure source code into a list of tokens.
+
+This is the main entry point for lexical analysis. It processes the entire
+input and returns a list of tokens with position information.
+
+## Arguments
+
+- `Source` - Binary containing Cure source code to tokenize
+
+## Returns
+
+- `{ok, Tokens}` - Successful tokenization with list of token records
+- `{error, {Reason, Line, Column}}` - Tokenization error with location
+- `{error, {Error, Reason, Stack}}` - Internal error with stack trace
+
+## Token Record
+
+Each token is a record with fields:
+- `type` - Token type atom (e.g., `identifier`, `number`, `def`)
+- `value` - Token value (e.g., variable name, number value)
+- `line` - Line number (1-based)
+- `column` - Column number (1-based)
+
+## Examples
+
+```erlang
+tokenize(<<"def add(x, y) = x + y">>).
+% => {ok, [
+%      #token{type=def, value=def, line=1, column=1},
+%      #token{type=identifier, value= <<"add">>, line=1, column=5},
+%      #token{type='(', value='(', line=1, column=8},
+%      ...
+%    ]}
+
+tokenize(<<"invalid \xff character">>).
+% => {error, {invalid_character, 1, 9}}
+```
+
+## Error Types
+
+- `invalid_character` - Unrecognized character in input
+- `unterminated_string` - String literal without closing quote
+- `invalid_number_format` - Malformed numeric literal
+- `unterminated_comment` - Block comment without proper termination
+
+"""
 -spec tokenize(binary()) -> {ok, [#token{}]} | {error, term()}.
 tokenize(Source) when is_binary(Source) ->
     try
@@ -27,7 +116,34 @@ tokenize(Source) when is_binary(Source) ->
             {error, {Error, Reason, Stack}}
     end.
 
-%% @doc Tokenize a file
+-doc """
+Tokenize a Cure source file.
+
+This is a convenience function that reads a file from disk and tokenizes
+its contents. It handles file I/O errors and passes the content to the
+main tokenization function.
+
+## Arguments
+
+- `Filename` - Path to the .cure source file to tokenize
+
+## Returns
+
+- `{ok, Tokens}` - Successful tokenization with list of token records
+- `{error, {file_error, Reason}}` - File I/O error
+- `{error, {Reason, Line, Column}}` - Tokenization error with location
+
+## Examples
+
+```erlang
+tokenize_file("examples/hello.cure").
+% => {ok, [#token{type=def, ...}, ...]}
+
+tokenize_file("nonexistent.cure").
+% => {error, {file_error, enoent}}
+```
+
+"""
 -spec tokenize_file(string()) -> {ok, [#token{}]} | {error, term()}.
 tokenize_file(Filename) ->
     case file:read_file(Filename) of
@@ -37,7 +153,33 @@ tokenize_file(Filename) ->
             {error, {file_error, Reason}}
     end.
 
-%% @doc Get the type of a token
+-doc """
+Extract the type from a token record.
+
+This utility function extracts the token type, which is useful for
+pattern matching and categorizing tokens in the parser.
+
+## Arguments
+
+- `Token` - Token record to extract type from
+
+## Returns
+
+- Atom representing the token type (e.g., `def`, `identifier`, `number`)
+
+## Examples
+
+```erlang
+Token = #token{type = identifier, value = <<"add">>, line = 1, column = 5},
+token_type(Token).
+% => identifier
+
+KeywordToken = #token{type = def, value = def, line = 1, column = 1},
+token_type(KeywordToken).
+% => def
+```
+
+"""
 -spec token_type(#token{}) -> atom().
 token_type(#token{type = Type}) -> Type.
 

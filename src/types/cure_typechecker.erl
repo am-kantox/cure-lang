@@ -1,3 +1,126 @@
+-moduledoc """
+# Cure Programming Language - Type Checker
+
+The type checker module provides high-level type checking functionality for
+Cure programs. It works with parsed AST nodes and implements comprehensive
+static type analysis including dependent type verification, constraint solving,
+and type inference.
+
+## Features
+
+### Comprehensive Type Checking
+- **Program-Level Analysis**: Full program type checking with module support
+- **Function Type Checking**: Parameter and return type verification
+- **Expression Type Inference**: Bottom-up type inference for all expressions
+- **Dependent Type Support**: Verification of dependent type constraints
+
+### Module System Support
+- **Module Scoping**: Proper scoping of types and functions within modules
+- **Export Verification**: Ensures exported functions exist and have correct types
+- **Import Resolution**: Type-safe import of functions and types from other modules
+- **Two-Pass Processing**: Collects signatures before checking bodies
+
+### Advanced Type Features
+- **Generic Functions**: Full support for parametric polymorphism
+- **Constraint Solving**: Integration with SMT-based constraint solving
+- **FSM Type Checking**: Verification of finite state machine definitions
+- **Erlang Interop**: Type checking for Erlang function interfaces
+
+### Error Reporting
+- **Detailed Error Messages**: Precise error locations with helpful descriptions
+- **Warning System**: Non-fatal issues that may indicate problems
+- **Error Recovery**: Continues checking after errors to find more issues
+- **Structured Results**: Machine-readable error and warning information
+
+## Type Checking Process
+
+### 1. Environment Setup
+```erlang
+Env = cure_typechecker:builtin_env(),  % Built-in types and functions
+Result = cure_typechecker:check_program(AST).
+```
+
+### 2. Module Processing
+- **Signature Collection**: First pass collects all function signatures
+- **Body Checking**: Second pass verifies function bodies against signatures  
+- **Export Validation**: Ensures all exported items are properly typed
+
+### 3. Function Analysis
+- **Parameter Processing**: Converts parameter types to environment bindings
+- **Constraint Checking**: Verifies function constraints are boolean expressions
+- **Body Inference**: Infers body type and checks against declared return type
+- **Generic Resolution**: Resolves type parameters and constraints
+
+## Usage Examples
+
+### Program Type Checking
+```erlang
+AST = cure_parser:parse_file("example.cure"),
+Result = cure_typechecker:check_program(AST),
+case Result#typecheck_result.success of
+    true -> io:format("Type checking successful~n");
+    false -> 
+        Errors = Result#typecheck_result.errors,
+        io:format("Type errors: ~p~n", [Errors])
+end.
+```
+
+### Function Type Checking
+```erlang
+FuncAST = #function_def{name = add, params = Params, body = Body, ...},
+{ok, Env, Result} = cure_typechecker:check_function(FuncAST).
+```
+
+### Expression Type Inference
+```erlang
+{ok, Type} = cure_typechecker:check_expression(ExprAST, Environment).
+```
+
+## Type Checking Results
+
+Returns structured results with:
+- **Success Flag**: Overall type checking success/failure
+- **Inferred Types**: Types inferred for expressions and functions
+- **Error List**: Detailed error information with locations
+- **Warnings**: Non-fatal issues found during checking
+
+## Built-in Environment
+
+Provides built-in types and functions:
+- **Primitive Types**: Int, Float, String, Bool, Atom
+- **Type Constructors**: List, Tuple, Map, Vector
+- **Standard Functions**: Arithmetic, logical, and utility functions
+- **FSM Operations**: Built-in FSM manipulation functions
+
+## Integration
+
+This module integrates with:
+- **cure_types**: Core type system operations
+- **cure_parser**: Processes parsed AST nodes  
+- **cure_smt_solver**: Constraint solving for dependent types
+- **cure_type_optimizer**: Provides type information for optimizations
+
+## Error Categories
+
+- **Type Mismatches**: Incompatible type assignments or operations
+- **Undefined Variables**: References to unbound variables
+- **Constraint Violations**: Failed dependent type constraints
+- **Export Errors**: Missing or incorrectly typed exported functions
+- **Import Errors**: Invalid module imports or type mismatches
+
+## Performance
+
+- **Two-Pass Efficiency**: Minimizes redundant type checking
+- **Incremental Checking**: Supports incremental compilation scenarios
+- **Constraint Caching**: Reuses constraint solving results where possible
+- **Environment Sharing**: Efficient environment management
+
+## Thread Safety
+
+The type checker is stateless and thread-safe. Multiple type checking
+operations can run concurrently on different ASTs.
+"""
+
 %% Cure Programming Language - Type Checker
 %% High-level type checker that works with parsed AST nodes
 -module(cure_typechecker).
@@ -46,7 +169,41 @@
 -type typecheck_warning() :: #typecheck_warning{}.
 -type location() :: term().
 
-%% Check entire program
+-doc """
+Type checks an entire Cure program.
+
+Performs comprehensive type checking of all top-level items in the program
+including modules, functions, FSMs, and type definitions.
+
+## Arguments
+- `AST` - List of top-level AST items from the parser
+
+## Returns
+- `typecheck_result()` - Complete type checking results including:
+  - `success` - Boolean indicating overall success/failure
+  - `type` - Program type (usually undefined for programs)
+  - `errors` - List of type checking errors found
+  - `warnings` - List of warnings found
+
+## Example
+```erlang
+AST = cure_parser:parse_file("example.cure"),
+Result = cure_typechecker:check_program(AST),
+case Result#typecheck_result.success of
+    true -> 
+        io:format("Program type checks successfully~n");
+    false -> 
+        lists:foreach(fun(Error) ->
+            io:format("Error: ~s~n", [Error#typecheck_error.message])
+        end, Result#typecheck_result.errors)
+end.
+```
+
+## Features
+- **Built-in Environment**: Uses standard built-in types and functions
+- **Error Recovery**: Continues checking after errors to find more issues
+- **Two-Pass Processing**: Collects signatures before checking implementations
+"""
 check_program(AST) ->
     Env = builtin_env(),
     check_items(AST, Env, #typecheck_result{
@@ -95,10 +252,60 @@ check_item(FSM = #fsm_def{}, Env) ->
 check_item(TypeDef = #type_def{}, Env) ->
     check_type_definition(TypeDef, Env).
 
-%% Check module definition
+-doc """
+Type checks a module definition using the built-in environment.
+
+Convenience function that calls check_module/2 with the standard built-in
+environment.
+
+## Arguments
+- `Module` - Module definition AST node
+
+## Returns
+- `{ok, NewEnv, typecheck_result()}` - Success with updated environment
+- `{error, typecheck_error()}` - Type checking failure
+
+## Example
+```erlang
+Module = #module_def{name = 'MyModule', exports = Exports, items = Items},
+{ok, Env, Result} = cure_typechecker:check_module(Module).
+```
+"""
 check_module(Module) ->
     check_module(Module, builtin_env()).
 
+-doc """
+Type checks a module definition with the given environment.
+
+Performs comprehensive module type checking including signature collection,
+body verification, and export validation.
+
+## Arguments
+- `Module` - Module definition AST node with name, exports, and items
+- `Env` - Type environment to use as base
+
+## Returns
+- `{ok, NewEnv, typecheck_result()}` - Success with updated environment
+- `{error, typecheck_error()}` - Type checking failure
+
+## Process
+1. **Module Scoping**: Creates module-scoped environment
+2. **Signature Collection**: First pass collects all function signatures  
+3. **Body Checking**: Second pass verifies function implementations
+4. **Export Validation**: Ensures all exported items exist and are well-typed
+
+## Example
+```erlang
+Module = #module_def{name = 'Math', exports = [{add, 2}], items = Functions},
+Env = cure_types:extend_env(cure_typechecker:builtin_env(), custom_type, Type),
+{ok, NewEnv, Result} = cure_typechecker:check_module(Module, Env).
+```
+
+## Features
+- **Two-Pass Processing**: Allows mutual recursion between functions
+- **Export Verification**: Validates exported function signatures
+- **Scoped Environment**: Proper module-level scoping
+"""
 check_module(#module_def{name = Name, exports = Exports, items = Items}, Env) ->
     % Create module-scoped environment
     ModuleEnv = cure_types:extend_env(Env, module, Name),
@@ -120,7 +327,25 @@ check_module(#module_def{name = Name, exports = Exports, items = Items}, Env) ->
             {ok, Env, Result}
     end.
 
-%% Check function definition
+-doc """
+Type checks a function definition using the built-in environment.
+
+Convenience function that calls check_function/2 with the standard built-in
+environment.
+
+## Arguments
+- `Function` - Function definition AST node
+
+## Returns
+- `{ok, NewEnv, typecheck_result()}` - Success with updated environment
+- `{error, typecheck_error()}` - Type checking failure
+
+## Example
+```erlang
+Func = #function_def{name = add, params = Params, body = Body, ...},
+{ok, Env, Result} = cure_typechecker:check_function(Func).
+```
+"""
 check_function(Function) ->
     check_function(Function, builtin_env()).
 

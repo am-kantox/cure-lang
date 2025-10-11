@@ -1,3 +1,118 @@
+-moduledoc """
+# Cure Programming Language - Parser
+
+The parser module implements a recursive descent parser that converts tokens from
+the lexer into an Abstract Syntax Tree (AST). It handles the complete Cure language
+grammar including modules, functions, finite state machines, types, records,
+and expressions.
+
+## Features
+
+### Language Constructs
+- **Modules**: Module definitions with exports and imports
+- **Functions**: Function definitions with parameters, return types, and guards
+- **FSMs**: Finite state machine definitions with states and transitions
+- **Types**: User-defined types, records, and type aliases
+- **Expressions**: Complete expression parsing including pattern matching
+- **Literals**: Numbers, strings, atoms, lists, tuples, and maps
+
+### Parser Architecture
+- **Recursive Descent**: Top-down parsing with predictive lookahead
+- **Error Recovery**: Comprehensive error reporting with location information
+- **Token Stream**: Sequential token processing with position tracking
+- **AST Generation**: Direct AST construction during parsing
+
+### Error Handling
+- **Syntax Errors**: Detailed error messages with expected vs. actual tokens
+- **Location Tracking**: Line and column information for all parse errors
+- **Error Recovery**: Attempts to continue parsing after errors where possible
+- **Structured Errors**: Well-formed error tuples for programmatic handling
+
+## Grammar Support
+
+The parser supports the complete Cure language grammar:
+
+### Top-Level Constructs
+```cure
+module MyModule do
+  export [function/2, MyType]
+  
+  def function(param1: Type1, param2: Type2) -> ReturnType do
+    # Function body
+  end
+  
+  fsm StateMachine do
+    state idle do
+      on start -> running
+    end
+  end
+end
+```
+
+### Expression Parsing
+- **Arithmetic**: `+`, `-`, `*`, `/`, `div`, `rem`
+- **Logical**: `and`, `or`, `not`, `andalso`, `orelse`
+- **Comparison**: `==`, `/=`, `<`, `>`, `=<`, `>=`
+- **Pattern Matching**: Complete pattern support with guards
+- **Function Calls**: Local and remote function calls
+- **Data Structures**: Lists, tuples, maps, records
+
+### Type System Integration
+- **Type Annotations**: Function parameters and return types
+- **Type Definitions**: User-defined types and aliases
+- **Generic Types**: Parameterized types with constraints
+- **Dependent Types**: Types that depend on values
+
+## API Usage
+
+```erlang
+%% Parse tokens directly
+{ok, AST} = cure_parser:parse(Tokens).
+
+%% Parse from file
+{ok, AST} = cure_parser:parse_file("example.cure").
+
+%% Handle parse errors
+case cure_parser:parse_file("example.cure") of
+    {ok, AST} -> 
+        io:format("Parsed successfully~n");
+    {error, {parse_error, Reason, Line, Column}} ->
+        io:format("Parse error at ~p:~p: ~p~n", [Line, Column, Reason])
+end.
+```
+
+## Parser State
+
+The parser maintains state including:
+- **Token Stream**: Current and remaining tokens
+- **Position**: Current parsing position for error reporting
+- **Filename**: Source file name for error messages
+- **Context**: Current parsing context for better error messages
+
+## Error Types
+
+The parser can return these error types:
+- `{parse_error, Reason, Line, Column}` - Syntax error with location
+- `{expected, TokenType, got, ActualType}` - Expected token mismatch
+- `{unexpected_token, TokenType}` - Unexpected token in context
+- `{Error, Reason, Stack}` - Internal parser errors
+
+## Performance Characteristics
+
+- **Linear Time**: O(n) parsing time for well-formed input
+- **Memory Efficient**: Streaming token processing
+- **Early Termination**: Stops on first syntax error
+- **Lookahead**: Minimal lookahead for efficient parsing
+
+## Integration
+
+The parser integrates with:
+- **Lexer**: Consumes tokens from cure_lexer
+- **AST**: Produces AST records defined in cure_ast_simple.hrl
+- **Type Checker**: Provides AST input for type checking
+- **Compiler**: Part of the complete compilation pipeline
+"""
+
 %% Cure Programming Language - Parser
 %% Recursive descent parser that converts tokens to AST
 -module(cure_parser).
@@ -16,7 +131,32 @@
 
 %% API Functions
 
-%% @doc Parse a list of tokens into an AST
+-doc """
+Parses a list of tokens into an Abstract Syntax Tree (AST).
+
+This is the main parsing function that takes a list of tokens from the lexer
+and produces a complete AST representing the Cure program structure.
+
+## Arguments
+- `Tokens` - List of token records from cure_lexer
+
+## Returns
+- `{ok, Program}` - Successfully parsed AST program
+- `{error, {parse_error, Reason, Line, Column}}` - Syntax error with location
+- `{error, {Error, Reason, Stack}}` - Internal parser error
+
+## Example
+```erlang
+Tokens = cure_lexer:tokenize("def hello() -> :ok end"),
+{ok, AST} = cure_parser:parse(Tokens).
+```
+
+## Error Handling
+The parser provides detailed error information including:
+- Specific error reason (expected token, unexpected construct, etc.)
+- Line and column numbers for error location
+- Full stack trace for internal errors
+"""
 -spec parse([term()]) -> {ok, cure_ast:program()} | {error, term()}.
 parse(Tokens) ->
     try
@@ -30,7 +170,40 @@ parse(Tokens) ->
             {error, {Error, Reason, Stack}}
     end.
 
-%% @doc Parse a file
+-doc """
+Parses a Cure source file into an Abstract Syntax Tree (AST).
+
+This convenience function reads and tokenizes a file, then parses the tokens
+into an AST. It handles both lexical and syntax errors from the complete
+lexing and parsing pipeline.
+
+## Arguments
+- `Filename` - Path to the Cure source file to parse
+
+## Returns
+- `{ok, Program}` - Successfully parsed AST program
+- `{error, {parse_error, Reason, Line, Column}}` - Syntax error with location
+- `{error, LexError}` - Lexical error from tokenization
+- `{error, {Error, Reason, Stack}}` - Internal parser error
+
+## Example
+```erlang
+case cure_parser:parse_file("examples/hello.cure") of
+    {ok, AST} ->
+        io:format("Successfully parsed file~n");
+    {error, {parse_error, Reason, Line, Col}} ->
+        io:format("Parse error at ~p:~p: ~p~n", [Line, Col, Reason]);
+    {error, Reason} ->
+        io:format("Error: ~p~n", [Reason])
+end.
+```
+
+## Error Sources
+This function can return errors from:
+1. **File I/O**: File not found, permission errors
+2. **Lexical Analysis**: Invalid tokens, malformed strings
+3. **Syntax Analysis**: Grammar violations, unexpected tokens
+"""
 -spec parse_file(string()) -> {ok, cure_ast:program()} | {error, term()}.
 parse_file(Filename) ->
     case cure_lexer:tokenize_file(Filename) of

@@ -1,3 +1,181 @@
+-moduledoc """
+# Cure Programming Language - SMT Solver and Proof Assistant
+
+The SMT (Satisfiability Modulo Theories) solver provides constraint solving
+capabilities for Cure's dependent type system. It handles arithmetic constraints,
+logical reasoning, and proof generation for dependent type verification.
+
+## Features
+
+### Constraint Solving
+- **Arithmetic Constraints**: Linear and non-linear arithmetic over integers/reals
+- **Equality Reasoning**: Equality and disequality constraints
+- **Boolean Logic**: Propositional logic with AND, OR, NOT, IMPLIES
+- **Quantified Formulas**: Existential and universal quantification
+
+### Pattern Matching Support
+- **Length Inference**: Infers list length constraints from pattern matching
+- **Structural Constraints**: Handles tuple/record structure constraints
+- **Exhaustiveness Checking**: Verifies pattern match completeness
+- **Reachability Analysis**: Determines unreachable pattern branches
+
+### Proof Generation
+- **Constructive Proofs**: Generates proof terms for valid constraints
+- **Counter-examples**: Provides counter-examples for invalid constraints
+- **Proof Verification**: Checks independently generated proofs
+- **Automated Reasoning**: Combines multiple proof strategies
+
+### Dependent Type Integration
+- **Type-level Arithmetic**: Solves constraints involving type-level values
+- **Refinement Types**: Verifies refinement type predicates
+- **Constraint Propagation**: Propagates constraints through type inference
+- **Vector Types**: Handles length-indexed vectors and arrays
+
+## Core Operations
+
+### Constraint Solving
+```erlang
+%% Create arithmetic constraints
+Constraint1 = cure_smt_solver:arithmetic_constraint(X, '+', Y),
+Constraint2 = cure_smt_solver:equality_constraint(Result, Z),
+
+%% Solve constraints
+case cure_smt_solver:solve_constraints([Constraint1, Constraint2]) of
+    {sat, Solution} -> 
+        io:format("Solution: ~p~n", [Solution]);
+    unsat -> 
+        io:format("No solution exists~n");
+    unknown -> 
+        io:format("Cannot determine satisfiability~n")
+end.
+```
+
+### Pattern Length Inference
+```erlang
+%% Infer length constraints from list patterns
+Pattern = {list_pattern, [a, b], {identifier_pattern, tail}, Location},
+LengthVar = cure_smt_solver:variable_term(list_length),
+Constraints = cure_smt_solver:infer_pattern_length(Pattern, LengthVar).
+%% Generates: list_length = 2 + tail_length
+```
+
+### Proof Generation
+```erlang
+%% Prove that a constraint follows from assumptions
+Assumptions = [X_greater_than_zero, Y_positive],
+Goal = cure_smt_solver:arithmetic_constraint(X, '+', Y, '>', zero),
+
+case cure_smt_solver:prove_constraint(Assumptions, Goal) of
+    {proved, Proof} -> 
+        io:format("Proof: ~p~n", [Proof]);
+    {disproved, CounterExample} -> 
+        io:format("Counter-example: ~p~n", [CounterExample]);
+    unknown -> 
+        io:format("Cannot prove or disprove~n")
+end.
+```
+
+## Constraint Types
+
+### Arithmetic Constraints
+- **Linear**: `ax + by = c`, `ax + by ≤ c`
+- **Non-linear**: `xy = z`, `x² + y² ≤ r²`
+- **Modular**: `x ≡ y (mod m)`
+- **Divisibility**: `x divides y`
+
+### Logical Constraints
+- **Propositional**: `P ∧ Q`, `P ∨ Q`, `¬P`
+- **Implications**: `P → Q`, `P ↔ Q`
+- **Quantified**: `∀x. P(x)`, `∃x. P(x)`
+
+### Type-level Constraints
+- **Length Constraints**: `length(xs) = n`
+- **Range Constraints**: `0 ≤ index < length`
+- **Dimension Constraints**: `Matrix(m, n) @ Matrix(n, p) = Matrix(m, p)`
+
+## SMT Solver Interface
+
+### Constraint Representation
+```erlang
+-record(smt_constraint, {
+    type :: equality | inequality | arithmetic | logical,
+    left :: smt_term(),
+    op :: '=' | '<' | '>' | '<=' | '>=' | '/=' | '+' | '-' | '*',
+    right :: smt_term(),
+    location :: location()
+}).
+```
+
+### Term Representation
+```erlang
+-record(smt_term, {
+    type :: variable | constant | expression,
+    value :: atom() | integer() | float() | smt_expression(),
+    location :: location()
+}).
+```
+
+## Solving Strategies
+
+### Decision Procedures
+1. **Linear Arithmetic**: Simplex algorithm for linear constraints
+2. **Congruence Closure**: Equality reasoning with uninterpreted functions
+3. **Bit-vectors**: Precise reasoning about fixed-width integers
+4. **Arrays**: Theory of arrays with select/store operations
+
+### Proof Search
+1. **Resolution**: Propositional resolution with conflict analysis
+2. **DPLL(T)**: Integration of propositional and theory reasoning
+3. **Instantiation**: Quantifier instantiation with triggers
+4. **Model Construction**: Building satisfying assignments
+
+## Performance Characteristics
+
+- **Linear Arithmetic**: Polynomial time in most practical cases
+- **General Arithmetic**: May be exponential (semi-decidable)
+- **Propositional Logic**: NP-complete but efficient SAT solvers
+- **Quantified Formulas**: Undecidable in general, heuristic-based
+
+## Integration with Type System
+
+### Dependent Types
+```cure
+type Vector(T, n: Nat) where n > 0
+%% SMT solver verifies: n > 0
+
+def safe_index(v: Vector(T, n), i: Int) -> T where 0 <= i < n
+%% SMT solver verifies: 0 <= i < n
+```
+
+### Refinement Types
+```cure
+type Positive = Int where x > 0
+type Even = Int where x % 2 == 0
+%% SMT solver verifies refinement predicates
+```
+
+## Error Handling
+
+The SMT solver provides structured error information:
+- **Unsatisfiable Core**: Minimal unsatisfiable subset of constraints
+- **Model Generation**: Concrete counter-examples for failed proofs
+- **Timeout Handling**: Graceful degradation for complex problems
+- **Resource Limits**: Configurable limits on solving time/memory
+
+## External Solver Integration
+
+Supports integration with external SMT solvers:
+- **Z3**: Microsoft Research SMT solver
+- **CVC4**: Stanford/NYU SMT solver  
+- **Yices**: SRI SMT solver
+- **MathSAT**: FBKIRST SMT solver
+
+## Thread Safety
+
+The SMT solver is stateless and thread-safe. Multiple constraint solving
+operations can run concurrently without interference.
+"""
+
 %% Cure Programming Language - SMT Solver and Proof Assistant
 %% Handles arithmetic constraints and dependent type reasoning
 -module(cure_smt_solver).

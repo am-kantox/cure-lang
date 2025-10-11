@@ -1,6 +1,52 @@
-%% Cure Programming Language - Command Line Interface
-%% Provides a unified CLI for compiling .cure files to BEAM bytecode
 -module(cure_cli).
+
+-moduledoc """
+# Cure Programming Language - Command Line Interface
+
+This module provides a comprehensive command-line interface for the Cure programming
+language compiler. It handles argument parsing, file compilation, and the complete
+compilation pipeline from Cure source code to BEAM bytecode.
+
+## Features
+
+- **Complete CLI Interface**: Argument parsing with support for all compiler options
+- **Full Compilation Pipeline**: Lexing → Parsing → Type Checking → Optimization → Code Generation
+- **Error Handling**: Comprehensive error reporting with optional debug information
+- **Multiple Output Formats**: Support for different output directories and file formats
+- **Integration Ready**: Designed for use with build systems and IDEs
+
+## Usage
+
+```bash
+cure input.cure                    # Compile with defaults
+cure input.cure -o output.beam     # Specify output file
+cure input.cure --verbose          # Enable verbose output
+cure input.cure --no-optimize      # Disable optimizations
+```
+
+## Command Line Options
+
+- `-o, --output FILE` - Output .beam file path
+- `-d, --output-dir DIR` - Output directory (default: `_build/ebin`)
+- `--verbose` - Enable verbose compilation output
+- `--no-debug` - Disable debug information in output
+- `--no-warnings` - Suppress compiler warnings
+- `--no-type-check` - Skip type checking phase
+- `--no-optimize` - Disable type-directed optimizations
+- `--help, -h` - Show help information
+- `--version, -v` - Show version information
+
+## Environment Variables
+
+- `CURE_DEBUG=1` - Enable detailed debug output including stack traces
+
+## Error Codes
+
+- `0` - Success
+- `1` - Compilation or runtime error
+- `2` - Usage error (invalid arguments)
+
+""".
 
 -export([
     % Main entry point for escript
@@ -56,7 +102,37 @@
 %% Main Entry Point
 %% ============================================================================
 
-%% Main entry point for escript usage
+-doc """
+Main entry point for the Cure compiler when used as an escript.
+
+This function processes command line arguments and orchestrates the entire
+compilation process. It handles all user-facing errors and exits with
+appropriate status codes.
+
+## Arguments
+
+- `Args` - List of command line arguments as strings
+
+## Exit Codes
+
+- `0` - Successful compilation
+- `1` - Compilation error or internal error
+- `2` - Usage error (invalid arguments)
+
+## Examples
+
+```erlang
+% These calls happen automatically when using the CLI:
+main(["input.cure"]).
+main(["input.cure", "-o", "output.beam"]).
+main(["--help"]).
+```
+
+## Error Handling
+
+All exceptions are caught and converted to user-friendly error messages.
+When `CURE_DEBUG=1` is set, full stack traces are displayed for debugging.
+"""
 main(Args) ->
     try
         case parse_args(Args) of
@@ -155,11 +231,80 @@ parse_compile_args([Arg | _Rest], _Options, _Filename) ->
 %% Compilation Functions
 %% ============================================================================
 
-%% Compile a .cure file with default options
+-doc """
+Compile a .cure file with default compilation options.
+
+## Arguments
+
+- `Filename` - Path to the .cure source file to compile
+
+## Returns
+
+- `{ok, OutputFile}` - Successful compilation with output file path
+- `{error, Reason}` - Compilation failed with error details
+
+## Examples
+
+```erlang
+compile_file("examples/hello.cure").
+% => {ok, "_build/ebin/hello.beam"}
+```
+
+""" 
 compile_file(Filename) ->
     compile_file(Filename, #compile_options{}).
 
-%% Compile a .cure file with specified options
+-doc """
+Compile a .cure file with specified compilation options.
+
+This is the main compilation entry point that supports all compiler
+features including type checking, optimizations, and custom output options.
+
+## Arguments
+
+- `Filename` - Path to the .cure source file to compile
+- `Options` - Compilation options record with fields:
+  - `output_file` - Custom output file path (optional)
+  - `output_dir` - Output directory (default: "_build/ebin")
+  - `debug_info` - Include debug information (default: true)
+  - `warnings` - Show warnings (default: true)  
+  - `verbose` - Verbose output (default: false)
+  - `type_check` - Enable type checking (default: true)
+  - `optimize` - Enable optimizations (default: true)
+  - `fsm_runtime` - Include FSM runtime (default: true)
+
+## Returns
+
+- `{ok, OutputFile}` - Successful compilation
+- `{error, Reason}` - Compilation error with detailed reason
+
+## Compilation Pipeline
+
+The function executes a complete 5-stage pipeline:
+
+1. **Lexical Analysis** - Tokenize source code
+2. **Parsing** - Build Abstract Syntax Tree
+3. **Type Checking** - Verify types and constraints (optional)
+4. **Optimization** - Type-directed optimizations (optional)
+5. **Code Generation** - Generate BEAM bytecode
+
+## Examples
+
+```erlang
+% Compile with verbose output
+Options = #compile_options{verbose = true},
+compile_file("src/math.cure", Options).
+
+% Compile without optimizations  
+Options = #compile_options{optimize = false},
+compile_file("debug.cure", Options).
+
+% Custom output file
+Options = #compile_options{output_file = "custom.beam"},
+compile_file("input.cure", Options).
+```
+
+"""
 compile_file(Filename, Options) ->
     case filelib:is_regular(Filename) of
         false ->
@@ -375,7 +520,28 @@ check_type_result(Result, AST) ->
             {error, invalid_type_check_result}
     end.
 
-%% Convert compile options to codegen options
+-doc """
+Convert CLI compilation options to code generation options.
+
+This function transforms the user-facing compilation options into
+the internal format expected by the code generation modules.
+
+## Arguments
+
+- `Options` - Compilation options record
+
+## Returns
+
+- List of `{Key, Value}` tuples for the code generator
+
+## Option Mapping
+
+- `debug_info` → `{debug_info, true}`
+- `optimize` → `{optimize, 1}` 
+- `warnings` → `{warnings, true}`
+- `fsm_runtime` → `{fsm_integration, true}`
+
+"""
 compile_opts_to_codegen_opts(Options) ->
     CodegenOpts = [],
 
@@ -448,7 +614,21 @@ determine_output_filename(InputFilename, Options) ->
 %% Help and Information Functions
 %% ============================================================================
 
-%% Display help information
+-doc """
+Display comprehensive help information for the Cure compiler.
+
+Outputs usage instructions, command-line options, examples, and
+environment variables to assist users in using the compiler effectively.
+
+## Output Format
+
+- **Usage**: Basic command syntax
+- **Arguments**: Required input file specification
+- **Options**: All available command-line flags with descriptions
+- **Examples**: Common usage patterns
+- **Environment**: Relevant environment variables
+
+"""
 help() ->
     io:format("~s v~s~n", [?CURE_DESCRIPTION, ?CURE_VERSION]),
     io:format("~n"),
@@ -477,7 +657,30 @@ help() ->
     io:format("ENVIRONMENT VARIABLES:~n"),
     io:format("    CURE_DEBUG=1         Enable debug stack traces~n").
 
-%% Display version information
+-doc """
+Display version and system information for the Cure compiler.
+
+Shows the current Cure compiler version, Erlang/OTP version,
+and a brief description of the Cure programming language.
+
+## Output Information
+
+- **Cure Version**: Current compiler version (from `?CURE_VERSION`)
+- **Erlang/OTP Version**: Version of the runtime platform
+- **Description**: Brief overview of Cure language features
+
+## Example Output
+
+```
+Cure Programming Language Compiler v0.1.0
+
+Built with Erlang/OTP 25
+
+Cure is a dependently-typed functional programming language
+for the BEAM virtual machine with built-in finite state machines.
+```
+
+"""
 version() ->
     io:format("~s v~s~n", [?CURE_DESCRIPTION, ?CURE_VERSION]),
     io:format("~n"),
@@ -525,7 +728,29 @@ format_compilation_error(Reason) ->
 %% Module Information Functions
 %% ============================================================================
 
-%% Get module information from AST (simplified, for future use)
+-doc """
+Extract module information from an Abstract Syntax Tree.
+
+This is a utility function for extracting metadata from compiled
+modules. Currently provides basic structure with placeholder values.
+
+## Arguments
+
+- `AST` - Abstract Syntax Tree from the parser
+
+## Returns
+
+- Map with module information:
+  - `name` - Module name (currently `unknown`)
+  - `exports` - List of exported functions (currently empty)
+  - `type` - Module type (currently `module` or `unknown`)
+
+## Note
+
+This is a simplified implementation. Future versions will extract
+actual module information including exports, imports, and metadata.
+
+"""
 get_module_info(AST) when is_tuple(AST) ->
     % For now, just return a generic structure
     % TODO: Extract actual module info when AST types are available
@@ -541,7 +766,35 @@ get_module_info(_) ->
         type => unknown
     }.
 
-%% Utility function to check if we have a complete Cure installation
+-doc """
+Verify that all required Cure compiler modules are available.
+
+This function checks for the presence of core compiler modules
+to ensure the Cure installation is complete and functional.
+
+## Required Modules
+
+- `cure_lexer` - Tokenization engine
+- `cure_parser` - AST generation
+- `cure_typechecker` - Type checking system
+- `cure_codegen` - Code generation
+
+## Returns
+
+- `ok` - All required modules are present
+- `{error, {missing_modules, List}}` - Some modules are missing
+
+## Side Effects
+
+Prints warning messages if modules are missing, including
+instructions to run `make all` to build the complete compiler.
+
+## Usage
+
+This function is called internally to validate the compiler
+state before attempting compilation operations.
+
+"""
 check_cure_installation() ->
     RequiredModules = [cure_lexer, cure_parser, cure_typechecker, cure_codegen],
     Missing = lists:filter(
