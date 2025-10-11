@@ -1,3 +1,7 @@
+%% Cure Programming Language - Runtime Execution Engine
+%% Interprets and executes generated BEAM instructions
+-module(cure_runtime).
+
 -moduledoc """
 # Cure Programming Language - Runtime Execution Engine
 
@@ -137,11 +141,7 @@ information including function names, instruction details, and stack state.
 The runtime state is designed for single-threaded execution within a process.
 Concurrent execution requires separate runtime state instances per thread.
 External function calls may interact with concurrent Erlang processes safely.
-"""
-
-%% Cure Programming Language - Runtime Execution Engine
-%% Interprets and executes generated BEAM instructions
--module(cure_runtime).
+""".
 
 -export([
     execute_module/1,
@@ -200,7 +200,7 @@ The execution environment includes:
 - Pre-loaded standard library functions
 - Module functions available for internal calls
 - Proper error handling and propagation
-"""
+""".
 execute_module(CompiledModule) ->
     State = create_runtime_state(),
     StateWithModule = cure_runtime:load_module(CompiledModule, State),
@@ -247,7 +247,7 @@ ProgramAST = [Module1AST, Module2AST, MainModuleAST],
 - Functions from all loaded modules are available to each other
 - No explicit import/export checking at runtime
 - Name conflicts resolved by load order (later modules shadow earlier ones)
-"""
+""".
 run_program([]) ->
     {error, no_modules};
 run_program([FirstModule | RestModules]) ->
@@ -317,7 +317,7 @@ The runtime state includes immediate access to:
 ## Function Resolution
 All pre-loaded functions use external references to cure_std module
 functions, ensuring consistent behavior and implementation.
-"""
+""".
 create_runtime_state() ->
     GlobalFunctions = #{
         % Standard library functions from cure_std
@@ -420,7 +420,7 @@ Expected compiled module format:
 Module loading is designed to always succeed. Malformed modules may
 result in functions that cannot be executed, but loading itself will
 not fail.
-"""
+""".
 load_module(CompiledModule, State) ->
     ModuleName = maps:get(name, CompiledModule),
     Functions = maps:get(functions, CompiledModule, []),
@@ -529,7 +529,7 @@ StateWithModule = cure_runtime:load_module(CompiledModule, State1),
 - Function parameters and locals are isolated per call
 - Stack is managed automatically during execution
 - External functions cannot modify runtime state
-"""
+""".
 call_function(FuncName, Args, State) ->
     case maps:get(FuncName, State#runtime_state.globals, undefined) of
         undefined ->

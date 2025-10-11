@@ -1,3 +1,7 @@
+%% Cure Programming Language - SMT Solver and Proof Assistant
+%% Handles arithmetic constraints and dependent type reasoning
+-module(cure_smt_solver).
+
 -moduledoc """
 # Cure Programming Language - SMT Solver and Proof Assistant
 
@@ -174,11 +178,7 @@ Supports integration with external SMT solvers:
 
 The SMT solver is stateless and thread-safe. Multiple constraint solving
 operations can run concurrently without interference.
-"""
-
-%% Cure Programming Language - SMT Solver and Proof Assistant
-%% Handles arithmetic constraints and dependent type reasoning
--module(cure_smt_solver).
+""".
 
 -export([
     % Core SMT solver interface

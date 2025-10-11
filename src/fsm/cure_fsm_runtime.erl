@@ -1,3 +1,7 @@
+%% Cure Programming Language - FSM Runtime System
+%% Optimized runtime for finite state machine execution on BEAM VM
+-module(cure_fsm_runtime).
+
 -moduledoc """
 # Cure Programming Language - FSM Runtime System
 
@@ -90,11 +94,7 @@ The FSM runtime integrates with:
 - **Guard Compiler**: Uses compiled guard expressions for efficiency
 - **Action Compiler**: Executes compiled action instruction sequences
 - **BEAM Runtime**: Built on standard OTP gen_server behavior
-"""
-
-%% Cure Programming Language - FSM Runtime System
-%% Optimized runtime for finite state machine execution on BEAM VM
--module(cure_fsm_runtime).
+""".
 
 %% Public API
 -export([
@@ -165,7 +165,7 @@ This is a convenience function that calls start_fsm/3 with an empty options list
 ```erlang
 {ok, FSM} = cure_fsm_runtime:start_fsm(counter, #{count => 0}).
 ```
-"""
+""".
 start_fsm(FSMType, InitialData) ->
     start_fsm(FSMType, InitialData, []).
 
@@ -186,7 +186,7 @@ Starts a new FSM instance with the specified type, initial data, and options.
 ```erlang
 {ok, FSM} = cure_fsm_runtime:start_fsm(traffic_light, #{}, []).
 ```
-"""
+""".
 start_fsm(FSMType, InitialData, Options) ->
     case lookup_fsm_definition(FSMType) of
         {ok, Definition} ->
@@ -209,7 +209,7 @@ Stops an FSM instance gracefully.
 ```erlang
 ok = cure_fsm_runtime:stop_fsm(FSMPid).
 ```
-"""
+""".
 stop_fsm(FSMPid) when is_pid(FSMPid) ->
     gen_server:call(FSMPid, stop).
 
@@ -229,7 +229,7 @@ This is a convenience function that calls send_event/3 with undefined event data
 ```erlang
 cure_fsm_runtime:send_event(FSMPid, start).
 ```
-"""
+""".
 send_event(FSMPid, Event) ->
     send_event(FSMPid, Event, undefined).
 
@@ -248,7 +248,7 @@ Sends an event with associated data to an FSM instance.
 ```erlang
 cure_fsm_runtime:send_event(FSMPid, button_pressed, #{button => ok}).
 ```
-"""
+""".
 send_event(FSMPid, Event, Data) when is_pid(FSMPid) ->
     gen_server:cast(FSMPid, {event, Event, Data}).
 
@@ -266,7 +266,7 @@ Retrieves the current state of an FSM instance.
 ```erlang
 {ok, CurrentState} = cure_fsm_runtime:get_state(FSMPid).
 ```
-"""
+""".
 get_state(FSMPid) when is_pid(FSMPid) ->
     gen_server:call(FSMPid, get_state).
 
@@ -289,7 +289,7 @@ Retrieves comprehensive FSM information for debugging and introspection.
 {ok, #{fsm_type := Type, current_state := State}} = 
     cure_fsm_runtime:get_fsm_info(FSMPid).
 ```
-"""
+""".
 get_fsm_info(FSMPid) when is_pid(FSMPid) ->
     gen_server:call(FSMPid, get_fsm_info).
 
@@ -308,7 +308,7 @@ Sets a timeout for the FSM that will trigger the specified event after the given
 ```erlang
 cure_fsm_runtime:set_timeout(FSMPid, 5000, timeout_expired).
 ```
-"""
+""".
 set_timeout(FSMPid, Timeout, Event) when is_pid(FSMPid) ->
     gen_server:cast(FSMPid, {set_timeout, Timeout, Event}).
 
@@ -325,7 +325,7 @@ Clears any existing timeout for the FSM.
 ```erlang
 cure_fsm_runtime:clear_timeout(FSMPid).
 ```
-"""
+""".
 clear_timeout(FSMPid) when is_pid(FSMPid) ->
     gen_server:cast(FSMPid, clear_timeout).
 
@@ -350,7 +350,7 @@ event sends when processing large numbers of events.
 Events = [start, {increment, 5}, stop],
 cure_fsm_runtime:send_batch_events(FSMPid, Events).
 ```
-"""
+""".
 send_batch_events(FSMPid, Events) when is_pid(FSMPid), is_list(Events) ->
     gen_server:cast(FSMPid, {batch_events, Events}).
 
@@ -374,7 +374,7 @@ Retrieves performance statistics for an FSM instance.
 {ok, Stats} = cure_fsm_runtime:get_performance_stats(FSMPid),
 AvgTime = Stats#fsm_perf_stats.avg_event_time.
 ```
-"""
+""".
 get_performance_stats(FSMPid) when is_pid(FSMPid) ->
     gen_server:call(FSMPid, get_perf_stats).
 
@@ -407,7 +407,7 @@ Registers a new FSM type definition in the global registry.
 Definition = #fsm_definition{name = counter, ...},
 ok = cure_fsm_runtime:register_fsm_type(counter, Definition).
 ```
-"""
+""".
 register_fsm_type(FSMType, Definition) when is_atom(FSMType) ->
     init_fsm_registry(),
     ets:insert(?FSM_REGISTRY, {FSMType, Definition}),
@@ -424,7 +424,7 @@ Returns a list of all registered FSM type names.
 Types = cure_fsm_runtime:get_registered_fsm_types(),
 %% Types might be [counter, traffic_light, state_machine]
 ```
-"""
+""".
 get_registered_fsm_types() ->
     init_fsm_registry(),
     [FSMType || {FSMType, _} <- ets:tab2list(?FSM_REGISTRY)].
@@ -442,7 +442,7 @@ Removes an FSM type definition from the global registry.
 ```erlang
 cure_fsm_runtime:unregister_fsm_type(old_counter).
 ```
-"""
+""".
 unregister_fsm_type(FSMType) when is_atom(FSMType) ->
     init_fsm_registry(),
     ets:delete(?FSM_REGISTRY, FSMType).
@@ -460,7 +460,7 @@ This function removes ALL registered FSM types. Use with caution.
 ```erlang
 cure_fsm_runtime:clear_fsm_registry().
 ```
-"""
+""".
 clear_fsm_registry() ->
     case ets:info(?FSM_REGISTRY) of
         undefined ->
@@ -487,7 +487,7 @@ case cure_fsm_runtime:lookup_fsm_definition(counter) of
     {error, not_found} -> io:format("FSM type not registered~n")
 end.
 ```
-"""
+""".
 lookup_fsm_definition(FSMType) ->
     init_fsm_registry(),
     case ets:lookup(?FSM_REGISTRY, FSMType) of
@@ -1140,7 +1140,7 @@ representation with pre-compiled guards, actions, and optimized transition looku
 CompiledDef = cure_fsm_runtime:compile_fsm_definition(ParsedFSM),
 cure_fsm_runtime:register_fsm_type(my_fsm, CompiledDef).
 ```
-"""
+""".
 compile_fsm_definition(FSMDef) ->
     #fsm_def{
         name = Name,

@@ -1,3 +1,7 @@
+%% Cure Programming Language - Type System Core
+%% Dependent type system with constraint solving and inference
+-module(cure_types).
+
 -moduledoc """
 # Cure Programming Language - Type System Core
 
@@ -125,11 +129,7 @@ Returns structured errors for:
 
 Type variables use a global counter that should be accessed safely in
 concurrent environments. The module is otherwise stateless and thread-safe.
-"""
-
-%% Cure Programming Language - Type System Core
-%% Dependent type system with constraint solving and inference
--module(cure_types).
+""".
 
 -include("../parser/cure_ast_simple.hrl").
 
@@ -436,7 +436,7 @@ true = cure_types:is_type_var(TVar).
 ## Note
 Uses a process dictionary counter to ensure uniqueness within a process.
 For concurrent use, external synchronization may be required.
-"""
+""".
 new_type_var() ->
     new_type_var(undefined).
 
@@ -459,7 +459,7 @@ true = TVar1#type_var.name =:= my_var.
 ## Note
 The name is primarily for debugging and error reporting. The unique ID
 ensures type variable identity regardless of name.
-"""
+""".
 new_type_var(Name) ->
     Counter =
         case get(?TYPE_VAR_COUNTER) of
@@ -489,7 +489,7 @@ TVar = cure_types:new_type_var(),
 true = cure_types:is_type_var(TVar),
 false = cure_types:is_type_var(my_atom).
 ```
-"""
+""".
 is_type_var(#type_var{}) -> true;
 is_type_var(_) -> false.
 
@@ -517,7 +517,7 @@ false = cure_types:occurs_check(TVar, {primitive_type, 'Int'}).
 
 ## Note
 This is essential for preventing infinite types like `T = List(T)` during unification.
-"""
+""".
 occurs_check(#type_var{id = Id}, Type) ->
     occurs_check_impl(Id, Type).
 
@@ -574,7 +574,7 @@ Env2 = cure_types:extend_env(Env, x, {primitive_type, 'Int'}),
 - **Hierarchical Scoping**: Supports nested environments
 - **Constraint Tracking**: Accumulates type constraints
 - **Efficient Lookup**: Fast variable resolution
-"""
+""".
 new_env() ->
     #type_env{
         bindings = #{},
@@ -606,7 +606,7 @@ Env1 = cure_types:new_env(),
 Env2 = cure_types:extend_env(Env1, x, {primitive_type, 'Int'}),
 Env3 = cure_types:extend_env(Env2, y, {primitive_type, 'String'}).
 ```
-"""
+""".
 extend_env(Env = #type_env{bindings = Bindings}, Var, Type) ->
     Env#type_env{bindings = maps:put(Var, Type, Bindings)};
 extend_env(#{} = Env, Var, Type) ->
@@ -639,7 +639,7 @@ Env = cure_types:extend_env(cure_types:new_env(), x, IntType),
 IntType = cure_types:lookup_env(Env, x),
 undefined = cure_types:lookup_env(Env, unbound_var).
 ```
-"""
+""".
 lookup_env(#type_env{bindings = Bindings, parent = Parent}, Var) ->
     case maps:get(Var, Bindings, undefined) of
         undefined when Parent =/= undefined ->
@@ -684,7 +684,7 @@ This is a convenience function that calls unify/3 with an empty substitution.
 - Type mismatch (e.g., Int vs String)
 - Occurs check failure (infinite types)
 - Constraint violations
-"""
+""".
 unify(Type1, Type2) ->
     unify(Type1, Type2, #{}).
 
@@ -713,7 +713,7 @@ and composes the results.
 ## Substitution Composition
 The function applies the input substitution to both types before
 unification and composes the result with the input substitution.
-"""
+""".
 unify(Type1, Type2, Subst) ->
     unify_impl(
         apply_substitution(Type1, Subst),

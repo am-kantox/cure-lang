@@ -1,3 +1,7 @@
+%% Cure Programming Language - Standard Library Runtime
+%% Provides core functions and types used by compiled Cure programs
+-module(cure_std).
+
 -moduledoc """
 # Cure Programming Language - Standard Library Runtime
 
@@ -81,11 +85,7 @@ type system and Erlang's dynamic typing.
 - String operations use efficient list concatenation
 - Monadic operations minimize pattern matching overhead
 - FSM operations are lightweight stubs (full implementation in cure_fsm_runtime)
-"""
-
-%% Cure Programming Language - Standard Library Runtime
-%% Provides core functions and types used by compiled Cure programs
--module(cure_std).
+""".
 
 %% Core utility functions that cannot be implemented in Cure itself
 %% (mainly Erlang interop and low-level runtime functions)
@@ -142,7 +142,7 @@ by this function, though they follow similar patterns.
 ## Usage
 Primarily used internally by pipe/2 to determine whether function
 results need to be wrapped in Ok constructors or can be returned as-is.
-"""
+""".
 is_monad({'Ok', _}) ->
     true;
 is_monad({'Error', _}) ->
@@ -214,7 +214,7 @@ The pipe operator maintains type safety by:
 - Propagating errors without execution
 - Catching runtime exceptions as Error values
 - Preserving monadic invariants through composition chains
-"""
+""".
 pipe({'Error', _} = Err, _RHO) ->
     % Rule 1: propagate error
     Err;
@@ -283,7 +283,7 @@ ensuring proper handling of international characters.
 ## Error Handling
 I/O errors are handled by the underlying Erlang system.
 This function always returns 'ok' from the Cure perspective.
-"""
+""".
 print(Message) ->
     io:format("~ts", [Message]),
     ok.
@@ -329,7 +329,7 @@ ensuring proper handling of international characters.
 ## Error Handling
 I/O errors are handled by the underlying Erlang system.
 This function always returns 'ok' from the Cure perspective.
-"""
+""".
 println(Message) ->
     io:format("~ts~n", [Message]),
     ok.
@@ -433,7 +433,7 @@ making this function safe for debugging any Cure value.
 - Recursive formatting for nested structures
 - String concatenation using Erlang's efficient list operations
 - Optimized for readability over performance
-"""
+""".
 show({'Ok', Value}) ->
     "Ok(" ++ show(Value) ++ ")";
 show({'Error', Reason}) ->

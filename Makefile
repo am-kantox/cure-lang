@@ -40,7 +40,7 @@ CURE_STD_BEAM_FILES = $(patsubst $(LIB_DIR)/%.cure,$(LIB_EBIN_DIR)/%.beam,$(CURE
 # Compiler options
 ERLC_OPTS = +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(EBIN_DIR)
 
-.PHONY: all clean test test-basic test-integration test-performance docs setup compiler tests compile-file stdlib
+.PHONY: all clean test test-basic test-integration test-performance docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check
 
 all: setup compiler stdlib
 
@@ -62,6 +62,35 @@ compiler: $(BEAM_FILES)
 # Compile Cure standard library
 stdlib: compiler $(CURE_STD_BEAM_FILES)
 	@echo "Cure standard library compiled successfully"
+
+# Clean standard library build artifacts
+stdlib-clean:
+	@echo "Cleaning Cure standard library build artifacts..."
+	rm -rf $(LIB_EBIN_DIR)
+	@echo "Standard library artifacts cleaned"
+
+# Check if standard library is compiled
+stdlib-check: compiler
+	@echo "Checking Cure standard library compilation..."
+	@MISSING_FILES=(); \
+	for cure_file in $(CURE_STD_SRC); do \
+		beam_file=$$(echo "$$cure_file" | sed 's|$(LIB_DIR)|$(LIB_EBIN_DIR)|' | sed 's|\.cure$$|\.beam|'); \
+		if [ ! -f "$$beam_file" ]; then \
+			MISSING_FILES+=("$$beam_file"); \
+		fi; \
+	done; \
+	if [ $${#MISSING_FILES[@]} -gt 0 ]; then \
+		echo "Missing compiled standard library files:"; \
+		printf '  %s\n' "$${MISSING_FILES[@]}"; \
+		echo "Run 'make stdlib' to compile the standard library."; \
+		false; \
+	else \
+		echo "All standard library files are compiled."; \
+	fi
+
+# Force recompile standard library
+stdlib-rebuild: stdlib-clean stdlib
+	@echo "Cure standard library rebuilt successfully"
 
 # Compile tests
 tests: compiler $(TEST_BEAM_FILES)
@@ -162,6 +191,10 @@ help:
 	@echo "Available targets:"
 	@echo "  all        - Build the complete compiler (default)"
 	@echo "  compiler   - Build compiler components"
+	@echo "  stdlib     - Compile Cure standard library"
+	@echo "  stdlib-clean - Clean standard library build artifacts"
+	@echo "  stdlib-check - Check if standard library is compiled"
+	@echo "  stdlib-rebuild - Force rebuild of standard library"
 	@echo "  tests      - Compile test files"
 	@echo "  test       - Run complete test suite (basic + integration)"
 	@echo "  test-basic - Run only basic unit tests"

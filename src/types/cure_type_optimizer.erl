@@ -1,3 +1,7 @@
+%% Cure Programming Language - Type-directed Optimizer
+%% Framework for optimizations based on type information
+-module(cure_type_optimizer).
+
 -moduledoc """
 # Cure Programming Language - Type-directed Optimizer
 
@@ -155,11 +159,7 @@ Generates detailed reports including:
 - **Semantic Equivalence**: Optimized code maintains original semantics
 - **Constraint Preservation**: Dependent type constraints are maintained
 - **Error Handling**: Graceful degradation when optimization fails
-"""
-
-%% Cure Programming Language - Type-directed Optimizer
-%% Framework for optimizations based on type information
--module(cure_type_optimizer).
+""".
 
 -export([
     % Main optimization interface

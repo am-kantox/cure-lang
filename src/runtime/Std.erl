@@ -1,3 +1,7 @@
+%% Cure Standard Library - Main Module (Temporary Erlang Implementation)
+%% This re-exports functions from various standard library modules
+-module('Std').
+
 -moduledoc """
 # Cure Standard Library - Main Module
 
@@ -61,11 +65,7 @@ This module depends on:
 
 All error handling is delegated to the underlying implementation modules.
 Refer to specific module documentation for error semantics.
-"""
-
-%% Cure Standard Library - Main Module (Temporary Erlang Implementation)
-%% This re-exports functions from various standard library modules
--module('Std').
+""".
 
 %% Re-export list functions from Std.List
 -export([

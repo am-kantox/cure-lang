@@ -1,3 +1,7 @@
+%% Cure Programming Language - FSM Built-in Functions
+%% High-level FSM functions available in Cure programs
+-module(cure_fsm_builtins).
+
 -moduledoc """
 # Cure Programming Language - FSM Built-in Functions
 
@@ -87,11 +91,7 @@ The module provides type definitions for the Cure type checker:
 
 All operations are thread-safe and can be called concurrently from multiple
 processes. FSM instances handle concurrent access safely through the actor model.
-"""
-
-%% Cure Programming Language - FSM Built-in Functions
-%% High-level FSM functions available in Cure programs
--module(cure_fsm_builtins).
+""".
 
 %% Export built-in FSM functions
 -export([
@@ -163,7 +163,7 @@ This is a convenience function that calls fsm_spawn/2 with undefined initial dat
 ```erlang
 {ok, Counter} = cure_fsm_builtins:fsm_spawn(counter).
 ```
-"""
+""".
 fsm_spawn(FSMType) ->
     fsm_spawn(FSMType, undefined).
 
@@ -184,7 +184,7 @@ Spawns a new FSM instance of the specified type with initial data.
 ```erlang
 {ok, Counter} = cure_fsm_builtins:fsm_spawn(counter, #{count => 10}).
 ```
-"""
+""".
 fsm_spawn(FSMType, InitialData) when is_atom(FSMType) ->
     case cure_fsm_runtime:start_fsm(FSMType, InitialData) of
         {ok, Pid} ->
@@ -210,7 +210,7 @@ Stops an FSM instance gracefully.
 ```erlang
 ok = cure_fsm_builtins:fsm_stop(FSMPid).
 ```
-"""
+""".
 fsm_stop(FSMPid) when is_pid(FSMPid) ->
     case cure_fsm_runtime:stop_fsm(FSMPid) of
         ok -> ok;
@@ -238,7 +238,7 @@ Sends an event to an FSM instance asynchronously without event data.
 ```erlang
 ok = cure_fsm_builtins:fsm_send(FSMPid, start).
 ```
-"""
+""".
 fsm_send(FSMPid, Event) when is_pid(FSMPid) ->
     cure_fsm_runtime:send_event(FSMPid, Event),
     ok;
@@ -261,7 +261,7 @@ Sends an event with associated data to an FSM instance asynchronously.
 ```erlang
 ok = cure_fsm_builtins:fsm_send(FSMPid, button_press, #{button => ok}).
 ```
-"""
+""".
 fsm_send(FSMPid, Event, Data) when is_pid(FSMPid) ->
     cure_fsm_runtime:send_event(FSMPid, Event, Data),
     ok;
@@ -283,7 +283,7 @@ Retrieves the current state of an FSM instance.
 ```erlang
 {ok, CurrentState} = cure_fsm_builtins:fsm_state(FSMPid).
 ```
-"""
+""".
 fsm_state(FSMPid) when is_pid(FSMPid) ->
     case cure_fsm_runtime:get_state(FSMPid) of
         {ok, State} -> {ok, State};
@@ -353,7 +353,7 @@ This is a convenience function that calls fsm_call/3 with a 5-second timeout.
 ```erlang
 {ok, NewState} = cure_fsm_builtins:fsm_call(FSMPid, process_request).
 ```
-"""
+""".
 fsm_call(FSMPid, Event) ->
     fsm_call(FSMPid, Event, 5000).
 
@@ -375,7 +375,7 @@ Sends an event to an FSM and waits for any state change with specified timeout.
 ```erlang
 {ok, NewState} = cure_fsm_builtins:fsm_call(FSMPid, process, 1000).
 ```
-"""
+""".
 fsm_call(FSMPid, Event, Timeout) when is_pid(FSMPid), is_integer(Timeout), Timeout > 0 ->
     % Send event asynchronously
     ok = fsm_send(FSMPid, Event),
@@ -582,7 +582,7 @@ case cure_fsm_builtins:validate_fsm_type(counter) of
     {error, Reason} -> io:format("Invalid FSM type: ~p~n", [Reason])
 end.
 ```
-"""
+""".
 validate_fsm_type(FSMType) when is_atom(FSMType) ->
     case cure_fsm_runtime:lookup_fsm_definition(FSMType) of
         {ok, _Definition} -> ok;
@@ -614,7 +614,7 @@ case cure_fsm_builtins:validate_fsm_event(FSMPid, start) of
     {error, Reason} -> io:format("Error: ~p~n", [Reason])
 end.
 ```
-"""
+""".
 validate_fsm_event(FSMPid, Event) when is_pid(FSMPid) ->
     case fsm_info(FSMPid) of
         {ok, #{fsm_type := FSMType, current_state := CurrentState}} ->

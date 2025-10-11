@@ -1,3 +1,7 @@
+%% Cure Programming Language - BEAM Code Generator
+%% Generates BEAM bytecode from typed Cure AST
+-module(cure_codegen).
+
 -moduledoc """
 # Cure Programming Language - BEAM Code Generator
 
@@ -189,11 +193,7 @@ Generates standard BEAM bytecode compatible with:
 The code generator is stateless at the module level and can safely compile
 multiple modules concurrently. Individual function compilation maintains
 local state that is not shared between threads.
-"""
-
-%% Cure Programming Language - BEAM Code Generator
-%% Generates BEAM bytecode from typed Cure AST
--module(cure_codegen).
+""".
 
 -export([
     % Main compilation interface
@@ -297,7 +297,7 @@ end, Modules).
 ## Default Options
 Uses standard compilation options: debug_info, optimization level 1,
 warnings enabled, strict types, and FSM integration.
-"""
+""".
 compile_program(AST) ->
     compile_program(AST, default_options()).
 
@@ -357,7 +357,7 @@ cure_codegen:write_beam_module(BeamModule, "MyModule.beam").
 - FSM definitions (compiled to gen_statem)
 - Record and type definitions
 - Import and export declarations
-"""
+""".
 compile_module(ModuleAST) ->
     compile_module(ModuleAST, default_options()).
 
@@ -465,7 +465,7 @@ FuncAST = #function_def{
 - Creates minimal compilation state for standalone compilation
 - May not have access to full module context for imports/types
 - Primarily intended for testing individual functions
-"""
+""".
 compile_function(FunctionAST) ->
     compile_function(FunctionAST, default_options()).
 
@@ -895,7 +895,7 @@ Expr = #binary_op_expr{op = '+', left = {literal, 5}, right = {literal, 3}},
 ## Error Handling
 Returns detailed error information for unsupported expressions,
 type mismatches, and compilation failures.
-"""
+""".
 compile_expression(Expr) ->
     compile_expression(Expr, #codegen_state{}).
 
@@ -1359,7 +1359,7 @@ FSMs maintain state data through:
 - State data transformation during transitions
 - Event payload integration with state data
 - Timeout handling with state persistence
-"""
+""".
 compile_fsm_impl(
     #fsm_def{
         name = Name,
@@ -1996,7 +1996,7 @@ Generated BEAM files are fully compatible with:
 - `{write_failed, Reason}` - File system errors
 - `{compile_failed, Errors, Warnings}` - Erlang compiler errors
 - Form conversion errors from convert_to_erlang_forms/1
-"""
+""".
 generate_beam_file(Module, OutputPath) ->
     case convert_to_erlang_forms(Module) of
         {ok, Forms} ->
@@ -2197,7 +2197,7 @@ MyModule:function_name(args).
 - Integration with build systems and tools
 - Deployment of Cure modules to BEAM environments
 - Testing and development workflows
-"""
+""".
 write_beam_module(Module, OutputPath) ->
     generate_beam_file(Module, OutputPath).
 

@@ -1,3 +1,7 @@
+%% Cure Programming Language - Type Checker
+%% High-level type checker that works with parsed AST nodes
+-module(cure_typechecker).
+
 -moduledoc """
 # Cure Programming Language - Type Checker
 
@@ -119,11 +123,7 @@ This module integrates with:
 
 The type checker is stateless and thread-safe. Multiple type checking
 operations can run concurrently on different ASTs.
-"""
-
-%% Cure Programming Language - Type Checker
-%% High-level type checker that works with parsed AST nodes
--module(cure_typechecker).
+""".
 
 -export([
     check_program/1,
@@ -203,7 +203,7 @@ end.
 - **Built-in Environment**: Uses standard built-in types and functions
 - **Error Recovery**: Continues checking after errors to find more issues
 - **Two-Pass Processing**: Collects signatures before checking implementations
-"""
+""".
 check_program(AST) ->
     Env = builtin_env(),
     check_items(AST, Env, #typecheck_result{
@@ -270,7 +270,7 @@ environment.
 Module = #module_def{name = 'MyModule', exports = Exports, items = Items},
 {ok, Env, Result} = cure_typechecker:check_module(Module).
 ```
-"""
+""".
 check_module(Module) ->
     check_module(Module, builtin_env()).
 
@@ -305,7 +305,7 @@ Env = cure_types:extend_env(cure_typechecker:builtin_env(), custom_type, Type),
 - **Two-Pass Processing**: Allows mutual recursion between functions
 - **Export Verification**: Validates exported function signatures
 - **Scoped Environment**: Proper module-level scoping
-"""
+""".
 check_module(#module_def{name = Name, exports = Exports, items = Items}, Env) ->
     % Create module-scoped environment
     ModuleEnv = cure_types:extend_env(Env, module, Name),
@@ -345,7 +345,7 @@ environment.
 Func = #function_def{name = add, params = Params, body = Body, ...},
 {ok, Env, Result} = cure_typechecker:check_function(Func).
 ```
-"""
+""".
 check_function(Function) ->
     check_function(Function, builtin_env()).
 

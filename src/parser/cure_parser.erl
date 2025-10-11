@@ -1,3 +1,7 @@
+%% Cure Programming Language - Parser
+%% Recursive descent parser that converts tokens to AST
+-module(cure_parser).
+
 -moduledoc """
 # Cure Programming Language - Parser
 
@@ -111,11 +115,7 @@ The parser integrates with:
 - **AST**: Produces AST records defined in cure_ast_simple.hrl
 - **Type Checker**: Provides AST input for type checking
 - **Compiler**: Part of the complete compilation pipeline
-"""
-
-%% Cure Programming Language - Parser
-%% Recursive descent parser that converts tokens to AST
--module(cure_parser).
+""".
 
 -export([parse/1, parse_file/1]).
 
@@ -156,7 +156,7 @@ The parser provides detailed error information including:
 - Specific error reason (expected token, unexpected construct, etc.)
 - Line and column numbers for error location
 - Full stack trace for internal errors
-"""
+""".
 -spec parse([term()]) -> {ok, cure_ast:program()} | {error, term()}.
 parse(Tokens) ->
     try
@@ -203,7 +203,7 @@ This function can return errors from:
 1. **File I/O**: File not found, permission errors
 2. **Lexical Analysis**: Invalid tokens, malformed strings
 3. **Syntax Analysis**: Grammar violations, unexpected tokens
-"""
+""".
 -spec parse_file(string()) -> {ok, cure_ast:program()} | {error, term()}.
 parse_file(Filename) ->
     case cure_lexer:tokenize_file(Filename) of

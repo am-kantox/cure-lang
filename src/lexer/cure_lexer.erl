@@ -103,7 +103,7 @@ tokenize(<<"invalid \xff character">>).
 - `invalid_number_format` - Malformed numeric literal
 - `unterminated_comment` - Block comment without proper termination
 
-"""
+""".
 -spec tokenize(binary()) -> {ok, [#token{}]} | {error, term()}.
 tokenize(Source) when is_binary(Source) ->
     try
@@ -143,7 +143,7 @@ tokenize_file("nonexistent.cure").
 % => {error, {file_error, enoent}}
 ```
 
-"""
+""".
 -spec tokenize_file(string()) -> {ok, [#token{}]} | {error, term()}.
 tokenize_file(Filename) ->
     case file:read_file(Filename) of
@@ -179,7 +179,7 @@ token_type(KeywordToken).
 % => def
 ```
 
-"""
+""".
 -spec token_type(#token{}) -> atom().
 token_type(#token{type = Type}) -> Type.
 

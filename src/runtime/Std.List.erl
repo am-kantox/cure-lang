@@ -1,3 +1,7 @@
+%% Cure Standard Library - List Module (Temporary Erlang Implementation)
+%% This is a temporary implementation until the Cure standard library can be compiled
+-module('Std.List').
+
 -moduledoc """
 # Cure Standard Library - List Processing Module
 
@@ -114,11 +118,7 @@ This Erlang implementation will be replaced by:
 3. Integration with Cure's type system and pattern matching
 
 The API will remain stable during this transition.
-"""
-
-%% Cure Standard Library - List Module (Temporary Erlang Implementation)
-%% This is a temporary implementation until the Cure standard library can be compiled
--module('Std.List').
+""".
 
 %% Export the functions that are being called by compiled Cure code
 -export([

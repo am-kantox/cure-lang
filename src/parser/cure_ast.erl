@@ -1,3 +1,7 @@
+%% Cure Programming Language - AST Definitions
+%% Abstract Syntax Tree node definitions
+-module(cure_ast).
+
 -moduledoc """
 # Cure Programming Language - AST Definitions
 
@@ -125,11 +129,7 @@ This module integrates with:
 - **Copy-on-Write**: Erlang's immutable data structures optimize memory usage
 - **Pattern Matching**: Efficient pattern matching on AST node types
 - **Location Sharing**: Location records can be shared between related nodes
-"""
-
-%% Cure Programming Language - AST Definitions
-%% Abstract Syntax Tree node definitions
--module(cure_ast).
+""".
 
 -export([
     new_module/4,
@@ -571,7 +571,7 @@ Exports = [#export_spec{name = hello, arity = 1, location = Loc}],
 Items = [FunctionDef],
 Module = cure_ast:new_module('MyModule', Exports, Items, Location).
 ```
-"""
+""".
 -spec new_module(atom(), [export_spec()], [item()], location()) -> module_def().
 new_module(Name, Exports, Items, Location) ->
     #module_def{
@@ -604,7 +604,7 @@ Function = cure_ast:new_function(identity, Params, IntType, undefined, Body).
 ## Note
 This helper function uses a default location. For proper location tracking,
 construct the record directly with accurate location information.
-"""
+""".
 -spec new_function(
     atom(),
     [param()],
@@ -644,7 +644,7 @@ TypeDef = cure_ast:new_type_def('Maybe', Params, Definition).
 ## Note
 This helper function uses a default location. For proper location tracking,
 construct the record directly with accurate location information.
-"""
+""".
 -spec new_type_def(atom(), [atom()], type_expr()) -> type_def().
 new_type_def(Name, Params, Definition) ->
     #type_def{
@@ -677,7 +677,7 @@ FSM = cure_ast:new_fsm(counter, States, idle, StateDefs).
 ## Note
 This helper function uses a default location. For proper location tracking,
 construct the record directly with accurate location information.
-"""
+""".
 -spec new_fsm(atom(), [atom()], atom(), [state_def()]) -> fsm_def().
 new_fsm(Name, States, Initial, StateDefs) ->
     #fsm_def{
@@ -714,7 +714,7 @@ Identifier = cure_ast:new_expr(identifier, variable_name, Location).
 ## Note
 This is a limited helper function that only supports basic expression types.
 For complex expressions, construct the records directly.
-"""
+""".
 -spec new_expr(atom(), term(), location()) -> expr().
 new_expr(literal, Value, Location) ->
     #literal_expr{value = Value, location = Location};

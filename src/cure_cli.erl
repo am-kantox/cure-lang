@@ -132,7 +132,7 @@ main(["--help"]).
 
 All exceptions are caught and converted to user-friendly error messages.
 When `CURE_DEBUG=1` is set, full stack traces are displayed for debugging.
-"""
+""".
 main(Args) ->
     try
         case parse_args(Args) of
@@ -250,7 +250,7 @@ compile_file("examples/hello.cure").
 % => {ok, "_build/ebin/hello.beam"}
 ```
 
-""" 
+""". 
 compile_file(Filename) ->
     compile_file(Filename, #compile_options{}).
 
@@ -304,7 +304,7 @@ Options = #compile_options{output_file = "custom.beam"},
 compile_file("input.cure", Options).
 ```
 
-"""
+""".
 compile_file(Filename, Options) ->
     case filelib:is_regular(Filename) of
         false ->
@@ -541,7 +541,7 @@ the internal format expected by the code generation modules.
 - `warnings` → `{warnings, true}`
 - `fsm_runtime` → `{fsm_integration, true}`
 
-"""
+""".
 compile_opts_to_codegen_opts(Options) ->
     CodegenOpts = [],
 
@@ -628,7 +628,7 @@ environment variables to assist users in using the compiler effectively.
 - **Examples**: Common usage patterns
 - **Environment**: Relevant environment variables
 
-"""
+""".
 help() ->
     io:format("~s v~s~n", [?CURE_DESCRIPTION, ?CURE_VERSION]),
     io:format("~n"),
@@ -680,7 +680,7 @@ Cure is a dependently-typed functional programming language
 for the BEAM virtual machine with built-in finite state machines.
 ```
 
-"""
+""".
 version() ->
     io:format("~s v~s~n", [?CURE_DESCRIPTION, ?CURE_VERSION]),
     io:format("~n"),
@@ -750,7 +750,7 @@ modules. Currently provides basic structure with placeholder values.
 This is a simplified implementation. Future versions will extract
 actual module information including exports, imports, and metadata.
 
-"""
+""".
 get_module_info(AST) when is_tuple(AST) ->
     % For now, just return a generic structure
     % TODO: Extract actual module info when AST types are available
@@ -794,7 +794,7 @@ instructions to run `make all` to build the complete compiler.
 This function is called internally to validate the compiler
 state before attempting compilation operations.
 
-"""
+""".
 check_cure_installation() ->
     RequiredModules = [cure_lexer, cure_parser, cure_typechecker, cure_codegen],
     Missing = lists:filter(
