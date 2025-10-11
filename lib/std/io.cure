@@ -7,23 +7,23 @@ module Std.IO do
   ]
 
   # Basic output operations
-  def print(s: String): Unit =
+  def print(s: String): Int =
     # Print string without newline - would be primitive operation
-    get_unit()
+    0  # Simplified return
 
-  def println(s: String): Unit =
+  def println(s: String): Int =
     # Print string with newline - would be primitive operation
-    unit()
+    0  # Simplified return
 
-  def print_int(n: Int): Unit =
+  def print_int(n: Int): Int =
     # Print integer - would convert to string and print
-    unit()
+    0  # Simplified return
 
-  def print_float(f: Float): Unit =
+  def print_float(f: Float): Int =
     # Print float - would convert to string and print
-    unit()
+    0  # Simplified return
 
-  def print_bool(b: Bool): Unit =
+  def print_bool(b: Bool): Int =
     if b then print("true") else print("false") end
 
   # Input operations (simplified - would be more complex in real implementation)
@@ -40,14 +40,11 @@ module Std.IO do
     0.0  # Placeholder
 
   # Debug and error output
-  def debug(s: String): Unit =
+  def debug(s: String): Int =
     # Print debug message to stderr
-    unit()
+    0  # Simplified return
 
-  def error(s: String): Unit =
+  def error(s: String): Int =
     # Print error message to stderr
-    unit()
-
-  # Helper for unit type  
-  defp get_unit(): Unit = 0  # Simplified unit representation
+    0  # Simplified return
 end

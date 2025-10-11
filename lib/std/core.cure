@@ -11,7 +11,7 @@ module Std.Core do
     
     # Comparison operations
     eq/2, ne/2, lt/2, le/2, gt/2, ge/2, compare/2,
-    min/2, max/2, clamp/3,
+    minimum/2, maximum/2, clamp/3,
     
     # Error handling
     ok/1, error/1, is_ok/1, is_error/1,
@@ -25,9 +25,11 @@ module Std.Core do
     const/1, apply/2, pipe/2
   ]
 
-  # Type definitions for error handling
+  # Type definitions for error handling - move to beginning
   type Result(T, E) = Ok(T) | Error(E)
   type Option(T) = Some(T) | None
+  # Ordering type for comparisons - define before use
+  type Ordering = Lt | Eq | Gt
 
   # Identity function - returns its argument unchanged
   def identity(x: T): T = x
@@ -51,7 +53,9 @@ module Std.Core do
     if x then true else y end
 
   def xor(x: Bool, y: Bool): Bool =
-    if x then not(y) else y end
+    if x then 
+      if y then false else true end 
+    else y end
 
   # Comparison operations
   def eq(x: T, y: T): Bool = x == y
@@ -63,18 +67,20 @@ module Std.Core do
 
   def compare(x: T, y: T): Ordering =
     if x < y then Lt
-    else if x > y then Gt
-    else Eq
+    else 
+      if x > y then Gt
+      else Eq
+      end
     end
 
-  def min(x: T, y: T): T =
+  def minimum(x: T, y: T): T =
     if x <= y then x else y end
 
-  def max(x: T, y: T): T =
+  def maximum(x: T, y: T): T =
     if x >= y then x else y end
 
   def clamp(value: T, min_val: T, max_val: T): T =
-    min(max(value, min_val), max_val)
+    minimum(maximum(value, min_val), max_val)
 
   # Result/Either type operations
   def ok(value: T): Result(T, E) = Ok(value)
@@ -82,14 +88,14 @@ module Std.Core do
 
   def is_ok(result: Result(T, E)): Bool =
     match result do
-      Ok(_) -> true
-      Error(_) -> false
+      Ok(value) -> true
+      Error(err) -> false
     end
 
   def is_error(result: Result(T, E)): Bool =
     match result do
-      Ok(_) -> false
-      Error(_) -> true
+      Ok(value) -> false
+      Error(err) -> true
     end
 
   def map_ok(result: Result(T, E), f: T -> U): Result(U, E) =
@@ -116,13 +122,13 @@ module Std.Core do
 
   def is_some(option: Option(T)): Bool =
     match option do
-      Some(_) -> true
+      Some(value) -> true
       None -> false
     end
 
   def is_none(option: Option(T)): Bool =
     match option do
-      Some(_) -> false
+      Some(value) -> false
       None -> true
     end
 
@@ -146,12 +152,9 @@ module Std.Core do
 
   # Utility functions
   def const(x: T): U -> T =
-    fn(_) -> x end
+    fn(y) -> x end
 
   def apply(f: T -> U, x: T): U = f(x)
 
   def pipe(x: T, f: T -> U): U = f(x)
-
-  # Ordering type for comparisons
-  type Ordering = Lt | Eq | Gt
 end
