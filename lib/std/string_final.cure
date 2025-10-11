@@ -1,0 +1,83 @@
+module Std.String do
+  export [
+    length/1, is_empty/1,
+    concat/2, repeat/2,
+    to_upper/1, to_lower/1,
+    starts_with/2, ends_with/2,
+    trim/1, reverse/1,
+    slice/3, take/2, drop/2
+  ]
+
+  # Basic string operations
+  def length(s: String): Int =
+    # This would be implemented as a primitive operation
+    0  # Placeholder
+
+  def is_empty(s: String): Bool =
+    length(s) == 0
+
+  def concat(s1: String, s2: String): String =
+    # Primitive string concatenation
+    s1 ++ s2
+
+  def repeat(s: String, n: Int): String =
+    if n <= 0 then ""
+    else 
+      if n == 1 then s
+      else concat(s, repeat(s, subtract(n, 1)))
+      end
+    end
+
+  # String conversion (simplified - would need char list support)
+  def to_upper(s: String): String =
+    # Would convert each character to uppercase
+    s  # Placeholder
+
+  def to_lower(s: String): String =
+    # Would convert each character to lowercase  
+    s  # Placeholder
+
+  # String predicates (simplified)
+  def starts_with(s: String, prefix: String): Bool =
+    # Would check if string starts with prefix
+    let s_len = length(s)
+    let prefix_len = length(prefix)
+    if prefix_len > s_len then false
+    else check_prefix_match(s, prefix, 0)
+    end
+
+  defp check_prefix_match(s: String, prefix: String, pos: Int): Bool =
+    # Simplified implementation
+    true  # Placeholder
+
+  def ends_with(s: String, suffix: String): Bool =
+    # Would check if string ends with suffix
+    true  # Placeholder
+
+  # String manipulation
+  def trim(s: String): String =
+    # Remove whitespace from both ends
+    s  # Placeholder
+
+  def reverse(s: String): String =
+    # Reverse the string
+    s  # Placeholder
+
+  def slice(s: String, start: Int, len: Int): String =
+    # Extract substring from start position with given length
+    s  # Placeholder
+
+  def take(s: String, n: Int): String =
+    if n <= 0 then ""
+    else slice(s, 0, n)
+    end
+
+  def drop(s: String, n: Int): String =
+    let s_len = length(s)
+    if n >= s_len then ""
+    else slice(s, n, subtract(s_len, n))
+    end
+
+  # Helper function for subtraction
+  defp subtract(x: Int, y: Int): Int = x - y
+end

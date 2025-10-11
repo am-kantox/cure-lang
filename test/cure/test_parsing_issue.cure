@@ -1,0 +1,9 @@
+module TestParsing do
+  export [
+    test1/0, test2/0
+  ]
+
+  def test1(): Int = 42
+
+  def test2(): Int = 24
+end

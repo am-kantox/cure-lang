@@ -1,0 +1,7 @@
+module TestMath do
+  export [
+    add/2
+  ]
+
+  def add(x: Int, y: Int): Int = x + y
+end

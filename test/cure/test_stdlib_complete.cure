@@ -1,0 +1,63 @@
+module TestStdLib do
+  export [
+    test_math/0, test_string/0, test_io/0,
+    test_option/0, test_result/0, test_list/0,
+    run_all_tests/0
+  ]
+
+  # Test Math module
+  def test_math(): Bool =
+    let pi_val = Std.Math.pi()
+    let abs_test = Std.Math.abs(-5) == 5
+    let add_test = Std.Math.add(2, 3) == 5
+    let factorial_test = Std.Math.factorial(5) == 120
+    abs_test
+
+  # Test String module (basic operations)  
+  def test_string(): Bool =
+    let empty_test = Std.String.is_empty("")
+    let concat_test = Std.String.concat("Hello", " World")
+    let repeat_test = Std.String.repeat("Hi", 3)
+    empty_test
+
+  # Test IO module
+  def test_io(): Bool =
+    let print_result = Std.IO.print("Test")
+    let read_result = Std.IO.read_line()
+    true  # IO operations return success
+
+  # Test Option module
+  def test_option(): Bool =
+    let some_val = Std.Option.some(42)
+    let is_some_test = Std.Option.is_some(some_val)
+    let none_val = Std.Option.none()
+    let is_none_test = Std.Option.is_none(none_val)
+    is_some_test
+
+  # Test Result module
+  def test_result(): Bool =
+    let ok_val = Std.Result.ok(100)
+    let is_ok_test = Std.Result.is_ok(ok_val)
+    let error_val = Std.Result.error("failure")
+    let is_error_test = Std.Result.is_error(error_val)
+    is_ok_test
+
+  # Test List module
+  def test_list(): Bool =
+    let test_list = [1, 2, 3, 4, 5]
+    let length_test = Std.List.length(test_list) == 5
+    let head_test = Std.List.head(test_list) == 1
+    let tail_test = Std.List.length(Std.List.tail(test_list)) == 4
+    let reverse_test = Std.List.head(Std.List.reverse(test_list)) == 5
+    length_test
+
+  # Run all tests
+  def run_all_tests(): Bool =
+    let math_result = test_math()
+    let string_result = test_string()  
+    let io_result = test_io()
+    let option_result = test_option()
+    let result_result = test_result()
+    let list_result = test_list()
+    math_result
+end

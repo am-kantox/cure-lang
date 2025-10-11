@@ -1,0 +1,9 @@
+module TestLet do
+  export [
+    test_let/2
+  ]
+
+  def test_let(x: Int, y: Int): Int =
+    let sum = x + y
+    sum * 2
+end

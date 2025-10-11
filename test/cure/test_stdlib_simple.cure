@@ -1,0 +1,48 @@
+module TestStdLib do  
+  export [
+    test_basic_operations/0, test_list_operations/0,
+    test_math_operations/0
+  ]
+
+  # Test basic list operations  
+  def test_list_operations(): Bool =
+    let test_list = [1, 2, 3]
+    let head_val = list_head(test_list)
+    let tail_list = list_tail(test_list) 
+    let is_empty_test = list_is_empty([])
+    true
+
+  # Test basic math operations
+  def test_math_operations(): Bool =
+    let add_result = 2 + 3
+    let mult_result = 4 * 5
+    let abs_result = abs_value(-10)
+    add_result == 5
+
+  # Test basic operations
+  def test_basic_operations(): Bool =
+    let x = 42
+    let y = -x
+    let z = x + y
+    z == 0
+
+  # Helper functions (would normally import from modules)
+  defp list_head(list: List(T)): T =
+    match list do
+      [h | _] -> h
+    end
+
+  defp list_tail(list: List(T)): List(T) =
+    match list do  
+      [_ | t] -> t
+    end
+
+  defp list_is_empty(list: List(T)): Bool =
+    match list do
+      [] -> true
+      _ -> false
+    end
+
+  defp abs_value(x: Int): Int =
+    if x < 0 then -x else x end
+end

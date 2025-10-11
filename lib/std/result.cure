@@ -1,0 +1,80 @@
+module Std.Result do
+  export [
+    ok/1, error/1,
+    is_ok/1, is_error/1,
+    map/2, map_error/2, flat_map/2,
+    get_or_else/2, unwrap/1, unwrap_or/2,
+    to_option/1, from_option/2
+  ]
+
+  # Constructor functions
+  def ok(value: T): Result(T, E) = Ok(value)
+  def error(err: E): Result(T, E) = Error(err)
+
+  # Predicates
+  def is_ok(result: Result(T, E)): Bool =
+    match result do
+      Ok(_) -> true
+      Error(_) -> false
+    end
+
+  def is_error(result: Result(T, E)): Bool =
+    match result do
+      Ok(_) -> false
+      Error(_) -> true
+    end
+
+  # Transformations
+  def map(result: Result(T, E), f: T -> U): Result(U, E) =
+    match result do
+      Ok(value) -> Ok(f(value))
+      Error(err) -> Error(err)
+    end
+
+  def map_error(result: Result(T, E), f: E -> F): Result(T, F) =
+    match result do
+      Ok(value) -> Ok(value)
+      Error(err) -> Error(f(err))
+    end
+
+  def flat_map(result: Result(T, E), f: T -> Result(U, E)): Result(U, E) =
+    match result do
+      Ok(value) -> f(value)
+      Error(err) -> Error(err)
+    end
+
+  # Value extraction
+  def get_or_else(result: Result(T, E), default: T): T =
+    match result do
+      Ok(value) -> value
+      Error(_) -> default
+    end
+
+  def unwrap(result: Result(T, E)): T =
+    match result do
+      Ok(value) -> value
+      Error(_) -> get_default_value()
+    end
+
+  def unwrap_or(result: Result(T, E), default: T): T =
+    get_or_else(result, default)
+
+  # Conversions
+  def to_option(result: Result(T, E)): Option(T) =
+    match result do
+      Ok(value) -> Some(value)
+      Error(_) -> None
+    end
+
+  def from_option(opt: Option(T), error_value: E): Result(T, E) =
+    match opt do
+      Some(value) -> Ok(value)
+      None -> Error(error_value)
+    end
+
+  # Helper for default value - simplified
+  defp get_default_value(): T =
+    # In real implementation would throw exception
+    # For now, return a placeholder - this is a type system limitation
+    0  # This won't work for all types but is a placeholder
+end

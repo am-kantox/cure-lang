@@ -1,13 +1,11 @@
-module Test do
-  export [compare/2]
+module TestNestedIf do
+  export [
+    test/1
+  ]
 
-  type Ordering = Lt | Eq | Gt
-
-  def compare(x: T, y: T): Ordering =
-    if x < y then Lt
-    else 
-      if x > y then Gt
-      else Eq
-      end
+  def test(x: Int): Int =
+    if x > 0 then 1
+    else if x < 0 then -1
+    else 0
     end
 end
