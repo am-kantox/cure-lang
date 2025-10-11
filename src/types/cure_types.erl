@@ -1177,6 +1177,12 @@ apply_substitution(#type_var{id = Id}, Subst) ->
         undefined -> #type_var{id = Id};
         Type -> apply_substitution(Type, Subst)
     end;
+% Handle type variable tuples (legacy format)
+apply_substitution({type_var, Id, Name, Constraints}, Subst) ->
+    case maps:get(Id, Subst, undefined) of
+        undefined -> {type_var, Id, Name, Constraints};
+        Type -> apply_substitution(Type, Subst)
+    end;
 apply_substitution({function_type, Params, Return}, Subst) ->
     {function_type, [apply_substitution(P, Subst) || P <- Params],
         apply_substitution(Return, Subst)};
@@ -1187,10 +1193,7 @@ apply_substitution({list_type, ElemType, LenExpr}, Subst) ->
             _ -> apply_substitution_to_expr(LenExpr, Subst)
         end};
 apply_substitution({dependent_type, Name, Params}, Subst) ->
-    {dependent_type, Name, [
-        P#type_param{value = apply_substitution(P#type_param.value, Subst)}
-     || P <- Params
-    ]};
+    {dependent_type, Name, [apply_substitution(P, Subst) || P <- Params]};
 apply_substitution({refined_type, BaseType, Predicate}, Subst) ->
     {refined_type, apply_substitution(BaseType, Subst), Predicate};
 apply_substitution({gadt_constructor, Name, Args, ReturnType}, Subst) ->
@@ -1303,55 +1306,10 @@ infer_expr({function_call_expr, Function, Args, Location}, Env) ->
                     end,
                     io:format("DEBUG: Argument types: ~p~n", [ArgTypes]),
 
-                    % FIXED: Properly instantiate function type with shared type variables
-                    case instantiate_function_type(FuncType) of
-                        {ok, InstantiatedFuncType, InstantiationConstraints} ->
-                            io:format("*** DEBUG: Instantiated function type: ~p~n", [
-                                InstantiatedFuncType
-                            ]),
-                            case InstantiatedFuncType of
-                                {function_type, InstParamTypes, InstReturnType} ->
-                                    % Create constraints between instantiated param types and arg types
-                                    ParamConstraints = create_param_constraints(
-                                        InstParamTypes, ArgTypes, Location
-                                    ),
-                                    io:format("*** DEBUG: Parameter constraints: ~p~n", [
-                                        ParamConstraints
-                                    ]),
-                                    AllConstraints =
-                                        FuncConstraints ++ ArgConstraints ++
-                                            InstantiationConstraints ++ ParamConstraints,
-                                    {ok, InstReturnType, AllConstraints};
-                                _ ->
-                                    % Fallback to old method for non-function types
-                                    ReturnType = new_type_var(),
-                                    ExpectedFuncType = {function_type, ArgTypes, ReturnType},
-                                    UnifyConstraint = #type_constraint{
-                                        left = FuncType,
-                                        op = '=',
-                                        right = ExpectedFuncType,
-                                        location = Location
-                                    },
-                                    AllConstraints =
-                                        FuncConstraints ++ ArgConstraints ++ [UnifyConstraint],
-                                    {ok, ReturnType, AllConstraints}
-                            end;
-                        {error, Reason} ->
-                            io:format("*** DEBUG: Function type instantiation failed: ~p~n", [
-                                Reason
-                            ]),
-                            % Fallback to old method
-                            ReturnType = new_type_var(),
-                            ExpectedFuncType = {function_type, ArgTypes, ReturnType},
-                            UnifyConstraint = #type_constraint{
-                                left = FuncType,
-                                op = '=',
-                                right = ExpectedFuncType,
-                                location = Location
-                            },
-                            AllConstraints = FuncConstraints ++ ArgConstraints ++ [UnifyConstraint],
-                            {ok, ReturnType, AllConstraints}
-                    end;
+                    % Handle curried function application: f(a, b) becomes f(a)(b)
+                    infer_curried_application(
+                        FuncType, ArgTypes, Location, FuncConstraints ++ ArgConstraints
+                    );
                 Error ->
                     Error
             end;
@@ -1442,7 +1400,8 @@ infer_expr({lambda_expr, Params, Body, _Location}, Env) ->
     % Infer body type
     case infer_expr(Body, NewEnv) of
         {ok, BodyType, BodyConstraints} ->
-            LambdaType = {function_type, ParamTypes, BodyType},
+            % Create curried function type: fn(a, b) -> fn(a) -> fn(b) -> body
+            LambdaType = build_curried_function_type(ParamTypes, BodyType),
             {ok, LambdaType, BodyConstraints};
         Error ->
             Error
@@ -1478,7 +1437,8 @@ infer_expr({cons_expr, Elements, Tail, Location}, Env) ->
                                     },
                                     % Result type is also List(ElemType) with unknown length
                                     ResultType = {list_type, ElemType, new_type_var()},
-                                    AllConstraints = ElemConstraints ++ TailConstraints ++ [TailConstraint],
+                                    AllConstraints =
+                                        ElemConstraints ++ TailConstraints ++ [TailConstraint],
                                     {ok, ResultType, AllConstraints};
                                 Error ->
                                     Error
@@ -1492,6 +1452,13 @@ infer_expr({cons_expr, Elements, Tail, Location}, Env) ->
     end;
 infer_expr(Expr, _Env) ->
     {error, {unsupported_expression, Expr}}.
+
+%% Build curried function type from parameter list: [A, B, C] -> Body becomes A -> (B -> (C -> Body))
+build_curried_function_type([], BodyType) ->
+    BodyType;
+build_curried_function_type([ParamType | RestParams], BodyType) ->
+    RestFuncType = build_curried_function_type(RestParams, BodyType),
+    {function_type, [ParamType], RestFuncType}.
 
 %% Helper functions for type inference
 infer_literal_type(N) when is_integer(N) -> ?TYPE_INT;
@@ -1552,6 +1519,20 @@ collect_type_variables_in_type({function_type, ParamTypes, ReturnType}, Map) ->
     collect_type_variables_in_type(ReturnType, Map1);
 collect_type_variables_in_type({list_type, ElemType, _Length}, Map) ->
     collect_type_variables_in_type(ElemType, Map);
+collect_type_variables_in_type({primitive_type, Name}, Map) ->
+    % Handle primitive types that represent generic type variables
+    case is_generic_type_variable_name(Name) of
+        true ->
+            case maps:is_key(Name, Map) of
+                % Already have a mapping
+                true -> Map;
+                % Create new mapping
+                false -> maps:put(Name, new_type_var(), Map)
+            end;
+        false ->
+            % Not a generic type variable, leave as-is
+            Map
+    end;
 collect_type_variables_in_type(_, Map) ->
     Map.
 
@@ -1565,6 +1546,20 @@ instantiate_type_with_map({function_type, ParamTypes, ReturnType}, Map) ->
     {function_type, InstParamTypes, InstReturnType};
 instantiate_type_with_map({list_type, ElemType, Length}, Map) ->
     {list_type, instantiate_type_with_map(ElemType, Map), Length};
+instantiate_type_with_map({primitive_type, Name}, Map) ->
+    % Handle primitive types that represent generic type variables
+    case is_generic_type_variable_name(Name) of
+        true ->
+            case maps:get(Name, Map, undefined) of
+                % No mapping, keep as-is
+                undefined -> {primitive_type, Name};
+                % Replace with instantiated type variable
+                TypeVar -> TypeVar
+            end;
+        false ->
+            % Not a generic type variable, keep as primitive
+            {primitive_type, Name}
+    end;
 instantiate_type_with_map(Type, _Map) ->
     Type.
 
@@ -1588,6 +1583,85 @@ update_param_value(#type_param{name = _Name, value = _OldValue} = Param, NewValu
 update_param_value(_Param, NewValue) ->
     % Fallback - create new param structure
     #type_param{name = undefined, value = NewValue}.
+
+%% Check if a name represents a generic type variable (T, E, U, etc.)
+is_generic_type_variable_name(Name) ->
+    % Check if it's a common generic type variable name pattern
+    case atom_to_list(Name) of
+        % Single uppercase letter: T, E, U, etc.
+        [C] when C >= $A, C =< $Z -> true;
+        % Type variables like T1, T2, etc.
+        "T" ++ _ -> true;
+        % Error type variables
+        "E" ++ _ -> true;
+        % Other generic variables
+        "U" ++ _ -> true;
+        % Generic A variables
+        "A" ++ _ -> true;
+        % Generic B variables
+        "B" ++ _ -> true;
+        % Generic C variables
+        "C" ++ _ -> true;
+        % Generic F variables (for function types)
+        "F" ++ _ -> true;
+        _ -> false
+    end.
+
+%% Infer curried function application: f(a1, a2, ..., an) becomes f(a1)(a2)...(an)
+infer_curried_application(FuncType, [], _Location, Constraints) ->
+    % No arguments - return function as-is
+    {ok, FuncType, Constraints};
+infer_curried_application(FuncType, [ArgType | RestArgs], Location, Constraints) ->
+    % Apply function to first argument
+    case apply_function_to_arg(FuncType, ArgType, Location) of
+        {ok, ResultType, NewConstraints} ->
+            % Recursively apply to remaining arguments
+            infer_curried_application(
+                ResultType, RestArgs, Location, Constraints ++ NewConstraints
+            );
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Apply a function type to a single argument
+apply_function_to_arg(FuncType, ArgType, Location) ->
+    case instantiate_function_type(FuncType) of
+        {ok, {function_type, [ParamType], ReturnType}, InstConstraints} ->
+            % Single parameter function - apply directly
+            Constraint = #type_constraint{
+                left = ParamType,
+                op = '=',
+                right = ArgType,
+                location = Location
+            },
+            {ok, ReturnType, InstConstraints ++ [Constraint]};
+        {ok, {function_type, [ParamType | RestParams], ReturnType}, InstConstraints} when
+            RestParams =/= []
+        ->
+            % Multi-parameter function - apply first param and return curried function
+            Constraint = #type_constraint{
+                left = ParamType,
+                op = '=',
+                right = ArgType,
+                location = Location
+            },
+            CurriedType = {function_type, RestParams, ReturnType},
+            {ok, CurriedType, InstConstraints ++ [Constraint]};
+        {ok, {function_type, [], _ReturnType}, _InstConstraints} ->
+            % Zero parameter function - cannot apply argument
+            {error, {cannot_apply_to_nullary_function, FuncType, ArgType}};
+        {error, Reason} ->
+            % Not a function type - create expected function type and unify
+            ReturnType = new_type_var(),
+            ExpectedFuncType = {function_type, [ArgType], ReturnType},
+            UnifyConstraint = #type_constraint{
+                left = FuncType,
+                op = '=',
+                right = ExpectedFuncType,
+                location = Location
+            },
+            {ok, ReturnType, [UnifyConstraint]}
+    end.
 
 %% Create constraints between instantiated parameter types and argument types
 create_param_constraints([], [], _Location) ->
@@ -1634,35 +1708,50 @@ infer_binary_op('==', LeftType, RightType, Location, Constraints) ->
     },
     {ok, ?TYPE_BOOL, Constraints ++ [EqualityConstraint]};
 infer_binary_op('>', LeftType, RightType, Location, Constraints) ->
-    NumConstraints = [
-        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
-        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
-    ],
-    {ok, ?TYPE_BOOL, Constraints ++ NumConstraints};
+    % Allow generic comparison - both operands must be the same type
+    ComparisonConstraint = #type_constraint{
+        left = LeftType,
+        op = '=',
+        right = RightType,
+        location = Location
+    },
+    {ok, ?TYPE_BOOL, Constraints ++ [ComparisonConstraint]};
 infer_binary_op('<', LeftType, RightType, Location, Constraints) ->
-    NumConstraints = [
-        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
-        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
-    ],
-    {ok, ?TYPE_BOOL, Constraints ++ NumConstraints};
+    % Allow generic comparison - both operands must be the same type
+    ComparisonConstraint = #type_constraint{
+        left = LeftType,
+        op = '=',
+        right = RightType,
+        location = Location
+    },
+    {ok, ?TYPE_BOOL, Constraints ++ [ComparisonConstraint]};
 infer_binary_op('>=', LeftType, RightType, Location, Constraints) ->
-    NumConstraints = [
-        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
-        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
-    ],
-    {ok, ?TYPE_BOOL, Constraints ++ NumConstraints};
+    % Allow generic comparison - both operands must be the same type
+    ComparisonConstraint = #type_constraint{
+        left = LeftType,
+        op = '=',
+        right = RightType,
+        location = Location
+    },
+    {ok, ?TYPE_BOOL, Constraints ++ [ComparisonConstraint]};
 infer_binary_op('=<', LeftType, RightType, Location, Constraints) ->
-    NumConstraints = [
-        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
-        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
-    ],
-    {ok, ?TYPE_BOOL, Constraints ++ NumConstraints};
+    % Allow generic comparison - both operands must be the same type
+    ComparisonConstraint = #type_constraint{
+        left = LeftType,
+        op = '=',
+        right = RightType,
+        location = Location
+    },
+    {ok, ?TYPE_BOOL, Constraints ++ [ComparisonConstraint]};
 infer_binary_op('<=', LeftType, RightType, Location, Constraints) ->
-    NumConstraints = [
-        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
-        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
-    ],
-    {ok, ?TYPE_BOOL, Constraints ++ NumConstraints};
+    % Allow generic comparison - both operands must be the same type
+    ComparisonConstraint = #type_constraint{
+        left = LeftType,
+        op = '=',
+        right = RightType,
+        location = Location
+    },
+    {ok, ?TYPE_BOOL, Constraints ++ [ComparisonConstraint]};
 infer_binary_op('!=', LeftType, RightType, Location, Constraints) ->
     EqualityConstraint = #type_constraint{
         left = LeftType,
@@ -1833,6 +1922,29 @@ infer_pattern_type({identifier_pattern, Name, _Location}, MatchType, Env) ->
 infer_pattern_type({wildcard_pattern, _Location}, _MatchType, Env) ->
     % Wildcard doesn't bind any variables
     {ok, Env, []};
+infer_pattern_type({constructor_pattern, ConstructorName, Args, _Location}, MatchType, Env) ->
+    % Handle constructor patterns like Ok(value), Error(err), Some(x), None
+    case Args of
+        undefined ->
+            % Nullary constructor like None
+            {ok, Env, []};
+        [] ->
+            % Nullary constructor like None
+            {ok, Env, []};
+        ArgPatterns ->
+            % Constructor with arguments - need to infer argument types from constructor
+            case lookup_env(Env, ConstructorName) of
+                undefined ->
+                    % Constructor not found in environment - treat as unbound
+                    {error, {unbound_constructor, ConstructorName}};
+                {function_type, ArgTypes, _ResultType} ->
+                    % Constructor is a function - extract argument types
+                    infer_constructor_args(ArgPatterns, ArgTypes, Env, []);
+                _OtherType ->
+                    % Constructor has unexpected type - treat args as generic
+                    infer_constructor_args_generic(ArgPatterns, Env, [])
+            end
+    end;
 infer_pattern_type(_Pattern, _MatchType, Env) ->
     % For other patterns, return env unchanged for now
     {ok, Env, []}.
@@ -1869,6 +1981,36 @@ infer_list_pattern_elements([Element | RestElements], Tail, MatchType, Env, Cons
             infer_list_pattern_elements(
                 RestElements, Tail, MatchType, NewEnv, Constraints ++ ElemConstraints
             );
+        Error ->
+            Error
+    end.
+
+%% Helper for constructor pattern arguments with known types
+infer_constructor_args([], [], Env, Constraints) ->
+    {ok, Env, Constraints};
+infer_constructor_args([Pattern | RestPatterns], [ArgType | RestArgTypes], Env, Constraints) ->
+    case infer_pattern_type(Pattern, ArgType, Env) of
+        {ok, NewEnv, PatternConstraints} ->
+            infer_constructor_args(
+                RestPatterns, RestArgTypes, NewEnv, Constraints ++ PatternConstraints
+            );
+        Error ->
+            Error
+    end;
+infer_constructor_args(Patterns, ArgTypes, Env, Constraints) when
+    length(Patterns) =/= length(ArgTypes)
+->
+    % Arity mismatch - create generic types for all patterns
+    infer_constructor_args_generic(Patterns, Env, Constraints).
+
+%% Helper for constructor pattern arguments with generic types
+infer_constructor_args_generic([], Env, Constraints) ->
+    {ok, Env, Constraints};
+infer_constructor_args_generic([Pattern | RestPatterns], Env, Constraints) ->
+    GenericType = new_type_var(),
+    case infer_pattern_type(Pattern, GenericType, Env) of
+        {ok, NewEnv, PatternConstraints} ->
+            infer_constructor_args_generic(RestPatterns, NewEnv, Constraints ++ PatternConstraints);
         Error ->
             Error
     end.

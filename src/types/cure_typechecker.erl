@@ -234,10 +234,14 @@ check_item({module_def, Name, Exports, Items, Location}, Env) ->
     check_module_new({module_def, Name, [], Exports, Items, Location}, Env);
 check_item({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
     % Fallback for old tuple-based format without is_private field
-    check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, false, Location}, Env);
+    check_function_new(
+        {function_def, Name, Params, ReturnType, Constraint, Body, false, Location}, Env
+    );
 check_item({function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location}, Env) ->
     % New tuple format with is_private field
-    check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location}, Env);
+    check_function_new(
+        {function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location}, Env
+    );
 check_item({erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}, Env) ->
     check_erlang_function_new(
         {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}, Env
@@ -513,7 +517,7 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
     % Two-pass processing: first collect all function signatures, then check bodies
     % Pass 1: Collect function signatures and add them to environment
     FunctionEnv = collect_function_signatures(Items, ImportEnv),
-    
+
     % Pass 2: Check all items with function signatures in environment
     case check_items(Items, FunctionEnv, new_result()) of
         Result = #typecheck_result{success = true} ->
@@ -532,9 +536,13 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
 %% Check function definition - New AST format
 % 7-parameter format (old format without is_private)
 check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
-    check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, false, Location}, Env);
+    check_function_new(
+        {function_def, Name, Params, ReturnType, Constraint, Body, false, Location}, Env
+    );
 % 8-parameter format (new format with is_private)
-check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location}, Env) ->
+check_function_new(
+    {function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location}, Env
+) ->
     try
         % Convert parameters to type environment and extract type parameters
         {ParamTypes, ParamEnv} = process_parameters_new(Params, Env),
@@ -542,8 +550,11 @@ check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Is
         % Also extract type parameters from return type if present
         EnvWithReturnTypeParams =
             case ReturnType of
-                undefined -> ParamEnv;
-                _ -> extract_and_add_type_params(ReturnType, ParamEnv)
+                undefined ->
+                    ParamEnv;
+                _ ->
+                    io:format("DEBUG RETURN: Processing return type ~p~n", [ReturnType]),
+                    extract_and_add_type_params(ReturnType, ParamEnv)
             end,
 
         % Check and process constraint if present
@@ -590,7 +601,7 @@ check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Is
                         {ok, NewEnv, success_result(FuncType)};
                     _ ->
                         % Check body matches declared return type
-                        ExpectedReturnType = convert_type_to_tuple(ReturnType),
+                        ExpectedReturnType = convert_type_with_env(ReturnType, FinalEnv),
                         case cure_types:unify(BodyType, ExpectedReturnType) of
                             {ok, _} ->
                                 FuncType = {function_type, ParamTypes, ExpectedReturnType},
@@ -752,11 +763,144 @@ check_import_new({import_def, Module, Items, _Location}, Env) ->
     end.
 
 %% Check type definition
-check_type_definition(#type_def{name = Name, definition = Definition}, Env) ->
-    % For now, just add the type to environment
-    TypeDefType = convert_type_to_tuple(Definition),
-    NewEnv = cure_types:extend_env(Env, Name, TypeDefType),
-    {ok, NewEnv, success_result(TypeDefType)}.
+check_type_definition(#type_def{name = Name, params = Params, definition = Definition}, Env) ->
+    try
+        % Convert type parameters to environment bindings if they exist
+        EnvWithTypeParams =
+            case Params of
+                [] -> Env;
+                _ -> add_type_params_to_env(Params, Env)
+            end,
+
+        % Handle different kinds of type definitions
+        case Definition of
+            #union_type{types = Variants} ->
+                % This is an algebraic data type with constructors
+                {NewEnv, ConstructorTypes} = process_union_type(
+                    Name, Params, Variants, EnvWithTypeParams
+                ),
+                UnionType = {union_type, Name, Params, ConstructorTypes},
+                FinalEnv = cure_types:extend_env(NewEnv, Name, UnionType),
+                {ok, FinalEnv, success_result(UnionType)};
+            _ ->
+                % Simple type definition or type alias
+                TypeDefType = convert_type_to_tuple(Definition),
+                NewEnv = cure_types:extend_env(EnvWithTypeParams, Name, TypeDefType),
+                {ok, NewEnv, success_result(TypeDefType)}
+        end
+    catch
+        _:Error ->
+            ErrorMsg = #typecheck_error{
+                message = "Failed to process type definition",
+                location = #location{line = 0, column = 0, file = undefined},
+                details = {type_definition_error, Name, Error}
+            },
+            {ok, Env, error_result(ErrorMsg)}
+    end.
+
+%% Add type parameters to environment
+add_type_params_to_env([], Env) ->
+    Env;
+add_type_params_to_env([Param | Rest], Env) ->
+    ParamName =
+        case Param of
+            #type_param{name = Name} -> Name;
+            Name when is_atom(Name) -> Name;
+            _ -> throw({invalid_type_param, Param})
+        end,
+    % Add type parameter as a type variable
+    TypeVar = cure_types:new_type_var(ParamName),
+    NewEnv = cure_types:extend_env(Env, ParamName, TypeVar),
+    add_type_params_to_env(Rest, NewEnv).
+
+%% Process union type and register constructors
+process_union_type(TypeName, TypeParams, Variants, Env) ->
+    process_union_type_variants(Variants, TypeName, TypeParams, Env, [], Env).
+
+process_union_type_variants([], _TypeName, _TypeParams, _OrigEnv, ConstructorAcc, FinalEnv) ->
+    {FinalEnv, lists:reverse(ConstructorAcc)};
+process_union_type_variants(
+    [Variant | Rest], TypeName, TypeParams, OrigEnv, ConstructorAcc, CurrentEnv
+) ->
+    {ConstructorName, ConstructorType, UpdatedEnv} = process_variant(
+        Variant, TypeName, TypeParams, CurrentEnv
+    ),
+    ConstructorInfo = {ConstructorName, ConstructorType},
+    process_union_type_variants(
+        Rest, TypeName, TypeParams, OrigEnv, [ConstructorInfo | ConstructorAcc], UpdatedEnv
+    ).
+
+%% Process a single variant in a union type
+process_variant(Variant, TypeName, TypeParams, Env) ->
+    case Variant of
+        #primitive_type{name = ConstructorName} ->
+            % Simple constructor without arguments: None, Lt, Eq, Gt
+            % Nullary constructors are direct values, not functions
+            ResultType = create_result_type_with_env(TypeName, TypeParams, Env),
+            NewEnv = cure_types:extend_env(Env, ConstructorName, ResultType),
+            {ConstructorName, ResultType, NewEnv};
+        #dependent_type{name = ConstructorName, params = Args} ->
+            % Constructor with arguments: Ok(T), Error(E), Some(T)
+            % Use environment-aware conversion to properly resolve type variables
+            ArgTypes = [convert_type_param_with_env(P, Env) || P <- Args],
+            ResultType = create_result_type_with_env(TypeName, TypeParams, Env),
+            % Create function type: (ArgTypes...) -> ResultType
+            ConstructorType = {function_type, ArgTypes, ResultType},
+            NewEnv = cure_types:extend_env(Env, ConstructorName, ConstructorType),
+            {ConstructorName, ConstructorType, NewEnv};
+        _ ->
+            % Fallback for other variant types
+            throw({unsupported_variant_type, Variant})
+    end.
+
+%% Create result type for constructor
+create_result_type(TypeName, []) ->
+    {primitive_type, TypeName};
+create_result_type(TypeName, TypeParams) ->
+    % Convert type parameters to proper type variables for the result type
+    ParamVars = [
+        case P of
+            #type_param{name = Name} when Name =/= undefined -> cure_types:new_type_var(Name);
+            Name when is_atom(Name) -> cure_types:new_type_var(Name);
+            _ -> cure_types:new_type_var()
+        end
+     || P <- TypeParams
+    ],
+    {dependent_type, TypeName, ParamVars}.
+
+%% Create result type for constructor using environment for type variable lookup
+create_result_type_with_env(TypeName, [], _Env) ->
+    {primitive_type, TypeName};
+create_result_type_with_env(TypeName, TypeParams, Env) ->
+    % Convert type parameters using the environment to get consistent type variables
+    ParamVars = [
+        case P of
+            #type_param{name = Name} when Name =/= undefined ->
+                case cure_types:lookup_env(Env, Name) of
+                    undefined ->
+                        cure_types:new_type_var(Name);
+                    TypeVar ->
+                        case cure_types:is_type_var(TypeVar) of
+                            true -> TypeVar;
+                            false -> cure_types:new_type_var(Name)
+                        end
+                end;
+            Name when is_atom(Name) ->
+                case cure_types:lookup_env(Env, Name) of
+                    undefined ->
+                        cure_types:new_type_var(Name);
+                    TypeVar ->
+                        case cure_types:is_type_var(TypeVar) of
+                            true -> TypeVar;
+                            false -> cure_types:new_type_var(Name)
+                        end
+                end;
+            _ ->
+                cure_types:new_type_var()
+        end
+     || P <- TypeParams
+    ],
+    {dependent_type, TypeName, ParamVars}.
 
 %% Create function type for imported function with given arity
 create_imported_function_type(Module, Name, Arity) ->
@@ -1001,6 +1145,13 @@ convert_type_to_tuple(#primitive_type{name = Name}) ->
 convert_type_to_tuple(#dependent_type{name = Name, params = Params}) ->
     ConvertedParams = [convert_type_param_to_tuple(P) || P <- Params],
     {dependent_type, Name, ConvertedParams};
+convert_type_to_tuple(#union_type{types = Variants}) ->
+    ConvertedVariants = [convert_type_to_tuple(V) || V <- Variants],
+    {union_type, ConvertedVariants};
+convert_type_to_tuple(#function_type{params = Params, return_type = ReturnType}) ->
+    ConvertedParams = [convert_type_to_tuple(P) || P <- Params],
+    ConvertedReturn = convert_type_to_tuple(ReturnType),
+    {function_type, ConvertedParams, ConvertedReturn};
 convert_type_to_tuple(#identifier_expr{name = Name}) when
     Name =:= 'Float' orelse Name =:= 'Int' orelse Name =:= 'Bool' orelse
         Name =:= 'String' orelse Name =:= 'Unit'
@@ -1010,22 +1161,84 @@ convert_type_to_tuple(#identifier_expr{name = Name}) when
 convert_type_to_tuple(Type) ->
     Type.
 
+%% Convert type expressions while resolving type variables from environment
+convert_type_with_env(#primitive_type{name = Name}, _Env) ->
+    {primitive_type, Name};
+convert_type_with_env(#dependent_type{name = Name, params = Params}, Env) ->
+    ConvertedParams = [convert_type_param_with_env(P, Env) || P <- Params],
+    {dependent_type, Name, ConvertedParams};
+convert_type_with_env(#union_type{types = Variants}, Env) ->
+    ConvertedVariants = [convert_type_with_env(V, Env) || V <- Variants],
+    {union_type, ConvertedVariants};
+convert_type_with_env(#function_type{params = Params, return_type = ReturnType}, Env) ->
+    ConvertedParams = [convert_type_with_env(P, Env) || P <- Params],
+    ConvertedReturn = convert_type_with_env(ReturnType, Env),
+    {function_type, ConvertedParams, ConvertedReturn};
+convert_type_with_env(#identifier_expr{name = Name}, Env) when
+    Name =:= 'Float' orelse Name =:= 'Int' orelse Name =:= 'Bool' orelse
+        Name =:= 'String' orelse Name =:= 'Unit'
+->
+    % Convert primitive type identifiers to primitive_type tuples
+    {primitive_type, Name};
+convert_type_with_env(#identifier_expr{name = Name}, Env) ->
+    % Check if this is a type variable in the environment
+    case cure_types:lookup_env(Env, Name) of
+        undefined ->
+            % If not found in environment, check if it's a generic type variable name
+            case is_generic_type_var(Name) of
+                true ->
+                    % ERROR: Generic type parameters should be in the environment by now!
+                    % This indicates the environment wasn't properly set up
+                    io:format("ERROR: Generic parameter ~p not found in environment!~n", [Name]),
+                    io:format("ERROR: This should not happen - creating emergency type variable~n"),
+                    cure_types:new_type_var(Name);
+                false ->
+                    % It's a concrete type like Int, Bool, etc.
+                    io:format("DEBUG: Converting ~p to primitive type~n", [Name]),
+                    {primitive_type, Name}
+            end;
+        TypeVar ->
+            % Found in environment - MUST reuse existing type variable
+            io:format("DEBUG: Found ~p in environment, reusing: ~p~n", [Name, TypeVar]),
+            case cure_types:is_type_var(TypeVar) of
+                % It's already a proper type_var record - REUSE IT!
+                true -> TypeVar;
+                % It's something else, treat as primitive
+                false -> {primitive_type, Name}
+            end
+    end;
+convert_type_with_env(Type, _Env) ->
+    % Fallback to regular conversion
+    convert_type_to_tuple(Type).
+
+%% Convert type parameter expressions while resolving type variables from environment
+convert_type_param_with_env(#type_param{value = Value}, Env) ->
+    convert_type_with_env(Value, Env);
+convert_type_param_with_env(TypeParam, Env) ->
+    convert_type_with_env(TypeParam, Env).
+
 convert_type_param_to_tuple(#type_param{value = Value}) ->
     case Value of
         TypeExpr when
             is_record(TypeExpr, primitive_type);
             is_record(TypeExpr, dependent_type)
         ->
-            #type_param{value = convert_type_to_tuple(TypeExpr)};
+            convert_type_to_tuple(TypeExpr);
         #identifier_expr{name = Name} when
             Name =:= 'Float' orelse Name =:= 'Int' orelse Name =:= 'Bool' orelse
                 Name =:= 'String' orelse Name =:= 'Unit'
         ->
             % Convert primitive type identifiers to primitive_type tuples
-            #type_param{value = {primitive_type, Name}};
+            {primitive_type, Name};
+        #identifier_expr{name = Name} ->
+            % Generic type parameter - convert to proper type variable record
+            cure_types:new_type_var(Name);
         _ ->
-            #type_param{value = Value}
-    end.
+            convert_type_to_tuple(Value)
+    end;
+convert_type_param_to_tuple(TypeParam) ->
+    % Handle non-record type parameters
+    convert_type_to_tuple(TypeParam).
 
 %% Two-pass processing: collect function signatures first
 collect_function_signatures(Items, Env) ->
@@ -1034,36 +1247,40 @@ collect_function_signatures(Items, Env) ->
 collect_function_signatures_helper([], Env) ->
     Env;
 collect_function_signatures_helper([Item | Rest], Env) ->
-    NewEnv = case Item of
-        #function_def{name = Name, params = Params, return_type = ReturnType, is_private = _} ->
-            % Create function type from signature
-            try
-                {ParamTypes, _} = process_parameters_new(Params, Env),
-                FinalReturnType = case ReturnType of
-                    undefined -> cure_types:new_type_var();
-                    _ -> convert_type_to_tuple(ReturnType)
-                end,
-                FuncType = {function_type, ParamTypes, FinalReturnType},
-                cure_types:extend_env(Env, Name, FuncType)
-            catch
-                _:Error ->
-                    io:format("WARNING: Failed to pre-process function ~p signature: ~p~n", [Name, Error]),
-                    Env
-            end;
-        #type_def{name = Name} ->
-            % Add type definitions to environment as well
-            try
-                case check_type_definition(Item, Env) of
-                    {ok, NewTypeEnv, _Result} -> NewTypeEnv;
-                    _ -> Env
-                end
-            catch
-                _:_ -> Env
-            end;
-        _ ->
-            % Non-function items don't need pre-processing
-            Env
-    end,
+    NewEnv =
+        case Item of
+            #function_def{name = Name, params = Params, return_type = ReturnType, is_private = _} ->
+                % Create function type from signature
+                try
+                    {ParamTypes, EnvWithParams} = process_parameters_new(Params, Env),
+                    FinalReturnType =
+                        case ReturnType of
+                            undefined -> cure_types:new_type_var();
+                            _ -> convert_type_with_env(ReturnType, EnvWithParams)
+                        end,
+                    FuncType = {function_type, ParamTypes, FinalReturnType},
+                    cure_types:extend_env(Env, Name, FuncType)
+                catch
+                    _:Error ->
+                        io:format("WARNING: Failed to pre-process function ~p signature: ~p~n", [
+                            Name, Error
+                        ]),
+                        Env
+                end;
+            #type_def{name = Name} ->
+                % Add type definitions to environment as well
+                try
+                    case check_type_definition(Item, Env) of
+                        {ok, NewTypeEnv, _Result} -> NewTypeEnv;
+                        _ -> Env
+                    end
+                catch
+                    _:_ -> Env
+                end;
+            _ ->
+                % Non-function items don't need pre-processing
+                Env
+        end,
     collect_function_signatures_helper(Rest, NewEnv).
 
 %% Result construction helpers
@@ -1150,12 +1367,74 @@ extract_type_params_helper(#dependent_type{params = Params}, Env) ->
         Env,
         Params
     );
+extract_type_params_helper(#function_type{params = ParamTypes, return_type = ReturnType}, Env) ->
+    % Handle function types - extract type parameters from both parameters and return type
+    Env1 = lists:foldl(
+        fun(ParamType, AccEnv) ->
+            extract_type_params_helper(ParamType, AccEnv)
+        end,
+        Env,
+        ParamTypes
+    ),
+    extract_type_params_helper(ReturnType, Env1);
+% Handle tuple-form function types (already converted from AST) - 4 elements with location
+extract_type_params_helper({function_type, ParamTypes, ReturnType, _Location}, Env) ->
+    % Handle function types in tuple form - extract type parameters from both parameters and return type
+    Env1 = lists:foldl(
+        fun(ParamType, AccEnv) ->
+            extract_type_params_helper(ParamType, AccEnv)
+        end,
+        Env,
+        ParamTypes
+    ),
+    extract_type_params_helper(ReturnType, Env1);
+% Handle tuple-form function types (already converted from AST) - 3 elements without location
+extract_type_params_helper({function_type, ParamTypes, ReturnType}, Env) ->
+    % Handle function types in tuple form - extract type parameters from both parameters and return type
+    Env1 = lists:foldl(
+        fun(ParamType, AccEnv) ->
+            extract_type_params_helper(ParamType, AccEnv)
+        end,
+        Env,
+        ParamTypes
+    ),
+    extract_type_params_helper(ReturnType, Env1);
+% Handle tuple-form primitive types with location
+extract_type_params_helper({primitive_type, Name, _Location}, Env) ->
+    % Check if it's a generic type variable and add it
+    case is_generic_type_var(Name) of
+        true -> extract_type_param_value(#primitive_type{name = Name}, Env);
+        false -> Env
+    end;
+% Handle tuple-form primitive types without location
+extract_type_params_helper({primitive_type, Name}, Env) ->
+    % Check if it's a generic type variable and add it
+    case is_generic_type_var(Name) of
+        true -> extract_type_param_value(#primitive_type{name = Name}, Env);
+        false -> Env
+    end;
+% Handle tuple-form dependent types
+extract_type_params_helper({dependent_type, _Name, Params}, Env) ->
+    % Extract type parameters from the parameters list
+    lists:foldl(
+        fun(Param, AccEnv) ->
+            extract_type_params_helper(Param, AccEnv)
+        end,
+        Env,
+        Params
+    );
 extract_type_params_helper(#list_type{element_type = ElemType, length = LengthExpr}, Env) ->
     % Handle list types with length expressions
     Env1 = extract_type_params_helper(ElemType, Env),
     case LengthExpr of
         undefined -> Env1;
         _ -> extract_type_param_value(LengthExpr, Env1)
+    end;
+extract_type_params_helper(#identifier_expr{name = Name}, Env) ->
+    % Handle identifier expressions - if they're generic type variables, add them
+    case is_generic_type_var(Name) of
+        true -> extract_type_param_value(#primitive_type{name = Name}, Env);
+        false -> Env
     end;
 extract_type_params_helper(_, Env) ->
     Env.
@@ -1168,6 +1447,62 @@ extract_type_params_helper_safe(#dependent_type{params = Params}, Env) ->
         Env,
         Params
     );
+extract_type_params_helper_safe(#function_type{params = ParamTypes, return_type = ReturnType}, Env) ->
+    % Handle function types - extract type parameters from both parameters and return type
+    Env1 = lists:foldl(
+        fun(ParamType, AccEnv) ->
+            extract_type_params_helper_safe(ParamType, AccEnv)
+        end,
+        Env,
+        ParamTypes
+    ),
+    extract_type_params_helper_safe(ReturnType, Env1);
+% Handle tuple-form function types (already converted from AST) - 4 elements with location
+extract_type_params_helper_safe({function_type, ParamTypes, ReturnType, _Location}, Env) ->
+    % Handle function types in tuple form - extract type parameters from both parameters and return type
+    Env1 = lists:foldl(
+        fun(ParamType, AccEnv) ->
+            extract_type_params_helper_safe(ParamType, AccEnv)
+        end,
+        Env,
+        ParamTypes
+    ),
+    extract_type_params_helper_safe(ReturnType, Env1);
+% Handle tuple-form function types (already converted from AST) - 3 elements without location
+extract_type_params_helper_safe({function_type, ParamTypes, ReturnType}, Env) ->
+    % Handle function types in tuple form - extract type parameters from both parameters and return type
+    Env1 = lists:foldl(
+        fun(ParamType, AccEnv) ->
+            extract_type_params_helper_safe(ParamType, AccEnv)
+        end,
+        Env,
+        ParamTypes
+    ),
+    extract_type_params_helper_safe(ReturnType, Env1);
+% Handle tuple-form primitive types with location
+extract_type_params_helper_safe({primitive_type, Name, _Location}, Env) ->
+    % Check if it's a generic type variable and add it
+    case is_generic_type_var(Name) of
+        true -> extract_type_param_value_safe(#primitive_type{name = Name}, Env);
+        false -> Env
+    end;
+% Handle tuple-form primitive types without location
+extract_type_params_helper_safe({primitive_type, Name}, Env) ->
+    % Check if it's a generic type variable and add it
+    case is_generic_type_var(Name) of
+        true -> extract_type_param_value_safe(#primitive_type{name = Name}, Env);
+        false -> Env
+    end;
+% Handle tuple-form dependent types
+extract_type_params_helper_safe({dependent_type, _Name, Params}, Env) ->
+    % Extract type parameters from the parameters list
+    lists:foldl(
+        fun(Param, AccEnv) ->
+            extract_type_params_helper_safe(Param, AccEnv)
+        end,
+        Env,
+        Params
+    );
 extract_type_params_helper_safe(#list_type{element_type = ElemType, length = LengthExpr}, Env) ->
     % Handle list types with length expressions
     Env1 = extract_type_params_helper_safe(ElemType, Env),
@@ -1175,12 +1510,26 @@ extract_type_params_helper_safe(#list_type{element_type = ElemType, length = Len
         undefined -> Env1;
         _ -> extract_type_param_value_safe(LengthExpr, Env1)
     end;
+extract_type_params_helper_safe(#identifier_expr{name = Name}, Env) ->
+    % Handle identifier expressions - if they're generic type variables, add them
+    case is_generic_type_var(Name) of
+        true -> extract_type_param_value_safe(#primitive_type{name = Name}, Env);
+        false -> Env
+    end;
 extract_type_params_helper_safe(_, Env) ->
     Env.
 
 extract_type_param_value(#identifier_expr{name = Name}, Env) ->
-    % Add identifier as a length parameter (typically numeric for dependent types)
-    cure_types:extend_env(Env, Name, {primitive_type, 'Int'});
+    % Check if it's a generic type variable first
+    case is_generic_type_var(Name) of
+        true ->
+            % It's a generic type parameter like T, E, U - add as type variable
+            TypeVar = cure_types:new_type_var(Name),
+            cure_types:extend_env(Env, Name, TypeVar);
+        false ->
+            % Add identifier as a length parameter (typically numeric for dependent types)
+            cure_types:extend_env(Env, Name, {primitive_type, 'Int'})
+    end;
 extract_type_param_value(#primitive_type{name = Name}, Env) ->
     % Type parameter like T - add to environment as type variable
     TypeVar = cure_types:new_type_var(Name),
@@ -1195,8 +1544,16 @@ extract_type_param_value_safe(#identifier_expr{name = Name}, Env) ->
     % Only add identifier if it's not already in the environment
     case cure_types:lookup_env(Env, Name) of
         undefined ->
-            % Add identifier as a length parameter (typically numeric for dependent types)
-            cure_types:extend_env(Env, Name, {primitive_type, 'Int'});
+            % Check if it's a generic type variable first
+            case is_generic_type_var(Name) of
+                true ->
+                    % It's a generic type parameter like T, E, U - add as type variable
+                    TypeVar = cure_types:new_type_var(Name),
+                    cure_types:extend_env(Env, Name, TypeVar);
+                false ->
+                    % Add identifier as a length parameter (typically numeric for dependent types)
+                    cure_types:extend_env(Env, Name, {primitive_type, 'Int'})
+            end;
         _ExistingType ->
             % Type parameter already exists, don't override it
             Env
@@ -1259,8 +1616,10 @@ extract_export_specs([{export_list, ExportSpecs}], _Items) ->
 extract_export_specs(ExportSpecs, _Items) when is_list(ExportSpecs) ->
     % Handle direct export spec list (from module_def)
     case ExportSpecs of
-        [{export_spec, _, _, _} | _] -> ExportSpecs; % List of export_spec tuples
-        _ -> ExportSpecs  % Pass through other formats
+        % List of export_spec tuples
+        [{export_spec, _, _, _} | _] -> ExportSpecs;
+        % Pass through other formats
+        _ -> ExportSpecs
     end;
 extract_export_specs([_ | RestExports], Items) ->
     extract_export_specs(RestExports, Items).
@@ -1269,9 +1628,11 @@ check_exports_new([], _Items) ->
     ok;
 check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) ->
     case find_function_new(Name, Items) of
-        {ok, {function_def, _Name, Params, _ReturnType, _Constraint, _Body, IsPrivate, _UnusedLocation}} ->
+        {ok,
+            {function_def, _Name, Params, _ReturnType, _Constraint, _Body, IsPrivate,
+                _UnusedLocation}} ->
             case IsPrivate of
-                true -> 
+                true ->
                     {error, {cannot_export_private_function, Name, Arity}};
                 false ->
                     case length(Params) =:= Arity of
@@ -1290,7 +1651,18 @@ check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) 
             {error, {exported_function_not_found, Name, Arity}}
     end.
 
-find_function_new(Name, [#function_def{name = Name, params = Params, return_type = ReturnType, constraint = Constraint, body = Body, is_private = IsPrivate, location = Location} | _]) ->
+find_function_new(Name, [
+    #function_def{
+        name = Name,
+        params = Params,
+        return_type = ReturnType,
+        constraint = Constraint,
+        body = Body,
+        is_private = IsPrivate,
+        location = Location
+    }
+    | _
+]) ->
     {ok, {function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location}};
 find_function_new(Name, [{function_def, Name, Params, ReturnType, Constraint, Body, Location} | _]) ->
     % Fallback for old tuple-based format without is_private field
@@ -1312,9 +1684,12 @@ process_parameters_new([], _OrigEnv, TypesAcc, EnvAcc) ->
 process_parameters_new(
     [{param, Name, TypeExpr, _Location} | RestParams], OrigEnv, TypesAcc, EnvAcc
 ) ->
-    ParamType = convert_type_to_tuple(TypeExpr),
-    % Extract type parameters from dependent types and add them to environment
+    % First, extract and register any type parameters from the type expression
+    io:format("DEBUG PARAM: Processing parameter ~p with type ~p~n", [Name, TypeExpr]),
     EnvWithTypeParams = extract_and_add_type_params(TypeExpr, EnvAcc),
+    % Then convert the type expression using the updated environment
+    ParamType = convert_type_with_env(TypeExpr, EnvWithTypeParams),
+    io:format("DEBUG PARAM: Converted ~p to type ~p~n", [TypeExpr, ParamType]),
     % Add the parameter itself to environment
     NewEnvAcc = cure_types:extend_env(EnvWithTypeParams, Name, ParamType),
     process_parameters_new(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc).
@@ -1332,7 +1707,7 @@ import_items_new(Module, [Item | RestItems], AccEnv) ->
             {error, Error}
     end.
 
-import_item_new(Module, {function_import, Name, Arity, _Location}, Env) ->
+import_item_new(Module, {function_import, Name, Arity, _Alias, _Location}, Env) ->
     FunctionType = create_imported_function_type(Module, Name, Arity),
     NewEnv = cure_types:extend_env(Env, Name, FunctionType),
     {ok, NewEnv};
@@ -1474,3 +1849,24 @@ add_smt_constraints_to_env(SmtConstraints, Env) ->
     % In a full implementation, would store constraints in environment
     io:format("Added ~p SMT constraints for when clause verification~n", [length(SmtConstraints)]),
     Env.
+
+%% Check if a name represents a generic type variable (T, E, U, etc.)
+is_generic_type_var(Name) ->
+    % Check if it's a common generic type variable name pattern
+    case atom_to_list(Name) of
+        % Single uppercase letter: T, E, U, etc.
+        [C] when C >= $A, C =< $Z -> true;
+        % Type variables like T1, T2, etc.
+        "T" ++ _ -> true;
+        % Error type variables
+        "E" ++ _ -> true;
+        % Other generic variables
+        "U" ++ _ -> true;
+        % Generic A variables
+        "A" ++ _ -> true;
+        % Generic B variables
+        "B" ++ _ -> true;
+        % Generic C variables
+        "C" ++ _ -> true;
+        _ -> false
+    end.
