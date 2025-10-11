@@ -1,1 +1,0 @@
-def safe_length(list: List(T, n)) = n

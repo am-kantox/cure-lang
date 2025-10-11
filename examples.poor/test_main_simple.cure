@@ -1,6 +1,0 @@
-module TestMainSimple do
-  export [main/0]
-
-  def main(): Int =
-    42
-end

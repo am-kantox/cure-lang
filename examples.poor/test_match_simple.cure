@@ -1,4 +1,0 @@
-def test_match(x) = match x do
-  42 -> "found answer"
-  _ -> "something else"
-end

@@ -1,2 +1,0 @@
-# Minimal dependent type test
-def safe_length(list: List(T, n)) = n

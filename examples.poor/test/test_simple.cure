@@ -1,6 +1,0 @@
-# Test basic function without dependent types
-
-def simple_head(list) =
-  match list do
-    [x|_] -> x
-  end

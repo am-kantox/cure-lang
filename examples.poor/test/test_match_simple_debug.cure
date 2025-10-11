@@ -1,4 +1,0 @@
-def test_simple_match(x) = match x do
-  0 -> "zero"
-  _ -> "other"
-end

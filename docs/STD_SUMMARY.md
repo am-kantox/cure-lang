@@ -1,17 +1,23 @@
 # Cure Standard Library Implementation Summary
 
-This document summarizes the comprehensive standard library foundation created for the Cure programming language, written entirely in Cure itself.
+This document summarizes the current standard library implementation for the Cure programming language, a strongly-typed, dependently-typed language for the BEAM virtual machine.
 
-## Standard Library Structure Created
+## Standard Library Structure
 
-### ✅ **Core Files:**
+### ✅ **Current Implementation:**
 
 1. **`lib/std.cure`** - Main module that re-exports core functionality
-2. **`lib/std/core.cure`** - Core types (`Result`, `Option`, `Ordering`) and fundamental operations
-3. **`lib/std/list.cure`** - Comprehensive list operations with dependent types support
-4. **`lib/std/math.cure`** - Mathematical functions, constants, and safe numerical operations
-5. **`lib/std/string.cure`** - String manipulation and text processing functions
-6. **`lib/std/fsm.cure`** - High-level FSM utilities and common patterns with predefined FSMs
+2. **`lib/std/`** - Standard library modules directory containing:
+   - Core types and fundamental operations
+   - List operations with dependent types support
+   - Mathematical functions and constants
+   - String manipulation and text processing
+   - FSM utilities and common patterns
+3. **`src/runtime/`** - Erlang runtime implementations:
+   - `cure_std.erl` - Standard library runtime support
+   - `Std.erl` - Main standard library module
+   - `Std.List.erl` - List operations runtime
+   - `cure_runtime.erl` - Core runtime system
 
 ## Key Features Implemented
 
@@ -215,20 +221,37 @@ def and_then(result: Result(T, E), f: T -> Result(U, E)): Result(U, E) =
 
 ## Module Organization
 
-### Complete Module Structure:
+### Current Module Structure:
 
 ```
 lib/
 ├── std.cure                 # Main re-export module
-├── std/
-│   ├── core.cure           # Core types and functions
-│   ├── list.cure           # List operations
-│   ├── math.cure           # Mathematical functions
-│   ├── string.cure         # String processing
-│   └── fsm.cure            # FSM utilities
-├── examples/
-│   └── std_demo.cure       # Usage demonstrations
-└── README.md               # Complete documentation
+├── std/                     # Standard library modules
+├── README.md               # Library documentation
+└── STDLIB_SUMMARY.md       # Implementation summary
+
+src/
+├── runtime/
+│   ├── cure_std.erl        # Standard library runtime
+│   ├── Std.erl             # Main standard module
+│   ├── Std.List.erl        # List operations runtime
+│   └── cure_runtime.erl    # Core runtime system
+├── lexer/
+│   └── cure_lexer.erl      # Tokenization engine
+├── parser/
+│   ├── cure_parser.erl     # Parser implementation
+│   ├── cure_ast.erl        # AST utilities
+│   └── cure_ast.hrl        # AST definitions
+├── types/
+│   ├── cure_types.erl      # Type system core
+│   ├── cure_typechecker.erl # Type checking
+│   └── cure_type_optimizer.erl # Type optimizations
+├── fsm/
+│   ├── cure_fsm_runtime.erl # FSM runtime system
+│   └── cure_fsm_builtins.erl # Built-in FSM functions
+└── codegen/
+    ├── cure_codegen.erl    # Code generation
+    └── cure_beam_compiler.erl # BEAM compilation
 ```
 
 ### Function Count Summary:

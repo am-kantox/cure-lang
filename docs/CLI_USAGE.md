@@ -1,21 +1,28 @@
 # Cure Programming Language - Command Line Interface
 
-The Cure compiler now includes a comprehensive command-line interface for compiling `.cure` source files to BEAM bytecode.
+The Cure compiler provides a complete command-line interface for compiling `.cure` source files to BEAM bytecode. This document covers installation, usage, and integration with build systems.
 
 ## Installation and Setup
 
 ### Prerequisites
-- Erlang/OTP 20 or later
+- Erlang/OTP 21 or later
 - Make (for building)
+- rebar3 (for code formatting)
 - A Unix-like environment (Linux, macOS, WSL)
 
 ### Building the Compiler
 ```bash
-# Build the complete compiler including CLI
+# Build the complete compiler and standard library
 make all
 
-# Or build and run tests
+# Build only the compiler components
+make compiler
+
+# Build and run the test suite
 make all && make test
+
+# Build with formatting
+make all && make format
 ```
 
 ### Verifying Installation
@@ -28,13 +35,19 @@ make all && make test
 # Built with Erlang/OTP XX
 # Cure is a dependently-typed functional programming language
 # for the BEAM virtual machine with built-in finite state machines.
+
+# Verify compiler modules are loaded
+make shell
+# In Erlang shell:
+# 1> cure_lexer:tokenize(<<"def test() = 42">>).
+# 2> cure_parser:parse([...]).
 ```
 
 ## Command Line Usage
 
 ### Basic Syntax
 ```bash
-cure [OPTIONS] <input-file>
+cure [OPTIONS] <input-file.cure>
 ```
 
 ### Examples
@@ -50,8 +63,11 @@ cure [OPTIONS] <input-file>
 # Specify output file
 ./cure examples/simple.cure -o my_module.beam
 
-# Specify output directory
-./cure examples/simple.cure -d build/
+# Specify output directory  
+./cure examples/simple.cure -d _build/ebin/
+
+# Compile standard library module
+./cure lib/std.cure --verbose
 ```
 
 #### Advanced Options
@@ -106,51 +122,76 @@ Builds an Abstract Syntax Tree (AST) from tokens, supporting:
 - Complex expressions (let bindings, conditionals, pattern matching)
 - Type specifications and constraints
 
-### 3. Type Checking (Optional)
+### 3. Type Checking
 Validates type correctness including:
-- Dependent type constraints
-- Function signature matching
-- FSM state type consistency
-- (Currently shows warning when unavailable)
+- Dependent type constraints and refinement types
+- Function signature matching with polymorphism
+- FSM state type consistency and transition safety
+- Type class instance resolution
+- Constraint solving with SMT integration
 
-### 4. Code Generation
+### 4. Type Optimization
+Applies type-directed optimizations:
+- Monomorphization of polymorphic functions
+- Function specialization for hot paths
+- Inlining based on cost/benefit analysis  
+- Dead code elimination using type constraints
+
+### 5. Code Generation
 Generates BEAM bytecode optimized for:
 - Function calls and local variables
-- FSM runtime integration
-- Error handling and debugging
+- FSM runtime integration with cure_fsm_runtime
+- Error handling and debugging with position info
 - BEAM virtual machine compatibility
+- Integration with Erlang/OTP supervision trees
 
 ## Make Integration
 
-The build system includes convenient targets for file compilation:
+The build system provides comprehensive targets for development:
 
 ```bash
-# Compile a specific .cure file
+# Build targets
+make all                    # Build complete compiler and stdlib
+make compiler               # Build compiler only
+make stdlib                 # Build standard library
+make tests                  # Build test files
+
+# Testing targets
+make test                   # Run complete test suite
+make test-basic             # Run basic unit tests
+make test-integration       # Run integration tests
+make test-performance       # Run performance benchmarks
+
+# File compilation
 make compile-file CURE_FILE=examples/simple.cure
+make compile-file CURE_FILE=lib/std.cure OUTPUT=custom.beam
 
-# Compile with custom output
-make compile-file CURE_FILE=examples/simple.cure OUTPUT=my_output.beam
-
-# Show available Make targets
-make help
+# Development utilities
+make shell                  # Start Erlang shell with modules loaded
+make clean                  # Clean build artifacts
+make format                 # Format code with rebar3 fmt
+make help                   # Show available targets
 ```
 
 ## Development Commands
 
-The CLI wrapper also provides development utilities:
+The build system integrates with standard development workflows:
 
 ```bash
-# Start development shell with Cure modules loaded
-./cure shell
+# Development cycle
+make clean && make all      # Full rebuild
+make format                 # Format Erlang source code
+make test                   # Verify functionality
 
-# Run compiler tests
-./cure test
+# Interactive development
+make shell                  # Start Erlang shell
+# 1> cure_lexer:tokenize(<<"def test() = 42">>).
+# 2> cure_parser:parse(Tokens).
+# 3> cure_typechecker:check_program(AST).
 
-# Build the compiler
-./cure build
-
-# Clean build artifacts  
-./cure clean
+# Performance testing
+make test-performance       # Run benchmarks
+CURE_DEBUG=1 make test      # Debug test failures
 ```
 
 ## File Structure and Output
@@ -168,28 +209,39 @@ The CLI wrapper also provides development utilities:
 
 ## Language Support
 
-The CLI currently supports compilation of:
+Cure provides comprehensive support for a dependently-typed functional programming language:
 
 ✅ **Fully Supported**
-- Function definitions with parameters and types
-- Module definitions with exports
-- FSM definitions with states and transitions
-- Basic expressions (literals, identifiers, binary operations)
-- Let bindings and pattern matching
-- Conditional expressions (if-then-else)
-- Function calls and method calls
+- Function definitions with dependent types and constraints
+- Module definitions with exports and imports
+- FSM definitions with states, transitions, and data constraints
+- Dependent types with refinement and constraint solving
+- Type classes and instances with automatic derivation
+- Pattern matching including dependent patterns
+- Let bindings and where clauses
+- Conditional expressions and guards
+- Higher-order functions and closures
+- Standard library (Result, Option, List, Math, String)
 
-⚠️ **Partially Supported**
-- Type checking (framework exists, needs integration)
-- Complex pattern matching
-- Dependent type constraints
-- FSM timeout handling
+✅ **Advanced Features**
+- SMT-based constraint solving
+- Type-directed optimizations (monomorphization, specialization)
+- FSM runtime with supervision tree integration
+- Compile-time dependent type checking
+- Length-indexed lists and safe array operations
+- Error handling with Result types
 
-🚧 **In Development**
-- Full BEAM code generation (currently mock)
-- Runtime type checking
-- Optimization passes
-- Error recovery and reporting
+⚠️ **Experimental**
+- Complex type class hierarchies
+- Advanced dependent type features (Pi types)
+- Linear types for resource management
+- Proof obligations and theorem proving integration
+
+🎯 **Platform Integration**
+- BEAM bytecode generation
+- Erlang/OTP interoperability
+- Elixir module calling
+- Hot code reloading support
 
 ## Error Handling
 

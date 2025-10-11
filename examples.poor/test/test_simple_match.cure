@@ -1,4 +1,0 @@
-def safe_head(list: List(T, n)) -> T =
-  match list do
-    [x|_] -> x
-  end

@@ -6,7 +6,7 @@ This document summarizes the comprehensive standard library modules implemented 
 
 ## Implemented Modules
 
-### 1. Math Module (`lib/std/math_final.cure`)
+### 1. Math Module (`lib/std/math.cure`)
 **Purpose**: Mathematical operations and constants
 
 **Key Functions**:
@@ -17,7 +17,7 @@ This document summarizes the comprehensive standard library modules implemented 
 
 **Status**: ✅ Fully implemented and parsing correctly
 
-### 2. String Module (`lib/std/string_final.cure`)
+### 2. String Module (`lib/std/string.cure`)
 **Purpose**: String manipulation and text processing
 
 **Key Functions**:
@@ -29,7 +29,7 @@ This document summarizes the comprehensive standard library modules implemented 
 
 **Status**: ✅ Implemented with placeholders for primitive operations
 
-### 3. IO Module (`lib/std/io_fixed.cure`)
+### 3. IO Module (`lib/std/io.cure`)
 **Purpose**: Input/output operations
 
 **Key Functions**:
