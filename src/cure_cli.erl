@@ -250,7 +250,7 @@ compile_file("examples/hello.cure").
 % => {ok, "_build/ebin/hello.beam"}
 ```
 
-""". 
+""".
 compile_file(Filename) ->
     compile_file(Filename, #compile_options{}).
 

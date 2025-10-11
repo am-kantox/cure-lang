@@ -623,11 +623,12 @@ parse_function(State) ->
         end,
 
     % Determine if this is a private function
-    IsPrivate = case get_token_type(DefToken) of
-        defp -> true;
-        def -> false
-    end,
-    
+    IsPrivate =
+        case get_token_type(DefToken) of
+            defp -> true;
+            def -> false
+        end,
+
     Location = get_token_location(DefToken),
     Function = #function_def{
         name = Name,
@@ -1232,21 +1233,22 @@ parse_type_with_unions(State, LeftType) ->
             {_, State1} = expect(State, '|'),
             {RightType, State2} = parse_primary_type(State1),
             Location = get_type_location(LeftType),
-            
+
             % Create or extend union type
-            UnionType = case LeftType of
-                #union_type{types = ExistingTypes} ->
-                    % Already a union type, add new variant
-                    LeftType#union_type{
-                        types = ExistingTypes ++ [RightType]
-                    };
-                _ ->
-                    % Create new union type with two variants
-                    #union_type{
-                        types = [LeftType, RightType],
-                        location = Location
-                    }
-            end,
+            UnionType =
+                case LeftType of
+                    #union_type{types = ExistingTypes} ->
+                        % Already a union type, add new variant
+                        LeftType#union_type{
+                            types = ExistingTypes ++ [RightType]
+                        };
+                    _ ->
+                        % Create new union type with two variants
+                        #union_type{
+                            types = [LeftType, RightType],
+                            location = Location
+                        }
+                end,
             % Continue parsing more union variants if present
             parse_type_with_unions(State2, UnionType);
         false ->

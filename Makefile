@@ -72,16 +72,18 @@ stdlib-clean:
 # Check if standard library is compiled
 stdlib-check: compiler
 	@echo "Checking Cure standard library compilation..."
-	@MISSING_FILES=(); \
+	@MISSING_COUNT=0; \
+	MISSING_FILES_LIST=""; \
 	for cure_file in $(CURE_STD_SRC); do \
 		beam_file=$$(echo "$$cure_file" | sed 's|$(LIB_DIR)|$(LIB_EBIN_DIR)|' | sed 's|\.cure$$|\.beam|'); \
 		if [ ! -f "$$beam_file" ]; then \
-			MISSING_FILES+=("$$beam_file"); \
+			MISSING_COUNT=$$((MISSING_COUNT + 1)); \
+			MISSING_FILES_LIST="$$MISSING_FILES_LIST  $$beam_file\n"; \
 		fi; \
 	done; \
-	if [ $${#MISSING_FILES[@]} -gt 0 ]; then \
+	if [ $$MISSING_COUNT -gt 0 ]; then \
 		echo "Missing compiled standard library files:"; \
-		printf '  %s\n' "$${MISSING_FILES[@]}"; \
+		printf "$$MISSING_FILES_LIST"; \
 		echo "Run 'make stdlib' to compile the standard library."; \
 		false; \
 	else \
