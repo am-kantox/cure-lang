@@ -31,6 +31,7 @@
     return_type,
     constraint,
     body,
+    is_private,  % true for defp, false for def
     location
 }).
 

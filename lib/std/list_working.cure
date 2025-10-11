@@ -1,0 +1,40 @@
+# Cure Standard Library - List Module (Working Version)
+# Basic list operations that are proven to work
+
+module Std.List do
+  export [
+    # List properties
+    length/1, is_empty/1,
+    # Simple list operations  
+    head/1, tail/1
+  ]
+
+  # Helper function for length calculation
+  def length_helper(list: List(T), acc: Int): Int =
+    match list do
+      [] -> acc
+      [_ | t] -> length_helper(t, acc + 1)
+    end
+
+  # Main length function
+  def length(list: List(T)): Int =
+    length_helper(list, 0)
+
+  def is_empty(list: List(T)): Bool =
+    match list do
+      [] -> true
+      _ -> false
+    end
+
+  # Simple head function - unsafe (crashes on empty list)
+  def head(list: List(T)): T =
+    match list do
+      [h | _] -> h
+    end
+
+  # Simple tail function - unsafe (crashes on empty list)  
+  def tail(list: List(T)): List(T) =
+    match list do
+      [_ | t] -> t
+    end
+end

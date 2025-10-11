@@ -1,0 +1,7 @@
+module TestSimple do
+  export [
+    identity/1
+  ]
+  
+  def identity(x: T): T = x
+end

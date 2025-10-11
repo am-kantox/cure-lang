@@ -76,7 +76,11 @@ check_item({module_def, Name, Exports, Items, Location}, Env) ->
     % Parser format without imports field - add empty imports
     check_module_new({module_def, Name, [], Exports, Items, Location}, Env);
 check_item({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
-    check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env);
+    % Fallback for old tuple-based format without is_private field
+    check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, false, Location}, Env);
+check_item({function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location}, Env) ->
+    % New tuple format with is_private field
+    check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location}, Env);
 check_item({erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}, Env) ->
     check_erlang_function_new(
         {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}, Env
@@ -99,8 +103,11 @@ check_module(#module_def{name = Name, exports = Exports, items = Items}, Env) ->
     % Create module-scoped environment
     ModuleEnv = cure_types:extend_env(Env, module, Name),
 
-    % Check all items in the module
-    case check_items(Items, ModuleEnv, new_result()) of
+    % Two-pass processing: collect function signatures first, then check bodies
+    FunctionEnv = collect_function_signatures(Items, ModuleEnv),
+
+    % Check all items in the module with function signatures available
+    case check_items(Items, FunctionEnv, new_result()) of
         Result = #typecheck_result{success = true} ->
             % Verify exported functions exist and have correct arities
             case check_exports(Exports, Items) of
@@ -124,6 +131,7 @@ check_function(
         return_type = ReturnType,
         constraint = Constraint,
         body = Body,
+        is_private = _,
         location = Location
     },
     Env
@@ -257,7 +265,6 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
     ImportEnv =
         case process_imports(Imports, ModuleEnv) of
             {ok, TempEnv} ->
-                io:format("DEBUG: Import processing succeeded~n"),
                 % Add standard library function types if importing from Std
                 case
                     lists:any(
@@ -269,19 +276,21 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
                     )
                 of
                     true ->
-                        io:format("DEBUG: Adding Std function types to environment~n"),
                         add_std_function_types(TempEnv);
                     false ->
                         TempEnv
                 end;
             % Continue with original env on import errors
-            {error, Error} ->
-                io:format("DEBUG: Import processing failed: ~p~n", [Error]),
+            {error, _Error} ->
                 ModuleEnv
         end,
 
-    % Check all items in the module
-    case check_items(Items, ImportEnv, new_result()) of
+    % Two-pass processing: first collect all function signatures, then check bodies
+    % Pass 1: Collect function signatures and add them to environment
+    FunctionEnv = collect_function_signatures(Items, ImportEnv),
+    
+    % Pass 2: Check all items with function signatures in environment
+    case check_items(Items, FunctionEnv, new_result()) of
         Result = #typecheck_result{success = true} ->
             % Verify exported functions exist and have correct arities
             ExportSpecs = extract_export_specs(Exports, Items),
@@ -296,8 +305,11 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
     end.
 
 %% Check function definition - New AST format
+% 7-parameter format (old format without is_private)
 check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
-    io:format("DEBUG: Type checking function ~p~n", [Name]),
+    check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, false, Location}, Env);
+% 8-parameter format (new format with is_private)
+check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location}, Env) ->
     try
         % Convert parameters to type environment and extract type parameters
         {ParamTypes, ParamEnv} = process_parameters_new(Params, Env),
@@ -701,6 +713,10 @@ convert_expr_to_tuple(#unary_op_expr{op = Op, operand = Operand, location = Loca
 convert_expr_to_tuple(#match_expr{expr = Expr, patterns = Patterns, location = Location}) ->
     ConvertedPatterns = [convert_match_clause_to_tuple(P) || P <- Patterns],
     {match_expr, convert_expr_to_tuple(Expr), ConvertedPatterns, Location};
+convert_expr_to_tuple(#cons_expr{elements = Elements, tail = Tail, location = Location}) ->
+    ConvertedElements = [convert_expr_to_tuple(E) || E <- Elements],
+    ConvertedTail = convert_expr_to_tuple(Tail),
+    {cons_expr, ConvertedElements, ConvertedTail, Location};
 convert_expr_to_tuple(Expr) ->
     % Fallback - return as-is for unsupported expressions
     Expr.
@@ -785,6 +801,45 @@ convert_type_param_to_tuple(#type_param{value = Value}) ->
         _ ->
             #type_param{value = Value}
     end.
+
+%% Two-pass processing: collect function signatures first
+collect_function_signatures(Items, Env) ->
+    collect_function_signatures_helper(Items, Env).
+
+collect_function_signatures_helper([], Env) ->
+    Env;
+collect_function_signatures_helper([Item | Rest], Env) ->
+    NewEnv = case Item of
+        #function_def{name = Name, params = Params, return_type = ReturnType, is_private = _} ->
+            % Create function type from signature
+            try
+                {ParamTypes, _} = process_parameters_new(Params, Env),
+                FinalReturnType = case ReturnType of
+                    undefined -> cure_types:new_type_var();
+                    _ -> convert_type_to_tuple(ReturnType)
+                end,
+                FuncType = {function_type, ParamTypes, FinalReturnType},
+                cure_types:extend_env(Env, Name, FuncType)
+            catch
+                _:Error ->
+                    io:format("WARNING: Failed to pre-process function ~p signature: ~p~n", [Name, Error]),
+                    Env
+            end;
+        #type_def{name = Name} ->
+            % Add type definitions to environment as well
+            try
+                case check_type_definition(Item, Env) of
+                    {ok, NewTypeEnv, _Result} -> NewTypeEnv;
+                    _ -> Env
+                end
+            catch
+                _:_ -> Env
+            end;
+        _ ->
+            % Non-function items don't need pre-processing
+            Env
+    end,
+    collect_function_signatures_helper(Rest, NewEnv).
 
 %% Result construction helpers
 new_result() ->
@@ -976,6 +1031,12 @@ extract_export_specs([], _Items) ->
     [];
 extract_export_specs([{export_list, ExportSpecs}], _Items) ->
     ExportSpecs;
+extract_export_specs(ExportSpecs, _Items) when is_list(ExportSpecs) ->
+    % Handle direct export spec list (from module_def)
+    case ExportSpecs of
+        [{export_spec, _, _, _} | _] -> ExportSpecs; % List of export_spec tuples
+        _ -> ExportSpecs  % Pass through other formats
+    end;
 extract_export_specs([_ | RestExports], Items) ->
     extract_export_specs(RestExports, Items).
 
@@ -983,10 +1044,15 @@ check_exports_new([], _Items) ->
     ok;
 check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) ->
     case find_function_new(Name, Items) of
-        {ok, {function_def, _Name, Params, _ReturnType, _Constraint, _Body, _UnusedLocation}} ->
-            case length(Params) =:= Arity of
-                true -> check_exports_new(RestExports, Items);
-                false -> {error, {export_arity_mismatch, Name, Arity, length(Params)}}
+        {ok, {function_def, _Name, Params, _ReturnType, _Constraint, _Body, IsPrivate, _UnusedLocation}} ->
+            case IsPrivate of
+                true -> 
+                    {error, {cannot_export_private_function, Name, Arity}};
+                false ->
+                    case length(Params) =:= Arity of
+                        true -> check_exports_new(RestExports, Items);
+                        false -> {error, {export_arity_mismatch, Name, Arity, length(Params)}}
+                    end
             end;
         {ok,
             {erlang_function_def, _Name, Params, _ReturnType, _Constraint, _ErlangBody,
@@ -999,8 +1065,11 @@ check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) 
             {error, {exported_function_not_found, Name, Arity}}
     end.
 
+find_function_new(Name, [#function_def{name = Name, params = Params, return_type = ReturnType, constraint = Constraint, body = Body, is_private = IsPrivate, location = Location} | _]) ->
+    {ok, {function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location}};
 find_function_new(Name, [{function_def, Name, Params, ReturnType, Constraint, Body, Location} | _]) ->
-    {ok, {function_def, Name, Params, ReturnType, Constraint, Body, Location}};
+    % Fallback for old tuple-based format without is_private field
+    {ok, {function_def, Name, Params, ReturnType, Constraint, Body, false, Location}};
 find_function_new(Name, [
     {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location} | _
 ]) ->

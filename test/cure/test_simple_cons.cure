@@ -1,0 +1,7 @@
+module TestCons do
+  export [
+    cons/2
+  ]
+
+  def cons(x: T, xs: List(T)): List(T) = [x | xs]
+end

@@ -1,0 +1,11 @@
+module TestDefpExportError do
+  export [
+    helper_function/1  # This should fail - trying to export a private function
+  ]
+
+  def public_function(x: Int): Int =
+    helper_function(x) + 1
+
+  defp helper_function(x: Int): Int =
+    x * 2
+end

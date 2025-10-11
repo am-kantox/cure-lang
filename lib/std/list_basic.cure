@@ -1,0 +1,55 @@
+module Std.List do
+  export [
+    cons/2, head/1, tail/1, length/1, is_empty/1,
+    map/2, append/2, reverse/1
+  ]
+
+  # Basic list operations
+  def cons(x: T, xs: List(T)): List(T) = [x | xs]
+
+  def head(list: List(T)): T =
+    match list do
+      [x | _] -> x
+    end
+
+  def tail(list: List(T)): List(T) =
+    match list do
+      [_ | xs] -> xs
+    end
+
+  def length(list: List(T)): Int =
+    length_helper(list, 0)
+
+  defp length_helper(list: List(T), acc: Int): Int =
+    match list do
+      [] -> acc
+      [_ | xs] -> length_helper(xs, acc + 1)
+    end
+
+  def is_empty(list: List(T)): Bool =
+    match list do
+      [] -> true
+      _ -> false
+    end
+
+  def map(list: List(T), f: T -> U): List(U) =
+    match list do
+      [] -> []
+      [x | xs] -> [f(x) | map(xs, f)]
+    end
+
+  def append(xs: List(T), ys: List(T)): List(T) =
+    match xs do
+      [] -> ys
+      [x | rest] -> [x | append(rest, ys)]
+    end
+
+  def reverse(list: List(T)): List(T) =
+    reverse_helper(list, [])
+
+  defp reverse_helper(list: List(T), acc: List(T)): List(T) =
+    match list do
+      [] -> acc
+      [x | xs] -> reverse_helper(xs, [x | acc])
+    end
+end

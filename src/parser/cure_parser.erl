@@ -449,6 +449,12 @@ parse_function(State) ->
             _ -> ReturnType2
         end,
 
+    % Determine if this is a private function
+    IsPrivate = case get_token_type(DefToken) of
+        defp -> true;
+        def -> false
+    end,
+    
     Location = get_token_location(DefToken),
     Function = #function_def{
         name = Name,
@@ -456,6 +462,7 @@ parse_function(State) ->
         return_type = FinalReturnType,
         constraint = Constraint,
         body = Body,
+        is_private = IsPrivate,
         location = Location
     },
     {Function, State10}.

@@ -1,0 +1,23 @@
+module TestBasicList do
+  export [
+    cons/2, head/1, is_empty/1
+  ]
+
+  def cons(x: T, xs: List(T)): List(T) = [x | xs]
+
+  def head(list: List(T)): T =
+    if is_empty(list) then
+      error("empty list")
+    else
+      extract_first(list)
+    end
+
+  defp extract_first(list: List(T)): T = 
+    list[0]  # This is simplified - would need proper head extraction
+
+  def is_empty(list: List(T)): Bool =
+    length(list) == 0
+
+  defp length(list: List(T)): Int =
+    0  # Simplified for now
+end

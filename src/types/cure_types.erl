@@ -1121,6 +1121,49 @@ infer_expr({lambda_expr, Params, Body, _Location}, Env) ->
         Error ->
             Error
     end;
+infer_expr({cons_expr, Elements, Tail, Location}, Env) ->
+    % Type a cons expression [h1, h2, ... | tail]
+    case Elements of
+        [] ->
+            % Empty head list - just return the tail type
+            case infer_expr(Tail, Env) of
+                {ok, TailType, TailConstraints} ->
+                    {ok, TailType, TailConstraints};
+                Error ->
+                    Error
+            end;
+        [FirstElem | RestElems] ->
+            % Infer type of first element
+            case infer_expr(FirstElem, Env) of
+                {ok, ElemType, FirstConstraints} ->
+                    % Check that all elements have same type
+                    case infer_list_elements(RestElems, ElemType, Env, FirstConstraints) of
+                        {ok, ElemConstraints} ->
+                            % Infer tail type and ensure it's a list of the same element type
+                            case infer_expr(Tail, Env) of
+                                {ok, TailType, TailConstraints} ->
+                                    % Create constraint: tail must be List(ElemType)
+                                    ExpectedTailType = {list_type, ElemType, new_type_var()},
+                                    TailConstraint = #type_constraint{
+                                        left = TailType,
+                                        op = '=',
+                                        right = ExpectedTailType,
+                                        location = Location
+                                    },
+                                    % Result type is also List(ElemType) with unknown length
+                                    ResultType = {list_type, ElemType, new_type_var()},
+                                    AllConstraints = ElemConstraints ++ TailConstraints ++ [TailConstraint],
+                                    {ok, ResultType, AllConstraints};
+                                Error ->
+                                    Error
+                            end;
+                        Error ->
+                            Error
+                    end;
+                Error ->
+                    Error
+            end
+    end;
 infer_expr(Expr, _Env) ->
     {error, {unsupported_expression, Expr}}.
 
@@ -1288,6 +1331,20 @@ infer_binary_op('=<', LeftType, RightType, Location, Constraints) ->
         #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
     ],
     {ok, ?TYPE_BOOL, Constraints ++ NumConstraints};
+infer_binary_op('<=', LeftType, RightType, Location, Constraints) ->
+    NumConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = ?TYPE_INT, location = Location},
+        #type_constraint{left = RightType, op = '=', right = ?TYPE_INT, location = Location}
+    ],
+    {ok, ?TYPE_BOOL, Constraints ++ NumConstraints};
+infer_binary_op('!=', LeftType, RightType, Location, Constraints) ->
+    EqualityConstraint = #type_constraint{
+        left = LeftType,
+        op = '=',
+        right = RightType,
+        location = Location
+    },
+    {ok, ?TYPE_BOOL, Constraints ++ [EqualityConstraint]};
 infer_binary_op('++', LeftType, RightType, Location, Constraints) ->
     % String concatenation: both operands must be strings, result is string
     StringConstraints = [

@@ -1,0 +1,16 @@
+module TestList do
+  export [
+    length/1
+  ]
+
+  # Helper function
+  def length_helper(list: List(T), acc: Int): Int =
+    match list do
+      [] -> acc
+      [_ | t] -> length_helper(t, acc + 1)
+    end
+
+  # Main function using helper
+  def length(list: List(T)): Int =
+    length_helper(list, 0)
+end
