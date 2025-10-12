@@ -183,11 +183,11 @@ test_fsm_builtins() ->
 
     ok = cure_fsm_runtime:register_fsm_type('BuiltinTest', BuiltinFSM),
 
-    % Test fsm_spawn
-    {ok, FSMPid} = cure_fsm_builtins:fsm_spawn('BuiltinTest'),
+    % Test fsm_spawn with initial data
+    FSMPid = cure_fsm_builtins:fsm_spawn('BuiltinTest', undefined),
 
     % Test fsm_state
-    {ok, 'Ready'} = cure_fsm_builtins:fsm_state(FSMPid),
+    'Ready' = cure_fsm_builtins:fsm_state(FSMPid),
 
     % Test fsm_is_alive
     ?assert(cure_fsm_builtins:fsm_is_alive(FSMPid)),
@@ -195,7 +195,7 @@ test_fsm_builtins() ->
     % Test fsm_send
     ok = cure_fsm_builtins:fsm_send(FSMPid, start),
     timer:sleep(10),
-    {ok, 'Running'} = cure_fsm_builtins:fsm_state(FSMPid),
+    'Running' = cure_fsm_builtins:fsm_state(FSMPid),
 
     % Test fsm_info
     {ok, Info} = cure_fsm_builtins:fsm_info(FSMPid),
@@ -256,7 +256,7 @@ test_fsm_error_cases() ->
 
     % Test spawning non-existent FSM type
     try
-        Result1 = cure_fsm_builtins:fsm_spawn('NonExistent'),
+        Result1 = cure_fsm_builtins:fsm_spawn('NonExistent', undefined),
         case Result1 of
             % Any error is acceptable
             {error, _} -> ok;

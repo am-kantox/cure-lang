@@ -101,17 +101,20 @@ The FSM runtime integrates with:
     % FSM lifecycle
     start_fsm/2, start_fsm/3,
     stop_fsm/1,
-    spawn_fsm/1,  % Test compatibility
+    % Test compatibility
+    spawn_fsm/1,
 
     % FSM operations
     send_event/2, send_event/3,
     get_state/1,
-    get_current_state/1,  % Test compatibility
+    % Test compatibility
+    get_current_state/1,
     get_fsm_info/1,
 
     % FSM registration and compilation
     register_fsm_type/2,
-    register_fsm_type/4,  % Test compatibility
+    % Test compatibility
+    register_fsm_type/4,
     get_registered_fsm_types/0,
     unregister_fsm_type/1,
     lookup_fsm_definition/1,
@@ -442,7 +445,7 @@ get_current_state(FSMPid) ->
 register_fsm_type(FSMType, States, InitialState, Transitions) ->
     % Convert simple transition list to FSM definition format
     StateDefs = create_state_defs_from_transitions(States, Transitions),
-    
+
     FSMDef = #fsm_def{
         name = FSMType,
         states = States,
@@ -450,7 +453,7 @@ register_fsm_type(FSMType, States, InitialState, Transitions) ->
         state_defs = StateDefs,
         location = undefined
     },
-    
+
     CompiledDef = compile_fsm_definition(FSMDef),
     register_fsm_type(FSMType, CompiledDef).
 
@@ -1335,7 +1338,7 @@ create_state_defs_from_transitions(States, Transitions) ->
                 action = Action,
                 location = undefined
             },
-            
+
             case maps:find(FromState, Acc) of
                 {ok, ExistingTransitions} ->
                     maps:put(FromState, [Transition | ExistingTransitions], Acc);
@@ -1346,7 +1349,7 @@ create_state_defs_from_transitions(States, Transitions) ->
         #{},
         Transitions
     ),
-    
+
     % Create state definitions for all states
     lists:map(
         fun(StateName) ->
