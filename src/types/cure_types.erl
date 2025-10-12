@@ -1358,6 +1358,13 @@ infer_expr({binary_op_expr, Op, Left, Right, Location}, Env) ->
         Error ->
             Error
     end;
+infer_expr({unary_op_expr, Op, Operand, Location}, Env) ->
+    case infer_expr(Operand, Env) of
+        {ok, OperandType, OperandConstraints} ->
+            infer_unary_op(Op, OperandType, Location, OperandConstraints);
+        Error ->
+            Error
+    end;
 infer_expr({function_call_expr, Function, Args, Location}, Env) ->
     % Special debug output for dot_product calls
     case Function of
@@ -1880,6 +1887,40 @@ infer_binary_op('++', LeftType, RightType, Location, Constraints) ->
     {ok, ?TYPE_STRING, Constraints ++ StringConstraints};
 infer_binary_op(Op, _LeftType, _RightType, Location, _Constraints) ->
     {error, {unsupported_binary_operator, Op, Location}}.
+
+%% Type inference for unary operations
+infer_unary_op('-', OperandType, Location, Constraints) ->
+    % Unary minus: operand must be a numeric type (Int or Float), result has same type
+    ResultType = new_type_var(),
+    NumericConstraint = #type_constraint{
+        left = OperandType,
+        op = '=',
+        right = ResultType,
+        location = Location
+    },
+    % For now, accept any numeric type - could be more specific later
+    {ok, ResultType, Constraints ++ [NumericConstraint]};
+infer_unary_op('+', OperandType, Location, Constraints) ->
+    % Unary plus: operand must be a numeric type, result has same type
+    ResultType = new_type_var(),
+    NumericConstraint = #type_constraint{
+        left = OperandType,
+        op = '=',
+        right = ResultType,
+        location = Location
+    },
+    {ok, ResultType, Constraints ++ [NumericConstraint]};
+infer_unary_op('not', OperandType, Location, Constraints) ->
+    % Logical not: operand must be Bool, result is Bool
+    BoolConstraint = #type_constraint{
+        left = OperandType,
+        op = '=',
+        right = ?TYPE_BOOL,
+        location = Location
+    },
+    {ok, ?TYPE_BOOL, Constraints ++ [BoolConstraint]};
+infer_unary_op(Op, _OperandType, Location, _Constraints) ->
+    {error, {unsupported_unary_operator, Op, Location}}.
 
 infer_args([], _Env) ->
     {ok, [], []};

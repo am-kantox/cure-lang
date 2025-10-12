@@ -197,6 +197,7 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         concat_strings -> compile_concat_strings(Args, NewContext);
         guard_bif -> compile_guard_bif(Args, NewContext);
         guard_check -> compile_guard_check(Args, NewContext);
+        unary_op -> compile_unary_op(Args, NewContext);
         _ -> {error, {unsupported_instruction, Op}}
     end.
 
@@ -295,6 +296,17 @@ compile_guard_bif([GuardOp | Args], Context) ->
             % Create a guard BIF call
             GuardForm = compile_guard_bif_op(GuardOp, StackArgs, Line),
             {ok, [], push_stack(GuardForm, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% Compile unary operations
+compile_unary_op([Operator], Context) ->
+    case pop_stack(Context) of
+        {Operand, NewContext} ->
+            Line = NewContext#compile_context.line,
+            OpForm = compile_unary_operator(Operator, Operand, Line),
+            {ok, [], push_stack(OpForm, NewContext)};
         Error ->
             Error
     end.
@@ -1097,6 +1109,17 @@ compile_binary_operator('++', Left, Right, Line) ->
 compile_binary_operator(Op, Left, Right, Line) ->
     % Generic binary operation
     {call, Line, {atom, Line, Op}, [Left, Right]}.
+
+%% Compile unary operators
+compile_unary_operator('-', Operand, Line) ->
+    {op, Line, '-', Operand};
+compile_unary_operator('+', Operand, Line) ->
+    {op, Line, '+', Operand};
+compile_unary_operator('not', Operand, Line) ->
+    {op, Line, 'not', Operand};
+compile_unary_operator(Op, Operand, Line) ->
+    % Generic unary operation as function call
+    {call, Line, {atom, Line, Op}, [Operand]}.
 
 %% Check if a name is a built-in function
 % is_builtin_function(Name) ->
