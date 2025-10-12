@@ -328,14 +328,15 @@ program ::= module_def | item*
 module_def ::= 'module' IDENTIFIER 'do' export_list? item* 'end'
 
 export_list ::= 'export' '[' export_item (',' export_item)* ']'
-export_item ::= IDENTIFIER '/' INTEGER
+export_item ::= IDENTIFIER ('/' INTEGER)?
 
 # Top-level items
-item ::= function_def | type_def | record_def | fsm_def | process_def 
-       | import_def | let_binding
+item ::= function_def | def_erl_def | type_def | record_def | fsm_def 
+       | process_def | import_def | let_binding
 
 # Function definitions
 function_def ::= ('def' | 'defp') IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
+def_erl_def ::= 'def_erl' IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
 
 param_list ::= param (',' param)*
 param ::= IDENTIFIER ':' type
@@ -372,7 +373,7 @@ process_body ::= item* expr
 # Import definitions ✅ WORKING!
 import_def ::= 'import' IDENTIFIER import_list?
 import_list ::= '[' import_item (',' import_item)* ']'
-import_item ::= IDENTIFIER | IDENTIFIER '/' INTEGER  # Function name or name/arity
+import_item ::= IDENTIFIER ('/' INTEGER)? | IDENTIFIER 'as' IDENTIFIER  # Function name, arity, or alias
 
 # Let bindings
 let_binding ::= 'let' IDENTIFIER '=' expr
@@ -382,7 +383,7 @@ type ::= primitive_type | compound_type | dependent_type | function_type
        | union_type | refinement_type
 
 primitive_type ::= 'Int' | 'Float' | 'Atom' | 'Bool' | 'String' | 'Binary'
-                 | 'Nat' | 'Pos' | 'Pid'
+                 | 'Nat' | 'Pos' | 'Pid' | 'Unit'
 
 compound_type ::= IDENTIFIER type_args?
                 | '[' type ']'  # List type
@@ -403,7 +404,7 @@ expr ::= literal | identifier | function_call | match_expr | if_expr
        | case_expr | receive_expr | record_expr | list_expr | tuple_expr 
        | binary_op | unary_op | lambda_expr | spawn_expr | send_expr | fsm_expr
 
-literal ::= INTEGER | FLOAT | STRING | ATOM | BOOLEAN
+literal ::= INTEGER | FLOAT | STRING | ATOM | BOOLEAN | 'Ok' | 'Error' | 'Some' | 'None'
 
 identifier ::= IDENTIFIER | qualified_identifier
 qualified_identifier ::= IDENTIFIER '.' IDENTIFIER
@@ -474,7 +475,12 @@ INTEGER ::= [0-9]+
 FLOAT ::= [0-9]+ '.' [0-9]+
 STRING ::= '"' ([^"\\] | '\\' .)* '"'
 ATOM ::= ':' IDENTIFIER | ':"' ([^"\\] | '\\' .)* '"'
-BOOLEAN ::= 'true' | 'false'
+BOOLEAN ::= 'true' | 'false' 
+KEYWORD ::= 'def' | 'defp' | 'def_erl' | 'module' | 'import' | 'export' | 'fsm' 
+           | 'state' | 'states' | 'initial' | 'event' | 'timeout' | 'match' | 'when'
+           | 'if' | 'then' | 'else' | 'let' | 'in' | 'as' | 'do' | 'end' | 'fn'
+           | 'process' | 'receive' | 'send' | 'spawn' | 'record' | 'type'
+           | 'and' | 'or' | 'not' | 'ok' | 'error'
 COMMENT ::= '#' [^\n]*
 WHITESPACE ::= [ \t\n\r]+
 ```

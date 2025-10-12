@@ -33,6 +33,12 @@ cure input.cure                    # Compile with defaults
 cure input.cure -o output.beam     # Specify output file
 cure input.cure --verbose          # Verbose compilation
 cure input.cure --no-optimize      # Disable optimizations
+
+# Wrapper script special commands:
+cure build                         # Execute 'make all'
+cure test                          # Execute 'make test'
+cure shell                         # Start development shell
+cure clean                         # Execute 'make clean'
 ```
 
 **Options:**
@@ -52,6 +58,30 @@ compile_file(Filename :: string()) -> {ok, OutputFile} | {error, Reason}.
 compile_file(Filename :: string(), Options :: compile_options()) -> {ok, OutputFile} | {error, Reason}.
 ```
 Programmatically compile a .cure file.
+
+#### `cure_cli:add_automatic_stdlib_imports/2`
+```erlang
+add_automatic_stdlib_imports(Source :: string(), Options :: compile_options()) -> string().
+```
+Automatically add standard library imports to source code that lacks explicit imports.
+
+#### `cure_cli:has_explicit_module_or_imports/1`
+```erlang
+has_explicit_module_or_imports(Source :: string()) -> boolean().
+```
+Check if source code contains explicit module definitions or imports.
+
+#### `cure_cli:ensure_stdlib_available/1`
+```erlang
+ensure_stdlib_available(Options :: compile_options()) -> ok | {error, Reason}.
+```
+Ensure standard library is compiled and available, compiling if necessary.
+
+#### `cure_cli:convert_beam_to_source_path/1`
+```erlang
+convert_beam_to_source_path(BeamPath :: string()) -> {ok, SourcePath} | error.
+```
+Convert BEAM file path to corresponding source file path.
 
 ### Lexical Analysis
 
@@ -505,6 +535,65 @@ init([]) ->
         }
     ],
     {ok, {#{strategy => one_for_all, intensity => 10, period => 10}, Children}}.
+```
+
+## Testing API
+
+The Cure compiler includes comprehensive test suites for CLI wrapper functionality, standard library operations, and core compiler components.
+
+### CLI Testing
+
+#### `run_all_new_tests:run/0`
+```erlang
+run() -> ok | {error, {tests_failed, Count}}.
+```
+Execute all comprehensive CLI wrapper and standard library test suites.
+
+#### `cli_wrapper_comprehensive_test:run/0`
+```erlang
+run() -> ok.
+```
+Run comprehensive CLI wrapper tests including:
+- Cure wrapper script build command execution
+- Missing BEAM modules detection and reporting
+- Automatic stdlib import addition and detection
+- Standard library compilation failure reporting
+- Std.List.length function behavior and performance
+
+### Component-Specific Testing
+
+#### `cure_wrapper_script_test:run/0`
+```erlang
+run() -> ok.
+```
+Focused tests for wrapper script build command and error reporting.
+
+#### `cure_cli_stdlib_imports_test:run/0`
+```erlang
+run() -> ok.
+```
+Tests for CLI automatic stdlib imports with comprehensive edge cases.
+
+#### `stdlib_compilation_failure_test:run/0`
+```erlang
+run() -> ok.
+```
+Tests for stdlib compilation partial failure formatting and reporting.
+
+#### `std_list_length_function_test:run/0`
+```erlang
+run() -> ok.
+```
+Comprehensive tests for Std.List.length function with various data types and performance benchmarks.
+
+**Usage Examples:**
+```bash
+# Run all new comprehensive tests
+erl -pa _build/ebin -pa test -s run_all_new_tests run -s init stop
+
+# Run individual test suites
+erl -pa _build/ebin -pa test -s cli_wrapper_comprehensive_test run -s init stop
+erl -pa _build/ebin -pa test -s cure_wrapper_script_test run -s init stop
 ```
 
 This API reference covers the complete Cure compiler and runtime system. For more detailed examples and language features, see the [Language Specification](LANGUAGE_SPEC.md) and [Feature Reference](FEATURE_REFERENCE.md).

@@ -700,3 +700,27 @@ FSMs support BEAM's hot code loading:
 3. **FSM Chains**: Pipeline processing with FSMs
 4. **FSM Routers**: Event routing between FSMs
 5. **FSM Aggregation**: Collecting results from multiple FSMs
+
+## Testing and Validation
+
+The FSM system includes comprehensive testing infrastructure:
+
+### FSM Runtime Testing
+- **State Transition Testing**: Validates FSM transitions with guard conditions and actions
+- **FSM Registration Testing**: Tests FSM registration and lookup functionality
+- **State Query Testing**: Verifies FSM state queries and introspection
+- **Event Handling Testing**: Tests FSM event processing and timeout handling
+
+### Integration with CLI
+- **FSM Compilation Testing**: Validates FSM definitions compile correctly to gen_statem
+- **Runtime Integration**: Tests FSM runtime integration with CLI compilation pipeline
+- **Error Handling**: Tests FSM error reporting and recovery mechanisms
+- **Performance Testing**: Benchmarks FSM event processing performance
+
+### Test Coverage
+- All FSM builtins functions tested with EUnit
+- FSM runtime system validated with comprehensive test suites
+- Integration tests covering FSM compilation and BEAM integration
+- Performance benchmarks ensuring sub-millisecond event processing
+
+For detailed testing information, see [Testing Summary](TESTING_SUMMARY.md) and [API Reference](API_REFERENCE.md).

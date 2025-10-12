@@ -13,8 +13,10 @@ This document provides a comprehensive reference for all Cure language features,
 4. [Type Classes and Constraints](#type-classes-and-constraints)
 5. [Advanced Features](#advanced-features)
 6. [Standard Library Integration](#standard-library-integration)
-7. [Compilation and Runtime](#compilation-and-runtime)
-8. [Performance and Optimization](#performance-and-optimization)
+7. [CLI and Build System](#cli-and-build-system)
+8. [Compilation and Runtime](#compilation-and-runtime)
+9. [Testing Infrastructure](#testing-infrastructure)
+10. [Performance and Optimization](#performance-and-optimization)
 
 ## Core Language Syntax
 
@@ -584,6 +586,46 @@ Vector(T, n: Nat)         # Vector of type T with length n
 Matrix(rows: Nat, cols: Nat, T)  # Matrix with compile-time dimensions
 ```
 
+## CLI and Build System
+
+Cure provides a sophisticated command-line interface with wrapper script automation and intelligent build management.
+
+### Wrapper Script Commands
+```bash
+# Special wrapper script commands
+cure build      # Execute 'make all' to build compiler
+cure test       # Execute 'make test' to run test suite
+cure clean      # Execute 'make clean' to clean build artifacts
+cure shell      # Start Erlang development shell with modules loaded
+```
+
+### File Compilation
+```bash
+# Basic compilation
+cure input.cure                    # Compile with defaults
+cure input.cure -o output.beam     # Specify output file
+cure input.cure --verbose          # Verbose compilation
+cure input.cure --no-optimize      # Disable optimizations
+```
+
+### Automatic Standard Library Management
+- **Import Detection**: Automatically detects if source files need stdlib imports
+- **Smart Imports**: Adds common stdlib imports to files without explicit module/import declarations
+- **Conflict Avoidance**: Skips automatic imports for files with explicit module definitions or imports
+- **Partial Failure Handling**: Reports detailed errors when stdlib compilation partially fails
+
+### Module Detection and Validation
+- **Required Modules Check**: Validates presence of all required BEAM compiler modules
+- **Missing Module Reporting**: Provides detailed error messages for missing components
+- **Build Automation**: Automatically triggers 'make all' when modules are missing
+- **Error Recovery**: Graceful error handling with instructions for resolution
+
+### Standard Library Compilation
+- **Automatic Compilation**: Compiles stdlib modules as needed during user file compilation
+- **Dependency Resolution**: Handles stdlib dependencies and compilation order
+- **Partial Failure Recovery**: Attempts individual file compilation when batch compilation fails
+- **Path Conversion**: Converts BEAM paths to source paths for error reporting
+
 ## Standard Library Integration
 
 Cure includes a comprehensive standard library implemented in Cure itself with Erlang runtime support.
@@ -621,6 +663,48 @@ opt_value = find_in_list(items, predicate)
   |> map(fn(item) -> process(item) end)
   |> filter(fn(processed) -> is_valid(processed) end)
 ```
+
+## Testing Infrastructure
+
+Cure includes comprehensive testing infrastructure covering all aspects of the compiler and standard library.
+
+### Comprehensive Test Suites
+```bash
+# Master test runner for all new CLI and stdlib tests
+erl -pa _build/ebin -pa test -s run_all_new_tests run -s init stop
+
+# Individual comprehensive test suites
+erl -pa _build/ebin -pa test -s cli_wrapper_comprehensive_test run -s init stop
+erl -pa _build/ebin -pa test -s cure_wrapper_script_test run -s init stop
+```
+
+### CLI and Wrapper Testing
+- **Build Command Testing**: Verifies wrapper script correctly executes 'make all' for build command
+- **Missing Module Detection**: Tests wrapper script detection and reporting of missing BEAM modules
+- **Error Message Validation**: Ensures proper error reporting with helpful instructions
+- **Script Logic Verification**: Tests all wrapper script conditional logic and edge cases
+
+### Standard Library Testing
+- **Automatic Import Testing**: Validates CLI automatic stdlib import addition and detection
+- **Import Conflict Detection**: Tests detection of explicit modules/imports to prevent conflicts
+- **Compilation Failure Testing**: Tests stdlib compilation partial failure reporting
+- **Performance Testing**: Benchmarks Std.List.length function with large datasets (up to 50k elements)
+
+### Test Coverage Areas
+- **Lexical Analysis**: Token recognition and error handling
+- **Parsing**: AST construction and syntax validation
+- **Type System**: Inference, checking, and unification
+- **Code Generation**: BEAM instruction generation
+- **FSM Runtime**: State transitions and event handling
+- **CLI Functionality**: Complete wrapper script and CLI module coverage
+- **Error Handling**: Comprehensive error message formatting and reporting
+
+### Testing Features
+- **EUnit Integration**: All tests use EUnit assertions for reliable verification
+- **Performance Benchmarks**: Tests include timing validation for large datasets
+- **Edge Case Coverage**: Comprehensive testing of boundary conditions and error scenarios
+- **Master Test Runner**: Orchestrated execution of all test suites with detailed reporting
+- **Component Isolation**: Both comprehensive and focused component-specific test suites
 
 ## Compilation and Runtime
 
@@ -685,8 +769,11 @@ def map_Int_String(f: Int -> String, xs: List(Int)): List(String) =
 - Type-directed optimizations
 - BEAM code generation
 - Standard library with runtime support
-- Command-line interface
-- Comprehensive test suite
+- Advanced CLI with wrapper script automation
+- Automatic standard library import management
+- Comprehensive test suite with performance benchmarks
+- CLI wrapper functionality with missing module detection
+- Partial compilation failure handling and recovery
 
 ### 🚧 **Advanced Features** 
 - Complex type class hierarchies

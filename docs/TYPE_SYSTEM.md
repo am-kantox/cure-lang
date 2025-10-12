@@ -735,3 +735,13 @@ Comparison with other dependently-typed languages (relative performance):
 2. **Performance**: Faster type checking algorithms  
 3. **Expressiveness**: More powerful type system features
 4. **Usability**: Better error messages and tooling
+
+## CLI Integration and Testing
+
+The type system is extensively validated through comprehensive testing infrastructure:
+- Automatic standard library import resolution with type-aware detection
+- Integration testing with compilation pipeline including error recovery
+- Performance testing with large datasets to verify type system scalability
+- CLI wrapper tests validating type-safe stdlib compilation and partial failure handling
+
+For detailed testing information, see [Testing Summary](TESTING_SUMMARY.md) and [API Reference](API_REFERENCE.md).

@@ -127,6 +127,11 @@ cure/
 │   ├── std/                # Standard library modules
 │   └── README.md          # Library documentation
 ├── test/                   # Test suites
+│   ├── *_simple_test.erl          # Basic unit tests
+│   ├── *_comprehensive_test.erl   # Comprehensive test suites
+│   ├── cli_wrapper_*_test.erl     # CLI wrapper and functionality tests
+│   ├── std_*_test.erl             # Standard library tests
+│   └── run_all_new_tests.erl      # Master test runner
 ├── examples.poor/          # Example programs 
 ├── docs/                   # Complete documentation
 ├── _build/                 # Build artifacts
@@ -208,11 +213,13 @@ make compile-file CURE_FILE=file.cure OUTPUT=output.beam
    - FSM utilities and common patterns
    - Runtime support in Erlang
 
-8. **Command Line Interface** (`cure_cli.erl`)
-   - Complete CLI with option parsing
+8. **Command Line Interface** (`cure_cli.erl`, `cure` wrapper script)
+   - Complete CLI with comprehensive option parsing
    - File compilation with various output options
-   - Integration with build system
-   - Comprehensive error reporting
+   - Integration with build system and automatic stdlib compilation
+   - Wrapper script with missing module detection and build automation
+   - Automatic standard library import insertion for user code
+   - Comprehensive error reporting with partial failure handling
 
 ### ✅ **Advanced Features**
 
@@ -221,6 +228,9 @@ make compile-file CURE_FILE=file.cure OUTPUT=output.beam
 - Native FSM compilation with state verification
 - BEAM integration with hot code reloading
 - Comprehensive test suite with performance benchmarks
+- Advanced CLI with wrapper script automation and error handling
+- Automatic standard library management and import resolution
+- Robust compilation pipeline with partial failure recovery
 
 ## Quick Start
 
@@ -271,6 +281,14 @@ make test                    # Run complete test suite
 make test-basic              # Run basic unit tests
 make test-integration        # Run integration tests
 make test-performance        # Run performance benchmarks
+
+# Run new comprehensive CLI and stdlib tests
+erl -pa _build/ebin -pa test -s run_all_new_tests run -s init stop
+
+# Run individual test suites
+erl -pa _build/ebin -pa test -s cli_wrapper_comprehensive_test run -s init stop
+erl -pa _build/ebin -pa test -s cure_wrapper_script_test run -s init stop
+erl -pa _build/ebin -pa test -s cure_cli_stdlib_imports_test run -s init stop
 ```
 
 ## Documentation Index

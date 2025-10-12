@@ -7,16 +7,19 @@ This document summarizes the current standard library implementation for the Cur
 ### ✅ **Current Implementation:**
 
 1. **`lib/std.cure`** - Main module that re-exports core functionality
-2. **`lib/std/`** - Standard library modules directory containing:
-   - Core types and fundamental operations
-   - List operations with dependent types support
-   - Mathematical functions and constants
-   - String manipulation and text processing
-   - FSM utilities and common patterns
-3. **`src/runtime/`** - Erlang runtime implementations:
-   - `cure_std.erl` - Standard library runtime support
+2. **`lib/test.cure`** - Test utilities and validation functions
+3. **`lib/std/`** - Standard library modules directory containing:
+   - `core.cure` - Core types, Result/Option operations, and fundamental functions
+   - `result.cure` - Result type operations and error handling patterns
+   - Additional modules for specialized functionality (planned)
+4. **`src/runtime/`** - Erlang runtime implementations:
+   - `cure_std.erl` - Standard library runtime support with capitalized constructors
    - `cure_runtime.erl` - Core runtime system
-   - Note: Standard library functions now route to compiled Cure modules
+   - Integration with CLI for automatic stdlib compilation and import resolution
+5. **Automatic Import System**:
+   - CLI automatically adds stdlib imports to source files without explicit imports
+   - Detects explicit module definitions and imports to avoid conflicts
+   - Handles partial compilation failures with detailed error reporting
 
 ## Key Features Implemented
 
@@ -154,6 +157,7 @@ end
 4. **Safety**: Safe variants for potentially failing operations
 5. **Consistency**: Uniform API design across all modules
 6. **Documentation**: Comprehensive inline comments and examples
+7. **Testing**: Comprehensive unit tests for all functionality including performance benchmarks
 
 ## Advanced Features
 

@@ -36,6 +36,11 @@ make all && make format
 # Cure is a dependently-typed functional programming language
 # for the BEAM virtual machine with built-in finite state machines.
 
+# Check wrapper script functionality
+./cure build                    # Should execute 'make all'
+./cure test                     # Should execute 'make test'
+./cure shell                    # Should start development shell
+
 # Verify compiler modules are loaded
 make shell
 # In Erlang shell:
@@ -48,6 +53,12 @@ make shell
 ### Basic Syntax
 ```bash
 cure [OPTIONS] <input-file.cure>
+
+# Or special wrapper commands:
+cure build      # Execute 'make all' to build compiler
+cure test       # Execute 'make test' to run test suite
+cure clean      # Execute 'make clean' to clean build artifacts
+cure shell      # Start Erlang development shell with modules loaded
 ```
 
 ### Examples
@@ -129,6 +140,7 @@ Validates type correctness including:
 - FSM state type consistency and transition safety
 - Type class instance resolution
 - Constraint solving with SMT integration
+- Automatic standard library imports for source files without explicit imports
 
 ### 4. Type Optimization
 Applies type-directed optimizations:
@@ -247,6 +259,14 @@ Cure provides comprehensive support for a dependently-typed functional programmi
 
 The compiler provides detailed error messages with:
 
+### Wrapper Script Errors
+```
+Error: Missing required compiler modules:
+  cure_cli.beam
+  cure_lexer.beam
+Run 'make all' to build all required components.
+```
+
 ### Lexical Errors
 ```
 Error: Lexical error at line 5: unexpected character '$'
@@ -266,6 +286,12 @@ Error: Type error: Cannot unify Int with String in function add/2
 ```
 Error: File not found: examples/nonexistent.cure
 Error: Could not write file _build/ebin/test.beam: permission denied
+```
+
+### Standard Library Compilation Errors
+```
+Error: Partial standard library compilation failed: 
+Individual compilation of lib/std/broken.cure failed: Parse error at line 5
 ```
 
 ## Performance Considerations
@@ -295,6 +321,12 @@ Enabling `CURE_DEBUG=1` may significantly slow compilation due to detailed traci
 
 #### "Internal error: error:undef"
 **Solution**: Missing compiler modules. Run `make all` to build complete compiler.
+
+#### "Missing required compiler modules"
+**Solution**: The wrapper script detected missing BEAM files. Run `make all` to build all required components.
+
+#### "Standard library not available"
+**Solution**: Standard library modules are missing. The CLI will automatically attempt to compile them. If compilation fails, check for syntax errors in lib/ directory.
 
 #### "Compilation failed at Code Generation"
 **Solution**: Current limitation. Code generation is in development. Pipeline works for AST validation.
