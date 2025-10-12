@@ -848,60 +848,80 @@ compile_list_to_form([H | T], Line) ->
     TailForm = compile_list_to_form(T, Line),
     {cons, Line, HeadForm, TailForm}.
 
-%% Check if function should be routed to cure_std (not imported from Std module)
-is_cure_std_function(ok) -> true;
-is_cure_std_function(error) -> true;
-is_cure_std_function(some) -> true;
-is_cure_std_function(none) -> true;
-is_cure_std_function('Ok') -> true;
-is_cure_std_function('Error') -> true;
-is_cure_std_function('Some') -> true;
-is_cure_std_function('None') -> true;
-is_cure_std_function(map_ok) -> true;
-is_cure_std_function(bind_ok) -> true;
-is_cure_std_function(map_error) -> true;
-is_cure_std_function(map_some) -> true;
-is_cure_std_function(bind_some) -> true;
-is_cure_std_function(safe_div) -> true;
-is_cure_std_function(string_concat) -> true;
-is_cure_std_function(split) -> true;
-is_cure_std_function(trim) -> true;
-is_cure_std_function(to_upper) -> true;
-is_cure_std_function(contains) -> true;
-is_cure_std_function(starts_with) -> true;
-is_cure_std_function(abs) -> true;
-is_cure_std_function(sqrt) -> true;
-is_cure_std_function(pi) -> true;
-is_cure_std_function(fsm_create) -> true;
-is_cure_std_function(fsm_send_safe) -> true;
-is_cure_std_function(create_counter) -> true;
+%% Check if function should be routed to cure_std (legacy runtime functions)
+%% Most functions are now implemented in Cure standard library and should return false
+%% Only keep core runtime functions that haven't been migrated yet
+
+% Basic I/O still in runtime
 is_cure_std_function(print) -> true;
 is_cure_std_function(println) -> true;
+% Basic type conversions
 is_cure_std_function(int_to_string) -> true;
 is_cure_std_function(float_to_string) -> true;
 is_cure_std_function(list_to_string) -> true;
 is_cure_std_function(join_ints) -> true;
-is_cure_std_function(string_empty) -> true;
-is_cure_std_function(string_join) -> true;
-is_cure_std_function(string_any) -> true;
-% Functions that should NOT be routed to cure_std (use imported versions from Cure std lib)
+% FSM functions still in runtime (use FSM builtins)
+is_cure_std_function(fsm_create) -> true;
+is_cure_std_function(fsm_send_safe) -> true;
+is_cure_std_function(create_counter) -> true;
+% ALL other functions now implemented in Cure standard library modules
+% Route to compiled Cure modules instead of cure_std runtime
+
+% Now in Std.Core
+is_cure_std_function(ok) -> false;
+is_cure_std_function(error) -> false;
+is_cure_std_function(some) -> false;
+is_cure_std_function(none) -> false;
+is_cure_std_function('Ok') -> false;
+is_cure_std_function('Error') -> false;
+is_cure_std_function('Some') -> false;
+is_cure_std_function('None') -> false;
+is_cure_std_function(map_ok) -> false;
+is_cure_std_function(bind_ok) -> false;
+is_cure_std_function(map_error) -> false;
+is_cure_std_function(map_some) -> false;
+is_cure_std_function(bind_some) -> false;
+% Now in Std.List
 is_cure_std_function(map) -> false;
 is_cure_std_function(filter) -> false;
-% Now implemented in Cure standard library
 is_cure_std_function(fold) -> false;
 is_cure_std_function(foldl) -> false;
-% Now implemented in Cure standard library
+is_cure_std_function(foldr) -> false;
 is_cure_std_function(zip_with) -> false;
 is_cure_std_function(head) -> false;
 is_cure_std_function(tail) -> false;
 is_cure_std_function(length) -> false;
-is_cure_std_function(show) -> true;
+is_cure_std_function(reverse) -> false;
+is_cure_std_function(find) -> false;
+is_cure_std_function(cons) -> false;
+is_cure_std_function(append) -> false;
+% Now in Std.Show
+is_cure_std_function(show) -> false;
+% Now in Std.Math
+is_cure_std_function(abs) -> false;
+is_cure_std_function(sqrt) -> false;
+is_cure_std_function(pi) -> false;
+is_cure_std_function(safe_div) -> false;
+is_cure_std_function(safe_divide) -> false;
+% Now in Std.String
+is_cure_std_function(string_concat) -> false;
+is_cure_std_function(split) -> false;
+is_cure_std_function(trim) -> false;
+is_cure_std_function(to_upper) -> false;
+is_cure_std_function(contains) -> false;
+is_cure_std_function(starts_with) -> false;
+is_cure_std_function(string_empty) -> false;
+is_cure_std_function(string_join) -> false;
+is_cure_std_function(string_any) -> false;
 is_cure_std_function(_) -> false.
 
-%% Check if function should be routed to Cure standard library module
+%% Check if function should be routed to compiled Cure standard library module
 %% Returns {true, ModuleName} or false
+%% These now reference the compiled Cure modules instead of legacy Erlang bridge
 is_cure_stdlib_function(zip_with) -> {true, 'Std.List'};
 is_cure_stdlib_function(fold) -> {true, 'Std.List'};
+is_cure_stdlib_function(fold_left) -> {true, 'Std.List'};
+is_cure_stdlib_function(fold_right) -> {true, 'Std.List'};
 is_cure_stdlib_function(map) -> {true, 'Std.List'};
 is_cure_stdlib_function(filter) -> {true, 'Std.List'};
 is_cure_stdlib_function(head) -> {true, 'Std.List'};
@@ -911,6 +931,74 @@ is_cure_stdlib_function(reverse) -> {true, 'Std.List'};
 is_cure_stdlib_function(find) -> {true, 'Std.List'};
 is_cure_stdlib_function(foldl) -> {true, 'Std.List'};
 is_cure_stdlib_function(foldr) -> {true, 'Std.List'};
+is_cure_stdlib_function(cons) -> {true, 'Std.List'};
+is_cure_stdlib_function(append) -> {true, 'Std.List'};
+is_cure_stdlib_function(is_empty) -> {true, 'Std.List'};
+is_cure_stdlib_function(all) -> {true, 'Std.List'};
+is_cure_stdlib_function(any) -> {true, 'Std.List'};
+is_cure_stdlib_function(contains) -> {true, 'Std.List'};
+is_cure_stdlib_function(nth) -> {true, 'Std.List'};
+is_cure_stdlib_function(take) -> {true, 'Std.List'};
+is_cure_stdlib_function(drop) -> {true, 'Std.List'};
+is_cure_stdlib_function(safe_head) -> {true, 'Std.List'};
+is_cure_stdlib_function(safe_tail) -> {true, 'Std.List'};
+is_cure_stdlib_function(safe_nth) -> {true, 'Std.List'};
+% Core types and functions
+is_cure_stdlib_function(ok) -> {true, 'Std.Core'};
+is_cure_stdlib_function(error) -> {true, 'Std.Core'};
+is_cure_stdlib_function(some) -> {true, 'Std.Core'};
+is_cure_stdlib_function(none) -> {true, 'Std.Core'};
+is_cure_stdlib_function(is_ok) -> {true, 'Std.Core'};
+is_cure_stdlib_function(is_error) -> {true, 'Std.Core'};
+is_cure_stdlib_function(is_some) -> {true, 'Std.Core'};
+is_cure_stdlib_function(is_none) -> {true, 'Std.Core'};
+is_cure_stdlib_function(map_ok) -> {true, 'Std.Core'};
+is_cure_stdlib_function(map_error) -> {true, 'Std.Core'};
+is_cure_stdlib_function(and_then) -> {true, 'Std.Core'};
+% Math functions
+is_cure_stdlib_function(abs) -> {true, 'Std.Math'};
+is_cure_stdlib_function(sqrt) -> {true, 'Std.Math'};
+is_cure_stdlib_function(power) -> {true, 'Std.Math'};
+is_cure_stdlib_function(round) -> {true, 'Std.Math'};
+is_cure_stdlib_function(floor) -> {true, 'Std.Math'};
+is_cure_stdlib_function(ceiling) -> {true, 'Std.Math'};
+is_cure_stdlib_function(pi) -> {true, 'Std.Math'};
+is_cure_stdlib_function(e) -> {true, 'Std.Math'};
+is_cure_stdlib_function(safe_divide) -> {true, 'Std.Math'};
+is_cure_stdlib_function(safe_sqrt) -> {true, 'Std.Math'};
+% Show functions
+is_cure_stdlib_function(show) -> {true, 'Std.Show'};
+is_cure_stdlib_function(print) -> {true, 'Std.Show'};
+% String functions
+is_cure_stdlib_function(string_concat) -> {true, 'Std.String'};
+is_cure_stdlib_function(string_length) -> {true, 'Std.String'};
+is_cure_stdlib_function(string_empty) -> {true, 'Std.String'};
+is_cure_stdlib_function(trim) -> {true, 'Std.String'};
+is_cure_stdlib_function(to_upper) -> {true, 'Std.String'};
+is_cure_stdlib_function(to_lower) -> {true, 'Std.String'};
+is_cure_stdlib_function(capitalize) -> {true, 'Std.String'};
+is_cure_stdlib_function(starts_with) -> {true, 'Std.String'};
+is_cure_stdlib_function(ends_with) -> {true, 'Std.String'};
+is_cure_stdlib_function(split) -> {true, 'Std.String'};
+is_cure_stdlib_function(join) -> {true, 'Std.String'};
+% Main Std module for aggregated functions
+is_cure_stdlib_function(identity) -> {true, 'Std'};
+is_cure_stdlib_function(compose) -> {true, 'Std'};
+is_cure_stdlib_function(flip) -> {true, 'Std'};
+is_cure_stdlib_function('not') -> {true, 'Std'};
+is_cure_stdlib_function('and') -> {true, 'Std'};
+is_cure_stdlib_function('or') -> {true, 'Std'};
+is_cure_stdlib_function('xor') -> {true, 'Std'};
+is_cure_stdlib_function(eq) -> {true, 'Std'};
+is_cure_stdlib_function(ne) -> {true, 'Std'};
+is_cure_stdlib_function(lt) -> {true, 'Std'};
+is_cure_stdlib_function(le) -> {true, 'Std'};
+is_cure_stdlib_function(gt) -> {true, 'Std'};
+is_cure_stdlib_function(ge) -> {true, 'Std'};
+is_cure_stdlib_function(compare) -> {true, 'Std'};
+is_cure_stdlib_function(min) -> {true, 'Std'};
+is_cure_stdlib_function(max) -> {true, 'Std'};
+is_cure_stdlib_function(clamp) -> {true, 'Std'};
 is_cure_stdlib_function(_) -> false.
 
 %% Check if function is from standard library (legacy function)

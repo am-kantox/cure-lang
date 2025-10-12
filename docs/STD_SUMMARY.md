@@ -15,9 +15,8 @@ This document summarizes the current standard library implementation for the Cur
    - FSM utilities and common patterns
 3. **`src/runtime/`** - Erlang runtime implementations:
    - `cure_std.erl` - Standard library runtime support
-   - `Std.erl` - Main standard library module
-   - `Std.List.erl` - List operations runtime
    - `cure_runtime.erl` - Core runtime system
+   - Note: Standard library functions now route to compiled Cure modules
 
 ## Key Features Implemented
 
@@ -233,8 +232,6 @@ lib/
 src/
 ├── runtime/
 │   ├── cure_std.erl        # Standard library runtime
-│   ├── Std.erl             # Main standard module
-│   ├── Std.List.erl        # List operations runtime
 │   └── cure_runtime.erl    # Core runtime system
 ├── lexer/
 │   └── cure_lexer.erl      # Tokenization engine

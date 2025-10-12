@@ -121,9 +121,7 @@ cure/
 │   │   └── cure_guard_compiler.erl # Guard compilation
 │   └── runtime/
 │       ├── cure_runtime.erl   # Core runtime system
-│       ├── cure_std.erl       # Standard library runtime
-│       ├── Std.erl           # Main standard module
-│       └── Std.List.erl      # List operations runtime
+│       └── cure_std.erl       # Standard library runtime
 ├── lib/                    # Standard library (Cure source)
 │   ├── std.cure           # Main standard library module
 │   ├── std/                # Standard library modules
