@@ -1038,6 +1038,9 @@ parse_import_item(State) ->
             'not' -> expect(State, 'not');
             'and' -> expect(State, 'and');
             'or' -> expect(State, 'or');
+            'spawn' -> expect(State, 'spawn');
+            'send' -> expect(State, 'send');
+            'receive' -> expect(State, 'receive');
             _ -> expect(State, identifier)
         end,
     Name =
@@ -1053,7 +1056,10 @@ parse_import_item(State) ->
             'error' -> error;
             'not' -> 'not';
             'and' -> 'and';
-            'or' -> 'or'
+            'or' -> 'or';
+            'spawn' -> spawn;
+            'send' -> send;
+            'receive' -> 'receive'
         end,
     Location = get_token_location(Token),
 

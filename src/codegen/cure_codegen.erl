@@ -496,6 +496,10 @@ compile_module_items([], State, Acc) ->
     {ok, State#codegen_state{functions = lists:reverse(Acc)}};
 compile_module_items([Item | RestItems], State, Acc) ->
     case compile_module_item(Item, State) of
+        {ok, {union_type, _TypeDef, ConstructorFunctions}, NewState} ->
+            % Add all constructor functions to the accumulator
+            NewAcc = lists:reverse(ConstructorFunctions) ++ Acc,
+            compile_module_items(RestItems, NewState, NewAcc);
         {ok, CompiledItem, NewState} ->
             compile_module_items(RestItems, NewState, [CompiledItem | Acc]);
         {error, Reason} ->
@@ -545,8 +549,16 @@ compile_module_item(#record_def{} = RecordDef, State) ->
     % Record definitions generate type information and constructor functions
     {ok, {record_def, RecordDef}, State};
 compile_module_item(#type_def{} = TypeDef, State) ->
-    % Type definitions don't generate runtime code, but may affect compilation
-    {ok, {type_def, TypeDef}, State};
+    % Generate constructor functions for union types
+    case generate_union_type_constructors(TypeDef, State) of
+        {ok, ConstructorFunctions, NewState} ->
+            {ok, {union_type, TypeDef, ConstructorFunctions}, NewState};
+        {no_constructors, NewState} ->
+            % Not a union type or no constructors needed
+            {ok, {type_def, TypeDef}, NewState};
+        {error, Reason} ->
+            {error, Reason}
+    end;
 compile_module_item(#import_def{} = Import, State) ->
     % Process import for code generation context
     case process_import(Import, State) of
@@ -1690,19 +1702,43 @@ generate_guard_check_instruction(Location) ->
 %% BEAM Module Generation
 %% ============================================================================
 
-generate_beam_module(State) ->
-    % Extract regular functions and FSM definitions
-    RegularFunctions = [F || {function, F} <- State#codegen_state.functions],
-    FSMDefinitions = [FSM || {fsm, FSM} <- State#codegen_state.functions],
+%% Separate different types of functions in the functions list
+separate_functions(Functions) ->
+    separate_functions(Functions, [], [], []).
 
-    % Extract function information for debugging if needed
-    % FunctionNames = [maps:get(name, F, unknown) || F <- RegularFunctions],
+separate_functions([], RegularAcc, FSMAcc, ConstructorAcc) ->
+    {lists:reverse(RegularAcc), lists:reverse(FSMAcc), lists:reverse(ConstructorAcc)};
+separate_functions([{function, F} | Rest], RegularAcc, FSMAcc, ConstructorAcc) ->
+    % Wrapped regular function
+    separate_functions(Rest, [F | RegularAcc], FSMAcc, ConstructorAcc);
+separate_functions([{fsm, FSM} | Rest], RegularAcc, FSMAcc, ConstructorAcc) ->
+    % FSM definition
+    separate_functions(Rest, RegularAcc, [FSM | FSMAcc], ConstructorAcc);
+separate_functions(
+    [{function, _Line, _Name, _Arity, _Clauses} = ErlangFunction | Rest],
+    RegularAcc,
+    FSMAcc,
+    ConstructorAcc
+) ->
+    % Erlang abstract form (constructor function)
+    separate_functions(Rest, RegularAcc, FSMAcc, [ErlangFunction | ConstructorAcc]);
+separate_functions([F | Rest], RegularAcc, FSMAcc, ConstructorAcc) when is_map(F) ->
+    % Unwrapped regular function (map format)
+    separate_functions(Rest, [F | RegularAcc], FSMAcc, ConstructorAcc);
+separate_functions([_Other | Rest], RegularAcc, FSMAcc, ConstructorAcc) ->
+    % Skip unknown items
+    separate_functions(Rest, RegularAcc, FSMAcc, ConstructorAcc).
+
+generate_beam_module(State) ->
+    % Extract different types of functions from the functions list
+    {RegularFunctions, FSMDefinitions, ConstructorFunctions} =
+        separate_functions(State#codegen_state.functions),
 
     % Extract FSM functions and flatten them
     FSMFunctions = lists:flatten([maps:get(functions, FSM, []) || FSM <- FSMDefinitions]),
 
-    % Combine all functions
-    AllFunctions = RegularFunctions ++ FSMFunctions,
+    % Combine all functions: regular functions, FSM functions, and constructor functions
+    AllFunctions = RegularFunctions ++ FSMFunctions ++ ConstructorFunctions,
 
     Module = #{
         name => State#codegen_state.module_name,
@@ -2013,6 +2049,34 @@ generate_beam_file(Module, OutputPath) ->
             {error, Reason}
     end.
 
+%% Extract function exports from mixed function types (maps and Erlang forms)
+extract_function_exports(Functions) ->
+    extract_function_exports(Functions, []).
+
+extract_function_exports([], Acc) ->
+    lists:reverse(Acc);
+extract_function_exports([F | Rest], Acc) ->
+    case extract_single_function_export(F) of
+        {ok, Export} ->
+            extract_function_exports(Rest, [Export | Acc]);
+        skip ->
+            extract_function_exports(Rest, Acc)
+    end.
+
+%% Extract export info from a single function (map or Erlang abstract form)
+extract_single_function_export(F) when is_map(F) ->
+    case maps:is_key(name, F) andalso maps:is_key(arity, F) of
+        true ->
+            {ok, {maps:get(name, F), maps:get(arity, F)}};
+        false ->
+            skip
+    end;
+extract_single_function_export({function, _Line, Name, Arity, _Clauses}) ->
+    % Erlang abstract form from union constructors
+    {ok, {Name, Arity}};
+extract_single_function_export(_) ->
+    skip.
+
 %% Convert internal representation to Erlang abstract forms
 convert_to_erlang_forms(Module) ->
     try
@@ -2044,12 +2108,7 @@ convert_to_erlang_forms(Module) ->
         % Auto-generate exports from functions if no exports specified
         % For BEAM generation, we need to include ALL functions (exported and local)
         % The export list only controls external visibility
-        AllFunctionExports =
-            [
-                {maps:get(name, F), maps:get(arity, F)}
-             || F <- Functions,
-                maps:is_key(name, F) andalso maps:is_key(arity, F)
-            ],
+        AllFunctionExports = extract_function_exports(Functions),
 
         Exports =
             case RawExports of
@@ -2122,11 +2181,20 @@ convert_functions_to_forms([Function | RestFunctions], Line, Acc) ->
 
 %% Convert a single function to Erlang abstract form
 convert_function_to_form(Function, Line) ->
-    case cure_beam_compiler:compile_function_to_erlang(Function, Line) of
-        {ok, FunctionForm, NextLine} ->
-            {ok, FunctionForm, NextLine};
-        {error, Reason} ->
-            {error, Reason}
+    % Check if this is already an Erlang abstract form (from union type constructors)
+    case Function of
+        {function, FormLine, Name, Arity, Clauses} ->
+            % Already in Erlang abstract form, just update the line number
+            UpdatedForm = {function, Line, Name, Arity, Clauses},
+            {ok, UpdatedForm, Line + 1};
+        _ ->
+            % Normal function that needs compilation
+            case cure_beam_compiler:compile_function_to_erlang(Function, Line) of
+                {ok, FunctionForm, NextLine} ->
+                    {ok, FunctionForm, NextLine};
+                {error, Reason} ->
+                    {error, Reason}
+            end
     end.
 
 %% Convert attributes to Erlang abstract forms
@@ -2328,7 +2396,7 @@ get_line_from_location(_) -> 1.
 %% Compile match patterns with guards
 % compile_match_patterns(Patterns, Location, State) ->
 %     compile_match_patterns_impl(Patterns, [], Location, State).
-% 
+%
 % compile_match_patterns_impl([], Acc, _Location, State) ->
 %     {lists:flatten(lists:reverse(Acc)), State};
 % compile_match_patterns_impl([Pattern | Rest], Acc, Location, State) ->
@@ -2348,16 +2416,16 @@ get_line_from_location(_) -> 1.
 %     % Generate labels for control flow
 %     {FailLabel, State1} = new_label(State),
 %     {SuccessLabel, State2} = new_label(State1),
-% 
+%
 %     % Compile pattern matching
 %     {PatternInstr, State3} = compile_pattern(Pattern, FailLabel, State2),
-% 
+%
 %     % Compile guard if present
 %     case Guard of
 %         undefined ->
 %             % No guard, compile body directly
 %             {BodyInstr, State4} = compile_expression(Body, State3),
-% 
+%
 %             % Assemble instructions
 %             Instructions =
 %                 PatternInstr ++ BodyInstr ++
@@ -2367,7 +2435,7 @@ get_line_from_location(_) -> 1.
 %                         #beam_instr{op = pattern_fail, args = [], location = Location},
 %                         #beam_instr{op = label, args = [SuccessLabel], location = Location}
 %                     ],
-% 
+%
 %             {ok, Instructions, State4};
 %         _ ->
 %             case cure_guard_compiler:compile_guard(Guard, State3) of
@@ -2377,10 +2445,10 @@ get_line_from_location(_) -> 1.
 %                         args = [FailLabel],
 %                         location = Location
 %                     },
-% 
+%
 %                     % Compile body
 %                     {BodyInstr, State5} = compile_expression(Body, GuardState),
-% 
+%
 %                     % Assemble instructions
 %                     Instructions =
 %                         PatternInstr ++ GuardCode ++ [GuardFailInstr] ++ BodyInstr ++
@@ -2390,7 +2458,7 @@ get_line_from_location(_) -> 1.
 %                                 #beam_instr{op = pattern_fail, args = [], location = Location},
 %                                 #beam_instr{op = label, args = [SuccessLabel], location = Location}
 %                             ],
-% 
+%
 %                     {ok, Instructions, State5};
 %                 {error, GuardReason} ->
 %                     {error, GuardReason}
@@ -2400,14 +2468,14 @@ get_line_from_location(_) -> 1.
 %     % Handle non-clause patterns (backward compatibility)
 %     {FailLabel, State1} = new_label(State),
 %     {PatternInstr, State2} = compile_pattern(Pattern, FailLabel, State1),
-% 
+%
 %     Instructions =
 %         PatternInstr ++
 %             [
 %                 #beam_instr{op = label, args = [FailLabel], location = Location},
 %                 #beam_instr{op = pattern_fail, args = [], location = Location}
 %             ],
-% 
+%
 %     {ok, Instructions, State2}.
 
 %% Compile individual patterns
@@ -2419,11 +2487,11 @@ get_line_from_location(_) -> 1.
 % compile_pattern(#identifier_pattern{name = Name, location = Location}, _FailLabel, State) ->
 %     {VarRef, State1} = new_temp_var(State),
 %     NewVars = maps:put(Name, {local, VarRef}, State#codegen_state.local_vars),
-% 
+%
 %     Instructions = [
 %         #beam_instr{op = bind_var, args = [VarRef], location = Location}
 %     ],
-% 
+%
 %     {Instructions, State1#codegen_state{local_vars = NewVars}};
 % compile_pattern(#wildcard_pattern{location = Location}, _FailLabel, State) ->
 %     Instructions = [
@@ -2437,10 +2505,10 @@ get_line_from_location(_) -> 1.
 %         args = [length(Elements), FailLabel],
 %         location = Location
 %     },
-% 
+%
 %     % Compile element patterns
 %     {ElementInstr, State1} = compile_pattern_elements(Elements, FailLabel, State),
-% 
+%
 %     Instructions = [TupleMatchInstr] ++ ElementInstr,
 %     {Instructions, State1};
 % compile_pattern(
@@ -2452,17 +2520,17 @@ get_line_from_location(_) -> 1.
 %         args = [length(Elements), Tail =/= undefined, FailLabel],
 %         location = Location
 %     },
-% 
+%
 %     % Compile element patterns
 %     {ElementInstr, State1} = compile_pattern_elements(Elements, FailLabel, State),
-% 
+%
 %     % Compile tail pattern if present
 %     {TailInstr, State2} =
 %         case Tail of
 %             undefined -> {[], State1};
 %             _ -> compile_pattern(Tail, FailLabel, State1)
 %         end,
-% 
+%
 %     Instructions = [ListMatchInstr] ++ ElementInstr ++ TailInstr,
 %     {Instructions, State2};
 % %% Record pattern - special handling for Result/Option types
@@ -2479,10 +2547,10 @@ get_line_from_location(_) -> 1.
 %                 args = [RecordName, length(Fields), FailLabel],
 %                 location = Location
 %             },
-% 
+%
 %             % Compile field patterns
 %             {FieldInstr, State1} = compile_record_field_patterns(Fields, FailLabel, State),
-% 
+%
 %             Instructions = [RecordMatchInstr] ++ FieldInstr,
 %             {Instructions, State1};
 %         false ->
@@ -2493,10 +2561,10 @@ get_line_from_location(_) -> 1.
 %                 args = [RecordName, length(Fields), FailLabel],
 %                 location = Location
 %             },
-% 
+%
 %             % Compile field patterns
 %             {FieldInstr, State1} = compile_record_field_patterns(Fields, FailLabel, State),
-% 
+%
 %             Instructions = [RecordMatchInstr] ++ FieldInstr,
 %             {Instructions, State1}
 %     end;
@@ -2531,10 +2599,10 @@ get_line_from_location(_) -> 1.
 %                         args = [ConstructorName, 1, FailLabel],
 %                         location = Location
 %                     },
-% 
+%
 %                     % Compile the argument pattern
 %                     {ArgInstr, State1} = compile_pattern(SingleArg, FailLabel, State),
-% 
+%
 %                     Instructions = [ConstructorMatchInstr] ++ ArgInstr,
 %                     {Instructions, State1};
 %                 _ ->
@@ -2544,10 +2612,10 @@ get_line_from_location(_) -> 1.
 %                         args = [ConstructorName, length(Args), FailLabel],
 %                         location = Location
 %                     },
-% 
+%
 %                     % Compile all argument patterns
 %                     {ArgInstrs, State1} = compile_pattern_elements(Args, FailLabel, State),
-% 
+%
 %                     Instructions = [ConstructorMatchInstr] ++ ArgInstrs,
 %                     {Instructions, State1}
 %             end;
@@ -2560,11 +2628,11 @@ get_line_from_location(_) -> 1.
 %% Compile pattern elements (for tuples and lists)
 % compile_pattern_elements(Elements, FailLabel, State) ->
 %     compile_pattern_elements_impl(Elements, [], FailLabel, State).
-% 
+%
 % %% Compile record field patterns
 % compile_record_field_patterns(Fields, FailLabel, State) ->
 %     compile_record_field_patterns_impl(Fields, [], FailLabel, State).
-% 
+%
 % compile_record_field_patterns_impl([], Acc, _FailLabel, State) ->
 %     {lists:flatten(lists:reverse(Acc)), State};
 % compile_record_field_patterns_impl(
@@ -2581,7 +2649,7 @@ get_line_from_location(_) -> 1.
 %         {error, Reason, ErrorState} ->
 %             {error, Reason, ErrorState}
 %     end.
-% 
+%
 % compile_pattern_elements_impl([], Acc, _FailLabel, State) ->
 %     {lists:flatten(lists:reverse(Acc)), State};
 % compile_pattern_elements_impl([Element | Rest], Acc, FailLabel, State) ->
@@ -2602,7 +2670,7 @@ get_line_from_location(_) -> 1.
 % is_result_or_option_type('Some') -> true;
 % is_result_or_option_type('None') -> true;
 % is_result_or_option_type(_) -> false.
-% 
+%
 % %% Check if a constructor name represents a valid Result/Option constructor (both cases)
 % is_constructor_type('Ok') -> true;
 % is_constructor_type('Error') -> true;
@@ -2613,3 +2681,127 @@ get_line_from_location(_) -> 1.
 % is_constructor_type(some) -> true;
 % is_constructor_type(none) -> true;
 % is_constructor_type(_) -> false.
+
+%% ============================================================================
+%% Union Type Constructor Generation
+%% ============================================================================
+
+%% Generate constructor functions for union types
+%% For example: type Result(T, E) = Ok(T) | Error(E)
+%% Should generate: Ok/1 and Error/1 functions
+generate_union_type_constructors(#type_def{name = TypeName, definition = Definition}, State) ->
+    io:format("DEBUG: Processing type definition ~p with definition ~p~n", [TypeName, Definition]),
+    case extract_union_variants(Definition) of
+        {ok, Variants} ->
+            io:format("DEBUG: Found union variants: ~p~n", [Variants]),
+            case generate_constructor_functions(TypeName, Variants, State, []) of
+                {ok, Functions, NewState} ->
+                    io:format("DEBUG: Generated constructor functions: ~p~n", [Functions]),
+                    {ok, Functions, NewState};
+                {error, Reason} ->
+                    {error, Reason}
+            end;
+        not_a_union ->
+            io:format("DEBUG: ~p is not a union type~n", [TypeName]),
+            {no_constructors, State};
+        {error, Reason} ->
+            io:format("DEBUG: Error extracting union variants: ~p~n", [Reason]),
+            {error, Reason}
+    end.
+
+%% Extract variants from union type definition
+%% Handles various AST formats for union types
+extract_union_variants(#union_type{types = Types}) ->
+    {ok, Types};
+extract_union_variants(Definition) when is_list(Definition) ->
+    % Handle list of union variants
+    {ok, Definition};
+extract_union_variants(Definition) ->
+    % Try to detect if this is a union type in other formats
+    case is_union_type_definition(Definition) of
+        {true, Variants} -> {ok, Variants};
+        false -> not_a_union
+    end.
+
+%% Check if definition represents a union type
+%% This handles the case where union types might be represented differently in AST
+is_union_type_definition(Definition) ->
+    % Look for patterns like: Ok(T) | Error(E) or Lt | Eq | Gt
+    case Definition of
+        % Pattern for binary union: A | B
+        {union_expr, Left, Right, _Location} ->
+            Variants = flatten_union_expr({union_expr, Left, Right, _Location}),
+            {true, Variants};
+        % Direct list of variants
+        Variants when is_list(Variants) ->
+            case all_are_constructors(Variants) of
+                true -> {true, Variants};
+                false -> false
+            end;
+        _ ->
+            false
+    end.
+
+%% Flatten union expression like A | B | C into [A, B, C]
+flatten_union_expr({union_expr, Left, Right, _}) ->
+    LeftVariants = flatten_union_expr(Left),
+    RightVariants = flatten_union_expr(Right),
+    LeftVariants ++ RightVariants;
+flatten_union_expr(Variant) ->
+    [Variant].
+
+%% Check if all items look like type constructors
+all_are_constructors([]) -> true;
+all_are_constructors([#primitive_type{} | Rest]) -> all_are_constructors(Rest);
+all_are_constructors([#dependent_type{} | Rest]) -> all_are_constructors(Rest);
+all_are_constructors([_ | _]) -> false.
+
+%% Generate constructor functions for each variant
+generate_constructor_functions(_TypeName, [], State, Acc) ->
+    {ok, lists:reverse(Acc), State};
+generate_constructor_functions(TypeName, [Variant | RestVariants], State, Acc) ->
+    case generate_single_constructor(TypeName, Variant, State) of
+        {ok, Function, NewState} ->
+            generate_constructor_functions(TypeName, RestVariants, NewState, [Function | Acc]);
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Generate a single constructor function
+generate_single_constructor(TypeName, Variant, State) ->
+    case extract_constructor_info(Variant) of
+        {ok, ConstructorName, Arity} ->
+            % Create constructor function: ConstructorName(Args...) -> {ConstructorName, Args...}
+            Function = create_constructor_function(ConstructorName, Arity, State),
+            {ok, Function, State};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Extract constructor name and arity from variant
+extract_constructor_info(#primitive_type{name = Name}) ->
+    % Nullary constructor like Lt, Eq, Gt, None
+    {ok, Name, 0};
+extract_constructor_info(#dependent_type{name = Name, params = Params}) ->
+    % Constructor with arguments like Ok(T), Error(E), Some(T)
+    {ok, Name, length(Params)};
+extract_constructor_info(Variant) ->
+    {error, {unsupported_variant, Variant}}.
+
+%% Create constructor function as Erlang AST
+create_constructor_function(ConstructorName, 0, _State) ->
+    % Nullary constructor: ConstructorName() -> ConstructorName
+    {function, 0, ConstructorName, 0, [
+        {clause, 0, [], [], [{atom, 0, ConstructorName}]}
+    ]};
+create_constructor_function(ConstructorName, Arity, _State) when Arity > 0 ->
+    % Constructor with arguments: ConstructorName(Arg1, ..., ArgN) -> {ConstructorName, Arg1, ..., ArgN}
+    % Generate parameter variables
+    Params = [{var, 0, list_to_atom("Arg" ++ integer_to_list(I))} || I <- lists:seq(1, Arity)],
+    % Create tuple with constructor name and arguments
+    TupleElements = [{atom, 0, ConstructorName} | Params],
+    Body = {tuple, 0, TupleElements},
+
+    {function, 0, ConstructorName, Arity, [
+        {clause, 0, Params, [], [Body]}
+    ]}.

@@ -1,0 +1,10 @@
+module Test do
+  export [
+    add/2,
+    double/1
+  ]
+
+  def add(x: Int, y: Int): Int = x + y
+  
+  def double(x: Int): Int = add(x, x)
+end

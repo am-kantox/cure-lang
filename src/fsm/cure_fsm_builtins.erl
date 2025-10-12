@@ -65,7 +65,10 @@ They provide a clean interface to the underlying Erlang FSM runtime.
 
     % Legacy compatibility (for tests)
     validate_fsm_type/1,
-    validate_fsm_event/2
+    validate_fsm_event/2,
+
+    % Type environment integration
+    register_fsm_builtins/1
 ]).
 
 %% Include FSM runtime records
@@ -286,6 +289,43 @@ validate_fsm_type(FSMType) ->
 %% Legacy validate FSM event
 validate_fsm_event(FSMPid, Event) ->
     fsm_validate_event(FSMPid, Event).
+
+%% ============================================================================
+%% Type Environment Integration
+%% ============================================================================
+
+%% Register FSM built-in function types with the type environment
+%% This function is called by cure_typechecker:builtin_env/0 to add FSM function types
+register_fsm_builtins(Env) ->
+    % Add FSM reference type
+    FSMRefType = {primitive_type, 'FSMRef'},
+    Env1 = cure_types:extend_env(Env, 'FSMRef', FSMRefType),
+
+    % Add FSM built-in function types
+    % fsm_spawn/2 : Atom -> Data -> FSMRef
+    FSMSpawnType =
+        {function_type, [{primitive_type, 'Atom'}, cure_types:new_type_var()], FSMRefType},
+    Env2 = cure_types:extend_env(Env1, fsm_spawn, FSMSpawnType),
+
+    % fsm_stop/1 : FSMRef -> Unit
+    FSMStopType = {function_type, [FSMRefType], {primitive_type, 'Unit'}},
+    Env3 = cure_types:extend_env(Env2, fsm_stop, FSMStopType),
+
+    % fsm_send/2 : FSMRef -> Event -> Unit
+    FSMSendType =
+        {function_type, [FSMRefType, cure_types:new_type_var()], {primitive_type, 'Unit'}},
+    Env4 = cure_types:extend_env(Env3, fsm_send, FSMSendType),
+
+    % fsm_state/1 : FSMRef -> Atom
+    FSMStateType = {function_type, [FSMRefType], {primitive_type, 'Atom'}},
+    Env5 = cure_types:extend_env(Env4, fsm_state, FSMStateType),
+
+    % fsm_is_alive/1 : FSMRef -> Bool
+    FSMIsAliveType = {function_type, [FSMRefType], {primitive_type, 'Bool'}},
+    Env6 = cure_types:extend_env(Env5, fsm_is_alive, FSMIsAliveType),
+
+    % Return updated environment
+    Env6.
 
 %% ============================================================================
 %% Internal Helper Functions
