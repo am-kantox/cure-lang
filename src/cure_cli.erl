@@ -61,6 +61,8 @@ cure input.cure --no-optimize      # Disable optimizations
     get_module_info/1,
     %% Utility function to check if we have a complete Cure installation
     check_cure_installation/0,
+    %% Ensure standard library is available
+    ensure_stdlib_available/1,
     % Show help information
     help/0,
     % Show version information
@@ -95,7 +97,9 @@ cure input.cure --no-optimize      # Disable optimizations
     % Enable optimizations
     optimize = true,
     % Include FSM runtime
-    fsm_runtime = true
+    fsm_runtime = true,
+    % Standard library paths to link
+    stdlib_paths = ["_build/lib", "_build/lib/std"]
 }).
 
 %% ============================================================================
@@ -315,25 +319,59 @@ compile_file(Filename, Options) ->
 
 %% Implementation of file compilation
 compile_file_impl(Filename, Options) ->
-    if
-        Options#compile_options.verbose ->
-            io:format("Compiling ~s...~n", [Filename]);
+    % Check if we're compiling a standard library file to avoid circular dependency
+    IsStdlibFile = string:prefix(Filename, "lib/") =/= nomatch,
+    
+    case IsStdlibFile of
         true ->
-            ok
-    end,
-
-    try
-        % Step 1: Read source file
-        case file:read_file(Filename) of
-            {ok, SourceBinary} ->
-                Source = binary_to_list(SourceBinary),
-                compile_source(Filename, Source, Options);
-            {error, FileError} ->
-                {error, {file_read_error, Filename, FileError}}
-        end
-    catch
-        Error:Reason:_Stack ->
-            {error, {compilation_failed, Error, Reason}}
+            % Skip standard library check for stdlib files to avoid circular dependency
+            if
+                Options#compile_options.verbose ->
+                    io:format("Compiling standard library file ~s...~n", [Filename]);
+                true ->
+                    ok
+            end,
+            
+            try
+                % Step 1: Read source file
+                case file:read_file(Filename) of
+                    {ok, SourceBinary} ->
+                        Source = binary_to_list(SourceBinary),
+                        compile_source(Filename, Source, Options);
+                    {error, FileError} ->
+                        {error, {file_read_error, Filename, FileError}}
+                end
+            catch
+                Error:Reason:_Stack ->
+                    {error, {compilation_failed, Error, Reason}}
+            end;
+        false ->
+            % For non-stdlib files, ensure standard library is available
+            case ensure_stdlib_available(Options) of
+                ok ->
+                    if
+                        Options#compile_options.verbose ->
+                            io:format("Compiling ~s...~n", [Filename]);
+                        true ->
+                            ok
+                    end,
+                    
+                    try
+                        % Step 1: Read source file
+                        case file:read_file(Filename) of
+                            {ok, SourceBinary} ->
+                                Source = binary_to_list(SourceBinary),
+                                compile_source(Filename, Source, Options);
+                            {error, FileError} ->
+                                {error, {file_read_error, Filename, FileError}}
+                        end
+                    catch
+                        Error:Reason:_Stack ->
+                            {error, {compilation_failed, Error, Reason}}
+                    end;
+                {error, StdlibError} ->
+                    {error, {stdlib_unavailable, StdlibError}}
+            end
     end.
 
 %% Compile source code through the full pipeline
@@ -702,6 +740,10 @@ format_error({file_write_error, Filename, Reason}) ->
     io_lib:format("Could not write file ~s: ~p", [Filename, Reason]);
 format_error({directory_create_error, Dir, Reason}) ->
     io_lib:format("Could not create directory ~s: ~p", [Dir, Reason]);
+format_error({stdlib_unavailable, Reason}) ->
+    io_lib:format("Standard library not available: ~s", [format_error(Reason)]);
+format_error({stdlib_compilation_failed, Output}) ->
+    io_lib:format("Standard library compilation failed: ~s", [Output]);
 format_error({compilation_stage_failed, Stage, Reason}) ->
     io_lib:format("~s failed: ~s", [Stage, format_compilation_error(Reason)]);
 format_error({compilation_failed, Error, Reason}) ->
@@ -814,4 +856,81 @@ check_cure_installation() ->
             io:format("Warning: Missing Cure compiler modules: ~p~n", [MissingModules]),
             io:format("Make sure to run 'make all' to build the complete compiler~n"),
             {error, {missing_modules, MissingModules}}
+    end.
+
+-doc """
+Ensure that the Cure standard library is available and compiled.
+
+This function checks if the standard library BEAM files exist,
+and if not, attempts to compile them automatically.
+
+## Arguments
+
+- `Options` - Compilation options including verbosity settings
+
+## Returns
+
+- `ok` - Standard library is available
+- `{error, Reason}` - Standard library compilation failed
+
+## Side Effects
+
+- May invoke `make stdlib` to compile missing standard library
+- Prints progress messages if verbose mode is enabled
+
+""".
+ensure_stdlib_available(Options) ->
+    StdlibPaths = Options#compile_options.stdlib_paths,
+    
+    case check_stdlib_compiled(StdlibPaths) of
+        ok ->
+            if
+                Options#compile_options.verbose ->
+                    io:format("Standard library already compiled~n");
+                true -> ok
+            end,
+            ok;
+        {missing, _MissingFiles} ->
+            if
+                Options#compile_options.verbose ->
+                    io:format("Compiling Cure standard library...~n");
+                true -> ok
+            end,
+            compile_stdlib()
+    end.
+
+%% Check if standard library files are compiled
+check_stdlib_compiled(StdlibPaths) ->
+    % Check for some essential standard library BEAM files
+    EssentialLibFiles = [
+        "_build/lib/std/core.beam",
+        "_build/lib/std/list.beam",
+        "_build/lib/std/string.beam"
+    ],
+    
+    Missing = lists:filter(
+        fun(BeamFile) -> not filelib:is_regular(BeamFile) end,
+        EssentialLibFiles
+    ),
+    
+    case Missing of
+        [] -> ok;
+        MissingFiles -> {missing, MissingFiles}
+    end.
+
+%% Compile standard library using make
+compile_stdlib() ->
+    case os:cmd("make -C . stdlib 2>&1") of
+        Output ->
+            case string:str(Output, "successfully") of
+                0 ->
+                    % Compilation may have failed or had warnings
+                    io:format("Standard library compilation output: ~s~n", [Output]),
+                    case check_stdlib_compiled(["_build/lib", "_build/lib/std"]) of
+                        ok -> ok;
+                        {missing, _} -> {error, {stdlib_compilation_failed, Output}}
+                    end;
+                _ ->
+                    ok
+            end
     end.

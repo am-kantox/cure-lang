@@ -127,22 +127,22 @@ clean:
 # Run tests
 test: tests
 	@echo "Running Cure compiler test suite..."
-	$(ERL) -pa $(EBIN_DIR) -noshell -s test_runner run_all -s init stop
+	$(ERL) -pa $(EBIN_DIR) -pa $(LIB_EBIN_DIR) -pa $(LIB_EBIN_DIR)/std -noshell -s test_runner run_all -s init stop
 
 # Run only basic tests
 test-basic: tests
 	@echo "Running basic tests..."
-	$(ERL) -pa $(EBIN_DIR) -noshell -s test_runner run_basic -s init stop
+	$(ERL) -pa $(EBIN_DIR) -pa $(LIB_EBIN_DIR) -pa $(LIB_EBIN_DIR)/std -noshell -s test_runner run_basic -s init stop
 
 # Run only integration tests 
 test-integration: tests
 	@echo "Running integration tests..."
-	$(ERL) -pa $(EBIN_DIR) -noshell -s test_runner run_integration -s init stop
+	$(ERL) -pa $(EBIN_DIR) -pa $(LIB_EBIN_DIR) -pa $(LIB_EBIN_DIR)/std -noshell -s test_runner run_integration -s init stop
 
 # Run performance tests
 test-performance: tests
 	@echo "Running performance tests..."
-	$(ERL) -pa $(EBIN_DIR) -noshell -s test_runner run_performance -s init stop
+	$(ERL) -pa $(EBIN_DIR) -pa $(LIB_EBIN_DIR) -pa $(LIB_EBIN_DIR)/std -noshell -s test_runner run_performance -s init stop
 
 # Generate documentation
 docs:
@@ -156,7 +156,7 @@ install: compiler
 
 # Development shell
 shell: compiler
-	$(ERL) -pa $(EBIN_DIR)
+	$(ERL) -pa $(EBIN_DIR) -pa $(LIB_EBIN_DIR) -pa $(LIB_EBIN_DIR)/std
 
 # Lint code
 lint:
@@ -169,7 +169,7 @@ format:
 	rebar3 fmt
 
 # Compile a specific .cure file
-compile-file: compiler
+compile-file: compiler stdlib
 	@if [ -z "$(CURE_FILE)" ]; then \
 		echo "Usage: make compile-file CURE_FILE=path/to/file.cure [OUTPUT=output.beam]"; \
 		echo "Example: make compile-file CURE_FILE=examples/simple.cure"; \

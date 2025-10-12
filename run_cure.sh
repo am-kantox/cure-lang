@@ -92,7 +92,7 @@ echo "🎯 Executing ${MODULE_NAME}:${MAIN_FUNCTION}()..."
 echo "--------------------"
 
 # Run the function and capture both output and return value
-erl -pa _build/ebin -noshell -eval "
+erl -pa _build/ebin -pa _build/lib -pa _build/lib/std -noshell -eval "
 try
     Result = '$MODULE_NAME':'$MAIN_FUNCTION'(),
     io:format(\"~n📊 Function result: ~p~n\", [Result]),
