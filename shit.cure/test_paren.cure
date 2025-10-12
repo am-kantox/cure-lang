@@ -1,0 +1,6 @@
+module Test do
+  export [dot_product/2]
+
+  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
+    (zip_with(v1, v2, fn(x, y) -> x * y end))
+end

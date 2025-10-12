@@ -1,0 +1,25 @@
+module DependentTypes do
+  export [demo_all/0]
+
+  import Std [List, Result]
+
+  record Matrix(rows: Nat, cols: Nat, T) do
+    data: Vector(Vector(T, cols), rows)
+  end
+
+  def matrix_multiply(
+    a: Matrix(m, n, T), 
+    b: Matrix(n, p, T)
+  ): Matrix(m, p, T) do
+    # Type system ensures dimensions are compatible
+    let result_rows = map_with_index(a.data, fn(row, i) ->
+      map_with_index(transpose(b.data), fn(col, j) ->
+        dot_product(row, col)
+      end)
+    end)
+    Matrix{data: result_rows}
+  end
+
+  def demo_all(): Unit = ok
+
+end

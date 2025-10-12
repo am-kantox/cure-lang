@@ -1,0 +1,11 @@
+module TestDependent do
+  export [test/0]
+  
+  def test(): Unit = ok
+  
+  def safe_head(list: List(T, n)) -> T when n > 0 =
+    match list do
+      [x | _] -> x
+    end
+
+end

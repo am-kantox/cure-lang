@@ -1,0 +1,17 @@
+module TestRecord do
+  export [test/0]
+  
+  # Matrix type with compile-time dimension checking
+  record Matrix(rows: Nat, cols: Nat, T) do
+    data: Vector(Vector(T, cols), rows)
+  end
+  
+  # Units with type-level tagging  
+  type UnitType = Meters | Feet | Kilograms | Pounds
+
+  record Measurement(unit: UnitType, T) do
+    value: T
+  end
+
+  def test(): Unit = ok
+end

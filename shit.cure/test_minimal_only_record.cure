@@ -1,0 +1,10 @@
+module DependentTypes do
+  export []
+
+  def simple(): Unit = ok
+
+  record Matrix(rows: Nat, cols: Nat, T) do
+    data: Vector(Vector(T, cols), rows)
+  end
+
+end

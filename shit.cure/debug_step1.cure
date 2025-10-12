@@ -1,0 +1,17 @@
+# Dependent Types Examples in Cure
+# Demonstrates compile-time guarantees, length-indexed vectors, matrices, and type safety
+
+module DependentTypes do
+  export [demo_all/0]
+
+  # Import standard types
+  import Std [List, Result]
+
+  # === REFINEMENT TYPES ===
+
+  # Types with predicates
+  type PositiveInt = Int when x > 0
+
+  def demo_all(): Unit = ok
+
+end

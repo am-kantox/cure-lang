@@ -1,0 +1,8 @@
+module TestRecord do
+  export []
+
+  record TestRecord(T) do
+    value: T
+  end
+
+end

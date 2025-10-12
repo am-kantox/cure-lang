@@ -1,0 +1,11 @@
+module DependentTypes do
+  export []
+
+  def make_vec3(x: Float, y: Float, z: Float): Vector(Float, 3) =
+    [x, y, z]
+
+  record Matrix(rows: Nat, cols: Nat, T) do
+    data: Vector(Vector(T, cols), rows)
+  end
+
+end

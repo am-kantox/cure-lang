@@ -1,0 +1,10 @@
+module DependentTypes do
+  export []
+
+  def simple(): Unit = ok
+
+  record Matrix(R, C, T) do
+    data: T
+  end
+
+end

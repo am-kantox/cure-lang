@@ -1,0 +1,13 @@
+module TestTypes do
+  export [test/0]
+  
+  # === REFINEMENT TYPES ===
+
+  # Types with predicates
+  type PositiveInt = Int when x > 0
+  type NonZeroFloat = Float when x != 0.0
+  type NonEmptyString = String when length(x) > 0
+  type ValidAge = Nat when x >= 0 and x <= 150
+
+  def test(): Unit = ok
+end

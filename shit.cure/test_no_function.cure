@@ -1,0 +1,8 @@
+module Test do
+  export []
+  
+  record Matrix(rows: Nat, T) do
+    data: T
+  end
+  
+end

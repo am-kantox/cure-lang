@@ -1,0 +1,10 @@
+module Test do
+  export []
+  
+  def test(x: Int): Int = x
+  
+  record Matrix(rows: Nat, T) do
+    data: T
+  end
+  
+end

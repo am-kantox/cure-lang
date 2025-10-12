@@ -1,0 +1,6 @@
+module TestFunction do
+  export [test/0]
+
+  def test(): Unit = ok
+
+end

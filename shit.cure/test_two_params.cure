@@ -1,0 +1,8 @@
+module Test do
+  export []
+  
+  record Matrix(T, U) do
+    data: T
+  end
+  
+end

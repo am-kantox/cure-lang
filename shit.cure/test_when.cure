@@ -1,0 +1,7 @@
+module Test do
+  export [test/1]
+
+  type PositiveInt = Int when x > 0
+  
+  def test(n: PositiveInt): PositiveInt = n
+end

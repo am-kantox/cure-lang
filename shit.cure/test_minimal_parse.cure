@@ -1,0 +1,8 @@
+module Test do
+  export [demo/0]
+
+  def demo(): Int = 42
+
+  type MyType = Int
+
+end

@@ -1,0 +1,27 @@
+# Dependent Types Examples in Cure
+# Demonstrates compile-time guarantees, length-indexed vectors, matrices, and type safety
+
+module DependentTypes do
+  export [make_vec3/3, make_vec4/4]
+
+  # Import standard types
+  import Std [List, Result]
+
+  # === LENGTH-INDEXED VECTORS ===
+
+  # Vector type parameterized by length and element type
+  # Vector(T, n: Nat) ensures vectors always have exactly n elements
+
+  # Create vectors with known lengths
+  def make_vec3(x: Float, y: Float, z: Float): Vector(Float, 3) =
+    [x, y, z]
+
+  def make_vec4(x: Float, y: Float, z: Float, w: Float): Vector(Float, 4) =
+    [x, y, z, w]
+    
+  # Safe vector operations - length checked at compile time
+  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
+    # The type system guarantees v1 and v2 have the same length
+    (zip_with(v1, v2, fn(x, y) -> x * y end)
+    |> fold(0.0, fn(x, acc) -> acc + x end))
+end

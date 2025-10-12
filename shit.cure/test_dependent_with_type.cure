@@ -1,0 +1,16 @@
+module DependentTypes do
+  export [demo_all/0]
+
+  # Import standard types
+  import Std [List, Result]
+
+  def simple(): Unit = ok
+
+  record Matrix(rows: Nat, cols: Nat, T) do
+    data: Vector(Vector(T, cols), rows)
+  end
+
+  # Types with predicates
+  type PositiveInt = Int when x > 0
+
+end

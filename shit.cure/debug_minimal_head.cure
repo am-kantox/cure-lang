@@ -1,0 +1,162 @@
+
+module DependentTypes do
+  export [demo_all/0]
+  # Units with type-level tagging
+  type Unit = Meters | Feet | Kilograms | Pounds
+
+  record Measurement(unit: Unit, T) do
+    value: T
+  end
+
+  # Safe unit operations
+  def add_meters(
+    m1: Measurement(Meters, Float), 
+    m2: Measurement(Meters, Float)
+  ): Measurement(Meters, Float) =
+    Measurement{value: m1.value + m2.value}
+
+  def convert_feet_to_meters(feet: Measurement(Feet, Float)): Measurement(Meters, Float) =
+    Measurement{value: feet.value * 0.3048}
+
+  # Prevented at compile time:
+  # def invalid_add(m: Measurement(Meters, Float), f: Measurement(Feet, Float)) = 
+  #   m.value + f.value  # TYPE ERROR: Cannot add different units
+
+  # === PROOF CARRYING CODE ===
+
+  # Types that carry proofs of properties
+  type SortedList(T) = List(T, n) when is_sorted(list)
+  type UniqueList(T) = List(T, n) when all_unique(list)
+
+  # Functions that maintain invariants
+  def insert_sorted(x: T, list: SortedList(T)): SortedList(T) =
+    # Implementation must maintain sortedness
+    insert_ordered(x, list)
+
+  def merge_sorted(
+    list1: SortedList(T), 
+    list2: SortedList(T)
+  ): SortedList(T) =
+    # Result is guaranteed to be sorted
+    merge_ordered(list1, list2)
+
+  # === LIQUID TYPES ===
+
+  # Types with logical constraints
+  type ArrayIndex(arr: Array(T, n)) = Nat when i >= 0 and i < n
+
+  def safe_array_access(arr: Array(T, n), idx: ArrayIndex(arr)): T =
+    # No bounds checking needed - type system guarantees safety
+    array_get_unchecked(arr, idx)
+
+  # === GADTs (Generalized Algebraic Data Types) ===
+
+  # Expression language with type-safe evaluation
+  type Expr(T) = IntLit(Int) | BoolLit(Bool) | Add(Expr(Int), Expr(Int)) | Equal(Expr(T), Expr(T)) | If(Expr(Bool), Expr(T), Expr(T))
+
+  # Type-safe evaluator
+  def eval_expr(expr: Expr(T)): T =
+    match expr do
+      IntLit(n) -> n
+      BoolLit(b) -> b
+      Add(e1, e2) -> eval_expr(e1) + eval_expr(e2)
+      Equal(e1, e2) -> eval_expr(e1) == eval_expr(e2)
+      If(cond, then_expr, else_expr) ->
+        if eval_expr(cond) 
+        then eval_expr(then_expr)
+        else eval_expr(else_expr)
+        end
+    end
+
+  # === DEMONSTRATION FUNCTIONS ===
+
+  def vector_operations(): Unit =
+    print("=== Vector Operations ===")
+    
+    let v1 = make_vec3(1.0, 2.0, 3.0)
+    let v2 = make_vec3(4.0, 5.0, 6.0)
+    
+    let dot_result = dot_product(v1, v2)
+    print("Dot product: " ++ show(dot_result))  # 32.0
+    
+    let sum = vector_add(v1, v2)
+    print("Vector sum: " ++ show(sum))  # [5.0, 7.0, 9.0]
+    
+    let scaled = vector_scale(2.0, v1)
+    print("Scaled vector: " ++ show(scaled))  # [2.0, 4.0, 6.0]
+    
+    ok
+
+  def matrix_operations(): Unit =
+    print("\\n=== Matrix Operations ===")
+    
+    let m1 = make_matrix_2x3()
+    let identity = make_identity_3x3()
+    
+    # This would be a compile-time error due to dimension mismatch:
+    # let invalid = matrix_multiply(m1, m1)  # ERROR: 2x3 * 2x3 invalid
+    
+    print("Matrix created successfully with dimension checking")
+    
+    # Safe element access
+    let element = matrix_get(m1, 0, 1)
+    print("Matrix element (0,1): " ++ show(element))  # 2.0
+    
+    ok
+
+  def safe_operations(): Unit =
+    print("\\n=== Safe Operations with Refinement Types ===")
+    
+    # These operations are guaranteed safe by the type system
+    let result1 = safe_divide(10.0, 2.5)  # NonZeroFloat guaranteed
+    print("Safe division: " ++ show(result1))
+    
+    let factorial_result = calculate_factorial(5)  # PositiveInt guaranteed
+    print("Factorial: " ++ show(factorial_result))
+    
+    let formatted = format_name("Alice")  # NonEmptyString guaranteed
+    print("Formatted: " ++ formatted)
+    
+    let age_class = classify_person(25)  # ValidAge guaranteed
+    print("Age classification: " ++ age_class)
+    
+    ok
+
+  def demo_all(): Unit =
+    print("=== Dependent Types Demonstration ===")
+    
+    # Demonstrate compile-time safety
+    print("All operations below are compile-time verified for safety!")
+    
+    vector_operations()
+    matrix_operations()
+    safe_operations()
+    
+    print("\\n=== Expression Evaluation ===")
+    
+    # Type-safe expression evaluation
+    let expr1 = Add(IntLit(5), IntLit(3))
+    let result1 = eval_expr(expr1)  # Type: Int
+    print("5 + 3 = " ++ show(result1))
+    
+    let expr2 = If(Equal(IntLit(2), IntLit(2)), IntLit(42), IntLit(0))
+    let result2 = eval_expr(expr2)  # Type: Int  
+    print("if 2 == 2 then 42 else 0 = " ++ show(result2))
+    
+    print("\\n=== Unit Safety ===")
+    
+    let distance_meters = Measurement{value: 100.0}  # Meters
+    let distance_feet = Measurement{value: 328.0}    # Feet
+    
+    let converted = convert_feet_to_meters(distance_feet)
+    print("328 feet = " ++ show(converted.value) ++ " meters")
+    
+    # This would be prevented at compile time:
+    # let invalid = add_meters(distance_meters, distance_feet)  # TYPE ERROR!
+    
+    print("\\nAll dependent type examples completed successfully!")
+    print("The type system prevented numerous potential runtime errors!")
+    
+    ok
+
+end

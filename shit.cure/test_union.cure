@@ -1,0 +1,8 @@
+module TestUnion do
+  export [test/0]
+  
+  # Binary tree with depth tracking
+  type BTree(T, depth: Nat) = Leaf(T) | Node(BTree(T, depth-1), T, BTree(T, depth-1))
+
+  def test(): Unit = ok
+end
