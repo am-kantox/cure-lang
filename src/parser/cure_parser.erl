@@ -768,9 +768,9 @@ parse_record_def(State) ->
     {_, State1} = expect(State, record),
     {NameToken, State2} = expect(State1, identifier),
     Name = binary_to_atom(get_token_value(NameToken), utf8),
-    
+
     % Parse optional type parameters
-    {TypeParams, State3} = 
+    {TypeParams, State3} =
         case match_token(State2, '(') of
             true ->
                 {_, State2a} = expect(State2, '('),
@@ -780,7 +780,7 @@ parse_record_def(State) ->
             false ->
                 {[], State2}
         end,
-    
+
     {_, State4} = expect(State3, do),
 
     {Fields, State5} = parse_record_fields(State4, []),
@@ -3071,11 +3071,16 @@ is_end_of_body(State) ->
         'def' -> true;
         'defp' -> true;
         'def_erl' -> true;
-        'record' -> true;  % Record definitions end function body
-        'type' -> true;    % Type definitions end function body
-        'fsm' -> true;     % FSM definitions end function body
-        'import' -> true;  % Import statements end function body
-        'export' -> true;  % Export statements end function body
+        % Record definitions end function body
+        'record' -> true;
+        % Type definitions end function body
+        'type' -> true;
+        % FSM definitions end function body
+        'fsm' -> true;
+        % Import statements end function body
+        'import' -> true;
+        % Export statements end function body
+        'export' -> true;
         _ -> false
     end.
 

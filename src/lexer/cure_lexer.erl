@@ -206,12 +206,14 @@ scan(Source) when is_binary(Source) ->
         {ok, TokenRecords} ->
             SimpleTuples = [convert_token_to_tuple(Token) || Token <- TokenRecords],
             % Add EOF token at the end
-            LastLine = case SimpleTuples of
-                [] -> 1;
-                _ -> 
-                    LastToken = lists:last(SimpleTuples),
-                    element(2, LastToken)
-            end,
+            LastLine =
+                case SimpleTuples of
+                    [] ->
+                        1;
+                    _ ->
+                        LastToken = lists:last(SimpleTuples),
+                        element(2, LastToken)
+                end,
             {ok, SimpleTuples ++ [{eof, LastLine}]};
         {error, Reason} ->
             {error, Reason}

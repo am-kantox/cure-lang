@@ -1026,9 +1026,11 @@ unify_lengths_strict(Len1, Len2, Subst) ->
         {{primitive_type, VarName}, ConcreteLen} when is_atom(VarName) ->
             case is_generic_type_variable_name(VarName) of
                 true ->
-                    io:format("DEBUG: Unifying primitive type variable ~p with concrete length ~p~n", [
-                        VarName, ConcreteLen
-                    ]),
+                    io:format(
+                        "DEBUG: Unifying primitive type variable ~p with concrete length ~p~n", [
+                            VarName, ConcreteLen
+                        ]
+                    ),
                     % Convert primitive type variable to proper type var and unify
                     TypeVar = #type_var{id = VarName, name = VarName},
                     unify_impl(TypeVar, ConcreteLen, Subst);
@@ -1049,9 +1051,11 @@ unify_lengths_strict(Len1, Len2, Subst) ->
         {ConcreteLen, {primitive_type, VarName}} when is_atom(VarName) ->
             case is_generic_type_variable_name(VarName) of
                 true ->
-                    io:format("DEBUG: Unifying concrete length ~p with primitive type variable ~p~n", [
-                        ConcreteLen, VarName
-                    ]),
+                    io:format(
+                        "DEBUG: Unifying concrete length ~p with primitive type variable ~p~n", [
+                            ConcreteLen, VarName
+                        ]
+                    ),
                     % Convert primitive type variable to proper type var and unify
                     TypeVar = #type_var{id = VarName, name = VarName},
                     unify_impl(ConcreteLen, TypeVar, Subst);
@@ -1274,18 +1278,27 @@ apply_substitution_to_param(Param, Subst) ->
         #type_param{name = Name, value = Value} ->
             #type_param{name = Name, value = apply_substitution_to_param(Value, Subst)};
         % Type expressions
-        {primitive_type, _} -> apply_substitution(Param, Subst);
-        {dependent_type, _, _} -> apply_substitution(Param, Subst);
-        {function_type, _, _} -> apply_substitution(Param, Subst);
-        {list_type, _, _} -> apply_substitution(Param, Subst);
-        #type_var{} -> apply_substitution(Param, Subst);
+        {primitive_type, _} ->
+            apply_substitution(Param, Subst);
+        {dependent_type, _, _} ->
+            apply_substitution(Param, Subst);
+        {function_type, _, _} ->
+            apply_substitution(Param, Subst);
+        {list_type, _, _} ->
+            apply_substitution(Param, Subst);
+        #type_var{} ->
+            apply_substitution(Param, Subst);
         % Literal expressions - pass through unchanged
-        {literal_expr, _, _} -> Param;
-        {identifier_expr, _, _} -> Param;
-        {binary_op_expr, _, _, _, _} -> Param;
+        {literal_expr, _, _} ->
+            Param;
+        {identifier_expr, _, _} ->
+            Param;
+        {binary_op_expr, _, _, _, _} ->
+            Param;
         % Other expressions
         _ when is_atom(Param) -> apply_substitution(Param, Subst);
-        _ -> Param
+        _ ->
+            Param
     end.
 
 %% Apply substitution to expressions (simplified)
@@ -1775,7 +1788,6 @@ apply_function_to_arg(FuncType, ArgType, Location) ->
             },
             {ok, ReturnType, [UnifyConstraint]}
     end.
-
 
 infer_binary_op('+', LeftType, RightType, Location, Constraints) ->
     ResultType = new_type_var(),

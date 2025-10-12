@@ -130,7 +130,8 @@ operations can run concurrently on different ASTs.
     check_module/1, check_module/2,
     check_function/1, check_function/2,
     check_expression/2, check_expression/3,
-    infer_type/2,  % Add compatibility function for tests
+    % Add compatibility function for tests
+    infer_type/2,
 
     % Built-in type constructors
     builtin_env/0,
@@ -853,7 +854,6 @@ process_variant(Variant, TypeName, TypeParams, Env) ->
             % Fallback for other variant types
             throw({unsupported_variant_type, Variant})
     end.
-
 
 %% Create result type for constructor using environment for type variable lookup
 create_result_type_with_env(TypeName, [], _Env) ->
