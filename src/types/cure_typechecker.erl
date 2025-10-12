@@ -130,6 +130,7 @@ operations can run concurrently on different ASTs.
     check_module/1, check_module/2,
     check_function/1, check_function/2,
     check_expression/2, check_expression/3,
+    infer_type/2,  % Add compatibility function for tests
 
     % Built-in type constructors
     builtin_env/0,
@@ -541,7 +542,7 @@ check_function_new({function_def, Name, Params, ReturnType, Constraint, Body, Lo
     );
 % 8-parameter format (new format with is_private)
 check_function_new(
-    {function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location}, Env
+    {function_def, Name, Params, ReturnType, Constraint, Body, _IsPrivate, Location}, Env
 ) ->
     try
         % Convert parameters to type environment and extract type parameters
@@ -709,23 +710,23 @@ add_std_function_types(Env) ->
     UVar = cure_types:new_type_var('U'),
     VVar = cure_types:new_type_var('V'),
 
-    % zip_with: (List(T), List(U), (T, U) -> V) -> List(V)
+    % zip_with: (List(T), List(U), T -> U -> V) -> List(V) - curried function parameter
     ZipWithType =
         {function_type,
             [
                 {list_type, TVar, undefined},
                 {list_type, UVar, undefined},
-                {function_type, [TVar, UVar], VVar}
+                {function_type, [TVar], {function_type, [UVar], VVar}}
             ],
             {list_type, VVar, undefined}},
 
-    % fold: (List(T), U, (T, U) -> U) -> U
+    % fold: (List(T), U, T -> U -> U) -> U - curried function parameter
     FoldType =
         {function_type,
             [
                 {list_type, TVar, undefined},
                 UVar,
-                {function_type, [TVar, UVar], UVar}
+                {function_type, [TVar], {function_type, [UVar], UVar}}
             ],
             UVar},
 
@@ -853,20 +854,6 @@ process_variant(Variant, TypeName, TypeParams, Env) ->
             throw({unsupported_variant_type, Variant})
     end.
 
-%% Create result type for constructor
-create_result_type(TypeName, []) ->
-    {primitive_type, TypeName};
-create_result_type(TypeName, TypeParams) ->
-    % Convert type parameters to proper type variables for the result type
-    ParamVars = [
-        case P of
-            #type_param{name = Name} when Name =/= undefined -> cure_types:new_type_var(Name);
-            Name when is_atom(Name) -> cure_types:new_type_var(Name);
-            _ -> cure_types:new_type_var()
-        end
-     || P <- TypeParams
-    ],
-    {dependent_type, TypeName, ParamVars}.
 
 %% Create result type for constructor using environment for type variable lookup
 create_result_type_with_env(TypeName, [], _Env) ->
@@ -940,6 +927,33 @@ check_expression(Expr, Env, ExpectedType) ->
                 details = {inference_failed, Reason}
             },
             error_result(Error)
+    end.
+
+%% Infer the type of an expression in the given environment (test compatibility).
+%%
+%% This is a compatibility function for tests that converts expression AST to
+%% tuples and calls the core type inference.
+%%
+%% Args:
+%% - Expr: Expression AST node to type check
+%% - Env: Type environment for lookups
+%%
+%% Returns:
+%% - {ok, Type}: Successful type inference with inferred type
+%% - {error, Reason}: Type inference failure
+%%
+%% Examples:
+%% Expr = #literal_expr{value = 42, location = undefined},
+%% Env = cure_typechecker:builtin_env(),
+%% {ok, Type} = cure_typechecker:infer_type(Expr, Env).
+%% Type should be {primitive_type, 'Int'}
+infer_type(Expr, Env) ->
+    case cure_types:infer_type(convert_expr_to_tuple(Expr), Env) of
+        {ok, InferenceResult4} ->
+            InferredType = element(2, InferenceResult4),
+            {ok, InferredType};
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 %% Built-in type environment
@@ -1174,7 +1188,7 @@ convert_type_with_env(#function_type{params = Params, return_type = ReturnType},
     ConvertedParams = [convert_type_with_env(P, Env) || P <- Params],
     ConvertedReturn = convert_type_with_env(ReturnType, Env),
     {function_type, ConvertedParams, ConvertedReturn};
-convert_type_with_env(#identifier_expr{name = Name}, Env) when
+convert_type_with_env(#identifier_expr{name = Name}, _Env) when
     Name =:= 'Float' orelse Name =:= 'Int' orelse Name =:= 'Bool' orelse
         Name =:= 'String' orelse Name =:= 'Unit'
 ->
@@ -1267,7 +1281,7 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                         ]),
                         Env
                 end;
-            #type_def{name = Name} ->
+            #type_def{name = _Name} ->
                 % Add type definitions to environment as well
                 try
                     case check_type_definition(Item, Env) of
@@ -1377,28 +1391,6 @@ extract_type_params_helper(#function_type{params = ParamTypes, return_type = Ret
         ParamTypes
     ),
     extract_type_params_helper(ReturnType, Env1);
-% Handle tuple-form function types (already converted from AST) - 4 elements with location
-extract_type_params_helper({function_type, ParamTypes, ReturnType, _Location}, Env) ->
-    % Handle function types in tuple form - extract type parameters from both parameters and return type
-    Env1 = lists:foldl(
-        fun(ParamType, AccEnv) ->
-            extract_type_params_helper(ParamType, AccEnv)
-        end,
-        Env,
-        ParamTypes
-    ),
-    extract_type_params_helper(ReturnType, Env1);
-% Handle tuple-form function types (already converted from AST) - 3 elements without location
-extract_type_params_helper({function_type, ParamTypes, ReturnType}, Env) ->
-    % Handle function types in tuple form - extract type parameters from both parameters and return type
-    Env1 = lists:foldl(
-        fun(ParamType, AccEnv) ->
-            extract_type_params_helper(ParamType, AccEnv)
-        end,
-        Env,
-        ParamTypes
-    ),
-    extract_type_params_helper(ReturnType, Env1);
 % Handle tuple-form primitive types with location
 extract_type_params_helper({primitive_type, Name, _Location}, Env) ->
     % Check if it's a generic type variable and add it
@@ -1449,28 +1441,6 @@ extract_type_params_helper_safe(#dependent_type{params = Params}, Env) ->
     );
 extract_type_params_helper_safe(#function_type{params = ParamTypes, return_type = ReturnType}, Env) ->
     % Handle function types - extract type parameters from both parameters and return type
-    Env1 = lists:foldl(
-        fun(ParamType, AccEnv) ->
-            extract_type_params_helper_safe(ParamType, AccEnv)
-        end,
-        Env,
-        ParamTypes
-    ),
-    extract_type_params_helper_safe(ReturnType, Env1);
-% Handle tuple-form function types (already converted from AST) - 4 elements with location
-extract_type_params_helper_safe({function_type, ParamTypes, ReturnType, _Location}, Env) ->
-    % Handle function types in tuple form - extract type parameters from both parameters and return type
-    Env1 = lists:foldl(
-        fun(ParamType, AccEnv) ->
-            extract_type_params_helper_safe(ParamType, AccEnv)
-        end,
-        Env,
-        ParamTypes
-    ),
-    extract_type_params_helper_safe(ReturnType, Env1);
-% Handle tuple-form function types (already converted from AST) - 3 elements without location
-extract_type_params_helper_safe({function_type, ParamTypes, ReturnType}, Env) ->
-    % Handle function types in tuple form - extract type parameters from both parameters and return type
     Env1 = lists:foldl(
         fun(ParamType, AccEnv) ->
             extract_type_params_helper_safe(ParamType, AccEnv)

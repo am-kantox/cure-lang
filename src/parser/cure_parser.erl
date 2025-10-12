@@ -763,23 +763,37 @@ parse_parameter(State) ->
     },
     {Param, State2}.
 
-%% Parse record definition: record Name do field: Type end
+%% Parse record definition: record Name(Type1, Type2, ...) do field: Type end
 parse_record_def(State) ->
     {_, State1} = expect(State, record),
     {NameToken, State2} = expect(State1, identifier),
     Name = binary_to_atom(get_token_value(NameToken), utf8),
-    {_, State3} = expect(State2, do),
+    
+    % Parse optional type parameters
+    {TypeParams, State3} = 
+        case match_token(State2, '(') of
+            true ->
+                {_, State2a} = expect(State2, '('),
+                {Params, State2b} = parse_type_parameters(State2a, []),
+                {_, State2c} = expect(State2b, ')'),
+                {Params, State2c};
+            false ->
+                {[], State2}
+        end,
+    
+    {_, State4} = expect(State3, do),
 
-    {Fields, State4} = parse_record_fields(State3, []),
-    {_, State5} = expect(State4, 'end'),
+    {Fields, State5} = parse_record_fields(State4, []),
+    {_, State6} = expect(State5, 'end'),
 
     Location = get_token_location(NameToken),
     Record = #record_def{
         name = Name,
+        type_params = TypeParams,
         fields = Fields,
         location = Location
     },
-    {Record, State5}.
+    {Record, State6}.
 
 %% Parse record fields
 parse_record_fields(State, Acc) ->
@@ -1539,38 +1553,52 @@ parse_type_parameter(State) ->
                     Name = binary_to_atom(get_token_value(IdToken), utf8),
                     Location = get_token_location(IdToken),
 
-                    % Check if this is a parameterized type (e.g., List(T) within another type)
-                    case match_token(State1, '(') of
+                    % Check if this is a type constraint (name: Type)
+                    case match_token(State1, ':') of
                         true ->
-                            % This is a parameterized type, parse it as such
-                            {_, State2} = expect(State1, '('),
-                            {Params, State3} = parse_type_parameters(State2, []),
-                            {_, State4} = expect(State3, ')'),
-
-                            Type = #dependent_type{
-                                name = Name,
-                                params = Params,
-                                location = Location
-                            },
+                            % This is a type constraint like 'rows: Nat'
+                            {_, State2} = expect(State1, ':'),
+                            {ConstraintType, State3} = parse_type(State2),
                             Param = #type_param{
-                                name = undefined,
-                                value = Type,
+                                name = Name,
+                                value = ConstraintType,
                                 location = Location
                             },
-                            {Param, State4};
+                            {Param, State3};
                         false ->
-                            % This is either a type variable or a simple type
-                            % Create as type variable (identifier expression)
-                            TypeVar = #identifier_expr{
-                                name = Name,
-                                location = Location
-                            },
-                            Param = #type_param{
-                                name = undefined,
-                                value = TypeVar,
-                                location = Location
-                            },
-                            {Param, State1}
+                            % Check if this is a parameterized type (e.g., List(T) within another type)
+                            case match_token(State1, '(') of
+                                true ->
+                                    % This is a parameterized type, parse it as such
+                                    {_, State2} = expect(State1, '('),
+                                    {Params, State3} = parse_type_parameters(State2, []),
+                                    {_, State4} = expect(State3, ')'),
+
+                                    Type = #dependent_type{
+                                        name = Name,
+                                        params = Params,
+                                        location = Location
+                                    },
+                                    Param = #type_param{
+                                        name = undefined,
+                                        value = Type,
+                                        location = Location
+                                    },
+                                    {Param, State4};
+                                false ->
+                                    % This is either a type variable or a simple type
+                                    % Create as type variable (identifier expression)
+                                    TypeVar = #identifier_expr{
+                                        name = Name,
+                                        location = Location
+                                    },
+                                    Param = #type_param{
+                                        name = undefined,
+                                        value = TypeVar,
+                                        location = Location
+                                    },
+                                    {Param, State1}
+                            end
                     end
             end;
         % Handle other cases by trying expression parsing for type parameters
@@ -3043,6 +3071,11 @@ is_end_of_body(State) ->
         'def' -> true;
         'defp' -> true;
         'def_erl' -> true;
+        'record' -> true;  % Record definitions end function body
+        'type' -> true;    % Type definitions end function body
+        'fsm' -> true;     % FSM definitions end function body
+        'import' -> true;  % Import statements end function body
+        'export' -> true;  % Export statements end function body
         _ -> false
     end.
 

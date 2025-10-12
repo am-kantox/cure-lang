@@ -143,14 +143,34 @@ zip_with([], _, _F) ->
 zip_with(_, [], _F) ->
     [];
 zip_with([X | Xs], [Y | Ys], F) ->
-    [F(X, Y) | zip_with(Xs, Ys, F)].
+    % Handle both curried and non-curried functions
+    Result = try
+                % Try curried application: F(X)(Y)
+                CurriedF = F(X),
+                CurriedF(Y)
+             catch
+                _:_ ->
+                % Fallback to direct application: F(X, Y)
+                F(X, Y)
+             end,
+    [Result | zip_with(Xs, Ys, F)].
 
 %% Fold function with different argument order for Cure compatibility
 %% fold(List, InitialValue, Function)
 fold([], Acc, _F) ->
     Acc;
 fold([H | T], Acc, F) ->
-    fold(T, F(H, Acc), F).
+    % Handle both curried and non-curried functions
+    NewAcc = try
+                % Try curried application: F(H)(Acc)
+                CurriedF = F(H),
+                CurriedF(Acc)
+             catch
+                _:_ ->
+                % Fallback to direct application: F(H, Acc)
+                F(H, Acc)
+             end,
+    fold(T, NewAcc, F).
 
 %% Map function over list
 map(_F, []) ->

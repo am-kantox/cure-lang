@@ -528,8 +528,11 @@ occurs_check_impl(Id, {function_type, Params, Return}) ->
         occurs_check_impl(Id, Return);
 occurs_check_impl(Id, {dependent_type, _, Params}) ->
     lists:any(
-        fun(#type_param{value = V}) ->
-            occurs_check_impl(Id, V)
+        fun(Param) ->
+            case Param of
+                #type_param{value = V} -> occurs_check_impl(Id, V);
+                _ -> occurs_check_impl(Id, Param)
+            end
         end,
         Params
     );
@@ -550,6 +553,12 @@ occurs_check_impl(Id, {liquid_type, _, BaseType, _Constraints, _Context}) ->
     occurs_check_impl(Id, BaseType);
 occurs_check_impl(_Id, undefined) ->
     % undefined contains no type variables
+    false;
+occurs_check_impl(_Id, {literal_expr, _, _}) ->
+    % literal expressions contain no type variables
+    false;
+occurs_check_impl(_Id, {identifier_expr, _, _}) ->
+    % identifier expressions contain no type variables (in this context)
     false;
 occurs_check_impl(_, _) ->
     false.
@@ -1013,6 +1022,53 @@ unify_lengths_strict(Len1, Len2, Subst) ->
                 ConcreteLen, TypeVar
             ]),
             unify_impl(ConcreteLen, TypeVar, Subst);
+        % Handle primitive type variables (e.g., {primitive_type, n})
+        {{primitive_type, VarName}, ConcreteLen} when is_atom(VarName) ->
+            case is_generic_type_variable_name(VarName) of
+                true ->
+                    io:format("DEBUG: Unifying primitive type variable ~p with concrete length ~p~n", [
+                        VarName, ConcreteLen
+                    ]),
+                    % Convert primitive type variable to proper type var and unify
+                    TypeVar = #type_var{id = VarName, name = VarName},
+                    unify_impl(TypeVar, ConcreteLen, Subst);
+                false ->
+                    % Not a type variable, fall through to concrete comparison
+                    case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
+                        {{ok, N}, {ok, N}} when is_integer(N) ->
+                            {ok, Subst};
+                        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
+                            {error, {length_mismatch, N1, N2}};
+                        _ ->
+                            case expr_equal(Len1, Len2) of
+                                true -> {ok, Subst};
+                                false -> {error, {vector_dimension_mismatch, Len1, Len2}}
+                            end
+                    end
+            end;
+        {ConcreteLen, {primitive_type, VarName}} when is_atom(VarName) ->
+            case is_generic_type_variable_name(VarName) of
+                true ->
+                    io:format("DEBUG: Unifying concrete length ~p with primitive type variable ~p~n", [
+                        ConcreteLen, VarName
+                    ]),
+                    % Convert primitive type variable to proper type var and unify
+                    TypeVar = #type_var{id = VarName, name = VarName},
+                    unify_impl(ConcreteLen, TypeVar, Subst);
+                false ->
+                    % Not a type variable, fall through to concrete comparison
+                    case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
+                        {{ok, N}, {ok, N}} when is_integer(N) ->
+                            {ok, Subst};
+                        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
+                            {error, {length_mismatch, N1, N2}};
+                        _ ->
+                            case expr_equal(Len1, Len2) of
+                                true -> {ok, Subst};
+                                false -> {error, {vector_dimension_mismatch, Len1, Len2}}
+                            end
+                    end
+            end;
         _ ->
             % Both are concrete expressions - evaluate them
             case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
@@ -1177,12 +1233,6 @@ apply_substitution(#type_var{id = Id}, Subst) ->
         undefined -> #type_var{id = Id};
         Type -> apply_substitution(Type, Subst)
     end;
-% Handle type variable tuples (legacy format)
-apply_substitution({type_var, Id, Name, Constraints}, Subst) ->
-    case maps:get(Id, Subst, undefined) of
-        undefined -> {type_var, Id, Name, Constraints};
-        Type -> apply_substitution(Type, Subst)
-    end;
 apply_substitution({function_type, Params, Return}, Subst) ->
     {function_type, [apply_substitution(P, Subst) || P <- Params],
         apply_substitution(Return, Subst)};
@@ -1193,7 +1243,7 @@ apply_substitution({list_type, ElemType, LenExpr}, Subst) ->
             _ -> apply_substitution_to_expr(LenExpr, Subst)
         end};
 apply_substitution({dependent_type, Name, Params}, Subst) ->
-    {dependent_type, Name, [apply_substitution(P, Subst) || P <- Params]};
+    {dependent_type, Name, [apply_substitution_to_param(P, Subst) || P <- Params]};
 apply_substitution({refined_type, BaseType, Predicate}, Subst) ->
     {refined_type, apply_substitution(BaseType, Subst), Predicate};
 apply_substitution({gadt_constructor, Name, Args, ReturnType}, Subst) ->
@@ -1216,6 +1266,27 @@ apply_substitution(Atom, Subst) when is_atom(Atom) ->
     end;
 apply_substitution(Type, _Subst) ->
     Type.
+
+%% Apply substitution to type parameters (handles types and expressions)
+apply_substitution_to_param(Param, Subst) ->
+    case Param of
+        % Type parameter record
+        #type_param{name = Name, value = Value} ->
+            #type_param{name = Name, value = apply_substitution_to_param(Value, Subst)};
+        % Type expressions
+        {primitive_type, _} -> apply_substitution(Param, Subst);
+        {dependent_type, _, _} -> apply_substitution(Param, Subst);
+        {function_type, _, _} -> apply_substitution(Param, Subst);
+        {list_type, _, _} -> apply_substitution(Param, Subst);
+        #type_var{} -> apply_substitution(Param, Subst);
+        % Literal expressions - pass through unchanged
+        {literal_expr, _, _} -> Param;
+        {identifier_expr, _, _} -> Param;
+        {binary_op_expr, _, _, _, _} -> Param;
+        % Other expressions
+        _ when is_atom(Param) -> apply_substitution(Param, Subst);
+        _ -> Param
+    end.
 
 %% Apply substitution to expressions (simplified)
 apply_substitution_to_expr(Expr, _Subst) ->
@@ -1588,8 +1659,8 @@ update_param_value(_Param, NewValue) ->
 is_generic_type_variable_name(Name) ->
     % Check if it's a common generic type variable name pattern
     case atom_to_list(Name) of
-        % Single uppercase letter: T, E, U, etc.
-        [C] when C >= $A, C =< $Z -> true;
+        % Single letter: T, E, U, n, etc.
+        [C] when (C >= $A andalso C =< $Z) orelse (C >= $a andalso C =< $z) -> true;
         % Type variables like T1, T2, etc.
         "T" ++ _ -> true;
         % Error type variables
@@ -1604,6 +1675,10 @@ is_generic_type_variable_name(Name) ->
         "C" ++ _ -> true;
         % Generic F variables (for function types)
         "F" ++ _ -> true;
+        % Common lowercase type variables
+        "n" ++ _ -> true;
+        "m" ++ _ -> true;
+        "k" ++ _ -> true;
         _ -> false
     end.
 
@@ -1611,12 +1686,50 @@ is_generic_type_variable_name(Name) ->
 infer_curried_application(FuncType, [], _Location, Constraints) ->
     % No arguments - return function as-is
     {ok, FuncType, Constraints};
-infer_curried_application(FuncType, [ArgType | RestArgs], Location, Constraints) ->
+infer_curried_application(FuncType, ArgTypes, Location, Constraints) ->
+    % Try to apply all arguments at once first (for multi-parameter functions)
+    case apply_all_args_at_once(FuncType, ArgTypes, Location) of
+        {ok, ResultType, NewConstraints} ->
+            {ok, ResultType, Constraints ++ NewConstraints};
+        {error, _Reason} ->
+            % Fall back to curried application
+            apply_args_curried(FuncType, ArgTypes, Location, Constraints)
+    end.
+
+%% Apply all arguments to a multi-parameter function at once
+apply_all_args_at_once(FuncType, ArgTypes, Location) ->
+    case instantiate_function_type(FuncType) of
+        {ok, {function_type, ParamTypes, ReturnType}, InstConstraints} when
+            length(ParamTypes) =:= length(ArgTypes)
+        ->
+            % Multi-parameter function with matching arity - apply all args
+            Constraints = lists:zipwith(
+                fun(ParamType, ArgType) ->
+                    #type_constraint{
+                        left = ParamType,
+                        op = '=',
+                        right = ArgType,
+                        location = Location
+                    }
+                end,
+                ParamTypes,
+                ArgTypes
+            ),
+            {ok, ReturnType, InstConstraints ++ Constraints};
+        _ ->
+            % Not a matching multi-parameter function
+            {error, not_matching_multi_param}
+    end.
+
+%% Apply arguments one by one (curried style)
+apply_args_curried(FuncType, [], _Location, Constraints) ->
+    {ok, FuncType, Constraints};
+apply_args_curried(FuncType, [ArgType | RestArgs], Location, Constraints) ->
     % Apply function to first argument
     case apply_function_to_arg(FuncType, ArgType, Location) of
         {ok, ResultType, NewConstraints} ->
             % Recursively apply to remaining arguments
-            infer_curried_application(
+            apply_args_curried(
                 ResultType, RestArgs, Location, Constraints ++ NewConstraints
             );
         {error, Reason} ->
@@ -1650,7 +1763,7 @@ apply_function_to_arg(FuncType, ArgType, Location) ->
         {ok, {function_type, [], _ReturnType}, _InstConstraints} ->
             % Zero parameter function - cannot apply argument
             {error, {cannot_apply_to_nullary_function, FuncType, ArgType}};
-        {error, Reason} ->
+        {error, _Reason} ->
             % Not a function type - create expected function type and unify
             ReturnType = new_type_var(),
             ExpectedFuncType = {function_type, [ArgType], ReturnType},
@@ -1663,20 +1776,6 @@ apply_function_to_arg(FuncType, ArgType, Location) ->
             {ok, ReturnType, [UnifyConstraint]}
     end.
 
-%% Create constraints between instantiated parameter types and argument types
-create_param_constraints([], [], _Location) ->
-    [];
-create_param_constraints([ParamType | RestParams], [ArgType | RestArgs], Location) ->
-    Constraint = #type_constraint{
-        left = ParamType,
-        op = '=',
-        right = ArgType,
-        location = Location
-    },
-    [Constraint | create_param_constraints(RestParams, RestArgs, Location)];
-create_param_constraints(_, _, _) ->
-    % Arity mismatch - let unification handle this
-    [].
 
 infer_binary_op('+', LeftType, RightType, Location, Constraints) ->
     ResultType = new_type_var(),
@@ -1922,7 +2021,7 @@ infer_pattern_type({identifier_pattern, Name, _Location}, MatchType, Env) ->
 infer_pattern_type({wildcard_pattern, _Location}, _MatchType, Env) ->
     % Wildcard doesn't bind any variables
     {ok, Env, []};
-infer_pattern_type({constructor_pattern, ConstructorName, Args, _Location}, MatchType, Env) ->
+infer_pattern_type({constructor_pattern, ConstructorName, Args, _Location}, _MatchType, Env) ->
     % Handle constructor patterns like Ok(value), Error(err), Some(x), None
     case Args of
         undefined ->
@@ -2526,13 +2625,23 @@ extract_vector_dimensions(_Type) ->
 %% Enhanced occurs checking for dependent types
 check_dependent_occurs(#type_var{id = Id}, {dependent_type, _Name, Params}) ->
     lists:any(
-        fun(#type_param{value = Value}) ->
-            occurs_check_impl(Id, Value) orelse
-                case Value of
-                    % Direct match
-                    #type_var{id = Id} -> true;
-                    _ -> false
-                end
+        fun(Param) ->
+            case Param of
+                #type_param{value = Value} ->
+                    occurs_check_impl(Id, Value) orelse
+                        case Value of
+                            % Direct match
+                            #type_var{id = Id} -> true;
+                            _ -> false
+                        end;
+                _ ->
+                    % Handle raw parameters (no type_param wrapper)
+                    occurs_check_impl(Id, Param) orelse
+                        case Param of
+                            #type_var{id = Id} -> true;
+                            _ -> false
+                        end
+            end
         end,
         Params
     );

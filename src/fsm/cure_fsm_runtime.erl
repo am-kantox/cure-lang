@@ -101,14 +101,17 @@ The FSM runtime integrates with:
     % FSM lifecycle
     start_fsm/2, start_fsm/3,
     stop_fsm/1,
+    spawn_fsm/1,  % Test compatibility
 
     % FSM operations
     send_event/2, send_event/3,
     get_state/1,
+    get_current_state/1,  % Test compatibility
     get_fsm_info/1,
 
     % FSM registration and compilation
     register_fsm_type/2,
+    register_fsm_type/4,  % Test compatibility
     get_registered_fsm_types/0,
     unregister_fsm_type/1,
     lookup_fsm_definition/1,
@@ -377,6 +380,79 @@ AvgTime = Stats#fsm_perf_stats.avg_event_time.
 """.
 get_performance_stats(FSMPid) when is_pid(FSMPid) ->
     gen_server:call(FSMPid, get_perf_stats).
+
+%% ============================================================================
+%% Test Compatibility Functions
+%% ============================================================================
+
+%% Spawn a new FSM instance (test compatibility function).
+%%
+%% This is a compatibility function for tests that creates a simple FSM
+%% instance with minimal configuration.
+%%
+%% Args:
+%% - FSMType: The FSM type name
+%%
+%% Returns:
+%% - FSM process PID or error
+%%
+%% Example:
+%% FSM = cure_fsm_runtime:spawn_fsm(test_fsm).
+spawn_fsm(FSMType) ->
+    case start_fsm(FSMType, #{}) of
+        {ok, Pid} -> Pid;
+        Error -> Error
+    end.
+
+%% Get current state (test compatibility function).
+%%
+%% This is an alias for get_state/1 to match test expectations.
+%%
+%% Args:
+%% - FSMPid: FSM process PID
+%%
+%% Returns:
+%% - Current state atom
+%%
+%% Example:
+%% State = cure_fsm_runtime:get_current_state(FSMPid).
+get_current_state(FSMPid) ->
+    case get_state(FSMPid) of
+        {ok, State} -> State;
+        Error -> Error
+    end.
+
+%% Register FSM type with states, initial state, and transitions (test compatibility).
+%%
+%% This is a compatibility function for tests that creates a simple FSM definition
+%% from the provided parameters.
+%%
+%% Args:
+%% - FSMType: FSM type name
+%% - States: List of state names
+%% - InitialState: Initial state name
+%% - Transitions: List of transition tuples {FromState, Event, ToState, Guard, Action}
+%%
+%% Returns:
+%% - ok: FSM type registered successfully
+%%
+%% Example:
+%% Transitions = [{start, test_event, finish, undefined, undefined}],
+%% ok = cure_fsm_runtime:register_fsm_type(test_fsm, [start, finish], start, Transitions).
+register_fsm_type(FSMType, States, InitialState, Transitions) ->
+    % Convert simple transition list to FSM definition format
+    StateDefs = create_state_defs_from_transitions(States, Transitions),
+    
+    FSMDef = #fsm_def{
+        name = FSMType,
+        states = States,
+        initial = InitialState,
+        state_defs = StateDefs,
+        location = undefined
+    },
+    
+    CompiledDef = compile_fsm_definition(FSMDef),
+    register_fsm_type(FSMType, CompiledDef).
 
 %% ============================================================================
 %% Registry Functions
@@ -1246,3 +1322,40 @@ find_timeout_in_transitions([#transition{event = {timeout, Timeout}, target = Ta
     {ok, {Timeout, Target}};
 find_timeout_in_transitions([_ | Rest]) ->
     find_timeout_in_transitions(Rest).
+
+%% Create state definitions from simple transition list (for test compatibility)
+create_state_defs_from_transitions(States, Transitions) ->
+    % Group transitions by source state
+    StateTransitionsMap = lists:foldl(
+        fun({FromState, Event, ToState, Guard, Action}, Acc) ->
+            Transition = #transition{
+                event = Event,
+                target = ToState,
+                guard = Guard,
+                action = Action,
+                location = undefined
+            },
+            
+            case maps:find(FromState, Acc) of
+                {ok, ExistingTransitions} ->
+                    maps:put(FromState, [Transition | ExistingTransitions], Acc);
+                error ->
+                    maps:put(FromState, [Transition], Acc)
+            end
+        end,
+        #{},
+        Transitions
+    ),
+    
+    % Create state definitions for all states
+    lists:map(
+        fun(StateName) ->
+            StateTransitions = maps:get(StateName, StateTransitionsMap, []),
+            #state_def{
+                name = StateName,
+                transitions = lists:reverse(StateTransitions),
+                location = undefined
+            }
+        end,
+        States
+    ).

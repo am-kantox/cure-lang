@@ -57,6 +57,7 @@
 %% Record definition
 -record(record_def, {
     name,
+    type_params,  % optional type parameters [param1, param2, ...]
     fields,
     location
 }).

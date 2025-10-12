@@ -45,7 +45,7 @@ All tokenization errors include precise location information:
 
 """.
 
--export([tokenize/1, tokenize_file/1, token_type/1]).
+-export([tokenize/1, tokenize_file/1, token_type/1, scan/1]).
 
 %% Token definitions
 -record(token, {
@@ -182,6 +182,53 @@ token_type(KeywordToken).
 """.
 -spec token_type(#token{}) -> atom().
 token_type(#token{type = Type}) -> Type.
+
+%% Scan source code and return tokens in simple tuple format for parser compatibility.
+%%
+%% This is a compatibility function that converts source code to simple token tuples
+%% that match the format expected by the parser and existing tests.
+%%
+%% Args:
+%% - Source: String or binary containing source code to scan
+%%
+%% Returns:
+%% - {ok, Tokens}: List of token tuples in format {Type, Line, Value} or {Type, Line}
+%% - {error, Reason}: Error information
+%%
+%% Examples:
+%% scan("42"). -> {ok, [{integer, 1, 42}, {eof, 1}]}
+%% scan("def add"). -> {ok, [{def, 1}, {identifier, 1, "add"}, {eof, 1}]}
+-spec scan(string() | binary()) -> {ok, [tuple()]} | {error, term()}.
+scan(Source) when is_list(Source) ->
+    scan(list_to_binary(Source));
+scan(Source) when is_binary(Source) ->
+    case tokenize(Source) of
+        {ok, TokenRecords} ->
+            SimpleTuples = [convert_token_to_tuple(Token) || Token <- TokenRecords],
+            % Add EOF token at the end
+            LastLine = case SimpleTuples of
+                [] -> 1;
+                _ -> 
+                    LastToken = lists:last(SimpleTuples),
+                    element(2, LastToken)
+            end,
+            {ok, SimpleTuples ++ [{eof, LastLine}]};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Convert token record to simple tuple format
+convert_token_to_tuple(#token{type = number, value = Value, line = Line}) ->
+    {integer, Line, Value};
+convert_token_to_tuple(#token{type = string, value = Value, line = Line}) ->
+    {string, Line, Value};
+convert_token_to_tuple(#token{type = identifier, value = Value, line = Line}) ->
+    {identifier, Line, binary_to_list(Value)};
+convert_token_to_tuple(#token{type = atom, value = Value, line = Line}) ->
+    {atom, Line, Value};
+% Keywords and operators - just type and line
+convert_token_to_tuple(#token{type = Type, line = Line}) ->
+    {Type, Line}.
 
 %% Internal functions
 
