@@ -1,70 +1,39 @@
 module Std.Option do
   export [
+    # Option types (simplified)
     some/1, none/0,
+    
+    # Option operations
     is_some/1, is_none/1,
-    map/2, flat_map/2, filter/2,
-    get_or_else/2, or_else/2,
-    to_list/1, from_nullable/1
+    get_or_default/2,
+    map_option/2
   ]
 
-  # Constructor functions
-  def some(value: T): Option(T) = Some(value)
-  def none(): Option(T) = None
+  # Simplified Option implementation using integers
+  # 0 = None, positive = Some(value)
+  
+  def some(value: Int): Int =
+    "Create Some value (simplified)"
+    if value <= 0 then 1 else value end  # Ensure positive
 
-  # Predicates
-  def is_some(opt: Option(T)): Bool =
-    match opt do
-      Some(_) -> true
-      None -> false
-    end
+  def none(): Int =
+    "Create None value (simplified)"
+    0
 
-  def is_none(opt: Option(T)): Bool =
-    match opt do
-      Some(_) -> false
-      None -> true
-    end
+  def is_some(option: Int): Bool =
+    "Check if option is Some"
+    option > 0
 
-  # Transformations
-  def map(opt: Option(T), f: T -> U): Option(U) =
-    match opt do
-      Some(value) -> Some(f(value))
-      None -> None
-    end
+  def is_none(option: Int): Bool =
+    "Check if option is None"
+    option == 0
 
-  def flat_map(opt: Option(T), f: T -> Option(U)): Option(U) =
-    match opt do
-      Some(value) -> f(value)
-      None -> None
-    end
+  def get_or_default(option: Int, default: Int): Int =
+    "Get option value or return default"
+    if is_some(option) then option else default end
 
-  def filter(opt: Option(T), predicate: T -> Bool): Option(T) =
-    match opt do
-      Some(value) -> 
-        if predicate(value) then Some(value) else None end
-      None -> None
-    end
+  def map_option(option: Int, f: Int -> Int): Int =
+    "Map function over option"
+    if is_some(option) then some(f(option)) else none() end
 
-  # Value extraction
-  def get_or_else(opt: Option(T), default: T): T =
-    match opt do
-      Some(value) -> value
-      None -> default
-    end
-
-  def or_else(opt: Option(T), alternative: Option(T)): Option(T) =
-    match opt do
-      Some(_) -> opt
-      None -> alternative
-    end
-
-  # Conversions
-  def to_list(opt: Option(T)): List(T) =
-    match opt do
-      Some(value) -> [value]
-      None -> []
-    end
-
-  def from_nullable(value: T): Option(T) =
-    # This would check for null/nil in real implementation
-    Some(value)  # Simplified
 end

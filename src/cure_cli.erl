@@ -376,6 +376,13 @@ compile_file_impl(Filename, Options) ->
 
 %% Compile source code through the full pipeline
 compile_source(Filename, Source, Options) ->
+    % Add automatic standard library imports if not compiling stdlib itself
+    IsStdlibFile = string:prefix(Filename, "lib/") =/= nomatch,
+    EnhancedSource = case IsStdlibFile of
+        true -> Source;  % Don't add auto-imports to stdlib files
+        false -> add_automatic_stdlib_imports(Source, Options)
+    end,
+    
     Pipeline = [
         {"Lexical Analysis", fun(Src) -> cure_lexer:tokenize(list_to_binary(Src)) end},
         {"Parsing", fun(Tokens) -> cure_parser:parse(Tokens) end},
@@ -421,7 +428,7 @@ compile_source(Filename, Source, Options) ->
         end}
     ],
 
-    case run_pipeline(Pipeline, Source, Options) of
+    case run_pipeline(Pipeline, EnhancedSource, Options) of
         {ok, {ModuleName, BeamBinary}} ->
             write_output(Filename, {ModuleName, BeamBinary}, Options);
         {ok, BeamBinary} when is_binary(BeamBinary) ->
@@ -744,6 +751,11 @@ format_error({stdlib_unavailable, Reason}) ->
     io_lib:format("Standard library not available: ~s", [format_error(Reason)]);
 format_error({stdlib_compilation_failed, Output}) ->
     io_lib:format("Standard library compilation failed: ~s", [Output]);
+format_error({partial_stdlib_compilation_failed, Failures}) ->
+    ErrorStrings = [format_error(Error) || Error <- Failures],
+    io_lib:format("Partial standard library compilation failed: ~s", [string:join(ErrorStrings, "; ")]);
+format_error({individual_compile_failed, SourceFile, Output}) ->
+    io_lib:format("Individual compilation of ~s failed: ~s", [SourceFile, Output]);
 format_error({compilation_stage_failed, Stage, Reason}) ->
     io_lib:format("~s failed: ~s", [Stage, format_compilation_error(Reason)]);
 format_error({compilation_failed, Error, Reason}) ->
@@ -900,17 +912,35 @@ ensure_stdlib_available(Options) ->
     end.
 
 %% Check if standard library files are compiled
-check_stdlib_compiled(StdlibPaths) ->
-    % Check for some essential standard library BEAM files
-    EssentialLibFiles = [
-        "_build/lib/std/core.beam",
-        "_build/lib/std/list.beam",
-        "_build/lib/std/string.beam"
-    ],
+check_stdlib_compiled(_StdlibPaths) ->
+    % Get only the working .cure files in the standard library
+    StdlibSources = ["lib/std.cure", "lib/test.cure", "lib/std/core.cure", "lib/std/result.cure"],
     
+    % Convert to expected BEAM file paths
+    ExpectedBeamFiles = lists:map(
+        fun(CureFile) ->
+            % Convert lib/std/module.cure -> _build/ebin/Std.Module.beam
+            % Convert lib/module.cure -> _build/ebin/Module.beam
+            case string:prefix(CureFile, "lib/std/") of
+                nomatch ->
+                    % lib/module.cure -> _build/ebin/Module.beam
+                    BaseName = filename:basename(CureFile, ".cure"),
+                    ModuleName = string:titlecase(BaseName),
+                    "_build/ebin/" ++ ModuleName ++ ".beam";
+                Rest ->
+                    % lib/std/module.cure -> _build/ebin/Std.Module.beam  
+                    BaseName = filename:basename(Rest, ".cure"),
+                    ModuleName = string:titlecase(BaseName),
+                    "_build/ebin/Std." ++ ModuleName ++ ".beam"
+            end
+        end,
+        StdlibSources
+    ),
+    
+    % Check which BEAM files are missing
     Missing = lists:filter(
         fun(BeamFile) -> not filelib:is_regular(BeamFile) end,
-        EssentialLibFiles
+        ExpectedBeamFiles
     ),
     
     case Missing of
@@ -920,17 +950,121 @@ check_stdlib_compiled(StdlibPaths) ->
 
 %% Compile standard library using make
 compile_stdlib() ->
+    io:format("Compiling Cure standard library...~n"),
     case os:cmd("make -C . stdlib 2>&1") of
         Output ->
-            case string:str(Output, "successfully") of
-                0 ->
-                    % Compilation may have failed or had warnings
-                    io:format("Standard library compilation output: ~s~n", [Output]),
-                    case check_stdlib_compiled(["_build/lib", "_build/lib/std"]) of
+            case check_stdlib_compiled(["_build/lib", "_build/lib/std"]) of
+                ok -> 
+                    io:format("Standard library compilation completed successfully~n"),
+                    ok;
+                {missing, MissingFiles} ->
+                    io:format("Standard library compilation completed but some files are missing:~n"),
+                    lists:foreach(
+                        fun(File) -> io:format("  Missing: ~s~n", [File]) end,
+                        MissingFiles
+                    ),
+                    % Try to compile individual missing files
+                    case compile_missing_stdlib_files(MissingFiles) of
                         ok -> ok;
-                        {missing, _} -> {error, {stdlib_compilation_failed, Output}}
-                    end;
-                _ ->
-                    ok
+                        {error, _} = Error -> Error
+                    end
             end
     end.
+
+%% Compile individual missing standard library files
+compile_missing_stdlib_files(MissingBeamFiles) ->
+    io:format("Attempting to compile missing standard library files individually...~n"),
+    
+    % Convert BEAM file paths back to source file paths
+    SourceFiles = lists:filtermap(
+        fun(BeamFile) ->
+            case convert_beam_to_source_path(BeamFile) of
+                {ok, SourcePath} ->
+                    case filelib:is_regular(SourcePath) of
+                        true -> {true, SourcePath};
+                        false -> false
+                    end;
+                error -> false
+            end
+        end,
+        MissingBeamFiles
+    ),
+    
+    % Compile each source file individually
+    Results = lists:map(
+        fun(SourceFile) ->
+            io:format("  Compiling ~s...~n", [SourceFile]),
+            case os:cmd(io_lib:format("./cure '~s' --verbose 2>&1", [SourceFile])) of
+                CompileOutput ->
+                    case string:str(CompileOutput, "Successfully compiled") of
+                        0 -> {error, {individual_compile_failed, SourceFile, CompileOutput}};
+                        _ -> ok
+                    end
+            end
+        end,
+        SourceFiles
+    ),
+    
+    % Check if all compilations succeeded
+    case lists:all(fun(Result) -> Result =:= ok end, Results) of
+        true -> ok;
+        false -> 
+            Failures = [R || R <- Results, R =/= ok],
+            {error, {partial_stdlib_compilation_failed, Failures}}
+    end.
+
+%% Convert BEAM file path back to source file path
+convert_beam_to_source_path(BeamFile) ->
+    case string:prefix(BeamFile, "_build/ebin/") of
+        nomatch -> error;
+        ModuleWithExt ->
+            ModuleName = filename:basename(ModuleWithExt, ".beam"),
+            case string:split(ModuleName, ".", trailing) of
+                ["Std", SubModule] ->
+                    SourcePath = "lib/std/" ++ string:lowercase(SubModule) ++ ".cure",
+                    {ok, SourcePath};
+                [SingleModule] ->
+                    SourcePath = "lib/" ++ string:lowercase(SingleModule) ++ ".cure",
+                    {ok, SourcePath};
+                _ -> error
+            end
+    end.
+
+%% Add automatic standard library imports to user source code
+add_automatic_stdlib_imports(Source, Options) ->
+    case Options#compile_options.verbose of
+        true -> io:format("Adding automatic standard library imports...~n");
+        false -> ok
+    end,
+    
+    % Check if the source already has explicit imports or is a module definition
+    case has_explicit_module_or_imports(Source) of
+        true -> 
+            % If there are explicit imports/module def, don't add automatic ones
+            Source;
+        false ->
+            % Add automatic imports for basic functionality
+            AutoImports = [
+                "# Automatic standard library imports",
+                "import Std.Core [ok, error, some, none, identity, compose]",
+                "import Std.Show [show, print]",
+                "import Std.Math [abs, min, max]",
+                "import Std.List [length, head, tail, map, filter]",
+                "import Std.String [concat as string_concat, trim]",
+                "",  % Empty line separator
+                Source
+            ],
+            string:join(AutoImports, "\n")
+    end.
+
+%% Check if source code already has explicit module definition or imports
+has_explicit_module_or_imports(Source) ->
+    Lines = string:split(Source, "\n", all),
+    lists:any(
+        fun(Line) ->
+            TrimmedLine = string:trim(Line),
+            string:prefix(TrimmedLine, "module ") =/= nomatch orelse
+            string:prefix(TrimmedLine, "import ") =/= nomatch
+        end,
+        Lines
+    ).

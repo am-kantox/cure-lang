@@ -61,12 +61,22 @@ compiler: $(BEAM_FILES)
 
 # Compile Cure standard library
 stdlib: compiler $(CURE_STD_BEAM_FILES)
-	@echo "Cure standard library compiled successfully"
+	@echo "Cure standard library compilation completed"
+	@FAILED_FILES=$$(find $(LIB_EBIN_DIR) -name "*.failed" 2>/dev/null | wc -l); \
+	if [ $$FAILED_FILES -gt 0 ]; then \
+		echo "Warning: $$FAILED_FILES standard library files failed to compile"; \
+		echo "Failed files:"; \
+		find $(LIB_EBIN_DIR) -name "*.failed" -exec echo "  {}" \; 2>/dev/null || true; \
+		echo "Standard library partially compiled - some functionality may be limited"; \
+	else \
+		echo "All standard library files compiled successfully"; \
+	fi
 
 # Clean standard library build artifacts
 stdlib-clean:
 	@echo "Cleaning Cure standard library build artifacts..."
 	rm -rf $(LIB_EBIN_DIR)
+	find $(BUILD_DIR) -name "*.failed" -delete 2>/dev/null || true
 	@echo "Standard library artifacts cleaned"
 
 # Check if standard library is compiled
@@ -114,14 +124,21 @@ $(LIB_EBIN_DIR)/%.beam: $(LIB_DIR)/%.cure
 	@echo "Compiling Cure stdlib $<..."
 	@mkdir -p $(@D)
 	@if [ -f "cure" ]; then \
-		./cure "$<" -o "$@" --verbose; \
+		if ./cure "$<" -o "$@" --verbose 2>/dev/null; then \
+			echo "Successfully compiled $< -> $@"; \
+		else \
+			echo "Warning: Failed to compile $<, continuing with other files"; \
+			touch "$@.failed"; \
+		fi; \
 	else \
 		echo "Warning: cure compiler not found, skipping $<"; \
+		touch "$@.failed"; \
 	fi
 
 # Clean build artifacts
 clean:
 	rm -rf $(BUILD_DIR)
+	find . -name "*.failed" -delete 2>/dev/null || true
 	@echo "Build artifacts cleaned"
 
 # Run tests

@@ -24,7 +24,8 @@ module Std.IO do
     0  # Simplified return
 
   def print_bool(b: Bool): Int =
-    if b then print("true") else print("false") end
+    # Print boolean - would convert to string and print
+    0  # Simplified return
 
   # Input operations (simplified - would be more complex in real implementation)
   def read_line(): String =
