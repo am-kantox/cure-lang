@@ -2992,12 +2992,14 @@ parse_constructor_expression(State) ->
             },
             {CallExpr, State4};
         false ->
-            % Constructor without argument: None
-            Expr = #identifier_expr{
-                name = Name,
+            % Constructor without argument: None -> treat as None() function call
+            ConstructorExpr = #identifier_expr{name = Name, location = Location},
+            CallExpr = #function_call_expr{
+                function = ConstructorExpr,
+                args = [],
                 location = Location
             },
-            {Expr, State1}
+            {CallExpr, State1}
     end.
 
 %% Parse constructor expression from an atom token (for quoted atoms like 'Some')
@@ -3018,12 +3020,14 @@ parse_atom_constructor_expression(State, ConstructorName, Location) ->
             },
             {CallExpr, State3};
         false ->
-            % Constructor without argument: 'None'
-            Expr = #identifier_expr{
-                name = ConstructorName,
+            % Constructor without argument: 'None' -> treat as 'None'() function call
+            ConstructorExpr = #identifier_expr{name = ConstructorName, location = Location},
+            CallExpr = #function_call_expr{
+                function = ConstructorExpr,
+                args = [],
                 location = Location
             },
-            {Expr, State}
+            {CallExpr, State}
     end.
 
 %% Parse function body (can be a sequence of statements)

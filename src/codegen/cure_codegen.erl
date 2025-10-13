@@ -2348,6 +2348,16 @@ convert_pattern_to_erlang_form(#tuple_pattern{elements = Elements, location = Lo
     Line = get_line_from_location(Location),
     ErlangElements = [convert_pattern_to_erlang_form(Element, Location) || Element <- Elements],
     {tuple, Line, ErlangElements};
+convert_pattern_to_erlang_form(
+    #constructor_pattern{name = ConstructorName, args = Args, location = Location}, _
+) ->
+    Line = get_line_from_location(Location),
+    convert_constructor_pattern_to_erlang_form(ConstructorName, Args, Line, Location);
+convert_pattern_to_erlang_form(
+    #record_pattern{name = RecordName, fields = Fields, location = Location}, _
+) ->
+    Line = get_line_from_location(Location),
+    convert_record_pattern_to_erlang_form(RecordName, Fields, Line, Location);
 convert_pattern_to_erlang_form(_Pattern, Location) ->
     % Fallback for unsupported patterns
     {var, get_line_from_location(Location), '_'}.
@@ -2379,6 +2389,68 @@ convert_cons_pattern_to_erlang([HeadElement | RestElements], Tail, Line) ->
     HeadPattern = convert_pattern_to_erlang_form(HeadElement, {location, Line, 1, undefined}),
     TailPattern = convert_cons_pattern_to_erlang(RestElements, Tail, Line),
     {cons, Line, HeadPattern, TailPattern}.
+
+%% Convert constructor patterns to Erlang tuple patterns
+%% None -> {none}, Some(value) -> {some, Value}, Ok(value) -> {ok, Value}, etc.
+convert_constructor_pattern_to_erlang_form(ConstructorName, Args, Line, Location) ->
+    % Convert constructor name to lowercase atom for Erlang representation
+    ErlangConstructorName = normalize_constructor_name(ConstructorName),
+    ConstructorAtom = {atom, Line, ErlangConstructorName},
+
+    case Args of
+        undefined ->
+            % Constructor with no arguments: None -> {none}
+            {tuple, Line, [ConstructorAtom]};
+        [] ->
+            % Constructor with empty argument list: None() -> {none}
+            {tuple, Line, [ConstructorAtom]};
+        [SingleArg] ->
+            % Constructor with single argument: Some(value) -> {some, Value}
+            ArgPattern = convert_pattern_to_erlang_form(SingleArg, Location),
+            {tuple, Line, [ConstructorAtom, ArgPattern]};
+        MultipleArgs ->
+            % Constructor with multiple arguments: Constructor(a, b, c) -> {constructor, A, B, C}
+            ArgPatterns = [convert_pattern_to_erlang_form(Arg, Location) || Arg <- MultipleArgs],
+            {tuple, Line, [ConstructorAtom | ArgPatterns]}
+    end.
+
+%% Convert record patterns to Erlang record patterns
+%% #person{name = Name, age = Age} -> {record, Line, person, [...fields...]}
+convert_record_pattern_to_erlang_form(RecordName, Fields, Line, Location) ->
+    % Convert field patterns to Erlang record field patterns
+    ErlangFields = [convert_field_pattern_to_erlang_form(Field, Location) || Field <- Fields],
+    {record, Line, RecordName, ErlangFields}.
+
+%% Convert field patterns within records
+convert_field_pattern_to_erlang_form(
+    #field_pattern{name = FieldName, pattern = Pattern, location = _}, Location
+) ->
+    ErlangPattern = convert_pattern_to_erlang_form(Pattern, Location),
+    Line = get_line_from_location(Location),
+    {record_field, Line, {atom, Line, FieldName}, ErlangPattern}.
+
+%% Normalize constructor names to lowercase atoms for consistent Erlang representation
+normalize_constructor_name('None') ->
+    none;
+normalize_constructor_name('Some') ->
+    some;
+normalize_constructor_name('Ok') ->
+    ok;
+normalize_constructor_name('Error') ->
+    error;
+normalize_constructor_name('Lt') ->
+    lt;
+normalize_constructor_name('Eq') ->
+    eq;
+normalize_constructor_name('Gt') ->
+    gt;
+normalize_constructor_name(Name) when is_atom(Name) ->
+    % Convert atom to string, lowercase it, and convert back to atom
+    NameStr = atom_to_list(Name),
+    LowerStr = string:to_lower(NameStr),
+    list_to_atom(LowerStr);
+normalize_constructor_name(Name) ->
+    Name.
 
 %% Convert guard to Erlang guard form
 convert_guard_to_erlang_form(Guard, Location) ->
@@ -2862,16 +2934,20 @@ extract_constructor_info(Variant) ->
 
 %% Create constructor function as Erlang AST
 create_constructor_function(ConstructorName, 0, _State) ->
-    % Nullary constructor: ConstructorName() -> ConstructorName
+    % Nullary constructor: ConstructorName() -> {ConstructorName}
+    % Use consistent tuple representation for all constructors
+    ErlangName = normalize_constructor_name(ConstructorName),
+    Body = {tuple, 0, [{atom, 0, ErlangName}]},
     {function, 0, ConstructorName, 0, [
-        {clause, 0, [], [], [{atom, 0, ConstructorName}]}
+        {clause, 0, [], [], [Body]}
     ]};
 create_constructor_function(ConstructorName, Arity, _State) when Arity > 0 ->
-    % Constructor with arguments: ConstructorName(Arg1, ..., ArgN) -> {ConstructorName, Arg1, ..., ArgN}
+    % Constructor with arguments: ConstructorName(Arg1, ..., ArgN) -> {constructor_name, Arg1, ..., ArgN}
     % Generate parameter variables
     Params = [{var, 0, list_to_atom("Arg" ++ integer_to_list(I))} || I <- lists:seq(1, Arity)],
-    % Create tuple with constructor name and arguments
-    TupleElements = [{atom, 0, ConstructorName} | Params],
+    % Create tuple with normalized constructor name and arguments
+    ErlangName = normalize_constructor_name(ConstructorName),
+    TupleElements = [{atom, 0, ErlangName} | Params],
     Body = {tuple, 0, TupleElements},
 
     {function, 0, ConstructorName, Arity, [

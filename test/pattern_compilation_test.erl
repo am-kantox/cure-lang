@@ -275,13 +275,10 @@ test_record_pattern_compilation() ->
                 ]}}
         ]},
 
-    % TODO: These tests will fail until record pattern compilation is implemented
-    % For now, the current implementation falls back to wildcard
-
-    % Test current implementation (should return wildcard as fallback)
+    % Test that record pattern compilation now works correctly
     CurrentResult = cure_codegen:convert_pattern_to_erlang_form(PersonPattern, Location),
-    % Current implementation should return wildcard fallback
-    ?assertEqual({var, Line, '_'}, CurrentResult),
+    % Current implementation should generate proper record patterns
+    ?assertEqual(ExpectedPersonRecord, CurrentResult),
 
     % Verify expected forms are correctly structured for when record patterns are implemented
     ?assertMatch(
@@ -298,7 +295,9 @@ test_record_pattern_compilation() ->
         ExpectedNestedRecord
     ),
 
-    io:format("✓ Record pattern compilation test passed (fallback and structural verification)~n").
+    io:format(
+        "✓ Record pattern compilation test passed (full implementation and structural verification)~n"
+    ).
 
 %% Test 4: Wildcard patterns compilation to Erlang forms
 test_wildcard_pattern_compilation() ->
