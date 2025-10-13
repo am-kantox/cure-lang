@@ -2297,12 +2297,20 @@ compile_patterns_to_case_clauses_impl(
     % Compile body to generate Erlang expressions
     {_BodyInstructions, State1} = compile_expression(Body, State),
 
-    % For now, we'll create a simple return of the body value
-    % In a full implementation, BodyInstructions would be converted to Erlang forms
+    % Convert body expression to Erlang form
     ErlangBody =
         case Body of
-            #literal_expr{value = Value} -> [compile_value_to_erlang_form(Value, Location)];
-            _ -> [compile_value_to_erlang_form(default_value_for_body(Body), Location)]
+            #literal_expr{value = Value} ->
+                [compile_value_to_erlang_form(Value, Location)];
+            #identifier_expr{name = Name} ->
+                % Variable reference in pattern match body
+                [{var, get_line_from_location(Location), Name}];
+            _ ->
+                % For other expression types, try to convert them properly
+                case convert_body_expression_to_erlang(Body, Location) of
+                    {ok, ErlangForm} -> [ErlangForm];
+                    error -> [compile_value_to_erlang_form(default_value_for_body(Body), Location)]
+                end
         end,
 
     % Create Erlang case clause
@@ -2325,9 +2333,46 @@ convert_pattern_to_erlang_form(#wildcard_pattern{location = Location}, _) ->
     {var, get_line_from_location(Location), '_'};
 convert_pattern_to_erlang_form(#identifier_pattern{name = Name, location = Location}, _) ->
     {var, get_line_from_location(Location), Name};
+convert_pattern_to_erlang_form(
+    #list_pattern{elements = Elements, tail = Tail, location = Location}, _
+) ->
+    Line = get_line_from_location(Location),
+    convert_list_pattern_to_erlang_form(Elements, Tail, Line);
+convert_pattern_to_erlang_form(#tuple_pattern{elements = Elements, location = Location}, _) ->
+    Line = get_line_from_location(Location),
+    ErlangElements = [convert_pattern_to_erlang_form(Element, Location) || Element <- Elements],
+    {tuple, Line, ErlangElements};
 convert_pattern_to_erlang_form(_Pattern, Location) ->
     % Fallback for unsupported patterns
     {var, get_line_from_location(Location), '_'}.
+
+%% Convert list pattern to Erlang pattern form
+convert_list_pattern_to_erlang_form([], undefined, Line) ->
+    % Empty list pattern []
+    {nil, Line};
+convert_list_pattern_to_erlang_form(Elements, undefined, Line) ->
+    % Fixed-length list pattern [a, b, c]
+    convert_fixed_list_to_erlang(Elements, Line);
+convert_list_pattern_to_erlang_form(Elements, Tail, Line) ->
+    % Head-tail pattern [h | t] or [a, b | t]
+    convert_cons_pattern_to_erlang(Elements, Tail, Line).
+
+%% Convert fixed-length list to Erlang pattern [a, b, c] -> [a | [b | [c | []]]]
+convert_fixed_list_to_erlang([], Line) ->
+    {nil, Line};
+convert_fixed_list_to_erlang([Element | RestElements], Line) ->
+    HeadPattern = convert_pattern_to_erlang_form(Element, {location, Line, 1, undefined}),
+    TailPattern = convert_fixed_list_to_erlang(RestElements, Line),
+    {cons, Line, HeadPattern, TailPattern}.
+
+%% Convert head-tail pattern to Erlang cons pattern [h1, h2 | t] -> [h1 | [h2 | t]]
+convert_cons_pattern_to_erlang([], Tail, Line) ->
+    % No head elements, just the tail
+    convert_pattern_to_erlang_form(Tail, {location, Line, 1, undefined});
+convert_cons_pattern_to_erlang([HeadElement | RestElements], Tail, Line) ->
+    HeadPattern = convert_pattern_to_erlang_form(HeadElement, {location, Line, 1, undefined}),
+    TailPattern = convert_cons_pattern_to_erlang(RestElements, Tail, Line),
+    {cons, Line, HeadPattern, TailPattern}.
 
 %% Convert guard to Erlang guard form
 convert_guard_to_erlang_form(Guard, Location) ->
@@ -2377,6 +2422,27 @@ compile_list_to_erlang_form([H | T], Line) ->
     HeadForm = compile_value_to_erlang_form_impl(H, Line),
     TailForm = compile_list_to_erlang_form(T, Line),
     {cons, Line, HeadForm, TailForm}.
+
+%% Convert body expression to Erlang form for pattern matching
+convert_body_expression_to_erlang(#literal_expr{value = Value}, Location) ->
+    {ok, compile_value_to_erlang_form(Value, Location)};
+convert_body_expression_to_erlang(#identifier_expr{name = Name}, Location) ->
+    {ok, {var, get_line_from_location(Location), Name}};
+convert_body_expression_to_erlang(#binary_op_expr{op = Op, left = Left, right = Right}, Location) ->
+    Line = get_line_from_location(Location),
+    case convert_body_expression_to_erlang(Left, Location) of
+        {ok, LeftForm} ->
+            case convert_body_expression_to_erlang(Right, Location) of
+                {ok, RightForm} ->
+                    {ok, {op, Line, Op, LeftForm, RightForm}};
+                error ->
+                    error
+            end;
+        error ->
+            error
+    end;
+convert_body_expression_to_erlang(_, _) ->
+    error.
 
 %% Get default values for patterns and bodies
 default_value_for_pattern(#literal_pattern{value = Value}) -> Value;
