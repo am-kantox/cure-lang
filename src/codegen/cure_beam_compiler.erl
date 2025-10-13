@@ -136,13 +136,18 @@ compile_instructions_to_forms([], Context, Acc) ->
     FinalBody =
         case {Body, Context#compile_context.stack} of
             {[], []} ->
-                % No body and no stack - return ok
+                % No body and no stack - return ok (only for truly empty functions)
                 [{atom, Context#compile_context.line, ok}];
             {[], [StackValue | _]} ->
                 % No body but value on stack - return the stack value
                 [StackValue];
-            {_, _} ->
-                % Has body - use the body (which should include stack values)
+            {Body, [StackValue | _]} ->
+                % Has body AND stack value - body should evaluate to stack value
+                % This typically means the body contains intermediate computations
+                % and the stack has the final result
+                Body ++ [StackValue];
+            {Body, []} ->
+                % Has body but no stack - body should contain the return value
                 Body
         end,
     {ok, FinalBody, Context};

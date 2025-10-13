@@ -505,7 +505,13 @@ compile_module_items([Item | RestItems], State, Acc) ->
         {ok, {union_type, _TypeDef, ConstructorFunctions}, NewState} ->
             % Add all constructor functions to the accumulator
             NewAcc = lists:reverse(ConstructorFunctions) ++ Acc,
-            compile_module_items(RestItems, NewState, NewAcc);
+            % Also add constructor functions to exports
+            ConstructorExports = extract_constructor_exports(ConstructorFunctions),
+            io:format("DEBUG: Adding constructor exports: ~p~n", [ConstructorExports]),
+            UpdatedExports = NewState#codegen_state.exports ++ ConstructorExports,
+            io:format("DEBUG: Updated exports list: ~p~n", [UpdatedExports]),
+            NewStateWithExports = NewState#codegen_state{exports = UpdatedExports},
+            compile_module_items(RestItems, NewStateWithExports, NewAcc);
         {ok, CompiledItem, NewState} ->
             compile_module_items(RestItems, NewState, [CompiledItem | Acc]);
         {error, Reason} ->
@@ -556,13 +562,19 @@ compile_module_item(#record_def{} = RecordDef, State) ->
     {ok, {record_def, RecordDef}, State};
 compile_module_item(#type_def{} = TypeDef, State) ->
     % Generate constructor functions for union types
+    io:format("DEBUG: Processing type_def: ~p~n", [TypeDef]),
     case generate_union_type_constructors(TypeDef, State) of
         {ok, ConstructorFunctions, NewState} ->
+            io:format("DEBUG: Generated ~p constructor functions~n", [length(ConstructorFunctions)]),
             {ok, {union_type, TypeDef, ConstructorFunctions}, NewState};
         {no_constructors, NewState} ->
             % Not a union type or no constructors needed
+            io:format("DEBUG: No constructors generated for ~p~n", [TypeDef#type_def.name]),
             {ok, {type_def, TypeDef}, NewState};
         {error, Reason} ->
+            io:format("ERROR: Failed to generate constructors for ~p: ~p~n", [
+                TypeDef#type_def.name, Reason
+            ]),
             {error, Reason}
     end;
 compile_module_item(#import_def{} = Import, State) ->
@@ -869,10 +881,7 @@ generate_function_code(Name, Params, BodyInstructions, Location) ->
         params => ParamList,
         instructions => [
             #beam_instr{op = label, args = [function_start], location = Location}
-        ] ++ BodyInstructions ++
-            [
-                #beam_instr{op = return, args = [], location = Location}
-            ],
+        ] ++ BodyInstructions,
         location => Location
     }.
 
@@ -1740,11 +1749,15 @@ generate_beam_module(State) ->
     {RegularFunctions, FSMDefinitions, ConstructorFunctions} =
         separate_functions(State#codegen_state.functions),
 
+    io:format("DEBUG: BEAM generation - Constructor functions: ~p~n", [ConstructorFunctions]),
+    io:format("DEBUG: BEAM generation - Exports: ~p~n", [State#codegen_state.exports]),
+
     % Extract FSM functions and flatten them
     FSMFunctions = lists:flatten([maps:get(functions, FSM, []) || FSM <- FSMDefinitions]),
 
     % Combine all functions: regular functions, FSM functions, and constructor functions
     AllFunctions = RegularFunctions ++ FSMFunctions ++ ConstructorFunctions,
+    io:format("DEBUG: BEAM generation - Total functions: ~p~n", [length(AllFunctions)]),
 
     Module = #{
         name => State#codegen_state.module_name,
@@ -1754,6 +1767,11 @@ generate_beam_module(State) ->
         attributes => generate_module_attributes(State),
         optimization_level => State#codegen_state.optimization_level
     },
+
+    % Debug: Show first few constructor functions to verify their format
+    ConstructorSample = lists:sublist(ConstructorFunctions, 3),
+    io:format("DEBUG: Sample constructor functions: ~p~n", [ConstructorSample]),
+
     {ok, Module}.
 
 generate_module_attributes(State) ->
@@ -1777,6 +1795,15 @@ generate_module_attributes(State) ->
     DebugAttributes = [{debug_info, true}],
 
     BaseAttributes ++ FSMAttributes ++ DebugAttributes.
+
+%% Extract exports from constructor functions
+extract_constructor_exports(ConstructorFunctions) ->
+    lists:map(
+        fun({function, _Line, Name, Arity, _Clauses}) ->
+            {Name, Arity}
+        end,
+        ConstructorFunctions
+    ).
 
 %% Convert export specifications
 convert_exports(Exports) ->
@@ -2049,6 +2076,8 @@ generate_beam_file(Module, OutputPath) ->
                         {error, Reason} -> {error, {write_failed, Reason}}
                     end;
                 {error, Errors, Warnings} ->
+                    io:format("DEBUG: Erlang compile errors: ~p~n", [Errors]),
+                    io:format("DEBUG: Erlang compile warnings: ~p~n", [Warnings]),
                     {error, {compile_failed, Errors, Warnings}}
             end;
         {error, Reason} ->
@@ -2115,6 +2144,8 @@ convert_to_erlang_forms(Module) ->
         % For BEAM generation, we need to include ALL functions (exported and local)
         % The export list only controls external visibility
         AllFunctionExports = extract_function_exports(Functions),
+        io:format("DEBUG: RawExports: ~p~n", [RawExports]),
+        io:format("DEBUG: AllFunctionExports: ~p~n", [AllFunctionExports]),
 
         Exports =
             case RawExports of
@@ -2124,7 +2155,9 @@ convert_to_erlang_forms(Module) ->
                 _ ->
                     % Use explicit exports for external visibility
                     % but ensure all functions are included in BEAM
-                    lists:usort(RawExports ++ AllFunctionExports)
+                    FinalExports = lists:usort(RawExports ++ AllFunctionExports),
+                    io:format("DEBUG: FinalExports: ~p~n", [FinalExports]),
+                    FinalExports
             end,
 
         % Add module and export attributes
@@ -2164,6 +2197,25 @@ convert_to_erlang_forms(Module) ->
 
         Forms = BaseAttributes ++ AttributeForms ++ LoadHook ++ FunctionForms ++ FSMRegisterFunc,
 
+        % Debug: Show a sample of the generated forms
+        io:format("DEBUG: Generated ~p forms total~n", [length(Forms)]),
+        AttributeSample = lists:sublist(Forms, 5),
+        io:format("DEBUG: First 5 forms: ~p~n", [AttributeSample]),
+
+        % Find constructor functions in the forms
+        ConstructorForms = [
+            F
+         || {function, _, Name, _, _} = F <- Forms,
+            lists:member(Name, ['Ok', 'Error', 'Some', 'None', 'Lt', 'Eq', 'Gt'])
+        ],
+        io:format("DEBUG: Constructor forms found: ~p~n", [length(ConstructorForms)]),
+        if
+            length(ConstructorForms) > 0 ->
+                io:format("DEBUG: Sample constructor form: ~p~n", [hd(ConstructorForms)]);
+            true ->
+                ok
+        end,
+
         {ok, Forms}
     catch
         error:Reason:Stack ->
@@ -2191,16 +2243,23 @@ convert_function_to_form(Function, Line) ->
     case Function of
         {function, _FormLine, Name, Arity, Clauses} ->
             % Already in Erlang abstract form, just update the line number
+            io:format("DEBUG: Converting constructor function ~p/~p~n", [Name, Arity]),
             UpdatedForm = {function, Line, Name, Arity, Clauses},
             {ok, UpdatedForm, Line + 1};
-        _ ->
+        _ when is_map(Function) ->
             % Normal function that needs compilation
+            FuncName = maps:get(name, Function, unknown),
+            FuncArity = maps:get(arity, Function, unknown),
+            io:format("DEBUG: Converting regular function ~p/~p~n", [FuncName, FuncArity]),
             case cure_beam_compiler:compile_function_to_erlang(Function, Line) of
                 {ok, FunctionForm, NextLine} ->
                     {ok, FunctionForm, NextLine};
                 {error, Reason} ->
                     {error, Reason}
-            end
+            end;
+        _ ->
+            io:format("DEBUG: Unknown function format: ~p~n", [Function]),
+            {error, {unknown_function_format, Function}}
     end.
 
 %% Convert attributes to Erlang abstract forms
@@ -2300,10 +2359,11 @@ compile_patterns_to_case_clauses_impl(
             _ -> [convert_guard_to_erlang_form(Guard, Location)]
         end,
 
-    % Compile body to generate Erlang expressions
-    {_BodyInstructions, State1} = compile_expression(Body, State),
+    % For complex expressions, we need to create a more sophisticated approach
+    % Instead of trying to convert complex expressions directly to Erlang forms,
+    % we'll create a function call that executes the compiled instructions
 
-    % Convert body expression to Erlang form
+    % First, try simple conversions for basic cases
     ErlangBody =
         case Body of
             #literal_expr{value = Value} ->
@@ -2312,10 +2372,17 @@ compile_patterns_to_case_clauses_impl(
                 % Variable reference in pattern match body
                 [{var, get_line_from_location(Location), Name}];
             _ ->
-                % For other expression types, try to convert them properly
-                case convert_body_expression_to_erlang(Body, Location) of
-                    {ok, ErlangForm} -> [ErlangForm];
-                    error -> [compile_value_to_erlang_form(default_value_for_body(Body), Location)]
+                % For complex expressions, convert them to proper Erlang form
+                case convert_complex_body_to_erlang(Body, Location) of
+                    {ok, ErlangForm} ->
+                        [ErlangForm];
+                    error ->
+                        % Fallback - this should not happen with proper implementation
+                        Line = get_line_from_location(Location),
+                        [
+                            {call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, error}},
+                                [{atom, Line, unimplemented_body_expression}]}
+                        ]
                 end
         end,
 
@@ -2323,7 +2390,7 @@ compile_patterns_to_case_clauses_impl(
     CaseClause =
         {clause, get_line_from_location(Location), [ErlangPattern], ErlangGuard, ErlangBody},
 
-    compile_patterns_to_case_clauses_impl(Rest, [CaseClause | Acc], State1);
+    compile_patterns_to_case_clauses_impl(Rest, [CaseClause | Acc], State);
 compile_patterns_to_case_clauses_impl([Pattern | Rest], Acc, State) ->
     % Handle non-match_clause patterns (legacy)
     Location = {location, 1, 1, undefined},
@@ -2521,6 +2588,182 @@ convert_body_expression_to_erlang(#binary_op_expr{op = Op, left = Left, right = 
     end;
 convert_body_expression_to_erlang(_, _) ->
     error.
+
+%% Convert complex body expressions to Erlang form for pattern matching
+%% This handles more complex expressions that the simple convert_body_expression_to_erlang cannot
+convert_complex_body_to_erlang(#literal_expr{value = Value}, Location) ->
+    {ok, compile_value_to_erlang_form(Value, Location)};
+convert_complex_body_to_erlang(#identifier_expr{name = Name}, Location) ->
+    % Function calls (both constructors and regular functions) should use atom references, not variables
+    % Variables in pattern match bodies should be references to bound variables from the pattern
+    % Function calls should be atoms that refer to functions
+    case is_function_name(Name) of
+        true ->
+            {ok, {atom, get_line_from_location(Location), Name}};
+        false ->
+            {ok, {var, get_line_from_location(Location), Name}}
+    end;
+convert_complex_body_to_erlang(#binary_op_expr{op = Op, left = Left, right = Right}, Location) ->
+    Line = get_line_from_location(Location),
+    io:format("DEBUG: Converting binary op ~p at line ~p~n", [Op, Line]),
+    case
+        {
+            convert_complex_body_to_erlang(Left, Location),
+            convert_complex_body_to_erlang(Right, Location)
+        }
+    of
+        {{ok, LeftForm}, {ok, RightForm}} ->
+            BinOpForm = {op, Line, Op, LeftForm, RightForm},
+            io:format("DEBUG: Generated binary op form: ~p~n", [BinOpForm]),
+            {ok, BinOpForm};
+        _ ->
+            error
+    end;
+convert_complex_body_to_erlang(#function_call_expr{function = Function, args = Args}, Location) ->
+    Line = get_line_from_location(Location),
+    io:format("DEBUG: Converting function call ~p with args ~p~n", [Function, Args]),
+    case convert_complex_body_to_erlang(Function, Location) of
+        {ok, FunctionForm} ->
+            io:format("DEBUG: Function form: ~p~n", [FunctionForm]),
+            case convert_complex_args_to_erlang(Args, Location) of
+                {ok, ArgForms} ->
+                    CallForm = {call, Line, FunctionForm, ArgForms},
+                    io:format("DEBUG: Generated call form: ~p~n", [CallForm]),
+                    {ok, CallForm};
+                error ->
+                    error
+            end;
+        error ->
+            error
+    end;
+convert_complex_body_to_erlang(#let_expr{bindings = Bindings, body = Body}, Location) ->
+    Line = get_line_from_location(Location),
+    case convert_complex_bindings_to_erlang(Bindings, Location) of
+        {ok, BindingForms} ->
+            case convert_complex_body_to_erlang(Body, Location) of
+                {ok, BodyForm} ->
+                    % Create a block with bindings followed by body
+                    {ok, {block, Line, BindingForms ++ [BodyForm]}};
+                error ->
+                    error
+            end;
+        error ->
+            error
+    end;
+convert_complex_body_to_erlang(
+    #if_expr{condition = Condition, then_branch = ThenBranch, else_branch = ElseBranch}, Location
+) ->
+    Line = get_line_from_location(Location),
+    case
+        {
+            convert_complex_body_to_erlang(Condition, Location),
+            convert_complex_body_to_erlang(ThenBranch, Location),
+            convert_complex_body_to_erlang(ElseBranch, Location)
+        }
+    of
+        {{ok, CondForm}, {ok, ThenForm}, {ok, ElseForm}} ->
+            % Use case expression instead of if expression to avoid guard restrictions
+            {ok,
+                {'case', Line, CondForm, [
+                    {clause, Line, [{atom, Line, true}], [], [ThenForm]},
+                    {clause, Line, [{atom, Line, false}], [], [ElseForm]}
+                ]}};
+        _ ->
+            error
+    end;
+convert_complex_body_to_erlang(#list_expr{elements = Elements}, Location) ->
+    Line = get_line_from_location(Location),
+    case convert_complex_args_to_erlang(Elements, Location) of
+        {ok, ElementForms} ->
+            ListForm = build_list_form(ElementForms, Line),
+            {ok, ListForm};
+        error ->
+            error
+    end;
+convert_complex_body_to_erlang(#tuple_expr{elements = Elements}, Location) ->
+    Line = get_line_from_location(Location),
+    case convert_complex_args_to_erlang(Elements, Location) of
+        {ok, ElementForms} ->
+            {ok, {tuple, Line, ElementForms}};
+        error ->
+            error
+    end;
+convert_complex_body_to_erlang(_, _) ->
+    error.
+
+%% Helper function to convert argument lists
+convert_complex_args_to_erlang([], _Location) ->
+    {ok, []};
+convert_complex_args_to_erlang([Arg | Rest], Location) ->
+    case convert_complex_body_to_erlang(Arg, Location) of
+        {ok, ArgForm} ->
+            case convert_complex_args_to_erlang(Rest, Location) of
+                {ok, RestForms} ->
+                    {ok, [ArgForm | RestForms]};
+                error ->
+                    error
+            end;
+        error ->
+            error
+    end.
+
+%% Helper function to convert let bindings
+convert_complex_bindings_to_erlang([], _Location) ->
+    {ok, []};
+convert_complex_bindings_to_erlang([#binding{pattern = Pattern, value = Value} | Rest], Location) ->
+    Line = get_line_from_location(Location),
+    case convert_complex_body_to_erlang(Value, Location) of
+        {ok, ValueForm} ->
+            % Convert pattern to proper match form
+            PatternForm =
+                case Pattern of
+                    #identifier_pattern{name = Name} -> {var, Line, Name};
+                    _ -> convert_pattern_to_erlang_form(Pattern, Location)
+                end,
+            BindingForm = {match, Line, PatternForm, ValueForm},
+            case convert_complex_bindings_to_erlang(Rest, Location) of
+                {ok, RestForms} ->
+                    {ok, [BindingForm | RestForms]};
+                error ->
+                    error
+            end;
+        error ->
+            error
+    end;
+convert_complex_bindings_to_erlang([_ | Rest], Location) ->
+    % Skip unsupported binding types for now
+    convert_complex_bindings_to_erlang(Rest, Location).
+
+%% Check if a name is a known function (constructor or regular function)
+%% This determines whether identifier should be treated as atom (function call) or var (variable reference)
+is_function_name('Ok') -> true;
+is_function_name('Error') -> true;
+is_function_name('Some') -> true;
+is_function_name('None') -> true;
+is_function_name('Lt') -> true;
+is_function_name('Eq') -> true;
+is_function_name('Gt') -> true;
+% Common stdlib functions that might appear in pattern match bodies
+is_function_name(length) -> true;
+is_function_name(append) -> true;
+is_function_name(concat) -> true;
+is_function_name(fold) -> true;
+is_function_name(contains) -> true;
+is_function_name(reverse) -> true;
+is_function_name(head) -> true;
+is_function_name(tail) -> true;
+is_function_name(map) -> true;
+is_function_name(filter) -> true;
+% NOTE: 'f' is typically a parameter variable, not a function name
+% is_function_name(f) -> true;
+% Add more function names as needed
+is_function_name(_) -> false.
+
+%% Helper function to build proper list forms
+build_list_form([], Line) ->
+    {nil, Line};
+build_list_form([Element | Rest], Line) ->
+    {cons, Line, Element, build_list_form(Rest, Line)}.
 
 %% Get default values for patterns and bodies
 default_value_for_pattern(#literal_pattern{value = Value}) -> Value;
@@ -2856,15 +3099,22 @@ generate_union_type_constructors(#type_def{name = TypeName, definition = Definit
 %% Extract variants from union type definition
 %% Handles various AST formats for union types
 extract_union_variants(#union_type{types = Types}) ->
+    io:format("DEBUG: Found union_type record with types: ~p~n", [Types]),
     {ok, Types};
 extract_union_variants(Definition) when is_list(Definition) ->
     % Handle list of union variants
+    io:format("DEBUG: Found list definition: ~p~n", [Definition]),
     {ok, Definition};
 extract_union_variants(Definition) ->
+    io:format("DEBUG: Checking if definition is union type: ~p~n", [Definition]),
     % Try to detect if this is a union type in other formats
     case is_union_type_definition(Definition) of
-        {true, Variants} -> {ok, Variants};
-        false -> not_a_union
+        {true, Variants} ->
+            io:format("DEBUG: Detected union type with variants: ~p~n", [Variants]),
+            {ok, Variants};
+        false ->
+            io:format("DEBUG: Not a union type~n"),
+            not_a_union
     end.
 
 %% Check if definition represents a union type
