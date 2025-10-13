@@ -215,10 +215,22 @@ check_program(AST) ->
         warnings = []
     }).
 
-%% Check list of top-level items
+% Check list of top-level items
 check_items([], _Env, Result) ->
     Result;
 check_items([Item | RestItems], Env, Result) ->
+    % Debug output to identify which item is being processed
+    case Item of
+        {function_def, Name, _, _, _, _, _} ->
+            io:format("DEBUG ITEMS: Processing function body for ~p~n", [Name]);
+        {function_def, Name, _, _, _, _, _, _} ->
+            io:format("DEBUG ITEMS: Processing function body for ~p~n", [Name]);
+        {type_def, TypeName, _, _, _} ->
+            io:format("DEBUG ITEMS: Processing type definition ~p~n", [TypeName]);
+        _ ->
+            io:format("DEBUG ITEMS: Processing other item: ~p~n", [element(1, Item)]),
+            io:format("DEBUG ITEMS: Full item structure: ~p~n", [Item])
+    end,
     case check_item(Item, Env) of
         {ok, NewEnv, ItemResult} ->
             MergedResult = merge_results(Result, ItemResult),
@@ -588,48 +600,80 @@ check_function_new(
             end,
 
         % Check function body with constraint-enhanced environment
-        case cure_types:infer_type(convert_expr_to_tuple(Body), FinalEnv) of
-            {ok, InferenceResult2} ->
-                BodyType = element(2, InferenceResult2),
-                % Check return type if specified
-                case ReturnType of
-                    undefined ->
-                        % Function type is inferred
-                        FuncType = {function_type, ParamTypes, BodyType},
-                        io:format("DEBUG: Adding function ~p (new AST) with inferred type: ~p~n", [
-                            Name, FuncType
-                        ]),
-                        NewEnv = cure_types:extend_env(Env, Name, FuncType),
-                        {ok, NewEnv, success_result(FuncType)};
-                    _ ->
-                        % Check body matches declared return type
-                        ExpectedReturnType = convert_type_with_env(ReturnType, FinalEnv),
-                        case cure_types:unify(BodyType, ExpectedReturnType) of
-                            {ok, _} ->
-                                FuncType = {function_type, ParamTypes, ExpectedReturnType},
-                                io:format(
-                                    "DEBUG: Adding function ~p (new AST) with explicit type: ~p~n",
-                                    [Name, FuncType]
-                                ),
-                                NewEnv = cure_types:extend_env(Env, Name, FuncType),
-                                {ok, NewEnv, success_result(FuncType)};
-                            {error, UnifyReason} ->
-                                ErrorMsg = #typecheck_error{
-                                    message =
-                                        "Function body type doesn't match declared return type",
-                                    location = Location,
-                                    details =
-                                        {type_mismatch, ExpectedReturnType, BodyType, UnifyReason}
-                                },
-                                {ok, Env, error_result(ErrorMsg)}
-                        end
-                end;
-            {error, InferReason} ->
-                io:format("*** DEBUG: FUNCTION BODY INFERENCE FAILED ***~n"),
-                io:format("*** Function: ~p~n", [Name]),
-                io:format("*** Body: ~p~n", [Body]),
-                io:format("*** Error: ~p~n", [InferReason]),
-                io:format("*** Environment size: ~p functions~n", [
+        io:format("DEBUG: About to infer type for function ~p body~n", [Name]),
+        io:format("DEBUG: Body AST: ~p~n", [Body]),
+        try
+            BodyTuple = convert_expr_to_tuple(Body),
+            io:format("DEBUG: Converted body to tuple: ~p~n", [BodyTuple]),
+            BodyInferenceResult = cure_types:infer_type(BodyTuple, FinalEnv),
+            io:format("DEBUG: Type inference result: ~p~n", [BodyInferenceResult]),
+            case BodyInferenceResult of
+                {ok, InferenceResult2} ->
+                    BodyType = element(2, InferenceResult2),
+                    % Check return type if specified
+                    case ReturnType of
+                        undefined ->
+                            % Function type is inferred
+                            FuncType = {function_type, ParamTypes, BodyType},
+                            io:format(
+                                "DEBUG: Adding function ~p (new AST) with inferred type: ~p~n", [
+                                    Name, FuncType
+                                ]
+                            ),
+                            NewEnv = cure_types:extend_env(Env, Name, FuncType),
+                            {ok, NewEnv, success_result(FuncType)};
+                        _ ->
+                            % Check body matches declared return type
+                            ExpectedReturnType = convert_type_with_env(ReturnType, FinalEnv),
+                            case cure_types:unify(BodyType, ExpectedReturnType) of
+                                {ok, _} ->
+                                    FuncType = {function_type, ParamTypes, ExpectedReturnType},
+                                    io:format(
+                                        "DEBUG: Adding function ~p (new AST) with explicit type: ~p~n",
+                                        [Name, FuncType]
+                                    ),
+                                    NewEnv = cure_types:extend_env(Env, Name, FuncType),
+                                    {ok, NewEnv, success_result(FuncType)};
+                                {error, UnifyReason} ->
+                                    ErrorMsg = #typecheck_error{
+                                        message =
+                                            "Function body type doesn't match declared return type",
+                                        location = Location,
+                                        details =
+                                            {type_mismatch, ExpectedReturnType, BodyType,
+                                                UnifyReason}
+                                    },
+                                    {ok, Env, error_result(ErrorMsg)}
+                            end
+                    end;
+                {error, InferReason} ->
+                    io:format("*** DEBUG: FUNCTION BODY INFERENCE FAILED ***~n"),
+                    io:format("*** Function: ~p~n", [Name]),
+                    io:format("*** Body: ~p~n", [Body]),
+                    io:format("*** Error: ~p~n", [InferReason]),
+                    io:format("*** Environment size: ~p functions~n", [
+                        map_size(
+                            case FinalEnv of
+                                #{} -> FinalEnv;
+                                _ -> #{}
+                            end
+                        )
+                    ]),
+                    io:format("DEBUG: Failed to infer function ~p body type: ~p~n", [
+                        Name, InferReason
+                    ]),
+                    ErrorMsg2 = #typecheck_error{
+                        message = "Failed to infer function body type",
+                        location = Location,
+                        details = {inference_failed, InferReason}
+                    },
+                    {ok, Env, error_result(ErrorMsg2)}
+            end
+        catch
+            error:function_clause:Stacktrace ->
+                io:format("ERROR: function_clause error in infer_type for function ~p~n", [Name]),
+                io:format("ERROR: Body tuple: ~p~n", [convert_expr_to_tuple(Body)]),
+                io:format("ERROR: Environment size: ~p~n", [
                     map_size(
                         case FinalEnv of
                             #{} -> FinalEnv;
@@ -637,13 +681,13 @@ check_function_new(
                         end
                     )
                 ]),
-                io:format("DEBUG: Failed to infer function ~p body type: ~p~n", [Name, InferReason]),
-                ErrorMsg2 = #typecheck_error{
-                    message = "Failed to infer function body type",
+                io:format("ERROR: Stacktrace: ~p~n", [Stacktrace]),
+                ErrorMsg3 = #typecheck_error{
+                    message = "Function clause error during type inference",
                     location = Location,
-                    details = {inference_failed, InferReason}
+                    details = {function_clause_error, Stacktrace}
                 },
-                {ok, Env, error_result(ErrorMsg2)}
+                {ok, Env, error_result(ErrorMsg3)}
         end
     catch
         throw:{ErrorType, Details, ErrorLocation} ->
@@ -1176,18 +1220,22 @@ convert_type_to_tuple(Type) ->
     Type.
 
 %% Convert type expressions while resolving type variables from environment
-convert_type_with_env(#primitive_type{name = Name}, _Env) ->
+% Handle function_type in tuple format (from parser) - must come before record format
+convert_type_with_env({function_type, ParamTypes, ReturnType, _Location}, Env) ->
+    ConvertedParams = [convert_type_with_env(P, Env) || P <- ParamTypes],
+    ConvertedReturn = convert_type_with_env(ReturnType, Env),
+    {function_type, ConvertedParams, ConvertedReturn};
+% Handle primitive_type in tuple format (from parser) - must come before record format
+convert_type_with_env({primitive_type, Name, _Location}, _Env) ->
     {primitive_type, Name};
-convert_type_with_env(#dependent_type{name = Name, params = Params}, Env) ->
+% Handle dependent_type in tuple format (from parser) - must come before record format
+convert_type_with_env({dependent_type, Name, Params, _Location}, Env) ->
     ConvertedParams = [convert_type_param_with_env(P, Env) || P <- Params],
     {dependent_type, Name, ConvertedParams};
+% Handle record format types (for types not converted to tuple format yet)
 convert_type_with_env(#union_type{types = Variants}, Env) ->
     ConvertedVariants = [convert_type_with_env(V, Env) || V <- Variants],
     {union_type, ConvertedVariants};
-convert_type_with_env(#function_type{params = Params, return_type = ReturnType}, Env) ->
-    ConvertedParams = [convert_type_with_env(P, Env) || P <- Params],
-    ConvertedReturn = convert_type_with_env(ReturnType, Env),
-    {function_type, ConvertedParams, ConvertedReturn};
 convert_type_with_env(#identifier_expr{name = Name}, _Env) when
     Name =:= 'Float' orelse Name =:= 'Int' orelse Name =:= 'Bool' orelse
         Name =:= 'String' orelse Name =:= 'Unit'
@@ -1226,7 +1274,8 @@ convert_type_with_env(Type, _Env) ->
     convert_type_to_tuple(Type).
 
 %% Convert type parameter expressions while resolving type variables from environment
-convert_type_param_with_env(#type_param{value = Value}, Env) ->
+% Handle type_param in tuple format (from parser)
+convert_type_param_with_env({type_param, _Name, Value, _Location}, Env) ->
     convert_type_with_env(Value, Env);
 convert_type_param_with_env(TypeParam, Env) ->
     convert_type_with_env(TypeParam, Env).
@@ -1265,20 +1314,27 @@ collect_function_signatures_helper([Item | Rest], Env) ->
         case Item of
             #function_def{name = Name, params = Params, return_type = ReturnType, is_private = _} ->
                 % Create function type from signature
+                io:format("DEBUG SIG: Pre-processing function signature for ~p~n", [Name]),
                 try
                     {ParamTypes, EnvWithParams} = process_parameters_new(Params, Env),
                     FinalReturnType =
                         case ReturnType of
-                            undefined -> cure_types:new_type_var();
-                            _ -> convert_type_with_env(ReturnType, EnvWithParams)
+                            undefined ->
+                                cure_types:new_type_var();
+                            _ ->
+                                io:format("DEBUG SIG: Converting return type ~p~n", [ReturnType]),
+                                convert_type_with_env(ReturnType, EnvWithParams)
                         end,
                     FuncType = {function_type, ParamTypes, FinalReturnType},
+                    io:format("DEBUG SIG: Successfully pre-processed ~p with type ~p~n", [
+                        Name, FuncType
+                    ]),
                     cure_types:extend_env(Env, Name, FuncType)
                 catch
-                    _:Error ->
-                        io:format("WARNING: Failed to pre-process function ~p signature: ~p~n", [
-                            Name, Error
-                        ]),
+                    Class:Error:Stacktrace ->
+                        io:format("ERROR SIG: Failed to pre-process function ~p signature~n", [Name]),
+                        io:format("ERROR SIG: Class: ~p, Error: ~p~n", [Class, Error]),
+                        io:format("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
                         Env
                 end;
             #type_def{name = _Name} ->
@@ -1473,6 +1529,17 @@ extract_type_params_helper_safe({dependent_type, _Name, Params}, Env) ->
         Env,
         Params
     );
+% Handle tuple-form function types
+extract_type_params_helper_safe({function_type, ParamTypes, ReturnType}, Env) ->
+    % Handle function types - extract type parameters from both parameters and return type
+    Env1 = lists:foldl(
+        fun(ParamType, AccEnv) ->
+            extract_type_params_helper_safe(ParamType, AccEnv)
+        end,
+        Env,
+        ParamTypes
+    ),
+    extract_type_params_helper_safe(ReturnType, Env1);
 extract_type_params_helper_safe(#list_type{element_type = ElemType, length = LengthExpr}, Env) ->
     % Handle list types with length expressions
     Env1 = extract_type_params_helper_safe(ElemType, Env),
@@ -1540,6 +1607,8 @@ extract_type_param_value_safe(#primitive_type{name = Name}, Env) ->
             Env
     end;
 extract_type_param_value_safe(TypeExpr, Env) when is_record(TypeExpr, dependent_type) ->
+    extract_type_params_helper_safe(TypeExpr, Env);
+extract_type_param_value_safe(TypeExpr, Env) when is_record(TypeExpr, function_type) ->
     extract_type_params_helper_safe(TypeExpr, Env);
 extract_type_param_value_safe(_, Env) ->
     % Other expressions (literals, complex expressions) don't introduce type parameters
@@ -1647,21 +1716,31 @@ find_function_new(_Name, []) ->
     not_found.
 
 process_parameters_new(Params, Env) ->
-    process_parameters_new(Params, Env, [], Env).
+    % First pass: collect all type parameters from all parameters
+    io:format("DEBUG: Extracting type parameters from all params: ~p~n", [Params]),
+    EnvWithAllTypeParams = lists:foldl(
+        fun({param, _Name, TypeExpr, _Location}, AccEnv) ->
+            extract_and_add_type_params_safe(TypeExpr, AccEnv)
+        end,
+        Env,
+        Params
+    ),
+    io:format("DEBUG: Environment after extracting all type params~n"),
+
+    % Second pass: process parameters with full type environment
+    process_parameters_new(Params, Env, [], EnvWithAllTypeParams).
 
 process_parameters_new([], _OrigEnv, TypesAcc, EnvAcc) ->
     {lists:reverse(TypesAcc), EnvAcc};
 process_parameters_new(
     [{param, Name, TypeExpr, _Location} | RestParams], OrigEnv, TypesAcc, EnvAcc
 ) ->
-    % First, extract and register any type parameters from the type expression
+    % Convert the type expression using the environment with all type parameters
     io:format("DEBUG PARAM: Processing parameter ~p with type ~p~n", [Name, TypeExpr]),
-    EnvWithTypeParams = extract_and_add_type_params(TypeExpr, EnvAcc),
-    % Then convert the type expression using the updated environment
-    ParamType = convert_type_with_env(TypeExpr, EnvWithTypeParams),
+    ParamType = convert_type_with_env(TypeExpr, EnvAcc),
     io:format("DEBUG PARAM: Converted ~p to type ~p~n", [TypeExpr, ParamType]),
     % Add the parameter itself to environment
-    NewEnvAcc = cure_types:extend_env(EnvWithTypeParams, Name, ParamType),
+    NewEnvAcc = cure_types:extend_env(EnvAcc, Name, ParamType),
     process_parameters_new(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc).
 
 check_import_items_new(Module, Items, Env) ->
@@ -1678,10 +1757,26 @@ import_items_new(Module, [Item | RestItems], AccEnv) ->
     end.
 
 import_item_new(Module, {function_import, Name, Arity, _Alias, _Location}, Env) ->
+    io:format("DEBUG IMPORT: Processing function_import ~p/~p from ~p~n", [Name, Arity, Module]),
     FunctionType = create_imported_function_type(Module, Name, Arity),
     NewEnv = cure_types:extend_env(Env, Name, FunctionType),
     {ok, NewEnv};
+import_item_new(Module, {aliased_import, OriginalName, Alias, _Location}, Env) ->
+    % Import with alias: "import Module [name as alias]"
+    io:format("DEBUG IMPORT: Processing aliased_import ~p as ~p from ~p~n", [
+        OriginalName, Alias, Module
+    ]),
+    % We assume it's a function with unknown arity - use arity 2 as default for map
+    DefaultArity =
+        case OriginalName of
+            map -> 2;
+            _ -> 1
+        end,
+    FunctionType = create_imported_function_type(Module, OriginalName, DefaultArity),
+    NewEnv = cure_types:extend_env(Env, Alias, FunctionType),
+    {ok, NewEnv};
 import_item_new(Module, Identifier, Env) when is_atom(Identifier) ->
+    io:format("DEBUG IMPORT: Processing atom identifier ~p from ~p~n", [Identifier, Module]),
     IdentifierType = {imported_identifier, Module, Identifier},
     NewEnv = cure_types:extend_env(Env, Identifier, IdentifierType),
     {ok, NewEnv}.
@@ -1822,21 +1917,4 @@ add_smt_constraints_to_env(SmtConstraints, Env) ->
 
 %% Check if a name represents a generic type variable (T, E, U, etc.)
 is_generic_type_var(Name) ->
-    % Check if it's a common generic type variable name pattern
-    case atom_to_list(Name) of
-        % Single uppercase letter: T, E, U, etc.
-        [C] when C >= $A, C =< $Z -> true;
-        % Type variables like T1, T2, etc.
-        "T" ++ _ -> true;
-        % Error type variables
-        "E" ++ _ -> true;
-        % Other generic variables
-        "U" ++ _ -> true;
-        % Generic A variables
-        "A" ++ _ -> true;
-        % Generic B variables
-        "B" ++ _ -> true;
-        % Generic C variables
-        "C" ++ _ -> true;
-        _ -> false
-    end.
+    cure_types:is_generic_type_variable_name(Name).

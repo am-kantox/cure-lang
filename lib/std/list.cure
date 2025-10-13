@@ -2,120 +2,136 @@ module Std.List do
   export [
     # Basic list operations
     length/1, is_empty/1, reverse/1,
-    head/1, tail/1,
+    head/2, tail/1,
     
     # List construction
     cons/2, append/2, concat/1,
     
-    # Simple transformations (non-generic for now)
-    map_int/2, filter_int/2,
+    # Simple transformations
+    map/2, filter/2, fold/3, zip_with/3,
     
     # Access
-    nth/2, take/2, drop/2,
+    nth/3, # take/2, drop/2,
     
     # Simple predicates
-    contains_int/2
+    contains/2
   ]
 
   # Basic operations
-  def length(list: List(Int)): Int =
+  def length(list: List(T)): Int =
     match list do
       [] -> 0
       [_ | t] -> 1 + length(t)
     end
 
-  def is_empty(list: List(Int)): Bool =
+  def is_empty(list: List(T)): Bool =
     match list do
       [] -> true
       _ -> false
     end
 
-  def reverse(list: List(Int)): List(Int) =
+  def reverse(list: List(T)): List(T) =
     reverse_helper(list, [])
 
   # Helper for reverse
-  defp reverse_helper(list: List(Int), acc: List(Int)): List(Int) =
+  defp reverse_helper(list: List(T), acc: List(T)): List(T) =
     match list do
       [] -> acc
       [h | t] -> reverse_helper(t, [h | acc])
     end
 
-  def head(list: List(Int)): Int =
+  def head(list: List(T), default: T): T =
     match list do
-      [] -> 0  # Default value
+      [] -> default
       [h | _] -> h
     end
 
-  def tail(list: List(Int)): List(Int) =
+  def tail(list: List(T)): List(T) =
     match list do
       [] -> []
       [_ | t] -> t
     end
 
   # List construction
-  def cons(element: Int, list: List(Int)): List(Int) =
+  def cons(element: T, list: List(T)): List(T) =
     [element | list]
 
-  def append(list1: List(Int), list2: List(Int)): List(Int) =
+  def append(list1: List(T), list2: List(T)): List(T) =
     match list1 do
       [] -> list2
       [h | t] -> [h | append(t, list2)]
     end
 
-  def concat(lists: List(List(Int))): List(Int) =
+  def concat(lists: List(List(T))): List(T) =
     match lists do
       [] -> []
       [h | t] -> append(h, concat(t))
     end
 
   # Simplified transformations (Int only for now)
-  def map_int(list: List(Int), f: Int -> Int): List(Int) =
+  def map(list: List(T), f: T -> U): List(U) =
     match list do
       [] -> []
-      [h | t] -> [f(h) | map_int(t, f)]
+      [h | t] -> [f(h) | map(t, f)]
     end
 
-  def filter_int(list: List(Int), predicate: Int -> Bool): List(Int) =
+  def filter(list: List(T), predicate: T -> Bool): List(T) =
     match list do
       [] -> []
       [h | t] -> 
-        let filtered_tail = filter_int(t, predicate)
+        let filtered_tail = filter(t, predicate)
         if predicate(h) then [h | filtered_tail]
         else filtered_tail
         end
     end
 
+  def fold(list: List(T), init: U, func: T -> U -> U): U =
+    match list do
+      [] -> init
+      [h | t] -> func(h, fold(t, init, func))
+    end
+
+  def zip_with(list1: List(T), list2: List(U), func: T -> U -> V): List(V) =
+    match list1 do
+      [] -> []
+      [h1 | t1] ->
+        match list2 do
+          [] -> []
+          [h2 | t2] -> [func(h1, h2) | zip_with(t1, t2, func)]
+        end
+    end
+
   # Access
-  def nth(list: List(Int), index: Int): Int =
-    if index == 0 then head(list)
-    else nth(tail(list), index - 1)
+  def nth(list: List(T), index: Int, default: T): T =
+    if index == 0 then head(list, default)
+    else nth(tail(list), index - 1, default)
     end
 
-  def take(list: List(Int), n: Int): List(Int) =
-    if n <= 0 then []
-    else
-      match list do
-        [] -> []
-        [h | t] -> [h | take(t, n - 1)]
-      end
-    end
+  # def take(list: List(T), n: Int): List(T) =
+  #   if n <= 0 then []
+  #   else
+  #     match list do
+  #       [] -> []
+  #       [h | t] -> [h | take(t, n - 1)]
+  #     end
+  #   end
 
-  def drop(list: List(Int), n: Int): List(Int) =
-    if n <= 0 then list
-    else
-      match list do
-        [] -> []
-        [_ | t] -> drop(t, n - 1)
-      end
-    end
+  # def drop(list: List(T), n: Int): List(T) =
+  #   if n <= 0 then list
+  #   else
+  #     match list do
+  #       [] -> []
+  #       [_ | t] -> drop(t, n - 1)
+  #     end
+  #  end
 
   # Simple predicates
-  def contains_int(list: List(Int), element: Int): Bool =
+  def contains(list: List(T), element: T): Bool =
     match list do
       [] -> false
       [h | t] ->
         if h == element then true
-        else contains_int(t, element)
+        else contains(t, element)
         end
     end
 

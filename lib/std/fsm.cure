@@ -1,7 +1,7 @@
 # Cure Standard Library - FSM Module (Simplified)
 # Basic FSM utilities
 
-module Std.StateMachine do
+module Std.FSM do
   import Std.Core [Result, ok, error]
 
   export [

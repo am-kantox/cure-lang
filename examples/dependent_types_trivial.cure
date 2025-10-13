@@ -3,6 +3,7 @@ module DependentTypes do
 
   # Import standard types
   import Std [List, Result]
+  import Std.Vector [zip_with/3, fold/3]
   
   # === LENGTH-INDEXED VECTORS ===
 

@@ -7,4 +7,6 @@ module Test do
   def add(x: Int, y: Int): Int = x + y
   
   def double(x: Int): Int = add(x, x)
+
+  def double_42(): Int = double(42)
 end

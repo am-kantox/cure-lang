@@ -163,7 +163,7 @@ fsm_history(FSM) ->
     {error, {invalid_fsm_pid, FSM}}.
 
 %% Set FSM data
-fsm_set_data(FSMPid, NewData) when is_pid(FSMPid) ->
+fsm_set_data(FSMPid, _NewData) when is_pid(FSMPid) ->
     % This could be extended to actually set data in the runtime
     ok;
 fsm_set_data(FSM, _NewData) ->

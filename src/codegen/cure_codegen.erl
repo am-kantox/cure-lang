@@ -2183,7 +2183,7 @@ convert_functions_to_forms([Function | RestFunctions], Line, Acc) ->
 convert_function_to_form(Function, Line) ->
     % Check if this is already an Erlang abstract form (from union type constructors)
     case Function of
-        {function, FormLine, Name, Arity, Clauses} ->
+        {function, _FormLine, Name, Arity, Clauses} ->
             % Already in Erlang abstract form, just update the line number
             UpdatedForm = {function, Line, Name, Arity, Clauses},
             {ok, UpdatedForm, Line + 1};
@@ -2768,7 +2768,7 @@ generate_constructor_functions(TypeName, [Variant | RestVariants], State, Acc) -
     end.
 
 %% Generate a single constructor function
-generate_single_constructor(TypeName, Variant, State) ->
+generate_single_constructor(_TypeName, Variant, State) ->
     case extract_constructor_info(Variant) of
         {ok, ConstructorName, Arity} ->
             % Create constructor function: ConstructorName(Args...) -> {ConstructorName, Args...}

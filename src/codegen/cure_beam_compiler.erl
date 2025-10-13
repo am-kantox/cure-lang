@@ -448,8 +448,9 @@ compile_call([Arity], Context) ->
                                                         {atom, Line, FuncName}},
                                                     Args};
                                             false ->
-                                                % Direct call (including imported functions)
-                                                {call, Line, Function, Args}
+                                                % For local function calls, ensure proper arity and format
+                                                % This handles recursive calls within the same module
+                                                {call, Line, {atom, Line, FuncName}, Args}
                                         end
                                 end;
                             _ ->

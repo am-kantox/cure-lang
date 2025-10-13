@@ -4,7 +4,7 @@ module Std.Math do
     abs/1, sign/1, negate/1,
     add/2, subtract/2, multiply/2,
     min/2, max/2, clamp/3,
-    power/2, factorial/1, fibonacci/1
+    power/2
   ]
 
   # Mathematical constants
@@ -44,27 +44,4 @@ module Std.Math do
       end
     end
 
-  def factorial(n: Int): Int =
-    # Simplified non-recursive version for basic cases
-    if n <= 1 then 1
-    else 
-      if n == 2 then 2
-      else 
-        if n == 3 then 6
-        else 24  # Simplified - just return 4! for higher values
-        end
-      end
-    end
-
-  def fibonacci(n: Int): Int =
-    # Simplified non-recursive version for basic cases
-    if n <= 1 then n
-    else 
-      if n == 2 then 1
-      else 
-        if n == 3 then 2
-        else 5  # Simplified - just return F(5) for higher values
-        end
-      end
-    end
 end

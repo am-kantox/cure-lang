@@ -1,0 +1,55 @@
+module Std.Vector do
+  export [
+    # Basic operations
+    length/1, is_empty/1, reverse/1,
+    
+    # Simple transformations
+    map/2, filter/2, fold/3, zip_with/3,
+    
+    # Simple predicates
+    contains/2
+  ]
+
+  # Basic operations
+  def length(v: Vector(T, n)): Int = n
+
+  def is_empty(v: Vector(T, n)): Bool = n == 0
+
+  def reverse(v: Vector(T, n)): Vector(T, n) =
+    reverse_helper(v, [])
+
+  # Helper for reverse
+  defp reverse_helper(v: Vector(T, n), acc: Vector(T, m)): Vector(T, m + n) =
+    match v do
+      [] -> acc
+      [h | t] -> reverse_helper(t, [h | acc])
+    end
+
+  # Simplified transformations (Int only for now)
+  def map(v: Vector(T, n), f: T -> U): Vector(U, n) =
+    match list do
+      [] -> []
+      [h | t] -> [f(h) | map(t, f)]
+    end
+
+  def filter(list: Vector(T, n), predicate: T -> Bool): List(T) =
+    match list do
+      [] -> []
+      [h | t] -> 
+        let filtered_tail = filter(t, predicate)
+        if predicate(h) then [h | filtered_tail]
+        else filtered_tail
+        end
+    end
+
+  # Simple predicates
+  def contains(v: Vector(T, n), element: T): Bool =
+    match list do
+      [] -> false
+      [h | t] ->
+        if h == element then true
+        else contains(t, element)
+        end
+    end
+
+end

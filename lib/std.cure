@@ -22,86 +22,11 @@ module Std do
     # Utility functions
     const/1, apply/2, pipe/2
   ]
-
-  # Re-export commonly used list functions
-  import Std.List [
-    # List construction
-    cons/2, head/1, tail/1, length/1, is_empty/1,
-    
-    # List transformation
-    map/2, filter/2, reverse/1, append/2, concat/1,
-    
-    # Folding and reducing
-    foldl/3, foldr/3, fold/3, reduce/2,
-    
-    # List utilities
-    find/2, elem/2, all/2, any/2,
-    take/2, drop/2, zip/2, zip_with/3, unzip/1,
-    
-    # Safe operations
-    safe_head/1, safe_tail/1, safe_nth/2
-  ]
-
-  # Re-export common math functions
-  import Std.Math [
-    # Constants
-    pi/0, e/0,
-    
-    # Basic operations
-    abs/1, sign/1, min/2, max/2,
-    
-    # Rounding
-    round/1, floor/1, ceiling/1,
-    
-    # Common math functions
-    sqrt/1, power/2,
-    
-    # Safe operations
-    safe_divide/2, safe_sqrt/1
-  ]
-
-  # Re-export common string functions
-  import Std.String [
-    # String properties
-    length/1 as string_length, is_empty/1 as string_empty,
-    
-    # String manipulation
-    concat/2 as string_concat, join/2, trim/1,
-    to_upper/1, to_lower/1, capitalize/1,
-    
-    # String searching
-    contains/2, starts_with/2, ends_with/2,
-    
-    # String slicing
-    slice/3 as string_slice, take/2 as string_take, 
-    drop/2 as string_drop,
-    
-    # String splitting
-    split/2, words/1
-  ]
   
   # Re-export Show functions
   import Std.Show [
     # String conversion
     show/1, print/1
-  ]
-
-  # Re-export FSM utilities
-  import Std.FSM [
-    # FSM management
-    create/2 as fsm_create, start/1 as fsm_start, 
-    stop/1 as fsm_stop_safe,
-    
-    # FSM queries
-    current_state/1 as fsm_current_state, 
-    get_data/1 as fsm_get_data, 
-    is_alive/1 as fsm_alive,
-    
-    # FSM events
-    send_event/2 as fsm_send_safe,
-    
-    # Common patterns
-    create_counter/1, create_toggle/1, create_timer/2
   ]
 
   # Export all re-imported functions
@@ -118,35 +43,8 @@ module Std do
     map_option/2, flat_map_option/2, option_or/2,
     const/1, apply/2, pipe/2,
     
-    # List functions
-    cons/2, head/1, tail/1, length/1, is_empty/1,
-    map/2, filter/2, reverse/1, append/2, concat/1,
-    foldl/3, foldr/3, fold/3, reduce/2,
-    find/2, elem/2, all/2, any/2,
-    take/2, drop/2, zip/2, zip_with/3, unzip/1,
-    safe_head/1, safe_tail/1, safe_nth/2,
-    
-    # Math functions  
-    pi/0, e/0, abs/1, sign/1,
-    round/1, floor/1, ceiling/1,
-    sqrt/1, power/2, safe_divide/2, safe_sqrt/1,
-    
-    # String functions
-    string_length/1, string_empty/1,
-    string_concat/2, join/2, trim/1,
-    to_upper/1, to_lower/1, capitalize/1,
-    contains/2, starts_with/2, ends_with/2,
-    string_slice/3, string_take/2, string_drop/2,
-    split/2, words/1,
-    
     # Show functions
     show/1, print/1,
-    
-    # FSM functions
-    fsm_create/2, fsm_start/1, fsm_stop_safe/1,
-    fsm_current_state/1, fsm_get_data/1, fsm_alive/1,
-    fsm_send_safe/2,
-    create_counter/1, create_toggle/1, create_timer/2
   ]
 
 end

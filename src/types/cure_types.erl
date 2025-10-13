@@ -208,6 +208,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     substitute/2,
     normalize_type/1,
     type_to_string/1,
+    is_generic_type_variable_name/1,
 
     % DEBUG: Temporary exports for debugging vector param extraction
     extract_vector_params/1,
