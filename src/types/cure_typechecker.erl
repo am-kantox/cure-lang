@@ -933,12 +933,59 @@ create_result_type_with_env(TypeName, TypeParams, Env) ->
     ],
     {dependent_type, TypeName, ParamVars}.
 
+%% Get concrete type signature for standard library functions
+get_stdlib_function_type('Std.List', fold, 3) ->
+    % fold: List(T) -> U -> (T -> U -> U) -> U
+    % Based on the actual implementation: func(h, fold(t, init, func))
+    T = cure_types:new_type_var('T'),
+    U = cure_types:new_type_var('U'),
+    ListType = {list_type, T, undefined},
+    % The function parameter is curried: T -> (U -> U)
+    InnerFuncType = {function_type, [U], U},
+    FuncType = {function_type, [T], InnerFuncType},
+    ResultType = {function_type, [ListType, U, FuncType], U},
+    {ok, ResultType};
+get_stdlib_function_type('Std.List', map, 2) ->
+    % map: List(T) -> (T -> U) -> List(U)
+    T = cure_types:new_type_var('T'),
+    U = cure_types:new_type_var('U'),
+    ListT = {list_type, T, undefined},
+    ListU = {list_type, U, undefined},
+    FuncType = {function_type, [T], U},
+    ResultType = {function_type, [ListT, FuncType], ListU},
+    {ok, ResultType};
+get_stdlib_function_type('Std.List', filter, 2) ->
+    % filter: List(T) -> (T -> Bool) -> List(T)
+    T = cure_types:new_type_var('T'),
+    ListT = {list_type, T, undefined},
+    FuncType = {function_type, [T], {primitive_type, 'Bool'}},
+    ResultType = {function_type, [ListT, FuncType], ListT},
+    {ok, ResultType};
+get_stdlib_function_type('Std.List', length, 1) ->
+    % length: List(T) -> Int
+    T = cure_types:new_type_var('T'),
+    ListT = {list_type, T, undefined},
+    ResultType = {function_type, [ListT], {primitive_type, 'Int'}},
+    {ok, ResultType};
+get_stdlib_function_type('Std.Core', identity, 1) ->
+    % identity: T -> T
+    T = cure_types:new_type_var('T'),
+    ResultType = {function_type, [T], T},
+    {ok, ResultType};
+get_stdlib_function_type(_Module, _Name, _Arity) ->
+    not_found.
+
 %% Create function type for imported function with given arity
 create_imported_function_type(Module, Name, Arity) ->
-    % Generate parameter types
-    ParamTypes = [cure_types:new_type_var() || _ <- lists:seq(1, Arity)],
-    ReturnType = cure_types:new_type_var(),
-    {imported_function_type, Module, Name, ParamTypes, ReturnType}.
+    case get_stdlib_function_type(Module, Name, Arity) of
+        {ok, ConcreteType} ->
+            ConcreteType;
+        not_found ->
+            % Generate parameter types as fallback
+            ParamTypes = [cure_types:new_type_var() || _ <- lists:seq(1, Arity)],
+            ReturnType = cure_types:new_type_var(),
+            {imported_function_type, Module, Name, ParamTypes, ReturnType}
+    end.
 
 %% Check expression with given environment
 check_expression(Expr, Env) ->

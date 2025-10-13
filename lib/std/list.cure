@@ -88,7 +88,9 @@ module Std.List do
   def fold(list: List(T), init: U, func: T -> U -> U): U =
     match list do
       [] -> init
-      [h | t] -> func(h, fold(t, init, func))
+      [h | t] -> 
+        let partial_func = func(h)
+        partial_func(fold(t, init, func))
     end
 
   def zip_with(list1: List(T), list2: List(U), func: T -> U -> V): List(V) =
