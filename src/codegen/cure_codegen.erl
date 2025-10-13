@@ -217,6 +217,12 @@ local state that is not shared between threads.
     convert_to_erlang_forms/1,
     generate_module_attributes/1,
 
+    % Pattern compilation functions (for testing)
+    convert_body_expression_to_erlang/2,
+    convert_list_pattern_to_erlang_form/3,
+    convert_pattern_to_erlang_form/2,
+    compile_patterns_to_case_clauses/2,
+
     % Configuration and options
     default_options/0,
     validate_options/1
