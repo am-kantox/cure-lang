@@ -1,7 +1,7 @@
 module Std.List do
   export [
     # Basic list operations
-    length/1, is_empty/1, reverse/1,
+    length/1, is_empty/1, reverse/2,
     head/2, tail/1,
     
     # List construction
@@ -30,7 +30,7 @@ module Std.List do
       _ -> false
     end
 
-  def reverse(list: List(T)): List(T) =
+  def reverse(list: List(T), acc: List(T)): List(T) =
     match list do
       [] -> acc
       [h | t] -> reverse(t, [h | acc])
@@ -94,14 +94,17 @@ module Std.List do
       [h1 | t1] ->
         match list2 do
           [] -> []
-          [h2 | t2] -> [func(h1, h2) | zip_with(t1, t2, func)]
+          [h2 | t2] -> 
+            let partial_func = func(h1)
+            [partial_func(h2) | zip_with(t1, t2, func)]
         end
     end
 
   # Access
   def nth(list: List(T), index: Int, default: T): T =
-    if index == 0 then head(list, default)
-    else nth(tail(list), index - 1, default)
+    match index do
+      n when n <= 0 -> head(list, default)
+      _ -> nth(tail(list), index - 1, default)
     end
 
   # def take(list: List(T), n: Int): List(T) =

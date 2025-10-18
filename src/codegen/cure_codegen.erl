@@ -2803,6 +2803,22 @@ convert_complex_body_to_erlang(#cons_expr{elements = Elements, tail = Tail}, Loc
         error ->
             error
     end;
+convert_complex_body_to_erlang(#match_expr{expr = Expr, patterns = Patterns}, Location) ->
+    Line = get_line_from_location(Location),
+    io:format("DEBUG: Converting match expr with ~p patterns~n", [length(Patterns)]),
+    case convert_complex_body_to_erlang(Expr, Location) of
+        {ok, ExprForm} ->
+            case convert_match_patterns_to_erlang(Patterns, Location) of
+                {ok, ClauseForms} ->
+                    CaseForm = {'case', Line, ExprForm, ClauseForms},
+                    io:format("DEBUG: Generated case form: ~p~n", [CaseForm]),
+                    {ok, CaseForm};
+                error ->
+                    error
+            end;
+        error ->
+            error
+    end;
 convert_complex_body_to_erlang(_, _) ->
     error.
 
@@ -2869,6 +2885,7 @@ is_function_name(head) -> true;
 is_function_name(tail) -> true;
 is_function_name(map) -> true;
 is_function_name(filter) -> true;
+is_function_name(zip_with) -> true;
 is_function_name(reverse_helper) -> true;
 % Common test and user-defined function names
 is_function_name(add_five) -> true;
@@ -2893,6 +2910,36 @@ build_cons_form([], TailForm, _Line) ->
 build_cons_form([Element | RestElements], TailForm, Line) ->
     RestConsForm = build_cons_form(RestElements, TailForm, Line),
     {cons, Line, Element, RestConsForm}.
+
+%% Helper function to convert match patterns to Erlang case clauses
+convert_match_patterns_to_erlang([], _Location) ->
+    {ok, []};
+convert_match_patterns_to_erlang([#match_clause{pattern = Pattern, guard = Guard, body = Body} | Rest], Location) ->
+    Line = get_line_from_location(Location),
+    ErlangPattern = convert_pattern_to_erlang_form(Pattern, Location),
+    
+    % Convert guard to Erlang guard form if present
+    ErlangGuard = case Guard of
+        undefined -> [];
+        _ -> [convert_guard_to_erlang_form(Guard, Location)]
+    end,
+    
+    % Convert body to Erlang form
+    case convert_complex_body_to_erlang(Body, Location) of
+        {ok, BodyForm} ->
+            CaseClause = {clause, Line, [ErlangPattern], ErlangGuard, [BodyForm]},
+            case convert_match_patterns_to_erlang(Rest, Location) of
+                {ok, RestClauses} ->
+                    {ok, [CaseClause | RestClauses]};
+                error ->
+                    error
+            end;
+        error ->
+            error
+    end;
+convert_match_patterns_to_erlang([_ | Rest], Location) ->
+    % Skip unsupported pattern types and continue
+    convert_match_patterns_to_erlang(Rest, Location).
 
 %% Get default values for patterns and bodies
 default_value_for_pattern(#literal_pattern{value = Value}) -> Value;
