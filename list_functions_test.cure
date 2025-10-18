@@ -1,0 +1,17 @@
+module ListFunctionsTest do
+  export [test_all/0]
+  
+  import Std.List [length/1, reverse/1, head/2, tail/1, contains/2, map/2, filter/2]
+  
+  def test_all(): List(Int) =
+    let numbers = [1, 2, 3, 4, 5]
+    let len = length(numbers)
+    let rev = reverse(numbers)
+    let first = head(numbers, 0)
+    let rest = tail(numbers)
+    let has_3 = contains(numbers, 3)
+    let doubled = map(numbers, fn(x) -> x * 2 end)
+    let evens = filter(numbers, fn(x) -> x > 2 end)
+    [len, first] ++ rest
+
+end

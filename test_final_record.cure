@@ -1,0 +1,14 @@
+module TestFinalRecord do
+
+record Person do
+    name: String
+    age: Int
+end
+
+def main() =
+    let alice = Person{name: "Alice", age: 30}
+    match alice do
+        Person{name: n} -> n
+    end
+
+end

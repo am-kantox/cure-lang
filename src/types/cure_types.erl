@@ -2240,7 +2240,9 @@ infer_constructor_args_generic([Pattern | RestPatterns], Env, Constraints) ->
 %% Helper for record field patterns
 infer_record_field_patterns([], _RecordFields, Env, Constraints) ->
     {ok, Env, Constraints};
-infer_record_field_patterns([{field_pattern, FieldName, Pattern, _Location} | RestFields], RecordFields, Env, Constraints) ->
+infer_record_field_patterns(
+    [{field_pattern, FieldName, Pattern, _Location} | RestFields], RecordFields, Env, Constraints
+) ->
     % Find the field type in the record definition
     case find_record_field_type(FieldName, RecordFields) of
         undefined ->
@@ -2248,7 +2250,9 @@ infer_record_field_patterns([{field_pattern, FieldName, Pattern, _Location} | Re
         FieldType ->
             case infer_pattern_type(Pattern, FieldType, Env) of
                 {ok, NewEnv, PatternConstraints} ->
-                    infer_record_field_patterns(RestFields, RecordFields, NewEnv, Constraints ++ PatternConstraints);
+                    infer_record_field_patterns(
+                        RestFields, RecordFields, NewEnv, Constraints ++ PatternConstraints
+                    );
                 Error ->
                     Error
             end
@@ -2260,7 +2264,9 @@ find_record_field_type(FieldName, RecordFields) ->
 
 find_record_field_type_helper(_FieldName, []) ->
     undefined;
-find_record_field_type_helper(FieldName, [{record_field_def, FieldName, FieldType, _DefaultValue, _Location} | _Rest]) ->
+find_record_field_type_helper(FieldName, [
+    {record_field_def, FieldName, FieldType, _DefaultValue, _Location} | _Rest
+]) ->
     FieldType;
 find_record_field_type_helper(FieldName, [_OtherField | Rest]) ->
     find_record_field_type_helper(FieldName, Rest).

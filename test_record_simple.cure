@@ -1,0 +1,13 @@
+module TestRecordSimple do
+
+record Person do
+    name: String
+    age: Int
+end
+
+def main() =
+    let p = Person{name: "Alice", age: 30}
+    match p do
+        Person{name: n} -> n
+    end
+end

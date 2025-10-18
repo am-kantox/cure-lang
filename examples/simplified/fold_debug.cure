@@ -1,0 +1,32 @@
+module FoldDebug do
+  export [trace_simple/0, trace_base/0, test_step_by_step/0]
+  
+  # Test the base case - should return 5
+  def trace_base(): Int =
+    my_fold_debug([], 5, simple_add, 0)
+    
+  # Test simple case - should return 1 + 0 = 1
+  def trace_simple(): Int =
+    my_fold_debug([1], 0, simple_add, 0)
+    
+  # Test step by step to ensure curried functions work
+  def test_step_by_step(): Int =
+    let adder = simple_add(1)
+    adder(0)
+  
+  def simple_add(x: Int): Int -> Int = 
+    fn(acc) -> x + acc end
+  
+  def my_fold_debug(list: List(T), init: U, func: T -> U -> U, depth: Int): U =
+    match list do
+      [] -> 
+        # Base case - should return init
+        init
+      [h | t] -> 
+        # Recursive case
+        let rest_result = my_fold_debug(t, init, func, depth + 1)
+        let partial_func = func(h)
+        partial_func(rest_result)
+    end
+    
+end

@@ -1,0 +1,9 @@
+module StandaloneTest do
+  type MyOption(T) = MySome(T) | MyNone
+  
+  def test() =
+    match MyNone do
+      MyNone -> true
+      MySome(_) -> false
+    end
+end

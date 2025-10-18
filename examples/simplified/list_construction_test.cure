@@ -1,0 +1,26 @@
+module ListConstructionTest do
+  export [test_literal_list/0, test_head_tail/0, test_direct_match/0]
+  
+  # Test direct matching with literal list
+  def test_literal_list(): Int =
+    match [7] do
+      [] -> 999
+      [x | _] -> x
+    end
+    
+  # Test head/tail extraction
+  def test_head_tail(): Int =
+    match [7] do
+      [] -> 999
+      [h | t] -> h
+    end
+    
+  # Test direct pattern without variables
+  def test_direct_match(): Int =
+    match [7] do
+      [] -> 999
+      [7 | _] -> 100
+      _ -> 888
+    end
+    
+end

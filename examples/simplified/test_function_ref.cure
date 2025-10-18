@@ -1,0 +1,11 @@
+module FunctionRefTest do
+  export [demo/0]
+  
+  def demo(): Int =
+    let f = double_func
+    f(5)
+  
+  def double_func(x: Int): Int = 
+    x * 2
+
+end

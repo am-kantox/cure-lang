@@ -1,0 +1,11 @@
+module CurryTest do
+  export [test_curry/0]
+  
+  def test_curry(): Int =
+    let add_five = make_adder(5)
+    add_five(10)
+  
+  def make_adder(x: Int): Int -> Int = 
+    fn(y) -> x + y end
+    
+end

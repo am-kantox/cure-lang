@@ -1,0 +1,177 @@
+module ListComprehensiveTest do
+  export [
+    # Existing demos
+    demo_fold/0, demo_map/0, demo_filter/0, demo_append/0, demo_concat/0,
+    # New demos for all Std.List functions
+    demo_length/0, demo_is_empty/0, demo_reverse/0, demo_head/0, demo_tail/0,
+    demo_cons/0, demo_zip_with/0, demo_nth/0, demo_contains/0,
+    # Helper functions
+    add_folder_func/1, multiply_folder_func/1, add_mapper_func/1, filter_func/1,
+    double_func/1, add_zipper_func/1, simple_add/2
+  ]
+  
+  import Std.List [
+    # Basic operations
+    length/1, is_empty/1, reverse/2, head/2, tail/1,
+    # Construction
+    cons/2, append/2, concat/1,
+    # Transformations
+    map/2, filter/2, fold/3, zip_with/3,
+    # Access and predicates
+    nth/3, contains/2
+  ]
+  
+  def demo_fold(): Int =
+    let numbers = [1, 2, 3, 4, 5]
+    let sum_result = fold(numbers, 0, add_folder_func)
+    let product_result = fold(numbers, 1, multiply_folder_func)
+    sum_result + product_result
+  
+  def add_folder_func(x: Int): Int -> Int =
+    fn(acc) -> x + acc end
+  
+  def multiply_folder_func(x: Int): Int -> Int =
+    fn(acc) -> x * acc end
+
+  def demo_map(): List(Int) =
+    let numbers = [1, 2, 3, 4, 5]
+    let sum_result = map(numbers, add_mapper_func)
+    sum_result
+  
+  def add_mapper_func(x: Int): Int =
+    x + 5
+
+  def demo_filter(): List(Int) =
+    let numbers = [1, 2, 3, 4, 5]
+    let filtered_result = filter(numbers, filter_func)
+    filtered_result
+
+  def filter_func(x: Int): Bool =
+    let three = x == 3
+    three
+
+  def demo_append(): List(Int) =
+    let l1 = [1, 2]
+    let l2 = [3, 4, 5]
+    let result = append(l1, l2)
+    result
+  
+  def demo_concat(): List(Int) =
+    let l1 = [1, 2]
+    let l2 = [3, 4, 5]
+    let result = concat([l1, l2])
+    result
+
+  # ============================================================================
+  # New test functions for all remaining Std.List exported functions
+  # ============================================================================
+
+  def demo_length(): Int =
+    let empty_list = []
+    let short_list = [1, 2, 3]
+    let long_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    let empty_len = length(empty_list)
+    let short_len = length(short_list)
+    let long_len = length(long_list)
+    empty_len + short_len + long_len  # Should be 0 + 3 + 10 = 13
+
+  def demo_is_empty(): Int =
+    let empty_list = []
+    let non_empty_list = [1, 2, 3]
+    let empty_result = is_empty(empty_list)      # Should be true
+    let non_empty_result = is_empty(non_empty_list)  # Should be false
+    # Convert booleans to integers for return (true=1, false=0)
+    let empty_val = if empty_result then 1 else 0 end
+    let non_empty_val = if non_empty_result then 1 else 0 end
+    empty_val + non_empty_val  # Should be 1 + 0 = 1
+
+  def demo_reverse(): List(Int) =
+    let numbers = [1, 2, 3, 4, 5]
+    let empty_list = []
+    let single_item = [42]
+    let reversed_numbers = reverse(numbers, [])      # Should be [5, 4, 3, 2, 1]
+    let reversed_empty = reverse(empty_list, [])     # Should be []
+    let reversed_single = reverse(single_item, [])   # Should be [42]
+    # Combine results to show all cases work: reversed_numbers + reversed_single (empty adds nothing)
+    append(reversed_numbers, reversed_single)    # Should be [5, 4, 3, 2, 1, 42]
+
+  def demo_head(): Int =
+    let numbers = [10, 20, 30]
+    let empty_list = []
+    let default_value = 99
+    let head_of_numbers = head(numbers, default_value)     # Should be 10
+    let head_of_empty = head(empty_list, default_value)    # Should be 99
+    head_of_numbers + head_of_empty  # Should be 10 + 99 = 109
+
+  def demo_tail(): List(Int) =
+    let numbers = [1, 2, 3, 4, 5]
+    let single_item = [42]
+    let empty_list = []
+    let tail_of_numbers = tail(numbers)     # Should be [2, 3, 4, 5]
+    let tail_of_single = tail(single_item)  # Should be []
+    let tail_of_empty = tail(empty_list)    # Should be []
+    tail_of_numbers  # Return the main result
+
+  def demo_cons(): List(Int) =
+    let existing_list = [2, 3, 4]
+    let empty_list = []
+    let new_element = 1
+    let another_element = 100
+    let cons_to_existing = cons(new_element, existing_list)  # Should be [1, 2, 3, 4]
+    let cons_to_empty = cons(another_element, empty_list)    # Should be [100]
+    cons_to_existing  # Return the main result
+
+  def demo_zip_with(): List(Int) =
+    let list1 = [1, 2, 3, 4]
+    let list2 = [10, 20, 30, 40, 50]  # Longer list
+    let list3 = [100, 200]            # Shorter list
+    let empty_list = []
+    # Test zipping equal-length portions (should use first 4 from list2)
+    let zipped_result = zip_with(list1, list2, add_zipper_func)  # Should be [11, 22, 33, 44]
+    # Test with shorter second list
+    let zipped_short = zip_with(list1, list3, add_zipper_func)   # Should be [101, 202] (only 2 elements)
+    # Test with empty list
+    let zipped_empty = zip_with(list1, empty_list, add_zipper_func)  # Should be []
+    zipped_result  # Return the main result
+
+  def demo_nth(): Int =
+    let numbers = [10, 20, 30, 40, 50]
+    let empty_list = []
+    let default_value = 999
+    let first_element = nth(numbers, 0, default_value)   # Should be 10
+    # let third_element = nth(numbers, 2, default_value)   # Should be 30
+    # let last_element = nth(numbers, 4, default_value)    # Should be 50
+    # let out_of_bounds = nth(numbers, 10, default_value)  # Should be 999
+    # let from_empty = nth(empty_list, 0, default_value)   # Should be 999
+    first_element # + third_element + last_element # + out_of_bounds + from_empty  # Should be 10+30+50+999+999 = 2088
+
+  def demo_contains(): Int =
+    let numbers = [1, 2, 3, 4, 5]
+    let empty_list = []
+    let contains_3 = contains(numbers, 3)      # Should be true
+    let contains_10 = contains(numbers, 10)    # Should be false
+    let contains_1 = contains(numbers, 1)      # Should be true (first element)
+    let contains_5 = contains(numbers, 5)      # Should be true (last element)
+    let contains_empty = contains(empty_list, 1)  # Should be false
+    # Convert booleans to integers for arithmetic
+    let val_3 = if contains_3 then 1 else 0 end
+    let val_10 = if contains_10 then 1 else 0 end
+    let val_1 = if contains_1 then 1 else 0 end
+    let val_5 = if contains_5 then 1 else 0 end
+    let val_empty = if contains_empty then 1 else 0 end
+    val_3 + val_10 + val_1 + val_5 + val_empty  # Should be 1+0+1+1+0 = 3
+
+  # ============================================================================
+  # Additional helper functions for new tests
+  # ============================================================================
+
+  def double_func(x: Int): Int =
+    x * 2
+
+  def add_zipper_func(x: Int): Int -> Int =
+    fn(y) -> x + y end
+
+  def simple_add(x: Int, y: Int): Int =
+    x + y
+  
+end

@@ -1,0 +1,20 @@
+module MatchTest do
+  export [test_empty_match/0, test_single_match/0]
+  
+  # Test matching empty list - should return 42
+  def test_empty_match(): Int =
+    let empty_list = []
+    match empty_list do
+      [] -> 42
+      _ -> 999
+    end
+    
+  # Test matching single element list - should return the element
+  def test_single_match(): Int =
+    let single_list = [7]
+    match single_list do
+      [] -> 999
+      [x | _] -> x
+    end
+    
+end

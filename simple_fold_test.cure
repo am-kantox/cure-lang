@@ -1,0 +1,11 @@
+module SimpleFoldTest do
+  export [demo/0]
+  
+  import Std.List [fold/3]
+  
+  def demo(): Int =
+    let numbers = [1, 2, 3]
+    let add = fn(x) -> fn(acc) -> x + acc end end
+    fold(numbers, 0, add)
+
+end

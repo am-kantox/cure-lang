@@ -1,0 +1,22 @@
+module SimpleFoldTest do
+  export [test_simple/0, test_base_case/0]
+  
+  def test_simple(): Int =
+    my_fold([1], 0, simple_add)
+    
+  def test_base_case(): Int =
+    my_fold([], 5, simple_add)
+  
+  def simple_add(x: Int): Int -> Int = 
+    fn(acc) -> x + acc end
+  
+  # Fixed fold implementation with proper curried function application
+  def my_fold(list: List(T), init: U, func: T -> U -> U): U =
+    match list do
+      [] -> init
+      [h | t] -> 
+        let partial = func(h)
+        partial(my_fold(t, init, func))
+    end
+    
+end

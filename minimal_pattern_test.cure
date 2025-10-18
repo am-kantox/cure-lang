@@ -1,0 +1,11 @@
+module MinimalPatternTest do
+  export [simple_match/1]
+  
+  def simple_match(x: Int): Int =
+    match x do
+      0 -> 42
+      1 -> 99
+      _ -> 100 + 23
+    end
+    
+end

@@ -1,0 +1,75 @@
+module ListDemo do
+  export [demo_all/0]
+
+  # Import the fold function from Std.List
+  import Std [List]
+  import Std.List [fold]
+
+  # Demo 1: Sum a list of integers using fold
+  def sum_demo(): Int =
+    let numbers = [1, 2, 3, 4, 5]
+    fold(numbers, 0, add)  # Should return 15
+
+  # Demo 2: Product of a list using fold  
+  def product_demo(): Int =
+    let numbers = [2, 3, 4]
+    fold(numbers, 1, multiply)  # Should return 24
+
+  # Demo 3: Find maximum value using fold
+  def max_demo(): Int =
+    let numbers = [3, 1, 4, 1, 5, 9, 2, 6]
+    fold(numbers, 0, max)  # Should return 9
+
+  # Demo 4: Find minimum value using fold
+  def min_demo(): Int =
+    let numbers = [3, 1, 4, 1, 5, 9, 2, 6]
+    fold(numbers, 999, min)  # Should return 1
+
+  # Demo 5: Reverse a list using fold
+  def reverse_demo(): List(Int) =
+    let numbers = [1, 2, 3, 4]
+    fold(numbers, [], cons_helper)  # Should return [4, 3, 2, 1]
+
+  # Demo 6: Sum floats using fold
+  def sum_float_demo(): Float =
+    let numbers = [1.5, 2.5, 3.0]
+    fold(numbers, 0.0, add_float)  # Should return 7.0
+
+  # Demo 7: Product of floats using fold
+  def product_float_demo(): Float =
+    let numbers = [2.0, 1.5, 2.0]
+    fold(numbers, 1.0, multiply_float)  # Should return 6.0
+
+  # Demo 8: Count elements using fold
+  def count_demo(): Int =
+    let numbers = [10, 20, 30, 40, 50]
+    let count_func = fn(x: Int) -> fn(acc: Int) -> acc + 1 end
+    fold(numbers, 0, count_func)  # Should return 5
+
+  # Demo 9: Fold over empty list
+  def empty_list_demo(): Int =
+    let empty_list = []
+    fold(empty_list, 42, add)  # Should return 42 (initial value)
+
+  # Demo 10: Single element list
+  def single_element_demo(): Int =
+    let single = [7]
+    fold(single, 0, add)  # Should return 7
+
+  # Main demonstration function - returns sum as a simple test
+  def demo_all(): Int =
+    # Run the basic sum demo to verify fold is working
+    sum_demo()
+
+  # Helper functions for fold operations (curried style as required by fold signature)
+  defp add(x: Int): Int -> Int = fn(acc) -> x + acc end
+  defp multiply(x: Int): Int -> Int = fn(acc) -> x * acc end
+  defp max(x: Int): Int -> Int = fn(acc) -> if x > acc then x else acc end
+  defp min(x: Int): Int -> Int = fn(acc) -> if x < acc then x else acc end
+  defp cons_helper(x: T): List(T) -> List(T) = fn(acc) -> [x | acc] end
+  
+  # For float operations
+  defp add_float(x: Float): Float -> Float = fn(acc) -> x + acc end
+  defp multiply_float(x: Float): Float -> Float = fn(acc) -> x * acc end
+
+end

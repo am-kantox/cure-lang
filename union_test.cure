@@ -1,0 +1,13 @@
+module UnionTest do
+  export [test_ok/0, test_some/0]
+  
+  type Result(T, E) = Ok(T) | Error(E)
+  type Option(T) = Some(T) | None
+  
+  def test_ok(): Result(Int, String) =
+    Ok(42)
+    
+  def test_some(): Option(Int) =
+    Some(123)
+    
+end

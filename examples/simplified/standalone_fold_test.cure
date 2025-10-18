@@ -1,0 +1,30 @@
+module StandaloneFoldTest do
+  export [test_base_case/0, test_simple_fold/0, test_multi_fold/0]
+  
+  # Define our own List type to avoid stdlib dependencies
+  type List(T) = Nil | Cons(T, List(T))
+  
+  def test_base_case(): Int =
+    my_fold(Nil, 5, simple_add)
+    
+  def test_simple_fold(): Int =
+    let single = Cons(3, Nil)
+    my_fold(single, 0, simple_add)
+    
+  def test_multi_fold(): Int =
+    let multi = Cons(1, Cons(2, Cons(3, Nil)))
+    my_fold(multi, 0, simple_add)
+  
+  def simple_add(x: Int): Int -> Int = 
+    fn(acc) -> x + acc end
+  
+  # Fold implementation using constructor patterns
+  def my_fold(list: List(T), init: U, func: T -> U -> U): U =
+    match list do
+      Nil -> init
+      Cons(h, t) -> 
+        let partial = func(h)
+        partial(my_fold(t, init, func))
+    end
+    
+end

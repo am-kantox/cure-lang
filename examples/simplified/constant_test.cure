@@ -1,0 +1,8 @@
+module ConstantTest do
+  export [return_five/0, return_ten/0]
+  
+  def return_five(): Int = 5
+  
+  def return_ten(): Int = 10
+    
+end

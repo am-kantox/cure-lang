@@ -1,0 +1,9 @@
+module ConstructorTest do
+  export [test_result/0]
+  
+  type MyResult(T) = MyOk(T) | MyError(String)
+  
+  def test_result(): MyResult(Int) =
+    MyOk(42)
+    
+end
