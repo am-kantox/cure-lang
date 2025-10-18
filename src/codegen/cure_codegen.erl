@@ -2914,16 +2914,19 @@ build_cons_form([Element | RestElements], TailForm, Line) ->
 %% Helper function to convert match patterns to Erlang case clauses
 convert_match_patterns_to_erlang([], _Location) ->
     {ok, []};
-convert_match_patterns_to_erlang([#match_clause{pattern = Pattern, guard = Guard, body = Body} | Rest], Location) ->
+convert_match_patterns_to_erlang(
+    [#match_clause{pattern = Pattern, guard = Guard, body = Body} | Rest], Location
+) ->
     Line = get_line_from_location(Location),
     ErlangPattern = convert_pattern_to_erlang_form(Pattern, Location),
-    
+
     % Convert guard to Erlang guard form if present
-    ErlangGuard = case Guard of
-        undefined -> [];
-        _ -> [convert_guard_to_erlang_form(Guard, Location)]
-    end,
-    
+    ErlangGuard =
+        case Guard of
+            undefined -> [];
+            _ -> [convert_guard_to_erlang_form(Guard, Location)]
+        end,
+
     % Convert body to Erlang form
     case convert_complex_body_to_erlang(Body, Location) of
         {ok, BodyForm} ->

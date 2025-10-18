@@ -276,7 +276,13 @@ check_item({export_list, ExportSpecs}, Env) ->
 check_item(FSM = #fsm_def{}, Env) ->
     check_fsm(FSM, Env);
 check_item(TypeDef = #type_def{}, Env) ->
-    check_type_definition(TypeDef, Env).
+    check_type_definition(TypeDef, Env);
+check_item({record_def, RecordName, _TypeParams, Fields, _Location}, Env) ->
+    % For now, just add the record type to the environment
+    % Create a record type from the field definitions
+    RecordType = {record_type, RecordName, Fields},
+    NewEnv = cure_types:extend_env(Env, RecordName, RecordType),
+    {ok, NewEnv, success_result(RecordType)}.
 
 -doc """
 Type checks a module definition using the built-in environment.
@@ -1907,8 +1913,9 @@ import_item_new(Module, {aliased_import, OriginalName, Alias, _Location}, Env) -
     {ok, NewEnv};
 import_item_new(Module, Identifier, Env) when is_atom(Identifier) ->
     io:format("DEBUG IMPORT: Processing atom identifier ~p from ~p~n", [Identifier, Module]),
-    IdentifierType = {imported_identifier, Module, Identifier},
-    NewEnv = cure_types:extend_env(Env, Identifier, IdentifierType),
+    % Assume it's a function with arity 1 by default
+    FunctionType = create_imported_function_type(Module, Identifier, 1),
+    NewEnv = cure_types:extend_env(Env, Identifier, FunctionType),
     {ok, NewEnv}.
 
 %% Additional converter functions

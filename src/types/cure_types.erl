@@ -1567,6 +1567,23 @@ infer_expr({cons_expr, Elements, Tail, Location}, Env) ->
                     Error
             end
     end;
+infer_expr({record_expr, RecordName, Fields, _Location}, Env) ->
+    % Type a record construction expression: RecordName{field1: value1, field2: value2}
+    case lookup_env(Env, RecordName) of
+        undefined ->
+            {error, {unbound_record_type, RecordName}};
+        {record_type, RecordName, _RecordFields} ->
+            % For now, just check that all field values can be typed
+            case infer_record_fields(Fields, Env) of
+                {ok, FieldConstraints} ->
+                    % Return the record type
+                    {ok, {record_type, RecordName}, FieldConstraints};
+                Error ->
+                    Error
+            end;
+        _Other ->
+            {error, {not_record_type, RecordName}}
+    end;
 infer_expr(Expr, _Env) ->
     {error, {unsupported_expression, Expr}}.
 
@@ -1583,6 +1600,22 @@ infer_literal_type(F) when is_float(F) -> ?TYPE_FLOAT;
 infer_literal_type(S) when is_list(S) -> ?TYPE_STRING;
 infer_literal_type(B) when is_boolean(B) -> ?TYPE_BOOL;
 infer_literal_type(A) when is_atom(A) -> ?TYPE_ATOM.
+
+%% Type inference for record field expressions
+infer_record_fields([], _Env) ->
+    {ok, []};
+infer_record_fields([{field_expr, _FieldName, ValueExpr, _Location} | RestFields], Env) ->
+    case infer_expr(ValueExpr, Env) of
+        {ok, _ValueType, ValueConstraints} ->
+            case infer_record_fields(RestFields, Env) of
+                {ok, RestConstraints} ->
+                    {ok, ValueConstraints ++ RestConstraints};
+                Error ->
+                    Error
+            end;
+        Error ->
+            Error
+    end.
 
 %% Instantiate function type with fresh type variables while preserving sharing
 instantiate_function_type({function_type, ParamTypes, ReturnType}) ->
@@ -2123,6 +2156,17 @@ infer_pattern_type({constructor_pattern, ConstructorName, Args, _Location}, _Mat
                     infer_constructor_args_generic(ArgPatterns, Env, [])
             end
     end;
+infer_pattern_type({record_pattern, RecordName, FieldPatterns, _Location}, MatchType, Env) ->
+    % Handle record patterns like Person{name: n, age: a}
+    case lookup_env(Env, RecordName) of
+        undefined ->
+            {error, {unbound_record_type, RecordName}};
+        {record_type, RecordName, RecordFields} ->
+            % Infer types for field patterns
+            infer_record_field_patterns(FieldPatterns, RecordFields, Env, []);
+        _Other ->
+            {error, {not_record_type, RecordName}}
+    end;
 infer_pattern_type(_Pattern, _MatchType, Env) ->
     % For other patterns, return env unchanged for now
     {ok, Env, []}.
@@ -2192,6 +2236,34 @@ infer_constructor_args_generic([Pattern | RestPatterns], Env, Constraints) ->
         Error ->
             Error
     end.
+
+%% Helper for record field patterns
+infer_record_field_patterns([], _RecordFields, Env, Constraints) ->
+    {ok, Env, Constraints};
+infer_record_field_patterns([{field_pattern, FieldName, Pattern, _Location} | RestFields], RecordFields, Env, Constraints) ->
+    % Find the field type in the record definition
+    case find_record_field_type(FieldName, RecordFields) of
+        undefined ->
+            {error, {unknown_record_field, FieldName}};
+        FieldType ->
+            case infer_pattern_type(Pattern, FieldType, Env) of
+                {ok, NewEnv, PatternConstraints} ->
+                    infer_record_field_patterns(RestFields, RecordFields, NewEnv, Constraints ++ PatternConstraints);
+                Error ->
+                    Error
+            end
+    end.
+
+%% Find the type of a field in a record definition
+find_record_field_type(FieldName, RecordFields) ->
+    find_record_field_type_helper(FieldName, RecordFields).
+
+find_record_field_type_helper(_FieldName, []) ->
+    undefined;
+find_record_field_type_helper(FieldName, [{record_field_def, FieldName, FieldType, _DefaultValue, _Location} | _Rest]) ->
+    FieldType;
+find_record_field_type_helper(FieldName, [_OtherField | Rest]) ->
+    find_record_field_type_helper(FieldName, Rest).
 
 %% Type checking (simplified)
 check_type(Expr, ExpectedType, Env) ->

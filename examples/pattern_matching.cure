@@ -4,13 +4,13 @@
 module PatternMatching do
   export [demo_all/0, list_operations/1, result_handling/1, record_matching/1]
 
-  # Import standard types for demonstration
+  # Import standard types for demonstration (functions removed due to import issues)
   import Std [Result, Option, List]
 
   # Record definitions for examples
   record Person do
     name: String
-    age: Nat
+    age: Int
     email: String
   end
 
@@ -31,7 +31,7 @@ module PatternMatching do
       0 -> "zero"
       1 -> "one"
       2 -> "two"
-      _ -> "other: " ++ show(n)
+      _ -> "other number"
     end
 
   # List pattern matching with head/tail destructuring
@@ -49,8 +49,8 @@ module PatternMatching do
     match n do
       x when x < 0 -> "negative: " ++ show(x)
       x when x == 0 -> "zero"
-      x when x > 0 && x <= 10 -> "small positive: " ++ show(x)
-      x when x > 10 && x <= 100 -> "medium positive: " ++ show(x)
+      x when x > 0 and x <= 10 -> "small positive: " ++ show(x)
+      x when x > 10 and x <= 100 -> "medium positive: " ++ show(x)
       x when x > 100 -> "large positive: " ++ show(x)
     end
 
@@ -74,8 +74,8 @@ module PatternMatching do
       Person{name: "Alice", age: age} ->
         "Special greeting for Alice, age " ++ show(age)
       
-      # Match email domain pattern (conceptual - would need string pattern matching)
-      Person{email: email, name: name} when contains(email, "@company.com") ->
+      # Match email domain pattern (simplified - no string pattern matching for now)  
+      Person{email: email, name: name} when email == "user@company.com" ->
         "Corporate user: " ++ name
       
       # Generic pattern with field extraction
@@ -112,8 +112,7 @@ module PatternMatching do
 
   def option_handling(opt: Option(String)): String =
     match opt do
-      Some(value) when length(value) > 10 -> "Long string: " ++ value
-      Some(value) -> "Short string: " ++ value
+      Some(value) -> "String: " ++ value
       None -> "No value provided"
     end
 
@@ -135,7 +134,7 @@ module PatternMatching do
       {x, 0.0} -> "On X-axis at " ++ show(x)
       {0.0, y} -> "On Y-axis at " ++ show(y)
       {x, y} when x == y -> "Diagonal point at " ++ show(x)
-      {x, y} when x > 0.0 && y > 0.0 -> "First quadrant: (" ++ show(x) ++ ", " ++ show(y) ++ ")"
+      {x, y} when x > 0.0 and y > 0.0 -> "First quadrant: (" ++ show(x) ++ ", " ++ show(y) ++ ")"
       {x, y} -> "Point: (" ++ show(x) ++ ", " ++ show(y) ++ ")"
     end
 
@@ -167,7 +166,7 @@ module PatternMatching do
   defp filter_successes(results: List(Result(Person, String))): List(Person) =
     match results do
       [] -> []
-      [Ok(person) | rest] -> person :: filter_successes(rest)
+      [Ok(person) | rest] -> [person | filter_successes(rest)]
       [Error(_) | rest] -> filter_successes(rest)
     end
 
@@ -175,7 +174,7 @@ module PatternMatching do
     match results do
       [] -> []
       [Ok(_) | rest] -> filter_errors(rest)
-      [Error(err) | rest] -> err :: filter_errors(rest)
+      [Error(err) | rest] -> [err | filter_errors(rest)]
     end
 
   # === DEMONSTRATION FUNCTION ===

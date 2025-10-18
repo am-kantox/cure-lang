@@ -1,20 +1,18 @@
 module Std.Show do
   export [
-    # Basic show functions
+    # Basic show functions (multiple overloads)
     show/1,
     print/1, println/1
   ]
 
-  # Simplified show implementation
-  def show(value: T): String =
-    "Convert integer to T (simplified)"
+  # Simplified show implementation for integers only for now
+  def show(value: Int): String =
+    "[number]"  # Simplified - returns a placeholder
 
-  def print(s: String): Int =
-    "Print string (simplified)"
-    0
+  def print(s: String): Unit =
+    ok  # Simplified - just return unit
 
-  def println(s: String): Int =
-    "Print string with newline (simplified)"
-    0
+  def println(s: String): Unit =
+    ok  # Simplified - just return unit
 
 end

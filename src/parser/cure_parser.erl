@@ -2058,6 +2058,8 @@ parse_primary_expression(State) ->
                     parse_lambda_expression(State);
                 'match' ->
                     parse_match_expression(State);
+                'case' ->
+                    parse_case_expression(State);
                 '(' ->
                     {_, State1} = expect(State, '('),
                     {Expr, State2} = parse_expression(State1),
@@ -2413,6 +2415,23 @@ parse_match_expression(State) ->
     },
     {MatchExpr, State5}.
 
+%% Parse case expression: case expr of pattern -> body end
+parse_case_expression(State) ->
+    {_, State1} = expect(State, 'case'),
+    {Expr, State2} = parse_expression(State1),
+    {_, State3} = expect(State2, 'of'),
+    {Clauses, State4} = parse_match_clauses(State3, []),
+    {_, State5} = expect(State4, 'end'),
+
+    Location = get_token_location(current_token(State)),
+    % Reuse match_expr AST node since case is essentially the same as match
+    MatchExpr = #match_expr{
+        expr = Expr,
+        patterns = Clauses,
+        location = Location
+    },
+    {MatchExpr, State5}.
+
 %% Parse match clauses
 parse_match_clauses(State, Acc) ->
     case match_token(State, 'end') of
@@ -2468,67 +2487,44 @@ parse_pattern(State) ->
                 _ ->
                     % Check if it's a constructor pattern like Ok(value), ok(value), etc.
                     case match_token(State1, '(') of
-                        true when
-                            Name =:= 'Ok';
-                            Name =:= 'Error';
-                            Name =:= 'Some';
-                            Name =:= 'None';
-                            Name =:= ok;
-                            Name =:= error;
-                            Name =:= some;
-                            Name =:= none
-                        ->
+                        true ->
                             {_, State2} = expect(State1, '('),
-                            % Handle None/none with optional arguments
-                            case Name =:= 'None' orelse Name =:= none of
+                            % Check if there are no arguments (empty constructor)
+                            case match_token(State2, ')') of
                                 true ->
-                                    % None can have no arguments - check if closing paren immediately
-                                    case match_token(State2, ')') of
-                                        true ->
-                                            {_, State3} = expect(State2, ')'),
-                                            Pattern = #constructor_pattern{
-                                                name = Name,
-                                                args = [],
-                                                location = Location
-                                            },
-                                            {Pattern, State3};
-                                        false ->
-                                            % None with argument (shouldn't happen but handle gracefully)
-                                            {InnerPattern, State3} = parse_pattern(State2),
-                                            {_, State4} = expect(State3, ')'),
-                                            Pattern = #constructor_pattern{
-                                                name = Name,
-                                                args = [InnerPattern],
-                                                location = Location
-                                            },
-                                            {Pattern, State4}
-                                    end;
+                                    {_, State3} = expect(State2, ')'),
+                                    Pattern = #constructor_pattern{
+                                        name = Name,
+                                        args = [],
+                                        location = Location
+                                    },
+                                    {Pattern, State3};
                                 false ->
-                                    % Other constructors require an argument
-                                    {InnerPattern, State3} = parse_pattern(State2),
+                                    % Constructor with arguments - parse all patterns
+                                    {Patterns, State3} = parse_pattern_list_for_constructor(
+                                        State2, []
+                                    ),
                                     {_, State4} = expect(State3, ')'),
                                     Pattern = #constructor_pattern{
                                         name = Name,
-                                        args = [InnerPattern],
+                                        args = Patterns,
                                         location = Location
                                     },
                                     {Pattern, State4}
                             end;
-                        true ->
-                            % Not a known constructor pattern, treat as function call pattern or tuple
-                            % For now, just treat as identifier (could extend for function patterns)
-                            Pattern = #identifier_pattern{
-                                name = Name,
-                                location = Location
-                            },
-                            {Pattern, State1};
                         false ->
-                            % Simple identifier pattern
-                            Pattern = #identifier_pattern{
-                                name = Name,
-                                location = Location
-                            },
-                            {Pattern, State1}
+                            % Check if it's a record pattern like Person{name: name}
+                            case match_token(State1, '{') of
+                                true ->
+                                    parse_record_pattern(State1, Name, Location);
+                                false ->
+                                    % Simple identifier pattern
+                                    Pattern = #identifier_pattern{
+                                        name = Name,
+                                        location = Location
+                                    },
+                                    {Pattern, State1}
+                            end
                     end
             end;
         '[' ->
@@ -2933,6 +2929,83 @@ parse_pattern_list(State, Acc) ->
                     parse_pattern_list(State2, [Pattern | Acc]);
                 false ->
                     {lists:reverse(Acc), State}
+            end
+    end.
+
+%% Parse record pattern Person{name: name, age: age}
+parse_record_pattern(State, RecordName, Location) ->
+    % We already consumed the identifier, now expect '{'
+    {_, State1} = expect(State, '{'),
+
+    case match_token(State1, '}') of
+        true ->
+            % Empty record pattern Person{}
+            {_, State2} = expect(State1, '}'),
+            Pattern = #record_pattern{
+                name = RecordName,
+                fields = [],
+                location = Location
+            },
+            {Pattern, State2};
+        false ->
+            % Record with field patterns
+            {FieldPatterns, State2} = parse_record_field_patterns(State1, []),
+            {_, State3} = expect(State2, '}'),
+            Pattern = #record_pattern{
+                name = RecordName,
+                fields = FieldPatterns,
+                location = Location
+            },
+            {Pattern, State3}
+    end.
+
+%% Parse record field patterns: name: pattern, age: pattern
+parse_record_field_patterns(State, Acc) ->
+    case match_token(State, '}') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            % Parse field name
+            {NameToken, State1} = expect(State, identifier),
+            FieldName = binary_to_atom(get_token_value(NameToken), utf8),
+            FieldLocation = get_token_location(NameToken),
+
+            % Expect colon
+            {_, State2} = expect(State1, ':'),
+
+            % Parse pattern
+            {Pattern, State3} = parse_pattern(State2),
+
+            % Create field pattern
+            FieldPattern = #field_pattern{
+                name = FieldName,
+                pattern = Pattern,
+                location = FieldLocation
+            },
+
+            % Check for comma (more fields) or end
+            case match_token(State3, ',') of
+                true ->
+                    {_, State4} = expect(State3, ','),
+                    parse_record_field_patterns(State4, [FieldPattern | Acc]);
+                false ->
+                    {lists:reverse([FieldPattern | Acc]), State3}
+            end
+    end.
+
+%% Parse comma-separated pattern list for constructor arguments
+parse_pattern_list_for_constructor(State, Acc) ->
+    case match_token(State, ')') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {Pattern, State1} = parse_pattern(State),
+            case match_token(State1, ',') of
+                true ->
+                    {_, State2} = expect(State1, ','),
+                    parse_pattern_list_for_constructor(State2, [Pattern | Acc]);
+                false ->
+                    {lists:reverse([Pattern | Acc]), State1}
             end
     end.
 

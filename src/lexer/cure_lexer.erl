@@ -280,6 +280,8 @@ keywords() ->
         <<"then">> => 'then',
         <<"else">> => 'else',
         <<"match">> => 'match',
+        <<"case">> => 'case',
+        <<"of">> => 'of',
         <<"when">> => 'when',
         <<"let">> => 'let',
         <<"in">> => 'in',

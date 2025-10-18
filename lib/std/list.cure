@@ -102,9 +102,8 @@ module Std.List do
 
   # Access
   def nth(list: List(T), index: Int, default: T): T =
-    match index do
-      n when n <= 0 -> head(list, default)
-      _ -> nth(tail(list), index - 1, default)
+    if index <= 0 then head(list, default)
+    else nth(tail(list), index - 1, default)
     end
 
   # def take(list: List(T), n: Int): List(T) =
