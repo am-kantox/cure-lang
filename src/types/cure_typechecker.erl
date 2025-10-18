@@ -145,7 +145,11 @@ operations can run concurrently on different ASTs.
 
     % Test/debug functions
     load_stdlib_modules/0,
-    extract_module_functions/1
+    extract_module_functions/1,
+    add_std_function_types/1,
+    get_stdlib_function_type/3,
+    create_function_type_from_signature/2,
+    create_function_type_from_signature_records/2
 ]).
 
 -include("../parser/cure_ast_simple.hrl").
