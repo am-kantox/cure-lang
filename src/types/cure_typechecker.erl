@@ -141,7 +141,11 @@ operations can run concurrently on different ASTs.
     infer_dependent_type/2,
 
     % Utility functions
-    convert_type_to_tuple/1
+    convert_type_to_tuple/1,
+
+    % Test/debug functions
+    load_stdlib_modules/0,
+    extract_module_functions/1
 ]).
 
 -include("../parser/cure_ast_simple.hrl").
@@ -747,56 +751,30 @@ check_erlang_function_new(
             {ok, Env, error_result(ThrownError)}
     end.
 
-%% Add basic function types for Std module functions
+%% Add standard library function types parsed from stdlib files
 add_std_function_types(Env) ->
-    % Add commonly used Std functions with their types
-    % Note: T, U, V are type variables
-    TVar = cure_types:new_type_var('T'),
-    UVar = cure_types:new_type_var('U'),
-    VVar = cure_types:new_type_var('V'),
+    % Load all standard library function types
+    StdlibFunctions =
+        case get(stdlib_functions) of
+            undefined ->
+                Functions = load_stdlib_modules(),
+                put(stdlib_functions, Functions),
+                Functions;
+            Functions ->
+                Functions
+        end,
 
-    % zip_with: (List(T), List(U), T -> U -> V) -> List(V) - curried function parameter
-    ZipWithType =
-        {function_type,
-            [
-                {list_type, TVar, undefined},
-                {list_type, UVar, undefined},
-                {function_type, [TVar], {function_type, [UVar], VVar}}
-            ],
-            {list_type, VVar, undefined}},
+    % Add all loaded stdlib functions to the environment
+    add_stdlib_functions_to_env(maps:to_list(StdlibFunctions), Env).
 
-    % fold: (List(T), U, T -> U -> U) -> U - curried function parameter
-    FoldType =
-        {function_type,
-            [
-                {list_type, TVar, undefined},
-                UVar,
-                {function_type, [TVar], {function_type, [UVar], UVar}}
-            ],
-            UVar},
-
-    % map: (List(T), (T -> U)) -> List(U)
-    MapType =
-        {function_type,
-            [
-                {list_type, TVar, undefined},
-                {function_type, [TVar], UVar}
-            ],
-            {list_type, UVar, undefined}},
-
-    % show: T -> String
-    ShowType = {function_type, [TVar], {primitive_type, 'String'}},
-
-    % print: String -> Unit
-    PrintType = {function_type, [{primitive_type, 'String'}], {primitive_type, 'Unit'}},
-
-    % Add all function types to environment
-    Env1 = cure_types:extend_env(Env, zip_with, ZipWithType),
-    Env2 = cure_types:extend_env(Env1, fold, FoldType),
-    Env3 = cure_types:extend_env(Env2, map, MapType),
-    Env4 = cure_types:extend_env(Env3, show, ShowType),
-    Env5 = cure_types:extend_env(Env4, print, PrintType),
-    Env5.
+%% Helper to add stdlib functions to environment
+add_stdlib_functions_to_env([], Env) ->
+    Env;
+add_stdlib_functions_to_env([{{Module, FunctionName, _Arity}, FunctionType} | Rest], Env) ->
+    % For imported functions, we add them with just the function name
+    % (not the fully qualified module name) since imports make them available locally
+    NewEnv = cure_types:extend_env(Env, FunctionName, FunctionType),
+    add_stdlib_functions_to_env(Rest, NewEnv).
 
 %% Check import - New AST format
 check_import_new({import_def, Module, Items, _Location}, Env) ->
@@ -933,65 +911,148 @@ create_result_type_with_env(TypeName, TypeParams, Env) ->
     ],
     {dependent_type, TypeName, ParamVars}.
 
-%% Get concrete type signature for standard library functions
-get_stdlib_function_type('Std.List', fold, 3) ->
-    % fold: List(T) -> U -> (T -> U -> U) -> U
-    % Based on the actual implementation: func(h, fold(t, init, func))
-    T = cure_types:new_type_var('T'),
-    U = cure_types:new_type_var('U'),
-    ListType = {list_type, T, undefined},
-    % The function parameter is curried: T -> (U -> U)
-    InnerFuncType = {function_type, [U], U},
-    FuncType = {function_type, [T], InnerFuncType},
-    ResultType = {function_type, [ListType, U, FuncType], U},
-    {ok, ResultType};
-get_stdlib_function_type('Std.List', map, 2) ->
-    % map: List(T) -> (T -> U) -> List(U)
-    T = cure_types:new_type_var('T'),
-    U = cure_types:new_type_var('U'),
-    ListT = {list_type, T, undefined},
-    ListU = {list_type, U, undefined},
-    FuncType = {function_type, [T], U},
-    ResultType = {function_type, [ListT, FuncType], ListU},
-    {ok, ResultType};
-get_stdlib_function_type('Std.List', filter, 2) ->
-    % filter: List(T) -> (T -> Bool) -> List(T)
-    T = cure_types:new_type_var('T'),
-    ListT = {list_type, T, undefined},
-    FuncType = {function_type, [T], {primitive_type, 'Bool'}},
-    ResultType = {function_type, [ListT, FuncType], ListT},
-    {ok, ResultType};
-get_stdlib_function_type('Std.List', length, 1) ->
-    % length: List(T) -> Int
-    T = cure_types:new_type_var('T'),
-    ListT = {list_type, T, undefined},
-    ResultType = {function_type, [ListT], {primitive_type, 'Int'}},
-    {ok, ResultType};
-get_stdlib_function_type('Std.List', append, 2) ->
-    % append: List(T) -> List(T) -> List(T)
-    T = cure_types:new_type_var('T'),
-    ListT = {list_type, T, undefined},
-    ResultType = {function_type, [ListT, ListT], ListT},
-    {ok, ResultType};
-get_stdlib_function_type('Std.List', concat, 1) ->
-    % concat: List(List(T)) -> List(T)
-    % Use more flexible typing that doesn't enforce strict length constraints
-    T = cure_types:new_type_var('T'),
-    % Create inner list type without length constraint
-    ListT = {list_type, T, undefined},
-    % Create outer list type without length constraint
-    ListListT = {list_type, ListT, undefined},
-    % Result type also without length constraint
-    ResultListT = {list_type, T, undefined},
-    ResultType = {function_type, [ListListT], ResultListT},
-    {ok, ResultType};
-get_stdlib_function_type('Std.Core', identity, 1) ->
-    % identity: T -> T
-    T = cure_types:new_type_var('T'),
-    ResultType = {function_type, [T], T},
-    {ok, ResultType};
-get_stdlib_function_type(_Module, _Name, _Arity) ->
-    not_found.
+%% Load and parse standard library modules
+load_stdlib_modules() ->
+    StdLibPath = "lib/std/",
+    case file:list_dir(StdLibPath) of
+        {ok, Files} ->
+            CureFiles = [F || F <- Files, lists:suffix(".cure", F)],
+            load_stdlib_files(StdLibPath, CureFiles, #{});
+        {error, Reason} ->
+            io:format("Warning: Could not load stdlib directory ~s: ~p~n", [StdLibPath, Reason]),
+            #{}
+    end.
+
+load_stdlib_files(_BasePath, [], Acc) ->
+    Acc;
+load_stdlib_files(BasePath, [File | Rest], Acc) ->
+    FilePath = BasePath ++ File,
+    case cure_parser:parse_file(FilePath) of
+        {ok, AST} ->
+            ModuleFunctions = extract_module_functions(AST),
+            NewAcc = maps:merge(Acc, ModuleFunctions),
+            load_stdlib_files(BasePath, Rest, NewAcc);
+        {error, Reason} ->
+            io:format("Warning: Could not parse stdlib file ~s: ~p~n", [FilePath, Reason]),
+            load_stdlib_files(BasePath, Rest, Acc)
+    end.
+
+%% Extract function definitions from parsed AST
+extract_module_functions(AST) ->
+    extract_module_functions_helper(AST, #{}).
+
+extract_module_functions_helper([], Acc) ->
+    Acc;
+extract_module_functions_helper([Item | Rest], Acc) ->
+    case Item of
+        {module_def, ModuleName, _Imports, _Exports, ModuleItems, _Location} ->
+            io:format("DEBUG: Found module ~p with ~p items~n", [ModuleName, length(ModuleItems)]),
+            ModuleFunctions = extract_functions_from_items(ModuleItems, ModuleName),
+            NewAcc = maps:merge(Acc, ModuleFunctions),
+            extract_module_functions_helper(Rest, NewAcc);
+        {module_def, ModuleName, _Exports, ModuleItems, _Location} ->
+            % 4-element version without imports
+            io:format("DEBUG: Found module ~p (no imports) with ~p items~n", [
+                ModuleName, length(ModuleItems)
+            ]),
+            ModuleFunctions = extract_functions_from_items(ModuleItems, ModuleName),
+            NewAcc = maps:merge(Acc, ModuleFunctions),
+            extract_module_functions_helper(Rest, NewAcc);
+        _ ->
+            io:format("DEBUG: Skipping non-module item: ~p~n", [element(1, Item)]),
+            extract_module_functions_helper(Rest, Acc)
+    end.
+
+extract_functions_from_items(Items, ModuleName) ->
+    extract_functions_from_items_helper(Items, ModuleName, #{}).
+
+extract_functions_from_items_helper([], _ModuleName, Acc) ->
+    Acc;
+extract_functions_from_items_helper([Item | Rest], ModuleName, Acc) ->
+    case Item of
+        {function_def, FunctionName, Params, ReturnType, _Constraint, _Body, IsPrivate, _Location} ->
+            % Only extract public functions
+            case IsPrivate of
+                false ->
+                    FunctionType = create_function_type_from_signature(Params, ReturnType),
+                    Key = {ModuleName, FunctionName, length(Params)},
+                    NewAcc = maps:put(Key, FunctionType, Acc),
+                    extract_functions_from_items_helper(Rest, ModuleName, NewAcc);
+                true ->
+                    extract_functions_from_items_helper(Rest, ModuleName, Acc)
+            end;
+        % Handle record format functions (from newer parser)
+        FuncDef when is_record(FuncDef, function_def) ->
+            FunctionName = FuncDef#function_def.name,
+            Params = FuncDef#function_def.params,
+            ReturnType = FuncDef#function_def.return_type,
+            IsPrivate = FuncDef#function_def.is_private,
+            % Only extract public functions
+            case IsPrivate of
+                false ->
+                    FunctionType = create_function_type_from_signature_records(Params, ReturnType),
+                    Key = {ModuleName, FunctionName, length(Params)},
+                    NewAcc = maps:put(Key, FunctionType, Acc),
+                    extract_functions_from_items_helper(Rest, ModuleName, NewAcc);
+                true ->
+                    extract_functions_from_items_helper(Rest, ModuleName, Acc)
+            end;
+        _ ->
+            extract_functions_from_items_helper(Rest, ModuleName, Acc)
+    end.
+
+%% Create function type from parameter and return type definitions
+create_function_type_from_signature(Params, ReturnType) ->
+    ParamTypes = [convert_param_type_to_tuple(P) || P <- Params],
+    case ReturnType of
+        undefined ->
+            % No return type specified, use type variable
+            {function_type, ParamTypes, cure_types:new_type_var()};
+        _ ->
+            ReturnTuple = convert_type_to_tuple(ReturnType),
+            {function_type, ParamTypes, ReturnTuple}
+    end.
+
+%% Convert parameter type to tuple format
+convert_param_type_to_tuple({param, _Name, TypeExpr, _Location}) ->
+    convert_type_to_tuple(TypeExpr).
+
+%% Create function type from record format parameters and return type
+create_function_type_from_signature_records(Params, ReturnType) ->
+    ParamTypes = [convert_param_record_to_tuple(P) || P <- Params],
+    case ReturnType of
+        undefined ->
+            % No return type specified, use type variable
+            {function_type, ParamTypes, cure_types:new_type_var()};
+        _ ->
+            ReturnTuple = convert_type_to_tuple(ReturnType),
+            {function_type, ParamTypes, ReturnTuple}
+    end.
+
+%% Convert parameter record to tuple format
+convert_param_record_to_tuple(Param) when is_record(Param, param) ->
+    convert_type_to_tuple(Param#param.type);
+convert_param_record_to_tuple({param, _Name, TypeExpr, _Location}) ->
+    convert_type_to_tuple(TypeExpr).
+
+%% Cached standard library functions
+-spec get_stdlib_function_type(atom(), atom(), integer()) -> {ok, term()} | not_found.
+get_stdlib_function_type(Module, Name, Arity) ->
+    % Lazy loading - load stdlib on first access
+    StdlibFunctions =
+        case get(stdlib_functions) of
+            undefined ->
+                Functions = load_stdlib_modules(),
+                put(stdlib_functions, Functions),
+                Functions;
+            Functions ->
+                Functions
+        end,
+
+    case maps:get({Module, Name, Arity}, StdlibFunctions, undefined) of
+        undefined -> not_found;
+        FunctionType -> {ok, FunctionType}
+    end.
 
 %% Create function type for imported function with given arity
 create_imported_function_type(Module, Name, Arity) ->
