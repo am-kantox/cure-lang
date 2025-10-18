@@ -31,13 +31,9 @@ module Std.List do
     end
 
   def reverse(list: List(T)): List(T) =
-    reverse_helper(list, [])
-
-  # Helper for reverse
-  defp reverse_helper(list: List(T), acc: List(T)): List(T) =
     match list do
       [] -> acc
-      [h | t] -> reverse_helper(t, [h | acc])
+      [h | t] -> reverse(t, [h | acc])
     end
 
   def head(list: List(T), default: T): T =
@@ -68,7 +64,6 @@ module Std.List do
       [h | t] -> append(h, concat(t))
     end
 
-  # Simplified transformations (Int only for now)
   def map(list: List(T), f: T -> U): List(U) =
     match list do
       [] -> []

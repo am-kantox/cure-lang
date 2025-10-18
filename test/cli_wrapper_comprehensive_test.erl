@@ -11,6 +11,18 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
+-record(compile_options, {
+    output_file = undefined,
+    output_dir = "_build/ebin",
+    debug_info = true,
+    warnings = true,
+    verbose = false,
+    type_check = true,
+    optimize = true,
+    fsm_runtime = true,
+    stdlib_paths = ["_build/lib", "_build/lib/std"]
+}).
+
 %% Run all comprehensive CLI wrapper tests
 run() ->
     io:format("Running Comprehensive CLI Wrapper Tests...~n"),
@@ -243,14 +255,3 @@ test_list_length(List) ->
 %% ============================================================================
 
 %% Mock compile_options record definition (since we can't include the actual header)
--record(compile_options, {
-    output_file = undefined,
-    output_dir = "_build/ebin",
-    debug_info = true,
-    warnings = true,
-    verbose = false,
-    type_check = true,
-    optimize = true,
-    fsm_runtime = true,
-    stdlib_paths = ["_build/lib", "_build/lib/std"]
-}).
