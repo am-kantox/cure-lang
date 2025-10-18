@@ -967,6 +967,24 @@ get_stdlib_function_type('Std.List', length, 1) ->
     ListT = {list_type, T, undefined},
     ResultType = {function_type, [ListT], {primitive_type, 'Int'}},
     {ok, ResultType};
+get_stdlib_function_type('Std.List', append, 2) ->
+    % append: List(T) -> List(T) -> List(T)
+    T = cure_types:new_type_var('T'),
+    ListT = {list_type, T, undefined},
+    ResultType = {function_type, [ListT, ListT], ListT},
+    {ok, ResultType};
+get_stdlib_function_type('Std.List', concat, 1) ->
+    % concat: List(List(T)) -> List(T)
+    % Use more flexible typing that doesn't enforce strict length constraints
+    T = cure_types:new_type_var('T'),
+    % Create inner list type without length constraint
+    ListT = {list_type, T, undefined},
+    % Create outer list type without length constraint
+    ListListT = {list_type, ListT, undefined},
+    % Result type also without length constraint
+    ResultListT = {list_type, T, undefined},
+    ResultType = {function_type, [ListListT], ResultListT},
+    {ok, ResultType};
 get_stdlib_function_type('Std.Core', identity, 1) ->
     % identity: T -> T
     T = cure_types:new_type_var('T'),

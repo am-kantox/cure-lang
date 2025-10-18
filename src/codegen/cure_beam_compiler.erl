@@ -5,6 +5,7 @@
 -export([
     compile_instructions_to_forms/2,
     compile_function_to_erlang/2,
+    compile_function_to_erlang/4,
     compile_erlang_function_to_erlang/2,
     optimize_instructions/1,
     validate_erlang_forms/1
@@ -29,7 +30,9 @@
     variables = #{},
     labels = #{},
     temp_counter = 0,
-    stack = []
+    stack = [],
+    module_name = undefined,
+    local_functions = #{}
 }).
 
 %% ============================================================================
@@ -72,6 +75,52 @@ compile_function_to_erlang(
         is_erlang_function := true
     },
     StartLine
+) ->
+    compile_erlang_function_to_erlang(
+        #{name => Name, arity => Arity, params => Params, erlang_body => ErlangBody}, StartLine
+    ).
+
+%% Compile function with module context (module name and local functions)
+compile_function_to_erlang(
+    #{
+        name := Name,
+        arity := Arity,
+        params := Params,
+        instructions := Instructions
+    },
+    StartLine,
+    ModuleName,
+    LocalFunctions
+) ->
+    Context = #compile_context{
+        line = StartLine,
+        variables = create_param_variables(Params, StartLine),
+        module_name = ModuleName,
+        local_functions = LocalFunctions
+    },
+
+    case compile_instructions_to_forms(Instructions, Context) of
+        {ok, Body, _FinalContext} ->
+            ParamVars = [{var, StartLine, Param} || Param <- Params],
+            FunctionForm =
+                {function, StartLine, Name, Arity, [
+                    {clause, StartLine, ParamVars, [], Body}
+                ]},
+            {ok, FunctionForm, StartLine + 20};
+        {error, Reason} ->
+            {error, Reason}
+    end;
+compile_function_to_erlang(
+    #{
+        name := Name,
+        arity := Arity,
+        params := Params,
+        erlang_body := ErlangBody,
+        is_erlang_function := true
+    },
+    StartLine,
+    _ModuleName,
+    _LocalFunctions
 ) ->
     compile_erlang_function_to_erlang(
         #{name => Name, arity => Arity, params => Params, erlang_body => ErlangBody}, StartLine
@@ -247,10 +296,24 @@ compile_load_local([VarName], Context) ->
 compile_load_global([Name], Context) ->
     Line = Context#compile_context.line,
 
-    % For now, just push the function name - we'll handle stdlib calls in call compilation
-    Form = {atom, Line, Name},
+    % Check if this is a local function (defined in the current module)
+    % If so, create a proper function reference, otherwise create atom for stdlib calls
+    ModuleName = Context#compile_context.module_name,
 
-    {ok, [], push_stack(Form, Context)}.
+    case is_local_function_reference(Name, Context) of
+        {true, Arity} ->
+            % Create function reference for local functions like fun 'ModuleName':'FunctionName'/Arity
+            FunForm =
+                {'fun', Line,
+                    {function, {atom, Line, ModuleName}, {atom, Line, Name},
+                        {integer, Line, Arity}}},
+            {ok, [], push_stack(FunForm, Context)};
+        false ->
+            % For stdlib calls and unknown functions, just push the function name as atom
+            % This will be handled by compile_call to route to cure_std or stdlib
+            Form = {atom, Line, Name},
+            {ok, [], push_stack(Form, Context)}
+    end.
 
 %% Load imported function - create proper function reference
 compile_load_imported_function([Name, ImportedFunction], Context) ->
@@ -865,6 +928,17 @@ compile_list_to_form([H | T], Line) ->
     HeadForm = compile_value_to_form(H, Line),
     TailForm = compile_list_to_form(T, Line),
     {cons, Line, HeadForm, TailForm}.
+
+%% Check if a name refers to a local function defined in the current module
+%% Returns {true, Arity} if it's a local function, false otherwise
+is_local_function_reference(Name, Context) ->
+    % Check if this function is in the local_functions map
+    LocalFunctions = Context#compile_context.local_functions,
+    case maps:get(Name, LocalFunctions, undefined) of
+        undefined -> false;
+        Arity when is_integer(Arity) -> {true, Arity};
+        _ -> false
+    end.
 
 %% Check if function should be routed to cure_std (legacy runtime functions)
 %% Most functions are now implemented in Cure standard library and should return false
