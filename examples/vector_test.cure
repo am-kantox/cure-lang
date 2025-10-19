@@ -1,0 +1,29 @@
+module VectorTest do
+  export [run_tests/0]
+  
+  import Std.Vector [length/1, is_empty/1, contains/2, reverse/2]
+  
+  def run_tests(): Vector(Int, 5) =
+    let numbers = [1, 2, 3, 4, 5]
+    # let empty = []
+    
+    # Test basic operations using imported functions
+    let len = length(numbers)  # Should be 5
+    # let empty_check = is_empty(empty)  # Should be true
+    # let contains_check = contains(numbers, 3)  # Should be true
+    # let not_contains_check = contains(numbers, 10)  # Should be false
+    
+    # Test reverse
+    let reversed = reverse(numbers, [])
+    # let reversed_len = length(reversed)  # Should be 5
+    
+    # Convert booleans to integers for arithmetic
+    # let empty_val = if empty_check then 1 else 0 end
+    # let contains_val = if contains_check then 1 else 0 end  
+    # let not_contains_val = if not_contains_check then 0 else 1 end  # Invert since we expect false
+    
+    # len + empty_val + contains_val + not_contains_val + reversed_len  # Should be 5 + 1 + 1 + 1 + 5 = 13
+
+    reversed
+    
+end

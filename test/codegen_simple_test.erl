@@ -4,7 +4,7 @@
 -export([run/0]).
 
 -include_lib("eunit/include/eunit.hrl").
--include("../src/parser/cure_ast_simple.hrl").
+-include("../src/parser/cure_ast.hrl").
 
 %% BEAM instruction record for testing
 -record(beam_instr, {

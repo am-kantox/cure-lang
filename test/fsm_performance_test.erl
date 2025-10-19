@@ -1,7 +1,7 @@
 -module(fsm_performance_test).
 -export([run/0]).
 
--include("../src/parser/cure_ast_simple.hrl").
+-include("../src/parser/cure_ast.hrl").
 -include("../src/fsm/cure_fsm_runtime.hrl").
 
 %% Test FSM performance optimizations

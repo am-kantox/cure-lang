@@ -1,7 +1,7 @@
 module Std.Vector do
   export [
     # Basic operations
-    length/1, is_empty/1, reverse/1,
+    length/1, is_empty/1, reverse/2,
     
     # Simple transformations
     map/2, filter/2, fold/3, zip_with/3,
@@ -15,25 +15,21 @@ module Std.Vector do
 
   def is_empty(v: Vector(T, n)): Bool = n == 0
 
-  def reverse(v: Vector(T, n)): Vector(T, n) =
-    reverse_helper(v, [])
-
-  # Helper for reverse
-  defp reverse_helper(v: Vector(T, n), acc: Vector(T, m)): Vector(T, m + n) =
+  def reverse(v: Vector(T, n), acc: Vector(T, m)): Vector(T, m + n) =
     match v do
       [] -> acc
-      [h | t] -> reverse_helper(t, [h | acc])
+      [h | t] -> reverse(t, [h | acc])
     end
 
   # Simplified transformations (Int only for now)
   def map(v: Vector(T, n), f: T -> U): Vector(U, n) =
-    match list do
+    match v do
       [] -> []
       [h | t] -> [f(h) | map(t, f)]
     end
 
-  def filter(list: Vector(T, n), predicate: T -> Bool): List(T) =
-    match list do
+  def filter(v: Vector(T, n), predicate: T -> Bool): List(T) =
+    match v do
       [] -> []
       [h | t] -> 
         let filtered_tail = filter(t, predicate)
@@ -42,9 +38,29 @@ module Std.Vector do
         end
     end
 
+  def fold(v: Vector(T, n), init: U, func: T -> U -> U): U =
+    match v do
+      [] -> init
+      [h | t] -> 
+        let partial_func = func(h)
+        partial_func(fold(t, init, func))
+    end
+
+  def zip_with(v1: Vector(T, n), v2: Vector(U, n), func: T -> U -> V): Vector(V, n) =
+    match v1 do
+      [] -> []
+      [h1 | t1] -> 
+        match v2 do
+          [] -> []  # This should not happen with equal length vectors
+          [h2 | t2] -> 
+            let partial_func = func(h1)
+            [partial_func(h2) | zip_with(t1, t2, func)]
+        end
+    end
+
   # Simple predicates
   def contains(v: Vector(T, n), element: T): Bool =
-    match list do
+    match v do
       [] -> false
       [h | t] ->
         if h == element then true

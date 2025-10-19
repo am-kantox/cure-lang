@@ -4,7 +4,7 @@
 -export([run/0]).
 
 -include_lib("eunit/include/eunit.hrl").
--include("../src/parser/cure_ast_simple.hrl").
+-include("../src/parser/cure_ast.hrl").
 
 %% Helper function to tokenize and parse a let expression
 parse_let_expression_from_code(Code) ->

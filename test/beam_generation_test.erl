@@ -3,7 +3,7 @@
 
 -export([test_beam_generation_framework/0, run_beam_tests/0]).
 
--include("../src/parser/cure_ast_simple.hrl").
+-include("../src/parser/cure_ast.hrl").
 
 %% Run BEAM generation tests
 run_beam_tests() ->

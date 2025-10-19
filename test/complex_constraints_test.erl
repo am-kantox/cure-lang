@@ -3,7 +3,7 @@
 
 -export([run/0]).
 
--include("../src/parser/cure_ast_simple.hrl").
+-include("../src/parser/cure_ast.hrl").
 
 %% Test result tracking
 -record(test_result, {

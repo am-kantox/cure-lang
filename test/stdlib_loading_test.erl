@@ -5,7 +5,7 @@
 -export([run/0]).
 
 -include_lib("eunit/include/eunit.hrl").
--include("../src/parser/cure_ast_simple.hrl").
+-include("../src/parser/cure_ast.hrl").
 
 %% Type environment record definition (from cure_types.erl)
 -record(type_env, {

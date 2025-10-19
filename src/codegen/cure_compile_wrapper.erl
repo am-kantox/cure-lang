@@ -8,7 +8,7 @@
     get_error_suggestions/1
 ]).
 
--include("../parser/cure_ast_simple.hrl").
+-include("../parser/cure_ast.hrl").
 
 %% Compile a Cure source file with enhanced error reporting
 compile_source_file(SourceFile) ->

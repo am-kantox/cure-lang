@@ -46,7 +46,7 @@ This document summarizes the complete implementation of the `def_erl` feature fo
 #### Parser Layer
 - `src/lexer/cure_lexer.erl` - Added `def_erl` keyword
 - `src/parser/cure_ast.erl` - Added `erlang_function_def` record
-- `src/parser/cure_ast_simple.hrl` - Added header definition  
+- `src/parser/cure_ast.hrl` - Added header definition  
 - `src/parser/cure_parser.erl` - Added parsing logic with `parse_erlang_function/1`
 
 #### Type Checker Layer

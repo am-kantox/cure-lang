@@ -3,7 +3,7 @@
 
 -export([run/0, test_inlining_optimization/0, test_dead_code_elimination_with_types/0]).
 
--include("../src/parser/cure_ast_simple.hrl").
+-include("../src/parser/cure_ast.hrl").
 -include("../src/types/cure_type_optimizer.hrl").
 
 %% Run all type optimizer tests

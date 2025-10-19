@@ -12,7 +12,7 @@
 ]).
 
 %% Include necessary headers
--include("../parser/cure_ast_simple.hrl").
+-include("../parser/cure_ast.hrl").
 
 %% BEAM instruction record for internal representation
 -record(beam_instr, {

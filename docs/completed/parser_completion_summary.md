@@ -112,7 +112,7 @@ def demo_list_ops(): Unit =
 ### Files Modified
 - **`src/parser/cure_parser.erl`**: Enhanced with comprehensive parsing features (+618 lines)
 - **`src/lexer/cure_lexer.erl`**: Enhanced tokenization support (+13 lines)
-- **`src/parser/cure_ast_simple.hrl`**: New AST record definitions (+7 lines)
+- **`src/parser/cure_ast.hrl`**: New AST record definitions (+7 lines)
 - **`lib/examples/std_demo.cure`**: Fixed lambda syntax issues (+9 lines)
 - **Additional supporting files**: Type checker, code generator improvements
 

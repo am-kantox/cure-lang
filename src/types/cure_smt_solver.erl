@@ -213,7 +213,7 @@ operations can run concurrently without interference.
     modulo_expression/1
 ]).
 
--include("../parser/cure_ast_simple.hrl").
+-include("../parser/cure_ast.hrl").
 
 %% SMT Constraint representation
 -record(smt_constraint, {
@@ -254,7 +254,6 @@ operations can run concurrently without interference.
 -type smt_expression() :: #smt_expression{}.
 % -type smt_context() :: #smt_context{}.
 -type proof_term() :: #proof_term{}.
--type location() :: term().
 
 %% ============================================================================
 %% Public API

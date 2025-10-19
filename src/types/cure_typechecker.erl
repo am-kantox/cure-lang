@@ -152,7 +152,7 @@ operations can run concurrently on different ASTs.
     create_function_type_from_signature_records/2
 ]).
 
--include("../parser/cure_ast_simple.hrl").
+-include("../parser/cure_ast.hrl").
 
 %% Type checking result
 -record(typecheck_result, {
@@ -177,7 +177,6 @@ operations can run concurrently on different ASTs.
 %% Type definitions
 -type typecheck_error() :: #typecheck_error{}.
 -type typecheck_warning() :: #typecheck_warning{}.
--type location() :: term().
 
 -doc """
 Type checks an entire Cure program.
@@ -780,7 +779,7 @@ add_std_function_types(Env) ->
 %% Helper to add stdlib functions to environment
 add_stdlib_functions_to_env([], Env) ->
     Env;
-add_stdlib_functions_to_env([{{Module, FunctionName, _Arity}, FunctionType} | Rest], Env) ->
+add_stdlib_functions_to_env([{{_Module, FunctionName, _Arity}, FunctionType} | Rest], Env) ->
     % For imported functions, we add them with just the function name
     % (not the fully qualified module name) since imports make them available locally
     NewEnv = cure_types:extend_env(Env, FunctionName, FunctionType),
@@ -980,18 +979,7 @@ extract_functions_from_items_helper([], _ModuleName, Acc) ->
     Acc;
 extract_functions_from_items_helper([Item | Rest], ModuleName, Acc) ->
     case Item of
-        {function_def, FunctionName, Params, ReturnType, _Constraint, _Body, IsPrivate, _Location} ->
-            % Only extract public functions
-            case IsPrivate of
-                false ->
-                    FunctionType = create_function_type_from_signature(Params, ReturnType),
-                    Key = {ModuleName, FunctionName, length(Params)},
-                    NewAcc = maps:put(Key, FunctionType, Acc),
-                    extract_functions_from_items_helper(Rest, ModuleName, NewAcc);
-                true ->
-                    extract_functions_from_items_helper(Rest, ModuleName, Acc)
-            end;
-        % Handle record format functions (from newer parser)
+        % Handle function definitions - use record pattern which covers all function_def cases
         FuncDef when is_record(FuncDef, function_def) ->
             FunctionName = FuncDef#function_def.name,
             Params = FuncDef#function_def.params,
@@ -1041,9 +1029,7 @@ create_function_type_from_signature_records(Params, ReturnType) ->
 
 %% Convert parameter record to tuple format
 convert_param_record_to_tuple(Param) when is_record(Param, param) ->
-    convert_type_to_tuple(Param#param.type);
-convert_param_record_to_tuple({param, _Name, TypeExpr, _Location}) ->
-    convert_type_to_tuple(TypeExpr).
+    convert_type_to_tuple(Param#param.type).
 
 %% Cached standard library functions
 -spec get_stdlib_function_type(atom(), atom(), integer()) -> {ok, term()} | not_found.

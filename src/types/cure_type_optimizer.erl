@@ -204,7 +204,7 @@ Generates detailed reports including:
     analyze_program_types/1
 ]).
 
--include("../parser/cure_ast_simple.hrl").
+-include("../parser/cure_ast.hrl").
 -include("../codegen/cure_beam_compiler.hrl").
 
 %% Type optimization context

@@ -1,4 +1,4 @@
-%% Cure Programming Language - AST Header File
+%% Cure Programming Language - AST Header File (Simplified)
 %% Record definitions for Abstract Syntax Tree nodes
 
 %% Token record (from lexer)
@@ -31,267 +31,314 @@
     return_type,
     constraint,
     body,
+    is_private,  % true for defp, false for def
     location
 }).
 
-%% Erlang function definition (for interop)
+%% Erlang function definition (for Erlang interop)
 -record(erlang_function_def, {
-    name :: atom(),
-    params :: [param()],
-    return_type :: type_expr(),
-    constraint :: expr() | undefined,
-    erlang_body :: string(),  % Raw Erlang code as string
-    location :: location()
+    name,
+    params,
+    return_type,
+    constraint,
+    erlang_body,  % Raw Erlang code as string
+    location
 }).
 
 %% Type definition
 -record(type_def, {
-    name :: atom(),
-    params :: [atom()],
-    definition :: type_expr(),
-    location :: location()
+    name,
+    params,
+    definition,
+    constraint,
+    location
+}).
+
+%% Record definition
+-record(record_def, {
+    name,
+    type_params,  % optional type parameters [param1, param2, ...]
+    fields,
+    location
+}).
+
+%% Record field definition
+-record(record_field_def, {
+    name,
+    type,
+    default_value,  % optional
+    location
 }).
 
 %% FSM definition
 -record(fsm_def, {
-    name :: atom(),
-    states :: [atom()],
-    initial :: atom(),
-    state_defs :: [state_def()],
-    location :: location()
+    name,
+    states,
+    initial,
+    state_defs,
+    location
 }).
 
 %% State definition within FSM
 -record(state_def, {
-    name :: atom(),
-    transitions :: [transition()],
-    location :: location()
+    name,
+    transitions,
+    location
 }).
 
 %% State transition
 -record(transition, {
-    event :: expr(),
-    guard :: expr() | undefined,
-    target :: atom(),
-    action :: expr() | undefined,
-    location :: location()
+    event,
+    guard,
+    target,
+    action,
+    location
 }).
 
 %% Import definition
 -record(import_def, {
-    module :: atom(),
-    items :: [atom()] | all,
-    location :: location()
+    module,
+    items,
+    location
+}).
+
+%% Function import specification (name/arity)
+-record(function_import, {
+    name,
+    arity,
+    alias,  % Optional alias name
+    location
 }).
 
 %% Export specification
 -record(export_spec, {
-    name :: atom(),
-    arity :: integer(),
-    location :: location()
+    name,
+    arity,
+    location
 }).
 
 %% Function parameter
 -record(param, {
-    name :: atom(),
-    type :: type_expr(),
-    location :: location()
+    name,
+    type,
+    location
 }).
 
 %% Literal expressions
 -record(literal_expr, {
-    value :: term(),
-    location :: location()
+    value,
+    location
 }).
 
 %% Identifier expressions
 -record(identifier_expr, {
-    name :: atom(),
-    location :: location()
+    name,
+    location
 }).
 
 %% Function call expressions
 -record(function_call_expr, {
-    function :: expr(),
-    args :: [expr()],
-    location :: location()
+    function,
+    args,
+    location
 }).
 
 %% Match expressions
 -record(match_expr, {
-    expr :: expr(),
-    patterns :: [match_clause()],
-    location :: location()
+    expr,
+    patterns,
+    location
 }).
 
 -record(match_clause, {
-    pattern :: pattern(),
-    guard :: expr() | undefined,
-    body :: expr(),
-    location :: location()
+    pattern,
+    guard,
+    body,
+    location
 }).
 
 %% If expressions
 -record(if_expr, {
-    condition :: expr(),
-    then_branch :: expr(),
-    else_branch :: expr(),
-    location :: location()
+    condition,
+    then_branch,
+    else_branch,
+    location
 }).
 
 %% Let expressions
 -record(let_expr, {
-    bindings :: [binding()],
-    body :: expr(),
-    location :: location()
+    bindings,
+    body,
+    location
+}).
+
+%% Block expressions (sequential expressions)
+-record(block_expr, {
+    expressions,
+    location
 }).
 
 -record(binding, {
-    pattern :: pattern(),
-    value :: expr(),
-    location :: location()
+    pattern,
+    value,
+    location
 }).
 
 %% Binary operations
 -record(binary_op_expr, {
-    op :: atom(),
-    left :: expr(),
-    right :: expr(),
-    location :: location()
+    op,
+    left,
+    right,
+    location
 }).
 
 %% Unary operations
 -record(unary_op_expr, {
-    op :: atom(),
-    operand :: expr(),
-    location :: location()
+    op,
+    operand,
+    location
 }).
 
 %% List expressions
 -record(list_expr, {
-    elements :: [expr()],
-    location :: location()
+    elements,
+    location
+}).
+
+%% Cons expressions [head | tail]
+-record(cons_expr, {
+    elements,  % List of head elements
+    tail,      % Tail expression
+    location
+}).
+
+%% Type annotation expressions (expr as Type)
+-record(type_annotation_expr, {
+    expr,      % Expression being annotated
+    type,      % Type annotation
+    location
 }).
 
 %% Tuple expressions
 -record(tuple_expr, {
-    elements :: [expr()],
-    location :: location()
+    elements,
+    location
 }).
 
 %% Record expressions
 -record(record_expr, {
-    name :: atom(),
-    fields :: [field_expr()],
-    location :: location()
+    name,
+    fields,
+    location
 }).
 
 -record(field_expr, {
-    name :: atom(),
-    value :: expr(),
-    location :: location()
+    name,
+    value,
+    location
 }).
 
 %% Lambda expressions
 -record(lambda_expr, {
-    params :: [param()],
-    body :: expr(),
-    location :: location()
+    params,
+    body,
+    location
+}).
+
+%% String interpolation expressions
+-record(string_interpolation_expr, {
+    parts,   % List of {string_part, String} | {expr, Expression}
+    location
 }).
 
 %% Primitive types
 -record(primitive_type, {
-    name :: atom(),
-    location :: location()
+    name,
+    location
 }).
 
 %% Dependent types
 -record(dependent_type, {
-    name :: atom(),
-    params :: [type_param()],
-    location :: location()
+    name,
+    params,
+    location
 }).
 
 -record(type_param, {
-    name :: atom() | undefined,  % Named parameter
-    value :: type_expr() | expr(),  % Type or value parameter
-    location :: location()
+    name,
+    value,
+    location
 }).
 
 %% Function types
 -record(function_type, {
-    params :: [type_expr()],
-    return_type :: type_expr(),
-    location :: location()
+    params,
+    return_type,
+    location
 }).
 
 %% Union types
 -record(union_type, {
-    types :: [type_expr()],
-    location :: location()
+    types,
+    location
 }).
 
 %% List types
 -record(list_type, {
-    element_type :: type_expr(),
-    length :: expr() | undefined,  % For dependent typing
-    location :: location()
+    element_type,
+    length,
+    location
 }).
 
 %% Tuple types
 -record(tuple_type, {
-    element_types :: [type_expr()],
-    location :: location()
+    element_types,
+    location
 }).
 
-%% Wildcard pattern
+%% Patterns
 -record(wildcard_pattern, {
-    location :: location()
+    location
 }).
 
-%% Literal pattern
 -record(literal_pattern, {
-    value :: term(),
-    location :: location()
+    value,
+    location
 }).
 
-%% Identifier pattern
 -record(identifier_pattern, {
-    name :: atom(),
-    location :: location()
+    name,
+    location
 }).
 
-%% List pattern
 -record(list_pattern, {
-    elements :: [pattern()],
-    tail :: pattern() | undefined,
-    location :: location()
+    elements,
+    tail,
+    location
 }).
 
-%% Tuple pattern
 -record(tuple_pattern, {
-    elements :: [pattern()],
-    location :: location()
+    elements,
+    location
 }).
 
-%% Record pattern
 -record(record_pattern, {
-    name :: atom(),
-    fields :: [field_pattern()],
-    location :: location()
+    name,
+    fields,
+    location
 }).
 
 -record(field_pattern, {
-    name :: atom(),
-    pattern :: pattern(),
-    location :: location()
+    name,
+    pattern,
+    location
 }).
 
 %% Constructor pattern (for Result, Option, etc.)
 -record(constructor_pattern, {
-    name :: atom(),                 % Ok, Error, Some, None, etc.
-    args :: [pattern()] | undefined, % Arguments to the constructor
-    location :: location()
+    name,    % Ok, Error, Some, None, ok, error, etc.
+    args,    % Arguments to the constructor (list or undefined)
+    location
 }).
 
 %% Type definitions for use throughout the AST
@@ -332,3 +379,4 @@
 -type type_param() :: #type_param{}.
 -type state_def() :: #state_def{}.
 -type transition() :: #transition{}.
+

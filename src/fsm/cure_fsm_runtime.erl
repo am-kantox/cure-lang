@@ -143,7 +143,7 @@ The FSM runtime integrates with:
 -behaviour(gen_server).
 
 %% Include AST definitions and FSM records
--include("../parser/cure_ast_simple.hrl").
+-include("../parser/cure_ast.hrl").
 -include("cure_fsm_runtime.hrl").
 
 %% Global FSM definition registry

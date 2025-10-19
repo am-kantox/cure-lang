@@ -4,7 +4,7 @@
 -export([run/0]).
 
 -include_lib("eunit/include/eunit.hrl").
--include("../src/parser/cure_ast_simple.hrl").
+-include("../src/parser/cure_ast.hrl").
 
 %% Type checking result record (from cure_typechecker.erl)
 -record(typecheck_result, {

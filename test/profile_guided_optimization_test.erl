@@ -3,7 +3,7 @@
 
 -export([run_profile_tests/0, test_profile_collection/0, test_adaptive_optimization/0]).
 
--include("../src/parser/cure_ast_simple.hrl").
+-include("../src/parser/cure_ast.hrl").
 
 %% Run profile-guided optimization tests
 run_profile_tests() ->

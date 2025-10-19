@@ -131,7 +131,7 @@ Type variables use a global counter that should be accessed safely in
 concurrent environments. The module is otherwise stateless and thread-safe.
 """.
 
--include("../parser/cure_ast_simple.hrl").
+-include("../parser/cure_ast.hrl").
 
 -export([
     % Type operations
@@ -227,7 +227,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     constraints :: [term()]
 }).
 
-% type_param record is defined in cure_ast_simple.hrl
+% type_param record is defined in cure_ast.hrl
 
 -record(type_constraint, {
     left :: type_expr(),
@@ -254,13 +254,10 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     | 'invariant'
     | 'covariant'
     | 'contravariant'.
--type type_expr() :: term().
--type location() :: term().
 -type type_env() :: #type_env{}.
 -type type_var() :: #type_var{}.
 -type type_constraint() :: #type_constraint{}.
-% Defined in cure_ast_simple.hrl
--type type_param() :: term().
+% Defined in cure_ast.hrl
 
 -record(inference_result, {
     type :: type_expr(),
@@ -1101,23 +1098,36 @@ unify_lengths_strict(Len1, Len2, Subst) ->
             end;
         _ ->
             % Both are concrete expressions - evaluate them
-            case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
+            % First try enhanced evaluation with substitution context
+            case {evaluate_length_expr_with_subst(Len1, Subst), evaluate_length_expr_with_subst(Len2, Subst)} of
                 {{ok, N}, {ok, N}} when is_integer(N) ->
                     % Same evaluated length
-                    io:format("DEBUG: Same concrete lengths: ~p~n", [N]),
+                    io:format("DEBUG: Same concrete lengths (with subst): ~p~n", [N]),
                     {ok, Subst};
                 {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
                     % Different evaluated lengths
-                    io:format("DEBUG: Different concrete lengths: ~p vs ~p~n", [N1, N2]),
+                    io:format("DEBUG: Different concrete lengths (with subst): ~p vs ~p~n", [N1, N2]),
                     {error, {length_mismatch, N1, N2}};
-                _Other ->
-                    % Fall back to structural comparison
-                    io:format("DEBUG: Falling back to structural comparison~n"),
-                    case expr_equal(Len1, Len2) of
-                        true ->
+                _ ->
+                    % Fall back to basic evaluation without substitution
+                    case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
+                        {{ok, N}, {ok, N}} when is_integer(N) ->
+                            % Same evaluated length
+                            io:format("DEBUG: Same concrete lengths: ~p~n", [N]),
                             {ok, Subst};
-                        false ->
-                            {error, {vector_dimension_mismatch, Len1, Len2}}
+                        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
+                            % Different evaluated lengths
+                            io:format("DEBUG: Different concrete lengths: ~p vs ~p~n", [N1, N2]),
+                            {error, {length_mismatch, N1, N2}};
+                        _Other ->
+                            % Fall back to structural comparison
+                            io:format("DEBUG: Falling back to structural comparison~n"),
+                            case expr_equal(Len1, Len2) of
+                                true ->
+                                    {ok, Subst};
+                                false ->
+                                    {error, {vector_dimension_mismatch, Len1, Len2}}
+                            end
                     end
             end
     end.
@@ -1273,7 +1283,8 @@ apply_substitution({list_type, ElemType, LenExpr}, Subst) ->
             _ -> apply_substitution_to_expr(LenExpr, Subst)
         end};
 apply_substitution({dependent_type, Name, Params}, Subst) ->
-    {dependent_type, Name, [apply_substitution_to_param(P, Subst) || P <- Params]};
+    SubstitutedParams = [apply_substitution_to_param(P, Subst) || P <- Params],
+    {dependent_type, Name, SubstitutedParams};
 apply_substitution({refined_type, BaseType, Predicate}, Subst) ->
     {refined_type, apply_substitution(BaseType, Subst), Predicate};
 apply_substitution({gadt_constructor, Name, Args, ReturnType}, Subst) ->
@@ -1314,22 +1325,96 @@ apply_substitution_to_param(Param, Subst) ->
             apply_substitution(Param, Subst);
         #type_var{} ->
             apply_substitution(Param, Subst);
-        % Literal expressions - pass through unchanged
+        % Expressions - apply substitution
         {literal_expr, _, _} ->
-            Param;
+            apply_substitution_to_expr(Param, Subst);
         {identifier_expr, _, _} ->
-            Param;
+            apply_substitution_to_expr(Param, Subst);
         {binary_op_expr, _, _, _, _} ->
-            Param;
+            apply_substitution_to_expr(Param, Subst);
         % Other expressions
         _ when is_atom(Param) -> apply_substitution(Param, Subst);
         _ ->
             Param
     end.
 
-%% Apply substitution to expressions (simplified)
+%% Find variable binding by scanning for type variables with matching names
+find_variable_binding(VarName, Subst) ->
+    % Check for direct binding first
+    case maps:get(VarName, Subst, undefined) of
+        undefined ->
+            % Look for type variables that might correspond to this name
+            % This handles the case where 'm' corresponds to type variable 74
+            maps:fold(
+                fun(Id, Value, Acc) ->
+                    case Acc of
+                        {found, _} -> Acc; % short-circuit if already found
+                        not_found ->
+                            % Check different ways a type variable might match the name
+                            IdMatches = case Id of
+                                % Direct atom match
+                                I when is_atom(I) -> atom_to_list(I) =:= atom_to_list(VarName);
+                                % Integer ID matching  
+                                _ -> false
+                            end,
+                            if IdMatches -> {found, Value};
+                               true -> not_found
+                            end
+                    end
+                end,
+                not_found,
+                Subst
+            );
+        Value -> {found, Value}
+    end.
+
+%% Apply substitution to expressions
+apply_substitution_to_expr({binary_op_expr, Op, Left, Right, Location}, Subst) ->
+    % Apply substitution to left and right operands
+    LeftSubst = apply_substitution_to_expr(Left, Subst),
+    RightSubst = apply_substitution_to_expr(Right, Subst),
+    % Try to evaluate if both operands become literals
+    NewExpr = {binary_op_expr, Op, LeftSubst, RightSubst, Location},
+    case evaluate_length_expr(NewExpr) of
+        {ok, N} when is_integer(N) ->
+            % Successfully evaluated to a concrete value
+            {literal_expr, N, Location};
+        _ ->
+            % Cannot evaluate, return the substituted expression
+            NewExpr
+    end;
+apply_substitution_to_expr({identifier_expr, VarName, Location}, Subst) ->
+    % Enhanced lookup for identifier expressions in dependent types
+    % First try direct lookup by atom name
+    case maps:get(VarName, Subst, undefined) of
+        undefined ->
+            % Look for type variable that might be bound to this name
+            % Search through all keys in substitution for matching type variables
+            case find_variable_binding(VarName, Subst) of
+                {found, Value} ->
+                    case Value of
+                        {literal_expr, N, _} when is_integer(N) -> {literal_expr, N, Location};
+                        N when is_integer(N) -> {literal_expr, N, Location};
+                        _ -> Value
+                    end;
+                not_found -> {identifier_expr, VarName, Location}
+            end;
+        {literal_expr, N, _} when is_integer(N) ->
+            {literal_expr, N, Location};
+        N when is_integer(N) ->
+            {literal_expr, N, Location};
+        Type ->
+            % For other types, apply substitution recursively
+            apply_substitution(Type, Subst)
+    end;
+apply_substitution_to_expr(#type_var{} = TypeVar, Subst) ->
+    % Handle type variables within expressions
+    apply_substitution(TypeVar, Subst);
+apply_substitution_to_expr({literal_expr, _, _} = Expr, _Subst) ->
+    % Literals don't need substitution
+    Expr;
 apply_substitution_to_expr(Expr, _Subst) ->
-    % In full implementation, would substitute type variables in expressions
+    % For other expressions, return as-is (could be extended)
     Expr.
 
 %% Type inference entry point
@@ -1620,13 +1705,16 @@ infer_record_fields([{field_expr, _FieldName, ValueExpr, _Location} | RestFields
 %% Instantiate function type with fresh type variables while preserving sharing
 instantiate_function_type({function_type, ParamTypes, ReturnType}) ->
     io:format("DEBUG: Instantiating function type with params: ~p~n", [ParamTypes]),
-    % Create a mapping from type variable names to fresh type variables
-    TypeVarMap = collect_type_variables(ParamTypes ++ [ReturnType]),
-    io:format("DEBUG: Type variable map: ~p~n", [TypeVarMap]),
-
-    % Instantiate parameter types with shared variables
-    InstParamTypes = [instantiate_type_with_map(PT, TypeVarMap) || PT <- ParamTypes],
-    InstReturnType = instantiate_type_with_map(ReturnType, TypeVarMap),
+    
+    % First pass: instantiate parameters and collect their type variable mappings
+    InstParamTypes = [instantiate_type_with_map(PT, #{}) || PT <- ParamTypes],
+    
+    % Extract type variable mappings from instantiated parameters
+    ParamVarMap = extract_type_var_mappings_from_params(InstParamTypes),
+    io:format("DEBUG: Parameter variable mappings: ~p~n", [ParamVarMap]),
+    
+    % Second pass: instantiate return type using parameter mappings
+    InstReturnType = instantiate_type_with_param_mappings(ReturnType, ParamVarMap),
 
     io:format("DEBUG: Instantiated params: ~p~n", [InstParamTypes]),
     io:format("DEBUG: Instantiated return: ~p~n", [InstReturnType]),
@@ -1635,6 +1723,84 @@ instantiate_function_type({function_type, ParamTypes, ReturnType}) ->
 instantiate_function_type(Type) ->
     % Not a function type, return as-is
     {error, {not_function_type, Type}}.
+
+%% Collect variables from expressions (handles nested expressions)
+collect_variables_in_expression({identifier_expr, VarName, _}, Map) ->
+    case maps:is_key(VarName, Map) of
+        % Already have a mapping
+        true -> Map;
+        false -> maps:put(VarName, new_type_var(), Map)
+    end;
+collect_variables_in_expression({binary_op_expr, _Op, Left, Right, _}, Map) ->
+    Map1 = collect_variables_in_expression(Left, Map),
+    collect_variables_in_expression(Right, Map1);
+collect_variables_in_expression({literal_expr, _, _}, Map) ->
+    Map; % No variables in literals
+collect_variables_in_expression(_, Map) ->
+    Map. % Other expressions don't contribute variables
+
+%% Extract type variable mappings from parameter types
+extract_type_var_mappings_from_params(ParamTypes) ->
+    lists:foldl(
+        fun(ParamType, AccMap) ->
+            extract_type_var_mappings_from_type(ParamType, AccMap)
+        end,
+        #{},
+        ParamTypes
+    ).
+
+%% Extract type variable mappings from a single type
+extract_type_var_mappings_from_type({dependent_type, _Name, Params}, Map) ->
+    lists:foldl(
+        fun(Param, AccMap) ->
+            extract_type_var_mappings_from_param(Param, AccMap)
+        end,
+        Map,
+        Params
+    );
+extract_type_var_mappings_from_type(_, Map) ->
+    Map.
+
+%% Extract type variable mappings from a parameter
+extract_type_var_mappings_from_param(Param, Map) ->
+    Value = extract_type_param_value(Param),
+    case Value of
+        #type_var{id = _Id, name = Name} when Name =/= undefined ->
+            case maps:is_key(Name, Map) of
+                false -> maps:put(Name, Value, Map);
+                true -> Map  % Keep first mapping
+            end;
+        _ -> Map
+    end.
+
+%% Instantiate type using parameter variable mappings
+instantiate_type_with_param_mappings({dependent_type, Name, Params}, ParamVarMap) ->
+    InstParams = [instantiate_param_with_param_mappings(P, ParamVarMap) || P <- Params],
+    {dependent_type, Name, InstParams};
+instantiate_type_with_param_mappings(Type, _ParamVarMap) ->
+    Type.
+
+%% Instantiate parameter using parameter variable mappings
+instantiate_param_with_param_mappings(Param, ParamVarMap) ->
+    Value = extract_type_param_value(Param),
+    NewValue = instantiate_expression_with_param_mappings(Value, ParamVarMap),
+    case NewValue =:= Value of
+        true -> Param;
+        false -> update_param_value(Param, NewValue)
+    end.
+
+%% Instantiate expressions using parameter variable mappings
+instantiate_expression_with_param_mappings({identifier_expr, VarName, Location}, ParamVarMap) ->
+    case maps:get(VarName, ParamVarMap, undefined) of
+        undefined -> {identifier_expr, VarName, Location}; % Keep original if not found
+        TypeVar -> TypeVar
+    end;
+instantiate_expression_with_param_mappings({binary_op_expr, Op, Left, Right, Location}, ParamVarMap) ->
+    LeftInst = instantiate_expression_with_param_mappings(Left, ParamVarMap),
+    RightInst = instantiate_expression_with_param_mappings(Right, ParamVarMap),
+    {binary_op_expr, Op, LeftInst, RightInst, Location};
+instantiate_expression_with_param_mappings(Expr, _ParamVarMap) ->
+    Expr.
 
 %% Collect all type variables in a list of types and create fresh mappings
 collect_type_variables(Types) ->
@@ -1650,16 +1816,8 @@ collect_type_variables([Type | Rest], Map) ->
 collect_type_variables_in_type({dependent_type, _Name, Params}, Map) ->
     lists:foldl(
         fun(Param, AccMap) ->
-            case extract_type_param_value(Param) of
-                {identifier_expr, VarName, _} ->
-                    case maps:is_key(VarName, AccMap) of
-                        % Already have a mapping
-                        true -> AccMap;
-                        false -> maps:put(VarName, new_type_var(), AccMap)
-                    end;
-                _ ->
-                    AccMap
-            end
+            Value = extract_type_param_value(Param),
+            collect_variables_in_expression(Value, AccMap)
         end,
         Map,
         Params
@@ -1716,16 +1874,26 @@ instantiate_type_with_map(Type, _Map) ->
 %% Instantiate a type parameter using the map
 instantiate_param_with_map(Param, Map) ->
     Value = extract_type_param_value(Param),
-    case Value of
-        {identifier_expr, VarName, _Location} ->
-            case maps:get(VarName, Map, undefined) of
-                % Keep original if not found
-                undefined -> Param;
-                TypeVar -> update_param_value(Param, TypeVar)
-            end;
-        _ ->
-            Param
+    NewValue = instantiate_expression_with_map(Value, Map),
+    case NewValue =:= Value of
+        true -> Param;  % No change
+        false -> update_param_value(Param, NewValue)
     end.
+
+%% Instantiate expressions within type parameters
+instantiate_expression_with_map({identifier_expr, VarName, Location}, Map) ->
+    case maps:get(VarName, Map, undefined) of
+        undefined -> {identifier_expr, VarName, Location}; % Keep original if not found
+        TypeVar -> TypeVar
+    end;
+instantiate_expression_with_map({binary_op_expr, Op, Left, Right, Location}, Map) ->
+    LeftInst = instantiate_expression_with_map(Left, Map),
+    RightInst = instantiate_expression_with_map(Right, Map),
+    {binary_op_expr, Op, LeftInst, RightInst, Location};
+instantiate_expression_with_map({literal_expr, _, _} = Expr, _Map) ->
+    Expr; % Literals don't need instantiation
+instantiate_expression_with_map(Expr, _Map) ->
+    Expr. % Other expressions returned as-is
 
 %% Update the value in a type parameter
 update_param_value(#type_param{name = _Name, value = _OldValue} = Param, NewValue) ->
@@ -2662,6 +2830,14 @@ solve_element_constraint(Element, Collection, Subst) ->
 
 evaluate_length_expr({literal_expr, N, _}) when is_integer(N) ->
     {ok, N};
+% Handle direct literal evaluation in binary operations
+evaluate_length_expr({binary_op_expr, '+', {literal_expr, N1, _}, {literal_expr, N2, _}, _}) 
+    when is_integer(N1), is_integer(N2) ->
+    {ok, N1 + N2};
+evaluate_length_expr({binary_op_expr, '-', {literal_expr, N1, _}, {literal_expr, N2, _}, _}) 
+    when is_integer(N1), is_integer(N2) ->
+    {ok, N1 - N2};
+% Recursive evaluation for nested expressions
 evaluate_length_expr({binary_op_expr, '+', Left, Right, _}) ->
     case {evaluate_length_expr(Left), evaluate_length_expr(Right)} of
         {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2) ->
@@ -2677,6 +2853,64 @@ evaluate_length_expr({binary_op_expr, '-', Left, Right, _}) ->
             {error, cannot_evaluate}
     end;
 evaluate_length_expr(_) ->
+    {error, cannot_evaluate}.
+
+%% Enhanced evaluate_length_expr that can look up variables from substitution
+evaluate_length_expr_with_subst({literal_expr, N, _}, _Subst) when is_integer(N) ->
+    {ok, N};
+evaluate_length_expr_with_subst({identifier_expr, VarName, _}, Subst) when is_atom(VarName) ->
+    % Enhanced lookup: first try direct name, then scan for type variable IDs
+    case maps:get(VarName, Subst, undefined) of
+        {literal_expr, N, _} when is_integer(N) ->
+            {ok, N};
+        N when is_integer(N) ->
+            {ok, N};
+        undefined ->
+            % Scan substitution map for type variables that might correspond to this name
+            case maps:fold(
+                fun(Id, Value, Acc) ->
+                    case Acc of
+                        {found, _} -> Acc; % already found
+                        not_found ->
+                            % Check if this type variable corresponds to our variable name
+                            IdMatches = case Id of
+                                I when is_atom(I) -> atom_to_list(I) =:= atom_to_list(VarName);
+                                _ -> false
+                            end,
+                            if IdMatches ->
+                                   case Value of
+                                       {literal_expr, N, _} when is_integer(N) -> {found, N};
+                                       N when is_integer(N) -> {found, N};
+                                       _ -> not_found
+                                   end;
+                               true -> not_found
+                            end
+                    end
+                end,
+                not_found,
+                Subst
+            ) of
+                {found, N} -> {ok, N};
+                not_found -> {error, cannot_evaluate}
+            end;
+        _ ->
+            {error, cannot_evaluate}
+    end;
+evaluate_length_expr_with_subst({binary_op_expr, '+', Left, Right, _}, Subst) ->
+    case {evaluate_length_expr_with_subst(Left, Subst), evaluate_length_expr_with_subst(Right, Subst)} of
+        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2) ->
+            {ok, N1 + N2};
+        _ ->
+            {error, cannot_evaluate}
+    end;
+evaluate_length_expr_with_subst({binary_op_expr, '-', Left, Right, _}, Subst) ->
+    case {evaluate_length_expr_with_subst(Left, Subst), evaluate_length_expr_with_subst(Right, Subst)} of
+        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2) ->
+            {ok, N1 - N2};
+        _ ->
+            {error, cannot_evaluate}
+    end;
+evaluate_length_expr_with_subst(_, _) ->
     {error, cannot_evaluate}.
 
 check_subtype_relation(Subtype, Supertype, Subst) ->

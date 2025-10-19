@@ -130,7 +130,7 @@ The tests rely on several core Cure compiler modules:
 - `cure_typechecker`: Main module being tested
 - `cure_types`: Type system operations and environment management
 - `cure_parser`: For parsing `.cure` source files
-- `cure_ast_simple.hrl`: AST record definitions
+- `cure_ast.hrl`: AST record definitions
 
 ### Type System Integration
 

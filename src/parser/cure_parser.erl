@@ -112,14 +112,14 @@ The parser can return these error types:
 
 The parser integrates with:
 - **Lexer**: Consumes tokens from cure_lexer
-- **AST**: Produces AST records defined in cure_ast_simple.hrl
+- **AST**: Produces AST records defined in cure_ast.hrl
 - **Type Checker**: Provides AST input for type checking
 - **Compiler**: Part of the complete compilation pipeline
 """.
 
 -export([parse/1, parse_file/1]).
 
--include("cure_ast_simple.hrl").
+-include("cure_ast.hrl").
 
 %% Parser state record
 -record(parser_state, {

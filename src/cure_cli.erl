@@ -69,7 +69,7 @@ cure input.cure --no-optimize      # Disable optimizations
     version/0
 ]).
 
--include("parser/cure_ast_simple.hrl").
+-include("parser/cure_ast.hrl").
 
 %% Version information
 -define(CURE_VERSION, "0.1.0").

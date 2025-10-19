@@ -9,7 +9,7 @@
 ]).
 
 %% Include necessary headers
--include("../src/parser/cure_ast_simple.hrl").
+-include("../src/parser/cure_ast.hrl").
 -include("../src/codegen/cure_codegen.hrl").
 -include("../src/fsm/cure_fsm_runtime.hrl").
 

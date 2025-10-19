@@ -2,7 +2,7 @@
 -module(match_test).
 -export([run_all_tests/0]).
 
--include("../src/parser/cure_ast_simple.hrl").
+-include("../src/parser/cure_ast.hrl").
 
 %% Run all match expression tests
 run_all_tests() ->

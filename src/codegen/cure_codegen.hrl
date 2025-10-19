@@ -19,7 +19,8 @@
     constants = #{} :: map(),
     type_info = #{} :: map(),
     optimization_level = 0 :: integer(),
-    imported_functions = #{} :: map()  % Map of {Name, Arity} -> FunctionData
+    imported_functions = #{} :: map(),  % Map of {Name, Arity} -> FunctionData
+    current_function = undefined :: map() | undefined  % Current function context for dimension resolution
 }).
 
 %% Function compilation result
