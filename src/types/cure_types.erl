@@ -1176,13 +1176,20 @@ unify_lengths_strict(Len1, Len2, Subst) ->
                             io:format("DEBUG: Different concrete lengths: ~p vs ~p~n", [N1, N2]),
                             {error, {length_mismatch, N1, N2}};
                         _Other ->
-                            % Fall back to structural comparison
-                            io:format("DEBUG: Falling back to structural comparison~n"),
-                            case expr_equal(Len1, Len2) of
-                                true ->
-                                    {ok, Subst};
-                                false ->
-                                    {error, {vector_dimension_mismatch, Len1, Len2}}
+                            % Try enhanced length expression unification
+                            io:format("DEBUG: Trying enhanced length expression unification~n"),
+                            case unify_length_expressions(Len1, Len2, Subst) of
+                                {ok, NewSubst} ->
+                                    {ok, NewSubst};
+                                {error, _} ->
+                                    % Fall back to structural comparison
+                                    io:format("DEBUG: Falling back to structural comparison~n"),
+                                    case expr_equal(Len1, Len2) of
+                                        true ->
+                                            {ok, Subst};
+                                        false ->
+                                            {error, {vector_dimension_mismatch, Len1, Len2}}
+                                    end
                             end
                     end
             end
@@ -1213,10 +1220,66 @@ unify_type_params(
         Error -> Error
     end.
 
-%% Expression equality (simplified)
+%% Expression equality (enhanced to handle binary operations)
 expr_equal(Expr1, Expr2) ->
-    % Simplified structural equality - would need full expression comparison
-    Expr1 =:= Expr2.
+    case {Expr1, Expr2} of
+        {Same, Same} ->
+            true;
+        {{binary_op_expr, Op, L1, R1, _}, {binary_op_expr, Op, L2, R2, _}} ->
+            % For binary operations with same operator, compare operands recursively
+            expr_equal(L1, L2) andalso expr_equal(R1, R2);
+        {{identifier_expr, Name, _}, {identifier_expr, Name, _}} ->
+            % Same identifier
+            true;
+        {{literal_expr, Val, _}, {literal_expr, Val, _}} ->
+            % Same literal
+            true;
+        {#type_var{id = Id}, #type_var{id = Id}} ->
+            % Same type variable
+            true;
+        {{primitive_type, Name}, {primitive_type, Name}} ->
+            % Same primitive type
+            true;
+        _ ->
+            % Different expressions
+            false
+    end.
+
+%% Unify length expressions with type variables
+unify_length_expressions(Expr1, Expr2, Subst) ->
+    case {Expr1, Expr2} of
+        {Same, Same} ->
+            {ok, Subst};
+        {{binary_op_expr, Op, L1, R1, Loc}, {binary_op_expr, Op, L2, R2, _}} ->
+            % Same operator, try to unify operands
+            case unify_length_expressions(L1, L2, Subst) of
+                {ok, Subst1} ->
+                    unify_length_expressions(R1, R2, Subst1);
+                Error ->
+                    Error
+            end;
+        {{identifier_expr, Name, _}, {identifier_expr, Name, _}} ->
+            % Same identifier
+            {ok, Subst};
+        {{literal_expr, Val, _}, {literal_expr, Val, _}} ->
+            % Same literal
+            {ok, Subst};
+        {#type_var{id = Id1}, #type_var{id = Id2}} when Id1 =:= Id2 ->
+            % Same type variable
+            {ok, Subst};
+        {#type_var{} = TypeVar, Expr} ->
+            % Unify type variable with expression
+            unify_impl(TypeVar, Expr, Subst);
+        {Expr, #type_var{} = TypeVar} ->
+            % Symmetric case
+            unify_impl(Expr, TypeVar, Subst);
+        {{primitive_type, Name}, {primitive_type, Name}} ->
+            % Same primitive type
+            {ok, Subst};
+        _ ->
+            % Cannot unify
+            {error, {length_expression_mismatch, Expr1, Expr2}}
+    end.
 
 %% Helper functions for dependent type parameter extraction
 extract_list_params([]) ->
@@ -1723,17 +1786,56 @@ infer_function_call_with_recursive_tracking(Function, Args, Location, Env) ->
 
     case Function of
         {identifier_expr, FunctionName, _} ->
-            % This could be a recursive call - use enhanced inference
-            case infer_recursive_function_call(FunctionName, Args, Env, RecState) of
-                {ok, ResultType, Constraints, UpdatedState} ->
-                    % Update the recursive state in process dictionary
-                    put(recursive_state, UpdatedState),
-                    {ok, ResultType, Constraints};
-                {error, {unbound_function, _}} ->
-                    % Not a recursive function, fall back to standard inference
-                    infer_function_call_standard(Function, Args, Location, Env);
-                {error, Reason} ->
-                    {error, Reason}
+            % Check if this is a nullary constructor call (constructor with 0 args)
+            case Args of
+                [] ->
+                    % Look up the identifier in the environment
+                    case lookup_env(Env, FunctionName) of
+                        undefined ->
+                            % Try recursive call inference
+                            case infer_recursive_function_call(FunctionName, Args, Env, RecState) of
+                                {ok, ResultType, Constraints, UpdatedState} ->
+                                    put(recursive_state, UpdatedState),
+                                    {ok, ResultType, Constraints};
+                                {error, _} ->
+                                    infer_function_call_standard(Function, Args, Location, Env)
+                            end;
+                        ConstructorType ->
+                            % Check if it's a nullary constructor (not a function type)
+                            case is_constructor_type(ConstructorType) of
+                                true ->
+                                    % This is a nullary constructor - return its type directly
+                                    {ok, ConstructorType, []};
+                                false ->
+                                    % This is a function - proceed with normal inference
+                                    case
+                                        infer_recursive_function_call(
+                                            FunctionName, Args, Env, RecState
+                                        )
+                                    of
+                                        {ok, ResultType, Constraints, UpdatedState} ->
+                                            put(recursive_state, UpdatedState),
+                                            {ok, ResultType, Constraints};
+                                        {error, {unbound_function, _}} ->
+                                            infer_function_call_standard(
+                                                Function, Args, Location, Env
+                                            );
+                                        {error, Reason} ->
+                                            {error, Reason}
+                                    end
+                            end
+                    end;
+                _ ->
+                    % Non-empty args - proceed with normal function call inference
+                    case infer_recursive_function_call(FunctionName, Args, Env, RecState) of
+                        {ok, ResultType, Constraints, UpdatedState} ->
+                            put(recursive_state, UpdatedState),
+                            {ok, ResultType, Constraints};
+                        {error, {unbound_function, _}} ->
+                            infer_function_call_standard(Function, Args, Location, Env);
+                        {error, Reason} ->
+                            {error, Reason}
+                    end
             end;
         _ ->
             % Complex function expression, use standard inference
@@ -2016,6 +2118,26 @@ update_param_value(#type_param{name = _Name, value = _OldValue} = Param, NewValu
 update_param_value(_Param, NewValue) ->
     % Fallback - create new param structure
     #type_param{name = undefined, value = NewValue}.
+
+%% Check if a type is a nullary constructor (value type, not function type)
+is_constructor_type({function_type, _, _}) ->
+    % Function types are not constructor values
+    false;
+is_constructor_type({primitive_type, _}) ->
+    % Primitive types can be constructor values
+    true;
+is_constructor_type({dependent_type, _, _}) ->
+    % Dependent types can be constructor values
+    true;
+is_constructor_type({record_type, _}) ->
+    % Record types can be constructor values
+    true;
+is_constructor_type({union_type, _, _, _}) ->
+    % Union types can be constructor values
+    true;
+is_constructor_type(_) ->
+    % Other types default to being non-function values
+    true.
 
 %% Check if a name represents a generic type variable (T, E, U, etc.)
 is_generic_type_variable_name(Name) ->
@@ -4124,10 +4246,30 @@ infer_function_call_enhanced(_Function, FuncType, Args, ExpectedType, Env, Locat
             {error, {invalid_function_type, FuncType, Reason}}
     end.
 
-extract_function_signature({function_type, ParamTypes, ReturnType}) ->
+%% Extract function signature from multi-param, curried, and zero-param function types
+extract_function_signature({function_type, ParamTypes, ReturnType}) when is_list(ParamTypes) ->
+    % Multi-parameter or zero-parameter function type: {function_type, [A, B, C], ReturnType} or {function_type, [], ReturnType}
     {ok, ParamTypes, ReturnType};
-extract_function_signature(_) ->
-    {error, not_a_function_type}.
+extract_function_signature(CurriedType) ->
+    % Try to extract curried function type: A -> (B -> (C -> ReturnType))
+    case extract_curried_signature(CurriedType) of
+        {ok, ParamTypes, ReturnType} ->
+            {ok, ParamTypes, ReturnType};
+        {error, _} ->
+            {error, not_a_function_type}
+    end.
+
+%% Extract signature from curried function types: A -> (B -> (C -> ReturnType))
+extract_curried_signature({function_type, [ParamType], ReturnType}) ->
+    case extract_curried_signature(ReturnType) of
+        {ok, RestParams, FinalReturn} ->
+            {ok, [ParamType | RestParams], FinalReturn};
+        {error, _} ->
+            % Base case: A -> ReturnType
+            {ok, [ParamType], ReturnType}
+    end;
+extract_curried_signature(_) ->
+    {error, not_curried_function}.
 
 infer_args_with_expected_types(Args, ExpectedTypes, Env, Location) ->
     case length(Args) =:= length(ExpectedTypes) of

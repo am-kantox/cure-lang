@@ -40,7 +40,10 @@ module Std.Core do
 
   # Flip the order of arguments for a binary function
   def flip(f: A -> B -> C): B -> A -> C =
-    fn(b, a) -> f(a, b) end
+    fn(b, a) -> 
+      let g = f(a) in
+      g(b)
+    end
 
   # Boolean operations
   def not(x: Bool): Bool =
