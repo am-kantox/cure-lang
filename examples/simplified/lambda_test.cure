@@ -1,7 +1,0 @@
-module LambdaTest do
-  export [main/0]
-
-  def main(): Int = 
-    let add = fn(x, y) -> x + y end in
-    add(5, 3)
-end

@@ -1,7 +1,0 @@
-module LambdaSimple do
-  export [main/0]
-
-  def main(): Int = 
-    let result = 42 in
-    result
-end

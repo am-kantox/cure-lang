@@ -1,1 +1,0 @@
-def test_map_ok(result: Result(T, E), f: T -> U): Result(U, E) = Ok(42)

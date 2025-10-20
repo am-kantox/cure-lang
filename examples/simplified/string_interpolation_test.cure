@@ -1,9 +1,0 @@
-module StringInterpolationTest do
-  export [test/0]
-
-  def test() do
-    let name = "World" in
-    let greeting = "Hello #{name}!" in
-    greeting
-  end
-end

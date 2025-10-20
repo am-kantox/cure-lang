@@ -1,9 +1,0 @@
-module Test do
-  export [matrix_multiply/2]
-
-  def matrix_multiply(
-    a: Matrix(m, n, T), 
-    b: Matrix(n, p, T)
-  ): Matrix(m, p, T) = 
-    42
-end

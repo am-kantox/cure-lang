@@ -1,7 +1,0 @@
-module Test do
-  export [test/0]
-  
-  type PositiveInt = Int when x > 0
-  
-  def test(): Unit = ok
-end

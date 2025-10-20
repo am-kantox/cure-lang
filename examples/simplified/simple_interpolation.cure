@@ -1,4 +1,0 @@
-def test() do
-  let name = "World" in
-  "Hello #{name}!"
-end

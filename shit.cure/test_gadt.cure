@@ -1,8 +1,0 @@
-module TestGADT do
-  export [test/0]
-  
-  # Expression language with type-safe evaluation
-  type Expr(T) = IntLit(Int) | BoolLit(Bool) | Add(Expr(Int), Expr(Int)) | Equal(Expr(T), Expr(T)) | If(Expr(Bool), Expr(T), Expr(T))
-
-  def test(): Unit = ok
-end

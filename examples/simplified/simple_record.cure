@@ -1,3 +1,0 @@
-record Point do
-  x: Int
-end

@@ -1,5 +1,0 @@
-def main(): Int =
-  match 123 do
-    x -> x
-    _ -> 0  
-  end

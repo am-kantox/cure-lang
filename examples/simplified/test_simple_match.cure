@@ -1,5 +1,0 @@
-def main(): Int =
-  match 5 do
-    0 -> 10
-    _ -> 30
-  end
