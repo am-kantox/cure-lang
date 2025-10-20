@@ -84,17 +84,17 @@ module MonadicPipes do
     |> bind(validate_name)
 
   defp validate_email(user: User): Result(User, ValidationError) =
-    if contains(user.email, "@") && contains(user.email, ".")
+    if contains(user.email, "@") and contains(user.email, ".")
     then Ok(user)
     else Error(InvalidEmail)
 
   defp validate_age(user: User): Result(User, ValidationError) =
-    if user.age >= 13 && user.age <= 120
+    if user.age >= 13 and user.age <= 120
     then Ok(user)
     else Error(InvalidAge)
 
   defp validate_name(user: User): Result(User, ValidationError) =
-    if length(user.name) >= 2 && length(user.name) <= 50
+    if length(user.name) >= 2 and length(user.name) <= 50
     then Ok(user)
     else Error(InvalidName)
 

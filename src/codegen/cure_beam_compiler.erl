@@ -721,7 +721,7 @@ compile_match_tagged_tuple([Tag, FieldCount, _FailLabel], Context) ->
 %% Result tuple matching (for Result/Option types like {'Ok', value}, {'Error', reason})
 compile_match_result_tuple([Tag, FieldCount, _FailLabel], Context) ->
     % This matches Result/Option types which use simple tuple format: {'Ok', Value}, {'Error', Reason}
-    io:format("DEBUG: compile_match_result_tuple called with Tag=~p, FieldCount=~p~n", [
+    cure_utils:debug("compile_match_result_tuple called with Tag=~p, FieldCount=~p~n", [
         Tag, FieldCount
     ]),
     case pop_stack(Context) of

@@ -1,10 +1,10 @@
 module VectorTest do
-  export [run_tests/0]
+  export [main/0]
   
   import Std.Vector [length/1, is_empty/1, contains/2, reverse/2]
   import Std.Core ['and'/2, 'not'/1]
   
-  def run_tests(): Bool =
+  def main(): Bool =
     let numbers = [1, 2, 3, 4, 5]
     let empty = []
     let single = [42]

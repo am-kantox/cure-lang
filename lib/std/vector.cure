@@ -21,7 +21,6 @@ module Std.Vector do
       [h | t] -> reverse(t, [h | acc])
     end
 
-  # Simplified transformations (Int only for now)
   def map(v: Vector(T, n), f: T -> U): Vector(U, n) =
     match v do
       [] -> []

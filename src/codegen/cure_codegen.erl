@@ -369,7 +369,7 @@ compile_module(ModuleAST) ->
 
 %% Support for new AST format
 compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) ->
-    io:format("DEBUG: Compiling module ~p with imports ~p~n", [Name, Imports]),
+    cure_utils:debug("Compiling module ~p with imports ~p~n", [Name, Imports]),
     % Using new AST format compilation path
     ConvertedExports = convert_exports_new(Exports, Items),
     State = #codegen_state{
@@ -384,11 +384,11 @@ compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) 
     StateWithImports =
         case process_imports_new(Imports, State) of
             {ok, ImportState} ->
-                io:format("DEBUG: Import processing succeeded~n"),
+                cure_utils:debug("Import processing succeeded~n"),
                 ImportState;
             % Continue with basic state on import errors
             {error, Error} ->
-                io:format("DEBUG: Import processing failed: ~p~n", [Error]),
+                cure_utils:debug("Import processing failed: ~p~n", [Error]),
                 State
         end,
 
@@ -399,14 +399,14 @@ compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) 
             {error, Reason}
     end;
 compile_module(#module_def{name = Name, exports = Exports, items = Items} = Module, Options) ->
-    io:format("DEBUG: Using old AST format path for module ~p~n", [Name]),
-    io:format("DEBUG: Module record: ~p~n", [Module]),
+    cure_utils:debug("Using old AST format path for module ~p~n", [Name]),
+    cure_utils:debug("Module record: ~p~n", [Module]),
     % Check if there are any imports in the items
     Imports = [
         Item
      || Item <- Items, element(1, Item) =:= import_def orelse is_record(Item, import_def)
     ],
-    io:format("DEBUG: Found imports: ~p~n", [Imports]),
+    cure_utils:debug("Found imports: ~p~n", [Imports]),
     % Using old AST format compilation path
     State = #codegen_state{
         module_name = Name,
@@ -420,10 +420,10 @@ compile_module(#module_def{name = Name, exports = Exports, items = Items} = Modu
     StateWithImports =
         case process_imports_new(Imports, State) of
             {ok, ImportState} ->
-                io:format("DEBUG: Old path import processing succeeded~n"),
+                cure_utils:debug("Old path import processing succeeded~n"),
                 ImportState;
             {error, Error} ->
-                io:format("DEBUG: Old path import processing failed: ~p~n", [Error]),
+                cure_utils:debug("Old path import processing failed: ~p~n", [Error]),
                 State
         end,
 
@@ -507,9 +507,9 @@ compile_module_items([Item | RestItems], State, Acc) ->
             NewAcc = lists:reverse(ConstructorFunctions) ++ Acc,
             % Also add constructor functions to exports
             ConstructorExports = extract_constructor_exports(ConstructorFunctions),
-            io:format("DEBUG: Adding constructor exports: ~p~n", [ConstructorExports]),
+            cure_utils:debug("Adding constructor exports: ~p~n", [ConstructorExports]),
             UpdatedExports = NewState#codegen_state.exports ++ ConstructorExports,
-            io:format("DEBUG: Updated exports list: ~p~n", [UpdatedExports]),
+            cure_utils:debug("Updated exports list: ~p~n", [UpdatedExports]),
             NewStateWithExports = NewState#codegen_state{exports = UpdatedExports},
             compile_module_items(RestItems, NewStateWithExports, NewAcc);
         {ok, CompiledItem, NewState} ->
@@ -562,14 +562,14 @@ compile_module_item(#record_def{} = RecordDef, State) ->
     {ok, {record_def, RecordDef}, State};
 compile_module_item(#type_def{} = TypeDef, State) ->
     % Generate constructor functions for union types
-    io:format("DEBUG: Processing type_def: ~p~n", [TypeDef]),
+    cure_utils:debug("Processing type_def: ~p~n", [TypeDef]),
     case generate_union_type_constructors(TypeDef, State) of
         {ok, ConstructorFunctions, NewState} ->
-            io:format("DEBUG: Generated ~p constructor functions~n", [length(ConstructorFunctions)]),
+            cure_utils:debug("Generated ~p constructor functions~n", [length(ConstructorFunctions)]),
             {ok, {union_type, TypeDef, ConstructorFunctions}, NewState};
         {no_constructors, NewState} ->
             % Not a union type or no constructors needed
-            io:format("DEBUG: No constructors generated for ~p~n", [TypeDef#type_def.name]),
+            cure_utils:debug("No constructors generated for ~p~n", [TypeDef#type_def.name]),
             {ok, {type_def, TypeDef}, NewState};
         {error, Reason} ->
             io:format("ERROR: Failed to generate constructors for ~p: ~p~n", [
@@ -1130,12 +1130,12 @@ find_vector_param([#param{name = ParamName, type = Type} | Rest]) ->
         {dependent_type, 'Vector', _} -> {ok, ParamName};
         _ -> find_vector_param(Rest)
     end;
-find_vector_param([{param, ParamName, Type, _} | Rest]) ->
-    case Type of
-        #dependent_type{name = 'Vector'} -> {ok, ParamName};
-        {dependent_type, 'Vector', _} -> {ok, ParamName};
-        _ -> find_vector_param(Rest)
-    end;
+% find_vector_param([{param, ParamName, Type, _} | Rest]) ->
+%     case Type of
+%         #dependent_type{name = 'Vector'} -> {ok, ParamName};
+%         {dependent_type, 'Vector', _} -> {ok, ParamName};
+%         _ -> find_vector_param(Rest)
+%     end;
 find_vector_param([_ | Rest]) ->
     find_vector_param(Rest).
 
@@ -1891,15 +1891,15 @@ generate_beam_module(State) ->
     {RegularFunctions, FSMDefinitions, ConstructorFunctions} =
         separate_functions(State#codegen_state.functions),
 
-    io:format("DEBUG: BEAM generation - Constructor functions: ~p~n", [ConstructorFunctions]),
-    io:format("DEBUG: BEAM generation - Exports: ~p~n", [State#codegen_state.exports]),
+    cure_utils:debug("BEAM generation - Constructor functions: ~p~n", [ConstructorFunctions]),
+    cure_utils:debug("BEAM generation - Exports: ~p~n", [State#codegen_state.exports]),
 
     % Extract FSM functions and flatten them
     FSMFunctions = lists:flatten([maps:get(functions, FSM, []) || FSM <- FSMDefinitions]),
 
     % Combine all functions: regular functions, FSM functions, and constructor functions
     AllFunctions = RegularFunctions ++ FSMFunctions ++ ConstructorFunctions,
-    io:format("DEBUG: BEAM generation - Total functions: ~p~n", [length(AllFunctions)]),
+    cure_utils:debug("BEAM generation - Total functions: ~p~n", [length(AllFunctions)]),
 
     Module = #{
         name => State#codegen_state.module_name,
@@ -1912,7 +1912,7 @@ generate_beam_module(State) ->
 
     % Debug: Show first few constructor functions to verify their format
     ConstructorSample = lists:sublist(ConstructorFunctions, 3),
-    io:format("DEBUG: Sample constructor functions: ~p~n", [ConstructorSample]),
+    cure_utils:debug("Sample constructor functions: ~p~n", [ConstructorSample]),
 
     {ok, Module}.
 
@@ -2005,10 +2005,10 @@ convert_export_specs([_ | Rest]) ->
 process_imports_new([], State) ->
     {ok, State};
 process_imports_new([{import_def, Module, Imports, _Location} | Rest], State) ->
-    io:format("DEBUG: Processing import ~p with items ~p~n", [Module, Imports]),
+    cure_utils:debug("Processing import ~p with items ~p~n", [Module, Imports]),
     case resolve_and_load_module(Module, Imports, State) of
         {ok, NewState} ->
-            io:format("DEBUG: Successfully imported ~p~n", [Module]),
+            cure_utils:debug("Successfully imported ~p~n", [Module]),
             process_imports_new(Rest, NewState);
         {error, Reason} ->
             io:format("Warning: Failed to import ~p: ~p~n", [Module, Reason]),
@@ -2231,8 +2231,8 @@ generate_beam_file(Module, OutputPath) ->
                         {error, Reason} -> {error, {write_failed, Reason}}
                     end;
                 {error, Errors, Warnings} ->
-                    io:format("DEBUG: Erlang compile errors: ~p~n", [Errors]),
-                    io:format("DEBUG: Erlang compile warnings: ~p~n", [Warnings]),
+                    cure_utils:debug("Erlang compile errors: ~p~n", [Errors]),
+                    cure_utils:debug("Erlang compile warnings: ~p~n", [Warnings]),
                     {error, {compile_failed, Errors, Warnings}}
             end;
         {error, Reason} ->
@@ -2299,8 +2299,8 @@ convert_to_erlang_forms(Module) ->
         % For BEAM generation, we need to include ALL functions (exported and local)
         % The export list only controls external visibility
         AllFunctionExports = extract_function_exports(Functions),
-        io:format("DEBUG: RawExports: ~p~n", [RawExports]),
-        io:format("DEBUG: AllFunctionExports: ~p~n", [AllFunctionExports]),
+        cure_utils:debug("RawExports: ~p~n", [RawExports]),
+        cure_utils:debug("AllFunctionExports: ~p~n", [AllFunctionExports]),
 
         Exports =
             case RawExports of
@@ -2353,9 +2353,9 @@ convert_to_erlang_forms(Module) ->
         Forms = BaseAttributes ++ AttributeForms ++ LoadHook ++ FunctionForms ++ FSMRegisterFunc,
 
         % Debug: Show a sample of the generated forms
-        io:format("DEBUG: Generated ~p forms total~n", [length(Forms)]),
+        cure_utils:debug("Generated ~p forms total~n", [length(Forms)]),
         AttributeSample = lists:sublist(Forms, 5),
-        io:format("DEBUG: First 5 forms: ~p~n", [AttributeSample]),
+        cure_utils:debug("First 5 forms: ~p~n", [AttributeSample]),
 
         % Find constructor functions in the forms
         ConstructorForms = [
@@ -2363,10 +2363,10 @@ convert_to_erlang_forms(Module) ->
          || {function, _, Name, _, _} = F <- Forms,
             lists:member(Name, ['Ok', 'Error', 'Some', 'None', 'Lt', 'Eq', 'Gt'])
         ],
-        io:format("DEBUG: Constructor forms found: ~p~n", [length(ConstructorForms)]),
+        cure_utils:debug("Constructor forms found: ~p~n", [length(ConstructorForms)]),
         if
             length(ConstructorForms) > 0 ->
-                io:format("DEBUG: Sample constructor form: ~p~n", [hd(ConstructorForms)]);
+                cure_utils:debug("Sample constructor form: ~p~n", [hd(ConstructorForms)]);
             true ->
                 ok
         end,
@@ -2377,11 +2377,11 @@ convert_to_erlang_forms(Module) ->
             {error, {form_conversion_failed, Reason, Stack}}
     end.
 
-%% Convert compiled functions to Erlang forms
-convert_functions_to_forms(Functions, LineStart) ->
-    % Extract local functions map for context
-    LocalFunctions = extract_local_functions_map(Functions),
-    convert_functions_to_forms(Functions, LineStart, [], undefined, LocalFunctions).
+% %% Convert compiled functions to Erlang forms
+% convert_functions_to_forms(Functions, LineStart) ->
+%     % Extract local functions map for context
+%     LocalFunctions = extract_local_functions_map(Functions),
+%     convert_functions_to_forms(Functions, LineStart, [], undefined, LocalFunctions).
 
 %% Convert compiled functions to Erlang forms with module name
 convert_functions_to_forms(Functions, LineStart, ModuleName) ->
@@ -2427,8 +2427,8 @@ extract_local_functions_map(Functions) ->
     ).
 
 %% Convert a single function to Erlang abstract form (backward compatibility)
-convert_function_to_form(Function, Line) ->
-    convert_function_to_form(Function, Line, undefined, #{}).
+% convert_function_to_form(Function, Line) ->
+%     convert_function_to_form(Function, Line, undefined, #{}).
 
 %% Convert a single function to Erlang abstract form with module context
 convert_function_to_form(Function, Line, ModuleName, LocalFunctions) ->
@@ -2436,14 +2436,14 @@ convert_function_to_form(Function, Line, ModuleName, LocalFunctions) ->
     case Function of
         {function, _FormLine, Name, Arity, Clauses} ->
             % Already in Erlang abstract form, just update the line number
-            io:format("DEBUG: Converting constructor function ~p/~p~n", [Name, Arity]),
+            cure_utils:debug("Converting constructor function ~p/~p~n", [Name, Arity]),
             UpdatedForm = {function, Line, Name, Arity, Clauses},
             {ok, UpdatedForm, Line + 1};
         _ when is_map(Function) ->
             % Normal function that needs compilation
             FuncName = maps:get(name, Function, unknown),
             FuncArity = maps:get(arity, Function, unknown),
-            io:format("DEBUG: Converting regular function ~p/~p~n", [FuncName, FuncArity]),
+            cure_utils:debug("Converting regular function ~p/~p~n", [FuncName, FuncArity]),
             case ModuleName of
                 undefined ->
                     % No module context, use old function
@@ -2467,7 +2467,7 @@ convert_function_to_form(Function, Line, ModuleName, LocalFunctions) ->
                     end
             end;
         _ ->
-            io:format("DEBUG: Unknown function format: ~p~n", [Function]),
+            cure_utils:debug("Unknown function format: ~p~n", [Function]),
             {error, {unknown_function_format, Function}}
     end.
 
@@ -2845,7 +2845,7 @@ convert_complex_body_to_erlang(#identifier_expr{name = Name}, Location) ->
     end;
 convert_complex_body_to_erlang(#binary_op_expr{op = Op, left = Left, right = Right}, Location) ->
     Line = get_line_from_location(Location),
-    io:format("DEBUG: Converting binary op ~p at line ~p~n", [Op, Line]),
+    cure_utils:debug("Converting binary op ~p at line ~p~n", [Op, Line]),
     case
         {
             convert_complex_body_to_erlang(Left, Location),
@@ -2854,21 +2854,21 @@ convert_complex_body_to_erlang(#binary_op_expr{op = Op, left = Left, right = Rig
     of
         {{ok, LeftForm}, {ok, RightForm}} ->
             BinOpForm = {op, Line, Op, LeftForm, RightForm},
-            io:format("DEBUG: Generated binary op form: ~p~n", [BinOpForm]),
+            cure_utils:debug("Generated binary op form: ~p~n", [BinOpForm]),
             {ok, BinOpForm};
         _ ->
             error
     end;
 convert_complex_body_to_erlang(#function_call_expr{function = Function, args = Args}, Location) ->
     Line = get_line_from_location(Location),
-    io:format("DEBUG: Converting function call ~p with args ~p~n", [Function, Args]),
+    cure_utils:debug("Converting function call ~p with args ~p~n", [Function, Args]),
     case convert_complex_body_to_erlang(Function, Location) of
         {ok, FunctionForm} ->
-            io:format("DEBUG: Function form: ~p~n", [FunctionForm]),
+            cure_utils:debug("Function form: ~p~n", [FunctionForm]),
             case convert_complex_args_to_erlang(Args, Location) of
                 {ok, ArgForms} ->
                     CallForm = {call, Line, FunctionForm, ArgForms},
-                    io:format("DEBUG: Generated call form: ~p~n", [CallForm]),
+                    cure_utils:debug("Generated call form: ~p~n", [CallForm]),
                     {ok, CallForm};
                 error ->
                     error
@@ -2930,14 +2930,14 @@ convert_complex_body_to_erlang(#tuple_expr{elements = Elements}, Location) ->
     end;
 convert_complex_body_to_erlang(#cons_expr{elements = Elements, tail = Tail}, Location) ->
     Line = get_line_from_location(Location),
-    io:format("DEBUG: Converting cons expr with elements ~p and tail ~p~n", [Elements, Tail]),
+    cure_utils:debug("Converting cons expr with elements ~p and tail ~p~n", [Elements, Tail]),
     case convert_complex_args_to_erlang(Elements, Location) of
         {ok, ElementForms} ->
             case convert_complex_body_to_erlang(Tail, Location) of
                 {ok, TailForm} ->
                     % Build cons structure: [E1, E2, ... | Tail] -> [E1 | [E2 | ... | Tail]]
                     ConsForm = build_cons_form(ElementForms, TailForm, Line),
-                    io:format("DEBUG: Generated cons form: ~p~n", [ConsForm]),
+                    cure_utils:debug("Generated cons form: ~p~n", [ConsForm]),
                     {ok, ConsForm};
                 error ->
                     error
@@ -2947,13 +2947,13 @@ convert_complex_body_to_erlang(#cons_expr{elements = Elements, tail = Tail}, Loc
     end;
 convert_complex_body_to_erlang(#match_expr{expr = Expr, patterns = Patterns}, Location) ->
     Line = get_line_from_location(Location),
-    io:format("DEBUG: Converting match expr with ~p patterns~n", [length(Patterns)]),
+    cure_utils:debug("Converting match expr with ~p patterns~n", [length(Patterns)]),
     case convert_complex_body_to_erlang(Expr, Location) of
         {ok, ExprForm} ->
             case convert_match_patterns_to_erlang(Patterns, Location) of
                 {ok, ClauseForms} ->
                     CaseForm = {'case', Line, ExprForm, ClauseForms},
-                    io:format("DEBUG: Generated case form: ~p~n", [CaseForm]),
+                    cure_utils:debug("Generated case form: ~p~n", [CaseForm]),
                     {ok, CaseForm};
                 error ->
                     error
@@ -3090,8 +3090,8 @@ convert_match_patterns_to_erlang([_ | Rest], Location) ->
 default_value_for_pattern(#literal_pattern{value = Value}) -> Value;
 default_value_for_pattern(_) -> undefined.
 
-default_value_for_body(#literal_expr{value = Value}) -> Value;
-default_value_for_body(_) -> ok.
+% default_value_for_body(#literal_expr{value = Value}) -> Value;
+% default_value_for_body(_) -> ok.
 
 %% Get line number from location
 % get_line_from_location({location, Line, _Col, _File}, _Default) when is_integer(Line) -> Line;
@@ -3398,43 +3398,43 @@ get_line_from_location(_) -> 1.
 %% For example: type Result(T, E) = Ok(T) | Error(E)
 %% Should generate: Ok/1 and Error/1 functions
 generate_union_type_constructors(#type_def{name = TypeName, definition = Definition}, State) ->
-    io:format("DEBUG: Processing type definition ~p with definition ~p~n", [TypeName, Definition]),
+    cure_utils:debug("Processing type definition ~p with definition ~p~n", [TypeName, Definition]),
     case extract_union_variants(Definition) of
         {ok, Variants} ->
-            io:format("DEBUG: Found union variants: ~p~n", [Variants]),
+            cure_utils:debug("Found union variants: ~p~n", [Variants]),
             case generate_constructor_functions(TypeName, Variants, State, []) of
                 {ok, Functions, NewState} ->
-                    io:format("DEBUG: Generated constructor functions: ~p~n", [Functions]),
+                    cure_utils:debug("Generated constructor functions: ~p~n", [Functions]),
                     {ok, Functions, NewState};
                 {error, Reason} ->
                     {error, Reason}
             end;
         not_a_union ->
-            io:format("DEBUG: ~p is not a union type~n", [TypeName]),
+            cure_utils:debug("~p is not a union type~n", [TypeName]),
             {no_constructors, State};
         {error, Reason} ->
-            io:format("DEBUG: Error extracting union variants: ~p~n", [Reason]),
+            cure_utils:debug("Error extracting union variants: ~p~n", [Reason]),
             {error, Reason}
     end.
 
 %% Extract variants from union type definition
 %% Handles various AST formats for union types
 extract_union_variants(#union_type{types = Types}) ->
-    io:format("DEBUG: Found union_type record with types: ~p~n", [Types]),
+    cure_utils:debug("Found union_type record with types: ~p~n", [Types]),
     {ok, Types};
 extract_union_variants(Definition) when is_list(Definition) ->
     % Handle list of union variants
-    io:format("DEBUG: Found list definition: ~p~n", [Definition]),
+    cure_utils:debug("Found list definition: ~p~n", [Definition]),
     {ok, Definition};
 extract_union_variants(Definition) ->
-    io:format("DEBUG: Checking if definition is union type: ~p~n", [Definition]),
+    cure_utils:debug("Checking if definition is union type: ~p~n", [Definition]),
     % Try to detect if this is a union type in other formats
     case is_union_type_definition(Definition) of
         {true, Variants} ->
-            io:format("DEBUG: Detected union type with variants: ~p~n", [Variants]),
+            cure_utils:debug("Detected union type with variants: ~p~n", [Variants]),
             {ok, Variants};
         false ->
-            io:format("DEBUG: Not a union type~n"),
+            cure_utils:debug("Not a union type~n"),
             not_a_union
     end.
 

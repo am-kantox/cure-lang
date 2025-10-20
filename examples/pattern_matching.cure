@@ -64,7 +64,7 @@ module PatternMatching do
         "Hello, " ++ name ++ "! You are " ++ show(age) ++ " years old."
       Person{name: name, age: age} when age >= 13 ->
         "Hey there, teen " ++ name ++ "!"
-      Person{name: name} ->
+      Person{name: name, age: _} ->
         "Hi, young " ++ name ++ "!"
     end
 

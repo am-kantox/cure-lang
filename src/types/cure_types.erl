@@ -402,7 +402,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.
 -type type_family_equation() :: #type_family_equation{}.
 -type constraint() :: #constraint{}.
 -type recursive_call_context() :: #recursive_call_context{}.
--type recursive_inference_state() :: #recursive_inference_state{}.
+% -type recursive_inference_state() :: #recursive_inference_state{}.
 
 % Complex dependent type relationship records - UNUSED TYPES COMMENTED OUT
 % -record(dependent_relation, {
@@ -810,17 +810,17 @@ unify_impl(
     {function_type, Params2, Return2},
     Subst
 ) ->
-    io:format("DEBUG: Function type unification - Params1: ~p, Params2: ~p~n", [Params1, Params2]),
+    cure_utils:debug("Function type unification - Params1: ~p, Params2: ~p~n", [Params1, Params2]),
     case length(Params1) =:= length(Params2) of
         false ->
             {error, {arity_mismatch, length(Params1), length(Params2)}};
         true ->
             case unify_lists(Params1, Params2, Subst) of
                 {ok, Subst1} ->
-                    io:format("DEBUG: Function parameter unification succeeded~n"),
+                    cure_utils:debug("Function parameter unification succeeded~n"),
                     unify_impl(Return1, Return2, Subst1);
                 Error ->
-                    io:format("DEBUG: Function parameter unification failed: ~p~n", [Error]),
+                    cure_utils:debug("Function parameter unification failed: ~p~n", [Error]),
                     Error
             end
     end;
@@ -837,25 +837,25 @@ unify_impl(
     {dependent_type, 'Vector', Params2},
     Subst
 ) ->
-    io:format("DEBUG: Vector unification - Params1: ~p, Params2: ~p~n", [Params1, Params2]),
+    cure_utils:debug("Vector unification - Params1: ~p, Params2: ~p~n", [Params1, Params2]),
     case {extract_vector_params(Params1), extract_vector_params(Params2)} of
         {{ok, Elem1, Len1}, {ok, Elem2, Len2}} ->
-            io:format("DEBUG: Vector lengths - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
+            cure_utils:debug("Vector lengths - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
             case unify_impl(Elem1, Elem2, Subst) of
                 {ok, Subst1} ->
                     % Strict length checking for Vector types - check if we have recursive state
                     RecState = get(recursive_state),
                     Result = unify_lengths_strict_with_context(Len1, Len2, Subst1, RecState),
-                    io:format("DEBUG: Vector dimension unification result: ~p~n", [Result]),
+                    cure_utils:debug("Vector dimension unification result: ~p~n", [Result]),
                     Result;
                 Error ->
                     Error
             end;
         {{error, Reason}, _} ->
-            io:format("DEBUG: Failed to extract vector params (left): ~p~n", [Reason]),
+            cure_utils:debug("Failed to extract vector params (left): ~p~n", [Reason]),
             {error, {invalid_vector_params_left, Reason}};
         {_, {error, Reason}} ->
-            io:format("DEBUG: Failed to extract vector params (right): ~p~n", [Reason]),
+            cure_utils:debug("Failed to extract vector params (right): ~p~n", [Reason]),
             {error, {invalid_vector_params_right, Reason}}
     end;
 %% Generic dependent type unification (AFTER specific Vector case)
@@ -866,7 +866,7 @@ unify_impl(
 ) when
     Name1 =:= Name2, length(Params1) =:= length(Params2)
 ->
-    io:format("DEBUG: Generic dependent_type unification called for ~p~n", [Name1]),
+    cure_utils:debug("Generic dependent_type unification called for ~p~n", [Name1]),
     unify_type_params(Params1, Params2, Subst);
 %% Bridge unification between list_type and dependent List types
 unify_impl(
@@ -1046,16 +1046,16 @@ unify_lengths(undefined, _AnyLength, Subst) ->
 unify_lengths(_AnyLength, undefined, Subst) ->
     {ok, Subst};
 unify_lengths(Len1, Len2, Subst) when Len1 =/= undefined, Len2 =/= undefined ->
-    io:format("DEBUG: unify_lengths - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
+    cure_utils:debug("unify_lengths - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
     case {Len1, Len2} of
         % Handle type variables properly - they should unify with any concrete length
         {TypeVar = #type_var{}, ConcreteLen} ->
-            io:format("DEBUG: (regular) Unifying type variable ~p with concrete length ~p~n", [
+            cure_utils:debug("(regular) Unifying type variable ~p with concrete length ~p~n", [
                 TypeVar, ConcreteLen
             ]),
             unify_impl(TypeVar, ConcreteLen, Subst);
         {ConcreteLen, TypeVar = #type_var{}} ->
-            io:format("DEBUG: (regular) Unifying concrete length ~p with type variable ~p~n", [
+            cure_utils:debug("(regular) Unifying concrete length ~p with type variable ~p~n", [
                 ConcreteLen, TypeVar
             ]),
             unify_impl(ConcreteLen, TypeVar, Subst);
@@ -1068,8 +1068,8 @@ unify_lengths(Len1, Len2, Subst) when Len1 =/= undefined, Len2 =/= undefined ->
                 {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
                     % Different evaluated lengths - for now, allow this to succeed
                     % This makes the type system more permissive for functions like concat
-                    io:format(
-                        "DEBUG: Allowing different lengths: ~p vs ~p (more permissive mode)~n", [
+                    cure_utils:debug(
+                        "Allowing different lengths: ~p vs ~p (more permissive mode)~n", [
                             N1, N2
                         ]
                     ),
@@ -1084,7 +1084,7 @@ unify_lengths(_, _, Subst) ->
 
 %% Enhanced strict length unification that uses recursive context
 unify_lengths_strict_with_context(Len1, Len2, Subst, RecState) ->
-    io:format("DEBUG: unify_lengths_strict_with_context - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
+    cure_utils:debug("unify_lengths_strict_with_context - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
     % Build enhanced substitution by merging local subst with recursive context
     EnhancedSubst = case RecState of
         undefined -> Subst;
@@ -1092,27 +1092,27 @@ unify_lengths_strict_with_context(Len1, Len2, Subst, RecState) ->
             merge_substitutions(Subst, RecSubst);
         _ -> Subst
     end,
-    io:format("DEBUG: Enhanced substitution has ~p entries~n", [maps:size(EnhancedSubst)]),
-    io:format("DEBUG: Enhanced substitution contents: ~p~n", [EnhancedSubst]),
+    cure_utils:debug("Enhanced substitution has ~p entries~n", [maps:size(EnhancedSubst)]),
+    cure_utils:debug("Enhanced substitution contents: ~p~n", [EnhancedSubst]),
     % Use enhanced substitution for length evaluation
     unify_lengths_strict_impl(Len1, Len2, Subst, EnhancedSubst).
 
 %% Strict length unification for Vector types - no undefined allowed
-unify_lengths_strict(Len1, Len2, Subst) ->
-    unify_lengths_strict_with_context(Len1, Len2, Subst, undefined).
+%% unify_lengths_strict(Len1, Len2, Subst) ->
+%%     unify_lengths_strict_with_context(Len1, Len2, Subst, undefined).
 
 %% Internal implementation that separates local and enhanced substitutions
 unify_lengths_strict_impl(Len1, Len2, LocalSubst, EnhancedSubst) ->
-    io:format("DEBUG: unify_lengths_strict_impl - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
+    cure_utils:debug("unify_lengths_strict_impl - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
     case {Len1, Len2} of
         % Handle type variables properly - they should unify with any concrete length
         {TypeVar = #type_var{}, ConcreteLen} ->
-            io:format("DEBUG: Unifying type variable ~p with concrete length ~p~n", [
+            cure_utils:debug("Unifying type variable ~p with concrete length ~p~n", [
                 TypeVar, ConcreteLen
             ]),
             unify_impl(TypeVar, ConcreteLen, LocalSubst);
         {ConcreteLen, TypeVar = #type_var{}} ->
-            io:format("DEBUG: Unifying concrete length ~p with type variable ~p~n", [
+            cure_utils:debug("Unifying concrete length ~p with type variable ~p~n", [
                 ConcreteLen, TypeVar
             ]),
             unify_impl(ConcreteLen, TypeVar, LocalSubst);
@@ -1120,8 +1120,8 @@ unify_lengths_strict_impl(Len1, Len2, LocalSubst, EnhancedSubst) ->
         {{primitive_type, VarName}, ConcreteLen} when is_atom(VarName) ->
             case is_generic_type_variable_name(VarName) of
                 true ->
-                    io:format(
-                        "DEBUG: Unifying primitive type variable ~p with concrete length ~p~n", [
+                    cure_utils:debug(
+                        "Unifying primitive type variable ~p with concrete length ~p~n", [
                             VarName, ConcreteLen
                         ]
                     ),
@@ -1145,8 +1145,8 @@ unify_lengths_strict_impl(Len1, Len2, LocalSubst, EnhancedSubst) ->
         {ConcreteLen, {primitive_type, VarName}} when is_atom(VarName) ->
             case is_generic_type_variable_name(VarName) of
                 true ->
-                    io:format(
-                        "DEBUG: Unifying concrete length ~p with primitive type variable ~p~n", [
+                    cure_utils:debug(
+                        "Unifying concrete length ~p with primitive type variable ~p~n", [
                             ConcreteLen, VarName
                         ]
                     ),
@@ -1178,26 +1178,26 @@ unify_lengths_strict_impl(Len1, Len2, LocalSubst, EnhancedSubst) ->
             of
                 {{ok, N}, {ok, N}} when is_integer(N) ->
                     % Same evaluated length using enhanced substitution
-                    io:format("DEBUG: Same concrete lengths (with enhanced subst): ~p~n", [N]),
+                    cure_utils:debug("Same concrete lengths (with enhanced subst): ~p~n", [N]),
                     {ok, LocalSubst};
                 {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
                     % Different evaluated lengths
-                    io:format("DEBUG: Different concrete lengths (with enhanced subst): ~p vs ~p~n", [N1, N2]),
+                    cure_utils:debug("Different concrete lengths (with enhanced subst): ~p vs ~p~n", [N1, N2]),
                     {error, {length_mismatch, N1, N2}};
                 _ ->
                     % Fall back to basic evaluation without substitution
                     case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
                         {{ok, N}, {ok, N}} when is_integer(N) ->
                             % Same evaluated length
-                            io:format("DEBUG: Same concrete lengths: ~p~n", [N]),
+                            cure_utils:debug("Same concrete lengths: ~p~n", [N]),
                             {ok, LocalSubst};
                         {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
                             % Different evaluated lengths
-                            io:format("DEBUG: Different concrete lengths: ~p vs ~p~n", [N1, N2]),
+                            cure_utils:debug("Different concrete lengths: ~p vs ~p~n", [N1, N2]),
                             {error, {length_mismatch, N1, N2}};
                         _Other ->
                             % Try enhanced length expression unification
-                            io:format("DEBUG: Trying enhanced length expression unification~n"),
+                            cure_utils:debug("Trying enhanced length expression unification~n"),
                             case unify_length_expressions(Len1, Len2, LocalSubst) of
                                 {ok, NewSubst} ->
                                     {ok, NewSubst};
@@ -1205,11 +1205,11 @@ unify_lengths_strict_impl(Len1, Len2, LocalSubst, EnhancedSubst) ->
                                     % Try arithmetic simplification with ENHANCED substitution
                                     case try_arithmetic_simplification_with_subst(Len1, Len2, EnhancedSubst) of
                                         {ok, true} ->
-                                            io:format("DEBUG: Arithmetic simplification succeeded~n"),
+                                            cure_utils:debug("Arithmetic simplification succeeded~n"),
                                             {ok, LocalSubst};
                                         _ ->
                                             % Fall back to structural comparison
-                                            io:format("DEBUG: Falling back to structural comparison~n"),
+                                            cure_utils:debug("Falling back to structural comparison~n"),
                                             case expr_equal(Len1, Len2) of
                                                 true ->
                                                     {ok, LocalSubst};
@@ -1277,7 +1277,7 @@ unify_length_expressions(Expr1, Expr2, Subst) ->
     case {Expr1, Expr2} of
         {Same, Same} ->
             {ok, Subst};
-        {{binary_op_expr, Op, L1, R1, Loc}, {binary_op_expr, Op, L2, R2, _}} ->
+        {{binary_op_expr, Op, L1, R1, _Loc1}, {binary_op_expr, Op, L2, R2, _Loc2}} ->
             % Same operator, try to unify operands
             case unify_length_expressions(L1, L2, Subst) of
                 {ok, Subst1} ->
@@ -1800,14 +1800,14 @@ infer_function_call_with_recursive_tracking(Function, Args, Location, Env) ->
     % Special debug output for dot_product calls
     case Function of
         {identifier_expr, dot_product, _} ->
-            io:format("\n*** DEBUG: DOT_PRODUCT CALL DETECTED ***~n"),
-            io:format("DEBUG: Function: ~p~n", [Function]),
-            io:format("DEBUG: Args: ~p~n", [Args]);
+            cure_utils:debug("DOT_PRODUCT CALL DETECTED ***~n", []),
+            cure_utils:debug("  *** Function: ~p~n", [Function]),
+            cure_utils:debug("  *** Args: ~p~n", [Args]);
         _ ->
             ok
     end,
 
-    io:format("DEBUG: Enhanced function call inference for ~p with ~p args~n", [
+    cure_utils:debug("Enhanced function call inference for ~p with ~p args~n", [
         Function, length(Args)
     ]),
 
@@ -1871,27 +1871,27 @@ infer_function_call_with_recursive_tracking(Function, Args, Location, Env) ->
 
 %% Standard function call inference (original implementation)
 infer_function_call_standard(Function, Args, Location, Env) ->
-    io:format("DEBUG: Standard function call inference for ~p with args ~p~n", [Function, Args]),
+    cure_utils:debug("Standard function call inference for ~p with args ~p~n", [Function, Args]),
     case infer_expr(Function, Env) of
         {ok, FuncType, FuncConstraints} ->
             % Special debug for dot_product
             case Function of
                 {identifier_expr, dot_product, _} ->
-                    io:format("*** DEBUG: dot_product function type: ~p~n", [FuncType]);
+                cure_utils:debug("dot_product function type: ~p~n", [FuncType]);
                 _ ->
                     ok
             end,
-            io:format("DEBUG: Function type: ~p~n", [FuncType]),
+            cure_utils:debug("Function type: ~p~n", [FuncType]),
             case infer_args(Args, Env) of
                 {ok, ArgTypes, ArgConstraints} ->
                     % Special debug for dot_product arguments
                     case Function of
                         {identifier_expr, dot_product, _} ->
-                            io:format("*** DEBUG: dot_product argument types: ~p~n", [ArgTypes]);
+                        core_utils:debug("dot_product argument types: ~p~n", [ArgTypes]);
                         _ ->
                             ok
                     end,
-                    io:format("DEBUG: Argument types: ~p~n", [ArgTypes]),
+                    cure_utils:debug("Argument types: ~p~n", [ArgTypes]),
 
                     % Handle curried function application: f(a, b) becomes f(a)(b)
                     infer_curried_application(
@@ -1937,20 +1937,20 @@ infer_record_fields([{field_expr, _FieldName, ValueExpr, _Location} | RestFields
 
 %% Instantiate function type with fresh type variables while preserving sharing
 instantiate_function_type({function_type, ParamTypes, ReturnType}) ->
-    io:format("DEBUG: Instantiating function type with params: ~p~n", [ParamTypes]),
+    cure_utils:debug("Instantiating function type with params: ~p~n", [ParamTypes]),
 
     % Create a single shared type variable mapping for this function call
     % This ensures consistency between parameters and return type while
     % still providing fresh variables for each function call
     SharedVarMap = collect_type_variables([ReturnType | ParamTypes]),
-    io:format("DEBUG: Shared type variable mappings: ~p~n", [SharedVarMap]),
+    cure_utils:debug("Shared type variable mappings: ~p~n", [SharedVarMap]),
 
     % Instantiate all types using the shared mapping
     InstParamTypes = [instantiate_type_with_map(PT, SharedVarMap) || PT <- ParamTypes],
     InstReturnType = instantiate_type_with_map(ReturnType, SharedVarMap),
 
-    io:format("DEBUG: Instantiated params: ~p~n", [InstParamTypes]),
-    io:format("DEBUG: Instantiated return: ~p~n", [InstReturnType]),
+    cure_utils:debug("Instantiated params: ~p~n", [InstParamTypes]),
+    cure_utils:debug("Instantiated return: ~p~n", [InstReturnType]),
 
     {ok, {function_type, InstParamTypes, InstReturnType}, []};
 instantiate_function_type(Type) ->
@@ -1974,73 +1974,73 @@ collect_variables_in_expression(_, Map) ->
     % Other expressions don't contribute variables
     Map.
 
-%% Extract type variable mappings from parameter types
-extract_type_var_mappings_from_params(ParamTypes) ->
-    lists:foldl(
-        fun(ParamType, AccMap) ->
-            extract_type_var_mappings_from_type(ParamType, AccMap)
-        end,
-        #{},
-        ParamTypes
-    ).
+% %% Extract type variable mappings from parameter types
+% extract_type_var_mappings_from_params(ParamTypes) ->
+%     lists:foldl(
+%         fun(ParamType, AccMap) ->
+%             extract_type_var_mappings_from_type(ParamType, AccMap)
+%         end,
+%         #{},
+%         ParamTypes
+%     ).
 
-%% Extract type variable mappings from a single type
-extract_type_var_mappings_from_type({dependent_type, _Name, Params}, Map) ->
-    lists:foldl(
-        fun(Param, AccMap) ->
-            extract_type_var_mappings_from_param(Param, AccMap)
-        end,
-        Map,
-        Params
-    );
-extract_type_var_mappings_from_type(_, Map) ->
-    Map.
+% %% Extract type variable mappings from a single type
+% extract_type_var_mappings_from_type({dependent_type, _Name, Params}, Map) ->
+%     lists:foldl(
+%         fun(Param, AccMap) ->
+%             extract_type_var_mappings_from_param(Param, AccMap)
+%         end,
+%         Map,
+%         Params
+%     );
+% extract_type_var_mappings_from_type(_, Map) ->
+%     Map.
 
-%% Extract type variable mappings from a parameter
-extract_type_var_mappings_from_param(Param, Map) ->
-    Value = extract_type_param_value(Param),
-    case Value of
-        #type_var{id = _Id, name = Name} when Name =/= undefined ->
-            case maps:is_key(Name, Map) of
-                false -> maps:put(Name, Value, Map);
-                % Keep first mapping
-                true -> Map
-            end;
-        _ ->
-            Map
-    end.
+% %% Extract type variable mappings from a parameter
+% extract_type_var_mappings_from_param(Param, Map) ->
+%     Value = extract_type_param_value(Param),
+%     case Value of
+%         #type_var{id = _Id, name = Name} when Name =/= undefined ->
+%             case maps:is_key(Name, Map) of
+%                 false -> maps:put(Name, Value, Map);
+%                 % Keep first mapping
+%                 true -> Map
+%             end;
+%         _ ->
+%             Map
+%     end.
 
-%% Instantiate type using parameter variable mappings
-instantiate_type_with_param_mappings({dependent_type, Name, Params}, ParamVarMap) ->
-    InstParams = [instantiate_param_with_param_mappings(P, ParamVarMap) || P <- Params],
-    {dependent_type, Name, InstParams};
-instantiate_type_with_param_mappings(Type, _ParamVarMap) ->
-    Type.
+% %% Instantiate type using parameter variable mappings
+% instantiate_type_with_param_mappings({dependent_type, Name, Params}, ParamVarMap) ->
+%     InstParams = [instantiate_param_with_param_mappings(P, ParamVarMap) || P <- Params],
+%     {dependent_type, Name, InstParams};
+% instantiate_type_with_param_mappings(Type, _ParamVarMap) ->
+%     Type.
 
-%% Instantiate parameter using parameter variable mappings
-instantiate_param_with_param_mappings(Param, ParamVarMap) ->
-    Value = extract_type_param_value(Param),
-    NewValue = instantiate_expression_with_param_mappings(Value, ParamVarMap),
-    case NewValue =:= Value of
-        true -> Param;
-        false -> update_param_value(Param, NewValue)
-    end.
+% %% Instantiate parameter using parameter variable mappings
+% instantiate_param_with_param_mappings(Param, ParamVarMap) ->
+%     Value = extract_type_param_value(Param),
+%     NewValue = instantiate_expression_with_param_mappings(Value, ParamVarMap),
+%     case NewValue =:= Value of
+%         true -> Param;
+%         false -> update_param_value(Param, NewValue)
+%     end.
 
-%% Instantiate expressions using parameter variable mappings
-instantiate_expression_with_param_mappings({identifier_expr, VarName, Location}, ParamVarMap) ->
-    case maps:get(VarName, ParamVarMap, undefined) of
-        % Keep original if not found
-        undefined -> {identifier_expr, VarName, Location};
-        TypeVar -> TypeVar
-    end;
-instantiate_expression_with_param_mappings(
-    {binary_op_expr, Op, Left, Right, Location}, ParamVarMap
-) ->
-    LeftInst = instantiate_expression_with_param_mappings(Left, ParamVarMap),
-    RightInst = instantiate_expression_with_param_mappings(Right, ParamVarMap),
-    {binary_op_expr, Op, LeftInst, RightInst, Location};
-instantiate_expression_with_param_mappings(Expr, _ParamVarMap) ->
-    Expr.
+% %% Instantiate expressions using parameter variable mappings
+% instantiate_expression_with_param_mappings({identifier_expr, VarName, Location}, ParamVarMap) ->
+%     case maps:get(VarName, ParamVarMap, undefined) of
+%         % Keep original if not found
+%         undefined -> {identifier_expr, VarName, Location};
+%         TypeVar -> TypeVar
+%     end;
+% instantiate_expression_with_param_mappings(
+%     {binary_op_expr, Op, Left, Right, Location}, ParamVarMap
+% ) ->
+%     LeftInst = instantiate_expression_with_param_mappings(Left, ParamVarMap),
+%     RightInst = instantiate_expression_with_param_mappings(Right, ParamVarMap),
+%     {binary_op_expr, Op, LeftInst, RightInst, Location};
+% instantiate_expression_with_param_mappings(Expr, _ParamVarMap) ->
+%     Expr.
 
 %% Collect all type variables in a list of types and create fresh mappings
 collect_type_variables(Types) ->
@@ -2592,7 +2592,7 @@ infer_pattern_type({constructor_pattern, ConstructorName, Args, _Location}, _Mat
                     infer_constructor_args_generic(ArgPatterns, Env, [])
             end
     end;
-infer_pattern_type({record_pattern, RecordName, FieldPatterns, _Location}, MatchType, Env) ->
+infer_pattern_type({record_pattern, RecordName, FieldPatterns, _Location}, _MatchType, Env) ->
     % Handle record patterns like Person{name: n, age: a}
     case lookup_env(Env, RecordName) of
         undefined ->
@@ -2777,9 +2777,9 @@ solve_type_constraints([Constraint | RestConstraints], Subst) ->
     end.
 
 solve_constraint(#type_constraint{left = Left, op = '=', right = Right}, Subst) ->
-    io:format("DEBUG: Solving constraint ~p = ~p~n", [Left, Right]),
+    cure_utils:debug("Solving constraint ~p = ~p~n", [Left, Right]),
     Result = unify(Left, Right, Subst),
-    io:format("DEBUG: Constraint result: ~p~n", [Result]),
+    cure_utils:debug("Constraint result: ~p~n", [Result]),
     Result;
 solve_constraint(#type_constraint{left = Left, op = 'length_eq', right = Right}, Subst) ->
     % Handle length equality constraints for dependent types
@@ -3177,8 +3177,8 @@ evaluate_length_expr_with_subst({identifier_expr, VarName, _}, Subst) when is_at
     end;
 % Handle type variables directly
 evaluate_length_expr_with_subst(#type_var{id = Id, name = Name}, Subst) ->
-    io:format("DEBUG: evaluate_length_expr_with_subst for type_var id=~p name=~p~n", [Id, Name]),
-    io:format("DEBUG: Available substitution keys: ~p~n", [maps:keys(Subst)]),
+    cure_utils:debug("evaluate_length_expr_with_subst for type_var id=~p name=~p~n", [Id, Name]),
+    cure_utils:debug("Available substitution keys: ~p~n", [maps:keys(Subst)]),
     % Try to find substitution for this type variable
     case maps:get(Id, Subst, undefined) of
         {literal_expr, N, _} when is_integer(N) ->
@@ -5428,7 +5428,7 @@ across recursive boundaries.
 push_recursive_call(FunctionName, ParameterTypes, ReturnType, State) ->
     #recursive_inference_state{
         call_stack = Stack,
-        current_substitution = Subst
+        current_substitution = _Subst
     } = State,
 
     % Check for maximum recursion depth
@@ -5500,7 +5500,7 @@ properly handles dependent types across recursive boundaries.
 - **Cycle Detection**: Prevents infinite recursion in type inference
 """.
 infer_recursive_function_call(FunctionName, Args, Env, RecState) ->
-    io:format("DEBUG: Inferring recursive call to ~p with ~p args~n", [FunctionName, length(Args)]),
+    cure_utils:debug("Inferring recursive call to ~p with ~p args~n", [FunctionName, length(Args)]),
 
     % Look up function type in environment
     case lookup_env(Env, FunctionName) of
@@ -5547,8 +5547,8 @@ is_recursive_call(FunctionName, #recursive_inference_state{call_stack = Stack}) 
 handle_recursive_call(
     FunctionName, FunctionType, ArgTypes, ExistingContext, ArgConstraints, RecState
 ) ->
-    io:format(
-        "DEBUG: Handling recursive call to ~p at depth ~p~n",
+    cure_utils:debug(
+        "Handling recursive call to ~p at depth ~p~n",
         [FunctionName, ExistingContext#recursive_call_context.call_depth]
     ),
 
@@ -5581,7 +5581,7 @@ handle_recursive_call(
 
 %% Start a new recursive context for first call
 start_recursive_context(FunctionName, FunctionType, ArgTypes, ArgConstraints, RecState) ->
-    io:format("DEBUG: Starting new recursive context for ~p~n", [FunctionName]),
+    cure_utils:debug("Starting new recursive context for ~p~n", [FunctionName]),
 
     case extract_function_signature(FunctionType) of
         {ok, ParamTypes, ReturnType} ->
@@ -5636,7 +5636,7 @@ solve_recursive_constraints_fixed_point(Constraints, RecState) ->
         max_iterations = MaxIters
     } = RecState,
 
-    io:format("DEBUG: Starting fixed-point solving with ~p constraints~n", [length(Constraints)]),
+    cure_utils:debug("Starting fixed-point solving with ~p constraints~n", [length(Constraints)]),
 
     fixed_point_iteration(Constraints, InitialSubst, 0, MaxIters, RecState).
 
@@ -5646,7 +5646,7 @@ fixed_point_iteration(Constraints, Subst, Iteration, MaxIters, RecState) ->
         true ->
             {error, {max_iterations_exceeded, MaxIters, Iteration}};
         false ->
-            io:format("DEBUG: Fixed-point iteration ~p~n", [Iteration]),
+            cure_utils:debug("Fixed-point iteration ~p~n", [Iteration]),
 
             % Apply current substitution to constraints
             SubstConstraints = [apply_substitution_to_constraint(C, Subst) || C <- Constraints],
@@ -5657,7 +5657,7 @@ fixed_point_iteration(Constraints, Subst, Iteration, MaxIters, RecState) ->
                     % Check for convergence
                     case check_recursive_convergence(Subst, NewSubst, RecState) of
                         {converged, FinalSubst} ->
-                            io:format("DEBUG: Converged after ~p iterations~n", [Iteration + 1]),
+                            cure_utils:debug("Converged after ~p iterations~n", [Iteration + 1]),
                             {ok, FinalSubst, Iteration + 1};
                         {not_converged, UpdatedSubst} ->
                             % Continue iterating
@@ -5700,7 +5700,7 @@ check_recursive_convergence(OldSubst, NewSubst, RecState) ->
     % Calculate the "distance" between substitutions
     Distance = calculate_substitution_distance(OldSubst, NewSubst),
 
-    io:format("DEBUG: Convergence distance: ~p (threshold: ~p)~n", [Distance, Threshold]),
+    cure_utils:debug("Convergence distance: ~p (threshold: ~p)~n", [Distance, Threshold]),
 
     case Distance =< Threshold of
         true ->
@@ -5778,8 +5778,8 @@ track_dependent_constraints_in_recursion(Constraints, Context, RecState) ->
         dependent_constraints = ExistingConstraints
     } = Context,
 
-    io:format(
-        "DEBUG: Tracking ~p constraints for ~p at depth ~p~n",
+    cure_utils:debug(
+        "Tracking ~p constraints for ~p at depth ~p~n",
         [length(Constraints), FuncName, Depth]
     ),
 
@@ -5843,11 +5843,11 @@ unify_with_recursive_context(Types1, Types2, Context, RecState) ->
     #recursive_call_context{
         function_name = FuncName,
         call_depth = Depth,
-        type_variable_bindings = VarBindings
+        type_variable_bindings = _VarBindings
     } = Context,
 
-    io:format(
-        "DEBUG: Unifying ~p types with recursive context for ~p at depth ~p~n",
+    cure_utils:debug(
+        "Unifying ~p types with recursive context for ~p at depth ~p~n",
         [length(Types1), FuncName, Depth]
     ),
 
@@ -5910,42 +5910,42 @@ unify_single_with_context(Type1, Type2, Context, RecState) ->
 
 %% Try to simplify arithmetic expressions to see if they are equivalent
 %% This handles cases like 0 + 5 being equivalent to 5
-try_arithmetic_simplification(Len1, Len2) ->
-    try_arithmetic_simplification_with_subst(Len1, Len2, #{}).
+% try_arithmetic_simplification(Len1, Len2) ->
+%     try_arithmetic_simplification_with_subst(Len1, Len2, #{}).
 
 %% Enhanced version that uses substitution context to resolve type variables
 try_arithmetic_simplification_with_subst(Len1, Len2, Subst) ->
-    io:format("DEBUG: try_arithmetic_simplification_with_subst - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
-    io:format("DEBUG: Substitution size: ~p~n", [maps:size(Subst)]),
+    cure_utils:debug("try_arithmetic_simplification_with_subst - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
+    cure_utils:debug("Substitution size: ~p~n", [maps:size(Subst)]),
     % First try to evaluate both expressions using the substitution context
     case {evaluate_length_expr_with_subst(Len1, Subst), evaluate_length_expr_with_subst(Len2, Subst)} of
         {{ok, N}, {ok, N}} when is_integer(N) ->
             % Both evaluate to the same integer
-            io:format("DEBUG: Both expressions evaluate to same value: ~p~n", [N]),
+            cure_utils:debug("Both expressions evaluate to same value: ~p~n", [N]),
             {ok, true};
         {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2) ->
             % Both evaluate to integers but different values
-            io:format("DEBUG: Expressions evaluate to different values: ~p vs ~p~n", [N1, N2]),
+            cure_utils:debug("Expressions evaluate to different values: ~p vs ~p~n", [N1, N2]),
             {error, not_equivalent};
         _ ->
             % Evaluation failed, try normalization
     case {normalize_arithmetic_expr_with_subst(Len1, Subst), normalize_arithmetic_expr_with_subst(Len2, Subst)} of
         {{ok, N}, {ok, N}} when is_integer(N) ->
             % Both normalize to the same integer
-            io:format("DEBUG: Both expressions normalize to same value: ~p~n", [N]),
+            cure_utils:debug("Both expressions normalize to same value: ~p~n", [N]),
             {ok, true};
         {{ok, Expr1}, {ok, Expr2}} ->
             % Both normalized - check structural equality
             case expr_equal(Expr1, Expr2) of
                 true -> 
-                    io:format("DEBUG: Normalized expressions are structurally equal~n"),
+                    cure_utils:debug("Normalized expressions are structurally equal~n"),
                     {ok, true};
                 false -> 
-                    io:format("DEBUG: Normalized expressions differ: ~p vs ~p~n", [Expr1, Expr2]),
+                    cure_utils:debug("Normalized expressions differ: ~p vs ~p~n", [Expr1, Expr2]),
                     % Try heuristic pattern matching for common vector operations
                     case try_heuristic_vector_pattern_matching(Len1, Len2) of
                         {ok, true} ->
-                            io:format("DEBUG: Heuristic pattern matching succeeded~n"),
+                            cure_utils:debug("Heuristic pattern matching succeeded~n"),
                             {ok, true};
                         _ ->
                             {error, not_equivalent}
@@ -5955,7 +5955,7 @@ try_arithmetic_simplification_with_subst(Len1, Len2, Subst) ->
             % Try heuristic pattern matching as last resort
             case try_heuristic_vector_pattern_matching(Len1, Len2) of
                 {ok, true} ->
-                    io:format("DEBUG: Heuristic pattern matching succeeded (fallback)~n"),
+                    cure_utils:debug("Heuristic pattern matching succeeded (fallback)~n"),
                     {ok, true};
                 _ ->
                     {error, cannot_normalize}
@@ -5963,43 +5963,43 @@ try_arithmetic_simplification_with_subst(Len1, Len2, Subst) ->
     end
     end.
 
-%% Normalize arithmetic expressions by evaluating constants
-normalize_arithmetic_expr({literal_expr, N, _}) when is_integer(N) ->
-    {ok, N};
-normalize_arithmetic_expr({binary_op_expr, '+', Left, Right, Loc}) ->
-    case {normalize_arithmetic_expr(Left), normalize_arithmetic_expr(Right)} of
-        {{ok, 0}, {ok, N}} when is_integer(N) ->
-            % 0 + N = N
-            {ok, N};
-        {{ok, N}, {ok, 0}} when is_integer(N) ->
-            % N + 0 = N
-            {ok, N};
-        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2) ->
-            % N1 + N2 = N1+N2
-            {ok, N1 + N2};
-        {{ok, NormLeft}, {ok, NormRight}} ->
-            % Keep normalized form
-            {ok, {binary_op_expr, '+', to_expr(NormLeft), to_expr(NormRight), Loc}};
-        _ ->
-            {error, cannot_normalize}
-    end;
-normalize_arithmetic_expr({binary_op_expr, '-', Left, Right, Loc}) ->
-    case {normalize_arithmetic_expr(Left), normalize_arithmetic_expr(Right)} of
-        {{ok, N}, {ok, 0}} when is_integer(N) ->
-            % N - 0 = N
-            {ok, N};
-        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2) ->
-            % N1 - N2 = N1-N2
-            {ok, N1 - N2};
-        {{ok, NormLeft}, {ok, NormRight}} ->
-            % Keep normalized form
-            {ok, {binary_op_expr, '-', to_expr(NormLeft), to_expr(NormRight), Loc}};
-        _ ->
-            {error, cannot_normalize}
-    end;
-normalize_arithmetic_expr(Expr) ->
-    % Cannot normalize other expressions, return as-is
-    {ok, Expr}.
+% %% Normalize arithmetic expressions by evaluating constants
+% normalize_arithmetic_expr({literal_expr, N, _}) when is_integer(N) ->
+%     {ok, N};
+% normalize_arithmetic_expr({binary_op_expr, '+', Left, Right, Loc}) ->
+%     case {normalize_arithmetic_expr(Left), normalize_arithmetic_expr(Right)} of
+%         {{ok, 0}, {ok, N}} when is_integer(N) ->
+%             % 0 + N = N
+%             {ok, N};
+%         {{ok, N}, {ok, 0}} when is_integer(N) ->
+%             % N + 0 = N
+%             {ok, N};
+%         {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2) ->
+%             % N1 + N2 = N1+N2
+%             {ok, N1 + N2};
+%         {{ok, NormLeft}, {ok, NormRight}} ->
+%             % Keep normalized form
+%             {ok, {binary_op_expr, '+', to_expr(NormLeft), to_expr(NormRight), Loc}};
+%         _ ->
+%             {error, cannot_normalize}
+%     end;
+% normalize_arithmetic_expr({binary_op_expr, '-', Left, Right, Loc}) ->
+%     case {normalize_arithmetic_expr(Left), normalize_arithmetic_expr(Right)} of
+%         {{ok, N}, {ok, 0}} when is_integer(N) ->
+%             % N - 0 = N
+%             {ok, N};
+%         {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2) ->
+%             % N1 - N2 = N1-N2
+%             {ok, N1 - N2};
+%         {{ok, NormLeft}, {ok, NormRight}} ->
+%             % Keep normalized form
+%             {ok, {binary_op_expr, '-', to_expr(NormLeft), to_expr(NormRight), Loc}};
+%         _ ->
+%             {error, cannot_normalize}
+%     end;
+% normalize_arithmetic_expr(Expr) ->
+%     % Cannot normalize other expressions, return as-is
+%     {ok, Expr}.
 
 %% Enhanced normalize function that uses substitution to resolve type variables
 normalize_arithmetic_expr_with_subst({literal_expr, N, _}, _Subst) when is_integer(N) ->
@@ -6054,7 +6054,7 @@ to_expr(Expr) ->
 %% Heuristic pattern matching for common vector operations
 %% This handles specific cases like reverse(Vector(T,5), Vector(T,0)) -> Vector(T, 0+5) = Vector(T,5)
 try_heuristic_vector_pattern_matching(Len1, Len2) ->
-    io:format("DEBUG: try_heuristic_vector_pattern_matching called with ~p vs ~p~n", [Len1, Len2]),
+    cure_utils:debug("try_heuristic_vector_pattern_matching called with ~p vs ~p~n", [Len1, Len2]),
     case {Len1, Len2} of
         % Pattern: binary_op_expr('+', TypeVar1, TypeVar2, Location) vs literal_expr(N)
         % Common in reverse: m + n = 5 where we expect m=0, n=5 (or vice versa)
@@ -6062,27 +6062,27 @@ try_heuristic_vector_pattern_matching(Len1, Len2) ->
             % Heuristic: for reverse operations, this usually means 0 + n = n
             % or n + 0 = n where one operand is from empty vector (length 0)
             % and the other from non-empty vector
-            io:format("DEBUG: Heuristic PATTERN 1 MATCHED - binary sum ~p should equal literal ~p~n", [Len1, N]),
+            cure_utils:debug("Heuristic PATTERN 1 MATCHED - binary sum ~p should equal literal ~p~n", [Len1, N]),
             case N >= 0 of
                 true -> 
-                    io:format("DEBUG: Accepting heuristic match for non-negative sum~n"),
+                    cure_utils:debug("Accepting heuristic match for non-negative sum~n"),
                     {ok, true};
                 false -> 
-                    io:format("DEBUG: Rejecting negative length ~p~n", [N]),
+                    cure_utils:debug("Rejecting negative length ~p~n", [N]),
                     {error, negative_length}
             end;
         % Pattern: literal_expr(N) vs binary_op_expr('+', TypeVar1, TypeVar2, Location)
         {{literal_expr, N, _}, {binary_op_expr, '+', #type_var{}, #type_var{}, _}} when is_integer(N) ->
-            io:format("DEBUG: Heuristic PATTERN 2 MATCHED - literal ~p should equal binary sum ~p~n", [N, Len2]),
+            cure_utils:debug("Heuristic PATTERN 2 MATCHED - literal ~p should equal binary sum ~p~n", [N, Len2]),
             case N >= 0 of
                 true -> 
-                    io:format("DEBUG: Accepting heuristic match for non-negative sum (symmetric)~n"),
+                    cure_utils:debug("Accepting heuristic match for non-negative sum (symmetric)~n"),
                     {ok, true};
                 false -> 
-                    io:format("DEBUG: Rejecting negative length ~p (symmetric)~n", [N]),
+                    cure_utils:debug("Rejecting negative length ~p (symmetric)~n", [N]),
                     {error, negative_length}
             end;
         _ ->
-            io:format("DEBUG: No heuristic pattern matched for ~p vs ~p~n", [Len1, Len2]),
+            cure_utils:debug("No heuristic pattern matched for ~p vs ~p~n", [Len1, Len2]),
             {error, no_heuristic_match}
     end.

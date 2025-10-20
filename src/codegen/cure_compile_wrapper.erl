@@ -32,10 +32,10 @@ compile_source_file(SourceFile, Options) ->
                         case create_module_ast(AST, SourceFile) of
                             {ok, ModuleAST} ->
                                 io:format("✓ Module structure: Created~n"),
-                                io:format("DEBUG: Created ModuleAST: ~p~n", [ModuleAST]),
+                                cure_utils:debug("Created ModuleAST: ~p~n", [ModuleAST]),
 
                                 % Step 4: Code generation
-                                io:format("DEBUG: ModuleAST format: ~p~n", [ModuleAST]),
+                                cure_utils:debug("ModuleAST format: ~p~n", [ModuleAST]),
                                 case cure_codegen:compile_module(ModuleAST, Options) of
                                     {ok, Module} ->
                                         io:format("✓ Code generation: Success~n"),

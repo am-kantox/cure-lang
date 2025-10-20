@@ -13,6 +13,7 @@ EBIN_DIR = $(BUILD_DIR)/ebin
 LIB_EBIN_DIR = $(BUILD_DIR)/lib
 
 # Source files
+UTILS_SRC = $(SRC_DIR)/cure_utils.erl
 LEXER_SRC = $(wildcard $(SRC_DIR)/lexer/*.erl)
 PARSER_SRC = $(wildcard $(SRC_DIR)/parser/*.erl)
 TYPES_SRC = $(filter-out $(SRC_DIR)/types/cure_type_optimizer.erl, $(wildcard $(SRC_DIR)/types/*.erl))
@@ -32,7 +33,7 @@ BASIC_TESTS = $(TEST_DIR)/test_runner.erl $(TEST_DIR)/fsm_simple_test.erl $(TEST
 INTEGRATION_TESTS = $(TEST_DIR)/integration_test.erl
 PERFORMANCE_TESTS = $(TEST_DIR)/performance_test.erl
 
-ALL_SRC = $(LEXER_SRC) $(PARSER_SRC) $(TYPES_SRC) $(CODEGEN_SRC) $(FSM_SRC) $(RUNTIME_SRC) $(CLI_SRC)
+ALL_SRC = $(UTILS_SRC) $(LEXER_SRC) $(PARSER_SRC) $(TYPES_SRC) $(CODEGEN_SRC) $(FSM_SRC) $(RUNTIME_SRC) $(CLI_SRC)
 BEAM_FILES = $(patsubst $(SRC_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(ALL_SRC))
 TEST_BEAM_FILES = $(patsubst $(TEST_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(TEST_SRC))
 CURE_STD_BEAM_FILES = $(patsubst $(LIB_DIR)/%.cure,$(LIB_EBIN_DIR)/%.beam,$(CURE_STD_SRC))

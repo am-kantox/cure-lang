@@ -397,7 +397,7 @@ compile_source(Filename, Source, Options) ->
         {"Code Generation", fun(AST) ->
             if
                 Options#compile_options.verbose ->
-                    io:format("    AST structure: ~p~n", [AST]);
+                    cure_utils:debug(" ★★★  AST structure: ~p~n", [AST]);
                 true ->
                     ok
             end,
@@ -513,7 +513,7 @@ type_check_ast(AST) ->
 
 %% Check type checking result and determine success/failure
 check_type_result(Result, AST) ->
-    io:format("DEBUG: Type check result structure: ~p~n", [Result]),
+    cure_utils:debug("Type check result structure: ~p~n", [Result]),
     case Result of
         % Handle typecheck_result record
         {typecheck_result, Success, _Type, Errors, _Warnings} ->
@@ -521,7 +521,6 @@ check_type_result(Result, AST) ->
                 true ->
                     case Errors of
                         [] ->
-                            io:format("Type checking successful~n"),
                             {ok, AST};
                         ErrorList ->
                             io:format("Type checking failed with errors: ~p~n", [ErrorList]),
@@ -533,7 +532,6 @@ check_type_result(Result, AST) ->
             end;
         % Handle legacy success result formats
         {success_result, _} ->
-            io:format("Type checking successful~n"),
             {ok, AST};
         % Handle typecheck_result tuple format based on position
         _ when is_tuple(Result) andalso tuple_size(Result) =:= 5 ->
@@ -547,7 +545,6 @@ check_type_result(Result, AST) ->
                 true ->
                     case Errors of
                         [] ->
-                            io:format("Type checking successful~n"),
                             {ok, AST};
                         ErrorList ->
                             io:format("Type checking failed with errors: ~p~n", [ErrorList]),
@@ -920,7 +917,16 @@ ensure_stdlib_available(Options) ->
 %% Check if standard library files are compiled
 check_stdlib_compiled(_StdlibPaths) ->
     % Get only the working .cure files in the standard library
-    StdlibSources = ["lib/std.cure", "lib/test.cure", "lib/std/core.cure", "lib/std/result.cure"],
+    StdlibSources = [
+                     "lib/std.cure",
+                     "lib/std/core.cure",
+                     "lib/std/io.cure",
+                     "lib/std/list.cure",
+                     "lib/std/math.cure",
+                     "lib/std/result.cure",
+                     "lib/std/show.cure",
+                     "lib/std/vector.cure"
+                    ],
 
     % Convert to expected BEAM file paths
     ExpectedBeamFiles = lists:map(
@@ -958,7 +964,7 @@ check_stdlib_compiled(_StdlibPaths) ->
 compile_stdlib() ->
     io:format("Compiling Cure standard library...~n"),
     case os:cmd("make -C . stdlib 2>&1") of
-        Output ->
+        _Output ->
             case check_stdlib_compiled(["_build/lib", "_build/lib/std"]) of
                 ok ->
                     io:format("Standard library compilation completed successfully~n"),
