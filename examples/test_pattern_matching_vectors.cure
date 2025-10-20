@@ -1,0 +1,38 @@
+module TestPatternMatchingVectors do
+  export [test_match_empty/0, test_match_single/0, test_match_multiple/0, test_nested_pattern/0]
+  
+  import Std.Vector [length/1, is_empty/1]
+  
+  def test_match_empty(): Int =
+    let vec = []
+    match vec do
+      [] -> length([])
+      _ -> -1
+    end
+    
+  def test_match_single(): Int =
+    let vec = [42]
+    match vec do
+      [] -> -1
+      [x] -> length([x])
+      _ -> -2
+    end
+    
+  def test_match_multiple(): Int =
+    let vec = [10, 20, 30]
+    match vec do
+      [] -> -1
+      [_] -> -2
+      [a, b, c] -> length([a, b, c])
+      _ -> -3
+    end
+    
+  def test_nested_pattern(): Bool =
+    let nested = [[1, 2], [3]]
+    match nested do
+      [] -> true
+      [first, second] -> is_empty([1, 2])
+      _ -> false
+    end
+    
+end

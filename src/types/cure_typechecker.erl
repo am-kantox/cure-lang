@@ -1171,10 +1171,14 @@ builtin_env() ->
     % Add standard library function types
     Env12 = add_std_function_types(Env11),
 
-    % Add constants
+    % Add constants and functions
     Env13 = cure_types:extend_env(Env12, ok, {primitive_type, 'Unit'}),
 
-    Env13.
+    % Add ok/0 function: () -> Unit
+    OkFunctionType = {function_type, [], {primitive_type, 'Unit'}},
+    Env14 = cure_types:extend_env(Env13, ok, OkFunctionType),
+
+    Env14.
 
 %% Helper functions
 process_parameters(Params, Env) ->

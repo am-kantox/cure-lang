@@ -10,9 +10,9 @@ module Std.Show do
     "[number]"  # Simplified - returns a placeholder
 
   def print(s: String): Unit =
-    ok  # Simplified - just return unit
+    ()  # Simplified - just return unit
 
   def println(s: String): Unit =
-    ok  # Simplified - just return unit
+    ()  # Simplified - just return unit
 
 end

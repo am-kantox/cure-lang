@@ -1,0 +1,58 @@
+module TestComplexContexts do
+  export [test_conditional_chains/0, test_nested_operations/0, test_expression_composition/0, test_multiple_vectors/0]
+  
+  import Std.Vector [length/1, is_empty/1]
+  
+  def test_conditional_chains(): Int =
+    let vec1 = []
+    let vec2 = [1, 2]
+    let vec3 = [10, 20, 30, 40]
+    
+    if is_empty(vec1) then
+      if is_empty(vec2) then
+        length(vec3)
+      else
+        length(vec2)
+      end
+    else
+      length(vec1)
+    end
+    
+  def test_nested_operations(): Bool =
+    let outer = [[1, 2], [], [3, 4, 5]]
+    let inner_empty = []
+    if length(outer) > 0 then
+      is_empty(inner_empty)
+    else
+      false
+    end
+    
+  def test_expression_composition(): Int =
+    let vec_a = [1, 2, 3]
+    let vec_b = [4, 5]
+    let vec_c = []
+    
+    length(vec_a) + length(vec_b) + length(vec_c)
+    
+  def test_multiple_vectors(): Bool =
+    let vectors = [[1], [2, 3], [], [4, 5, 6, 7]]
+    let first = [1]
+    let second = [2, 3]
+    let third = []
+    let fourth = [4, 5, 6, 7]
+    
+    if length(first) == 1 then
+      if length(second) == 2 then
+        if is_empty(third) then
+          length(fourth) == 4
+        else
+          false
+        end
+      else
+        false
+      end
+    else
+      false
+    end
+    
+end

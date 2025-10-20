@@ -214,7 +214,17 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     extract_vector_params/1,
     extract_param_info/2,
     get_tuple_param_info/1,
-    safe_extract_param_value/1
+    safe_extract_param_value/1,
+
+    % Recursive call context tracking
+    new_recursive_state/0,
+    push_recursive_call/4,
+    pop_recursive_call/1,
+    infer_recursive_function_call/4,
+    solve_recursive_constraints_fixed_point/2,
+    check_recursive_convergence/3,
+    track_dependent_constraints_in_recursion/3,
+    unify_with_recursive_context/4
 ]).
 
 %% Type variable counter for generating unique type variables
@@ -240,6 +250,25 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     bindings :: #{atom() => type_expr()},
     constraints :: [type_constraint()],
     parent :: type_env() | undefined
+}).
+
+%% Recursive call context tracking
+-record(recursive_call_context, {
+    function_name :: atom(),
+    call_depth :: integer(),
+    parameter_types :: [type_expr()],
+    return_type :: type_expr(),
+    dependent_constraints :: [type_constraint()],
+    type_variable_bindings :: #{atom() => type_var()},
+    location :: location()
+}).
+
+-record(recursive_inference_state, {
+    call_stack :: [recursive_call_context()],
+    fixed_point_iterations :: integer(),
+    max_iterations :: integer(),
+    convergence_threshold :: float(),
+    current_substitution :: #{type_var() => type_expr()}
 }).
 
 -type constraint_op() ::
@@ -372,6 +401,8 @@ concurrent environments. The module is otherwise stateless and thread-safe.
 % -type type_family() :: #type_family{}.
 -type type_family_equation() :: #type_family_equation{}.
 -type constraint() :: #constraint{}.
+-type recursive_call_context() :: #recursive_call_context{}.
+-type recursive_inference_state() :: #recursive_inference_state{}.
 
 % Complex dependent type relationship records - UNUSED TYPES COMMENTED OUT
 % -record(dependent_relation, {
@@ -754,6 +785,26 @@ unify_impl({primitive_type, Name1}, {primitive_type, Name2}, Subst) when
     Name1 =:= Name2
 ->
     {ok, Subst};
+%% Allow generic type variables to unify with concrete types
+unify_impl({primitive_type, Name1}, {primitive_type, Name2}, Subst) ->
+    case {is_generic_type_variable_name(Name1), is_generic_type_variable_name(Name2)} of
+        {true, false} ->
+            % Name1 is a generic type variable, Name2 is concrete - create binding
+            TypeVar = #type_var{id = Name1, name = Name1},
+            unify_impl(TypeVar, {primitive_type, Name2}, Subst);
+        {false, true} ->
+            % Name2 is a generic type variable, Name1 is concrete - create binding
+            TypeVar = #type_var{id = Name2, name = Name2},
+            unify_impl({primitive_type, Name1}, TypeVar, Subst);
+        {true, true} ->
+            % Both are generic type variables - unify them
+            TypeVar1 = #type_var{id = Name1, name = Name1},
+            TypeVar2 = #type_var{id = Name2, name = Name2},
+            unify_impl(TypeVar1, TypeVar2, Subst);
+        {false, false} ->
+            % Both are concrete but different - fail
+            {error, {unification_failed, {primitive_type, Name1}, {primitive_type, Name2}}}
+    end;
 unify_impl(
     {function_type, Params1, Return1},
     {function_type, Params2, Return2},
@@ -1099,7 +1150,12 @@ unify_lengths_strict(Len1, Len2, Subst) ->
         _ ->
             % Both are concrete expressions - evaluate them
             % First try enhanced evaluation with substitution context
-            case {evaluate_length_expr_with_subst(Len1, Subst), evaluate_length_expr_with_subst(Len2, Subst)} of
+            case
+                {
+                    evaluate_length_expr_with_subst(Len1, Subst),
+                    evaluate_length_expr_with_subst(Len2, Subst)
+                }
+            of
                 {{ok, N}, {ok, N}} when is_integer(N) ->
                     % Same evaluated length
                     io:format("DEBUG: Same concrete lengths (with subst): ~p~n", [N]),
@@ -1348,24 +1404,29 @@ find_variable_binding(VarName, Subst) ->
             maps:fold(
                 fun(Id, Value, Acc) ->
                     case Acc of
-                        {found, _} -> Acc; % short-circuit if already found
+                        % short-circuit if already found
+                        {found, _} ->
+                            Acc;
                         not_found ->
                             % Check different ways a type variable might match the name
-                            IdMatches = case Id of
-                                % Direct atom match
-                                I when is_atom(I) -> atom_to_list(I) =:= atom_to_list(VarName);
-                                % Integer ID matching  
-                                _ -> false
-                            end,
-                            if IdMatches -> {found, Value};
-                               true -> not_found
+                            IdMatches =
+                                case Id of
+                                    % Direct atom match
+                                    I when is_atom(I) -> atom_to_list(I) =:= atom_to_list(VarName);
+                                    % Integer ID matching
+                                    _ -> false
+                                end,
+                            if
+                                IdMatches -> {found, Value};
+                                true -> not_found
                             end
                     end
                 end,
                 not_found,
                 Subst
             );
-        Value -> {found, Value}
+        Value ->
+            {found, Value}
     end.
 
 %% Apply substitution to expressions
@@ -1397,7 +1458,8 @@ apply_substitution_to_expr({identifier_expr, VarName, Location}, Subst) ->
                         N when is_integer(N) -> {literal_expr, N, Location};
                         _ -> Value
                     end;
-                not_found -> {identifier_expr, VarName, Location}
+                not_found ->
+                    {identifier_expr, VarName, Location}
             end;
         {literal_expr, N, _} when is_integer(N) ->
             {literal_expr, N, Location};
@@ -1477,47 +1539,7 @@ infer_expr({unary_op_expr, Op, Operand, Location}, Env) ->
             Error
     end;
 infer_expr({function_call_expr, Function, Args, Location}, Env) ->
-    % Special debug output for dot_product calls
-    case Function of
-        {identifier_expr, dot_product, _} ->
-            io:format("\n*** DEBUG: DOT_PRODUCT CALL DETECTED ***~n"),
-            io:format("DEBUG: Function: ~p~n", [Function]),
-            io:format("DEBUG: Args: ~p~n", [Args]);
-        _ ->
-            ok
-    end,
-    io:format("DEBUG: Function call inference for ~p with args ~p~n", [Function, Args]),
-    case infer_expr(Function, Env) of
-        {ok, FuncType, FuncConstraints} ->
-            % Special debug for dot_product
-            case Function of
-                {identifier_expr, dot_product, _} ->
-                    io:format("*** DEBUG: dot_product function type: ~p~n", [FuncType]);
-                _ ->
-                    ok
-            end,
-            io:format("DEBUG: Function type: ~p~n", [FuncType]),
-            case infer_args(Args, Env) of
-                {ok, ArgTypes, ArgConstraints} ->
-                    % Special debug for dot_product arguments
-                    case Function of
-                        {identifier_expr, dot_product, _} ->
-                            io:format("*** DEBUG: dot_product argument types: ~p~n", [ArgTypes]);
-                        _ ->
-                            ok
-                    end,
-                    io:format("DEBUG: Argument types: ~p~n", [ArgTypes]),
-
-                    % Handle curried function application: f(a, b) becomes f(a)(b)
-                    infer_curried_application(
-                        FuncType, ArgTypes, Location, FuncConstraints ++ ArgConstraints
-                    );
-                Error ->
-                    Error
-            end;
-        Error ->
-            Error
-    end;
+    infer_function_call_with_recursive_tracking(Function, Args, Location, Env);
 infer_expr({if_expr, Condition, ThenBranch, ElseBranch, Location}, Env) ->
     case infer_expr(Condition, Env) of
         {ok, CondType, CondConstraints} ->
@@ -1672,6 +1694,87 @@ infer_expr({record_expr, RecordName, Fields, _Location}, Env) ->
 infer_expr(Expr, _Env) ->
     {error, {unsupported_expression, Expr}}.
 
+%% Enhanced function call inference with recursive tracking
+infer_function_call_with_recursive_tracking(Function, Args, Location, Env) ->
+    % Check if we have a recursive state in the process dictionary
+    RecState =
+        case get(recursive_state) of
+            undefined ->
+                NewState = new_recursive_state(),
+                put(recursive_state, NewState),
+                NewState;
+            State ->
+                State
+        end,
+
+    % Special debug output for dot_product calls
+    case Function of
+        {identifier_expr, dot_product, _} ->
+            io:format("\n*** DEBUG: DOT_PRODUCT CALL DETECTED ***~n"),
+            io:format("DEBUG: Function: ~p~n", [Function]),
+            io:format("DEBUG: Args: ~p~n", [Args]);
+        _ ->
+            ok
+    end,
+
+    io:format("DEBUG: Enhanced function call inference for ~p with ~p args~n", [
+        Function, length(Args)
+    ]),
+
+    case Function of
+        {identifier_expr, FunctionName, _} ->
+            % This could be a recursive call - use enhanced inference
+            case infer_recursive_function_call(FunctionName, Args, Env, RecState) of
+                {ok, ResultType, Constraints, UpdatedState} ->
+                    % Update the recursive state in process dictionary
+                    put(recursive_state, UpdatedState),
+                    {ok, ResultType, Constraints};
+                {error, {unbound_function, _}} ->
+                    % Not a recursive function, fall back to standard inference
+                    infer_function_call_standard(Function, Args, Location, Env);
+                {error, Reason} ->
+                    {error, Reason}
+            end;
+        _ ->
+            % Complex function expression, use standard inference
+            infer_function_call_standard(Function, Args, Location, Env)
+    end.
+
+%% Standard function call inference (original implementation)
+infer_function_call_standard(Function, Args, Location, Env) ->
+    io:format("DEBUG: Standard function call inference for ~p with args ~p~n", [Function, Args]),
+    case infer_expr(Function, Env) of
+        {ok, FuncType, FuncConstraints} ->
+            % Special debug for dot_product
+            case Function of
+                {identifier_expr, dot_product, _} ->
+                    io:format("*** DEBUG: dot_product function type: ~p~n", [FuncType]);
+                _ ->
+                    ok
+            end,
+            io:format("DEBUG: Function type: ~p~n", [FuncType]),
+            case infer_args(Args, Env) of
+                {ok, ArgTypes, ArgConstraints} ->
+                    % Special debug for dot_product arguments
+                    case Function of
+                        {identifier_expr, dot_product, _} ->
+                            io:format("*** DEBUG: dot_product argument types: ~p~n", [ArgTypes]);
+                        _ ->
+                            ok
+                    end,
+                    io:format("DEBUG: Argument types: ~p~n", [ArgTypes]),
+
+                    % Handle curried function application: f(a, b) becomes f(a)(b)
+                    infer_curried_application(
+                        FuncType, ArgTypes, Location, FuncConstraints ++ ArgConstraints
+                    );
+                Error ->
+                    Error
+            end;
+        Error ->
+            Error
+    end.
+
 %% Build curried function type from parameter list: [A, B, C] -> Body becomes A -> (B -> (C -> Body))
 build_curried_function_type([], BodyType) ->
     BodyType;
@@ -1684,6 +1787,7 @@ infer_literal_type(N) when is_integer(N) -> ?TYPE_INT;
 infer_literal_type(F) when is_float(F) -> ?TYPE_FLOAT;
 infer_literal_type(S) when is_list(S) -> ?TYPE_STRING;
 infer_literal_type(B) when is_boolean(B) -> ?TYPE_BOOL;
+infer_literal_type(unit) -> {primitive_type, 'Unit'};
 infer_literal_type(A) when is_atom(A) -> ?TYPE_ATOM.
 
 %% Type inference for record field expressions
@@ -1705,16 +1809,16 @@ infer_record_fields([{field_expr, _FieldName, ValueExpr, _Location} | RestFields
 %% Instantiate function type with fresh type variables while preserving sharing
 instantiate_function_type({function_type, ParamTypes, ReturnType}) ->
     io:format("DEBUG: Instantiating function type with params: ~p~n", [ParamTypes]),
-    
-    % First pass: instantiate parameters and collect their type variable mappings
-    InstParamTypes = [instantiate_type_with_map(PT, #{}) || PT <- ParamTypes],
-    
-    % Extract type variable mappings from instantiated parameters
-    ParamVarMap = extract_type_var_mappings_from_params(InstParamTypes),
-    io:format("DEBUG: Parameter variable mappings: ~p~n", [ParamVarMap]),
-    
-    % Second pass: instantiate return type using parameter mappings
-    InstReturnType = instantiate_type_with_param_mappings(ReturnType, ParamVarMap),
+
+    % Create a single shared type variable mapping for this function call
+    % This ensures consistency between parameters and return type while
+    % still providing fresh variables for each function call
+    SharedVarMap = collect_type_variables([ReturnType | ParamTypes]),
+    io:format("DEBUG: Shared type variable mappings: ~p~n", [SharedVarMap]),
+
+    % Instantiate all types using the shared mapping
+    InstParamTypes = [instantiate_type_with_map(PT, SharedVarMap) || PT <- ParamTypes],
+    InstReturnType = instantiate_type_with_map(ReturnType, SharedVarMap),
 
     io:format("DEBUG: Instantiated params: ~p~n", [InstParamTypes]),
     io:format("DEBUG: Instantiated return: ~p~n", [InstReturnType]),
@@ -1735,9 +1839,11 @@ collect_variables_in_expression({binary_op_expr, _Op, Left, Right, _}, Map) ->
     Map1 = collect_variables_in_expression(Left, Map),
     collect_variables_in_expression(Right, Map1);
 collect_variables_in_expression({literal_expr, _, _}, Map) ->
-    Map; % No variables in literals
+    % No variables in literals
+    Map;
 collect_variables_in_expression(_, Map) ->
-    Map. % Other expressions don't contribute variables
+    % Other expressions don't contribute variables
+    Map.
 
 %% Extract type variable mappings from parameter types
 extract_type_var_mappings_from_params(ParamTypes) ->
@@ -1768,9 +1874,11 @@ extract_type_var_mappings_from_param(Param, Map) ->
         #type_var{id = _Id, name = Name} when Name =/= undefined ->
             case maps:is_key(Name, Map) of
                 false -> maps:put(Name, Value, Map);
-                true -> Map  % Keep first mapping
+                % Keep first mapping
+                true -> Map
             end;
-        _ -> Map
+        _ ->
+            Map
     end.
 
 %% Instantiate type using parameter variable mappings
@@ -1792,10 +1900,13 @@ instantiate_param_with_param_mappings(Param, ParamVarMap) ->
 %% Instantiate expressions using parameter variable mappings
 instantiate_expression_with_param_mappings({identifier_expr, VarName, Location}, ParamVarMap) ->
     case maps:get(VarName, ParamVarMap, undefined) of
-        undefined -> {identifier_expr, VarName, Location}; % Keep original if not found
+        % Keep original if not found
+        undefined -> {identifier_expr, VarName, Location};
         TypeVar -> TypeVar
     end;
-instantiate_expression_with_param_mappings({binary_op_expr, Op, Left, Right, Location}, ParamVarMap) ->
+instantiate_expression_with_param_mappings(
+    {binary_op_expr, Op, Left, Right, Location}, ParamVarMap
+) ->
     LeftInst = instantiate_expression_with_param_mappings(Left, ParamVarMap),
     RightInst = instantiate_expression_with_param_mappings(Right, ParamVarMap),
     {binary_op_expr, Op, LeftInst, RightInst, Location};
@@ -1876,14 +1987,16 @@ instantiate_param_with_map(Param, Map) ->
     Value = extract_type_param_value(Param),
     NewValue = instantiate_expression_with_map(Value, Map),
     case NewValue =:= Value of
-        true -> Param;  % No change
+        % No change
+        true -> Param;
         false -> update_param_value(Param, NewValue)
     end.
 
 %% Instantiate expressions within type parameters
 instantiate_expression_with_map({identifier_expr, VarName, Location}, Map) ->
     case maps:get(VarName, Map, undefined) of
-        undefined -> {identifier_expr, VarName, Location}; % Keep original if not found
+        % Keep original if not found
+        undefined -> {identifier_expr, VarName, Location};
         TypeVar -> TypeVar
     end;
 instantiate_expression_with_map({binary_op_expr, Op, Left, Right, Location}, Map) ->
@@ -1891,9 +2004,11 @@ instantiate_expression_with_map({binary_op_expr, Op, Left, Right, Location}, Map
     RightInst = instantiate_expression_with_map(Right, Map),
     {binary_op_expr, Op, LeftInst, RightInst, Location};
 instantiate_expression_with_map({literal_expr, _, _} = Expr, _Map) ->
-    Expr; % Literals don't need instantiation
+    % Literals don't need instantiation
+    Expr;
 instantiate_expression_with_map(Expr, _Map) ->
-    Expr. % Other expressions returned as-is
+    % Other expressions returned as-is
+    Expr.
 
 %% Update the value in a type parameter
 update_param_value(#type_param{name = _Name, value = _OldValue} = Param, NewValue) ->
@@ -1963,6 +2078,10 @@ apply_all_args_at_once(FuncType, ArgTypes, Location) ->
                 ArgTypes
             ),
             {ok, ReturnType, InstConstraints ++ Constraints};
+        {ok, {function_type, [_], _}, _} when length(ArgTypes) > 1 ->
+            % This is a curried function (A -> B -> C) being called with multiple args
+            % Fall back to curried application
+            {error, curried_function};
         _ ->
             % Not a matching multi-parameter function
             {error, not_matching_multi_param}
@@ -2831,11 +2950,13 @@ solve_element_constraint(Element, Collection, Subst) ->
 evaluate_length_expr({literal_expr, N, _}) when is_integer(N) ->
     {ok, N};
 % Handle direct literal evaluation in binary operations
-evaluate_length_expr({binary_op_expr, '+', {literal_expr, N1, _}, {literal_expr, N2, _}, _}) 
-    when is_integer(N1), is_integer(N2) ->
+evaluate_length_expr({binary_op_expr, '+', {literal_expr, N1, _}, {literal_expr, N2, _}, _}) when
+    is_integer(N1), is_integer(N2)
+->
     {ok, N1 + N2};
-evaluate_length_expr({binary_op_expr, '-', {literal_expr, N1, _}, {literal_expr, N2, _}, _}) 
-    when is_integer(N1), is_integer(N2) ->
+evaluate_length_expr({binary_op_expr, '-', {literal_expr, N1, _}, {literal_expr, N2, _}, _}) when
+    is_integer(N1), is_integer(N2)
+->
     {ok, N1 - N2};
 % Recursive evaluation for nested expressions
 evaluate_length_expr({binary_op_expr, '+', Left, Right, _}) ->
@@ -2867,29 +2988,38 @@ evaluate_length_expr_with_subst({identifier_expr, VarName, _}, Subst) when is_at
             {ok, N};
         undefined ->
             % Scan substitution map for type variables that might correspond to this name
-            case maps:fold(
-                fun(Id, Value, Acc) ->
-                    case Acc of
-                        {found, _} -> Acc; % already found
-                        not_found ->
-                            % Check if this type variable corresponds to our variable name
-                            IdMatches = case Id of
-                                I when is_atom(I) -> atom_to_list(I) =:= atom_to_list(VarName);
-                                _ -> false
-                            end,
-                            if IdMatches ->
-                                   case Value of
-                                       {literal_expr, N, _} when is_integer(N) -> {found, N};
-                                       N when is_integer(N) -> {found, N};
-                                       _ -> not_found
-                                   end;
-                               true -> not_found
-                            end
-                    end
-                end,
-                not_found,
-                Subst
-            ) of
+            case
+                maps:fold(
+                    fun(Id, Value, Acc) ->
+                        case Acc of
+                            % already found
+                            {found, _} ->
+                                Acc;
+                            not_found ->
+                                % Check if this type variable corresponds to our variable name
+                                IdMatches =
+                                    case Id of
+                                        I when is_atom(I) ->
+                                            atom_to_list(I) =:= atom_to_list(VarName);
+                                        _ ->
+                                            false
+                                    end,
+                                if
+                                    IdMatches ->
+                                        case Value of
+                                            {literal_expr, N, _} when is_integer(N) -> {found, N};
+                                            N when is_integer(N) -> {found, N};
+                                            _ -> not_found
+                                        end;
+                                    true ->
+                                        not_found
+                                end
+                        end
+                    end,
+                    not_found,
+                    Subst
+                )
+            of
                 {found, N} -> {ok, N};
                 not_found -> {error, cannot_evaluate}
             end;
@@ -2897,14 +3027,24 @@ evaluate_length_expr_with_subst({identifier_expr, VarName, _}, Subst) when is_at
             {error, cannot_evaluate}
     end;
 evaluate_length_expr_with_subst({binary_op_expr, '+', Left, Right, _}, Subst) ->
-    case {evaluate_length_expr_with_subst(Left, Subst), evaluate_length_expr_with_subst(Right, Subst)} of
+    case
+        {
+            evaluate_length_expr_with_subst(Left, Subst),
+            evaluate_length_expr_with_subst(Right, Subst)
+        }
+    of
         {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2) ->
             {ok, N1 + N2};
         _ ->
             {error, cannot_evaluate}
     end;
 evaluate_length_expr_with_subst({binary_op_expr, '-', Left, Right, _}, Subst) ->
-    case {evaluate_length_expr_with_subst(Left, Subst), evaluate_length_expr_with_subst(Right, Subst)} of
+    case
+        {
+            evaluate_length_expr_with_subst(Left, Subst),
+            evaluate_length_expr_with_subst(Right, Subst)
+        }
+    of
         {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2) ->
             {ok, N1 - N2};
         _ ->
@@ -5040,3 +5180,534 @@ check_applied_args_valid(Constructor, Args) ->
 %% Helper functions for recursive types - using existing extract_type_param_value above
 
 %% Helper functions for enhanced inference use existing implementations above
+
+%%=============================================================================
+%% RECURSIVE CALL CONTEXT TRACKING IMPLEMENTATION
+%%=============================================================================
+
+-doc """
+Creates a new recursive inference state for tracking recursive function calls.
+
+## Returns
+- `recursive_inference_state()` - New state with empty call stack
+
+## Example
+```erlang
+State = cure_types:new_recursive_state(),
+UpdatedState = cure_types:push_recursive_call(factorial, ParamTypes, RetType, State).
+```
+""".
+new_recursive_state() ->
+    #recursive_inference_state{
+        call_stack = [],
+        fixed_point_iterations = 0,
+        max_iterations = 10,
+        convergence_threshold = 0.001,
+        current_substitution = #{}
+    }.
+
+-doc """
+Pushes a recursive function call context onto the call stack.
+
+This tracks recursive calls to enable proper dependent type handling
+across recursive boundaries.
+
+## Arguments
+- `FunctionName` - Name of the function being called recursively
+- `ParameterTypes` - Types of the parameters in this call
+- `ReturnType` - Expected return type of the function
+- `State` - Current recursive inference state
+
+## Returns
+- `{ok, NewState}` - Updated state with the call pushed
+- `{error, Reason}` - If maximum recursion depth exceeded
+
+## Example
+```erlang
+{ok, NewState} = cure_types:push_recursive_call(
+    factorial, [NType], FactorialRetType, State
+).
+```
+""".
+push_recursive_call(FunctionName, ParameterTypes, ReturnType, State) ->
+    #recursive_inference_state{
+        call_stack = Stack,
+        current_substitution = Subst
+    } = State,
+
+    % Check for maximum recursion depth
+    case length(Stack) >= 50 of
+        true ->
+            {error, {max_recursion_depth_exceeded, FunctionName, length(Stack)}};
+        false ->
+            % Create new call context
+            Context = #recursive_call_context{
+                function_name = FunctionName,
+                call_depth = length(Stack) + 1,
+                parameter_types = ParameterTypes,
+                return_type = ReturnType,
+                dependent_constraints = [],
+                type_variable_bindings = #{},
+                location = undefined
+            },
+
+            NewState = State#recursive_inference_state{
+                call_stack = [Context | Stack]
+            },
+
+            {ok, NewState}
+    end.
+
+-doc """
+Pops a recursive function call context from the call stack.
+
+## Arguments
+- `State` - Current recursive inference state
+
+## Returns
+- `{ok, Context, NewState}` - Popped context and updated state
+- `{error, empty_stack}` - If the call stack is empty
+""".
+pop_recursive_call(State) ->
+    #recursive_inference_state{call_stack = Stack} = State,
+
+    case Stack of
+        [] ->
+            {error, empty_stack};
+        [Context | RestStack] ->
+            NewState = State#recursive_inference_state{
+                call_stack = RestStack
+            },
+            {ok, Context, NewState}
+    end.
+
+-doc """
+Performs type inference for recursive function calls with dependent type tracking.
+
+This is the main entry point for recursive function call type inference that
+properly handles dependent types across recursive boundaries.
+
+## Arguments
+- `FunctionName` - Name of the recursive function
+- `Args` - Argument expressions
+- `Env` - Type environment
+- `RecState` - Recursive inference state
+
+## Returns
+- `{ok, ResultType, Constraints, UpdatedState}` - Successful inference
+- `{error, Reason}` - Type inference failure
+
+## Features
+- **Dependent Type Tracking**: Maintains dependent relationships across calls
+- **Fixed-Point Computation**: Iterates until type constraints converge
+- **Constraint Propagation**: Propagates constraints between recursive levels
+- **Cycle Detection**: Prevents infinite recursion in type inference
+""".
+infer_recursive_function_call(FunctionName, Args, Env, RecState) ->
+    io:format("DEBUG: Inferring recursive call to ~p with ~p args~n", [FunctionName, length(Args)]),
+
+    % Look up function type in environment
+    case lookup_env(Env, FunctionName) of
+        undefined ->
+            {error, {unbound_function, FunctionName}};
+        FunctionType ->
+            case infer_args(Args, Env) of
+                {ok, ArgTypes, ArgConstraints} ->
+                    % Check if this is a recursive call (function already on stack)
+                    case is_recursive_call(FunctionName, RecState) of
+                        {true, ExistingContext} ->
+                            % Handle recursive call with dependent type unification
+                            handle_recursive_call(
+                                FunctionName,
+                                FunctionType,
+                                ArgTypes,
+                                ExistingContext,
+                                ArgConstraints,
+                                RecState
+                            );
+                        false ->
+                            % First call - start new recursive context
+                            start_recursive_context(
+                                FunctionName,
+                                FunctionType,
+                                ArgTypes,
+                                ArgConstraints,
+                                RecState
+                            )
+                    end;
+                {error, Reason} ->
+                    {error, {arg_inference_failed, Reason}}
+            end
+    end.
+
+%% Check if a function is already being called recursively
+is_recursive_call(FunctionName, #recursive_inference_state{call_stack = Stack}) ->
+    case lists:keyfind(FunctionName, #recursive_call_context.function_name, Stack) of
+        false -> false;
+        Context -> {true, Context}
+    end.
+
+%% Handle a recursive function call
+handle_recursive_call(
+    FunctionName, FunctionType, ArgTypes, ExistingContext, ArgConstraints, RecState
+) ->
+    io:format(
+        "DEBUG: Handling recursive call to ~p at depth ~p~n",
+        [FunctionName, ExistingContext#recursive_call_context.call_depth]
+    ),
+
+    % Extract function signature
+    case extract_function_signature(FunctionType) of
+        {ok, ParamTypes, ReturnType} ->
+            % Unify current argument types with recursive parameter types
+            case unify_with_recursive_context(ArgTypes, ParamTypes, ExistingContext, RecState) of
+                {ok, UnifyConstraints, UpdatedState} ->
+                    % Track dependent constraints for this recursive level
+                    AllConstraints = ArgConstraints ++ UnifyConstraints,
+
+                    case
+                        track_dependent_constraints_in_recursion(
+                            AllConstraints, ExistingContext, UpdatedState
+                        )
+                    of
+                        {ok, TrackedConstraints, FinalState} ->
+                            % Return the recursive return type with tracked constraints
+                            {ok, ReturnType, TrackedConstraints, FinalState};
+                        {error, Reason} ->
+                            {error, {constraint_tracking_failed, Reason}}
+                    end;
+                {error, Reason} ->
+                    {error, {recursive_unification_failed, Reason}}
+            end;
+        {error, Reason} ->
+            {error, {invalid_function_signature, Reason}}
+    end.
+
+%% Start a new recursive context for first call
+start_recursive_context(FunctionName, FunctionType, ArgTypes, ArgConstraints, RecState) ->
+    io:format("DEBUG: Starting new recursive context for ~p~n", [FunctionName]),
+
+    case extract_function_signature(FunctionType) of
+        {ok, ParamTypes, ReturnType} ->
+            % Push the recursive call context
+            case push_recursive_call(FunctionName, ParamTypes, ReturnType, RecState) of
+                {ok, UpdatedState} ->
+                    % Apply function to arguments
+                    case apply_all_args_at_once(FunctionType, ArgTypes, undefined) of
+                        {ok, ResultType, AppConstraints} ->
+                            AllConstraints = ArgConstraints ++ AppConstraints,
+                            {ok, ResultType, AllConstraints, UpdatedState};
+                        {error, _Reason} ->
+                            % Fall back to curried application
+                            case apply_args_curried(FunctionType, ArgTypes, undefined, []) of
+                                {ok, ResultType, AppConstraints} ->
+                                    AllConstraints = ArgConstraints ++ AppConstraints,
+                                    {ok, ResultType, AllConstraints, UpdatedState};
+                                {error, Reason} ->
+                                    {error, {function_application_failed, Reason}}
+                            end
+                    end;
+                {error, Reason} ->
+                    {error, {recursive_context_creation_failed, Reason}}
+            end;
+        {error, Reason} ->
+            {error, {invalid_function_signature, Reason}}
+    end.
+
+-doc """
+Solves recursive type constraints using fixed-point computation.
+
+This function iteratively refines type constraints until they converge,
+handling dependent types that may change across recursive calls.
+
+## Arguments
+- `Constraints` - List of type constraints to solve
+- `RecState` - Recursive inference state
+
+## Returns
+- `{ok, Substitution, Iterations}` - Converged solution
+- `{error, Reason}` - If convergence fails or max iterations exceeded
+
+## Algorithm
+1. Apply current substitution to constraints
+2. Solve constraints to get new substitution
+3. Check for convergence by comparing substitutions
+4. Repeat until convergence or max iterations reached
+""".
+solve_recursive_constraints_fixed_point(Constraints, RecState) ->
+    #recursive_inference_state{
+        current_substitution = InitialSubst,
+        max_iterations = MaxIters
+    } = RecState,
+
+    io:format("DEBUG: Starting fixed-point solving with ~p constraints~n", [length(Constraints)]),
+
+    fixed_point_iteration(Constraints, InitialSubst, 0, MaxIters, RecState).
+
+%% Fixed-point iteration for constraint solving
+fixed_point_iteration(Constraints, Subst, Iteration, MaxIters, RecState) ->
+    case Iteration >= MaxIters of
+        true ->
+            {error, {max_iterations_exceeded, MaxIters, Iteration}};
+        false ->
+            io:format("DEBUG: Fixed-point iteration ~p~n", [Iteration]),
+
+            % Apply current substitution to constraints
+            SubstConstraints = [apply_substitution_to_constraint(C, Subst) || C <- Constraints],
+
+            % Solve the substituted constraints
+            case solve_constraints(SubstConstraints) of
+                {ok, NewSubst} ->
+                    % Check for convergence
+                    case check_recursive_convergence(Subst, NewSubst, RecState) of
+                        {converged, FinalSubst} ->
+                            io:format("DEBUG: Converged after ~p iterations~n", [Iteration + 1]),
+                            {ok, FinalSubst, Iteration + 1};
+                        {not_converged, UpdatedSubst} ->
+                            % Continue iterating
+                            fixed_point_iteration(
+                                Constraints, UpdatedSubst, Iteration + 1, MaxIters, RecState
+                            )
+                    end;
+                {error, Reason} ->
+                    {error, {constraint_solving_failed, Reason, Iteration}}
+            end
+    end.
+
+%% Apply substitution to a type constraint
+apply_substitution_to_constraint(
+    #type_constraint{left = Left, right = Right} = Constraint, Subst
+) ->
+    Constraint#type_constraint{
+        left = apply_substitution(Left, Subst),
+        right = apply_substitution(Right, Subst)
+    }.
+
+-doc """
+Checks if recursive constraint solving has converged.
+
+Convergence is determined by comparing the change in substitutions
+between iterations.
+
+## Arguments
+- `OldSubst` - Previous substitution
+- `NewSubst` - Current substitution
+- `RecState` - Recursive inference state with convergence threshold
+
+## Returns
+- `{converged, FinalSubst}` - If convergence achieved
+- `{not_converged, MergedSubst}` - If more iterations needed
+""".
+check_recursive_convergence(OldSubst, NewSubst, RecState) ->
+    #recursive_inference_state{convergence_threshold = Threshold} = RecState,
+
+    % Calculate the "distance" between substitutions
+    Distance = calculate_substitution_distance(OldSubst, NewSubst),
+
+    io:format("DEBUG: Convergence distance: ~p (threshold: ~p)~n", [Distance, Threshold]),
+
+    case Distance =< Threshold of
+        true ->
+            % Converged - merge the substitutions for final result
+            MergedSubst = merge_substitutions(OldSubst, NewSubst),
+            {converged, MergedSubst};
+        false ->
+            % Not converged - merge for next iteration
+            MergedSubst = merge_substitutions(OldSubst, NewSubst),
+            {not_converged, MergedSubst}
+    end.
+
+%% Calculate the "distance" between two substitutions
+calculate_substitution_distance(OldSubst, NewSubst) ->
+    AllKeys = sets:to_list(
+        sets:union(
+            sets:from_list(maps:keys(OldSubst)),
+            sets:from_list(maps:keys(NewSubst))
+        )
+    ),
+
+    Differences = lists:foldl(
+        fun(Key, Acc) ->
+            OldVal = maps:get(Key, OldSubst, undefined),
+            NewVal = maps:get(Key, NewSubst, undefined),
+            case {OldVal, NewVal} of
+                {Same, Same} -> Acc;
+                {undefined, _} -> Acc + 1.0;
+                {_, undefined} -> Acc + 1.0;
+                _ -> Acc + type_distance(OldVal, NewVal)
+            end
+        end,
+        0.0,
+        AllKeys
+    ),
+
+    case length(AllKeys) of
+        0 -> 0.0;
+        N -> Differences / N
+    end.
+
+%% Calculate distance between two types
+type_distance(Type1, Type2) when Type1 =:= Type2 -> 0.0;
+% Small distance between type vars
+type_distance(#type_var{}, #type_var{}) ->
+    0.1;
+type_distance({primitive_type, Name1}, {primitive_type, Name2}) when Name1 =:= Name2 -> 0.0;
+type_distance({function_type, P1, R1}, {function_type, P2, R2}) ->
+    ParamDist = lists:sum([type_distance(T1, T2) || {T1, T2} <- lists:zip(P1, P2)]) / length(P1),
+    ReturnDist = type_distance(R1, R2),
+    (ParamDist + ReturnDist) / 2;
+% Maximum distance for different type structures
+type_distance(_, _) ->
+    1.0.
+
+-doc """
+Tracks dependent constraints within recursive function calls.
+
+This function maintains the relationships between dependent types
+across recursive call boundaries, ensuring type safety.
+
+## Arguments
+- `Constraints` - Type constraints from the current call
+- `Context` - Recursive call context
+- `RecState` - Current recursive inference state
+
+## Returns
+- `{ok, TrackedConstraints, UpdatedState}` - Success with tracked constraints
+- `{error, Reason}` - If constraint tracking fails
+""".
+track_dependent_constraints_in_recursion(Constraints, Context, RecState) ->
+    #recursive_call_context{
+        function_name = FuncName,
+        call_depth = Depth,
+        dependent_constraints = ExistingConstraints
+    } = Context,
+
+    io:format(
+        "DEBUG: Tracking ~p constraints for ~p at depth ~p~n",
+        [length(Constraints), FuncName, Depth]
+    ),
+
+    % Filter out constraints that involve dependent types
+    {DependentConstraints, RegularConstraints} = partition_dependent_constraints(Constraints),
+
+    % Merge with existing dependent constraints from this context
+    AllDependentConstraints = ExistingConstraints ++ DependentConstraints,
+
+    % Update the context with new dependent constraints
+    UpdatedContext = Context#recursive_call_context{
+        dependent_constraints = AllDependentConstraints
+    },
+
+    % Update the recursive state
+    #recursive_inference_state{call_stack = Stack} = RecState,
+    UpdatedStack = lists:keyreplace(
+        FuncName, #recursive_call_context.function_name, Stack, UpdatedContext
+    ),
+
+    UpdatedState = RecState#recursive_inference_state{
+        call_stack = UpdatedStack
+    },
+
+    % Combine all constraints for return
+    AllConstraints = RegularConstraints ++ AllDependentConstraints,
+
+    {ok, AllConstraints, UpdatedState}.
+
+%% Partition constraints into dependent and regular constraints
+partition_dependent_constraints(Constraints) ->
+    lists:partition(fun is_dependent_constraint/1, Constraints).
+
+%% Check if a constraint involves dependent types
+is_dependent_constraint(#type_constraint{left = Left, right = Right}) ->
+    is_dependent_type(Left) orelse is_dependent_type(Right).
+
+%% Check if a type is a dependent type
+is_dependent_type({dependent_type, _, _}) -> true;
+is_dependent_type({list_type, _, Length}) when Length =/= undefined -> true;
+is_dependent_type({refined_type, _, _}) -> true;
+is_dependent_type(_) -> false.
+
+-doc """
+Performs unification with recursive context tracking.
+
+This extends the standard unification algorithm to properly handle
+type variables and dependent types across recursive call boundaries.
+
+## Arguments
+- `Types1` - First set of types to unify
+- `Types2` - Second set of types to unify  
+- `Context` - Recursive call context
+- `RecState` - Recursive inference state
+
+## Returns
+- `{ok, Constraints, UpdatedState}` - Successful unification with constraints
+- `{error, Reason}` - Unification failure
+""".
+unify_with_recursive_context(Types1, Types2, Context, RecState) ->
+    #recursive_call_context{
+        function_name = FuncName,
+        call_depth = Depth,
+        type_variable_bindings = VarBindings
+    } = Context,
+
+    io:format(
+        "DEBUG: Unifying ~p types with recursive context for ~p at depth ~p~n",
+        [length(Types1), FuncName, Depth]
+    ),
+
+    case length(Types1) =:= length(Types2) of
+        false ->
+            {error, {arity_mismatch, length(Types1), length(Types2)}};
+        true ->
+            % Perform pairwise unification with context tracking
+            unify_types_pairwise(Types1, Types2, Context, RecState, [])
+    end.
+
+%% Unify types pairwise with recursive context
+unify_types_pairwise([], [], _Context, RecState, AccConstraints) ->
+    {ok, lists:reverse(AccConstraints), RecState};
+unify_types_pairwise(
+    [Type1 | Rest1], [Type2 | Rest2], Context, RecState, AccConstraints
+) ->
+    case unify_single_with_context(Type1, Type2, Context, RecState) of
+        {ok, UnifyConstraints, UpdatedState} ->
+            unify_types_pairwise(
+                Rest1,
+                Rest2,
+                Context,
+                UpdatedState,
+                UnifyConstraints ++ AccConstraints
+            );
+        {error, Reason} ->
+            {error, {pairwise_unification_failed, Type1, Type2, Reason}}
+    end.
+
+%% Unify a single pair of types with recursive context
+unify_single_with_context(Type1, Type2, Context, RecState) ->
+    #recursive_inference_state{current_substitution = Subst} = RecState,
+
+    % Apply current substitution to both types
+    SubstType1 = apply_substitution(Type1, Subst),
+    SubstType2 = apply_substitution(Type2, Subst),
+
+    % Perform unification
+    case unify(SubstType1, SubstType2) of
+        {ok, NewSubst} ->
+            % Update the recursive state with new substitution
+            MergedSubst = merge_substitutions(Subst, NewSubst),
+            UpdatedState = RecState#recursive_inference_state{
+                current_substitution = MergedSubst
+            },
+
+            % Create constraint for this unification
+            UnifyConstraint = #type_constraint{
+                left = SubstType1,
+                op = '=',
+                right = SubstType2,
+                location = Context#recursive_call_context.location
+            },
+
+            {ok, [UnifyConstraint], UpdatedState};
+        {error, Reason} ->
+            {error, {unification_failed, SubstType1, SubstType2, Reason}}
+    end.

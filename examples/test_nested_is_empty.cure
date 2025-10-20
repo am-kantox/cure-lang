@@ -1,0 +1,22 @@
+module TestNestedIsEmpty do
+  export [test_nested_empty/0, test_nested_nonempty/0, test_inner_empty/0, test_inner_nonempty/0]
+  
+  import Std.Vector [length/1, is_empty/1]
+  
+  def test_nested_empty(): Bool =
+    let nested_empty = []
+    is_empty(nested_empty)
+    
+  def test_nested_nonempty(): Bool =
+    let nested_nonempty = [[1, 2], []]
+    is_empty(nested_nonempty)
+    
+  def test_inner_empty(): Bool =
+    let inner_empty = []
+    is_empty(inner_empty)
+    
+  def test_inner_nonempty(): Bool =
+    let inner_nonempty = [1, 2, 3, 4]
+    is_empty(inner_nonempty)
+    
+end

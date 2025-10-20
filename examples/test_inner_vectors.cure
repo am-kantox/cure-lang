@@ -1,0 +1,22 @@
+module TestInnerVectors do
+  export [test_inner_empty/0, test_inner_single/0, test_inner_multi/0, test_inner_is_empty/0]
+  
+  import Std.Vector [length/1, is_empty/1]
+  
+  def test_inner_empty(): Int =
+    let inner_empty = []
+    length(inner_empty)
+    
+  def test_inner_single(): Int =
+    let inner_single = [42]
+    length(inner_single)
+    
+  def test_inner_multi(): Int =
+    let inner_multi = [10, 20, 30, 40, 50]
+    length(inner_multi)
+    
+  def test_inner_is_empty(): Bool =
+    let inner_empty = []
+    is_empty(inner_empty)
+    
+end

@@ -252,6 +252,7 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         guard_bif -> compile_guard_bif(Args, NewContext);
         guard_check -> compile_guard_check(Args, NewContext);
         unary_op -> compile_unary_op(Args, NewContext);
+        list_length -> compile_list_length(Args, NewContext);
         _ -> {error, {unsupported_instruction, Op}}
     end.
 
@@ -895,6 +896,21 @@ compile_make_case([CaseClauses], Context) ->
             % Create a case expression with the given clauses
             CaseExpr = {'case', Line, ExprValue, CaseClauses},
             {ok, [], push_stack(CaseExpr, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% List length calculation
+compile_list_length([], Context) ->
+    case pop_stack(Context) of
+        {ListValue, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Use Erlang's built-in length/1 function
+            LengthForm =
+                {call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, length}}, [
+                    ListValue
+                ]},
+            {ok, [], push_stack(LengthForm, NewContext)};
         Error ->
             Error
     end.

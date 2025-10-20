@@ -1,0 +1,32 @@
+module TestVectorContexts do
+  export [test_as_parameter/0, test_as_return/0, test_in_if_condition/0, test_in_let_binding/0]
+  
+  import Std.Vector [length/1, is_empty/1]
+  
+  def test_as_parameter(): Int =
+    let vec = [1, 2, 3, 4]
+    length(vec)
+    
+  def test_as_return(): Int =
+    let result_vec = [10, 20, 30, 40, 50, 60]
+    length(result_vec)
+    
+  def create_vector(): Vector(Int, 6) =
+    [10, 20, 30, 40, 50, 60]
+    
+  def test_in_if_condition(): Int =
+    let vec = [7, 8, 9]
+    if is_empty(vec) then
+      0
+    else
+      length(vec)
+    end
+    
+  def test_in_let_binding(): Int =
+    let vec1 = [100]
+    let vec2 = [200, 300]
+    let len1 = length(vec1)
+    let len2 = length(vec2)
+    len1 + len2
+    
+end

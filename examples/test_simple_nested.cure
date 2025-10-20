@@ -1,0 +1,22 @@
+module TestSimpleNested do
+  export [test_nested_outer/0, test_nested_inner1/0, test_nested_inner2/0, test_triple_nested/0]
+  
+  import Std.Vector [length/1, is_empty/1]
+  
+  def test_nested_outer(): Int =
+    let nested = [[1, 2], [3, 4, 5]]
+    length(nested)
+    
+  def test_nested_inner1(): Int =
+    let inner1 = [1, 2]
+    length(inner1)
+    
+  def test_nested_inner2(): Int =
+    let inner2 = [3, 4, 5]
+    length(inner2)
+    
+  def test_triple_nested(): Int =
+    let triple = [[[1]], [[2, 3]]]
+    length(triple)
+    
+end

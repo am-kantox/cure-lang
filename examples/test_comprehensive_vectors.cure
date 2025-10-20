@@ -1,0 +1,80 @@
+module TestComprehensiveVectors do
+  export [main]
+  import Std.Vector [length/1, is_empty/1]
+  import Test
+
+  // Test 1: Basic vector operations with different sizes
+  def test_basic_operations(): Test.Result =
+    let empty_vec = [] : Vector(Int, 0)
+    let vec1 = [42] : Vector(Int, 1)
+    let vec3 = [1, 2, 3] : Vector(Int, 3)
+    let vec10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] : Vector(Int, 10)
+    
+    if not (length(empty_vec) == 0 and is_empty(empty_vec)) then
+      Test.fail("Empty vector test failed")
+    else if not (length(vec1) == 1 and not is_empty(vec1)) then
+      Test.fail("Single element vector test failed")
+    else if not (length(vec3) == 3 and not is_empty(vec3)) then
+      Test.fail("Three element vector test failed") 
+    else if not (length(vec10) == 10 and not is_empty(vec10)) then
+      Test.fail("Ten element vector test failed")
+    else
+      Test.pass("All basic vector operations passed")
+
+  // Test 2: Nested vector operations
+  def test_nested_vectors(): Test.Result =
+    let nested_empty = [] : Vector(Vector(Int, 2), 0)
+    let nested_vec = [[1, 2], [3, 4]] : Vector(Vector(Int, 2), 2)
+    
+    if not (length(nested_empty) == 0 and is_empty(nested_empty)) then
+      Test.fail("Nested empty vector test failed")
+    else if not (length(nested_vec) == 2 and not is_empty(nested_vec)) then
+      Test.fail("Nested vector test failed")
+    else
+      Test.pass("Nested vector operations passed")
+
+  // Test 3: Vector operations in different contexts
+  def test_vector_contexts(): Test.Result =
+    let test_in_match = fun(v : Vector(Int, n)) : Bool ->
+      match v with
+      | [] -> length(v) == 0
+      | [_] -> length(v) == 1
+      | _ -> length(v) > 1
+
+    let empty_vec = [] : Vector(Int, 0)
+    let single_vec = [5] : Vector(Int, 1)
+    let multi_vec = [1, 2, 3, 4] : Vector(Int, 4)
+    
+    if not test_in_match(empty_vec) then
+      Test.fail("Pattern match context test failed for empty vector")
+    else if not test_in_match(single_vec) then
+      Test.fail("Pattern match context test failed for single vector")
+    else if not test_in_match(multi_vec) then
+      Test.fail("Pattern match context test failed for multi vector")
+    else
+      Test.pass("Vector operations in contexts passed")
+
+  // Test 4: Edge cases
+  def test_edge_cases(): Test.Result =
+    let very_large_vec = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20] : Vector(Int, 20)
+    let string_vec = ["hello", "world"] : Vector(String, 2)
+    let bool_vec = [True, False, True] : Vector(Bool, 3)
+    
+    if not (length(very_large_vec) == 20) then
+      Test.fail("Large vector length test failed")
+    else if not (length(string_vec) == 2 and not is_empty(string_vec)) then
+      Test.fail("String vector test failed")
+    else if not (length(bool_vec) == 3 and not is_empty(bool_vec)) then
+      Test.fail("Bool vector test failed")
+    else
+      Test.pass("Edge case tests passed")
+
+  def main(): Test.Result =
+    Test.run_tests([
+      ("Basic Operations", test_basic_operations),
+      ("Nested Vectors", test_nested_vectors), 
+      ("Vector Contexts", test_vector_contexts),
+      ("Edge Cases", test_edge_cases)
+    ])
+    
+end

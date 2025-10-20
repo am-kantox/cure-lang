@@ -1,0 +1,14 @@
+module TestLength do
+  export [test_empty_length/0, test_numbers_length/0]
+  
+  import Std.Vector [length/1]
+  
+  def test_empty_length(): Int =
+    let empty = []
+    length(empty)
+    
+  def test_numbers_length(): Int = 
+    let numbers = [1, 2, 3]
+    length(numbers)
+    
+end

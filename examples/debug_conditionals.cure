@@ -1,0 +1,35 @@
+module DebugConditionals do
+  export [debug_chain/0, debug_vec1/0, debug_vec2/0, debug_vec3/0]
+  
+  import Std.Vector [length/1, is_empty/1]
+  
+  def debug_vec1(): Bool =
+    let vec1 = []
+    is_empty(vec1)
+    
+  def debug_vec2(): Bool =
+    let vec2 = [1, 2]
+    is_empty(vec2)
+    
+  def debug_vec3(): Int =
+    let vec3 = [10, 20, 30, 40]
+    length(vec3)
+    
+  def debug_chain(): Int =
+    let vec1 = []
+    let vec2 = [1, 2]
+    let vec3 = [10, 20, 30, 40]
+    
+    # This should be: is_empty([]) = true, so go to inner if
+    # Inner if: is_empty([1,2]) = false, so return length([1,2]) = 2
+    if is_empty(vec1) then
+      if is_empty(vec2) then
+        length(vec3)
+      else
+        length(vec2)
+      end
+    else
+      length(vec1)
+    end
+    
+end

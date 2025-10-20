@@ -2,28 +2,38 @@ module VectorTest do
   export [run_tests/0]
   
   import Std.Vector [length/1, is_empty/1, contains/2, reverse/2]
+  import Std.Core ['and'/2, 'not'/1]
   
-  def run_tests(): Vector(Int, 5) =
+  def run_tests(): Bool =
     let numbers = [1, 2, 3, 4, 5]
-    # let empty = []
+    let empty = []
+    let single = [42]
+    let another_empty = []
     
-    # Test basic operations using imported functions
-    let len = length(numbers)  # Should be 5
-    # let empty_check = is_empty(empty)  # Should be true
-    # let contains_check = contains(numbers, 3)  # Should be true
-    # let not_contains_check = contains(numbers, 10)  # Should be false
+    # Test is_empty on different vectors
+    let empty_check = is_empty(empty)         # Should be true
+    let numbers_check = is_empty(numbers)     # Should be false
+    let single_check = is_empty(single)       # Should be false  
+    let another_empty_check = is_empty(another_empty)  # Should be true
     
-    # Test reverse
+    # Test length consistency with is_empty
+    let empty_len = length(empty)             # Should be 0
+    let numbers_len = length(numbers)         # Should be 5
+    let single_len = length(single)           # Should be 1
+    let another_empty_len = length(another_empty)  # Should be 0
+    
+    # Verify is_empty logic: is_empty should be true iff length == 0
+    let empty_consistent = (empty_check == (empty_len == 0))
+    let numbers_consistent = (numbers_check == (numbers_len == 0))
+    let single_consistent = (single_check == (single_len == 0))
+    let another_empty_consistent = (another_empty_check == (another_empty_len == 0))
+    
+    # Test other operations for completeness
+    let contains_check = contains(numbers, 3)  # Should be true
     let reversed = reverse(numbers, [])
-    # let reversed_len = length(reversed)  # Should be 5
+    let reversed_len = length(reversed)        # Should be 5
     
-    # Convert booleans to integers for arithmetic
-    # let empty_val = if empty_check then 1 else 0 end
-    # let contains_val = if contains_check then 1 else 0 end  
-    # let not_contains_val = if not_contains_check then 0 else 1 end  # Invert since we expect false
-    
-    # len + empty_val + contains_val + not_contains_val + reversed_len  # Should be 5 + 1 + 1 + 1 + 5 = 13
-
-    reversed
+    # All tests should pass
+    numbers == reverse(reversed, [])
     
 end

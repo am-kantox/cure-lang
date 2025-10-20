@@ -1,0 +1,30 @@
+module TestContexts do
+  export [test_match_empty/0, test_match_single/0, test_match_multi/0]
+  
+  import Std.Vector [length/1, is_empty/1]
+  
+  def test_match_empty(): Int =
+    let vec = []
+    match vec do
+      [] -> length([])
+      [_] -> -1
+      _ -> -2
+    end
+    
+  def test_match_single(): Int =
+    let vec = [42]
+    match vec do
+      [] -> -1
+      [_] -> length([42])
+      _ -> -2
+    end
+    
+  def test_match_multi(): Int =
+    let vec = [1, 2, 3, 4]
+    match vec do
+      [] -> -1
+      [_] -> -2
+      _ -> length([1, 2, 3, 4])
+    end
+    
+end

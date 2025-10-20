@@ -978,6 +978,21 @@ compile_identifier(#identifier_expr{name = Name, location = Location}, State) ->
                         location = Location
                     },
                     {[Instruction], State};
+                {runtime_length, ParamName} ->
+                    % It's a runtime length computation - generate list length instruction
+                    Instructions = [
+                        #beam_instr{
+                            op = load_param,
+                            args = [ParamName],
+                            location = Location
+                        },
+                        #beam_instr{
+                            op = list_length,
+                            args = [],
+                            location = Location
+                        }
+                    ],
+                    {Instructions, State};
                 false ->
                     % Check if it's an imported function
                     case find_imported_function(Name, State) of
@@ -1017,65 +1032,112 @@ compile_identifier(#identifier_expr{name = Name, location = Location}, State) ->
 
 %% Check if identifier is a dependent type dimension and resolve its value
 is_dependent_type_dimension(Name, State) ->
-    % For now, implement a simple heuristic:
     % If we're compiling a function that takes a Vector(T, n) parameter,
-    % and we encounter identifier 'n', resolve it from the context
+    % and we encounter identifier 'n', resolve it to a runtime length computation
     case State#codegen_state.current_function of
-        undefined -> false;
+        undefined ->
+            false;
         FunctionInfo ->
             % Look for dimension parameters in the function signature
             DimensionMap = maps:get(dimension_bindings, FunctionInfo, #{}),
-            case maps:size(DimensionMap) of
-                0 ->
-                    % Try to infer from common patterns
+            case maps:get(Name, DimensionMap, undefined) of
+                undefined ->
+                    % Try to infer from common patterns for legacy support
                     case Name of
                         n -> infer_list_length_from_context(State);
-                        m -> {true, 0}; % Default for accumulator
+                        % Default for accumulator
+                        m -> {true, 0};
                         _ -> false
                     end;
+                {runtime_param_length, ParamName} ->
+                    % Need to compute length of ParamName at runtime
+                    {runtime_length, ParamName};
+                Value when is_integer(Value) ->
+                    % Static value
+                    {true, Value};
                 _ ->
-                    case maps:get(Name, DimensionMap, undefined) of
-                        undefined -> false;
-                        Value -> {true, Value}
-                    end
+                    false
             end
     end.
 
 %% Extract dimension bindings from function parameters
 extract_dimension_bindings(Params) ->
     % Look for Vector(T, n) patterns in parameters and extract dimension variables
-    % This is a simplified implementation - full implementation would need type analysis
-    lists:foldl(fun(Param, Acc) ->
-        case extract_dimension_from_param(Param) of
-            {ok, DimVar, Value} -> maps:put(DimVar, Value, Acc);
-            error -> Acc
-        end
-    end, #{}, Params).
+    % For dependent types, we need to compute dimensions at runtime from actual values
+    lists:foldl(
+        fun(Param, Acc) ->
+            case extract_dimension_from_param(Param) of
+                {ok, DimVar, _ParamName} ->
+                    maps:put(DimVar, {runtime_param_length, _ParamName}, Acc);
+                error ->
+                    Acc
+            end
+        end,
+        #{},
+        Params
+    ).
 
 %% Extract dimension variable from a parameter
-extract_dimension_from_param(#param{type = Type}) ->
+extract_dimension_from_param(#param{name = ParamName, type = Type}) ->
     case Type of
         #dependent_type{name = 'Vector', params = [_TypeParam, DimParam]} ->
             case DimParam of
-                #identifier_expr{name = n} -> {ok, n, 5}; % Hardcode for test
+                #identifier_expr{name = DimVar} -> {ok, DimVar, ParamName};
+                {primitive_type, DimVar} when is_atom(DimVar) -> {ok, DimVar, ParamName};
                 _ -> error
             end;
-        _ -> error
+        {dependent_type, 'Vector', [_TypeParam, DimParam]} ->
+            case DimParam of
+                #type_param{value = #identifier_expr{name = DimVar}} ->
+                    {ok, DimVar, ParamName};
+                #type_param{value = {primitive_type, DimVar}} when is_atom(DimVar) ->
+                    {ok, DimVar, ParamName};
+                _ ->
+                    error
+            end;
+        _ ->
+            error
     end;
-extract_dimension_from_param(_) -> error.
+extract_dimension_from_param(_) ->
+    error.
 
-%% Infer list length from context (simple heuristic)
+%% Infer list length from context (runtime extraction)
 infer_list_length_from_context(State) ->
-    % For the vector length function, if we see a literal list like [1,2,3,4,5],
-    % we can infer that n = 5
+    % For dependent type dimensions, we need to extract runtime length from parameters
     case State#codegen_state.current_function of
-        #{name := length} ->
-            % For length function, try to find the actual list length
-            % This is a simplified approach - in reality we'd need full type context
-            {true, 5}; % Hardcode for our test case
+        #{name := length, params := Params} ->
+            % For length function, find the vector parameter and extract its runtime length
+            case find_vector_param(Params) of
+                {ok, ParamName} -> {runtime_length, ParamName};
+                error -> false
+            end;
+        #{name := is_empty, params := Params} ->
+            % For is_empty function, same logic
+            case find_vector_param(Params) of
+                {ok, ParamName} -> {runtime_length, ParamName};
+                error -> false
+            end;
         _ ->
             false
     end.
+
+%% Find the vector parameter in a list of parameters
+find_vector_param([]) ->
+    error;
+find_vector_param([#param{name = ParamName, type = Type} | Rest]) ->
+    case Type of
+        #dependent_type{name = 'Vector'} -> {ok, ParamName};
+        {dependent_type, 'Vector', _} -> {ok, ParamName};
+        _ -> find_vector_param(Rest)
+    end;
+find_vector_param([{param, ParamName, Type, _} | Rest]) ->
+    case Type of
+        #dependent_type{name = 'Vector'} -> {ok, ParamName};
+        {dependent_type, 'Vector', _} -> {ok, ParamName};
+        _ -> find_vector_param(Rest)
+    end;
+find_vector_param([_ | Rest]) ->
+    find_vector_param(Rest).
 
 %% Find imported function by name (with any arity)
 find_imported_function(Name, State) ->

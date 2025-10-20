@@ -2062,9 +2062,23 @@ parse_primary_expression(State) ->
                     parse_case_expression(State);
                 '(' ->
                     {_, State1} = expect(State, '('),
-                    {Expr, State2} = parse_expression(State1),
-                    {_, State3} = expect(State2, ')'),
-                    {Expr, State3};
+                    % Check if this is an empty parentheses (unit literal)
+                    case match_token(State1, ')') of
+                        true ->
+                            % Empty parentheses - this is a unit literal
+                            {_, State2} = expect(State1, ')'),
+                            Location = get_token_location(current_token(State)),
+                            Expr = #literal_expr{
+                                value = unit,
+                                location = Location
+                            },
+                            {Expr, State2};
+                        false ->
+                            % Parenthesized expression
+                            {Expr, State2} = parse_expression(State1),
+                            {_, State3} = expect(State2, ')'),
+                            {Expr, State3}
+                    end;
                 '{' ->
                     parse_tuple_expression(State);
                 _ ->

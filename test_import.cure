@@ -1,8 +1,0 @@
-module TestImport do
-  export [test/0]
-  
-  import Std.Show [show]
-  
-  def test(): String =
-    show(42)
-end
