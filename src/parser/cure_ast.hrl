@@ -92,6 +92,42 @@
     guard,
     target,
     action,
+    timeout,     % Optional timeout
+    location
+}).
+
+%% FSM spawn expression
+-record(fsm_spawn_expr, {
+    fsm_name,
+    init_args,
+    init_state,
+    location
+}).
+
+%% FSM message send expression
+-record(fsm_send_expr, {
+    target,      % FSM or Pid to send to
+    message,     % Message to send
+    location
+}).
+
+%% FSM receive expression for handling messages
+-record(fsm_receive_expr, {
+    patterns,    % List of message patterns to match
+    timeout,     % Optional timeout
+    location
+}).
+
+%% FSM state expression for current state access
+-record(fsm_state_expr, {
+    location
+}).
+
+%% Safety property assertion for FSM verification
+-record(fsm_property, {
+    name,
+    property_type,  % invariant | eventually | always | until
+    condition,
     location
 }).
 
@@ -296,6 +332,21 @@
     location
 }).
 
+%% FSM types
+-record(fsm_type, {
+    name,           % FSM name
+    states,         % List of valid states
+    message_types,  % List of message types
+    location
+}).
+
+%% Process type (for FSM instances)
+-record(process_type, {
+    fsm_type,      % The FSM type this process implements
+    current_state, % Current state (for refinement types)
+    location
+}).
+
 %% Patterns
 -record(wildcard_pattern, {
     location
@@ -354,7 +405,11 @@
                #list_expr{} |
                #tuple_expr{} |
                #record_expr{} |
-               #lambda_expr{}.
+               #lambda_expr{} |
+               #fsm_spawn_expr{} |
+               #fsm_send_expr{} |
+               #fsm_receive_expr{} |
+               #fsm_state_expr{}.
 
 -type pattern() :: #wildcard_pattern{} |
                   #literal_pattern{} |
@@ -369,7 +424,9 @@
                     #function_type{} |
                     #union_type{} |
                     #list_type{} |
-                    #tuple_type{}.
+                    #tuple_type{} |
+                    #fsm_type{} |
+                    #process_type{}.
 
 -type match_clause() :: #match_clause{}.
 -type binding() :: #binding{}.

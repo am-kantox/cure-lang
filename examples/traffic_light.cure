@@ -1,0 +1,283 @@
+// Traffic Light FSM Example
+// Demonstrates FSM syntax, safety properties, and verification
+
+module TrafficLight
+
+// Define message types for the FSM
+type LightMessage = 
+    | TimerExpired
+    | EmergencyStop
+    | MaintenanceMode
+    | Resume
+
+// Traffic light FSM with safety properties
+fsm TrafficLight {
+    states: [red, yellow, green, maintenance]
+    initial: red
+    
+    // Safety properties for verification
+    property safety_never_conflicting: 
+        always (not (red and green))
+    
+    property liveness_eventually_green: 
+        always (red -> eventually green)
+    
+    property maintenance_reachable:
+        eventually maintenance
+    
+    // State definitions with transitions
+    state red {
+        transition timer_expired {
+            event: TimerExpired
+            guard: true
+            target: green
+            action: {
+                // Set timer for green light
+                set_timeout(30, TimerExpired)
+            }
+        }
+        
+        transition emergency {
+            event: EmergencyStop
+            guard: true
+            target: maintenance
+            action: {
+                clear_timeout()
+                log("Emergency stop activated")
+            }
+        }
+    }
+    
+    state green {
+        transition timer_expired {
+            event: TimerExpired
+            guard: true
+            target: yellow
+            action: {
+                set_timeout(5, TimerExpired)
+            }
+        }
+        
+        transition emergency {
+            event: EmergencyStop
+            guard: true
+            target: maintenance
+            action: {
+                clear_timeout()
+                log("Emergency stop from green")
+            }
+        }
+    }
+    
+    state yellow {
+        transition timer_expired {
+            event: TimerExpired
+            guard: true
+            target: red
+            action: {
+                set_timeout(60, TimerExpired)
+            }
+        }
+        
+        transition emergency {
+            event: EmergencyStop
+            guard: true
+            target: maintenance
+            action: {
+                clear_timeout()
+                log("Emergency stop from yellow")
+            }
+        }
+    }
+    
+    state maintenance {
+        transition resume {
+            event: Resume
+            guard: true
+            target: red
+            action: {
+                log("Resuming normal operation")
+                set_timeout(60, TimerExpired)
+            }
+        }
+    }
+}
+
+// Function to spawn and operate traffic light
+def start_traffic_light() -> Pid {
+    // Spawn the FSM with initial arguments
+    let light = spawn TrafficLight []
+    
+    // Start the initial timer
+    send light TimerExpired
+    
+    light
+}
+
+// Function to test traffic light behavior
+def test_traffic_light() -> Unit {
+    let light = start_traffic_light()
+    
+    // Verify initial state
+    let current = get_state light
+    match current {
+        red -> log("Traffic light started in red state")
+        _ -> log("ERROR: Unexpected initial state")
+    }
+    
+    // Simulate timer events
+    send light TimerExpired  // red -> green
+    send light TimerExpired  // green -> yellow  
+    send light TimerExpired  // yellow -> red
+    
+    // Test emergency stop
+    send light EmergencyStop
+    
+    let maintenance_state = get_state light
+    match maintenance_state {
+        maintenance -> log("Emergency stop successful")
+        _ -> log("ERROR: Emergency stop failed")
+    }
+    
+    // Resume operation
+    send light Resume
+    
+    let resumed_state = get_state light
+    match resumed_state {
+        red -> log("Resume successful")
+        _ -> log("ERROR: Resume failed")
+    }
+}
+
+// Advanced example: Coordinated traffic lights with safety verification
+fsm IntersectionController {
+    states: [north_south_green, east_west_green, all_red, emergency]
+    initial: all_red
+    
+    // Safety property: never have conflicting greens
+    property mutual_exclusion:
+        always (not (north_south_green and east_west_green))
+    
+    // Fairness property: each direction eventually gets green
+    property fairness_north_south:
+        always (east_west_green -> eventually north_south_green)
+    
+    property fairness_east_west:
+        always (north_south_green -> eventually east_west_green)
+    
+    state all_red {
+        transition start_north_south {
+            event: StartCycle  
+            guard: true
+            target: north_south_green
+            action: {
+                set_timeout(45, CycleComplete)
+            }
+        }
+    }
+    
+    state north_south_green {
+        transition cycle_complete {
+            event: CycleComplete
+            guard: true
+            target: east_west_green
+            action: {
+                set_timeout(45, CycleComplete)
+            }
+        }
+        
+        transition emergency {
+            event: EmergencyStop
+            guard: true
+            target: emergency
+            action: {
+                clear_timeout()
+                broadcast_emergency()
+            }
+        }
+    }
+    
+    state east_west_green {
+        transition cycle_complete {
+            event: CycleComplete
+            guard: true
+            target: north_south_green
+            action: {
+                set_timeout(45, CycleComplete)
+            }
+        }
+        
+        transition emergency {
+            event: EmergencyStop
+            guard: true
+            target: emergency
+            action: {
+                clear_timeout()
+                broadcast_emergency()
+            }
+        }
+    }
+    
+    state emergency {
+        transition reset {
+            event: SystemReset
+            guard: authorized()
+            target: all_red
+            action: {
+                log("System reset by authorized personnel")
+            }
+        }
+    }
+}
+
+// Helper functions
+def authorized() -> Bool {
+    // In real implementation, would check credentials
+    true
+}
+
+def broadcast_emergency() -> Unit {
+    log("EMERGENCY: All lights set to red")
+}
+
+// FSM composition example: Multiple traffic lights
+def create_intersection() -> (Pid, Pid, Pid, Pid) {
+    let controller = spawn IntersectionController []
+    let north_light = spawn TrafficLight []
+    let south_light = spawn TrafficLight []
+    let east_light = spawn TrafficLight []
+    let west_light = spawn TrafficLight []
+    
+    // Link lights to controller (simplified)
+    send controller StartCycle
+    
+    (controller, north_light, south_light, east_light)
+}
+
+// Example of FSM communication patterns
+def test_fsm_communication() -> Unit {
+    let (controller, north, south, east) = create_intersection()
+    
+    // Monitor FSM states
+    receive {
+        {state_change, fsm_id, old_state, new_state} -> {
+            log("State change in " ++ fsm_id ++ ": " ++ old_state ++ " -> " ++ new_state)
+        }
+        timeout(5000) -> {
+            log("Timeout waiting for state changes")
+        }
+    }
+}
+
+// Property verification example
+def verify_traffic_safety() -> Bool {
+    let light = spawn TrafficLight []
+    
+    // The Cure compiler will automatically verify:
+    // - safety_never_conflicting
+    // - liveness_eventually_green  
+    // - maintenance_reachable
+    
+    // Returns true if all properties are verified
+    true
+}

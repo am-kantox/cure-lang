@@ -444,6 +444,13 @@ concurrent environments. The module is otherwise stateless and thread-safe.
 -define(TYPE_BOOL, {primitive_type, 'Bool'}).
 -define(TYPE_ATOM, {primitive_type, 'Atom'}).
 
+%% FSM primitive types
+-define(TYPE_PID, {primitive_type, 'Pid'}).
+-define(TYPE_FSMID, {primitive_type, 'FsmId'}).
+-define(TYPE_STATE, {primitive_type, 'State'}).
+-define(TYPE_MESSAGE, {primitive_type, 'Message'}).
+-define(TYPE_TIMEOUT, {primitive_type, 'Timeout'}).
+
 %% Dependent types
 -define(TYPE_NAT, {refined_type, 'Int', fun(N) -> N >= 0 end}).
 -define(TYPE_POS, {refined_type, 'Int', fun(N) -> N > 0 end}).
@@ -1086,12 +1093,15 @@ unify_lengths(_, _, Subst) ->
 unify_lengths_strict_with_context(Len1, Len2, Subst, RecState) ->
     cure_utils:debug("unify_lengths_strict_with_context - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
     % Build enhanced substitution by merging local subst with recursive context
-    EnhancedSubst = case RecState of
-        undefined -> Subst;
-        #recursive_inference_state{current_substitution = RecSubst} ->
-            merge_substitutions(Subst, RecSubst);
-        _ -> Subst
-    end,
+    EnhancedSubst =
+        case RecState of
+            undefined ->
+                Subst;
+            #recursive_inference_state{current_substitution = RecSubst} ->
+                merge_substitutions(Subst, RecSubst);
+            _ ->
+                Subst
+        end,
     cure_utils:debug("Enhanced substitution has ~p entries~n", [maps:size(EnhancedSubst)]),
     cure_utils:debug("Enhanced substitution contents: ~p~n", [EnhancedSubst]),
     % Use enhanced substitution for length evaluation
@@ -1182,7 +1192,9 @@ unify_lengths_strict_impl(Len1, Len2, LocalSubst, EnhancedSubst) ->
                     {ok, LocalSubst};
                 {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
                     % Different evaluated lengths
-                    cure_utils:debug("Different concrete lengths (with enhanced subst): ~p vs ~p~n", [N1, N2]),
+                    cure_utils:debug(
+                        "Different concrete lengths (with enhanced subst): ~p vs ~p~n", [N1, N2]
+                    ),
                     {error, {length_mismatch, N1, N2}};
                 _ ->
                     % Fall back to basic evaluation without substitution
@@ -1203,13 +1215,21 @@ unify_lengths_strict_impl(Len1, Len2, LocalSubst, EnhancedSubst) ->
                                     {ok, NewSubst};
                                 {error, _} ->
                                     % Try arithmetic simplification with ENHANCED substitution
-                                    case try_arithmetic_simplification_with_subst(Len1, Len2, EnhancedSubst) of
+                                    case
+                                        try_arithmetic_simplification_with_subst(
+                                            Len1, Len2, EnhancedSubst
+                                        )
+                                    of
                                         {ok, true} ->
-                                            cure_utils:debug("Arithmetic simplification succeeded~n"),
+                                            cure_utils:debug(
+                                                "Arithmetic simplification succeeded~n"
+                                            ),
                                             {ok, LocalSubst};
                                         _ ->
                                             % Fall back to structural comparison
-                                            cure_utils:debug("Falling back to structural comparison~n"),
+                                            cure_utils:debug(
+                                                "Falling back to structural comparison~n"
+                                            ),
                                             case expr_equal(Len1, Len2) of
                                                 true ->
                                                     {ok, LocalSubst};
@@ -1781,6 +1801,93 @@ infer_expr({record_expr, RecordName, Fields, _Location}, Env) ->
         _Other ->
             {error, {not_record_type, RecordName}}
     end;
+infer_expr({fsm_spawn_expr, FsmName, InitArgs, InitState, Location}, Env) ->
+    % Type FSM spawn expression
+    case lookup_env(Env, FsmName) of
+        undefined ->
+            {error, {unbound_fsm_type, FsmName, Location}};
+        {fsm_type, FsmName, States, MessageTypes} ->
+            % Check that initial state is valid
+            case lists:member(InitState, States) of
+                true ->
+                    % Infer types of initialization arguments
+                    case infer_args(InitArgs, Env) of
+                        {ok, ArgTypes, ArgConstraints} ->
+                            % Return a process type for this FSM
+                            ProcessType = #process_type{
+                                fsm_type = {fsm_type, FsmName, States, MessageTypes},
+                                current_state = InitState,
+                                location = Location
+                            },
+                            {ok, ProcessType, ArgConstraints};
+                        Error ->
+                            Error
+                    end;
+                false ->
+                    {error, {invalid_initial_state, InitState, States, Location}}
+            end;
+        _Other ->
+            {error, {not_fsm_type, FsmName, Location}}
+    end;
+infer_expr({fsm_send_expr, Target, Message, Location}, Env) ->
+    % Type FSM message send expression
+    case infer_expr(Target, Env) of
+        {ok, TargetType, TargetConstraints} ->
+            case infer_expr(Message, Env) of
+                {ok, MessageType, MessageConstraints} ->
+                    % Check that target is a process or PID
+                    case is_process_type(TargetType) of
+                        true ->
+                            % Create message type constraint
+                            Constraint = create_message_type_constraint(
+                                TargetType, MessageType, Location
+                            ),
+                            {ok, {primitive_type, 'Unit'},
+                                TargetConstraints ++ MessageConstraints ++ [Constraint]};
+                        false ->
+                            {error, {invalid_send_target, TargetType, Location}}
+                    end;
+                Error ->
+                    Error
+            end;
+        Error ->
+            Error
+    end;
+infer_expr({fsm_receive_expr, Patterns, Timeout, Location}, Env) ->
+    % Type FSM receive expression
+    case infer_match_clauses(Patterns, ?TYPE_MESSAGE, Env) of
+        {ok, ResultType, PatternConstraints} ->
+            TimeoutConstraints =
+                case Timeout of
+                    undefined ->
+                        [];
+                    TimeoutExpr ->
+                        case infer_expr(TimeoutExpr, Env) of
+                            {ok, TimeoutType, TConstraints} ->
+                                TimeoutConstraint = #type_constraint{
+                                    left = TimeoutType,
+                                    op = '=',
+                                    right = ?TYPE_TIMEOUT,
+                                    location = Location
+                                },
+                                TConstraints ++ [TimeoutConstraint];
+                            {error, _} ->
+                                []
+                        end
+                end,
+            {ok, ResultType, PatternConstraints ++ TimeoutConstraints};
+        Error ->
+            Error
+    end;
+infer_expr({fsm_state_expr, Location}, Env) ->
+    % Type FSM current state access
+    % Return the current state type from environment if available
+    case lookup_env(Env, current_state) of
+        undefined ->
+            {ok, ?TYPE_STATE, []};
+        StateType ->
+            {ok, StateType, []}
+    end;
 infer_expr(Expr, _Env) ->
     {error, {unsupported_expression, Expr}}.
 
@@ -1877,7 +1984,7 @@ infer_function_call_standard(Function, Args, Location, Env) ->
             % Special debug for dot_product
             case Function of
                 {identifier_expr, dot_product, _} ->
-                cure_utils:debug("dot_product function type: ~p~n", [FuncType]);
+                    cure_utils:debug("dot_product function type: ~p~n", [FuncType]);
                 _ ->
                     ok
             end,
@@ -1887,7 +1994,7 @@ infer_function_call_standard(Function, Args, Location, Env) ->
                     % Special debug for dot_product arguments
                     case Function of
                         {identifier_expr, dot_product, _} ->
-                        core_utils:debug("dot_product argument types: ~p~n", [ArgTypes]);
+                            core_utils:debug("dot_product argument types: ~p~n", [ArgTypes]);
                         _ ->
                             ok
                     end,
@@ -2928,6 +3035,16 @@ type_to_string(?TYPE_BOOL) ->
     "Bool";
 type_to_string(?TYPE_ATOM) ->
     "Atom";
+type_to_string(?TYPE_PID) ->
+    "Pid";
+type_to_string(?TYPE_FSMID) ->
+    "FsmId";
+type_to_string(?TYPE_STATE) ->
+    "State";
+type_to_string(?TYPE_MESSAGE) ->
+    "Message";
+type_to_string(?TYPE_TIMEOUT) ->
+    "Timeout";
 type_to_string(#type_var{id = Id, name = undefined}) ->
     "T" ++ integer_to_list(Id);
 type_to_string(#type_var{name = Name}) when Name =/= undefined ->
@@ -2966,7 +3083,9 @@ create_derived_length_var(_, Suffix) ->
 %% Type well-formedness checking
 is_well_formed_type({primitive_type, Name}) when
     Name =:= 'Int' orelse Name =:= 'Float' orelse Name =:= 'String' orelse
-        Name =:= 'Bool' orelse Name =:= 'Atom' orelse Name =:= 'Nat'
+        Name =:= 'Bool' orelse Name =:= 'Atom' orelse Name =:= 'Nat' orelse
+        Name =:= 'Pid' orelse Name =:= 'FsmId' orelse Name =:= 'State' orelse
+        Name =:= 'Message' orelse Name =:= 'Timeout'
 ->
     true;
 is_well_formed_type(#type_var{}) ->
@@ -5918,7 +6037,9 @@ try_arithmetic_simplification_with_subst(Len1, Len2, Subst) ->
     cure_utils:debug("try_arithmetic_simplification_with_subst - Len1: ~p, Len2: ~p~n", [Len1, Len2]),
     cure_utils:debug("Substitution size: ~p~n", [maps:size(Subst)]),
     % First try to evaluate both expressions using the substitution context
-    case {evaluate_length_expr_with_subst(Len1, Subst), evaluate_length_expr_with_subst(Len2, Subst)} of
+    case
+        {evaluate_length_expr_with_subst(Len1, Subst), evaluate_length_expr_with_subst(Len2, Subst)}
+    of
         {{ok, N}, {ok, N}} when is_integer(N) ->
             % Both evaluate to the same integer
             cure_utils:debug("Both expressions evaluate to same value: ~p~n", [N]),
@@ -5929,38 +6050,45 @@ try_arithmetic_simplification_with_subst(Len1, Len2, Subst) ->
             {error, not_equivalent};
         _ ->
             % Evaluation failed, try normalization
-    case {normalize_arithmetic_expr_with_subst(Len1, Subst), normalize_arithmetic_expr_with_subst(Len2, Subst)} of
-        {{ok, N}, {ok, N}} when is_integer(N) ->
-            % Both normalize to the same integer
-            cure_utils:debug("Both expressions normalize to same value: ~p~n", [N]),
-            {ok, true};
-        {{ok, Expr1}, {ok, Expr2}} ->
-            % Both normalized - check structural equality
-            case expr_equal(Expr1, Expr2) of
-                true -> 
-                    cure_utils:debug("Normalized expressions are structurally equal~n"),
+            case
+                {
+                    normalize_arithmetic_expr_with_subst(Len1, Subst),
+                    normalize_arithmetic_expr_with_subst(Len2, Subst)
+                }
+            of
+                {{ok, N}, {ok, N}} when is_integer(N) ->
+                    % Both normalize to the same integer
+                    cure_utils:debug("Both expressions normalize to same value: ~p~n", [N]),
                     {ok, true};
-                false -> 
-                    cure_utils:debug("Normalized expressions differ: ~p vs ~p~n", [Expr1, Expr2]),
-                    % Try heuristic pattern matching for common vector operations
+                {{ok, Expr1}, {ok, Expr2}} ->
+                    % Both normalized - check structural equality
+                    case expr_equal(Expr1, Expr2) of
+                        true ->
+                            cure_utils:debug("Normalized expressions are structurally equal~n"),
+                            {ok, true};
+                        false ->
+                            cure_utils:debug("Normalized expressions differ: ~p vs ~p~n", [
+                                Expr1, Expr2
+                            ]),
+                            % Try heuristic pattern matching for common vector operations
+                            case try_heuristic_vector_pattern_matching(Len1, Len2) of
+                                {ok, true} ->
+                                    cure_utils:debug("Heuristic pattern matching succeeded~n"),
+                                    {ok, true};
+                                _ ->
+                                    {error, not_equivalent}
+                            end
+                    end;
+                _ ->
+                    % Try heuristic pattern matching as last resort
                     case try_heuristic_vector_pattern_matching(Len1, Len2) of
                         {ok, true} ->
-                            cure_utils:debug("Heuristic pattern matching succeeded~n"),
+                            cure_utils:debug("Heuristic pattern matching succeeded (fallback)~n"),
                             {ok, true};
                         _ ->
-                            {error, not_equivalent}
+                            {error, cannot_normalize}
                     end
-            end;
-        _ ->
-            % Try heuristic pattern matching as last resort
-            case try_heuristic_vector_pattern_matching(Len1, Len2) of
-                {ok, true} ->
-                    cure_utils:debug("Heuristic pattern matching succeeded (fallback)~n"),
-                    {ok, true};
-                _ ->
-                    {error, cannot_normalize}
             end
-    end
     end.
 
 % %% Normalize arithmetic expressions by evaluating constants
@@ -6008,10 +6136,16 @@ normalize_arithmetic_expr_with_subst(#type_var{} = TypeVar, Subst) ->
     % Try to resolve type variable first
     case evaluate_length_expr_with_subst(TypeVar, Subst) of
         {ok, N} when is_integer(N) -> {ok, N};
-        _ -> {ok, TypeVar}  % Return as-is if can't resolve
+        % Return as-is if can't resolve
+        _ -> {ok, TypeVar}
     end;
 normalize_arithmetic_expr_with_subst({binary_op_expr, '+', Left, Right, Loc}, Subst) ->
-    case {normalize_arithmetic_expr_with_subst(Left, Subst), normalize_arithmetic_expr_with_subst(Right, Subst)} of
+    case
+        {
+            normalize_arithmetic_expr_with_subst(Left, Subst),
+            normalize_arithmetic_expr_with_subst(Right, Subst)
+        }
+    of
         {{ok, 0}, {ok, N}} when is_integer(N) ->
             % 0 + N = N
             {ok, N};
@@ -6028,7 +6162,12 @@ normalize_arithmetic_expr_with_subst({binary_op_expr, '+', Left, Right, Loc}, Su
             {error, cannot_normalize}
     end;
 normalize_arithmetic_expr_with_subst({binary_op_expr, '-', Left, Right, Loc}, Subst) ->
-    case {normalize_arithmetic_expr_with_subst(Left, Subst), normalize_arithmetic_expr_with_subst(Right, Subst)} of
+    case
+        {
+            normalize_arithmetic_expr_with_subst(Left, Subst),
+            normalize_arithmetic_expr_with_subst(Right, Subst)
+        }
+    of
         {{ok, N}, {ok, 0}} when is_integer(N) ->
             % N - 0 = N
             {ok, N};
@@ -6058,27 +6197,37 @@ try_heuristic_vector_pattern_matching(Len1, Len2) ->
     case {Len1, Len2} of
         % Pattern: binary_op_expr('+', TypeVar1, TypeVar2, Location) vs literal_expr(N)
         % Common in reverse: m + n = 5 where we expect m=0, n=5 (or vice versa)
-        {{binary_op_expr, '+', #type_var{}, #type_var{}, _}, {literal_expr, N, _}} when is_integer(N) ->
+        {{binary_op_expr, '+', #type_var{}, #type_var{}, _}, {literal_expr, N, _}} when
+            is_integer(N)
+        ->
             % Heuristic: for reverse operations, this usually means 0 + n = n
             % or n + 0 = n where one operand is from empty vector (length 0)
             % and the other from non-empty vector
-            cure_utils:debug("Heuristic PATTERN 1 MATCHED - binary sum ~p should equal literal ~p~n", [Len1, N]),
+            cure_utils:debug(
+                "Heuristic PATTERN 1 MATCHED - binary sum ~p should equal literal ~p~n", [Len1, N]
+            ),
             case N >= 0 of
-                true -> 
+                true ->
                     cure_utils:debug("Accepting heuristic match for non-negative sum~n"),
                     {ok, true};
-                false -> 
+                false ->
                     cure_utils:debug("Rejecting negative length ~p~n", [N]),
                     {error, negative_length}
             end;
         % Pattern: literal_expr(N) vs binary_op_expr('+', TypeVar1, TypeVar2, Location)
-        {{literal_expr, N, _}, {binary_op_expr, '+', #type_var{}, #type_var{}, _}} when is_integer(N) ->
-            cure_utils:debug("Heuristic PATTERN 2 MATCHED - literal ~p should equal binary sum ~p~n", [N, Len2]),
+        {{literal_expr, N, _}, {binary_op_expr, '+', #type_var{}, #type_var{}, _}} when
+            is_integer(N)
+        ->
+            cure_utils:debug(
+                "Heuristic PATTERN 2 MATCHED - literal ~p should equal binary sum ~p~n", [N, Len2]
+            ),
             case N >= 0 of
-                true -> 
-                    cure_utils:debug("Accepting heuristic match for non-negative sum (symmetric)~n"),
+                true ->
+                    cure_utils:debug(
+                        "Accepting heuristic match for non-negative sum (symmetric)~n"
+                    ),
                     {ok, true};
-                false -> 
+                false ->
                     cure_utils:debug("Rejecting negative length ~p (symmetric)~n", [N]),
                     {error, negative_length}
             end;
@@ -6086,3 +6235,47 @@ try_heuristic_vector_pattern_matching(Len1, Len2) ->
             cure_utils:debug("No heuristic pattern matched for ~p vs ~p~n", [Len1, Len2]),
             {error, no_heuristic_match}
     end.
+
+%% ===== FSM TYPE CHECKING HELPERS =====
+
+%% Check if a type is a process type (for FSM message sending)
+is_process_type(#process_type{}) ->
+    true;
+is_process_type(?TYPE_PID) ->
+    true;
+is_process_type(_) ->
+    false.
+
+%% Create message type constraint for FSM communication
+create_message_type_constraint(ProcessType, MessageType, Location) ->
+    #type_constraint{
+        left = MessageType,
+        op = 'elem_of',
+        right = extract_message_types(ProcessType),
+        location = Location
+    }.
+
+%% Extract valid message types from FSM process type
+extract_message_types(#process_type{fsm_type = {fsm_type, _Name, _States, MessageTypes}}) ->
+    {union_type, MessageTypes, undefined};
+extract_message_types(?TYPE_PID) ->
+    % Generic PID can receive any message
+    ?TYPE_MESSAGE;
+extract_message_types(_) ->
+    ?TYPE_MESSAGE.
+
+%% Check if FSM type is well-formed
+is_well_formed_fsm_type(#fsm_type{name = Name, states = States, message_types = MessageTypes}) ->
+    is_atom(Name) andalso
+        is_list(States) andalso
+        length(States) > 0 andalso
+        lists:all(fun is_atom/1, States) andalso
+        is_list(MessageTypes) andalso
+        lists:all(fun is_well_formed_type/1, MessageTypes);
+is_well_formed_fsm_type(_) ->
+    false.
+
+is_well_formed_process_type(#process_type{fsm_type = FsmType, current_state = State}) ->
+    is_well_formed_fsm_type(FsmType) andalso is_atom(State);
+is_well_formed_process_type(_) ->
+    false.

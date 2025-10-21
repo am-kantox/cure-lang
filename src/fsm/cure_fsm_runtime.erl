@@ -101,8 +101,8 @@ The FSM runtime integrates with:
     % FSM lifecycle
     start_fsm/2, start_fsm/3,
     stop_fsm/1,
-    % Test compatibility
-    spawn_fsm/1,
+    % FSM spawning with type safety
+    spawn_fsm/1, spawn_fsm/3, spawn_fsm/4,
 
     % FSM operations
     send_event/2, send_event/3,
@@ -110,6 +110,14 @@ The FSM runtime integrates with:
     % Test compatibility
     get_current_state/1,
     get_fsm_info/1,
+
+    % FSM message passing
+    send_message/2, send_message/3,
+    receive_message/1, receive_message/2,
+
+    % FSM registry and lookup
+    lookup_fsm/1,
+    list_running_fsms/0,
 
     % FSM registration and compilation
     register_fsm_type/2,
@@ -456,6 +464,120 @@ register_fsm_type(FSMType, States, InitialState, Transitions) ->
 
     CompiledDef = compile_fsm_definition(FSMDef),
     register_fsm_type(FSMType, CompiledDef).
+
+%% ============================================================================
+%% New FSM API Functions
+%% ============================================================================
+
+%% Spawn FSM with type safety and initial arguments
+spawn_fsm(FsmType, FsmDef, InitArgs) ->
+    spawn_fsm(FsmType, FsmDef, InitArgs, #{}).
+
+spawn_fsm(FsmType, FsmDef, InitArgs, Options) ->
+    % Register FSM definition if not already registered
+    case lookup_fsm_definition(FsmType) of
+        {error, not_found} ->
+            register_fsm_type(FsmType, FsmDef);
+        {ok, _} ->
+            ok
+    end,
+
+    % Start FSM with proper initialization
+    case start_fsm(FsmType, #{init_args => InitArgs, options => Options}) of
+        {ok, Pid} ->
+            % Register in instance registry
+            register_fsm_instance(FsmType, Pid),
+            {ok, Pid};
+        Error ->
+            Error
+    end.
+
+%% Send typed message to FSM
+send_message(FsmPid, Message) ->
+    send_message(FsmPid, Message, #{}).
+
+send_message(FsmPid, Message, Options) ->
+    MessageType = infer_message_type(Message),
+    Timestamp = erlang:system_time(microsecond),
+    WrappedMessage = #{
+        type => MessageType,
+        payload => Message,
+        sender => self(),
+        timestamp => Timestamp,
+        options => Options
+    },
+    send_event(FsmPid, message_received, WrappedMessage).
+
+%% Receive message from FSM with optional timeout
+receive_message(FsmPid) ->
+    receive_message(FsmPid, 5000).
+
+receive_message(FsmPid, Timeout) ->
+    receive
+        {fsm_message, FsmPid, Message} ->
+            {ok, Message};
+        {fsm_error, FsmPid, Error} ->
+            {error, Error}
+    after Timeout ->
+        {error, timeout}
+    end.
+
+%% Lookup FSM instance by PID or name
+lookup_fsm(FsmPid) when is_pid(FsmPid) ->
+    case is_process_alive(FsmPid) of
+        true ->
+            case gen_server:call(FsmPid, get_fsm_info) of
+                {ok, Info} -> {ok, Info};
+                Error -> Error
+            end;
+        false ->
+            {error, not_alive}
+    end;
+lookup_fsm(FsmName) when is_atom(FsmName) ->
+    case whereis(FsmName) of
+        undefined -> {error, not_registered};
+        Pid -> lookup_fsm(Pid)
+    end.
+
+%% List all running FSM instances
+list_running_fsms() ->
+    case ets:info(fsm_instance_registry) of
+        undefined ->
+            init_fsm_instance_registry(),
+            [];
+        _ ->
+            ets:tab2list(fsm_instance_registry)
+    end.
+
+%% Initialize FSM instance registry
+init_fsm_instance_registry() ->
+    case ets:info(fsm_instance_registry) of
+        undefined ->
+            ets:new(fsm_instance_registry, [named_table, public, set]),
+            ok;
+        _ ->
+            ok
+    end.
+
+%% Register FSM instance
+register_fsm_instance(FsmType, Pid) ->
+    init_fsm_instance_registry(),
+    Entry = #{
+        fsm_type => FsmType,
+        pid => Pid,
+        start_time => erlang:system_time(microsecond),
+        % Will be updated by FSM
+        current_state => unknown
+    },
+    ets:insert(fsm_instance_registry, {Pid, Entry}).
+
+%% Infer message type for type safety
+infer_message_type(Message) ->
+    case Message of
+        {Type, _} when is_atom(Type) -> Type;
+        Type when is_atom(Type) -> Type;
+        _ -> unknown
+    end.
 
 %% ============================================================================
 %% Registry Functions

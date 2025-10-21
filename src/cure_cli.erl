@@ -918,15 +918,15 @@ ensure_stdlib_available(Options) ->
 check_stdlib_compiled(_StdlibPaths) ->
     % Get only the working .cure files in the standard library
     StdlibSources = [
-                     "lib/std.cure",
-                     "lib/std/core.cure",
-                     "lib/std/io.cure",
-                     "lib/std/list.cure",
-                     "lib/std/math.cure",
-                     "lib/std/result.cure",
-                     "lib/std/show.cure",
-                     "lib/std/vector.cure"
-                    ],
+        "lib/std.cure",
+        "lib/std/core.cure",
+        "lib/std/io.cure",
+        "lib/std/list.cure",
+        "lib/std/math.cure",
+        "lib/std/result.cure",
+        "lib/std/show.cure",
+        "lib/std/vector.cure"
+    ],
 
     % Convert to expected BEAM file paths
     ExpectedBeamFiles = lists:map(
