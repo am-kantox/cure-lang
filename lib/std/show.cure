@@ -1,18 +1,11 @@
 module Std.Show do
   export [
     # Basic show functions (multiple overloads)
-    show/1,
-    print/1, println/1
+    show/1
   ]
 
   # Simplified show implementation for integers only for now
   def show(value: Int): String =
     "[number]"  # Simplified - returns a placeholder
-
-  def print(s: String): Unit =
-    ()  # Simplified - just return unit
-
-  def println(s: String): Unit =
-    ()  # Simplified - just return unit
 
 end

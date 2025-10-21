@@ -107,12 +107,13 @@ module Std.List do
     end
 
   # def take(list: List(T), n: Int): List(T) =
-  #   if n <= 0 then []
-  #   else
-  #     match list do
-  #       [] -> []
-  #       [h | t] -> [h | take(t, n - 1)]
-  #     end
+  #   match n do
+  #     0 ->
+  #       match list do
+  #         [] -> []
+  #         [h | t] -> [h | take(t, n - 1)]
+  #       end
+  #     _ -> []
   #   end
 
   # def drop(list: List(T), n: Int): List(T) =

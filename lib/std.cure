@@ -23,10 +23,17 @@ module Std do
     const/1, apply/2, pipe/2
   ]
   
+  # Re-export IO functions
+  import Std.Io [
+    # Standard IO
+    print/1, println/1, 
+    debug/1, error/1
+  ]
+
   # Re-export Show functions
   import Std.Show [
     # String conversion
-    show/1, print/1
+    show/1
   ]
 
   # Export all re-imported functions

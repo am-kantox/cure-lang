@@ -1,5 +1,8 @@
 module MatchTest do
-  export [test_empty_match/0, test_single_match/0]
+  export [
+    test_empty_match/0, test_single_match/0, test_integer/0, test_tuple/0,
+    do_test_tuple/2
+  ]
   
   # Test matching empty list - should return 42
   def test_empty_match(): Int =
@@ -15,6 +18,30 @@ module MatchTest do
     match single_list do
       [] -> 999
       [x | _] -> x
+    end
+    
+  # Test matching integers
+  def test_integer(): Int =
+    let n = 42
+    match n do
+      42 -> 42
+      _ -> 999
+    end
+    
+  # Test matching tuples
+  def test_tuple(): Int =
+    let n = 7
+    let single_list = [7]
+    do_test_tuple(n, single_list)
+
+  def do_test_tuple(int: Int, list: List(Int)): Int =
+    match int do
+      42 -> 42
+      _ ->
+        match list do
+          [] -> 999
+          [x | _] -> x
+        end
     end
     
 end

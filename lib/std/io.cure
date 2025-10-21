@@ -1,4 +1,4 @@
-module Std.IO do
+module Std.Io do
   export [
     print/1, println/1, 
     debug/1, error/1
