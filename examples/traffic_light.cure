@@ -1,21 +1,21 @@
-// Traffic Light FSM Example
-// Demonstrates FSM syntax, safety properties, and verification
+# Traffic Light FSM Example
+# Demonstrates FSM syntax, safety properties, and verification
 
 module TrafficLight
 
-// Define message types for the FSM
+# Define message types for the FSM
 type LightMessage = 
     | TimerExpired
     | EmergencyStop
     | MaintenanceMode
     | Resume
 
-// Traffic light FSM with safety properties
+# Traffic light FSM with safety properties
 fsm TrafficLight {
     states: [red, yellow, green, maintenance]
     initial: red
     
-    // Safety properties for verification
+    # Safety properties for verification
     property safety_never_conflicting: 
         always (not (red and green))
     
@@ -25,14 +25,14 @@ fsm TrafficLight {
     property maintenance_reachable:
         eventually maintenance
     
-    // State definitions with transitions
+    # State definitions with transitions
     state red {
         transition timer_expired {
             event: TimerExpired
             guard: true
             target: green
             action: {
-                // Set timer for green light
+                # Set timer for green light
                 set_timeout(30, TimerExpired)
             }
         }
@@ -103,34 +103,34 @@ fsm TrafficLight {
     }
 }
 
-// Function to spawn and operate traffic light
+# Function to spawn and operate traffic light
 def start_traffic_light() -> Pid {
-    // Spawn the FSM with initial arguments
+    # Spawn the FSM with initial arguments
     let light = spawn TrafficLight []
     
-    // Start the initial timer
+    # Start the initial timer
     send light TimerExpired
     
     light
 }
 
-// Function to test traffic light behavior
+# Function to test traffic light behavior
 def test_traffic_light() -> Unit {
     let light = start_traffic_light()
     
-    // Verify initial state
+    # Verify initial state
     let current = get_state light
     match current {
         red -> log("Traffic light started in red state")
         _ -> log("ERROR: Unexpected initial state")
     }
     
-    // Simulate timer events
-    send light TimerExpired  // red -> green
-    send light TimerExpired  // green -> yellow  
-    send light TimerExpired  // yellow -> red
+    # Simulate timer events
+    send light TimerExpired  # red -> green
+    send light TimerExpired  # green -> yellow  
+    send light TimerExpired  # yellow -> red
     
-    // Test emergency stop
+    # Test emergency stop
     send light EmergencyStop
     
     let maintenance_state = get_state light
@@ -139,7 +139,7 @@ def test_traffic_light() -> Unit {
         _ -> log("ERROR: Emergency stop failed")
     }
     
-    // Resume operation
+    # Resume operation
     send light Resume
     
     let resumed_state = get_state light
@@ -149,16 +149,16 @@ def test_traffic_light() -> Unit {
     }
 }
 
-// Advanced example: Coordinated traffic lights with safety verification
+# Advanced example: Coordinated traffic lights with safety verification
 fsm IntersectionController {
     states: [north_south_green, east_west_green, all_red, emergency]
     initial: all_red
     
-    // Safety property: never have conflicting greens
+    # Safety property: never have conflicting greens
     property mutual_exclusion:
         always (not (north_south_green and east_west_green))
     
-    // Fairness property: each direction eventually gets green
+    # Fairness property: each direction eventually gets green
     property fairness_north_south:
         always (east_west_green -> eventually north_south_green)
     
@@ -230,9 +230,9 @@ fsm IntersectionController {
     }
 }
 
-// Helper functions
+# Helper functions
 def authorized() -> Bool {
-    // In real implementation, would check credentials
+    # In real implementation, would check credentials
     true
 }
 
@@ -240,7 +240,7 @@ def broadcast_emergency() -> Unit {
     log("EMERGENCY: All lights set to red")
 }
 
-// FSM composition example: Multiple traffic lights
+# FSM composition example: Multiple traffic lights
 def create_intersection() -> (Pid, Pid, Pid, Pid) {
     let controller = spawn IntersectionController []
     let north_light = spawn TrafficLight []
@@ -248,17 +248,17 @@ def create_intersection() -> (Pid, Pid, Pid, Pid) {
     let east_light = spawn TrafficLight []
     let west_light = spawn TrafficLight []
     
-    // Link lights to controller (simplified)
+    # Link lights to controller (simplified)
     send controller StartCycle
     
     (controller, north_light, south_light, east_light)
 }
 
-// Example of FSM communication patterns
+# Example of FSM communication patterns
 def test_fsm_communication() -> Unit {
     let (controller, north, south, east) = create_intersection()
     
-    // Monitor FSM states
+    # Monitor FSM states
     receive {
         {state_change, fsm_id, old_state, new_state} -> {
             log("State change in " ++ fsm_id ++ ": " ++ old_state ++ " -> " ++ new_state)
@@ -269,15 +269,15 @@ def test_fsm_communication() -> Unit {
     }
 }
 
-// Property verification example
+# Property verification example
 def verify_traffic_safety() -> Bool {
     let light = spawn TrafficLight []
     
-    // The Cure compiler will automatically verify:
-    // - safety_never_conflicting
-    // - liveness_eventually_green  
-    // - maintenance_reachable
+    # The Cure compiler will automatically verify:
+    # - safety_never_conflicting
+    # - liveness_eventually_green  
+    # - maintenance_reachable
     
-    // Returns true if all properties are verified
+    # Returns true if all properties are verified
     true
 }
