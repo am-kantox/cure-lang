@@ -297,22 +297,23 @@ compile_load_local([VarName], Context) ->
 %% Load global function or variable - just push to stack, don't generate forms
 compile_load_global([Name], Context) ->
     Line = Context#compile_context.line,
-
-    % Check if this is a local function (defined in the current module)
-    % If so, create a proper function reference, otherwise create atom for stdlib calls
     ModuleName = Context#compile_context.module_name,
 
+    % Check if this is a local function (defined in the current module)
     case is_local_function_reference(Name, Context) of
         {true, Arity} ->
-            % Create function reference for local functions like fun 'ModuleName':'FunctionName'/Arity
-            FunForm =
-                {'fun', Line,
-                    {function, {atom, Line, ModuleName}, {atom, Line, Name},
-                        {integer, Line, Arity}}},
-            {ok, [], push_stack(FunForm, Context)};
+            % For local functions, create an anonymous wrapper fun that calls the local function
+            % This allows passing it to other modules without requiring export
+            ArgVars = [
+                {var, Line, list_to_atom("Arg" ++ integer_to_list(I))}
+             || I <- lists:seq(1, Arity)
+            ],
+            LocalCall = {call, Line, {atom, Line, Name}, ArgVars},
+            WrapperFun = {'fun', Line, {clauses, [{clause, Line, ArgVars, [], [LocalCall]}]}},
+            {ok, [], push_stack(WrapperFun, Context)};
         false ->
-            % For stdlib calls and unknown functions, just push the function name as atom
-            % This will be handled by compile_call to route to cure_std or stdlib
+            % For non-local functions, just push the function name as atom
+            % This will be handled by compile_call to route to stdlib or other modules
             Form = {atom, Line, Name},
             {ok, [], push_stack(Form, Context)}
     end.
@@ -321,40 +322,39 @@ compile_load_global([Name], Context) ->
 compile_load_imported_function([Name, ImportedFunction], Context) ->
     Line = Context#compile_context.line,
 
-    % Check if this is a stdlib function that should be routed to cure_std
-    case is_cure_std_function(Name) of
-        true ->
-            % For stdlib functions, just push the function name as atom
-            % This will be handled by compile_call to route to cure_std
+    % Get arity from imported function metadata
+    Arity =
+        case maps:get(arity, ImportedFunction, unknown) of
+            unknown ->
+                % For unknown arities, try some common defaults
+                case Name of
+                    show -> 1;
+                    map -> 2;
+                    fold -> 3;
+                    zip_with -> 3;
+                    % Default to arity 1 for most functions
+                    _ -> 1
+                end;
+            ActualArity when is_integer(ActualArity) ->
+                ActualArity;
+            _ ->
+                1
+        end,
+
+    % Get module from imported function metadata
+    ModuleName = maps:get(module, ImportedFunction, undefined),
+
+    case ModuleName of
+        undefined ->
+            % No module info - push atom for later resolution
             Form = {atom, Line, Name},
             {ok, [], push_stack(Form, Context)};
-        false ->
-            % For other imported functions, create a fun reference
-            Arity =
-                case maps:get(arity, ImportedFunction, unknown) of
-                    unknown ->
-                        % For unknown arities, try some common defaults
-                        case Name of
-                            show -> 1;
-                            map -> 2;
-                            fold -> 3;
-                            zip_with -> 3;
-                            % Default to arity 1 for most functions
-                            _ -> 1
-                        end;
-                    ActualArity when is_integer(ActualArity) ->
-                        ActualArity;
-                    _ ->
-                        1
-                end,
-
-            % Create a fun reference for non-stdlib functions
-            ModuleName = maps:get(module, ImportedFunction, 'Std'),
+        _ ->
+            % Create a fun reference to the imported module function
             FunForm =
                 {'fun', Line,
                     {function, {atom, Line, ModuleName}, {atom, Line, Name},
                         {integer, Line, Arity}}},
-
             {ok, [], push_stack(FunForm, Context)}
     end.
 
@@ -520,31 +520,42 @@ compile_call([Arity], Context) ->
                     CallForm =
                         case Function of
                             {atom, _, FuncName} ->
-                                % Check if it's a stdlib function that should go to cure_std
-                                case is_cure_std_function(FuncName) of
-                                    true ->
-                                        % Remote call to cure_std
-                                        {call, Line,
-                                            {remote, Line, {atom, Line, cure_std},
-                                                {atom, Line, FuncName}},
-                                            Args};
+                                % Check if it's a local function first
+                                case is_local_function_reference(FuncName, NewContext) of
+                                    {true, _Arity} ->
+                                        % Local function call - use simple atom call
+                                        {call, Line, {atom, Line, FuncName}, Args};
                                     false ->
-                                        % Check if it's a function that should route to Cure standard library
-                                        case is_cure_stdlib_function(FuncName) of
-                                            {true, Module} ->
-                                                % Remote call to Cure standard library module
-                                                {call, Line,
-                                                    {remote, Line, {atom, Line, Module},
-                                                        {atom, Line, FuncName}},
-                                                    Args};
-                                            false ->
-                                                % For local function calls, ensure proper arity and format
-                                                % This handles recursive calls within the same module
-                                                {call, Line, {atom, Line, FuncName}, Args}
+                                        % Check if it's an imported function from the codegen state
+                                        ImportedFunctions =
+                                            NewContext#compile_context.imported_functions,
+                                        case maps:get(FuncName, ImportedFunctions, undefined) of
+                                            undefined ->
+                                                % Unknown function - assume local (will error at runtime if not found)
+                                                {call, Line, {atom, Line, FuncName}, Args};
+                                            ImportedFunc ->
+                                                % Get module from imported function metadata
+                                                Module = maps:get(module, ImportedFunc, undefined),
+                                                case Module of
+                                                    undefined ->
+                                                        % No module - treat as local
+                                                        {call, Line, {atom, Line, FuncName}, Args};
+                                                    _ ->
+                                                        % Remote call to imported module
+                                                        {call, Line,
+                                                            {remote, Line, {atom, Line, Module},
+                                                                {atom, Line, FuncName}},
+                                                            Args}
+                                                end
                                         end
                                 end;
+                            {'fun', _, {function, {atom, _, ModName}, {atom, _, FuncName}, _}} when
+                                ModName =:= NewContext#compile_context.module_name
+                            ->
+                                % Fun reference to a local function - call it directly as local
+                                {call, Line, {atom, Line, FuncName}, Args};
                             _ ->
-                                % Complex function expression (fun refs, etc.)
+                                % Complex function expression (fun refs, etc.) - call through fun
                                 {call, Line, Function, Args}
                         end,
 
@@ -658,10 +669,16 @@ compile_label([LabelName], Context) ->
     {ok, [], NewContext}.
 
 %% Pop (discard top of stack)
+%% NOTE: Even though we're discarding the result, we still need to execute the expression
+%% This is important for function calls that have side effects
 compile_pop([], Context) ->
     case pop_stack(Context) of
-        {_Value, NewContext} ->
-            {ok, [], NewContext};
+        {Value, NewContext} ->
+            % Generate code that executes the expression but discards its result
+            % We do this by wrapping it in a match with _ variable
+            Line = NewContext#compile_context.line,
+            ExecuteForm = {match, Line, {var, Line, '_'}, Value},
+            {ok, [ExecuteForm], NewContext};
         Error ->
             Error
     end.
@@ -982,156 +999,8 @@ is_local_function_reference(Name, Context) ->
 %% Only keep core runtime functions that haven't been migrated yet
 
 % Basic type conversions
-is_cure_std_function(int_to_string) -> true;
-is_cure_std_function(float_to_string) -> true;
-is_cure_std_function(list_to_string) -> true;
-is_cure_std_function(join_ints) -> true;
-% FSM functions still in runtime (use FSM builtins)
-is_cure_std_function(fsm_create) -> true;
-is_cure_std_function(fsm_send_safe) -> true;
-is_cure_std_function(create_counter) -> true;
-% ALL other functions now implemented in Cure standard library modules
-% Route to compiled Cure modules instead of cure_std runtime
-
-% Now in Std.Core
-is_cure_std_function(ok) -> false;
-is_cure_std_function(error) -> false;
-is_cure_std_function(some) -> false;
-is_cure_std_function(none) -> false;
-is_cure_std_function('Ok') -> false;
-is_cure_std_function('Error') -> false;
-is_cure_std_function('Some') -> false;
-is_cure_std_function('None') -> false;
-is_cure_std_function(map_ok) -> false;
-is_cure_std_function(bind_ok) -> false;
-is_cure_std_function(map_error) -> false;
-is_cure_std_function(map_some) -> false;
-is_cure_std_function(bind_some) -> false;
-% Now in Std.List
-is_cure_std_function(map) -> false;
-is_cure_std_function(filter) -> false;
-is_cure_std_function(fold) -> false;
-is_cure_std_function(foldl) -> false;
-is_cure_std_function(foldr) -> false;
-is_cure_std_function(zip_with) -> false;
-is_cure_std_function(head) -> false;
-is_cure_std_function(tail) -> false;
-is_cure_std_function(length) -> false;
-is_cure_std_function(reverse) -> false;
-is_cure_std_function(find) -> false;
-is_cure_std_function(cons) -> false;
-is_cure_std_function(append) -> false;
-% Now in Std.Show
-is_cure_std_function(show) -> false;
-% Now in Std.Math
-is_cure_std_function(abs) -> false;
-is_cure_std_function(sqrt) -> false;
-is_cure_std_function(pi) -> false;
-is_cure_std_function(safe_div) -> false;
-is_cure_std_function(safe_divide) -> false;
-% Now in Std.String
-is_cure_std_function(string_concat) -> false;
-is_cure_std_function(split) -> false;
-is_cure_std_function(trim) -> false;
-is_cure_std_function(to_upper) -> false;
-is_cure_std_function(contains) -> false;
-is_cure_std_function(starts_with) -> false;
-is_cure_std_function(string_empty) -> false;
-is_cure_std_function(string_join) -> false;
-is_cure_std_function(string_any) -> false;
-is_cure_std_function(_) -> false.
-
-%% Check if function should be routed to compiled Cure standard library module
-%% Returns {true, ModuleName} or false
-%% These now reference the compiled Cure modules instead of legacy Erlang bridge
-is_cure_stdlib_function(zip_with) -> {true, 'Std.List'};
-is_cure_stdlib_function(fold) -> {true, 'Std.List'};
-is_cure_stdlib_function(fold_left) -> {true, 'Std.List'};
-is_cure_stdlib_function(fold_right) -> {true, 'Std.List'};
-is_cure_stdlib_function(map) -> {true, 'Std.List'};
-is_cure_stdlib_function(filter) -> {true, 'Std.List'};
-is_cure_stdlib_function(head) -> {true, 'Std.List'};
-is_cure_stdlib_function(tail) -> {true, 'Std.List'};
-is_cure_stdlib_function(length) -> {true, 'Std.List'};
-is_cure_stdlib_function(reverse) -> {true, 'Std.List'};
-is_cure_stdlib_function(find) -> {true, 'Std.List'};
-is_cure_stdlib_function(foldl) -> {true, 'Std.List'};
-is_cure_stdlib_function(foldr) -> {true, 'Std.List'};
-is_cure_stdlib_function(cons) -> {true, 'Std.List'};
-is_cure_stdlib_function(append) -> {true, 'Std.List'};
-is_cure_stdlib_function(is_empty) -> {true, 'Std.List'};
-is_cure_stdlib_function(all) -> {true, 'Std.List'};
-is_cure_stdlib_function(any) -> {true, 'Std.List'};
-is_cure_stdlib_function(contains) -> {true, 'Std.List'};
-is_cure_stdlib_function(nth) -> {true, 'Std.List'};
-is_cure_stdlib_function(take) -> {true, 'Std.List'};
-is_cure_stdlib_function(drop) -> {true, 'Std.List'};
-is_cure_stdlib_function(safe_head) -> {true, 'Std.List'};
-is_cure_stdlib_function(safe_tail) -> {true, 'Std.List'};
-is_cure_stdlib_function(safe_nth) -> {true, 'Std.List'};
-% Core types and functions
-is_cure_stdlib_function(ok) -> {true, 'Std.Core'};
-is_cure_stdlib_function(error) -> {true, 'Std.Core'};
-is_cure_stdlib_function(some) -> {true, 'Std.Core'};
-is_cure_stdlib_function(none) -> {true, 'Std.Core'};
-is_cure_stdlib_function(is_ok) -> {true, 'Std.Core'};
-is_cure_stdlib_function(is_error) -> {true, 'Std.Core'};
-is_cure_stdlib_function(is_some) -> {true, 'Std.Core'};
-is_cure_stdlib_function(is_none) -> {true, 'Std.Core'};
-is_cure_stdlib_function(map_ok) -> {true, 'Std.Core'};
-is_cure_stdlib_function(map_error) -> {true, 'Std.Core'};
-is_cure_stdlib_function(and_then) -> {true, 'Std.Core'};
-% Math functions
-is_cure_stdlib_function(abs) -> {true, 'Std.Math'};
-is_cure_stdlib_function(sqrt) -> {true, 'Std.Math'};
-is_cure_stdlib_function(power) -> {true, 'Std.Math'};
-is_cure_stdlib_function(round) -> {true, 'Std.Math'};
-is_cure_stdlib_function(floor) -> {true, 'Std.Math'};
-is_cure_stdlib_function(ceiling) -> {true, 'Std.Math'};
-is_cure_stdlib_function(pi) -> {true, 'Std.Math'};
-is_cure_stdlib_function(e) -> {true, 'Std.Math'};
-is_cure_stdlib_function(safe_divide) -> {true, 'Std.Math'};
-is_cure_stdlib_function(safe_sqrt) -> {true, 'Std.Math'};
-% Show functions
-is_cure_stdlib_function(show) -> {true, 'Std.Show'};
-% IO functions
-is_cure_stdlib_function(print) -> {true, 'Std.Io'};
-is_cure_stdlib_function(println) -> {true, 'Std.Io'};
-% String functions
-is_cure_stdlib_function(string_concat) -> {true, 'Std.String'};
-is_cure_stdlib_function(string_length) -> {true, 'Std.String'};
-is_cure_stdlib_function(string_empty) -> {true, 'Std.String'};
-is_cure_stdlib_function(trim) -> {true, 'Std.String'};
-is_cure_stdlib_function(to_upper) -> {true, 'Std.String'};
-is_cure_stdlib_function(to_lower) -> {true, 'Std.String'};
-is_cure_stdlib_function(capitalize) -> {true, 'Std.String'};
-is_cure_stdlib_function(starts_with) -> {true, 'Std.String'};
-is_cure_stdlib_function(ends_with) -> {true, 'Std.String'};
-is_cure_stdlib_function(split) -> {true, 'Std.String'};
-is_cure_stdlib_function(join) -> {true, 'Std.String'};
-% Main Std module for aggregated functions
-is_cure_stdlib_function(identity) -> {true, 'Std'};
-is_cure_stdlib_function(compose) -> {true, 'Std'};
-is_cure_stdlib_function(flip) -> {true, 'Std'};
-is_cure_stdlib_function('not') -> {true, 'Std'};
-is_cure_stdlib_function('and') -> {true, 'Std'};
-is_cure_stdlib_function('or') -> {true, 'Std'};
-is_cure_stdlib_function('xor') -> {true, 'Std'};
-is_cure_stdlib_function(eq) -> {true, 'Std'};
-is_cure_stdlib_function(ne) -> {true, 'Std'};
-is_cure_stdlib_function(lt) -> {true, 'Std'};
-is_cure_stdlib_function(le) -> {true, 'Std'};
-is_cure_stdlib_function(gt) -> {true, 'Std'};
-is_cure_stdlib_function(ge) -> {true, 'Std'};
-is_cure_stdlib_function(compare) -> {true, 'Std'};
-is_cure_stdlib_function(min) -> {true, 'Std'};
-is_cure_stdlib_function(max) -> {true, 'Std'};
-is_cure_stdlib_function(clamp) -> {true, 'Std'};
-is_cure_stdlib_function(_) -> false.
-
-%% Check if function is from standard library (legacy function)
-is_stdlib_function(Function) ->
-    is_cure_std_function(Function).
+%% These functions have been removed - all functions are now resolved uniformly
+%% through the import system. No special hardcoded stdlib checks.
 
 %% Check if a parameter name is likely a type parameter
 is_type_parameter(ParamName) when is_atom(ParamName) ->

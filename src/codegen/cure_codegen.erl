@@ -500,6 +500,8 @@ compile_module_items(Items, State) ->
     compile_module_items(Items, State, []).
 
 compile_module_items([], State, Acc) ->
+    io:format("[CODEGEN] Finished compiling items, accumulated ~p items~n", [length(Acc)]),
+    lists:foreach(fun(Item) -> io:format("  Item: ~p~n", [Item]) end, Acc),
     {ok, State#codegen_state{functions = lists:reverse(Acc)}};
 compile_module_items([Item | RestItems], State, Acc) ->
     case compile_module_item(Item, State) of
@@ -1944,6 +1946,9 @@ separate_functions(Functions) ->
     separate_functions(Functions, [], [], []).
 
 separate_functions([], RegularAcc, FSMAcc, ConstructorAcc) ->
+    io:format("[SEPARATE] Regular functions: ~p~n", [length(RegularAcc)]),
+    io:format("[SEPARATE] FSM functions: ~p~n", [length(FSMAcc)]),
+    io:format("[SEPARATE] Constructor functions: ~p~n", [length(ConstructorAcc)]),
     {lists:reverse(RegularAcc), lists:reverse(FSMAcc), lists:reverse(ConstructorAcc)};
 separate_functions([{function, F} | Rest], RegularAcc, FSMAcc, ConstructorAcc) ->
     % Wrapped regular function
@@ -2117,27 +2122,30 @@ resolve_and_load_module(Module, Imports, State) ->
     end.
 
 %% Find module file based on module name
+%% Converts module names to file paths using generic conventions:
+%% - Foo.Bar -> lib/foo/bar.cure or src/foo/bar.cure
+%% - Foo -> lib/foo.cure or src/foo.cure
+%% - MyModule -> lib/mymodule.cure or src/mymodule.cure
 find_module_file(Module) ->
     ModuleStr = atom_to_list(Module),
-    % Convert module name to file path
-    % Std.List -> lib/std/list.cure
-    % Std -> lib/std.cure
-    case string:tokens(ModuleStr, ".") of
-        ["Std", SubModule] ->
-            SubModuleLower = string:to_lower(SubModule),
-            Path = "lib/std/" ++ SubModuleLower ++ ".cure",
-            case filelib:is_file(Path) of
-                true -> {ok, Path};
-                false -> {error, {file_not_found, Path}}
-            end;
-        ["Std"] ->
-            Path = "lib/std.cure",
-            case filelib:is_file(Path) of
-                true -> {ok, Path};
-                false -> {error, {file_not_found, Path}}
-            end;
-        _ ->
-            {error, {unsupported_module, Module}}
+    % Convert module name to file path components
+    PathComponents = string:tokens(ModuleStr, "."),
+    find_module_in_search_paths(PathComponents).
+
+%% Search for module file in standard directories
+find_module_in_search_paths(PathComponents) ->
+    % Convert module path to file path (e.g., ["Std", "List"] -> "std/list.cure")
+    RelativePath = string:join([string:to_lower(P) || P <- PathComponents], "/") ++ ".cure",
+    SearchPaths = ["lib/", "src/", ""],
+    find_in_paths(RelativePath, SearchPaths).
+
+find_in_paths(_RelativePath, []) ->
+    {error, {file_not_found, _RelativePath}};
+find_in_paths(RelativePath, [SearchPath | Rest]) ->
+    FullPath = SearchPath ++ RelativePath,
+    case filelib:is_file(FullPath) of
+        true -> {ok, FullPath};
+        false -> find_in_paths(RelativePath, Rest)
     end.
 
 %% Compile module and extract requested functions
@@ -2413,6 +2421,7 @@ convert_to_erlang_forms(Module) ->
             end,
 
         % Add module and export attributes
+        io:format("[EXPORTS] Module ~p exports: ~p~n", [ModuleName, ExportsWithRegistration]),
         BaseAttributes = [
             {attribute, 1, module, ModuleName},
             {attribute, 2, export, ExportsWithRegistration}
@@ -2483,6 +2492,28 @@ convert_to_erlang_forms(Module) ->
 
         % Debug: Show a sample of the generated forms
         cure_utils:debug("Generated ~p forms total~n", [length(Forms)]),
+        io:format("[FORMS] Total forms: ~p~n", [length(Forms)]),
+        io:format("[FORMS] Function forms: ~p~n", [length(FunctionForms)]),
+        io:format("[FORMS] Functions in FunctionForms:~n"),
+        lists:foreach(
+            fun
+                ({function, _, Name, Arity, _}) ->
+                    io:format("  Function: ~p/~p~n", [Name, Arity]);
+                (_) ->
+                    ok
+            end,
+            FunctionForms
+        ),
+        io:format("[FORMS] Functions in final Forms:~n"),
+        lists:foreach(
+            fun
+                ({function, _, Name, Arity, _}) ->
+                    io:format("  Final function: ~p/~p~n", [Name, Arity]);
+                (_) ->
+                    ok
+            end,
+            Forms
+        ),
         AttributeSample = lists:sublist(Forms, 5),
         cure_utils:debug("First 5 forms: ~p~n", [AttributeSample]),
 
@@ -2500,6 +2531,8 @@ convert_to_erlang_forms(Module) ->
                 ok
         end,
 
+        % Save forms to file for debugging
+        file:write_file("/tmp/cure_forms.erl", io_lib:format("~p.~n", [Forms])),
         {ok, Forms}
     catch
         error:Reason:Stack ->
@@ -2516,9 +2549,13 @@ convert_to_erlang_forms(Module) ->
 convert_functions_to_forms(Functions, LineStart, ModuleName) ->
     % Extract local functions map for context
     LocalFunctions = extract_local_functions_map(Functions),
+    io:format("[LOCAL_FUNCS] Module ~p has local functions: ~p~n", [
+        ModuleName, maps:to_list(LocalFunctions)
+    ]),
     convert_functions_to_forms(Functions, LineStart, [], ModuleName, LocalFunctions).
 
 convert_functions_to_forms([], _Line, Acc, _ModuleName, _LocalFunctions) ->
+    io:format("[CONVERT] Converted ~p functions to forms~n", [length(Acc)]),
     lists:reverse(Acc);
 convert_functions_to_forms([Function | RestFunctions], Line, Acc, ModuleName, LocalFunctions) ->
     case convert_function_to_form(Function, Line, ModuleName, LocalFunctions) of
@@ -2533,27 +2570,57 @@ convert_functions_to_forms([Function | RestFunctions], Line, Acc, ModuleName, Lo
 
 %% Extract local functions map for context
 extract_local_functions_map(Functions) ->
-    lists:foldl(
+    io:format("[EXTRACT_MAP] Extracting from ~p functions~n", [length(Functions)]),
+    lists:foreach(
+        fun(F) ->
+            case F of
+                _ when is_map(F) ->
+                    io:format("  Map: ~p/~p~n", [
+                        maps:get(name, F, undefined), maps:get(arity, F, undefined)
+                    ]);
+                {function, _, N, A, _} ->
+                    io:format("  Form: ~p/~p~n", [N, A]);
+                _ ->
+                    io:format("  Other: ~p~n", [element(1, F)])
+            end
+        end,
+        Functions
+    ),
+    Result = lists:foldl(
         fun(Function, Acc) ->
             case Function of
                 _ when is_map(Function) ->
                     case
                         {maps:get(name, Function, undefined), maps:get(arity, Function, undefined)}
                     of
-                        {undefined, _} -> Acc;
-                        {_, undefined} -> Acc;
-                        {Name, Arity} -> maps:put(Name, Arity, Acc)
+                        {undefined, _} ->
+                            io:format("    Skip: undefined name~n"),
+                            Acc;
+                        {_, undefined} ->
+                            io:format("    Skip: undefined arity~n"),
+                            Acc;
+                        {Name, Arity} ->
+                            NewAcc = maps:put(Name, Arity, Acc),
+                            io:format("    Added: ~p/~p, Acc now: ~p~n", [
+                                Name, Arity, maps:to_list(NewAcc)
+                            ]),
+                            NewAcc
                     end;
                 {function, _Line, Name, Arity, _Clauses} ->
                     % Constructor function
-                    maps:put(Name, Arity, Acc);
+                    NewAcc = maps:put(Name, Arity, Acc),
+                    io:format("    Added form: ~p/~p~n", [Name, Arity]),
+                    NewAcc;
                 _ ->
+                    io:format("    Skip: not a map or form~n"),
                     Acc
             end
         end,
         #{},
         Functions
-    ).
+    ),
+    io:format("[EXTRACT_MAP] Final result: ~p~n", [maps:to_list(Result)]),
+    Result.
 
 %% Convert a single function to Erlang abstract form (backward compatibility)
 % convert_function_to_form(Function, Line) ->

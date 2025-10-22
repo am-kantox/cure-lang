@@ -1,0 +1,18 @@
+module TestMultiPrint do
+  export [main/0, test_function/0]
+  
+  import Std.Io [print/1, println/1]
+  
+  def test_function(): Unit =
+    println("Line 1")
+    println("Line 2")
+    println("Line 3")
+  
+  def main(): Unit =
+    println("Starting test...")
+    println("Inline 1")
+    println("Inline 2")
+    println("Inline 3")
+    test_function()
+    println("Test complete!")
+end

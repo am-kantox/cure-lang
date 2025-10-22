@@ -14,7 +14,9 @@
 # the Cure language's FSM capabilities.
 
 module AdvancedTrafficLight do
-  export [main/0, run_demo/0]
+  export [main/0, run_demo/0, print_header/0]
+
+  import Std.Io [print/1]
 
   # Type definitions for state data
   record StateData do

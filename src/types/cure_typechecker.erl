@@ -150,9 +150,9 @@ operations can run concurrently on different ASTs.
     check_dependent_constraint/3,
     infer_dependent_type/2,
     convert_type_to_tuple/1,
+    % Stdlib functions are now resolved through normal import mechanisms
     load_stdlib_modules/0,
     extract_module_functions/1,
-    add_std_function_types/1,
     get_stdlib_function_type/3,
     create_function_type_from_signature/2,
     create_function_type_from_signature_records/2
@@ -510,26 +510,11 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
     ModuleEnv = cure_types:extend_env(Env, module, Name),
 
     % Process imports first to extend environment
+    % All modules (including stdlib) are handled uniformly through the import system
     ImportEnv =
         case process_imports(Imports, ModuleEnv) of
             {ok, TempEnv} ->
-                % Add standard library function types if importing from Std
-                case
-                    lists:any(
-                        fun
-                            ({import_def, 'Std', _, _}) ->
-                                true;
-                            (_) ->
-                                false
-                        end,
-                        Imports
-                    )
-                of
-                    true ->
-                        add_std_function_types(TempEnv);
-                    false ->
-                        TempEnv
-                end;
+                TempEnv;
             % Continue with original env on import errors
             {error, _Error} ->
                 ModuleEnv
@@ -1281,11 +1266,11 @@ builtin_env() ->
     % Add FSM built-in functions
     Env11 = cure_fsm_builtins:register_fsm_builtins(Env10),
 
-    % Add standard library function types
-    Env12 = add_std_function_types(Env11),
+    % Standard library function types are now loaded through the normal import mechanism
+    % No hardcoded stdlib loading needed
 
     % Add constants and functions
-    Env13 = cure_types:extend_env(Env12, ok, {primitive_type, 'Unit'}),
+    Env13 = cure_types:extend_env(Env11, ok, {primitive_type, 'Unit'}),
 
     % Add ok/0 function: () -> Unit
     OkFunctionType = {function_type, [], {primitive_type, 'Unit'}},

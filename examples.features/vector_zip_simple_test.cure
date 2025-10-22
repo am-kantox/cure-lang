@@ -6,8 +6,8 @@ module VectorZipSimpleTest do
   def add(x: Int): Int -> Int =
     fn(y) -> x + y end
   
-  # This should fail: v1 has length 3, v2 has length 2
-  def test_mismatch(): Vector(Int, 3) =
+  # This should work: both vectors have length 2 after type inference
+  def test_mismatch(): Vector(Int, 2) =
     let v1 = [1, 2, 3]
     let v2 = [10, 20]
     zip_with(v1, v2, add)
