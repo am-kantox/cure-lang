@@ -253,6 +253,7 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         guard_check -> compile_guard_check(Args, NewContext);
         unary_op -> compile_unary_op(Args, NewContext);
         list_length -> compile_list_length(Args, NewContext);
+        call_bif -> compile_call_bif(Args, NewContext);
         _ -> {error, {unsupported_instruction, Op}}
     end.
 
@@ -376,6 +377,26 @@ compile_unary_op([Operator], Context) ->
             Line = NewContext#compile_context.line,
             OpForm = compile_unary_operator(Operator, Operand, Line),
             {ok, [], push_stack(OpForm, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% Compile call_bif - call to Built-In Function (external module function)
+compile_call_bif([Module, Function, Arity], Context) ->
+    % Pop Arity arguments from stack
+    case pop_n_from_stack(Arity, Context) of
+        {Args, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Create a remote call: Module:Function(Args)
+            % Args are already in correct order from pop_n_from_stack
+            CallForm = {
+                call,
+                Line,
+                {remote, Line, {atom, Line, Module}, {atom, Line, Function}},
+                % Args are already in correct order
+                Args
+            },
+            {ok, [], push_stack(CallForm, NewContext)};
         Error ->
             Error
     end.

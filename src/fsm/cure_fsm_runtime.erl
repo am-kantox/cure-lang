@@ -711,6 +711,8 @@ init({FSMType, Definition, InitialData, _Options}) ->
         fsm_type = FSMType,
         current_state = InitialState,
         data = InitialData,
+        % Initial payload is empty
+        payload = undefined,
         event_data = undefined,
         timeout_ref = undefined,
         transitions = Transitions,
@@ -815,10 +817,11 @@ handle_fsm_event(Event, EventData, State) ->
             case evaluate_guard(Guard, State, EventData) of
                 true ->
                     % Execute action and transition to new state
-                    NewData = execute_action(Action, State, EventData),
+                    {NewData, NewPayload} = execute_action(Action, State, EventData),
                     NewState = State#fsm_state{
                         current_state = TargetState,
                         data = NewData,
+                        payload = NewPayload,
                         event_data = EventData,
                         event_history = [
                             {Event, CurrentState, TargetState, erlang:timestamp()} | History
@@ -1015,12 +1018,16 @@ execute_action_instructions(Instructions, State, EventData) ->
             variables => #{},
             stack => [],
             state_data => State#fsm_state.data,
+            payload => State#fsm_state.payload,
             modified => false
         },
         Result = execute_action_instructions_impl(Instructions, Context),
-        maps:get(state_data, Result, State#fsm_state.data)
+        {
+            maps:get(state_data, Result, State#fsm_state.data),
+            maps:get(payload, Result, State#fsm_state.payload)
+        }
     catch
-        _:_ -> State#fsm_state.data
+        _:_ -> {State#fsm_state.data, State#fsm_state.payload}
     end.
 
 %% Execute a list of action instructions
@@ -1061,6 +1068,50 @@ execute_action_instruction(#{op := load_event_data}, Context) ->
     EventData = maps:get(event_data, Context),
     Stack = maps:get(stack, Context, []),
     Context#{stack => [EventData | Stack]};
+execute_action_instruction(#{op := load_payload}, Context) ->
+    Payload = maps:get(payload, Context),
+    Stack = maps:get(stack, Context, []),
+    Context#{stack => [Payload | Stack]};
+execute_action_instruction(#{op := set_payload}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [NewPayload | RestStack] ->
+            Context#{
+                stack => RestStack,
+                payload => NewPayload,
+                modified => true
+            };
+        [] ->
+            Context
+    end;
+execute_action_instruction(#{op := update_payload, args := [Field]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [Value | RestStack] ->
+            Payload = maps:get(payload, Context),
+            NewPayload =
+                case Payload of
+                    Map when is_map(Map) -> maps:put(Field, Value, Map);
+                    _ -> #{Field => Value}
+                end,
+            Context#{
+                stack => RestStack,
+                payload => NewPayload,
+                modified => true
+            };
+        [] ->
+            Context
+    end;
+execute_action_instruction(#{op := get_payload_field, args := [Field]}, Context) ->
+    Payload = maps:get(payload, Context),
+    Stack = maps:get(stack, Context, []),
+    Value =
+        case Payload of
+            Map when is_map(Map) -> maps:get(Field, Map, undefined);
+            Tuple when is_tuple(Tuple) -> element(Field, Tuple);
+            _ -> undefined
+        end,
+    Context#{stack => [Value | Stack]};
 execute_action_instruction(#{op := load_current_state}, Context) ->
     State = maps:get(state, Context),
     CurrentState = State#fsm_state.current_state,
@@ -1210,19 +1261,24 @@ log_action_message(_, Message) ->
 
 %% Execute action with compiled action expression support
 execute_action(undefined, State, _EventData) ->
-    State#fsm_state.data;
+    {State#fsm_state.data, State#fsm_state.payload};
 execute_action(Action, State, EventData) when is_function(Action, 2) ->
     try
-        Action(State, EventData)
+        Result = Action(State, EventData),
+        % Support both old-style (returns just data) and new-style (returns {data, payload})
+        case Result of
+            {Data, Payload} -> {Data, Payload};
+            Data -> {Data, State#fsm_state.payload}
+        end
     catch
-        _:_ -> State#fsm_state.data
+        _:_ -> {State#fsm_state.data, State#fsm_state.payload}
     end;
 execute_action({compiled_action, Instructions}, State, EventData) ->
     % Execute compiled action instructions
     try
         execute_action_instructions(Instructions, State, EventData)
     catch
-        _:_ -> State#fsm_state.data
+        _:_ -> {State#fsm_state.data, State#fsm_state.payload}
     end;
 execute_action(Action, State, EventData) ->
     % Handle AST action expressions for backward compatibility
@@ -1230,7 +1286,7 @@ execute_action(Action, State, EventData) ->
         {ok, Instructions, _} ->
             execute_action_instructions(Instructions, State, EventData);
         {error, _Reason} ->
-            State#fsm_state.data
+            {State#fsm_state.data, State#fsm_state.payload}
     end.
 
 %% Set FSM timeout

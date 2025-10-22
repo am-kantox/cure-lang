@@ -88,7 +88,6 @@ export [
 function_name
 variable_name
 _private_var
-CamelCaseType
 
 # Module-qualified identifiers
 Module.function_name
@@ -126,7 +125,6 @@ Pos                    # Positive integers (Int > 0)
 ### Compound Types
 ```cure
 List(T)                # Homogeneous lists
-List(T, n: Nat)        # Length-indexed lists (dependent type)
 Vector(T, n: Nat)      # Fixed-length vectors
 {T1, T2, ...}          # Tuples
 Result(T, E)           # Error handling type
@@ -148,7 +146,6 @@ None                   # Absent optional value
 ```cure
 # Length-parameterized types
 Vector(T, n: Nat)                    # Vector of type T with length n
-List(T, n: Nat)                      # List with compile-time known length
 Matrix(rows: Nat, cols: Nat, T)      # 2D matrix with dimensions
 
 # Constraint-based types
@@ -189,7 +186,7 @@ def safe_divide(x: Int, y: Int): Int when y != 0 = x / y
 # Function with guard constraints
 def safe_head(list: List(T, n)): T when n > 0 =
   match list do
-    [x|_] -> x
+    [x | _] -> x
     # No need for empty case - type system prevents it
   end
 ```
@@ -273,10 +270,10 @@ x >= y                 # Greater than or equal
 str1 ++ str2           # String concatenation
 
 # List operations
-x :: xs                # Cons (prepend to list)
+[x | xs]               # Cons (prepend to list)
 
 # Pipe operator
-value |> function      # Function composition
+value |> function()    # Function composition
 ```
 
 ### Unary Operations

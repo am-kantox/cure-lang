@@ -231,6 +231,7 @@ local state that is not shared between threads.
 %% Include necessary headers
 -include("../parser/cure_ast.hrl").
 -include("cure_codegen.hrl").
+-include("../fsm/cure_fsm_runtime.hrl").
 
 %% Default compilation options
 default_options() ->
@@ -1573,13 +1574,17 @@ compile_fsm_impl(
 
 %% Generate BEAM functions for FSM access
 generate_fsm_functions(FSMName, CompiledFSM, Location) ->
-    [
-        generate_fsm_spawn_function(FSMName, Location),
-        generate_fsm_send_function(FSMName, Location),
-        generate_fsm_state_function(FSMName, Location),
-        generate_fsm_stop_function(FSMName, Location),
-        generate_fsm_definition_function(FSMName, CompiledFSM, Location)
-    ].
+    % generate_fsm_spawn_function returns a list with 2 functions (spawn/0 and spawn/1)
+    % Others return single functions
+    % generate_fsm_definition_function now returns an Erlang abstract form
+    SpawnFunctions = generate_fsm_spawn_function(FSMName, Location),
+    SendFunction = generate_fsm_send_function(FSMName, Location),
+    StateFunction = generate_fsm_state_function(FSMName, Location),
+    StopFunction = generate_fsm_stop_function(FSMName, Location),
+    DefinitionFunction = generate_fsm_definition_function(FSMName, CompiledFSM, Location),
+
+    % Flatten the list and include the Erlang form
+    SpawnFunctions ++ [SendFunction, StateFunction, StopFunction, DefinitionFunction].
 
 %% Generate FSM spawn function: FSMName_spawn/0, FSMName_spawn/1
 generate_fsm_spawn_function(FSMName, Location) ->
@@ -1589,10 +1594,11 @@ generate_fsm_spawn_function(FSMName, Location) ->
     Spawn0 = #{
         name => FunctionName,
         arity => 0,
+        params => [],
         instructions => [
             #beam_instr{op = load_literal, args = [FSMName], location = Location},
             #beam_instr{
-                op = call_bif, args = [cure_fsm_runtime, spawn_fsm, 1], location = Location
+                op = call_bif, args = [cure_fsm_runtime, start_fsm, 1], location = Location
             },
             #beam_instr{op = return, args = [], location = Location}
         ],
@@ -1604,11 +1610,12 @@ generate_fsm_spawn_function(FSMName, Location) ->
     Spawn1 = #{
         name => Spawn1FunctionName,
         arity => 1,
+        params => [init_data],
         instructions => [
             #beam_instr{op = load_literal, args = [FSMName], location = Location},
             #beam_instr{op = load_param, args = [init_data], location = Location},
             #beam_instr{
-                op = call_bif, args = [cure_fsm_runtime, spawn_fsm, 2], location = Location
+                op = call_bif, args = [cure_fsm_runtime, start_fsm, 2], location = Location
             },
             #beam_instr{op = return, args = [], location = Location}
         ],
@@ -1624,6 +1631,7 @@ generate_fsm_send_function(FSMName, Location) ->
     #{
         name => FunctionName,
         arity => 2,
+        params => [fsm_pid, event],
         instructions => [
             #beam_instr{op = load_param, args = [fsm_pid], location = Location},
             #beam_instr{op = load_param, args = [event], location = Location},
@@ -1642,6 +1650,7 @@ generate_fsm_state_function(FSMName, Location) ->
     #{
         name => FunctionName,
         arity => 1,
+        params => [fsm_pid],
         instructions => [
             #beam_instr{op = load_param, args = [fsm_pid], location = Location},
             #beam_instr{
@@ -1659,6 +1668,7 @@ generate_fsm_stop_function(FSMName, Location) ->
     #{
         name => FunctionName,
         arity => 1,
+        params => [fsm_pid],
         instructions => [
             #beam_instr{op = load_param, args = [fsm_pid], location = Location},
             #beam_instr{op = call_bif, args = [cure_fsm_runtime, stop_fsm, 1], location = Location},
@@ -1670,16 +1680,37 @@ generate_fsm_stop_function(FSMName, Location) ->
 %% Generate FSM definition function for runtime registration
 generate_fsm_definition_function(FSMName, CompiledFSM, Location) ->
     FunctionName = list_to_atom(atom_to_list(FSMName) ++ "_definition"),
+    Line = get_location_line(Location),
 
-    #{
-        name => FunctionName,
-        arity => 0,
-        instructions => [
-            #beam_instr{op = load_literal, args = [CompiledFSM], location = Location},
-            #beam_instr{op = return, args = [], location = Location}
-        ],
-        location => Location
-    }.
+    % Extract FSM definition components
+    #fsm_definition{
+        name = Name,
+        states = States,
+        initial_state = InitialState,
+        transitions = Transitions,
+        timeouts = Timeouts
+    } = CompiledFSM,
+
+    % Generate Erlang abstract form directly to avoid literal embedding issues
+    % This constructs the #fsm_definition{} record at runtime
+    RecordConstruction = {
+        record,
+        Line,
+        fsm_definition,
+        [
+            {record_field, Line, {atom, Line, name}, {atom, Line, Name}},
+            {record_field, Line, {atom, Line, states},
+                {cons, Line, {atom, Line, hd(States)}, build_list(tl(States), Line)}},
+            {record_field, Line, {atom, Line, initial_state}, {atom, Line, InitialState}},
+            {record_field, Line, {atom, Line, transitions}, build_map_literal(Transitions, Line)},
+            {record_field, Line, {atom, Line, timeouts}, build_map_literal(Timeouts, Line)}
+        ]
+    },
+
+    % Return as an already-formed Erlang function
+    {function, Line, FunctionName, 0, [
+        {clause, Line, [], [], [RecordConstruction]}
+    ]}.
 
 %% Add FSM exports to module export list
 add_fsm_exports(FSMName, CurrentExports) ->
@@ -1692,6 +1723,55 @@ add_fsm_exports(FSMName, CurrentExports) ->
         {list_to_atom(atom_to_list(FSMName) ++ "_definition"), 0}
     ],
     CurrentExports ++ FSMExports.
+
+%% Helper function to get line number from location
+get_location_line({location, Line, _, _}) -> Line;
+get_location_line(_) -> 1.
+
+%% Helper function to build Erlang abstract form for a list
+build_list([], Line) ->
+    {nil, Line};
+build_list([H | T], Line) when is_atom(H) ->
+    {cons, Line, {atom, Line, H}, build_list(T, Line)};
+build_list([H | T], Line) ->
+    {cons, Line, build_term(H, Line), build_list(T, Line)}.
+
+%% Helper function to build Erlang abstract form for a map
+build_map_literal(Map, Line) when map_size(Map) == 0 ->
+    {map, Line, []};
+build_map_literal(Map, Line) ->
+    Assocs = maps:fold(
+        fun(Key, Value, Acc) ->
+            KeyForm = build_term(Key, Line),
+            ValueForm = build_term(Value, Line),
+            [{map_field_assoc, Line, KeyForm, ValueForm} | Acc]
+        end,
+        [],
+        Map
+    ),
+    {map, Line, lists:reverse(Assocs)}.
+
+%% Helper function to build Erlang abstract form for any term
+build_term(Term, Line) when is_atom(Term) ->
+    {atom, Line, Term};
+build_term(Term, Line) when is_integer(Term) ->
+    {integer, Line, Term};
+build_term(Term, Line) when is_float(Term) ->
+    {float, Line, Term};
+build_term(Term, Line) when is_binary(Term) ->
+    {bin, Line, [{bin_element, Line, {string, Line, binary_to_list(Term)}, default, default}]};
+build_term(Term, Line) when is_list(Term) ->
+    build_list(Term, Line);
+build_term(Term, Line) when is_tuple(Term) ->
+    Elements = [build_term(E, Line) || E <- tuple_to_list(Term)],
+    {tuple, Line, Elements};
+build_term(Term, Line) when is_map(Term) ->
+    build_map_literal(Term, Line);
+build_term(undefined, Line) ->
+    {atom, Line, undefined};
+build_term(_Term, Line) ->
+    % For complex terms we can't easily represent, use undefined
+    {atom, Line, undefined}.
 
 %% ============================================================================
 %% Utility Functions
@@ -2224,7 +2304,13 @@ Generated BEAM files are fully compatible with:
 generate_beam_file(Module, OutputPath) ->
     case convert_to_erlang_forms(Module) of
         {ok, Forms} ->
-            case compile:forms(Forms, [binary, return_errors]) of
+            % The on_load attribute must be preserved - ensure it's not optimized out
+            case compile:forms(Forms, [binary, return_errors, return_warnings, no_auto_import]) of
+                {ok, ModuleName, Binary, _Warnings} ->
+                    case file:write_file(OutputPath, Binary) of
+                        ok -> {ok, {ModuleName, OutputPath}};
+                        {error, Reason} -> {error, {write_failed, Reason}}
+                    end;
                 {ok, ModuleName, Binary} ->
                     case file:write_file(OutputPath, Binary) of
                         ok -> {ok, {ModuleName, OutputPath}};
@@ -2302,30 +2388,68 @@ convert_to_erlang_forms(Module) ->
         cure_utils:debug("RawExports: ~p~n", [RawExports]),
         cure_utils:debug("AllFunctionExports: ~p~n", [AllFunctionExports]),
 
+        % Extract exports from FSM functions (they are always public)
+        FSMFunctionExports = lists:flatten([
+            extract_function_exports(maps:get(functions, FSM, []))
+         || FSM <- FSMDefinitions
+        ]),
+        cure_utils:debug("FSMFunctionExports: ~p~n", [FSMFunctionExports]),
+
         Exports =
             case RawExports of
                 [] ->
-                    % No explicit exports - export only public functions
-                    AllFunctionExports;
+                    % No explicit exports - export all functions including FSM functions
+                    AllFunctionExports ++ FSMFunctionExports;
                 _ ->
-                    % Use explicit exports for external visibility only
-                    RawExports
+                    % Use explicit exports but always add FSM functions
+                    RawExports ++ FSMFunctionExports
+            end,
+
+        % Add register_fsms to exports if FSMs are present (required for on_load)
+        ExportsWithRegistration =
+            case FSMDefinitions of
+                [] -> Exports;
+                _ -> Exports ++ [{register_fsms, 0}]
             end,
 
         % Add module and export attributes
         BaseAttributes = [
             {attribute, 1, module, ModuleName},
-            {attribute, 2, export, Exports}
+            {attribute, 2, export, ExportsWithRegistration}
         ],
 
+        % Add compile attributes (include FSM header if FSMs present)
+        CompileAttrs =
+            case FSMDefinitions of
+                [] ->
+                    [];
+                _ ->
+                    [
+                        {attribute, 3, file, {"cure_fsm_runtime.hrl", 1}},
+                        {attribute, 3, record,
+                            {fsm_definition, [
+                                {record_field, 3, {atom, 3, name}},
+                                {record_field, 3, {atom, 3, states}},
+                                {record_field, 3, {atom, 3, initial_state}},
+                                {record_field, 3, {atom, 3, transitions}},
+                                {record_field, 3, {atom, 3, timeouts}}
+                            ]}}
+                    ]
+            end,
+
         % Add custom attributes (including FSM types)
-        AttributeForms = convert_attributes_to_forms(Attributes, 3),
+        AttributeForms = convert_attributes_to_forms(Attributes, 3 + length(CompileAttrs)),
 
         % Add on_load hook for FSM registration if FSMs present
         LoadHook =
             case FSMDefinitions of
-                [] -> [];
-                _ -> [{attribute, 3 + length(AttributeForms), on_load, {register_fsms, 0}}]
+                [] ->
+                    [];
+                _ ->
+                    [
+                        {attribute, 3 + length(CompileAttrs) + length(AttributeForms), on_load,
+                            {register_fsms, 0}}
+                    ]
             end,
 
         % Set current module name for function reference generation
@@ -2333,7 +2457,9 @@ convert_to_erlang_forms(Module) ->
 
         % Convert functions to forms
         FunctionForms = convert_functions_to_forms(
-            Functions, 4 + length(AttributeForms) + length(LoadHook), ModuleName
+            Functions,
+            4 + length(CompileAttrs) + length(AttributeForms) + length(LoadHook),
+            ModuleName
         ),
 
         % Add FSM registration function if needed
@@ -2345,12 +2471,15 @@ convert_to_erlang_forms(Module) ->
                     [
                         generate_fsm_registration_function(
                             FSMDefinitions,
-                            4 + length(AttributeForms) + length(LoadHook) + length(FunctionForms)
+                            4 + length(CompileAttrs) + length(AttributeForms) + length(LoadHook) +
+                                length(FunctionForms)
                         )
                     ]
             end,
 
-        Forms = BaseAttributes ++ AttributeForms ++ LoadHook ++ FunctionForms ++ FSMRegisterFunc,
+        Forms =
+            BaseAttributes ++ CompileAttrs ++ AttributeForms ++ LoadHook ++ FunctionForms ++
+                FSMRegisterFunc,
 
         % Debug: Show a sample of the generated forms
         cure_utils:debug("Generated ~p forms total~n", [length(Forms)]),

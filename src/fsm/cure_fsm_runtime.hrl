@@ -24,7 +24,8 @@
     fsm_type :: atom(),
     current_state :: atom(),
     event_data :: term(),
-    data :: term(),
+    data :: term(),              % State-specific data
+    payload :: term(),           % Transition payload (can be modified by actions)
     timeout_ref :: reference() | undefined,
     transitions :: term(),
     timeouts :: term(),
