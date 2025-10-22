@@ -543,7 +543,10 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
     case check_items(Items, FunctionEnv, new_result()) of
         Result = #typecheck_result{success = true} ->
             % Verify exported functions exist and have correct arities
+            io:format("[DEBUG MODULE] Body checking succeeded, now checking exports~n"),
             ExportSpecs = extract_export_specs(Exports, Items),
+            io:format("[DEBUG MODULE] Export specs: ~p~n", [ExportSpecs]),
+            io:format("[DEBUG MODULE] Items: ~p~n", [[element(1, I) || I <- Items]]),
             case check_exports_new(ExportSpecs, Items) of
                 ok ->
                     {ok, cure_types:extend_env(Env, Name, {module_type, Name}), Result};
@@ -760,8 +763,9 @@ check_erlang_function_new(
                 % This should never happen as parser enforces return type for def_erl
                 throw({missing_return_type_for_def_erl, Location});
             _ ->
-                ExpectedReturnType = convert_type_to_tuple(ReturnType),
-                FuncType = {erlang_function_type, ParamTypes, ExpectedReturnType, ErlangBody},
+                ExpectedReturnType = convert_type_with_env(ReturnType, ParamEnv),
+                % Use regular function_type for def_erl functions - the Erlang body is handled during codegen
+                FuncType = {function_type, ParamTypes, ExpectedReturnType},
                 NewEnv = cure_types:extend_env(Env, Name, FuncType),
                 {ok, NewEnv, success_result(FuncType)}
         end
@@ -1053,6 +1057,24 @@ extract_functions_from_items_helper([Item | Rest], ModuleName, Acc) ->
                 true ->
                     extract_functions_from_items_helper(Rest, ModuleName, Acc)
             end;
+        % Handle erlang function definitions (record format)
+        ErlangFuncDef when is_record(ErlangFuncDef, erlang_function_def) ->
+            FunctionName = ErlangFuncDef#erlang_function_def.name,
+            Params = ErlangFuncDef#erlang_function_def.params,
+            ReturnType = ErlangFuncDef#erlang_function_def.return_type,
+            % Erlang functions are always public
+            FunctionType = create_function_type_from_signature_records(Params, ReturnType),
+            Key = {ModuleName, FunctionName, length(Params)},
+            NewAcc = maps:put(Key, FunctionType, Acc),
+            extract_functions_from_items_helper(Rest, ModuleName, NewAcc);
+        % Handle erlang function definitions (tuple format)
+        {erlang_function_def, FunctionName, Params, ReturnType, _Constraint, _ErlangBody,
+            _Location} ->
+            % Convert tuple-format params to records for processing
+            FunctionType = create_function_type_from_signature(Params, ReturnType),
+            Key = {ModuleName, FunctionName, length(Params)},
+            NewAcc = maps:put(Key, FunctionType, Acc),
+            extract_functions_from_items_helper(Rest, ModuleName, NewAcc);
         _ ->
             extract_functions_from_items_helper(Rest, ModuleName, Acc)
     end.
@@ -1310,6 +1332,30 @@ check_exports([#export_spec{name = Name, arity = Arity} | RestExports], Items) -
 
 find_function(Name, [#function_def{name = Name} = Function | _]) ->
     {ok, Function};
+find_function(Name, [#erlang_function_def{name = Name, params = Params} | _]) ->
+    % Treat erlang_function_def like function_def for export checking
+    {ok, #function_def{
+        name = Name,
+        params = Params,
+        return_type = undefined,
+        constraint = undefined,
+        body = undefined,
+        is_private = false,
+        location = undefined
+    }};
+find_function(Name, [
+    {erlang_function_def, Name, Params, _ReturnType, _Constraint, _ErlangBody, _Location} | _
+]) ->
+    % Handle tuple-format erlang_function_def
+    {ok, #function_def{
+        name = Name,
+        params = Params,
+        return_type = undefined,
+        constraint = undefined,
+        body = undefined,
+        is_private = false,
+        location = undefined
+    }};
 find_function(Name, [_ | RestItems]) ->
     find_function(Name, RestItems);
 find_function(_Name, []) ->
@@ -1592,6 +1638,7 @@ collect_function_signatures(Items, Env) ->
 collect_function_signatures_helper([], Env) ->
     Env;
 collect_function_signatures_helper([Item | Rest], Env) ->
+    io:format("[DEBUG COLLECT_SIG] Processing item: ~p~n", [element(1, Item)]),
     NewEnv =
         case Item of
             #function_def{
@@ -1624,6 +1671,64 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                         io:format("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
                         Env
                 end;
+            #erlang_function_def{
+                name = Name,
+                params = Params,
+                return_type = ReturnType
+            } ->
+                % Create function type from def_erl signature (record format)
+                io:format(
+                    "[DEBUG RECORD ERLANG] Processing erlang function ~p in record format~n", [Name]
+                ),
+                try
+                    {ParamTypes, EnvWithParams} = process_parameters_new(Params, Env),
+                    % For def_erl, return type MUST be specified
+                    FinalReturnType = convert_type_with_env(ReturnType, EnvWithParams),
+                    FuncType = {function_type, ParamTypes, FinalReturnType},
+                    cure_utils:debug(
+                        "[SIG] Successfully pre-processed erlang function ~p with type ~p~n", [
+                            Name, FuncType
+                        ]
+                    ),
+                    cure_types:extend_env(Env, Name, FuncType)
+                catch
+                    Class:Error:Stacktrace ->
+                        io:format(
+                            "ERROR SIG: Failed to pre-process erlang function ~p signature~n", [
+                                Name
+                            ]
+                        ),
+                        io:format("ERROR SIG: Class: ~p, Error: ~p~n", [Class, Error]),
+                        io:format("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
+                        Env
+                end;
+            {erlang_function_def, Name, Params, ReturnType, _Constraint, _ErlangBody, _Location} ->
+                % Create function type from def_erl signature (tuple format)
+                io:format("[DEBUG TUPLE ERLANG] Processing erlang function ~p in tuple format~n", [
+                    Name
+                ]),
+                try
+                    {ParamTypes, EnvWithParams} = process_parameters_new(Params, Env),
+                    % For def_erl, return type MUST be specified
+                    FinalReturnType = convert_type_with_env(ReturnType, EnvWithParams),
+                    FuncType = {function_type, ParamTypes, FinalReturnType},
+                    io:format(
+                        "[DEBUG TUPLE ERLANG] Successfully added ~p with type ~p to environment~n",
+                        [
+                            Name, FuncType
+                        ]
+                    ),
+                    cure_types:extend_env(Env, Name, FuncType)
+                catch
+                    Class:Error:Stacktrace ->
+                        io:format(
+                            "ERROR SIG: Failed to pre-process erlang function ~p signature (tuple)~n",
+                            [Name]
+                        ),
+                        io:format("ERROR SIG: Class: ~p, Error: ~p~n", [Class, Error]),
+                        io:format("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
+                        Env
+                end;
             #type_def{name = _Name} ->
                 % Add type definitions to environment as well
                 try
@@ -1639,6 +1744,7 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                 end;
             _ ->
                 % Non-function items don't need pre-processing
+                io:format("[DEBUG COLLECT_SIG] Unmatched item type: ~p~n", [Item]),
                 Env
         end,
     collect_function_signatures_helper(Rest, NewEnv).
@@ -2057,14 +2163,32 @@ find_function_new(
 find_function_new(
     Name,
     [
-        {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}
+        #erlang_function_def{
+            name = Name,
+            params = Params,
+            return_type = ReturnType,
+            constraint = Constraint,
+            erlang_body = ErlangBody,
+            location = Location
+        }
         | _
     ]
 ) ->
     {ok, {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}};
-find_function_new(Name, [_ | RestItems]) ->
+find_function_new(
+    Name,
+    [
+        {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}
+        | _
+    ]
+) ->
+    % Fallback for old tuple-based format
+    {ok, {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}};
+find_function_new(Name, [Item | RestItems]) ->
+    io:format("[DEBUG FIND] Looking for ~p, checking item ~p~n", [Name, element(1, Item)]),
     find_function_new(Name, RestItems);
-find_function_new(_Name, []) ->
+find_function_new(Name, []) ->
+    io:format("[DEBUG FIND] Function ~p not found!~n", [Name]),
     not_found.
 
 process_parameters_new(Params, Env) ->
@@ -2072,7 +2196,12 @@ process_parameters_new(Params, Env) ->
     cure_utils:debug("Extracting type parameters from all params: ~p~n", [Params]),
     EnvWithAllTypeParams =
         lists:foldl(
-            fun({param, _Name, TypeExpr, _Location}, AccEnv) ->
+            fun(Param, AccEnv) ->
+                TypeExpr =
+                    case Param of
+                        #param{type = T} -> T;
+                        {param, _Name, T, _Location} -> T
+                    end,
                 extract_and_add_type_params_safe(TypeExpr, AccEnv)
             end,
             Env,
@@ -2086,11 +2215,17 @@ process_parameters_new(Params, Env) ->
 process_parameters_new([], _OrigEnv, TypesAcc, EnvAcc) ->
     {lists:reverse(TypesAcc), EnvAcc};
 process_parameters_new(
-    [{param, Name, TypeExpr, _Location} | RestParams],
+    [Param | RestParams],
     OrigEnv,
     TypesAcc,
     EnvAcc
 ) ->
+    % Handle both record and tuple format
+    {Name, TypeExpr} =
+        case Param of
+            #param{name = N, type = T} -> {N, T};
+            {param, N, T, _Location} -> {N, T}
+        end,
     % Convert the type expression using the environment with all type parameters
     cure_utils:debug("[PARAM] Processing parameter ~p with type ~p~n", [Name, TypeExpr]),
     ParamType = convert_type_with_env(TypeExpr, EnvAcc),

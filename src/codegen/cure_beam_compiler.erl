@@ -981,9 +981,6 @@ is_local_function_reference(Name, Context) ->
 %% Most functions are now implemented in Cure standard library and should return false
 %% Only keep core runtime functions that haven't been migrated yet
 
-% Basic I/O still in runtime
-is_cure_std_function(print) -> true;
-is_cure_std_function(println) -> true;
 % Basic type conversions
 is_cure_std_function(int_to_string) -> true;
 is_cure_std_function(float_to_string) -> true;
@@ -1097,7 +1094,9 @@ is_cure_stdlib_function(safe_divide) -> {true, 'Std.Math'};
 is_cure_stdlib_function(safe_sqrt) -> {true, 'Std.Math'};
 % Show functions
 is_cure_stdlib_function(show) -> {true, 'Std.Show'};
-is_cure_stdlib_function(print) -> {true, 'Std.Show'};
+% IO functions
+is_cure_stdlib_function(print) -> {true, 'Std.Io'};
+is_cure_stdlib_function(println) -> {true, 'Std.Io'};
 % String functions
 is_cure_stdlib_function(string_concat) -> {true, 'Std.String'};
 is_cure_stdlib_function(string_length) -> {true, 'Std.String'};
@@ -1436,9 +1435,107 @@ validate_erlang_forms(Forms) ->
 % parse_erlang_body(ErlangBody, StartLine) ->
 %     parse_erlang_body(ErlangBody, StartLine, #{}).
 
-parse_erlang_body(_ErlangBody, StartLine, _ParamMapping) ->
-    % Simple stub implementation - return a basic ok atom as the function body
-    {ok, [{atom, StartLine, ok}]}.
+parse_erlang_body(ErlangBody, StartLine, ParamMapping) ->
+    % Parse the raw Erlang body string to Erlang abstract forms
+    % The ErlangBody comes from the parser as a string of valid Erlang code
+    try
+        % Trim and normalize the Erlang code
+        TrimmedBody = string:trim(ErlangBody),
+
+        % Add a dot at the end if not present (required for erl_scan)
+        CodeToParse =
+            case lists:last(TrimmedBody) of
+                $. -> TrimmedBody;
+                _ -> TrimmedBody ++ "."
+            end,
+
+        % Tokenize the Erlang code
+        case erl_scan:string(CodeToParse, StartLine) of
+            {ok, Tokens, _} ->
+                % Parse the tokens into abstract forms
+                case erl_parse:parse_exprs(Tokens) of
+                    {ok, Exprs} ->
+                        % Replace uppercase parameter names with actual parameter names
+                        MappedExprs = map_params_in_exprs(Exprs, ParamMapping),
+                        {ok, MappedExprs};
+                    {error, {_, erl_parse, Reason}} ->
+                        io:format("Erlang parse error: ~p~nCode: ~s~n", [Reason, CodeToParse]),
+                        {error, {parse_error, Reason}}
+                end;
+            {error, {_, erl_scan, Reason}, _} ->
+                io:format("Erlang scan error: ~p~nCode: ~s~n", [Reason, CodeToParse]),
+                {error, {scan_error, Reason}}
+        end
+    catch
+        error:CatchReason:Stack ->
+            io:format("Erlang body parsing exception: ~p~n~p~n", [CatchReason, Stack]),
+            {error, {exception, CatchReason}}
+    end.
+
+%% Map parameter names in parsed Erlang expressions
+%% Replaces uppercase parameter references (like S) with actual param names (like s)
+map_params_in_exprs(Exprs, ParamMapping) ->
+    [map_params_in_expr(Expr, ParamMapping) || Expr <- Exprs].
+
+map_params_in_expr({var, Line, VarName}, ParamMapping) ->
+    % Check if this variable should be mapped to a parameter
+    case maps:get(VarName, ParamMapping, undefined) of
+        undefined -> {var, Line, VarName};
+        MappedName -> {var, Line, MappedName}
+    end;
+map_params_in_expr({call, Line, Func, Args}, ParamMapping) ->
+    % Recursively map parameters in function calls
+    MappedFunc = map_params_in_expr(Func, ParamMapping),
+    MappedArgs = [map_params_in_expr(Arg, ParamMapping) || Arg <- Args],
+    {call, Line, MappedFunc, MappedArgs};
+map_params_in_expr({remote, Line, Module, Function}, ParamMapping) ->
+    % Remote calls like io:format
+    MappedModule = map_params_in_expr(Module, ParamMapping),
+    MappedFunction = map_params_in_expr(Function, ParamMapping),
+    {remote, Line, MappedModule, MappedFunction};
+map_params_in_expr({cons, Line, Head, Tail}, ParamMapping) ->
+    % List constructor [H|T]
+    MappedHead = map_params_in_expr(Head, ParamMapping),
+    MappedTail = map_params_in_expr(Tail, ParamMapping),
+    {cons, Line, MappedHead, MappedTail};
+map_params_in_expr({tuple, Line, Elements}, ParamMapping) ->
+    % Tuple constructor {A, B, C}
+    MappedElements = [map_params_in_expr(E, ParamMapping) || E <- Elements],
+    {tuple, Line, MappedElements};
+map_params_in_expr({op, Line, Op, Left, Right}, ParamMapping) ->
+    % Binary operators
+    MappedLeft = map_params_in_expr(Left, ParamMapping),
+    MappedRight = map_params_in_expr(Right, ParamMapping),
+    {op, Line, Op, MappedLeft, MappedRight};
+map_params_in_expr({op, Line, Op, Operand}, ParamMapping) ->
+    % Unary operators
+    MappedOperand = map_params_in_expr(Operand, ParamMapping),
+    {op, Line, Op, MappedOperand};
+map_params_in_expr({match, Line, Pattern, Expr}, ParamMapping) ->
+    % Pattern matching
+    MappedPattern = map_params_in_expr(Pattern, ParamMapping),
+    MappedExpr = map_params_in_expr(Expr, ParamMapping),
+    {match, Line, MappedPattern, MappedExpr};
+map_params_in_expr({block, Line, Exprs}, ParamMapping) ->
+    % begin ... end blocks
+    MappedExprs = [map_params_in_expr(E, ParamMapping) || E <- Exprs],
+    {block, Line, MappedExprs};
+map_params_in_expr(Expr, _ParamMapping) when is_atom(Expr); is_number(Expr); is_binary(Expr) ->
+    % Literals - no mapping needed
+    Expr;
+map_params_in_expr({atom, _, _} = Atom, _ParamMapping) ->
+    Atom;
+map_params_in_expr({integer, _, _} = Int, _ParamMapping) ->
+    Int;
+map_params_in_expr({float, _, _} = Float, _ParamMapping) ->
+    Float;
+map_params_in_expr({string, _, _} = String, _ParamMapping) ->
+    String;
+map_params_in_expr({nil, _} = Nil, _ParamMapping) ->
+    Nil;
+map_params_in_expr(Expr, _ParamMapping) ->
+    % For any unhandled expression types, return as-is
+    Expr.
 
 %% Parse simple Erlang expressions
 %% This is a simplified parser for common Erlang patterns

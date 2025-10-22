@@ -4,14 +4,12 @@ module Std.Io do
     debug/1, error/1
   ]
 
-  # Basic output operations
-  def print(s: String): Int =
-    # Print string without newline - would be primitive operation
-    0  # Simplified return
+  # Basic output operations - Erlang FFI
+  def_erl print(s: String): Int =
+    io:format("~ts", [S]), ok.
 
-  def println(s: String): Int =
-    # Print string with newline - would be primitive operation
-    0  # Simplified return
+  def_erl println(s: String): Int =
+    io:format("~ts~n", [S]), ok.
 
   # Debug and error output
   def debug(s: String): Int =

@@ -3461,7 +3461,35 @@ parse_erlang_tokens(State, Acc) ->
 
 %% Convert collected tokens back to a string representation
 tokens_to_string(Tokens) ->
-    string:join([token_to_string(Token) || Token <- Tokens], " ").
+    % The lexer treats `:` followed by an identifier as an atom literal
+    % So when we see `identifier` `atom` sequence, we need to insert `:` between them
+    % for proper Erlang module:function syntax
+    reconstruct_erlang_tokens(Tokens, []).
+
+%% Reconstruct Erlang code from tokens, handling special cases
+reconstruct_erlang_tokens([], Acc) ->
+    string:join(lists:reverse(Acc), " ");
+reconstruct_erlang_tokens([Token], Acc) ->
+    TokenStr = token_to_string(Token),
+    string:join(lists:reverse([TokenStr | Acc]), " ");
+reconstruct_erlang_tokens([Token1, Token2 | Rest], Acc) ->
+    Type1 = get_token_type(Token1),
+    Type2 = get_token_type(Token2),
+    Str1 = token_to_string(Token1),
+    Str2 = token_to_string(Token2),
+
+    % Check if we need to insert a colon between identifier and atom
+    % This handles cases like io:format where lexer consumed the colon
+    case {Type1, Type2} of
+        {identifier, atom} ->
+            % This is likely a module:function call - reconstruct with colon
+            % Combine them as "module:function" and continue
+            Combined = Str1 ++ ":" ++ Str2,
+            reconstruct_erlang_tokens(Rest, [Combined | Acc]);
+        _ ->
+            % Normal case - add current token and continue
+            reconstruct_erlang_tokens([Token2 | Rest], [Str1 | Acc])
+    end.
 
 %% Convert a single token to its string representation
 token_to_string(Token) ->
@@ -3469,7 +3497,21 @@ token_to_string(Token) ->
         identifier ->
             binary_to_list(get_token_value(Token));
         string ->
-            "\"" ++ get_token_value(Token) ++ "\"";
+            % For string literals in Erlang code, get value which should already have quotes
+            Value = get_token_value(Token),
+            % If value is binary, convert to list
+            ValueStr =
+                if
+                    is_binary(Value) -> binary_to_list(Value);
+                    is_list(Value) -> Value;
+                    true -> io_lib:format("~p", [Value])
+                end,
+            % Ensure quotes are present
+            case ValueStr of
+                % Already has quotes
+                [$" | _] -> ValueStr;
+                _ -> "\"" ++ ValueStr ++ "\""
+            end;
         number ->
             Value = get_token_value(Token),
             if
@@ -3478,8 +3520,32 @@ token_to_string(Token) ->
             end;
         atom ->
             atom_to_list(get_token_value(Token));
+        % Handle specific punctuation tokens
+        ':' ->
+            ":";
+        ',' ->
+            ",";
+        '(' ->
+            "(";
+        ')' ->
+            ")";
+        '[' ->
+            "[";
+        ']' ->
+            "]";
+        '{' ->
+            "{";
+        '}' ->
+            "}";
         _ ->
-            atom_to_list(get_token_value(Token))
+            % For other tokens, try to convert value to string
+            Value = get_token_value(Token),
+            if
+                is_atom(Value) -> atom_to_list(Value);
+                is_binary(Value) -> binary_to_list(Value);
+                is_list(Value) -> Value;
+                true -> io_lib:format("~p", [Value])
+            end
     end.
 
 %% Parse string interpolation
