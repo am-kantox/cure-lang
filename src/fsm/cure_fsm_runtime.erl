@@ -1482,7 +1482,8 @@ extract_event(_) -> unknown_event.
 compile_guard(undefined) ->
     undefined;
 compile_guard(Guard) when is_function(Guard) ->
-    Guard;  % Pass through functions unchanged
+    % Pass through functions unchanged
+    Guard;
 compile_guard(Guard) ->
     case cure_guard_compiler:compile_guard(Guard, #{}) of
         {ok, Instructions, _} -> {compiled_guard, Instructions};
@@ -1493,7 +1494,8 @@ compile_guard(Guard) ->
 compile_action(undefined) ->
     undefined;
 compile_action(Action) when is_function(Action) ->
-    Action;  % Pass through functions unchanged
+    % Pass through functions unchanged
+    Action;
 compile_action(Action) ->
     case cure_action_compiler:compile_action(Action, #{}) of
         {ok, Instructions, _} -> {compiled_action, Instructions};

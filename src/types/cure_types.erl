@@ -1073,14 +1073,13 @@ unify_lengths(Len1, Len2, Subst) when Len1 =/= undefined, Len2 =/= undefined ->
                     % Same evaluated length
                     {ok, Subst};
                 {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
-                    % Different evaluated lengths - for now, allow this to succeed
-                    % This makes the type system more permissive for functions like concat
+                    % Different evaluated lengths - this should fail for dependent types
                     cure_utils:debug(
-                        "Allowing different lengths: ~p vs ~p (more permissive mode)~n", [
+                        "Length mismatch detected: ~p vs ~p~n", [
                             N1, N2
                         ]
                     ),
-                    {ok, Subst};
+                    {error, {length_mismatch, N1, N2}};
                 _ ->
                     % Fall back to structural comparison - also be permissive
                     {ok, Subst}

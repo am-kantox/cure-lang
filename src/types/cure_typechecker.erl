@@ -1074,14 +1074,43 @@ convert_param_type_to_tuple({param, _Name, TypeExpr, _Location}) ->
     convert_type_to_tuple(TypeExpr).
 
 %% Create function type from record format parameters and return type
+%% Uses two-pass approach to preserve type variable sharing across parameters
 create_function_type_from_signature_records(Params, ReturnType) ->
-    ParamTypes = [convert_param_record_to_tuple(P) || P <- Params],
+    % First pass: collect all type parameters from all parameters and return type
+    % This ensures that the same type variable name (like 'n') gets the same type variable instance
+    EmptyEnv = cure_types:new_env(),
+    EnvWithTypeParams = lists:foldl(
+        fun(Param, AccEnv) when is_record(Param, param) ->
+            ParamType = Param#param.type,
+            extract_and_add_type_params_safe(ParamType, AccEnv)
+        end,
+        EmptyEnv,
+        Params
+    ),
+
+    % Also extract type parameters from return type
+    EnvWithAllTypeParams =
+        case ReturnType of
+            undefined -> EnvWithTypeParams;
+            _ -> extract_and_add_type_params_safe(ReturnType, EnvWithTypeParams)
+        end,
+
+    % Second pass: convert parameters using the shared environment
+    ParamTypes = [
+        begin
+            ParamType = P#param.type,
+            convert_type_with_env(ParamType, EnvWithAllTypeParams)
+        end
+     || P <- Params
+    ],
+
     case ReturnType of
         undefined ->
             % No return type specified, use type variable
             {function_type, ParamTypes, cure_types:new_type_var()};
         _ ->
-            ReturnTuple = convert_type_to_tuple(ReturnType),
+            % Convert return type using the shared environment
+            ReturnTuple = convert_type_with_env(ReturnType, EnvWithAllTypeParams),
             {function_type, ParamTypes, ReturnTuple}
     end.
 

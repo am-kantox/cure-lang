@@ -1,4 +1,4 @@
-module VectorTest do
+module VectorLengthTest do
   export [main/0]
   
   import Std.Vector [length/1]

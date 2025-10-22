@@ -1,0 +1,32 @@
+module VectorZipWithTest do
+  export [main/0, add/1, multiply/1, max/1]
+  
+  import Std.Vector [zip_with/3]
+  
+  # Helper functions for testing
+  def add(x: Int): Int -> Int =
+    fn(y) -> x + y end
+
+  def multiply(x: Int): Int -> Int =
+    fn(y) -> x * y end
+
+  # def max(a: Int, b: Int): Int = 
+  def max(a: Int): Int -> Int = 
+    fn(b) -> if a > b then a else b end end
+  
+  def main(): Vector(Int, 5) =
+    let v1 = [1, 2, 3, 4, 5]
+    let v2 = [100, 101, 102, 103, 104]
+    
+    # Test zip_with with addition
+    let sum_vec = zip_with(v1, v2, add)
+    
+    # Test zip_with with multiplication
+    let prod_vec = zip_with(v1, v2, multiply)
+    
+    # Test zip_with with max function
+    let max_vec = zip_with(v1, v2, max)
+    
+    prod_vec
+
+end
