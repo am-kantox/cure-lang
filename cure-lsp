@@ -1,0 +1,72 @@
+#!/usr/bin/env escript
+%% -*- erlang -*-
+%%! -noinput
+
+-mode(compile).
+
+main([]) ->
+  main(["start"]);
+main(["start"]) ->
+  io:format(standard_error, "Starting Cure Language Server...~n", []),
+
+  % Get script directory
+  ScriptPath = escript:script_name(),
+  ScriptDir = filename:dirname(ScriptPath),
+
+  % Add code paths
+  Paths = [
+    filename:join(ScriptDir, "_build/ebin"),
+    filename:join(ScriptDir, "_build/lsp"),
+    filename:join(ScriptDir, "_build/lib"),
+    filename:join(ScriptDir, "_build/lib/std"),
+    filename:join(ScriptDir, "_build/default/lib/jsx/ebin")
+  ],
+  lists:foreach(fun code:add_pathz/1, Paths),
+
+  % Check if jsx is available (needed for JSON encoding/decoding)
+  case code:which(jsx) of
+    non_existing ->
+      io:format(standard_error, "Error: jsx library not found. Please install jsx:~n", []),
+      io:format(standard_error, "  1. Add jsx to rebar.config dependencies~n", []),
+      io:format(standard_error, "  2. Or install via: rebar3 get-deps~n", []),
+      io:format(standard_error, "Paths searched: ~p~n", [Paths]),
+      halt(1);
+    _ ->
+      ok
+  end,
+
+  % Start the LSP server
+  case cure_lsp:start() of
+    {ok, Pid} ->
+      io:format(standard_error, "Cure LSP server started (PID: ~p)~n", [Pid]),
+
+      % Keep process alive
+      read_loop();
+    {error, Reason} ->
+      io:format(standard_error, "Failed to start LSP server: ~p~n", [Reason]),
+      halt(1)
+  end;
+main(["--version"]) ->
+  io:format("Cure Language Server version 0.1.0~n", []),
+  halt(0);
+main(["--help"]) ->
+  io:format("Cure Language Server Protocol Implementation~n", []),
+  io:format("~n", []),
+  io:format("Usage:~n", []),
+  io:format("  cure-lsp [start]     Start the LSP server (default)~n", []),
+  io:format("  cure-lsp --version   Show version information~n", []),
+  io:format("  cure-lsp --help      Show this help message~n", []),
+  io:format("~n", []),
+  io:format("The server communicates via stdin/stdout using the Language "
+            "Server Protocol.~n",
+            []),
+  halt(0);
+main(_) ->
+  io:format(standard_error, "Unknown command. Use --help for usage information.~n", []),
+  halt(1).
+
+read_loop() ->
+  % Use erlang:halt to keep process alive
+  receive
+    stop -> halt(0)
+  end.

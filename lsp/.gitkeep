@@ -1,0 +1,4 @@
+# This directory contains the Cure Language Server Protocol implementation
+# 
+# Build artifacts are stored in ../_build/lsp/
+# Make sure to add _build/ to your .gitignore if not already present

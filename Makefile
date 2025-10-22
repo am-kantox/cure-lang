@@ -8,9 +8,11 @@ MIX = mix
 SRC_DIR = src
 LIB_DIR = lib
 TEST_DIR = test
+LSP_DIR = lsp
 BUILD_DIR = _build
 EBIN_DIR = $(BUILD_DIR)/ebin
 LIB_EBIN_DIR = $(BUILD_DIR)/lib
+LSP_EBIN_DIR = $(BUILD_DIR)/lsp
 
 # Source files
 UTILS_SRC = $(SRC_DIR)/cure_utils.erl
@@ -21,6 +23,7 @@ CODEGEN_SRC = $(wildcard $(SRC_DIR)/codegen/*.erl)
 FSM_SRC = $(wildcard $(SRC_DIR)/fsm/*.erl)
 RUNTIME_SRC = $(wildcard $(SRC_DIR)/runtime/*.erl)
 CLI_SRC = $(SRC_DIR)/cure_cli.erl
+LSP_SRC = $(wildcard $(LSP_DIR)/*.erl)
 
 # Cure standard library files
 CURE_STD_SRC = $(wildcard $(LIB_DIR)/*.cure $(LIB_DIR)/std/*.cure)
@@ -37,11 +40,12 @@ ALL_SRC = $(UTILS_SRC) $(LEXER_SRC) $(PARSER_SRC) $(TYPES_SRC) $(CODEGEN_SRC) $(
 BEAM_FILES = $(patsubst $(SRC_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(ALL_SRC))
 TEST_BEAM_FILES = $(patsubst $(TEST_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(TEST_SRC))
 CURE_STD_BEAM_FILES = $(patsubst $(LIB_DIR)/%.cure,$(LIB_EBIN_DIR)/%.beam,$(CURE_STD_SRC))
+LSP_BEAM_FILES = $(patsubst $(LSP_DIR)/%.erl,$(LSP_EBIN_DIR)/%.beam,$(LSP_SRC))
 
 # Compiler options
 ERLC_OPTS = +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(EBIN_DIR)
 
-.PHONY: all clean test test-basic test-integration test-performance docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check
+.PHONY: all clean test test-basic test-integration test-performance docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-shell
 
 all: setup compiler stdlib
 
@@ -56,6 +60,7 @@ setup:
 	@mkdir -p $(EBIN_DIR)/runtime
 	@mkdir -p $(LIB_EBIN_DIR)
 	@mkdir -p $(LIB_EBIN_DIR)/std
+	@mkdir -p $(LSP_EBIN_DIR)
 
 compiler: $(BEAM_FILES)
 	@echo "Cure compiler built successfully"
@@ -120,6 +125,12 @@ $(EBIN_DIR)/%.beam: $(TEST_DIR)/%.erl
 	@echo "Compiling test $<..."
 	$(ERLC) $(ERLC_OPTS) $<
 
+# Pattern rule for compiling LSP files
+$(LSP_EBIN_DIR)/%.beam: $(LSP_DIR)/%.erl
+	@echo "Compiling LSP $<..."
+	@mkdir -p $(@D)
+	$(ERLC) +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(LSP_EBIN_DIR) $<
+
 # Pattern rule for compiling Cure standard library files
 $(LIB_EBIN_DIR)/%.beam: $(LIB_DIR)/%.cure
 	@echo "Compiling Cure stdlib $<..."
@@ -172,9 +183,17 @@ install: compiler
 	@echo "Installing Cure compiler..."
 	# TODO: Add installation logic
 
+# Build LSP server
+lsp: compiler $(LSP_BEAM_FILES)
+	@echo "Cure LSP server built successfully"
+
 # Development shell
 shell: compiler
 	$(ERL) -pa $(EBIN_DIR) -pa $(LIB_EBIN_DIR) -pa $(LIB_EBIN_DIR)/std
+
+# LSP development shell
+lsp-shell: compiler lsp
+	$(ERL) -pa $(EBIN_DIR) -pa $(LSP_EBIN_DIR) -pa $(LIB_EBIN_DIR) -pa $(LIB_EBIN_DIR)/std
 
 # Lint code
 lint:
@@ -211,6 +230,7 @@ help:
 	@echo "Available targets:"
 	@echo "  all        - Build the complete compiler (default)"
 	@echo "  compiler   - Build compiler components"
+	@echo "  lsp        - Build LSP server for IDE integration"
 	@echo "  stdlib     - Compile Cure standard library"
 	@echo "  stdlib-clean - Clean standard library build artifacts"
 	@echo "  stdlib-check - Check if standard library is compiled"
@@ -224,6 +244,7 @@ help:
 	@echo "  docs       - Generate documentation"
 	@echo "  install    - Install the compiler"
 	@echo "  shell      - Start Erlang shell with Cure modules loaded"
+	@echo "  lsp-shell  - Start Erlang shell with LSP modules loaded"
 	@echo "  lint       - Run static analysis"
 	@echo "  format     - Format source code"
 	@echo "  compile-file - Compile a single .cure file (Usage: make compile-file CURE_FILE=file.cure)"
