@@ -306,18 +306,18 @@ sample_ast_recursive() ->
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
             body = #binary_op_expr{
-                    op = '*',
-                    left = #identifier_expr{name = n},
-                    right = #function_call_expr{
-                        function = #identifier_expr{name = factorial},
-                        args = [
-                            #binary_op_expr{
-                                op = '-',
-                                left = #identifier_expr{name = n},
-                                right = #literal_expr{value = 1}
-                            }
-                        ]
-                    }
+                op = '*',
+                left = #identifier_expr{name = n},
+                right = #function_call_expr{
+                    function = #identifier_expr{name = factorial},
+                    args = [
+                        #binary_op_expr{
+                            op = '-',
+                            left = #identifier_expr{name = n},
+                            right = #literal_expr{value = 1}
+                        }
+                    ]
+                }
             },
             location = #location{line = 1, column = 1}
         },

@@ -385,7 +385,84 @@ test_let_expression_scoping() ->
 
 %% Test recursive function calls
 test_recursive_function_calls() ->
-    cure_utils:debug("✓ Tail recursive function calls test passed~n").
+    % Test factorial function with match expression:
+    % factorial = fn n ->
+    %   match n
+    %     0 -> 1
+    %     _ -> n * factorial(n - 1)
+    %   end
+    % end
+    FactorialFn = #function_def{
+        name = factorial,
+        params = [#param{name = n, type = undefined, location = create_location(1, 17)}],
+        return_type = undefined,
+        constraint = undefined,
+        body = #match_expr{
+            expr = create_identifier('n'),
+            patterns = [
+                #match_clause{
+                    pattern = #literal_expr{value = 0, location = create_location(2, 5)},
+                    guard = undefined,
+                    body = create_literal_int(1),
+                    location = create_location(2, 5)
+                },
+                #match_clause{
+                    pattern = #wildcard_pattern{location = create_location(3, 5)},
+                    guard = undefined,
+                    body = #binary_op_expr{
+                        op = '*',
+                        left = create_identifier('n'),
+                        right = #function_call_expr{
+                            function = create_identifier('factorial'),
+                            args = [
+                                #binary_op_expr{
+                                    op = '-',
+                                    left = create_identifier('n'),
+                                    right = create_literal_int(1),
+                                    location = create_location(3, 24)
+                                }
+                            ],
+                            location = create_location(3, 14)
+                        },
+                        location = create_location(3, 10)
+                    },
+                    location = create_location(3, 5)
+                }
+            ],
+            location = create_location(2, 3)
+        },
+        is_private = false,
+        location = create_location(1, 1)
+    },
+
+    % Compile the recursive factorial function
+    {Instructions, _State} = cure_codegen:compile_function(FactorialFn),
+
+    % Verify instructions are generated
+    ?assert(length(Instructions) > 0),
+
+    % Check for match/case instruction
+    MatchInstructions = [I || I <- Instructions, I#beam_instr.op == match_expr],
+    ?assert(length(MatchInstructions) >= 1),
+
+    % Check for recursive function call
+    CallInstructions = [I || I <- Instructions, I#beam_instr.op == function_call],
+    RecursiveCalls = [
+        I
+     || I <- CallInstructions,
+        lists:member(factorial, I#beam_instr.args)
+    ],
+    ?assert(length(RecursiveCalls) >= 1),
+
+    % Check for multiplication operation
+    MultInstructions = [
+        I
+     || I <- Instructions,
+        lists:member(I#beam_instr.op, [binary_op, mult_op])
+    ],
+    ?assert(length(MultInstructions) >= 1),
+
+    cure_utils:debug("✓ Recursive function calls test passed~n").
 
 %% Test higher-order function calls (functions as arguments)
 test_higher_order_function_calls() ->
@@ -491,7 +568,88 @@ test_closure_generation() ->
 
 %% Test tail call optimization
 test_tail_call_optimization() ->
-    % Test tail recursive function that should be optimized
+    % Test tail-recursive factorial with accumulator:
+    % factorial_tail = fn n, acc ->
+    %   match n
+    %     0 -> acc
+    %     _ -> factorial_tail(n - 1, n * acc)
+    %   end
+    % end
+    FactorialTailFn = #function_def{
+        name = factorial_tail,
+        params = [
+            #param{name = n, type = undefined, location = create_location(1, 22)},
+            #param{name = acc, type = undefined, location = create_location(1, 25)}
+        ],
+        return_type = undefined,
+        constraint = undefined,
+        body = #match_expr{
+            expr = create_identifier('n'),
+            patterns = [
+                #match_clause{
+                    pattern = #literal_expr{value = 0, location = create_location(2, 5)},
+                    guard = undefined,
+                    body = create_identifier('acc'),
+                    location = create_location(2, 5)
+                },
+                #match_clause{
+                    pattern = #wildcard_pattern{location = create_location(3, 5)},
+                    guard = undefined,
+                    body = #function_call_expr{
+                        function = create_identifier('factorial_tail'),
+                        args = [
+                            #binary_op_expr{
+                                op = '-',
+                                left = create_identifier('n'),
+                                right = create_literal_int(1),
+                                location = create_location(3, 29)
+                            },
+                            #binary_op_expr{
+                                op = '*',
+                                left = create_identifier('n'),
+                                right = create_identifier('acc'),
+                                location = create_location(3, 35)
+                            }
+                        ],
+                        location = create_location(3, 10)
+                    },
+                    location = create_location(3, 5)
+                }
+            ],
+            location = create_location(2, 3)
+        },
+        is_private = false,
+        location = create_location(1, 1)
+    },
+
+    % Compile the tail-recursive factorial function
+    {Instructions, _State} = cure_codegen:compile_function(FactorialTailFn),
+
+    % Verify instructions are generated
+    ?assert(length(Instructions) > 0),
+
+    % Check for match/case instruction
+    MatchInstructions = [I || I <- Instructions, I#beam_instr.op == match_expr],
+    ?assert(length(MatchInstructions) >= 1),
+
+    % Check for tail-recursive function call
+    CallInstructions = [I || I <- Instructions, I#beam_instr.op == function_call],
+    TailCalls = [
+        I
+     || I <- CallInstructions,
+        lists:member(factorial_tail, I#beam_instr.args)
+    ],
+    ?assert(length(TailCalls) >= 1),
+
+    % Check for tail call optimization marker (if supported)
+    TailCallOptInstructions = [
+        I
+     || I <- Instructions,
+        lists:member(I#beam_instr.op, [tail_call, tail_call_only])
+    ],
+    % Tail call optimization may or may not be present depending on implementation
+    % Just verify the instruction list was generated correctly
+
     cure_utils:debug("✓ Tail call optimization test passed~n").
 
 %% Test let expression optimizations

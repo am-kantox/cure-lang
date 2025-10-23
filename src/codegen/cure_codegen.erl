@@ -501,12 +501,13 @@ compile_function(AST, _Options) ->
 register_all_type_constructors([], State) ->
     State;
 register_all_type_constructors([Item | Rest], State) ->
-    NewState = case Item of
-        #type_def{} = TypeDef ->
-            register_type_constructors(TypeDef, State);
-        _ ->
-            State
-    end,
+    NewState =
+        case Item of
+            #type_def{} = TypeDef ->
+                register_type_constructors(TypeDef, State);
+            _ ->
+                State
+        end,
     register_all_type_constructors(Rest, NewState).
 
 compile_module_items(Items, State) ->
@@ -1050,7 +1051,8 @@ compile_identifier(#identifier_expr{name = Name, location = Location}, State) ->
                                 },
                                 #beam_instr{
                                     op = call,
-                                    args = [0],  % Zero arguments
+                                    % Zero arguments
+                                    args = [0],
                                     location = Location
                                 }
                             ],
@@ -1208,8 +1210,10 @@ is_nullary_constructor(Name, State) ->
     % Check in the registered type constructors map
     TypeConstructors = State#codegen_state.type_constructors,
     case maps:get(Name, TypeConstructors, undefined) of
-        0 -> true;  % Zero-arity constructor
-        _ -> false  % Either doesn't exist or has non-zero arity
+        % Zero-arity constructor
+        0 -> true;
+        % Either doesn't exist or has non-zero arity
+        _ -> false
     end.
 
 %% Find imported function by name (with any arity)

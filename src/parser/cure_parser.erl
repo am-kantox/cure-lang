@@ -2216,7 +2216,6 @@ parse_argument_list(State, Acc) ->
             end
     end.
 
-
 %% Parse let expression
 parse_let_expression(State) ->
     {_, State1} = expect(State, 'let'),
