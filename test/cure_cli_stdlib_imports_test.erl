@@ -22,7 +22,7 @@
 
 %% Run CLI stdlib imports specific tests
 run() ->
-    io:format("Running Cure CLI Stdlib Imports Tests...~n"),
+    cure_utils:debug("Running Cure CLI Stdlib Imports Tests...~n"),
 
     test_automatic_import_addition(),
     test_explicit_module_detection(),
@@ -31,14 +31,14 @@ run() ->
     test_source_preservation(),
     test_edge_cases(),
 
-    io:format("All cure CLI stdlib imports tests passed!~n").
+    cure_utils:debug("All cure CLI stdlib imports tests passed!~n").
 
 %% ============================================================================
 %% Test 3: cure_cli module correctly adds automatic standard library imports
 %% ============================================================================
 
 test_automatic_import_addition() ->
-    io:format("Testing automatic import addition to plain source...~n"),
+    cure_utils:debug("Testing automatic import addition to plain source...~n"),
 
     % Create test options
     TestOptions = #compile_options{verbose = false},
@@ -69,10 +69,10 @@ test_automatic_import_addition() ->
     % Test 3.3: Verify comment header is added
     ?assert(string:str(EnhancedSource, "# Automatic standard library imports") > 0),
 
-    io:format("✓ Automatic import addition test passed~n").
+    cure_utils:debug("✓ Automatic import addition test passed~n").
 
 test_explicit_module_detection() ->
-    io:format("Testing explicit module definition detection...~n"),
+    cure_utils:debug("Testing explicit module definition detection...~n"),
 
     TestOptions = #compile_options{verbose = false},
 
@@ -95,10 +95,10 @@ test_explicit_module_detection() ->
     ?assert(cure_cli:has_explicit_module_or_imports("module TestModule")),
     ?assert(cure_cli:has_explicit_module_or_imports("  module  TestModule  ")),
 
-    io:format("✓ Explicit module detection test passed~n").
+    cure_utils:debug("✓ Explicit module detection test passed~n").
 
 test_explicit_import_detection() ->
-    io:format("Testing explicit import statement detection...~n"),
+    cure_utils:debug("Testing explicit import statement detection...~n"),
 
     TestOptions = #compile_options{verbose = false},
 
@@ -121,10 +121,10 @@ test_explicit_import_detection() ->
     ?assert(cure_cli:has_explicit_module_or_imports("import TestModule [test]")),
     ?assert(cure_cli:has_explicit_module_or_imports("  import  TestModule  ")),
 
-    io:format("✓ Explicit import detection test passed~n").
+    cure_utils:debug("✓ Explicit import detection test passed~n").
 
 test_import_content_verification() ->
-    io:format("Testing automatic import content verification...~n"),
+    cure_utils:debug("Testing automatic import content verification...~n"),
 
     TestOptions = #compile_options{verbose = false},
     PlainSource = "def test() = 42",
@@ -152,10 +152,10 @@ test_import_content_verification() ->
     Lines = string:split(EnhancedSource, "\n", all),
     ?assert(lists:member("", Lines)),
 
-    io:format("✓ Import content verification test passed~n").
+    cure_utils:debug("✓ Import content verification test passed~n").
 
 test_source_preservation() ->
-    io:format("Testing original source preservation...~n"),
+    cure_utils:debug("Testing original source preservation...~n"),
 
     TestOptions = #compile_options{verbose = false},
 
@@ -177,10 +177,10 @@ test_source_preservation() ->
     Enhanced3 = cure_cli:add_automatic_stdlib_imports(SourceWithSpecial, TestOptions),
     ?assert(string:str(Enhanced3, SourceWithSpecial) > 0),
 
-    io:format("✓ Source preservation test passed~n").
+    cure_utils:debug("✓ Source preservation test passed~n").
 
 test_edge_cases() ->
-    io:format("Testing edge cases for import addition...~n"),
+    cure_utils:debug("Testing edge cases for import addition...~n"),
 
     TestOptions = #compile_options{verbose = false},
 
@@ -211,4 +211,4 @@ test_edge_cases() ->
     Enhanced5 = cure_cli:add_automatic_stdlib_imports(StringModuleSource, TestOptions),
     ?assert(string:str(Enhanced5, "import Std.Core") > 0),
 
-    io:format("✓ Edge cases test passed~n").
+    cure_utils:debug("✓ Edge cases test passed~n").

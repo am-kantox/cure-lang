@@ -8,17 +8,17 @@
 
 %% Run all pattern match body compilation tests
 run() ->
-    io:format("Running Pattern Match Body Compilation tests...~n"),
+    cure_utils:debug("Running Pattern Match Body Compilation tests...~n"),
     test_identifier_expr_in_pattern_match_body(),
     test_empty_list_pattern_conversion(),
     test_fixed_length_list_pattern_conversion(),
     test_head_tail_list_pattern_conversion(),
     test_tuple_pattern_conversion(),
-    io:format("All pattern match body compilation tests passed!~n").
+    cure_utils:debug("All pattern match body compilation tests passed!~n").
 
 %% Test 1: Handle identifier_expr in pattern match body compilation
 test_identifier_expr_in_pattern_match_body() ->
-    io:format("Testing identifier_expr in pattern match body...~n"),
+    cure_utils:debug("Testing identifier_expr in pattern match body...~n"),
 
     % Create test location
     Location = #location{line = 1, column = 1, file = "test"},
@@ -55,11 +55,11 @@ test_identifier_expr_in_pattern_match_body() ->
     {clause, _, [_Pattern], [], Body} = CaseClause,
     ?assertEqual([ExpectedForm], Body),
 
-    io:format("✓ identifier_expr pattern match body test passed~n").
+    cure_utils:debug("✓ identifier_expr pattern match body test passed~n").
 
 %% Test 2: Correctly convert empty list patterns to Erlang forms
 test_empty_list_pattern_conversion() ->
-    io:format("Testing empty list pattern conversion...~n"),
+    cure_utils:debug("Testing empty list pattern conversion...~n"),
 
     % Test empty list pattern []
     Line = 1,
@@ -79,11 +79,11 @@ test_empty_list_pattern_conversion() ->
     ErlangPattern = cure_codegen:convert_pattern_to_erlang_form(EmptyListPattern, Location),
     ?assertEqual({nil, Line}, ErlangPattern),
 
-    io:format("✓ Empty list pattern conversion test passed~n").
+    cure_utils:debug("✓ Empty list pattern conversion test passed~n").
 
 %% Test 3: Correctly convert fixed-length list patterns to Erlang forms
 test_fixed_length_list_pattern_conversion() ->
-    io:format("Testing fixed-length list pattern conversion...~n"),
+    cure_utils:debug("Testing fixed-length list pattern conversion...~n"),
 
     Location = #location{line = 1, column = 1, file = "test"},
     Line = 1,
@@ -115,11 +115,11 @@ test_fixed_length_list_pattern_conversion() ->
     ErlangPattern = cure_codegen:convert_pattern_to_erlang_form(ListPattern, Location),
     ?assertEqual(ExpectedForm, ErlangPattern),
 
-    io:format("✓ Fixed-length list pattern conversion test passed~n").
+    cure_utils:debug("✓ Fixed-length list pattern conversion test passed~n").
 
 %% Test 4: Correctly convert head-tail list patterns to Erlang forms
 test_head_tail_list_pattern_conversion() ->
-    io:format("Testing head-tail list pattern conversion...~n"),
+    cure_utils:debug("Testing head-tail list pattern conversion...~n"),
 
     Location = #location{line = 1, column = 1, file = "test"},
     Line = 1,
@@ -162,11 +162,11 @@ test_head_tail_list_pattern_conversion() ->
     ExpectedForm3 = {var, Line, t},
     ?assertEqual(ExpectedForm3, Result3),
 
-    io:format("✓ Head-tail list pattern conversion test passed~n").
+    cure_utils:debug("✓ Head-tail list pattern conversion test passed~n").
 
 %% Test 5: Correctly convert tuple patterns to Erlang forms
 test_tuple_pattern_conversion() ->
-    io:format("Testing tuple pattern conversion...~n"),
+    cure_utils:debug("Testing tuple pattern conversion...~n"),
 
     Location = #location{line = 1, column = 1, file = "test"},
     Line = 1,
@@ -244,4 +244,4 @@ test_tuple_pattern_conversion() ->
         ]},
     ?assertEqual(ExpectedNested, NestedResult),
 
-    io:format("✓ Tuple pattern conversion test passed~n").
+    cure_utils:debug("✓ Tuple pattern conversion test passed~n").

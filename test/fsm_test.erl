@@ -9,14 +9,14 @@
 
 %% Run all FSM tests
 run() ->
-    io:format("Running FSM System tests...~n"),
+    cure_utils:debug("Running FSM System tests...~n"),
     test_fsm_definition_compilation(),
     test_basic_fsm_runtime(),
     test_fsm_transitions(),
     test_fsm_builtins(),
     test_fsm_timeouts(),
     test_fsm_error_cases(),
-    io:format("All FSM tests passed!~n").
+    cure_utils:debug("All FSM tests passed!~n").
 
 %% Test FSM definition compilation
 test_fsm_definition_compilation() ->
@@ -65,7 +65,7 @@ test_fsm_definition_compilation() ->
     ?assertEqual('Zero', CompiledFSM#fsm_definition.initial_state),
     ?assert(is_map(CompiledFSM#fsm_definition.transitions)),
 
-    io:format("✓ FSM definition compilation test passed~n").
+    cure_utils:debug("✓ FSM definition compilation test passed~n").
 
 %% Test basic FSM runtime operations
 test_basic_fsm_runtime() ->
@@ -104,7 +104,7 @@ test_basic_fsm_runtime() ->
     % Stop FSM
     ok = cure_fsm_runtime:stop_fsm(FSMPid),
 
-    io:format("✓ Basic FSM runtime test passed~n").
+    cure_utils:debug("✓ Basic FSM runtime test passed~n").
 
 %% Test FSM state transitions
 test_fsm_transitions() ->
@@ -158,7 +158,7 @@ test_fsm_transitions() ->
     % Clean up
     cure_fsm_runtime:stop_fsm(FSMPid),
 
-    io:format("✓ FSM transitions test passed~n").
+    cure_utils:debug("✓ FSM transitions test passed~n").
 
 %% Test FSM built-in functions
 test_fsm_builtins() ->
@@ -208,7 +208,7 @@ test_fsm_builtins() ->
     % Verify it's stopped
     ?assertNot(cure_fsm_builtins:fsm_is_alive(FSMPid)),
 
-    io:format("✓ FSM built-ins test passed~n").
+    cure_utils:debug("✓ FSM built-ins test passed~n").
 
 %% Test FSM timeouts (basic test - full timeout testing would need more complex setup)
 test_fsm_timeouts() ->
@@ -248,11 +248,11 @@ test_fsm_timeouts() ->
     % Clean up
     cure_fsm_runtime:stop_fsm(FSMPid),
 
-    io:format("✓ FSM timeouts test passed~n").
+    cure_utils:debug("✓ FSM timeouts test passed~n").
 
 %% Test error cases
 test_fsm_error_cases() ->
-    io:format("Testing FSM error cases...~n"),
+    cure_utils:debug("Testing FSM error cases...~n"),
 
     % Test spawning non-existent FSM type
     try
@@ -260,7 +260,7 @@ test_fsm_error_cases() ->
         case Result1 of
             % Any error is acceptable
             {error, _} -> ok;
-            _ -> io:format("Warning: Expected error for non-existent FSM type~n")
+            _ -> cure_utils:debug("Warning: Expected error for non-existent FSM type~n")
         end
     catch
         % Any exception is acceptable for this test
@@ -273,7 +273,7 @@ test_fsm_error_cases() ->
         case Result2 of
             % Any error is acceptable
             {error, _} -> ok;
-            _ -> io:format("Warning: Expected error for invalid PID~n")
+            _ -> cure_utils:debug("Warning: Expected error for invalid PID~n")
         end
     catch
         % Any exception is acceptable for this test
@@ -285,11 +285,11 @@ test_fsm_error_cases() ->
         case Result3 of
             % Any error is acceptable
             {error, _} -> ok;
-            _ -> io:format("Warning: Expected error for invalid PID send~n")
+            _ -> cure_utils:debug("Warning: Expected error for invalid PID send~n")
         end
     catch
         % Any exception is acceptable for this test
         _:_ -> ok
     end,
 
-    io:format("✓ FSM error cases test passed~n").
+    cure_utils:debug("✓ FSM error cases test passed~n").

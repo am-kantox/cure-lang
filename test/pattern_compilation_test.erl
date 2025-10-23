@@ -9,17 +9,17 @@
 
 %% Run all pattern compilation tests
 run() ->
-    io:format("Running Pattern Compilation tests...~n"),
+    cure_utils:debug("Running Pattern Compilation tests...~n"),
     test_binary_pattern_compilation(),
     test_map_pattern_compilation(),
     test_record_pattern_compilation(),
     test_wildcard_pattern_compilation(),
     test_complex_nested_patterns(),
-    io:format("All pattern compilation tests passed!~n").
+    cure_utils:debug("All pattern compilation tests passed!~n").
 
 %% Test 1: Binary patterns compilation to Erlang forms
 test_binary_pattern_compilation() ->
-    io:format("Testing binary pattern compilation...~n"),
+    cure_utils:debug("Testing binary pattern compilation...~n"),
 
     Location = #location{line = 1, column = 1, file = "test"},
     Line = 1,
@@ -95,11 +95,11 @@ test_binary_pattern_compilation() ->
         {bin, _, [{bin_element, _, _, _, _}, {bin_element, _, _, _, _}]}, ExpectedRestBinary
     ),
 
-    io:format("✓ Binary pattern compilation test passed (structural verification)~n").
+    cure_utils:debug("✓ Binary pattern compilation test passed (structural verification)~n").
 
 %% Test 2: Map patterns compilation to Erlang forms
 test_map_pattern_compilation() ->
-    io:format("Testing map pattern compilation...~n"),
+    cure_utils:debug("Testing map pattern compilation...~n"),
 
     Location = #location{line = 1, column = 1, file = "test"},
     Line = 1,
@@ -172,11 +172,11 @@ test_map_pattern_compilation() ->
         ExpectedNestedMap
     ),
 
-    io:format("✓ Map pattern compilation test passed (structural verification)~n").
+    cure_utils:debug("✓ Map pattern compilation test passed (structural verification)~n").
 
 %% Test 3: Record patterns compilation to Erlang forms
 test_record_pattern_compilation() ->
-    io:format("Testing record pattern compilation...~n"),
+    cure_utils:debug("Testing record pattern compilation...~n"),
 
     Location = #location{line = 1, column = 1, file = "test"},
     Line = 1,
@@ -301,7 +301,7 @@ test_record_pattern_compilation() ->
 
 %% Test 4: Wildcard patterns compilation to Erlang forms
 test_wildcard_pattern_compilation() ->
-    io:format("Testing wildcard pattern compilation...~n"),
+    cure_utils:debug("Testing wildcard pattern compilation...~n"),
 
     Location = #location{line = 1, column = 1, file = "test"},
     Line = 1,
@@ -372,11 +372,11 @@ test_wildcard_pattern_compilation() ->
     MultiResult = cure_codegen:convert_pattern_to_erlang_form(MultiWildcardTuple, Location),
     ?assertEqual(ExpectedMultiWildcard, MultiResult),
 
-    io:format("✓ Wildcard pattern compilation test passed~n").
+    cure_utils:debug("✓ Wildcard pattern compilation test passed~n").
 
 %% Test 5: Complex nested patterns involving mix of lists, tuples, and other patterns
 test_complex_nested_patterns() ->
-    io:format("Testing complex nested pattern compilation...~n"),
+    cure_utils:debug("Testing complex nested pattern compilation...~n"),
 
     Location = #location{line = 1, column = 1, file = "test"},
     Line = 1,
@@ -542,4 +542,4 @@ test_complex_nested_patterns() ->
     EmptyResult = cure_codegen:convert_pattern_to_erlang_form(EmptyNestedPattern, Location),
     ?assertEqual(ExpectedEmptyNested, EmptyResult),
 
-    io:format("✓ Complex nested pattern compilation test passed~n").
+    cure_utils:debug("✓ Complex nested pattern compilation test passed~n").

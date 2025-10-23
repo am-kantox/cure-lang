@@ -18,11 +18,11 @@
 
 %% Run all simplified code generation tests
 run() ->
-    io:format("Running Code Generation Simple tests...~n"),
+    cure_utils:debug("Running Code Generation Simple tests...~n"),
     test_basic_expression_compilation(),
     test_simple_function_compilation(),
     test_basic_let_expressions(),
-    io:format("All code generation simple tests passed!~n").
+    cure_utils:debug("All code generation simple tests passed!~n").
 
 %% Test basic expression compilation
 test_basic_expression_compilation() ->
@@ -47,7 +47,7 @@ test_basic_expression_compilation() ->
     % load_literal, load_literal, binary_op
     ?assert(length(BinaryInstructions) >= 3),
 
-    io:format("✓ Basic expression compilation test passed~n").
+    cure_utils:debug("✓ Basic expression compilation test passed~n").
 
 %% Test simple function compilation
 test_simple_function_compilation() ->
@@ -79,7 +79,7 @@ test_simple_function_compilation() ->
             Instructions = maps:get(instructions, CompiledFunction),
             ?assert(length(Instructions) > 0),
 
-            io:format("✓ Simple function compilation test passed~n");
+            cure_utils:debug("✓ Simple function compilation test passed~n");
         {error, Reason} ->
             ?assert(false, {function_compilation_failed, Reason})
     end.
@@ -115,7 +115,7 @@ test_basic_let_expressions() ->
     % Should load 5 and 1
     ?assert(length(LoadInstructions) >= 2),
 
-    io:format("✓ Basic let expressions test passed~n").
+    cure_utils:debug("✓ Basic let expressions test passed~n").
 
 %% Helper functions
 create_location(Line, Column) ->

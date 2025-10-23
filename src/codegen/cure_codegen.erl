@@ -500,8 +500,8 @@ compile_module_items(Items, State) ->
     compile_module_items(Items, State, []).
 
 compile_module_items([], State, Acc) ->
-    io:format("[CODEGEN] Finished compiling items, accumulated ~p items~n", [length(Acc)]),
-    lists:foreach(fun(Item) -> io:format("  Item: ~p~n", [Item]) end, Acc),
+    cure_utils:debug("[CODEGEN] Finished compiling items, accumulated ~p items~n", [length(Acc)]),
+    lists:foreach(fun(Item) -> cure_utils:debug("  Item: ~p~n", [Item]) end, Acc),
     {ok, State#codegen_state{functions = lists:reverse(Acc)}};
 compile_module_items([Item | RestItems], State, Acc) ->
     case compile_module_item(Item, State) of
@@ -551,28 +551,6 @@ compile_module_item(CurifyFunc = #curify_function_def{}, State) ->
         {error, Reason} ->
             {error, Reason}
     end;
-compile_module_item(
-    {curify_function_def, Name, Params, ReturnType, _Constraint, ErlModule, ErlFunc, ErlArity,
-        _IsPrivate, Location},
-    State
-) ->
-    CurifyFunc = #curify_function_def{
-        name = Name,
-        params = Params,
-        return_type = ReturnType,
-        constraint = undefined,
-        erlang_module = ErlModule,
-        erlang_function = ErlFunc,
-        erlang_arity = ErlArity,
-        is_private = false,
-        location = Location
-    },
-    case compile_curify_function_impl(CurifyFunc, State) of
-        {ok, CompiledFunction, NewState} ->
-            {ok, CompiledFunction, NewState};
-        {error, Reason} ->
-            {error, Reason}
-    end;
 compile_module_item(#fsm_def{} = FSM, State) ->
     case compile_fsm_impl(FSM, State) of
         {ok, CompiledFSM, NewState} ->
@@ -595,7 +573,7 @@ compile_module_item(#type_def{} = TypeDef, State) ->
             cure_utils:debug("No constructors generated for ~p~n", [TypeDef#type_def.name]),
             {ok, {type_def, TypeDef}, NewState};
         {error, Reason} ->
-            io:format("ERROR: Failed to generate constructors for ~p: ~p~n", [
+            cure_utils:debug("ERROR: Failed to generate constructors for ~p: ~p~n", [
                 TypeDef#type_def.name, Reason
             ]),
             {error, Reason}
@@ -1987,9 +1965,9 @@ separate_functions(Functions) ->
     separate_functions(Functions, [], [], []).
 
 separate_functions([], RegularAcc, FSMAcc, ConstructorAcc) ->
-    io:format("[SEPARATE] Regular functions: ~p~n", [length(RegularAcc)]),
-    io:format("[SEPARATE] FSM functions: ~p~n", [length(FSMAcc)]),
-    io:format("[SEPARATE] Constructor functions: ~p~n", [length(ConstructorAcc)]),
+    cure_utils:debug("[SEPARATE] Regular functions: ~p~n", [length(RegularAcc)]),
+    cure_utils:debug("[SEPARATE] FSM functions: ~p~n", [length(FSMAcc)]),
+    cure_utils:debug("[SEPARATE] Constructor functions: ~p~n", [length(ConstructorAcc)]),
     {lists:reverse(RegularAcc), lists:reverse(FSMAcc), lists:reverse(ConstructorAcc)};
 separate_functions([{function, F} | Rest], RegularAcc, FSMAcc, ConstructorAcc) ->
     % Wrapped regular function
@@ -2137,7 +2115,7 @@ process_imports_new([{import_def, Module, Imports, _Location} | Rest], State) ->
             cure_utils:debug("Successfully imported ~p~n", [Module]),
             process_imports_new(Rest, NewState);
         {error, Reason} ->
-            io:format("Warning: Failed to import ~p: ~p~n", [Module, Reason]),
+            cure_utils:debug("Warning: Failed to import ~p: ~p~n", [Module, Reason]),
             % Continue with other imports
             process_imports_new(Rest, State)
     end;
@@ -2462,7 +2440,7 @@ convert_to_erlang_forms(Module) ->
             end,
 
         % Add module and export attributes
-        io:format("[EXPORTS] Module ~p exports: ~p~n", [ModuleName, ExportsWithRegistration]),
+        cure_utils:debug("[EXPORTS] Module ~p exports: ~p~n", [ModuleName, ExportsWithRegistration]),
         BaseAttributes = [
             {attribute, 1, module, ModuleName},
             {attribute, 2, export, ExportsWithRegistration}
@@ -2533,23 +2511,23 @@ convert_to_erlang_forms(Module) ->
 
         % Debug: Show a sample of the generated forms
         cure_utils:debug("Generated ~p forms total~n", [length(Forms)]),
-        io:format("[FORMS] Total forms: ~p~n", [length(Forms)]),
-        io:format("[FORMS] Function forms: ~p~n", [length(FunctionForms)]),
-        io:format("[FORMS] Functions in FunctionForms:~n"),
+        cure_utils:debug("[FORMS] Total forms: ~p~n", [length(Forms)]),
+        cure_utils:debug("[FORMS] Function forms: ~p~n", [length(FunctionForms)]),
+        cure_utils:debug("[FORMS] Functions in FunctionForms:~n"),
         lists:foreach(
             fun
                 ({function, _, Name, Arity, _}) ->
-                    io:format("  Function: ~p/~p~n", [Name, Arity]);
+                    cure_utils:debug("  Function: ~p/~p~n", [Name, Arity]);
                 (_) ->
                     ok
             end,
             FunctionForms
         ),
-        io:format("[FORMS] Functions in final Forms:~n"),
+        cure_utils:debug("[FORMS] Functions in final Forms:~n"),
         lists:foreach(
             fun
                 ({function, _, Name, Arity, _}) ->
-                    io:format("  Final function: ~p/~p~n", [Name, Arity]);
+                    cure_utils:debug("  Final function: ~p/~p~n", [Name, Arity]);
                 (_) ->
                     ok
             end,
@@ -2590,13 +2568,13 @@ convert_to_erlang_forms(Module) ->
 convert_functions_to_forms(Functions, LineStart, ModuleName) ->
     % Extract local functions map for context
     LocalFunctions = extract_local_functions_map(Functions),
-    io:format("[LOCAL_FUNCS] Module ~p has local functions: ~p~n", [
+    cure_utils:debug("[LOCAL_FUNCS] Module ~p has local functions: ~p~n", [
         ModuleName, maps:to_list(LocalFunctions)
     ]),
     convert_functions_to_forms(Functions, LineStart, [], ModuleName, LocalFunctions).
 
 convert_functions_to_forms([], _Line, Acc, _ModuleName, _LocalFunctions) ->
-    io:format("[CONVERT] Converted ~p functions to forms~n", [length(Acc)]),
+    cure_utils:debug("[CONVERT] Converted ~p functions to forms~n", [length(Acc)]),
     lists:reverse(Acc);
 convert_functions_to_forms([Function | RestFunctions], Line, Acc, ModuleName, LocalFunctions) ->
     case convert_function_to_form(Function, Line, ModuleName, LocalFunctions) of
@@ -2611,18 +2589,18 @@ convert_functions_to_forms([Function | RestFunctions], Line, Acc, ModuleName, Lo
 
 %% Extract local functions map for context
 extract_local_functions_map(Functions) ->
-    io:format("[EXTRACT_MAP] Extracting from ~p functions~n", [length(Functions)]),
+    cure_utils:debug("[EXTRACT_MAP] Extracting from ~p functions~n", [length(Functions)]),
     lists:foreach(
         fun(F) ->
             case F of
                 _ when is_map(F) ->
-                    io:format("  Map: ~p/~p~n", [
+                    cure_utils:debug("  Map: ~p/~p~n", [
                         maps:get(name, F, undefined), maps:get(arity, F, undefined)
                     ]);
                 {function, _, N, A, _} ->
-                    io:format("  Form: ~p/~p~n", [N, A]);
+                    cure_utils:debug("  Form: ~p/~p~n", [N, A]);
                 _ ->
-                    io:format("  Other: ~p~n", [element(1, F)])
+                    cure_utils:debug("  Other: ~p~n", [element(1, F)])
             end
         end,
         Functions
@@ -2635,14 +2613,14 @@ extract_local_functions_map(Functions) ->
                         {maps:get(name, Function, undefined), maps:get(arity, Function, undefined)}
                     of
                         {undefined, _} ->
-                            io:format("    Skip: undefined name~n"),
+                            cure_utils:debug("    Skip: undefined name~n"),
                             Acc;
                         {_, undefined} ->
-                            io:format("    Skip: undefined arity~n"),
+                            cure_utils:debug("    Skip: undefined arity~n"),
                             Acc;
                         {Name, Arity} ->
                             NewAcc = maps:put(Name, Arity, Acc),
-                            io:format("    Added: ~p/~p, Acc now: ~p~n", [
+                            cure_utils:debug("    Added: ~p/~p, Acc now: ~p~n", [
                                 Name, Arity, maps:to_list(NewAcc)
                             ]),
                             NewAcc
@@ -2650,17 +2628,17 @@ extract_local_functions_map(Functions) ->
                 {function, _Line, Name, Arity, _Clauses} ->
                     % Constructor function
                     NewAcc = maps:put(Name, Arity, Acc),
-                    io:format("    Added form: ~p/~p~n", [Name, Arity]),
+                    cure_utils:debug("    Added form: ~p/~p~n", [Name, Arity]),
                     NewAcc;
                 _ ->
-                    io:format("    Skip: not a map or form~n"),
+                    cure_utils:debug("    Skip: not a map or form~n"),
                     Acc
             end
         end,
         #{},
         Functions
     ),
-    io:format("[EXTRACT_MAP] Final result: ~p~n", [maps:to_list(Result)]),
+    cure_utils:debug("[EXTRACT_MAP] Final result: ~p~n", [maps:to_list(Result)]),
     Result.
 
 %% Convert a single function to Erlang abstract form (backward compatibility)

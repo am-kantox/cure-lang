@@ -9,7 +9,7 @@
 
 %% Run all advanced FSM tests
 run() ->
-    io:format("Running FSM Advanced tests...~n"),
+    cure_utils:debug("Running FSM Advanced tests...~n"),
     test_fsm_guard_conditions(),
     test_fsm_actions(),
     test_fsm_complex_guards(),
@@ -18,7 +18,7 @@ run() ->
     test_fsm_action_side_effects(),
     test_fsm_nested_guard_evaluation(),
     test_fsm_dynamic_guard_data(),
-    io:format("All FSM advanced tests passed!~n").
+    cure_utils:debug("All FSM advanced tests passed!~n").
 
 %% Test FSM transitions with guard conditions
 test_fsm_guard_conditions() ->
@@ -67,7 +67,7 @@ test_fsm_guard_conditions() ->
     {ok, 'Negative'} = cure_fsm_runtime:get_state(FSMPid),
 
     cure_fsm_runtime:stop_fsm(FSMPid),
-    io:format("✓ FSM guard conditions test passed~n").
+    cure_utils:debug("✓ FSM guard conditions test passed~n").
 
 %% Test FSM actions with side effects
 test_fsm_actions() ->
@@ -155,7 +155,7 @@ test_fsm_actions() ->
     ?assert(maps:is_key(log_time, Data2)),
 
     cure_fsm_runtime:stop_fsm(FSMPid),
-    io:format("✓ FSM actions test passed~n").
+    cure_utils:debug("✓ FSM actions test passed~n").
 
 %% Test complex guard conditions with multiple data fields
 test_fsm_complex_guards() ->
@@ -254,7 +254,7 @@ test_fsm_complex_guards() ->
     {ok, 'Complete'} = cure_fsm_runtime:get_state(FSMPid2),
 
     cure_fsm_runtime:stop_fsm(FSMPid2),
-    io:format("✓ FSM complex guards test passed~n").
+    cure_utils:debug("✓ FSM complex guards test passed~n").
 
 %% Test combination of guards and actions with data flow
 test_fsm_guard_action_combination() ->
@@ -334,7 +334,7 @@ test_fsm_guard_action_combination() ->
     {ok, 'Threshold'} = cure_fsm_runtime:get_state(FSMPid),
 
     cure_fsm_runtime:stop_fsm(FSMPid),
-    io:format("✓ FSM guard-action combination test passed~n").
+    cure_utils:debug("✓ FSM guard-action combination test passed~n").
 
 %% Test guard failure handling
 test_fsm_guard_failure_handling() ->
@@ -385,7 +385,7 @@ test_fsm_guard_failure_handling() ->
     ?assertEqual(1, maps:get(transition_count, Data2)),
 
     cure_fsm_runtime:stop_fsm(FSMPid),
-    io:format("✓ FSM guard failure handling test passed~n").
+    cure_utils:debug("✓ FSM guard failure handling test passed~n").
 
 %% Test action side effects and data mutations
 test_fsm_action_side_effects() ->
@@ -443,7 +443,7 @@ test_fsm_action_side_effects() ->
     ?assertEqual(1, length(maps:get(activation_history, Data1))),
 
     cure_fsm_runtime:stop_fsm(FSMPid),
-    io:format("✓ FSM action side effects test passed~n").
+    cure_utils:debug("✓ FSM action side effects test passed~n").
 
 %% Test nested guard evaluation with multiple conditions
 test_fsm_nested_guard_evaluation() ->
@@ -548,7 +548,7 @@ test_fsm_nested_guard_evaluation() ->
     {ok, 'Processed'} = cure_fsm_runtime:get_state(FSMPid2),
 
     cure_fsm_runtime:stop_fsm(FSMPid2),
-    io:format("✓ FSM nested guard evaluation test passed~n").
+    cure_utils:debug("✓ FSM nested guard evaluation test passed~n").
 
 %% Test dynamic guard data modification
 test_fsm_dynamic_guard_data() ->
@@ -650,4 +650,4 @@ test_fsm_dynamic_guard_data() ->
     {ok, 'Complete'} = cure_fsm_runtime:get_state(FSMPid),
 
     cure_fsm_runtime:stop_fsm(FSMPid),
-    io:format("✓ FSM dynamic guard data test passed~n").
+    cure_utils:debug("✓ FSM dynamic guard data test passed~n").

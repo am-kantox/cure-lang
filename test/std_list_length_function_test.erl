@@ -9,7 +9,7 @@
 
 %% Run Std.List.length function specific tests
 run() ->
-    io:format("Running Std.List.length Function Tests...~n"),
+    cure_utils:debug("Running Std.List.length Function Tests...~n"),
 
     test_integer_list_length(),
     test_mixed_type_list_length(),
@@ -19,14 +19,14 @@ run() ->
     test_special_value_lists(),
     test_edge_cases_and_boundaries(),
 
-    io:format("All Std.List.length function tests passed!~n").
+    cure_utils:debug("All Std.List.length function tests passed!~n").
 
 %% ============================================================================
 %% Test 5: Std.List.length function returns simplified length for integer lists
 %% ============================================================================
 
 test_integer_list_length() ->
-    io:format("Testing Std.List.length with integer lists...~n"),
+    cure_utils:debug("Testing Std.List.length with integer lists...~n"),
 
     % Test 5.1: Basic integer lists
     ?assertEqual(0, test_length([])),
@@ -54,10 +54,10 @@ test_integer_list_length() ->
     % Max/Min 64-bit integers
     ?assertEqual(2, test_length([9223372036854775807, -9223372036854775808])),
 
-    io:format("✓ Integer list length test passed~n").
+    cure_utils:debug("✓ Integer list length test passed~n").
 
 test_mixed_type_list_length() ->
-    io:format("Testing Std.List.length with mixed type lists...~n"),
+    cure_utils:debug("Testing Std.List.length with mixed type lists...~n"),
 
     % Test 6.1: Integer and atom mixtures
     ?assertEqual(4, test_length([1, atom, 2, another_atom])),
@@ -77,10 +77,10 @@ test_mixed_type_list_length() ->
     % Test 6.5: Complex mixed types
     ?assertEqual(7, test_length([1, 2.5, atom, "string", true, {tuple}, [nested]])),
 
-    io:format("✓ Mixed type list length test passed~n").
+    cure_utils:debug("✓ Mixed type list length test passed~n").
 
 test_nested_list_length() ->
-    io:format("Testing Std.List.length with nested lists...~n"),
+    cure_utils:debug("Testing Std.List.length with nested lists...~n"),
 
     % Test 7.1: Simple nested lists (each nested list counts as one element)
     ?assertEqual(3, test_length([[1, 2], [3, 4], [5, 6]])),
@@ -101,10 +101,10 @@ test_nested_list_length() ->
     % Test 7.5: Nested lists with mixed types
     ?assertEqual(3, test_length([[1, atom], ["string", 2.5], [true, {tuple, value}]])),
 
-    io:format("✓ Nested list length test passed~n").
+    cure_utils:debug("✓ Nested list length test passed~n").
 
 test_empty_and_single_element_lists() ->
-    io:format("Testing Std.List.length with empty and single element cases...~n"),
+    cure_utils:debug("Testing Std.List.length with empty and single element cases...~n"),
 
     % Test 8.1: Empty list
     ?assertEqual(0, test_length([])),
@@ -122,10 +122,10 @@ test_empty_and_single_element_lists() ->
     ?assertEqual(1, test_length([{complex, tuple, with, many, elements}])),
     ?assertEqual(1, test_length([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]])),
 
-    io:format("✓ Empty and single element list test passed~n").
+    cure_utils:debug("✓ Empty and single element list test passed~n").
 
 test_large_list_performance() ->
-    io:format("Testing Std.List.length performance with large lists...~n"),
+    cure_utils:debug("Testing Std.List.length performance with large lists...~n"),
 
     % Test 9.1: Large integer lists (performance test)
     LargeList1000 = lists:seq(1, 1000),
@@ -154,10 +154,10 @@ test_large_list_performance() ->
     % 10ms in microseconds
     ?assert(Duration < 10000),
 
-    io:format("✓ Large list performance test passed~n").
+    cure_utils:debug("✓ Large list performance test passed~n").
 
 test_special_value_lists() ->
-    io:format("Testing Std.List.length with special value lists...~n"),
+    cure_utils:debug("Testing Std.List.length with special value lists...~n"),
 
     % Test 10.1: Lists with boolean values
     ?assertEqual(4, test_length([true, false, true, false])),
@@ -180,10 +180,10 @@ test_special_value_lists() ->
     ?assertEqual(3, test_length([<<1, 2, 3>>, <<4, 5>>, <<>>])),
     ?assertEqual(2, test_length([<<"hello">>, <<"world">>])),
 
-    io:format("✓ Special value lists test passed~n").
+    cure_utils:debug("✓ Special value lists test passed~n").
 
 test_edge_cases_and_boundaries() ->
-    io:format("Testing Std.List.length edge cases and boundaries...~n"),
+    cure_utils:debug("Testing Std.List.length edge cases and boundaries...~n"),
 
     % Test 11.1: Extremely large lists (boundary testing)
     % Note: This tests memory/performance boundaries
@@ -194,7 +194,7 @@ test_edge_cases_and_boundaries() ->
     catch
         _:_ ->
             % If memory is insufficient, this is acceptable
-            io:format("    Large list boundary test skipped (insufficient memory)~n")
+            cure_utils:debug("    Large list boundary test skipped (insufficient memory)~n")
     end,
 
     % Test 11.2: Lists with zero values
@@ -212,7 +212,7 @@ test_edge_cases_and_boundaries() ->
     % Test 11.5: Unicode string lists (if supported)
     ?assertEqual(3, test_length(["hello", "世界", "тест"])),
 
-    io:format("✓ Edge cases and boundaries test passed~n").
+    cure_utils:debug("✓ Edge cases and boundaries test passed~n").
 
 %% ============================================================================
 %% Helper Functions

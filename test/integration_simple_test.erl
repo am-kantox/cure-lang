@@ -7,7 +7,7 @@
 
 %% Run all integration tests
 run() ->
-    io:format("Running Simple Integration tests...~n"),
+    cure_utils:debug("Running Simple Integration tests...~n"),
 
     Tests = [
         fun test_lexer_parser_pipeline/0,
@@ -23,14 +23,14 @@ run() ->
     Passed = length([ok || ok <- Results]),
     Total = length(Results),
 
-    io:format("Integration tests: ~w/~w passed~n", [Passed, Total]),
+    cure_utils:debug("Integration tests: ~w/~w passed~n", [Passed, Total]),
 
     case Passed of
         Total ->
-            io:format("All integration tests passed!~n"),
+            cure_utils:debug("All integration tests passed!~n"),
             ok;
         _ ->
-            io:format("Some integration tests failed~n"),
+            cure_utils:debug("Some integration tests failed~n"),
             error
     end.
 
@@ -41,14 +41,14 @@ run_test(TestFun) ->
         ok
     catch
         Error:Reason:Stack ->
-            io:format("❌ Test ~w failed: ~p:~p~n", [TestFun, Error, Reason]),
-            io:format("Stack: ~p~n", [Stack]),
+            cure_utils:debug("❌ Test ~w failed: ~p:~p~n", [TestFun, Error, Reason]),
+            cure_utils:debug("Stack: ~p~n", [Stack]),
             error
     end.
 
 %% Test 1: Lexer -> Parser pipeline
 test_lexer_parser_pipeline() ->
-    io:format("✓ Testing lexer-parser pipeline...~n"),
+    cure_utils:debug("✓ Testing lexer-parser pipeline...~n"),
 
     % Simple Cure code
     Code = "42",
@@ -59,14 +59,14 @@ test_lexer_parser_pipeline() ->
     % Verify tokens
     case Tokens of
         [{integer, _, 42}, {eof, _}] ->
-            io:format("  ✓ Lexer-parser pipeline test passed~n");
+            cure_utils:debug("  ✓ Lexer-parser pipeline test passed~n");
         _ ->
             throw({unexpected_tokens, Tokens})
     end.
 
 %% Test 2: Basic type checking
 test_basic_type_checking() ->
-    io:format("✓ Testing basic type checking...~n"),
+    cure_utils:debug("✓ Testing basic type checking...~n"),
 
     % Create type environment
     TypeEnv = cure_typechecker:builtin_env(),
@@ -80,14 +80,14 @@ test_basic_type_checking() ->
     % Verify it's an integer type
     case Type of
         {primitive_type, 'Int'} ->
-            io:format("  ✓ Basic type checking test passed~n");
+            cure_utils:debug("  ✓ Basic type checking test passed~n");
         _ ->
             throw({unexpected_type, Type})
     end.
 
 %% Test 3: Code generation basics
 test_code_generation_basic() ->
-    io:format("✓ Testing basic code generation...~n"),
+    cure_utils:debug("✓ Testing basic code generation...~n"),
 
     % Simple expression
     Expr = #literal_expr{value = 42, location = undefined},
@@ -98,14 +98,14 @@ test_code_generation_basic() ->
     % Verify we got some instructions
     case length(Instructions) > 0 of
         true ->
-            io:format("  ✓ Basic code generation test passed~n");
+            cure_utils:debug("  ✓ Basic code generation test passed~n");
         false ->
             throw({no_instructions_generated, Instructions})
     end.
 
 %% Test 4: FSM basic functionality
 test_fsm_basic_functionality() ->
-    io:format("✓ Testing FSM basic functionality...~n"),
+    cure_utils:debug("✓ Testing FSM basic functionality...~n"),
 
     % Test FSM registration
     FSMType = test_simple_fsm,
@@ -133,28 +133,28 @@ test_fsm_basic_functionality() ->
     % Clean up
     ok = cure_fsm_runtime:stop_fsm(FSM),
 
-    io:format("  ✓ FSM basic functionality test passed~n").
+    cure_utils:debug("  ✓ FSM basic functionality test passed~n").
 
 %% Additional helper functions for future tests
 
 %% Test error handling
 test_error_handling() ->
-    io:format("✓ Testing error handling...~n"),
+    cure_utils:debug("✓ Testing error handling...~n"),
 
     % Test with invalid code
     InvalidCode = "invalid syntax here!@#",
 
     case cure_lexer:scan(InvalidCode) of
         {error, _Reason} ->
-            io:format("  ✓ Error handling test passed~n");
+            cure_utils:debug("  ✓ Error handling test passed~n");
         {ok, _} ->
             % Lexer might not catch all syntax errors
-            io:format("  ✓ Error handling test passed (lexer accepted input)~n")
+            cure_utils:debug("  ✓ Error handling test passed (lexer accepted input)~n")
     end.
 
 %% Test performance of pipeline
 test_pipeline_performance() ->
-    io:format("✓ Testing pipeline performance...~n"),
+    cure_utils:debug("✓ Testing pipeline performance...~n"),
 
     % Generate medium-sized code
     Code = lists:flatten([integer_to_list(N) ++ " " || N <- lists:seq(1, 100)]),
@@ -168,11 +168,11 @@ test_pipeline_performance() ->
     EndTime = erlang:monotonic_time(microsecond),
     Duration = EndTime - StartTime,
 
-    io:format("  ✓ Pipeline performance test completed in ~w μs~n", [Duration]).
+    cure_utils:debug("  ✓ Pipeline performance test completed in ~w μs~n", [Duration]).
 
 %% Test memory usage
 test_memory_usage() ->
-    io:format("✓ Testing memory usage...~n"),
+    cure_utils:debug("✓ Testing memory usage...~n"),
 
     % Get initial memory usage
     {_, MemBefore} = erlang:process_info(self(), memory),
@@ -188,4 +188,4 @@ test_memory_usage() ->
     % Get final memory usage
     {_, MemAfter} = erlang:process_info(self(), memory),
 
-    io:format("  ✓ Memory usage test: ~w -> ~w bytes~n", [MemBefore, MemAfter]).
+    cure_utils:debug("  ✓ Memory usage test: ~w -> ~w bytes~n", [MemBefore, MemAfter]).

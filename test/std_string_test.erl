@@ -9,7 +9,7 @@
 
 %% Run all Std.String tests
 run() ->
-    io:format("Running Std.String tests...~n"),
+    cure_utils:debug("Running Std.String tests...~n"),
     test_basic_string_operations(),
     test_string_construction(),
     test_string_conversion(),
@@ -17,14 +17,14 @@ run() ->
     test_string_manipulation(),
     test_string_access(),
     test_edge_cases(),
-    io:format("All Std.String tests passed!~n").
+    cure_utils:debug("All Std.String tests passed!~n").
 
 %% ============================================================================
 %% Test 1: Basic string operations - length, is_empty
 %% ============================================================================
 
 test_basic_string_operations() ->
-    io:format("Testing basic string operations...~n"),
+    cure_utils:debug("Testing basic string operations...~n"),
 
     % Test length/1 with various strings
     % Note: Current implementation returns placeholder 0, so we test both expected and current behavior
@@ -62,7 +62,7 @@ test_basic_string_operations() ->
     ?assertEqual(false, real_is_empty("hello")),
     ?assertEqual(false, real_is_empty("world")),
 
-    io:format("✓ Basic string operations test passed~n").
+    cure_utils:debug("✓ Basic string operations test passed~n").
 
 % Helper functions for basic operations (current placeholder implementation)
 
@@ -81,7 +81,7 @@ real_is_empty(_) -> false.
 %% ============================================================================
 
 test_string_construction() ->
-    io:format("Testing string construction...~n"),
+    cure_utils:debug("Testing string construction...~n"),
 
     % Test concat/2 - this should work since it uses ++
     ?assertEqual("helloworld", test_concat("hello", "world")),
@@ -111,7 +111,7 @@ test_string_construction() ->
     ?assertEqual("hellohello", simple_repeat("hello", 2)),
     ?assertEqual("hellohellohello", simple_repeat("hello", 3)),
 
-    io:format("✓ String construction test passed~n").
+    cure_utils:debug("✓ String construction test passed~n").
 
 % Helper functions for construction
 test_concat(S1, S2) -> S1 ++ S2.
@@ -136,7 +136,7 @@ simple_repeat(String, N) when N > 1 ->
 %% ============================================================================
 
 test_string_conversion() ->
-    io:format("Testing string conversion...~n"),
+    cure_utils:debug("Testing string conversion...~n"),
 
     % Test to_upper/1 - current implementation returns input unchanged (placeholder)
 
@@ -166,7 +166,7 @@ test_string_conversion() ->
     ?assertEqual("hello", string:to_lower("HELLO")),
     ?assertEqual("world", string:to_lower("WORLD")),
 
-    io:format("✓ String conversion test passed~n").
+    cure_utils:debug("✓ String conversion test passed~n").
 
 % Helper functions for conversion (current placeholder implementation)
 
@@ -180,7 +180,7 @@ test_to_lower(String) -> String.
 %% ============================================================================
 
 test_string_predicates() ->
-    io:format("Testing string predicates...~n"),
+    cure_utils:debug("Testing string predicates...~n"),
 
     % Test starts_with/2 - current implementation returns true (placeholder)
 
@@ -228,7 +228,7 @@ test_string_predicates() ->
     ?assertEqual(true, real_ends_with("", "")),
     ?assertEqual(false, real_ends_with("", "a")),
 
-    io:format("✓ String predicates test passed~n").
+    cure_utils:debug("✓ String predicates test passed~n").
 
 % Helper functions for predicates (current placeholder implementation)
 
@@ -261,7 +261,7 @@ real_ends_with(String, Suffix) ->
 %% ============================================================================
 
 test_string_manipulation() ->
-    io:format("Testing string manipulation...~n"),
+    cure_utils:debug("Testing string manipulation...~n"),
 
     % Test trim/1 - current implementation returns input unchanged (placeholder)
 
@@ -298,7 +298,7 @@ test_string_manipulation() ->
     ?assertEqual("a", lists:reverse("a")),
     ?assertEqual("54321", lists:reverse("12345")),
 
-    io:format("✓ String manipulation test passed~n").
+    cure_utils:debug("✓ String manipulation test passed~n").
 
 % Helper functions for manipulation (current placeholder implementation)
 
@@ -312,7 +312,7 @@ test_reverse(String) -> String.
 %% ============================================================================
 
 test_string_access() ->
-    io:format("Testing string access operations...~n"),
+    cure_utils:debug("Testing string access operations...~n"),
 
     % Test slice/3 - current implementation returns input unchanged (placeholder)
 
@@ -354,7 +354,7 @@ test_string_access() ->
     % Similar to take(hello, 0)
     ?assertEqual("", lists:sublist("hello", 1, 0)),
 
-    io:format("✓ String access operations test passed~n").
+    cure_utils:debug("✓ String access operations test passed~n").
 
 % Helper functions for access (current implementation with placeholders)
 
@@ -381,7 +381,7 @@ test_drop(String, N) ->
 %% ============================================================================
 
 test_edge_cases() ->
-    io:format("Testing edge cases...~n"),
+    cure_utils:debug("Testing edge cases...~n"),
 
     % Test with empty strings
     ?assertEqual("", test_concat("", "")),
@@ -435,7 +435,7 @@ test_edge_cases() ->
     ?assertEqual(0, subtract_helper(5, 5)),
     ?assertEqual(-2, subtract_helper(3, 5)),
 
-    io:format("✓ Edge cases test passed~n").
+    cure_utils:debug("✓ Edge cases test passed~n").
 
 % Helper function for subtraction (as referenced in string.cure)
 subtract_helper(X, Y) -> X - Y.
@@ -447,7 +447,7 @@ subtract_helper(X, Y) -> X - Y.
 -ifdef(COMPREHENSIVE_TESTS).
 
 test_unicode_strings() ->
-    io:format("Testing Unicode strings...~n"),
+    cure_utils:debug("Testing Unicode strings...~n"),
 
     % Test with Unicode characters
     UnicodeString = "café naïve résumé",
@@ -464,10 +464,10 @@ test_unicode_strings() ->
     ?assertEqual(EmojiString, test_trim(EmojiString)),
     ?assertEqual(EmojiString ++ "!", test_concat(EmojiString, "!")),
 
-    io:format("✓ Unicode strings test passed~n").
+    cure_utils:debug("✓ Unicode strings test passed~n").
 
 test_performance_strings() ->
-    io:format("Testing performance with large strings...~n"),
+    cure_utils:debug("Testing performance with large strings...~n"),
 
     % Test with very large strings
     VeryLongString = lists:duplicate(10000, $x),
@@ -480,6 +480,6 @@ test_performance_strings() ->
     % 3 * 100
     ?assertEqual(300, length(RepeatedString)),
 
-    io:format("✓ Performance strings test passed~n").
+    cure_utils:debug("✓ Performance strings test passed~n").
 
 -endif.

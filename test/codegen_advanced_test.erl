@@ -18,7 +18,7 @@
 
 %% Run all advanced code generation tests
 run() ->
-    io:format("Running Code Generation Advanced tests...~n"),
+    cure_utils:debug("Running Code Generation Advanced tests...~n"),
     test_nested_let_expressions(),
     test_complex_function_calls(),
     test_let_with_function_calls(),
@@ -29,7 +29,7 @@ run() ->
     test_closure_generation(),
     test_tail_call_optimization(),
     test_let_expression_optimizations(),
-    io:format("All code generation advanced tests passed!~n").
+    cure_utils:debug("All code generation advanced tests passed!~n").
 
 %% Test nested let expressions compilation
 test_nested_let_expressions() ->
@@ -106,7 +106,7 @@ test_nested_let_expressions() ->
     % x+5, y*2, z+1
     ?assertEqual(3, length(ArithInstructions)),
 
-    io:format("✓ Nested let expressions test passed~n").
+    cure_utils:debug("✓ Nested let expressions test passed~n").
 
 %% Test complex function calls with multiple arguments and nesting
 test_complex_function_calls() ->
@@ -155,7 +155,7 @@ test_complex_function_calls() ->
     CallFunctions = [hd(I#beam_instr.args) || I <- CallInstructions],
     ?assertEqual(['qux', 'bar', 'baz', 'foo'], CallFunctions),
 
-    io:format("✓ Complex function calls test passed~n").
+    cure_utils:debug("✓ Complex function calls test passed~n").
 
 %% Test let expressions containing function calls
 test_let_with_function_calls() ->
@@ -212,7 +212,7 @@ test_let_with_function_calls() ->
     % x, y
     ?assertEqual(2, length(BindInstructions)),
 
-    io:format("✓ Let with function calls test passed~n").
+    cure_utils:debug("✓ Let with function calls test passed~n").
 
 %% Test deeply nested expressions with mixed let and function calls
 test_deeply_nested_expressions() ->
@@ -331,7 +331,7 @@ test_deeply_nested_expressions() ->
     % Should track variable scopes
     ?assert(maps:size(State) >= 0),
 
-    io:format("✓ Deeply nested expressions test passed~n").
+    cure_utils:debug("✓ Deeply nested expressions test passed~n").
 
 %% Test let expression variable scoping in code generation
 test_let_expression_scoping() ->
@@ -381,7 +381,7 @@ test_let_expression_scoping() ->
     % Should be different
     ?assertEqual(2, length(sets:to_list(sets:from_list(VariableScopes)))),
 
-    io:format("✓ Let expression scoping test passed~n").
+    cure_utils:debug("✓ Let expression scoping test passed~n").
 
 %% Test recursive function calls
 test_recursive_function_calls() ->
@@ -439,7 +439,7 @@ test_recursive_function_calls() ->
     TailCallInstructions = [I || I <- Instructions, I#beam_instr.op == tail_call],
     % May or may not be optimized depending on implementation
 
-    io:format("✓ Recursive function calls test passed~n").
+    cure_utils:debug("✓ Recursive function calls test passed~n").
 
 %% Test higher-order function calls (functions as arguments)
 test_higher_order_function_calls() ->
@@ -480,7 +480,7 @@ test_higher_order_function_calls() ->
     CallInstructions = [I || I <- Instructions, I#beam_instr.op == function_call],
     ?assertEqual(1, length(CallInstructions)),
 
-    io:format("✓ Higher-order function calls test passed~n").
+    cure_utils:debug("✓ Higher-order function calls test passed~n").
 
 %% Test closure generation and capture
 test_closure_generation() ->
@@ -541,7 +541,7 @@ test_closure_generation() ->
     CallInstructions = [I || I <- Instructions, I#beam_instr.op == closure_call],
     ?assertEqual(1, length(CallInstructions)),
 
-    io:format("✓ Closure generation test passed~n").
+    cure_utils:debug("✓ Closure generation test passed~n").
 
 %% Test tail call optimization
 test_tail_call_optimization() ->
@@ -599,7 +599,7 @@ test_tail_call_optimization() ->
     % Should prefer tail calls over regular calls in tail position
     ?assert(length(TailCallInstructions) >= length(RegularCallInstructions)),
 
-    io:format("✓ Tail call optimization test passed~n").
+    cure_utils:debug("✓ Tail call optimization test passed~n").
 
 %% Test let expression optimizations
 test_let_expression_optimizations() ->
@@ -648,7 +648,7 @@ test_let_expression_optimizations() ->
     CallInstructions = [I || I <- UnusedInstructions, I#beam_instr.op == function_call],
     % May or may not eliminate call depending on side effects analysis
 
-    io:format("✓ Let expression optimizations test passed~n").
+    cure_utils:debug("✓ Let expression optimizations test passed~n").
 
 %% ============================================================================
 %% Helper Functions for Creating AST Nodes

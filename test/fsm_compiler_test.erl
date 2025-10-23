@@ -30,7 +30,7 @@
 
 %% Test the complete FSM compilation pipeline
 run() ->
-    io:format("=== Testing FSM Compiler Support ===~n"),
+    cure_utils:debug("=== Testing FSM Compiler Support ===~n"),
 
     Tests = [
         fun test_basic_fsm_compilation/0,
@@ -48,29 +48,29 @@ run() ->
     Passed = length([ok || ok <- Results]),
     Failed = length(Results) - Passed,
 
-    io:format("~nFSM Compiler Tests Summary:~n"),
-    io:format("  Passed: ~w~n", [Passed]),
-    io:format("  Failed: ~w~n", [Failed]),
+    cure_utils:debug("~nFSM Compiler Tests Summary:~n"),
+    cure_utils:debug("  Passed: ~w~n", [Passed]),
+    cure_utils:debug("  Failed: ~w~n", [Failed]),
 
     case Failed of
-        0 -> io:format("All FSM compiler tests passed!~n");
-        _ -> io:format("Some FSM compiler tests failed.~n")
+        0 -> cure_utils:debug("All FSM compiler tests passed!~n");
+        _ -> cure_utils:debug("Some FSM compiler tests failed.~n")
     end,
 
     {ok, #{passed => Passed, failed => Failed}}.
 
 run_test(TestFun) ->
     TestName = extract_test_name(TestFun),
-    io:format("Running ~s... ", [TestName]),
+    cure_utils:debug("Running ~s... ", [TestName]),
     try
         TestFun(),
-        io:format("PASSED~n"),
+        cure_utils:debug("PASSED~n"),
         ok
     catch
         Error:Reason:Stack ->
-            io:format("FAILED~n"),
-            io:format("  Error: ~p:~p~n", [Error, Reason]),
-            io:format("  Stack: ~p~n", [Stack]),
+            cure_utils:debug("FAILED~n"),
+            cure_utils:debug("  Error: ~p:~p~n", [Error, Reason]),
+            cure_utils:debug("  Stack: ~p~n", [Stack]),
             {error, Reason}
     end.
 
@@ -425,11 +425,11 @@ test_end_to_end_compilation() ->
     % Try to compile the forms to BEAM (this would normally be done by cure_beam_compiler)
     try
         {ok, _ModuleName, _Binary} = compile:forms(Forms, [binary, return_errors]),
-        io:format(" [BEAM compilation successful] "),
+        cure_utils:debug(" [BEAM compilation successful] "),
         ok
     catch
         error:_Reason ->
             % If BEAM compilation fails due to missing dependencies, that's expected in test
-            io:format(" [BEAM compilation skipped - missing deps] "),
+            cure_utils:debug(" [BEAM compilation skipped - missing deps] "),
             ok
     end.

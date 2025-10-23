@@ -79,9 +79,9 @@ end
 %% Handle parse errors
 case cure_parser:parse_file("example.cure") of
     {ok, AST} -> 
-        io:format("Parsed successfully~n");
+        cure_utils:debug("Parsed successfully~n");
     {error, {parse_error, Reason, Line, Column}} ->
-        io:format("Parse error at ~p:~p: ~p~n", [Line, Column, Reason])
+        cure_utils:debug("Parse error at ~p:~p: ~p~n", [Line, Column, Reason])
 end.
 ```
 
@@ -190,11 +190,11 @@ lexing and parsing pipeline.
 ```erlang
 case cure_parser:parse_file("examples/hello.cure") of
     {ok, AST} ->
-        io:format("Successfully parsed file~n");
+        cure_utils:debug("Successfully parsed file~n");
     {error, {parse_error, Reason, Line, Col}} ->
-        io:format("Parse error at ~p:~p: ~p~n", [Line, Col, Reason]);
+        cure_utils:debug("Parse error at ~p:~p: ~p~n", [Line, Col, Reason]);
     {error, Reason} ->
-        io:format("Error: ~p~n", [Reason])
+        cure_utils:debug("Error: ~p~n", [Reason])
 end.
 ```
 

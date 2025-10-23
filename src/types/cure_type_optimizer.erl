@@ -301,7 +301,7 @@ optimize_program(AST, Config) ->
     Context = initialize_optimization_context(Config),
 
     % Phase 1: Collect type information and usage statistics
-    io:format("Phase 1: Analyzing type usage and collecting information...~n"),
+    cure_utils:debug("Phase 1: Analyzing type usage and collecting information...~n"),
     {TypeInfo, UsageStats} = analyze_program_types(AST),
 
     Context1 = Context#optimization_context{
@@ -310,14 +310,14 @@ optimize_program(AST, Config) ->
     },
 
     % Phase 2: Find optimization opportunities
-    io:format("Phase 2: Identifying optimization opportunities...~n"),
+    cure_utils:debug("Phase 2: Identifying optimization opportunities...~n"),
     Context2 = find_optimization_opportunities(AST, Context1),
 
     % Phase 3: Apply optimization passes
-    io:format("Phase 3: Applying optimization passes...~n"),
+    cure_utils:debug("Phase 3: Applying optimization passes...~n"),
     OptimizedAST = run_optimization_passes(AST, Context2),
 
-    io:format("Type-directed optimization completed.~n"),
+    cure_utils:debug("Type-directed optimization completed.~n"),
 
     {ok, OptimizedAST, generate_optimization_report(Context2)}.
 
@@ -367,7 +367,7 @@ run_optimization_passes(AST, Context) ->
         fun({PassName, Enabled}, CurrentAST) ->
             case Enabled of
                 true ->
-                    io:format("  Running ~p...~n", [PassName]),
+                    cure_utils:debug("  Running ~p...~n", [PassName]),
                     apply_optimization_pass(PassName, CurrentAST, Context);
                 false ->
                     CurrentAST
@@ -433,17 +433,17 @@ inlining_pass(AST) ->
 
 inlining_pass(AST, Context) ->
     % Phase 1: Analyze inlining opportunities based on type information
-    io:format("  Analyzing inlining opportunities...~n"),
+    cure_utils:debug("  Analyzing inlining opportunities...~n"),
     InliningOpportunities = analyze_inlining_opportunities(AST, Context),
 
     % Phase 2: Make intelligent inlining decisions
     InliningDecisions = make_inlining_decisions(InliningOpportunities, Context),
 
     % Phase 3: Apply inlining transformations
-    io:format("  Applying inlining transformations...~n"),
+    cure_utils:debug("  Applying inlining transformations...~n"),
     OptimizedAST = inline_functions(AST, InliningDecisions),
 
-    io:format("  [Inlining applied to ~p call sites]~n", [maps:size(InliningDecisions)]),
+    cure_utils:debug("  [Inlining applied to ~p call sites]~n", [maps:size(InliningDecisions)]),
     OptimizedAST.
 
 %% Dead Code Elimination Pass - Enhanced with Type Information
@@ -452,18 +452,18 @@ dead_code_elimination_pass(AST) ->
 
 dead_code_elimination_pass(AST, Context) ->
     % Phase 1: Analyze dead code using type information
-    io:format("  Analyzing dead code using type information...~n"),
+    cure_utils:debug("  Analyzing dead code using type information...~n"),
     DeadCodeAnalysis = analyze_dead_code_with_types(AST, Context),
 
     % Phase 2: Apply dead code elimination transformations
-    io:format("  Removing identified dead code...~n"),
+    cure_utils:debug("  Removing identified dead code...~n"),
     ColdCode = maps:get(cold_code, DeadCodeAnalysis, []),
     OptimizedAST = remove_dead_code(AST, ColdCode),
 
     % Phase 3: Clean up after dead code removal
     CleanedAST = cleanup_after_dead_code_removal(OptimizedAST, DeadCodeAnalysis),
 
-    io:format("  [Dead code elimination completed]~n"),
+    cure_utils:debug("  [Dead code elimination completed]~n"),
     CleanedAST.
 
 %% Analyze dead code using type information
@@ -2969,7 +2969,7 @@ remove_unused_functions_advanced(AST, UnusedFunctions) ->
         [] ->
             AST;
         _ ->
-            io:format("    Removing ~p unused functions~n", [length(UnusedFunctions)]),
+            cure_utils:debug("    Removing ~p unused functions~n", [length(UnusedFunctions)]),
             filter_dead_functions(AST, UnusedFunctions)
     end.
 
@@ -2979,7 +2979,7 @@ remove_unreachable_branches(AST, UnreachableBranches) ->
         [] ->
             AST;
         _ ->
-            io:format("    Removing ~p unreachable branches~n", [length(UnreachableBranches)]),
+            cure_utils:debug("    Removing ~p unreachable branches~n", [length(UnreachableBranches)]),
             transform_ast_remove_unreachable(AST, UnreachableBranches)
     end.
 
@@ -2989,7 +2989,7 @@ remove_redundant_type_checks(AST, RedundantChecks) ->
         [] ->
             AST;
         _ ->
-            io:format("    Removing ~p redundant type checks~n", [length(RedundantChecks)]),
+            cure_utils:debug("    Removing ~p redundant type checks~n", [length(RedundantChecks)]),
             transform_ast_remove_redundant_checks(AST, RedundantChecks)
     end.
 
@@ -2999,7 +2999,7 @@ remove_dead_code_patterns(AST, DeadPatterns) ->
         [] ->
             AST;
         _ ->
-            io:format("    Removing ~p dead code patterns~n", [length(DeadPatterns)]),
+            cure_utils:debug("    Removing ~p dead code patterns~n", [length(DeadPatterns)]),
             transform_ast_remove_patterns(AST, DeadPatterns)
     end.
 
@@ -3190,7 +3190,7 @@ verify_ast_consistency(AST) ->
 
 %% Apply type-directed BEAM code generation optimization
 apply_beam_generation_pass(AST, Context) ->
-    io:format("[Type Optimizer] Starting Type-directed BEAM Code Generation pass...~n"),
+    cure_utils:debug("[Type Optimizer] Starting Type-directed BEAM Code Generation pass...~n"),
 
     % Extract type information from optimization context
     TypeInfo = extract_type_info_for_beam(Context),
@@ -3218,7 +3218,7 @@ apply_beam_generation_pass(AST, Context) ->
         beam_generation = BeamResult
     },
 
-    io:format("[Type Optimizer] Type-directed BEAM Code Generation pass completed~n"),
+    cure_utils:debug("[Type Optimizer] Type-directed BEAM Code Generation pass completed~n"),
     {AST, NewContext}.
 
 %% Extract relevant type information for BEAM generation
@@ -4306,7 +4306,7 @@ are_all_float_params(ParamTypes) ->
 
 %% Apply profile-guided optimization pass
 apply_profile_guided_optimization_pass(AST, Context) ->
-    io:format("[Type Optimizer] Starting Profile-guided Optimization pass...~n"),
+    cure_utils:debug("[Type Optimizer] Starting Profile-guided Optimization pass...~n"),
 
     % Initialize profile collection system
     ProfileCollector = init_profile_collector(),
@@ -4333,7 +4333,7 @@ apply_profile_guided_optimization_pass(AST, Context) ->
         }
     },
 
-    io:format("[Type Optimizer] Profile-guided Optimization pass completed~n"),
+    cure_utils:debug("[Type Optimizer] Profile-guided Optimization pass completed~n"),
     {ProfileGuidedAST, NewContext}.
 
 %% Initialize profile collection system

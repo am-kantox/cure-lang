@@ -7,7 +7,7 @@
 
 %% Run all tests
 run() ->
-    io:format("~n=== Type Constraints Test Suite ===~n"),
+    cure_utils:debug("~n=== Type Constraints Test Suite ===~n"),
     Tests = [
         fun test_basic_type_operations/0,
         fun test_type_compatibility/0,
@@ -16,10 +16,10 @@ run() ->
     Results = [run_test(Test) || Test <- Tests],
     Passed = length([R || R <- Results, R =:= ok]),
     Total = length(Results),
-    io:format("~nResults: ~w/~w tests passed~n", [Passed, Total]),
+    cure_utils:debug("~nResults: ~w/~w tests passed~n", [Passed, Total]),
     case Passed of
-        Total -> io:format("All type constraints tests passed!~n");
-        _ -> io:format("Some tests failed.~n")
+        Total -> cure_utils:debug("All type constraints tests passed!~n");
+        _ -> cure_utils:debug("Some tests failed.~n")
     end.
 
 run_test(Test) ->
@@ -27,22 +27,22 @@ run_test(Test) ->
         Result = Test(),
         case Result of
             ok ->
-                io:format("PASSED~n"),
+                cure_utils:debug("PASSED~n"),
                 ok;
             {error, _Reason} ->
-                io:format("FAILED: ~p~n", [_Reason]),
+                cure_utils:debug("FAILED: ~p~n", [_Reason]),
                 error
         end
     catch
         Class:Error:Stack ->
-            io:format("FAILED: ~p:~p~n", [Class, Error]),
-            io:format("Stack: ~p~n", [Stack]),
+            cure_utils:debug("FAILED: ~p:~p~n", [Class, Error]),
+            cure_utils:debug("Stack: ~p~n", [Stack]),
             error
     end.
 
 %% Test basic type operations
 test_basic_type_operations() ->
-    io:format("Testing Basic Type Operations... "),
+    cure_utils:debug("Testing Basic Type Operations... "),
 
     % Test primitive type creation
     IntType = #primitive_type{name = 'Int', location = #location{line = 1, column = 1}},
@@ -58,7 +58,7 @@ test_basic_type_operations() ->
 
 %% Test type compatibility
 test_type_compatibility() ->
-    io:format("Testing Type Compatibility... "),
+    cure_utils:debug("Testing Type Compatibility... "),
 
     % Test list type creation
     ListType = #list_type{
@@ -85,7 +85,7 @@ test_type_compatibility() ->
 
 %% Test dependent types
 test_dependent_types() ->
-    io:format("Testing Dependent Types... "),
+    cure_utils:debug("Testing Dependent Types... "),
 
     % Test dependent type creation
     DepType = #dependent_type{

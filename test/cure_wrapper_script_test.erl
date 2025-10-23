@@ -10,21 +10,21 @@
 
 %% Run wrapper script specific tests
 run() ->
-    io:format("Running Cure Wrapper Script Tests...~n"),
+    cure_utils:debug("Running Cure Wrapper Script Tests...~n"),
 
     test_wrapper_build_command_execution(),
     test_wrapper_missing_beam_module_detection(),
     test_wrapper_required_modules_definition(),
     test_wrapper_error_reporting(),
 
-    io:format("All cure wrapper script tests passed!~n").
+    cure_utils:debug("All cure wrapper script tests passed!~n").
 
 %% ============================================================================
 %% Test 1: Cure wrapper script correctly executes "make all" for "build" command
 %% ============================================================================
 
 test_wrapper_build_command_execution() ->
-    io:format("Testing wrapper build command execution logic...~n"),
+    cure_utils:debug("Testing wrapper build command execution logic...~n"),
 
     % Read the cure wrapper script
     CureScriptPath = "/opt/Proyectos/Ammotion/cure/cure",
@@ -53,14 +53,14 @@ test_wrapper_build_command_execution() ->
     BuildCasePattern = "\"build\")",
     ?assert(string:str(ScriptText, BuildCasePattern) > 0),
 
-    io:format("✓ Wrapper build command execution test passed~n").
+    cure_utils:debug("✓ Wrapper build command execution test passed~n").
 
 %% ============================================================================
 %% Test 2: Cure wrapper script correctly reports missing required BEAM modules
 %% ============================================================================
 
 test_wrapper_missing_beam_module_detection() ->
-    io:format("Testing wrapper missing BEAM module detection...~n"),
+    cure_utils:debug("Testing wrapper missing BEAM module detection...~n"),
 
     CureScriptPath = "/opt/Proyectos/Ammotion/cure/cure",
     {ok, ScriptContent} = file:read_file(CureScriptPath),
@@ -95,10 +95,10 @@ test_wrapper_missing_beam_module_detection() ->
     % Test 2.5: Verify missing modules are added to array
     ?assert(string:str(ScriptText, "MISSING_MODULES+=(\"${module}\")") > 0),
 
-    io:format("✓ Wrapper missing BEAM module detection test passed~n").
+    cure_utils:debug("✓ Wrapper missing BEAM module detection test passed~n").
 
 test_wrapper_required_modules_definition() ->
-    io:format("Testing wrapper required modules definition...~n"),
+    cure_utils:debug("Testing wrapper required modules definition...~n"),
 
     CureScriptPath = "/opt/Proyectos/Ammotion/cure/cure",
     {ok, ScriptContent} = file:read_file(CureScriptPath),
@@ -119,10 +119,10 @@ test_wrapper_required_modules_definition() ->
     ?assert(string:str(ScriptText, "\"cure_typechecker.beam\"") > 0),
     ?assert(string:str(ScriptText, "\"cure_codegen.beam\"") > 0),
 
-    io:format("✓ Wrapper required modules definition test passed~n").
+    cure_utils:debug("✓ Wrapper required modules definition test passed~n").
 
 test_wrapper_error_reporting() ->
-    io:format("Testing wrapper error reporting mechanism...~n"),
+    cure_utils:debug("Testing wrapper error reporting mechanism...~n"),
 
     CureScriptPath = "/opt/Proyectos/Ammotion/cure/cure",
     {ok, ScriptContent} = file:read_file(CureScriptPath),
@@ -146,4 +146,4 @@ test_wrapper_error_reporting() ->
     % Test 4.6: Verify error messages go to stderr
     ?assert(string:str(ScriptText, ">&2") > 0),
 
-    io:format("✓ Wrapper error reporting test passed~n").
+    cure_utils:debug("✓ Wrapper error reporting test passed~n").

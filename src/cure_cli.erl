@@ -149,22 +149,22 @@ main(Args) ->
             {compile, Filename, Options} ->
                 case compile_file(Filename, Options) of
                     {ok, OutputFile} ->
-                        io:format("Successfully compiled ~s -> ~s~n", [Filename, OutputFile]),
+                        cure_utils:debug("Successfully compiled ~s -> ~s~n", [Filename, OutputFile]),
                         halt(?EXIT_SUCCESS);
                     {error, Reason} ->
-                        io:format("Error: ~s~n", [format_error(Reason)]),
+                        cure_utils:debug("Error: ~s~n", [format_error(Reason)]),
                         halt(?EXIT_ERROR)
                 end;
             {error, Message} ->
-                io:format("Error: ~s~n", [Message]),
-                io:format("Use 'cure --help' for usage information.~n"),
+                cure_utils:debug("Error: ~s~n", [Message]),
+                cure_utils:debug("Use 'cure --help' for usage information.~n"),
                 halt(?EXIT_USAGE)
         end
     catch
         Error:CatchReason:Stack ->
-            io:format("Internal error: ~p:~p~n", [Error, CatchReason]),
+            cure_utils:debug("Internal error: ~p:~p~n", [Error, CatchReason]),
             case os:getenv("CURE_DEBUG") of
-                "1" -> io:format("Stack trace: ~p~n", [Stack]);
+                "1" -> cure_utils:debug("Stack trace: ~p~n", [Stack]);
                 _ -> ok
             end,
             halt(?EXIT_ERROR)
@@ -327,7 +327,7 @@ compile_file_impl(Filename, Options) ->
             % Skip standard library check for stdlib files to avoid circular dependency
             if
                 Options#compile_options.verbose ->
-                    io:format("Compiling standard library file ~s...~n", [Filename]);
+                    cure_utils:debug("Compiling standard library file ~s...~n", [Filename]);
                 true ->
                     ok
             end,
@@ -351,7 +351,7 @@ compile_file_impl(Filename, Options) ->
                 ok ->
                     if
                         Options#compile_options.verbose ->
-                            io:format("Compiling ~s...~n", [Filename]);
+                            cure_utils:debug("Compiling ~s...~n", [Filename]);
                         true ->
                             ok
                     end,
@@ -439,7 +439,7 @@ compile_source(Filename, Source, Options) ->
         {error, Stage, Reason} ->
             if
                 Options#compile_options.verbose ->
-                    io:format("Compilation failed at ~s: ~p~n", [Stage, Reason]);
+                    cure_utils:debug("Compilation failed at ~s: ~p~n", [Stage, Reason]);
                 true ->
                     ok
             end,
@@ -452,7 +452,7 @@ run_pipeline([], Result, _Options) ->
 run_pipeline([{StageName, StageFunc} | RestStages], Input, Options) ->
     if
         Options#compile_options.verbose ->
-            io:format("  ~s...~n", [StageName]);
+            cure_utils:debug("  ~s...~n", [StageName]);
         true ->
             ok
     end,
@@ -478,14 +478,14 @@ type_check_ast(AST) ->
                     {ok, _NewEnv, Result} ->
                         check_type_result(Result, AST);
                     {error, Reason} ->
-                        io:format("Type checking error: ~p~n", [Reason]),
+                        cure_utils:debug("Type checking error: ~p~n", [Reason]),
                         {error, Reason}
                 end;
             Items when is_list(Items) ->
                 % Multiple top-level items - check them as a program
                 case cure_typechecker:check_program(Items) of
                     {error, Reason} ->
-                        io:format("Type checking error: ~p~n", [Reason]),
+                        cure_utils:debug("Type checking error: ~p~n", [Reason]),
                         {error, Reason};
                     Result ->
                         check_type_result(Result, AST)
@@ -494,7 +494,7 @@ type_check_ast(AST) ->
                 % Single non-module item - check as program with single item
                 case cure_typechecker:check_program([SingleItem]) of
                     {error, Reason} ->
-                        io:format("Type checking error: ~p~n", [Reason]),
+                        cure_utils:debug("Type checking error: ~p~n", [Reason]),
                         {error, Reason};
                     Result ->
                         check_type_result(Result, AST)
@@ -503,9 +503,9 @@ type_check_ast(AST) ->
     catch
         Class:Error:Stack ->
             % If type checking fails with exception, provide more detailed error
-            io:format("Error: Type checking failed with exception ~p:~p~n", [Class, Error]),
+            cure_utils:debug("Error: Type checking failed with exception ~p:~p~n", [Class, Error]),
             case os:getenv("CURE_DEBUG") of
-                "1" -> io:format("Stack trace: ~p~n", [Stack]);
+                "1" -> cure_utils:debug("Stack trace: ~p~n", [Stack]);
                 _ -> ok
             end,
             {error, type_check_exception}
@@ -523,11 +523,11 @@ check_type_result(Result, AST) ->
                         [] ->
                             {ok, AST};
                         ErrorList ->
-                            io:format("Type checking failed with errors: ~p~n", [ErrorList]),
+                            cure_utils:debug("Type checking failed with errors: ~p~n", [ErrorList]),
                             {error, {type_check_failed, ErrorList}}
                     end;
                 false ->
-                    io:format("Type checking failed with errors: ~p~n", [Errors]),
+                    cure_utils:debug("Type checking failed with errors: ~p~n", [Errors]),
                     {error, {type_check_failed, Errors}}
             end;
         % Handle legacy success result formats
@@ -547,20 +547,20 @@ check_type_result(Result, AST) ->
                         [] ->
                             {ok, AST};
                         ErrorList ->
-                            io:format("Type checking failed with errors: ~p~n", [ErrorList]),
+                            cure_utils:debug("Type checking failed with errors: ~p~n", [ErrorList]),
                             {error, {type_check_failed, ErrorList}}
                     end;
                 false ->
-                    io:format("Type checking failed with errors: ~p~n", [Errors]),
+                    cure_utils:debug("Type checking failed with errors: ~p~n", [Errors]),
                     {error, {type_check_failed, Errors}}
             end;
         % Handle other tuple formats
         _ when is_tuple(Result) ->
-            io:format("Warning: Unknown type check result format: ~p~n", [Result]),
-            io:format("Assuming type checking failed~n"),
+            cure_utils:debug("Warning: Unknown type check result format: ~p~n", [Result]),
+            cure_utils:debug("Assuming type checking failed~n"),
             {error, unknown_type_check_format};
         _ ->
-            io:format("Warning: Type check result is not a tuple: ~p~n", [Result]),
+            cure_utils:debug("Warning: Type check result is not a tuple: ~p~n", [Result]),
             {error, invalid_type_check_result}
     end.
 
@@ -674,32 +674,32 @@ environment variables to assist users in using the compiler effectively.
 
 """.
 help() ->
-    io:format("~s v~s~n", [?CURE_DESCRIPTION, ?CURE_VERSION]),
-    io:format("~n"),
-    io:format("USAGE:~n"),
-    io:format("    cure [OPTIONS] <input-file>~n"),
-    io:format("~n"),
-    io:format("ARGUMENTS:~n"),
-    io:format("    <input-file>    Input .cure source file to compile~n"),
-    io:format("~n"),
-    io:format("OPTIONS:~n"),
-    io:format("    -h, --help           Show this help message~n"),
-    io:format("    -v, --version        Show version information~n"),
-    io:format("    -o, --output <file>  Output .beam file path~n"),
-    io:format("    -d, --output-dir <dir>  Output directory (default: _build/ebin)~n"),
-    io:format("    --verbose            Enable verbose output~n"),
-    io:format("    --no-debug           Disable debug information~n"),
-    io:format("    --no-warnings        Disable warnings~n"),
-    io:format("    --no-type-check      Skip type checking~n"),
-    io:format("    --no-optimize        Disable optimizations~n"),
-    io:format("~n"),
-    io:format("EXAMPLES:~n"),
-    io:format("    cure examples/simple.cure~n"),
-    io:format("    cure examples/fsm_demo.cure -o fsm_demo.beam~n"),
-    io:format("    cure src/my_module.cure --verbose -d build/~n"),
-    io:format("~n"),
-    io:format("ENVIRONMENT VARIABLES:~n"),
-    io:format("    CURE_DEBUG=1         Enable debug stack traces~n").
+    cure_utils:debug("~s v~s~n", [?CURE_DESCRIPTION, ?CURE_VERSION]),
+    cure_utils:debug("~n"),
+    cure_utils:debug("USAGE:~n"),
+    cure_utils:debug("    cure [OPTIONS] <input-file>~n"),
+    cure_utils:debug("~n"),
+    cure_utils:debug("ARGUMENTS:~n"),
+    cure_utils:debug("    <input-file>    Input .cure source file to compile~n"),
+    cure_utils:debug("~n"),
+    cure_utils:debug("OPTIONS:~n"),
+    cure_utils:debug("    -h, --help           Show this help message~n"),
+    cure_utils:debug("    -v, --version        Show version information~n"),
+    cure_utils:debug("    -o, --output <file>  Output .beam file path~n"),
+    cure_utils:debug("    -d, --output-dir <dir>  Output directory (default: _build/ebin)~n"),
+    cure_utils:debug("    --verbose            Enable verbose output~n"),
+    cure_utils:debug("    --no-debug           Disable debug information~n"),
+    cure_utils:debug("    --no-warnings        Disable warnings~n"),
+    cure_utils:debug("    --no-type-check      Skip type checking~n"),
+    cure_utils:debug("    --no-optimize        Disable optimizations~n"),
+    cure_utils:debug("~n"),
+    cure_utils:debug("EXAMPLES:~n"),
+    cure_utils:debug("    cure examples/simple.cure~n"),
+    cure_utils:debug("    cure examples/fsm_demo.cure -o fsm_demo.beam~n"),
+    cure_utils:debug("    cure src/my_module.cure --verbose -d build/~n"),
+    cure_utils:debug("~n"),
+    cure_utils:debug("ENVIRONMENT VARIABLES:~n"),
+    cure_utils:debug("    CURE_DEBUG=1         Enable debug stack traces~n").
 
 -doc """
 Display version and system information for the Cure compiler.
@@ -726,12 +726,12 @@ for the BEAM virtual machine with built-in finite state machines.
 
 """.
 version() ->
-    io:format("~s v~s~n", [?CURE_DESCRIPTION, ?CURE_VERSION]),
-    io:format("~n"),
-    io:format("Built with Erlang/OTP ~s~n", [erlang:system_info(otp_release)]),
-    io:format("~n"),
-    io:format("Cure is a dependently-typed functional programming language~n"),
-    io:format("for the BEAM virtual machine with built-in finite state machines.~n").
+    cure_utils:debug("~s v~s~n", [?CURE_DESCRIPTION, ?CURE_VERSION]),
+    cure_utils:debug("~n"),
+    cure_utils:debug("Built with Erlang/OTP ~s~n", [erlang:system_info(otp_release)]),
+    cure_utils:debug("~n"),
+    cure_utils:debug("Cure is a dependently-typed functional programming language~n"),
+    cure_utils:debug("for the BEAM virtual machine with built-in finite state machines.~n").
 
 %% ============================================================================
 %% Error Formatting
@@ -866,8 +866,8 @@ check_cure_installation() ->
         [] ->
             ok;
         MissingModules ->
-            io:format("Warning: Missing Cure compiler modules: ~p~n", [MissingModules]),
-            io:format("Make sure to run 'make all' to build the complete compiler~n"),
+            cure_utils:debug("Warning: Missing Cure compiler modules: ~p~n", [MissingModules]),
+            cure_utils:debug("Make sure to run 'make all' to build the complete compiler~n"),
             {error, {missing_modules, MissingModules}}
     end.
 
@@ -899,7 +899,7 @@ ensure_stdlib_available(Options) ->
         ok ->
             if
                 Options#compile_options.verbose ->
-                    io:format("Standard library already compiled~n");
+                    cure_utils:debug("Standard library already compiled~n");
                 true ->
                     ok
             end,
@@ -907,7 +907,7 @@ ensure_stdlib_available(Options) ->
         {missing, _MissingFiles} ->
             if
                 Options#compile_options.verbose ->
-                    io:format("Compiling Cure standard library...~n");
+                    cure_utils:debug("Compiling Cure standard library...~n");
                 true ->
                     ok
             end,
@@ -962,19 +962,19 @@ check_stdlib_compiled(_StdlibPaths) ->
 
 %% Compile standard library using make
 compile_stdlib() ->
-    io:format("Compiling Cure standard library...~n"),
+    cure_utils:debug("Compiling Cure standard library...~n"),
     case os:cmd("make -C . stdlib 2>&1") of
         _Output ->
             case check_stdlib_compiled(["_build/lib", "_build/lib/std"]) of
                 ok ->
-                    io:format("Standard library compilation completed successfully~n"),
+                    cure_utils:debug("Standard library compilation completed successfully~n"),
                     ok;
                 {missing, MissingFiles} ->
                     io:format(
                         "Standard library compilation completed but some files are missing:~n"
                     ),
                     lists:foreach(
-                        fun(File) -> io:format("  Missing: ~s~n", [File]) end,
+                        fun(File) -> cure_utils:debug("  Missing: ~s~n", [File]) end,
                         MissingFiles
                     ),
                     % Try to compile individual missing files
@@ -987,7 +987,7 @@ compile_stdlib() ->
 
 %% Compile individual missing standard library files
 compile_missing_stdlib_files(MissingBeamFiles) ->
-    io:format("Attempting to compile missing standard library files individually...~n"),
+    cure_utils:debug("Attempting to compile missing standard library files individually...~n"),
 
     % Convert BEAM file paths back to source file paths
     SourceFiles = lists:filtermap(
@@ -1008,7 +1008,7 @@ compile_missing_stdlib_files(MissingBeamFiles) ->
     % Compile each source file individually
     Results = lists:map(
         fun(SourceFile) ->
-            io:format("  Compiling ~s...~n", [SourceFile]),
+            cure_utils:debug("  Compiling ~s...~n", [SourceFile]),
             case os:cmd(io_lib:format("./cure '~s' --verbose 2>&1", [SourceFile])) of
                 CompileOutput ->
                     case string:str(CompileOutput, "Successfully compiled") of
@@ -1051,7 +1051,7 @@ convert_beam_to_source_path(BeamFile) ->
 %% Add automatic standard library imports to user source code
 add_automatic_stdlib_imports(Source, Options) ->
     case Options#compile_options.verbose of
-        true -> io:format("Adding automatic standard library imports...~n");
+        true -> cure_utils:debug("Adding automatic standard library imports...~n");
         false -> ok
     end,
 

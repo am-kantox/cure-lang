@@ -10,23 +10,23 @@
 
 %% Test runner
 run() ->
-    io:format("~n=== Pattern Matching Integration Test ===~n"),
+    cure_utils:debug("~n=== Pattern Matching Integration Test ===~n"),
 
     try
         test_comprehensive_pattern_matching(),
-        io:format("✓ Comprehensive pattern matching test passed~n"),
+        cure_utils:debug("✓ Comprehensive pattern matching test passed~n"),
 
         test_case_with_records_and_constructors(),
-        io:format("✓ Case with records and constructors test passed~n"),
+        cure_utils:debug("✓ Case with records and constructors test passed~n"),
 
         test_show_functions_integration(),
-        io:format("✓ Show functions integration test passed~n"),
+        cure_utils:debug("✓ Show functions integration test passed~n"),
 
-        io:format("All pattern matching integration tests passed!~n")
+        cure_utils:debug("All pattern matching integration tests passed!~n")
     catch
         Error:Reason:Stacktrace ->
-            io:format("Test failed: ~p:~p~n", [Error, Reason]),
-            io:format("Stacktrace: ~p~n", [Stacktrace])
+            cure_utils:debug("Test failed: ~p:~p~n", [Error, Reason]),
+            cure_utils:debug("Stacktrace: ~p~n", [Stacktrace])
     end.
 
 %% Test comprehensive pattern matching with all features

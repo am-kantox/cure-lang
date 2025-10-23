@@ -9,7 +9,7 @@
 
 %% Run all advanced parser tests
 run() ->
-    io:format("Running Advanced Parser tests...~n"),
+    cure_utils:debug("Running Advanced Parser tests...~n"),
     test_fsm_transition_with_guard(),
     test_fsm_transition_without_guard(),
     test_fsm_complex_guard_expressions(),
@@ -17,7 +17,7 @@ run() ->
     test_unary_plus_operator(),
     test_nested_unary_operators(),
     test_unary_operators_in_complex_expressions(),
-    io:format("All advanced parser tests passed!~n").
+    cure_utils:debug("All advanced parser tests passed!~n").
 
 %% Test 1: Verify that FSM transitions with a "when" clause are correctly parsed
 test_fsm_transition_with_guard() ->
@@ -88,7 +88,7 @@ test_fsm_transition_with_guard() ->
     GreenGuard = GreenTransition#transition.guard,
     ?assertMatch(#identifier_expr{name = traffic_detected}, GreenGuard),
 
-    io:format("✓ FSM transition with guard parsing test passed~n").
+    cure_utils:debug("✓ FSM transition with guard parsing test passed~n").
 
 %% Test 2: Ensure that FSM transitions without a "when" clause continue to parse correctly
 test_fsm_transition_without_guard() ->
@@ -151,7 +151,7 @@ test_fsm_transition_without_guard() ->
     ?assertEqual('Positive', IncrTransition#transition.target),
     ?assertEqual('Zero', DecrTransition#transition.target),
 
-    io:format("✓ FSM transition without guard parsing test passed~n").
+    cure_utils:debug("✓ FSM transition without guard parsing test passed~n").
 
 %% Test 3: Test complex guard expressions with supported operators
 test_fsm_complex_guard_expressions() ->
@@ -220,7 +220,7 @@ test_fsm_complex_guard_expressions() ->
         LessEqualGuard
     ),
 
-    io:format("✓ FSM complex guard expressions test passed~n").
+    cure_utils:debug("✓ FSM complex guard expressions test passed~n").
 
 %% Test 4: Validate correct parsing of expressions using unary minus operator
 test_unary_minus_operator() ->
@@ -274,7 +274,7 @@ test_unary_minus_operator() ->
         Body3
     ),
 
-    io:format("✓ Unary minus operator parsing test passed~n").
+    cure_utils:debug("✓ Unary minus operator parsing test passed~n").
 
 %% Test 5: Validate correct parsing of expressions using unary plus operator
 test_unary_plus_operator() ->
@@ -328,7 +328,7 @@ test_unary_plus_operator() ->
         Body3
     ),
 
-    io:format("✓ Unary plus operator parsing test passed~n").
+    cure_utils:debug("✓ Unary plus operator parsing test passed~n").
 
 %% Test 6: Test nested unary operators (with spaces to avoid -- token)
 test_nested_unary_operators() ->
@@ -381,7 +381,7 @@ test_nested_unary_operators() ->
     [DoubleOpToken] = TokensDoubleOp,
     ?assertEqual('--', DoubleOpToken#token.type),
 
-    io:format("✓ Nested unary operators test passed~n").
+    cure_utils:debug("✓ Nested unary operators test passed~n").
 
 %% Test 7: Test unary operators in complex expressions
 test_unary_operators_in_complex_expressions() ->
@@ -450,4 +450,4 @@ test_unary_operators_in_complex_expressions() ->
         Body3
     ),
 
-    io:format("✓ Unary operators in complex expressions test passed~n").
+    cure_utils:debug("✓ Unary operators in complex expressions test passed~n").

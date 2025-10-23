@@ -14,7 +14,7 @@
 }).
 
 run() ->
-    io:format("=== Comprehensive Dependent Types Test Suite ===~n"),
+    cure_utils:debug("=== Comprehensive Dependent Types Test Suite ===~n"),
 
     Results = [
         % Core dependent type tests
@@ -52,31 +52,31 @@ run() ->
     Passed = length([R || R <- Results, R#test_result.passed]),
     Total = length(Results),
 
-    io:format("~n=== Test Summary ===~n"),
-    io:format("Passed: ~p/~p tests~n", [Passed, Total]),
+    cure_utils:debug("~n=== Test Summary ===~n"),
+    cure_utils:debug("Passed: ~p/~p tests~n", [Passed, Total]),
 
     % Report failures
     Failures = [R || R <- Results, not R#test_result.passed],
     lists:foreach(
         fun(#test_result{name = Name, details = Details}) ->
-            io:format("FAILED: ~s - ~p~n", [Name, Details])
+            cure_utils:debug("FAILED: ~s - ~p~n", [Name, Details])
         end,
         Failures
     ),
 
     case Passed of
         Total ->
-            io:format("All dependent types tests PASSED!~n"),
+            cure_utils:debug("All dependent types tests PASSED!~n"),
             ok;
         _ ->
-            io:format("~p tests FAILED~n", [Total - Passed]),
+            cure_utils:debug("~p tests FAILED~n", [Total - Passed]),
             error
     end.
 
 %% ===== CORE DEPENDENT TYPE TESTS =====
 
 test_vector_types() ->
-    io:format("Testing Vector(T, n) types...~n"),
+    cure_utils:debug("Testing Vector(T, n) types...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -167,7 +167,7 @@ test_vector_operations(Env, Vec3Type) ->
     end.
 
 test_length_indexed_lists() ->
-    io:format("Testing List(T, n) with length indices...~n"),
+    cure_utils:debug("Testing List(T, n) with length indices...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -265,7 +265,7 @@ test_list_operations(Env, List3Type) ->
     end.
 
 test_matrix_dimension_checking() ->
-    io:format("Testing Matrix(rows, cols, T) dimension checking...~n"),
+    cure_utils:debug("Testing Matrix(rows, cols, T) dimension checking...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -327,7 +327,7 @@ test_matrix_constraint_solving(_Env, _Matrix2x3Type) ->
     ).
 
 test_refinement_types() ->
-    io:format("Testing refinement types with predicates...~n"),
+    cure_utils:debug("Testing refinement types with predicates...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -410,7 +410,7 @@ test_negative_refinement_cases(Env, PositiveIntType) ->
 %% ===== ADVANCED TYPE FEATURES =====
 
 test_gadts() ->
-    io:format("Testing GADTs (Generalized Algebraic Data Types)...~n"),
+    cure_utils:debug("Testing GADTs (Generalized Algebraic Data Types)...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -466,7 +466,7 @@ test_gadts() ->
     end.
 
 test_phantom_types() ->
-    io:format("Testing phantom types for compile-time safety...~n"),
+    cure_utils:debug("Testing phantom types for compile-time safety...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -523,7 +523,7 @@ test_phantom_type_safety(Env, MeasurementMetersType, MeasurementFeetType) ->
     end.
 
 test_proof_carrying_code() ->
-    io:format("Testing proof-carrying code patterns...~n"),
+    cure_utils:debug("Testing proof-carrying code patterns...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -559,7 +559,7 @@ test_proof_carrying_code() ->
     end.
 
 test_liquid_types() ->
-    io:format("Testing liquid types with logical constraints...~n"),
+    cure_utils:debug("Testing liquid types with logical constraints...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -591,7 +591,7 @@ test_liquid_types() ->
 %% ===== TYPE INFERENCE AND CONSTRAINT SOLVING =====
 
 test_dependent_type_inference() ->
-    io:format("Testing type inference for dependent types...~n"),
+    cure_utils:debug("Testing type inference for dependent types...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -637,7 +637,7 @@ test_dependent_type_inference() ->
     end.
 
 test_constraint_generation() ->
-    io:format("Testing constraint generation for dependent types...~n"),
+    cure_utils:debug("Testing constraint generation for dependent types...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -691,7 +691,7 @@ test_constraint_generation() ->
     end.
 
 test_smt_constraint_solving() ->
-    io:format("Testing SMT constraint solving...~n"),
+    cure_utils:debug("Testing SMT constraint solving...~n"),
     try
         % Test basic constraint solving - use cure_types records
         _TypeVar1 = cure_types:new_type_var(),
@@ -732,7 +732,7 @@ test_smt_constraint_solving() ->
     end.
 
 test_unification_with_dependent_types() ->
-    io:format("Testing unification with dependent types...~n"),
+    cure_utils:debug("Testing unification with dependent types...~n"),
     try
         % Test unifying Vector(Float, 3) with Vector(Float, 3)
         Vec3Type1 = create_vector_type({primitive_type, 'Float'}, 3),
@@ -771,7 +771,7 @@ test_unification_with_dependent_types() ->
 %% ===== ERROR CASES AND EDGE TESTS =====
 
 test_dimension_mismatch_errors() ->
-    io:format("Testing dimension mismatch error detection...~n"),
+    cure_utils:debug("Testing dimension mismatch error detection...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -821,7 +821,7 @@ test_matrix_dimension_errors_comprehensive(Env) ->
     end.
 
 test_refinement_type_violations() ->
-    io:format("Testing refinement type violation detection...~n"),
+    cure_utils:debug("Testing refinement type violation detection...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -851,7 +851,7 @@ test_refinement_type_violations() ->
     end.
 
 test_occurs_check_with_dependent_types() ->
-    io:format("Testing occurs check with dependent types...~n"),
+    cure_utils:debug("Testing occurs check with dependent types...~n"),
     try
         % Create a type variable and a dependent type containing it
         TypeVar = cure_types:new_type_var(),
@@ -889,7 +889,7 @@ test_occurs_check_with_dependent_types() ->
     end.
 
 test_constraint_unsatisfiability() ->
-    io:format("Testing constraint unsatisfiability detection...~n"),
+    cure_utils:debug("Testing constraint unsatisfiability detection...~n"),
     try
         % Test unification of conflicting types
         Type1 = {primitive_type, 'Int'},
@@ -917,7 +917,7 @@ test_constraint_unsatisfiability() ->
 %% ===== COMPLEX SCENARIOS =====
 
 test_nested_dependent_types() ->
-    io:format("Testing nested dependent types...~n"),
+    cure_utils:debug("Testing nested dependent types...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -948,7 +948,7 @@ test_nested_dependent_types() ->
     end.
 
 test_higher_order_dependent_functions() ->
-    io:format("Testing higher-order functions with dependent types...~n"),
+    cure_utils:debug("Testing higher-order functions with dependent types...~n"),
     try
         Env = cure_types:new_env(),
 
@@ -1001,7 +1001,7 @@ test_higher_order_dependent_functions() ->
     end.
 
 test_dependent_pattern_matching() ->
-    io:format("Testing pattern matching with dependent types...~n"),
+    cure_utils:debug("Testing pattern matching with dependent types...~n"),
     try
         _Env = cure_types:new_env(),
 
@@ -1031,7 +1031,7 @@ test_dependent_pattern_matching() ->
     end.
 
 test_type_level_computation() ->
-    io:format("Testing type-level computation...~n"),
+    cure_utils:debug("Testing type-level computation...~n"),
     try
         Env = cure_types:new_env(),
 

@@ -46,11 +46,11 @@ Constraint2 = cure_smt_solver:equality_constraint(Result, Z),
 %% Solve constraints
 case cure_smt_solver:solve_constraints([Constraint1, Constraint2]) of
     {sat, Solution} -> 
-        io:format("Solution: ~p~n", [Solution]);
+        cure_utils:debug("Solution: ~p~n", [Solution]);
     unsat -> 
-        io:format("No solution exists~n");
+        cure_utils:debug("No solution exists~n");
     unknown -> 
-        io:format("Cannot determine satisfiability~n")
+        cure_utils:debug("Cannot determine satisfiability~n")
 end.
 ```
 
@@ -71,11 +71,11 @@ Goal = cure_smt_solver:arithmetic_constraint(X, '+', Y, '>', zero),
 
 case cure_smt_solver:prove_constraint(Assumptions, Goal) of
     {proved, Proof} -> 
-        io:format("Proof: ~p~n", [Proof]);
+        cure_utils:debug("Proof: ~p~n", [Proof]);
     {disproved, CounterExample} -> 
-        io:format("Counter-example: ~p~n", [CounterExample]);
+        cure_utils:debug("Counter-example: ~p~n", [CounterExample]);
     unknown -> 
-        io:format("Cannot prove or disprove~n")
+        cure_utils:debug("Cannot prove or disprove~n")
 end.
 ```
 

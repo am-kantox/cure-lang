@@ -9,7 +9,7 @@
 
 %% Run stdlib compilation failure specific tests
 run() ->
-    io:format("Running Stdlib Compilation Failure Tests...~n"),
+    cure_utils:debug("Running Stdlib Compilation Failure Tests...~n"),
 
     test_partial_compilation_failure_formatting(),
     test_individual_compile_failure_formatting(),
@@ -18,14 +18,14 @@ run() ->
     test_compilation_error_types(),
     test_error_message_aggregation(),
 
-    io:format("All stdlib compilation failure tests passed!~n").
+    cure_utils:debug("All stdlib compilation failure tests passed!~n").
 
 %% ============================================================================
 %% Test 4: Standard library compilation process correctly reports partial failures
 %% ============================================================================
 
 test_partial_compilation_failure_formatting() ->
-    io:format("Testing partial compilation failure error formatting...~n"),
+    cure_utils:debug("Testing partial compilation failure error formatting...~n"),
 
     % Test 4.1: Single failure formatting
     SingleFailure = [
@@ -53,10 +53,10 @@ test_partial_compilation_failure_formatting() ->
     % Test 4.3: Verify semicolon separation in multiple errors
     ?assert(string:str(MultipleError, ";") > 0),
 
-    io:format("✓ Partial compilation failure formatting test passed~n").
+    cure_utils:debug("✓ Partial compilation failure formatting test passed~n").
 
 test_individual_compile_failure_formatting() ->
-    io:format("Testing individual compile failure error formatting...~n"),
+    cure_utils:debug("Testing individual compile failure error formatting...~n"),
 
     % Test 5.1: Basic individual compile failure
     IndividualError = cure_cli:format_error(
@@ -83,10 +83,10 @@ test_individual_compile_failure_formatting() ->
     ?assert(string:str(SpecialCharError, "lib/test_with_spaces and symbols!.cure") > 0),
     ?assert(string:str(SpecialCharError, "unexpected token '&'") > 0),
 
-    io:format("✓ Individual compile failure formatting test passed~n").
+    cure_utils:debug("✓ Individual compile failure formatting test passed~n").
 
 test_beam_to_source_path_conversion() ->
-    io:format("Testing BEAM to source path conversion...~n"),
+    cure_utils:debug("Testing BEAM to source path conversion...~n"),
 
     % Test 6.1: Standard library module conversion
     ?assertEqual(
@@ -127,10 +127,10 @@ test_beam_to_source_path_conversion() ->
     ?assertEqual(error, cure_cli:convert_beam_to_source_path("")),
     ?assertEqual(error, cure_cli:convert_beam_to_source_path("_build/ebin/.beam")),
 
-    io:format("✓ BEAM to source path conversion test passed~n").
+    cure_utils:debug("✓ BEAM to source path conversion test passed~n").
 
 test_missing_files_detection() ->
-    io:format("Testing missing files detection logic...~n"),
+    cure_utils:debug("Testing missing files detection logic...~n"),
 
     % Test 7.1: Verify the check_stdlib_compiled function structure
     % This tests the logic without requiring actual files to exist
@@ -165,10 +165,10 @@ test_missing_files_detection() ->
 
     ?assertEqual(ExpectedBeamNames, ExpectedBeamFiles),
 
-    io:format("✓ Missing files detection test passed~n").
+    cure_utils:debug("✓ Missing files detection test passed~n").
 
 test_compilation_error_types() ->
-    io:format("Testing different compilation error types...~n"),
+    cure_utils:debug("Testing different compilation error types...~n"),
 
     % Test 8.1: File read errors
     FileReadError = cure_cli:format_error({file_read_error, "missing.cure", enoent}),
@@ -194,10 +194,10 @@ test_compilation_error_types() ->
     ?assert(string:str(StageFailedError, "Lexical Analysis failed") > 0),
     ?assert(string:str(StageFailedError, "Unexpected character") > 0),
 
-    io:format("✓ Compilation error types test passed~n").
+    cure_utils:debug("✓ Compilation error types test passed~n").
 
 test_error_message_aggregation() ->
-    io:format("Testing error message aggregation...~n"),
+    cure_utils:debug("Testing error message aggregation...~n"),
 
     % Test 9.1: Multiple error aggregation
     Errors = [
@@ -233,4 +233,4 @@ test_error_message_aggregation() ->
     ?assert(string:str(ComplexFormatted, "Type error") > 0),
     ?assert(string:str(ComplexFormatted, "Syntax error") > 0),
 
-    io:format("✓ Error message aggregation test passed~n").
+    cure_utils:debug("✓ Error message aggregation test passed~n").

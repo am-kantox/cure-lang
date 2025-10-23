@@ -8,11 +8,11 @@
 
 %% Run all tests
 run() ->
-    io:format("Running Enhanced Parser tests...~n"),
+    cure_utils:debug("Running Enhanced Parser tests...~n"),
     test_list_literals(),
     test_function_calls(),
     test_multi_statement_functions(),
-    io:format("All enhanced parser tests passed!~n").
+    cure_utils:debug("All enhanced parser tests passed!~n").
 
 %% Test list literal parsing
 test_list_literals() ->
@@ -32,7 +32,7 @@ test_list_literals() ->
     #list_expr{elements = Elements} = Body,
     ?assertEqual(3, length(Elements)),
 
-    io:format("✓ List literal parsing test passed~n").
+    cure_utils:debug("✓ List literal parsing test passed~n").
 
 %% Test function call parsing
 test_function_calls() ->
@@ -52,7 +52,7 @@ test_function_calls() ->
     ?assertEqual(2, length(Args)),
     ?assertMatch(#binary_op_expr{op = '.'}, Function),
 
-    io:format("✓ Function call parsing test passed~n").
+    cure_utils:debug("✓ Function call parsing test passed~n").
 
 %% Test multi-statement function bodies
 test_multi_statement_functions() ->
@@ -82,4 +82,4 @@ test_multi_statement_functions() ->
     [FirstExpr | _] = Expressions,
     ?assertMatch(#let_expr{}, FirstExpr),
 
-    io:format("✓ Multi-statement function parsing test passed~n").
+    cure_utils:debug("✓ Multi-statement function parsing test passed~n").

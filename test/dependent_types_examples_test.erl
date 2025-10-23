@@ -10,7 +10,7 @@
 
 %% Run all dependent types examples tests
 run() ->
-    io:format("~n=== Dependent Types Examples Test Suite ===~n"),
+    cure_utils:debug("~n=== Dependent Types Examples Test Suite ===~n"),
     Tests = [
         fun test_dependent_types_trivial/0,
         fun test_dependent_types_comprehensive/0,
@@ -19,10 +19,10 @@ run() ->
     Results = [run_test(Test) || Test <- Tests],
     Passed = length([R || R <- Results, R#test_result.passed]),
     Total = length(Results),
-    io:format("~nResults: ~w/~w tests passed~n", [Passed, Total]),
+    cure_utils:debug("~nResults: ~w/~w tests passed~n", [Passed, Total]),
     case Passed of
-        Total -> io:format("All dependent types examples tests passed!~n");
-        _ -> io:format("Some tests failed.~n")
+        Total -> cure_utils:debug("All dependent types examples tests passed!~n");
+        _ -> cure_utils:debug("Some tests failed.~n")
     end.
 
 %% Run a single test
@@ -36,7 +36,7 @@ run_test(Test) ->
 
 %% Test trivial dependent types example
 test_dependent_types_trivial() ->
-    io:format("Testing Trivial Dependent Types Example... "),
+    cure_utils:debug("Testing Trivial Dependent Types Example... "),
     case compile_cure_file("examples/dependent_types_trivial.cure") of
         {ok, Module} ->
             case get_function_signature(Module, demo, 0) of
@@ -55,7 +55,7 @@ test_dependent_types_trivial() ->
 
 %% Test comprehensive dependent types example
 test_dependent_types_comprehensive() ->
-    io:format("Testing Comprehensive Dependent Types Example... "),
+    cure_utils:debug("Testing Comprehensive Dependent Types Example... "),
     case compile_cure_file("examples/dependent_types_comprehensive.cure") of
         {ok, Module} ->
             case get_function_signature(Module, demo, 0) of
@@ -85,7 +85,7 @@ test_dependent_types_comprehensive() ->
 
 %% Test showcase dependent types example
 test_dependent_types_showcase() ->
-    io:format("Testing Showcase Dependent Types Example... "),
+    cure_utils:debug("Testing Showcase Dependent Types Example... "),
     case compile_cure_file("examples/dependent_types_showcase.cure") of
         {ok, Module} ->
             case get_function_signature(Module, demo, 0) of

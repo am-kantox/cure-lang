@@ -16,14 +16,14 @@
 
 %% Run all type system tests
 run() ->
-    io:format("Running Type System tests...~n"),
+    cure_utils:debug("Running Type System tests...~n"),
     test_basic_type_inference(),
     test_function_type_checking(),
     test_list_type_inference(),
     test_dependent_types(),
     test_type_unification(),
     test_program_type_checking(),
-    io:format("All type system tests passed!~n").
+    cure_utils:debug("All type system tests passed!~n").
 
 %% Test basic type inference
 test_basic_type_inference() ->
@@ -51,7 +51,7 @@ test_basic_type_inference() ->
     Result3 = cure_typechecker:check_expression(BoolLiteral, Env),
     ?assertMatch(#typecheck_result{success = true, type = {primitive_type, 'Bool'}}, Result3),
 
-    io:format("✓ Basic type inference test passed~n").
+    cure_utils:debug("✓ Basic type inference test passed~n").
 
 %% Test function type checking
 test_function_type_checking() ->
@@ -84,7 +84,7 @@ test_function_type_checking() ->
     Result = cure_typechecker:check_function(Function),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result),
 
-    io:format("✓ Function type checking test passed~n").
+    cure_utils:debug("✓ Function type checking test passed~n").
 
 %% Test list type inference
 test_list_type_inference() ->
@@ -105,7 +105,7 @@ test_list_type_inference() ->
         #typecheck_result{success = true, type = {list_type, {primitive_type, 'Int'}, _}}, Result
     ),
 
-    io:format("✓ List type inference test passed~n").
+    cure_utils:debug("✓ List type inference test passed~n").
 
 %% Test dependent types
 test_dependent_types() ->
@@ -120,7 +120,7 @@ test_dependent_types() ->
     ConvertedType = cure_typechecker:convert_type_to_tuple(DependentType),
     ?assertMatch({dependent_type, 'List', _}, ConvertedType),
 
-    io:format("✓ Dependent types test passed~n").
+    cure_utils:debug("✓ Dependent types test passed~n").
 
 %% Test type unification
 test_type_unification() ->
@@ -140,7 +140,7 @@ test_type_unification() ->
     Result3 = cure_types:unify(TypeVar, Type1),
     ?assertMatch({ok, _}, Result3),
 
-    io:format("✓ Type unification test passed~n").
+    cure_utils:debug("✓ Type unification test passed~n").
 
 %% Test program-level type checking
 test_program_type_checking() ->
@@ -170,4 +170,4 @@ test_program_type_checking() ->
     Result = cure_typechecker:check_program(Program),
     ?assertMatch(#typecheck_result{success = true}, Result),
 
-    io:format("✓ Program type checking test passed~n").
+    cure_utils:debug("✓ Program type checking test passed~n").

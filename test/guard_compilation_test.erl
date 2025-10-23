@@ -10,7 +10,7 @@
 
 %% Run all guard compilation tests
 run() ->
-    io:format("Running Guard Compilation tests...~n"),
+    cure_utils:debug("Running Guard Compilation tests...~n"),
     test_guard_safety_analysis(),
     test_simple_comparison_guards(),
     test_boolean_logic_guards(),
@@ -21,7 +21,7 @@ run() ->
     test_fsm_guard_compilation(),
     test_match_clause_guards(),
     test_guard_error_handling(),
-    io:format("All guard compilation tests passed!~n").
+    cure_utils:debug("All guard compilation tests passed!~n").
 
 %% Test 1: Guard safety analysis
 test_guard_safety_analysis() ->
@@ -50,7 +50,7 @@ test_guard_safety_analysis() ->
     },
     ?assertNot(cure_guard_compiler:is_guard_safe(UnsafeGuard)),
 
-    io:format("✓ Guard safety analysis test passed~n").
+    cure_utils:debug("✓ Guard safety analysis test passed~n").
 
 %% Test 2: Simple comparison guards
 test_simple_comparison_guards() ->
@@ -95,7 +95,7 @@ test_simple_comparison_guards() ->
         Instructions2
     ),
 
-    io:format("✓ Simple comparison guards test passed~n").
+    cure_utils:debug("✓ Simple comparison guards test passed~n").
 
 %% Test 3: Boolean logic guards
 test_boolean_logic_guards() ->
@@ -134,7 +134,7 @@ test_boolean_logic_guards() ->
     % >, <, and
     ?assertEqual(3, length(GuardBifInstructions)),
 
-    io:format("✓ Boolean logic guards test passed~n").
+    cure_utils:debug("✓ Boolean logic guards test passed~n").
 
 %% Test 4: Type guards
 test_type_guards() ->
@@ -156,7 +156,7 @@ test_type_guards() ->
         Instructions
     ),
 
-    io:format("✓ Type guards test passed~n").
+    cure_utils:debug("✓ Type guards test passed~n").
 
 %% Test 5: Arithmetic guards
 test_arithmetic_guards() ->
@@ -183,7 +183,7 @@ test_arithmetic_guards() ->
     % + and >
     ?assertEqual(2, length(GuardBifInstructions)),
 
-    io:format("✓ Arithmetic guards test passed~n").
+    cure_utils:debug("✓ Arithmetic guards test passed~n").
 
 %% Test 6: Nested guard expressions
 test_nested_guard_expressions() ->
@@ -225,7 +225,7 @@ test_nested_guard_expressions() ->
     % >, <, and, ==, or
     ?assertEqual(5, length(GuardBifInstructions)),
 
-    io:format("✓ Nested guard expressions test passed~n").
+    cure_utils:debug("✓ Nested guard expressions test passed~n").
 
 %% Test 7: Guard optimization
 test_guard_optimization() ->
@@ -251,7 +251,7 @@ test_guard_optimization() ->
     OptimizedGuard2 = cure_guard_compiler:optimize_guard(Guard2),
     ?assertMatch(#identifier_expr{name = x}, OptimizedGuard2),
 
-    io:format("✓ Guard optimization test passed~n").
+    cure_utils:debug("✓ Guard optimization test passed~n").
 
 %% Test 8: FSM guard compilation integration
 test_fsm_guard_compilation() ->
@@ -285,7 +285,7 @@ test_fsm_guard_compilation() ->
     % Test guard instruction execution (simulated)
     ?assert(length(GuardInstructions) > 0),
 
-    io:format("✓ FSM guard compilation integration test passed~n").
+    cure_utils:debug("✓ FSM guard compilation integration test passed~n").
 
 %% Test 9: Match clause guards
 test_match_clause_guards() ->
@@ -311,7 +311,7 @@ test_match_clause_guards() ->
     GuardBifInstructions = [I || I <- Instructions, I#beam_instr.op =:= guard_bif],
     ?assertEqual(1, length(GuardBifInstructions)),
 
-    io:format("✓ Match clause guards test passed~n").
+    cure_utils:debug("✓ Match clause guards test passed~n").
 
 %% Test 10: Guard error handling
 test_guard_error_handling() ->
@@ -338,4 +338,4 @@ test_guard_error_handling() ->
     Result2 = cure_guard_compiler:compile_guard(InvalidGuard, State),
     ?assertMatch({error, {invalid_guard_op, invalid_op}}, Result2),
 
-    io:format("✓ Guard error handling test passed~n").
+    cure_utils:debug("✓ Guard error handling test passed~n").

@@ -16,12 +16,12 @@
 
 %% Run all tests
 run() ->
-    io:format("Running Cure lexer tests...~n"),
+    cure_utils:debug("Running Cure lexer tests...~n"),
     test_basic_tokens(),
     test_keywords(),
     test_operators(),
     test_literals(),
-    io:format("All lexer tests passed!~n").
+    cure_utils:debug("All lexer tests passed!~n").
 
 %% Test basic token recognition
 test_basic_tokens() ->
@@ -43,7 +43,7 @@ test_basic_tokens() ->
     ],
 
     ?assertEqual(Expected, ActualSimple),
-    io:format("✓ Basic tokens test passed~n").
+    cure_utils:debug("✓ Basic tokens test passed~n").
 
 %% Test keyword recognition
 test_keywords() ->
@@ -54,7 +54,7 @@ test_keywords() ->
     Expected = [module, def, 'end', do, 'if', then, 'else', match, 'when'],
 
     ?assertEqual(Expected, KeywordTypes),
-    io:format("✓ Keywords test passed~n").
+    cure_utils:debug("✓ Keywords test passed~n").
 
 %% Test operator recognition
 test_operators() ->
@@ -65,7 +65,7 @@ test_operators() ->
     Expected = ['->', '=', '+', '-', '*', '/', '<', '>', '<=', '>=', '==', '!=', '::', '++'],
 
     ?assertEqual(Expected, OpTypes),
-    io:format("✓ Operators test passed~n").
+    cure_utils:debug("✓ Operators test passed~n").
 
 %% Test literal recognition
 test_literals() ->
@@ -85,4 +85,4 @@ test_literals() ->
     {ok, Tokens4} = cure_lexer:tokenize(<<"variable_name function_name?">>),
     ?assertEqual([<<"variable_name">>, <<"function_name?">>], [T#token.value || T <- Tokens4]),
 
-    io:format("✓ Literals test passed~n").
+    cure_utils:debug("✓ Literals test passed~n").

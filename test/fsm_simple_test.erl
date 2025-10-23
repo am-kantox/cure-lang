@@ -9,11 +9,11 @@
 
 %% Run all simplified FSM tests
 run() ->
-    io:format("Running FSM Simple tests...~n"),
+    cure_utils:debug("Running FSM Simple tests...~n"),
     test_basic_fsm_transitions(),
     test_fsm_registration(),
     test_fsm_state_queries(),
-    io:format("All FSM simple tests passed!~n").
+    cure_utils:debug("All FSM simple tests passed!~n").
 
 %% Test basic FSM transitions
 test_basic_fsm_transitions() ->
@@ -66,7 +66,7 @@ test_basic_fsm_transitions() ->
     % Clean up
     cure_fsm_runtime:stop_fsm(FSMPid),
 
-    io:format("✓ Basic FSM transitions test passed~n").
+    cure_utils:debug("✓ Basic FSM transitions test passed~n").
 
 %% Test FSM registration and lookup
 test_fsm_registration() ->
@@ -98,7 +98,7 @@ test_fsm_registration() ->
     % Test lookup of non-existent FSM
     {error, not_found} = cure_fsm_runtime:lookup_fsm_definition('NonExistent'),
 
-    io:format("✓ FSM registration test passed~n").
+    cure_utils:debug("✓ FSM registration test passed~n").
 
 %% Test FSM state queries and info
 test_fsm_state_queries() ->
@@ -152,4 +152,4 @@ test_fsm_state_queries() ->
     % Clean up
     cure_fsm_runtime:stop_fsm(FSMPid),
 
-    io:format("✓ FSM state queries test passed~n").
+    cure_utils:debug("✓ FSM state queries test passed~n").

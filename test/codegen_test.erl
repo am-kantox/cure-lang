@@ -18,7 +18,7 @@
 
 %% Run all code generation tests
 run() ->
-    io:format("Running BEAM Code Generation tests...~n"),
+    cure_utils:debug("Running BEAM Code Generation tests...~n"),
     test_basic_expression_compilation(),
     test_function_compilation(),
     test_module_compilation(),
@@ -26,7 +26,7 @@ run() ->
     test_beam_file_generation(),
     test_instruction_optimization(),
     test_error_handling(),
-    io:format("All code generation tests passed!~n").
+    cure_utils:debug("All code generation tests passed!~n").
 
 %% Test basic expression compilation
 test_basic_expression_compilation() ->
@@ -53,7 +53,7 @@ test_basic_expression_compilation() ->
     % load_literal, load_literal, binary_op
     ?assertEqual(3, length(BinaryInstructions)),
 
-    io:format("✓ Basic expression compilation test passed~n").
+    cure_utils:debug("✓ Basic expression compilation test passed~n").
 
 %% Test function compilation
 test_function_compilation() ->
@@ -97,7 +97,7 @@ test_function_compilation() ->
             Instructions = maps:get(instructions, CompiledFunction),
             ?assert(length(Instructions) > 0),
 
-            io:format("✓ Function compilation test passed~n");
+            cure_utils:debug("✓ Function compilation test passed~n");
         {error, Reason} ->
             ?assert(false, {function_compilation_failed, Reason})
     end.
@@ -149,7 +149,7 @@ test_module_compilation() ->
             Functions = maps:get(functions, CompiledModule),
             ?assertEqual(1, length(Functions)),
 
-            io:format("✓ Module compilation test passed~n");
+            cure_utils:debug("✓ Module compilation test passed~n");
         {error, Reason} ->
             ?assert(false, {module_compilation_failed, Reason})
     end.
@@ -201,7 +201,7 @@ test_fsm_integration() ->
             ?assertEqual(fsm_registration, maps:get(type, FSMDef)),
             ?assertEqual('TestFSM', maps:get(name, FSMDef)),
 
-            io:format("✓ FSM integration test passed~n");
+            cure_utils:debug("✓ FSM integration test passed~n");
         {error, Reason} ->
             ?assert(false, {fsm_integration_failed, Reason})
     end.
@@ -238,16 +238,16 @@ test_beam_file_generation() ->
             [ModuleAttr | _] = Forms,
             ?assertMatch({attribute, _, module, simple_test}, ModuleAttr),
 
-            io:format("✓ BEAM file generation test passed~n");
+            cure_utils:debug("✓ BEAM file generation test passed~n");
         {error, Reason} ->
-            io:format("BEAM file generation failed: ~p~n", [Reason]),
+            cure_utils:debug("BEAM file generation failed: ~p~n", [Reason]),
             % Don't fail the test for now, as this is a complex operation
-            io:format("✓ BEAM file generation test passed (with warnings)~n")
+            cure_utils:debug("✓ BEAM file generation test passed (with warnings)~n")
     end.
 
 %% Test instruction optimization
 test_instruction_optimization() ->
-    io:format("Testing instruction optimization...~n"),
+    cure_utils:debug("Testing instruction optimization...~n"),
 
     % Create redundant instructions
     Instructions = [
@@ -262,15 +262,15 @@ test_instruction_optimization() ->
         OptimizedInstructions = cure_beam_compiler:optimize_instructions(Instructions),
         % Should remove one duplicate
         ?assertEqual(2, length(OptimizedInstructions)),
-        io:format("✓ Instruction optimization test passed~n")
+        cure_utils:debug("✓ Instruction optimization test passed~n")
     catch
         error:undef ->
-            io:format("✓ Instruction optimization test skipped (function not implemented)~n")
+            cure_utils:debug("✓ Instruction optimization test skipped (function not implemented)~n")
     end.
 
 %% Test error handling
 test_error_handling() ->
-    io:format("Testing code generation error handling...~n"),
+    cure_utils:debug("Testing code generation error handling...~n"),
 
     % Test unsupported expression
     UnsupportedExpr = {unsupported_expression, test},
@@ -278,13 +278,13 @@ test_error_handling() ->
     try
         case cure_codegen:compile_expression(UnsupportedExpr) of
             {error, _} ->
-                io:format("✓ Error handling test passed~n");
+                cure_utils:debug("✓ Error handling test passed~n");
             _ ->
-                io:format("✓ Error handling test passed (no error, but function exists)~n")
+                cure_utils:debug("✓ Error handling test passed (no error, but function exists)~n")
         end
     catch
         error:undef ->
-            io:format("✓ Error handling test skipped (function not implemented)~n");
+            cure_utils:debug("✓ Error handling test skipped (function not implemented)~n");
         _:_ ->
-            io:format("✓ Error handling test passed (caught expected error)~n")
+            cure_utils:debug("✓ Error handling test passed (caught expected error)~n")
     end.

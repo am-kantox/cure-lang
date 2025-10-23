@@ -16,7 +16,7 @@
 
 %% Run all dependent type system tests
 run() ->
-    io:format("Running Dependent Types Advanced tests...~n"),
+    cure_utils:debug("Running Dependent Types Advanced tests...~n"),
     test_length_indexed_lists(),
     test_refinement_types(),
     test_dependent_function_types(),
@@ -27,7 +27,7 @@ run() ->
     test_state_dependent_operations(),
     test_proof_carrying_code(),
     test_dependent_type_inference(),
-    io:format("All dependent type system advanced tests passed!~n").
+    cure_utils:debug("All dependent type system advanced tests passed!~n").
 
 %% Test length-indexed lists (Vector types)
 test_length_indexed_lists() ->
@@ -90,7 +90,7 @@ test_length_indexed_lists() ->
     Result4 = cure_typechecker:check_function(ParametricVectorFun),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result4),
 
-    io:format("✓ Length-indexed lists test passed~n").
+    cure_utils:debug("✓ Length-indexed lists test passed~n").
 
 %% Test refinement types (types with predicates)
 test_refinement_types() ->
@@ -175,7 +175,7 @@ test_refinement_types() ->
     ),
     ?assertMatch(#typecheck_result{success = false}, Result6),
 
-    io:format("✓ Refinement types test passed~n").
+    cure_utils:debug("✓ Refinement types test passed~n").
 
 %% Test dependent function types
 test_dependent_function_types() ->
@@ -267,7 +267,7 @@ test_dependent_function_types() ->
     ExpectedReplicateResultType = create_vector_type('String', 4),
     ?assertEqual(ExpectedReplicateResultType, Result4#typecheck_result.type),
 
-    io:format("✓ Dependent function types test passed~n").
+    cure_utils:debug("✓ Dependent function types test passed~n").
 
 %% Test type constraint validation
 test_type_constraints_validation() ->
@@ -349,7 +349,7 @@ test_type_constraints_validation() ->
         )
     ),
 
-    io:format("✓ Type constraints validation test passed~n").
+    cure_utils:debug("✓ Type constraints validation test passed~n").
 
 %% Test dependent record types
 test_dependent_record_types() ->
@@ -418,7 +418,7 @@ test_dependent_record_types() ->
     Result3 = cure_typechecker:check_function(BufferPushFunction),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result3),
 
-    io:format("✓ Dependent record types test passed~n").
+    cure_utils:debug("✓ Dependent record types test passed~n").
 
 %% Test bounded integers with range constraints
 test_bounded_integers() ->
@@ -476,7 +476,7 @@ test_bounded_integers() ->
     % 200 + 100 = 300, overflow
     ?assertMatch(#typecheck_result{success = false}, Result4),
 
-    io:format("✓ Bounded integers test passed~n").
+    cure_utils:debug("✓ Bounded integers test passed~n").
 
 %% Test capacity-constrained collections
 test_capacity_constrained_collections() ->
@@ -520,7 +520,7 @@ test_capacity_constrained_collections() ->
     Result3 = cure_typechecker:check_function(BoundedListAppendFunction),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result3),
 
-    io:format("✓ Capacity-constrained collections test passed~n").
+    cure_utils:debug("✓ Capacity-constrained collections test passed~n").
 
 %% Test state-dependent operations
 test_state_dependent_operations() ->
@@ -603,7 +603,7 @@ test_state_dependent_operations() ->
         )
     ),
 
-    io:format("✓ State-dependent operations test passed~n").
+    cure_utils:debug("✓ State-dependent operations test passed~n").
 
 %% Test proof-carrying code patterns
 test_proof_carrying_code() ->
@@ -667,7 +667,7 @@ test_proof_carrying_code() ->
         )
     ),
 
-    io:format("✓ Proof-carrying code test passed~n").
+    cure_utils:debug("✓ Proof-carrying code test passed~n").
 
 %% Test dependent type inference
 test_dependent_type_inference() ->
@@ -708,7 +708,7 @@ test_dependent_type_inference() ->
     Result3 = cure_typechecker:infer_expression_type(AdditionExpr, Env),
     ?assertMatch(#typecheck_result{success = true}, Result3),
 
-    io:format("✓ Dependent type inference test passed~n").
+    cure_utils:debug("✓ Dependent type inference test passed~n").
 
 %% ============================================================================
 %% Helper Functions for Creating AST Nodes and Type Expressions

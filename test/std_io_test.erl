@@ -9,19 +9,19 @@
 
 %% Run all Std.IO tests
 run() ->
-    io:format("Running Std.IO tests...~n"),
+    cure_utils:debug("Running Std.IO tests...~n"),
     test_print_functions(),
     test_print_type_specific_functions(),
     test_input_functions(),
     test_debug_error_functions(),
-    io:format("All Std.IO tests passed!~n").
+    cure_utils:debug("All Std.IO tests passed!~n").
 
 %% ============================================================================
 %% Test 1: Basic print functions - verify they return Int (0)
 %% ============================================================================
 
 test_print_functions() ->
-    io:format("Testing print functions return types...~n"),
+    cure_utils:debug("Testing print functions return types...~n"),
 
     % Test print/1 returns Int (0) instead of Unit
     PrintResult = test_print("Hello World"),
@@ -47,7 +47,7 @@ test_print_functions() ->
     UnicodeResult = test_println("Unicode test: café naïve résumé"),
     ?assertEqual(0, UnicodeResult),
 
-    io:format("✓ Print functions return type test passed~n").
+    cure_utils:debug("✓ Print functions return type test passed~n").
 
 % Helper functions simulating Std.IO behavior
 test_print(_String) ->
@@ -65,7 +65,7 @@ test_println(_String) ->
 %% ============================================================================
 
 test_print_type_specific_functions() ->
-    io:format("Testing type-specific print functions...~n"),
+    cure_utils:debug("Testing type-specific print functions...~n"),
 
     % Test print_int/1
     PrintIntResult = test_print_int(42),
@@ -100,7 +100,7 @@ test_print_type_specific_functions() ->
     FalseBoolResult = test_print_bool(false),
     ?assertEqual(0, FalseBoolResult),
 
-    io:format("✓ Type-specific print functions test passed~n").
+    cure_utils:debug("✓ Type-specific print functions test passed~n").
 
 % Helper functions for type-specific printing
 test_print_int(_Integer) ->
@@ -123,7 +123,7 @@ test_print_bool(Bool) ->
 %% ============================================================================
 
 test_input_functions() ->
-    io:format("Testing input functions...~n"),
+    cure_utils:debug("Testing input functions...~n"),
 
     % Test read_line/0 returns String (placeholder)
     LineResult = test_read_line(),
@@ -144,7 +144,7 @@ test_input_functions() ->
     % Placeholder zero float
     ?assertEqual(0.0, FloatResult),
 
-    io:format("✓ Input functions test passed~n").
+    cure_utils:debug("✓ Input functions test passed~n").
 
 % Helper functions for input operations (simplified)
 test_read_line() ->
@@ -170,7 +170,7 @@ test_read_float() ->
 %% ============================================================================
 
 test_debug_error_functions() ->
-    io:format("Testing debug and error output functions...~n"),
+    cure_utils:debug("Testing debug and error output functions...~n"),
 
     % Test debug/1 returns Int (0)
     DebugResult = test_debug("Debug message: variable x = 42"),
@@ -195,7 +195,7 @@ test_debug_error_functions() ->
     ),
     ?assertEqual(0, ComplexErrorResult),
 
-    io:format("✓ Debug and error output functions test passed~n").
+    cure_utils:debug("✓ Debug and error output functions test passed~n").
 
 % Helper functions for debug and error output
 test_debug(_Message) ->
@@ -213,7 +213,7 @@ test_error(_Message) ->
 -ifdef(COMPREHENSIVE_TESTS).
 
 test_io_edge_cases() ->
-    io:format("Testing IO edge cases...~n"),
+    cure_utils:debug("Testing IO edge cases...~n"),
 
     % Test very long strings
     LongString = lists:duplicate(1000, $a),
@@ -238,6 +238,6 @@ test_io_edge_cases() ->
     ?assertEqual(0, SmallFloatResult),
     ?assertEqual(0, LargeFloatResult),
 
-    io:format("✓ IO edge cases test passed~n").
+    cure_utils:debug("✓ IO edge cases test passed~n").
 
 -endif.

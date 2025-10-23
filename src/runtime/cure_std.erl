@@ -285,7 +285,7 @@ I/O errors are handled by the underlying Erlang system.
 This function always returns 'ok' from the Cure perspective.
 """.
 print(Message) ->
-    io:format("~ts", [Message]),
+    cure_utils:debug("~ts", [Message]),
     ok.
 
 -doc """
@@ -331,7 +331,7 @@ I/O errors are handled by the underlying Erlang system.
 This function always returns 'ok' from the Cure perspective.
 """.
 println(Message) ->
-    io:format("~ts~n", [Message]),
+    cure_utils:debug("~ts~n", [Message]),
     ok.
 
 %% ============================================================================

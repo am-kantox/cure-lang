@@ -9,20 +9,20 @@
 
 %% Run all standard library tests
 run() ->
-    io:format("Running Cure Standard Library tests...~n"),
+    cure_utils:debug("Running Cure Standard Library tests...~n"),
     test_capitalized_alias_functions(),
     test_safe_div_function(),
     test_result_monadic_operations(),
     test_option_monadic_operations(),
     test_remaining_functions(),
-    io:format("All standard library tests passed!~n").
+    cure_utils:debug("All standard library tests passed!~n").
 
 %% ============================================================================
 %% Test 1: Capitalized constructor functions
 %% ============================================================================
 
 test_capitalized_alias_functions() ->
-    io:format("Testing capitalized constructor functions...~n"),
+    cure_utils:debug("Testing capitalized constructor functions...~n"),
 
     % Test Ok constructor
     Value1 = 42,
@@ -43,14 +43,14 @@ test_capitalized_alias_functions() ->
     NoneResult1 = cure_std:'None'(),
     ?assertEqual('None', NoneResult1),
 
-    io:format("✓ Capitalized constructor functions test passed~n").
+    cure_utils:debug("✓ Capitalized constructor functions test passed~n").
 
 %% ============================================================================
 %% Test 2: safe_div function
 %% ============================================================================
 
 test_safe_div_function() ->
-    io:format("Testing safe_div function...~n"),
+    cure_utils:debug("Testing safe_div function...~n"),
 
     % Test division by zero - should return Error
     DivByZeroResult = cure_std:safe_divide(10, 0),
@@ -72,14 +72,14 @@ test_safe_div_function() ->
     ValidDivResult4 = cure_std:safe_divide(0, 5),
     ?assertMatch({'Ok', +0.0}, ValidDivResult4),
 
-    io:format("✓ safe_div function test passed~n").
+    cure_utils:debug("✓ safe_div function test passed~n").
 
 %% ============================================================================
 %% Test 3: Result monadic operations (map_ok and bind_ok)
 %% ============================================================================
 
 test_result_monadic_operations() ->
-    io:format("Testing Result monadic operations...~n"),
+    cure_utils:debug("Testing Result monadic operations...~n"),
 
     % Test map_ok with Ok value - should apply function
     OkValue = cure_std:ok(5),
@@ -122,14 +122,14 @@ test_result_monadic_operations() ->
     ),
     ?assertEqual({'Ok', 8.0}, ChainResult),
 
-    io:format("✓ Result monadic operations test passed~n").
+    cure_utils:debug("✓ Result monadic operations test passed~n").
 
 %% ============================================================================
 %% Test 4: Option monadic operations (map_some and bind_some)
 %% ============================================================================
 
 test_option_monadic_operations() ->
-    io:format("Testing Option monadic operations...~n"),
+    cure_utils:debug("Testing Option monadic operations...~n"),
 
     % Test map_some with Some value - should apply function
     SomeValue = cure_std:some(10),
@@ -183,14 +183,14 @@ test_option_monadic_operations() ->
         end,
     ?assertEqual({'Some', 7.0}, ChainOptionResult),
 
-    io:format("✓ Option monadic operations test passed~n").
+    cure_utils:debug("✓ Option monadic operations test passed~n").
 
 %% ============================================================================
 %% Test 5: Test remaining functions work correctly
 %% ============================================================================
 
 test_remaining_functions() ->
-    io:format("Testing remaining built-in functions...~n"),
+    cure_utils:debug("Testing remaining built-in functions...~n"),
 
     % Test capitalized constructor functions (these remain as built-ins)
     ?assertMatch({'Ok', _}, cure_std:'Ok'(test_value)),
@@ -218,4 +218,4 @@ test_remaining_functions() ->
 
     % Note: String operations (string_concat, split, trim, to_upper, contains, starts_with) are now handled by Std.String module
 
-    io:format("✓ Remaining built-in functions test passed~n").
+    cure_utils:debug("✓ Remaining built-in functions test passed~n").

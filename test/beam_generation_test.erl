@@ -7,7 +7,7 @@
 
 %% Run BEAM generation tests
 run_beam_tests() ->
-    io:format("=== Testing Type-directed BEAM Code Generation ===~n"),
+    cure_utils:debug("=== Testing Type-directed BEAM Code Generation ===~n"),
     Tests = [
         fun test_beam_generation_framework/0,
         fun test_type_specific_instructions/0,
@@ -18,15 +18,15 @@ run_beam_tests() ->
     Results = lists:map(
         fun(Test) ->
             TestName = extract_test_name(Test),
-            io:format("Running ~s... ", [TestName]),
+            cure_utils:debug("Running ~s... ", [TestName]),
             try
                 Test(),
-                io:format("PASSED~n"),
+                cure_utils:debug("PASSED~n"),
                 ok
             catch
                 Error:Reason:Stack ->
-                    io:format("FAILED: ~p:~p~n", [Error, Reason]),
-                    io:format("  Stack: ~p~n", [Stack]),
+                    cure_utils:debug("FAILED: ~p:~p~n", [Error, Reason]),
+                    cure_utils:debug("  Stack: ~p~n", [Stack]),
                     {error, Reason}
             end
         end,
@@ -36,13 +36,13 @@ run_beam_tests() ->
     Passed = length([ok || ok <- Results]),
     Failed = length(Results) - Passed,
 
-    io:format("~nBEAM Generation Tests Summary:~n"),
-    io:format("  Passed: ~w~n", [Passed]),
-    io:format("  Failed: ~w~n", [Failed]),
+    cure_utils:debug("~nBEAM Generation Tests Summary:~n"),
+    cure_utils:debug("  Passed: ~w~n", [Passed]),
+    cure_utils:debug("  Failed: ~w~n", [Failed]),
 
     case Failed of
-        0 -> io:format("All BEAM generation tests passed!~n");
-        _ -> io:format("Some BEAM generation tests failed.~n")
+        0 -> cure_utils:debug("All BEAM generation tests passed!~n");
+        _ -> cure_utils:debug("Some BEAM generation tests failed.~n")
     end,
 
     {ok, #{passed => Passed, failed => Failed}}.
@@ -69,7 +69,7 @@ test_beam_generation_framework() ->
     TypeInfo = test_type_info_extraction(),
     true = is_map(TypeInfo),
 
-    io:format(" [BEAM framework available] "),
+    cure_utils:debug(" [BEAM framework available] "),
     ok.
 
 %% Test type-specific instruction generation
@@ -86,7 +86,7 @@ test_type_specific_instructions() ->
     AtomInstructions = generate_test_atom_instructions(),
     true = length(AtomInstructions) > 0,
 
-    io:format(" [Type-specific instructions generated] "),
+    cure_utils:debug(" [Type-specific instructions generated] "),
     ok.
 
 %% Test optimized calling conventions
@@ -103,7 +103,7 @@ test_optimized_calling_conventions() ->
     RegisterConvention = create_test_calling_convention(register_call),
     true = is_valid_calling_convention(RegisterConvention),
 
-    io:format(" [Optimized calling conventions created] "),
+    cure_utils:debug(" [Optimized calling conventions created] "),
     ok.
 
 %% Test specialized opcode generation
@@ -121,7 +121,7 @@ test_specialized_opcodes() ->
     DispatchOpcodes = generate_test_dispatch_opcodes(),
     true = length(DispatchOpcodes) >= 1,
 
-    io:format(" [Specialized opcodes generated] "),
+    cure_utils:debug(" [Specialized opcodes generated] "),
     ok.
 
 %% ============================================================================

@@ -22,7 +22,7 @@
 
 %% Test runner
 run() ->
-    io:format("~n=== Recursive Types Test Suite ===~n"),
+    cure_utils:debug("~n=== Recursive Types Test Suite ===~n"),
 
     Tests = [
         {test_recursive_type_creation, "Recursive Type Creation and Validation"},
@@ -34,20 +34,20 @@ run() ->
 
     Results = lists:map(
         fun({TestFun, TestName}) ->
-            io:format("Testing ~s... ", [TestName]),
+            cure_utils:debug("Testing ~s... ", [TestName]),
             try
                 case apply(?MODULE, TestFun, []) of
                     ok ->
-                        io:format("PASSED~n"),
+                        cure_utils:debug("PASSED~n"),
                         {TestName, passed};
                     {error, Reason} ->
-                        io:format("FAILED: ~p~n", [Reason]),
+                        cure_utils:debug("FAILED: ~p~n", [Reason]),
                         {TestName, {failed, Reason}}
                 end
             catch
                 Error:ErrReason:Stacktrace ->
-                    io:format("ERROR: ~p:~p~n", [Error, ErrReason]),
-                    io:format("Stacktrace: ~p~n", [Stacktrace]),
+                    cure_utils:debug("ERROR: ~p:~p~n", [Error, ErrReason]),
+                    cure_utils:debug("Stacktrace: ~p~n", [Stacktrace]),
                     {TestName, {error, {Error, ErrReason}}}
             end
         end,
@@ -57,14 +57,14 @@ run() ->
     Passed = length([Result || {_, passed} = Result <- Results]),
     Total = length(Results),
 
-    io:format("~nResults: ~p/~p tests passed~n", [Passed, Total]),
+    cure_utils:debug("~nResults: ~p/~p tests passed~n", [Passed, Total]),
 
     case Passed of
         Total ->
-            io:format("All recursive types tests passed!~n"),
+            cure_utils:debug("All recursive types tests passed!~n"),
             ok;
         _ ->
-            io:format("Some tests failed.~n"),
+            cure_utils:debug("Some tests failed.~n"),
             {failed, Results}
     end.
 

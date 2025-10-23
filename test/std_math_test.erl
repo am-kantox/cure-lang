@@ -9,7 +9,7 @@
 
 %% Run all Std.Math tests
 run() ->
-    io:format("Running Std.Math tests...~n"),
+    cure_utils:debug("Running Std.Math tests...~n"),
     test_mathematical_constants(),
     test_basic_operations(),
     test_comparison_functions(),
@@ -17,14 +17,14 @@ run() ->
     test_factorial_function(),
     test_fibonacci_function(),
     test_edge_cases(),
-    io:format("All Std.Math tests passed!~n").
+    cure_utils:debug("All Std.Math tests passed!~n").
 
 %% ============================================================================
 %% Test 1: Mathematical constants
 %% ============================================================================
 
 test_mathematical_constants() ->
-    io:format("Testing mathematical constants...~n"),
+    cure_utils:debug("Testing mathematical constants...~n"),
 
     % Test pi/0 - should return approximately 3.141592653589793
     Pi = test_pi(),
@@ -42,7 +42,7 @@ test_mathematical_constants() ->
     ?assert(E > 2.71),
     ?assert(E < 2.72),
 
-    io:format("✓ Mathematical constants test passed~n").
+    cure_utils:debug("✓ Mathematical constants test passed~n").
 
 % Helper functions for constants
 test_pi() -> 3.141592653589793.
@@ -53,7 +53,7 @@ test_e() -> 2.718281828459045.
 %% ============================================================================
 
 test_basic_operations() ->
-    io:format("Testing basic operations...~n"),
+    cure_utils:debug("Testing basic operations...~n"),
 
     % Test abs/1 with various integers
     ?assertEqual(5, test_abs(5)),
@@ -102,7 +102,7 @@ test_basic_operations() ->
     ?assertEqual(15, test_multiply(-3, -5)),
     ?assertEqual(0, test_multiply(0, 42)),
 
-    io:format("✓ Basic operations test passed~n").
+    cure_utils:debug("✓ Basic operations test passed~n").
 
 % Helper functions for basic operations
 test_abs(X) when X < 0 -> -X;
@@ -123,7 +123,7 @@ test_multiply(X, Y) -> X * Y.
 %% ============================================================================
 
 test_comparison_functions() ->
-    io:format("Testing comparison functions...~n"),
+    cure_utils:debug("Testing comparison functions...~n"),
 
     % Test min/2
     ?assertEqual(3, test_min(5, 3)),
@@ -161,7 +161,7 @@ test_comparison_functions() ->
     ?assertEqual(5, test_clamp(7, 5, 5)),
     ?assertEqual(5, test_clamp(5, 5, 5)),
 
-    io:format("✓ Comparison functions test passed~n").
+    cure_utils:debug("✓ Comparison functions test passed~n").
 
 % Helper functions for comparison
 test_min(X, Y) when X =< Y -> X;
@@ -178,7 +178,7 @@ test_clamp(Value, Min, Max) ->
 %% ============================================================================
 
 test_power_function() ->
-    io:format("Testing power function...~n"),
+    cure_utils:debug("Testing power function...~n"),
 
     % Test basic cases
 
@@ -237,7 +237,7 @@ test_power_function() ->
     % (-2)^4 = 16
     ?assertEqual(16, test_power(-2, 4)),
 
-    io:format("✓ Power function test passed~n").
+    cure_utils:debug("✓ Power function test passed~n").
 
 % Helper function for power calculation (recursive implementation)
 test_power(_, 0) ->
@@ -252,7 +252,7 @@ test_power(Base, Exponent) when Exponent > 1 ->
 %% ============================================================================
 
 test_factorial_function() ->
-    io:format("Testing factorial function...~n"),
+    cure_utils:debug("Testing factorial function...~n"),
 
     % Test base cases
 
@@ -290,7 +290,7 @@ test_factorial_function() ->
     % 12! = 479001600
     ?assertEqual(479001600, test_factorial(12)),
 
-    io:format("✓ Factorial function test passed~n").
+    cure_utils:debug("✓ Factorial function test passed~n").
 
 % Helper function for factorial calculation
 test_factorial(0) ->
@@ -305,7 +305,7 @@ test_factorial(N) when N > 1 ->
 %% ============================================================================
 
 test_fibonacci_function() ->
-    io:format("Testing fibonacci function...~n"),
+    cure_utils:debug("Testing fibonacci function...~n"),
 
     % Test base cases
 
@@ -355,7 +355,7 @@ test_fibonacci_function() ->
     % fib(25) = 75025
     ?assertEqual(75025, test_fibonacci(25)),
 
-    io:format("✓ Fibonacci function test passed~n").
+    cure_utils:debug("✓ Fibonacci function test passed~n").
 
 % Helper function for Fibonacci calculation (naive recursive implementation)
 test_fibonacci(0) ->
@@ -370,7 +370,7 @@ test_fibonacci(N) when N > 1 ->
 %% ============================================================================
 
 test_edge_cases() ->
-    io:format("Testing edge cases...~n"),
+    cure_utils:debug("Testing edge cases...~n"),
 
     % Test abs with maximum/minimum integers (within reasonable bounds)
 
@@ -433,4 +433,4 @@ test_edge_cases() ->
     PowerProduct = test_power(Base, M) * test_power(Base, N),
     ?assertEqual(PowerSum, PowerProduct),
 
-    io:format("✓ Edge cases test passed~n").
+    cure_utils:debug("✓ Edge cases test passed~n").

@@ -9,7 +9,7 @@
 
 %% Run all monomorphization tests
 run() ->
-    io:format("Running Monomorphization Pass tests...~n"),
+    cure_utils:debug("Running Monomorphization Pass tests...~n"),
     test_basic_polymorphic_function(),
     test_multiple_type_instances(),
     test_nested_polymorphic_calls(),
@@ -20,7 +20,7 @@ run() ->
     test_monomorphization_optimization(),
     test_behavior_preservation(),
     test_specialization_pruning(),
-    io:format("All monomorphization pass tests passed!~n").
+    cure_utils:debug("All monomorphization pass tests passed!~n").
 
 %% Test basic polymorphic function monomorphization
 test_basic_polymorphic_function() ->
@@ -98,7 +98,7 @@ test_basic_polymorphic_function() ->
         IdentityFunctions
     ),
 
-    io:format("✓ Basic polymorphic function test passed~n").
+    cure_utils:debug("✓ Basic polymorphic function test passed~n").
 
 %% Test multiple type instances with complex types
 test_multiple_type_instances() ->
@@ -158,7 +158,7 @@ test_multiple_type_instances() ->
     ?assert(lists:member('pair_String_String', FunctionNames)),
     ?assert(lists:member('pair_Int_Int', FunctionNames)),
 
-    io:format("✓ Multiple type instances test passed~n").
+    cure_utils:debug("✓ Multiple type instances test passed~n").
 
 %% Test nested polymorphic function calls
 test_nested_polymorphic_calls() ->
@@ -264,7 +264,7 @@ test_nested_polymorphic_calls() ->
         ParamTypes
     ),
 
-    io:format("✓ Nested polymorphic calls test passed~n").
+    cure_utils:debug("✓ Nested polymorphic calls test passed~n").
 
 %% Test generic data structures
 test_generic_data_structures() ->
@@ -342,7 +342,7 @@ test_generic_data_structures() ->
         MapFunctions
     ),
 
-    io:format("✓ Generic data structures test passed~n").
+    cure_utils:debug("✓ Generic data structures test passed~n").
 
 %% Test higher-order function monomorphization
 test_higher_order_function_monomorphization() ->
@@ -437,7 +437,7 @@ test_higher_order_function_monomorphization() ->
         ApplyTwiceFunctions
     ),
 
-    io:format("✓ Higher-order function monomorphization test passed~n").
+    cure_utils:debug("✓ Higher-order function monomorphization test passed~n").
 
 %% Test recursive polymorphic functions
 test_recursive_polymorphic_functions() ->
@@ -530,7 +530,7 @@ test_recursive_polymorphic_functions() ->
         LengthFunctions
     ),
 
-    io:format("✓ Recursive polymorphic functions test passed~n").
+    cure_utils:debug("✓ Recursive polymorphic functions test passed~n").
 
 %% Test cross-module monomorphization
 test_cross_module_monomorphization() ->
@@ -603,7 +603,7 @@ test_cross_module_monomorphization() ->
         WrapperFunctions
     ),
 
-    io:format("✓ Cross-module monomorphization test passed~n").
+    cure_utils:debug("✓ Cross-module monomorphization test passed~n").
 
 %% Test monomorphization optimization decisions
 test_monomorphization_optimization() ->
@@ -674,7 +674,7 @@ test_monomorphization_optimization() ->
     % Should have specialized version
     ?assert(length(MultiUseFunctions) >= 1),
 
-    io:format("✓ Monomorphization optimization test passed~n").
+    cure_utils:debug("✓ Monomorphization optimization test passed~n").
 
 %% Test behavior preservation after monomorphization
 test_behavior_preservation() ->
@@ -783,7 +783,7 @@ test_behavior_preservation() ->
         SortFunctions
     ),
 
-    io:format("✓ Behavior preservation test passed~n").
+    cure_utils:debug("✓ Behavior preservation test passed~n").
 
 %% Test specialization pruning (removing unused specializations)
 test_specialization_pruning() ->
@@ -863,7 +863,7 @@ test_specialization_pruning() ->
         )
     ),
 
-    io:format("✓ Specialization pruning test passed~n").
+    cure_utils:debug("✓ Specialization pruning test passed~n").
 
 %% ============================================================================
 %% Helper Functions

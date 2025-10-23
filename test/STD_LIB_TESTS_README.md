@@ -134,14 +134,14 @@ run() ->
     test_function_group_1(),
     test_function_group_2(),
     % ... more test groups
-    io:format("All tests passed!~n").
+    cure_utils:debug("All tests passed!~n").
 
 %% Individual test functions
 test_function_group_1() ->
     % Test cases with assertions
     ?assertEqual(expected, actual),
     % ...
-    io:format("✓ Test group 1 passed~n").
+    cure_utils:debug("✓ Test group 1 passed~n").
 
 % Helper functions that simulate Cure standard library behavior
 ```

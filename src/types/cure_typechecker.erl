@@ -70,11 +70,11 @@ AST = cure_parser:parse_file("example.cure"),
 Result = cure_typechecker:check_program(AST),
 case Result#typecheck_result.success of
   true ->
-    io:format("Type checking successful~n");
+    cure_utils:debug("Type checking successful~n");
  
   false -> 
     Errors = Result#typecheck_result.errors,
-    io:format("Type errors: ~p~n", [Errors])
+    cure_utils:debug("Type errors: ~p~n", [Errors])
 end.
 ```
 
@@ -184,25 +184,47 @@ operations can run concurrently on different ASTs.
 -type typecheck_error() :: #typecheck_error{}.
 -type typecheck_warning() :: #typecheck_warning{}.
 
--doc "Type checks an entire Cure program.\n\nPerforms comprehensive "
-"type checking of all top-level items in the program\nincluding "
-"modules, functions, FSMs, and type definitions.\n\n## Arguments\n- "
-"`AST` - List of top-level AST items from the parser\n\n## Returns\n- "
-"`typecheck_result()` - Complete type checking results including:\n "
-" - `success` - Boolean indicating overall success/failure\n "
-" - `type` - Program type (usually undefined for programs)\n "
-" - `errors` - List of type checking errors found\n  - `warnings` "
-"- List of warnings found\n\n## Example\n```erlang\nAST = cure_parser"
-":parse_file(\"example.cure\"),\nResult = cure_typechecker:check_prog"
-"ram(AST),\ncase Result#typecheck_result.success of\n    true "
-"-> \n        io:format(\"Program type checks successfully~n\");\n "
-"   false -> \n        lists:foreach(fun(Error) ->\n        "
-"    io:format(\"Error: ~s~n\", [Error#typecheck_error.message])\n "
-"       end, Result#typecheck_result.errors)\nend.\n```\n\n## "
-"Features\n- **Built-in Environment**: Uses standard built-in "
-"types and functions\n- **Error Recovery**: Continues checking "
-"after errors to find more issues\n- **Two-Pass Processing**: "
-"Collects signatures before checking implementations".
+-doc """
+Type checks an entire Cure program.
+
+Performs comprehensive type checking of all top-level items in the program
+including modules, functions, FSMs, and type definitions.
+
+## Arguments
+
+- `AST` - List of top-level AST items from the parser
+
+## Returns
+
+- `typecheck_result()` - Complete type checking results including:
+- `success` - Boolean indicating overall success/failure
+- `type` - Program type (usually undefined for programs)
+- `errors` - List of type checking errors found
+- `warnings` 
+- List of warnings found
+
+## Example
+
+```erlang
+AST = cure_parser:parse_file("example.cure"),
+Result = cure_typechecker:check_program(AST),
+case Result#typecheck_result.success of
+  true -> 
+    cure_utils:debug("Program type checks successfully~n");
+ 
+  false -> 
+    lists:foreach(fun(Error) ->
+      cure_utils:debug("Error: ~s~n", [Error#typecheck_error.message])
+    end, Result#typecheck_result.errors)
+end.
+```
+
+## Features
+
+- **Built-in Environment**: Uses standard built-in types and functions
+- **Error Recovery**: Continues checking after errors to find more issues
+- **Two-Pass Processing**: Collects signatures before checking implementations".
+""".
 
 check_program(AST) ->
     Env = builtin_env(),
@@ -264,8 +286,6 @@ check_item(
         Env
     );
 %% Handle curify function definition (both record and tuple formats)
-check_item(CurifyFunc = #curify_function_def{}, Env) ->
-    check_curify_function_new(CurifyFunc, Env);
 check_item(
     {curify_function_def, Name, Params, ReturnType, Constraint, ErlModule, ErlFunc, ErlArity,
         IsPrivate, Location},
@@ -292,39 +312,72 @@ check_item({record_def, RecordName, _TypeParams, Fields, _Location}, Env) ->
     NewEnv = cure_types:extend_env(Env, RecordName, RecordType),
     {ok, NewEnv, success_result(RecordType)}.
 
--doc "Type checks a module definition using the built-in environment.\n\nC"
-"onvenience function that calls check_module/2 with the standard "
-"built-in\nenvironment.\n\n## Arguments\n- `Module` - Module "
-"definition AST node\n\n## Returns\n- `{ok, NewEnv, typecheck_result("
-")}` - Success with updated environment\n- `{error, typecheck_error()"
-"}` - Type checking failure\n\n## Example\n```erlang\nModule "
-"= #module_def{name = 'MyModule', exports = Exports, items = "
-"Items},\n{ok, Env, Result} = cure_typechecker:check_module(Module).\n"
-"```".
+-doc """
+Type checks a module definition using the built-in environment.
+Convenience function that calls `check_module/2` with the standard
+built-in environment.
+
+## Arguments
+
+- `Module` - Module definition AST node
+
+## Returns
+
+- `{ok, NewEnv, typecheck_result()}` — Success with updated environment
+- `{error, typecheck_error()}` — Type checking failure
+
+## Example
+
+```erlang
+
+Module = #module_def{
+            name = 'MyModule',
+            exports = Exports,
+            items = Items},
+{ok, Env, Result} = cure_typechecker:check_module(Module).
+```
+""".
 
 check_module(Module) ->
     check_module(Module, builtin_env()).
 
--doc "Type checks a module definition with the given environment.\n\nPerfo"
-"rms comprehensive module type checking including signature "
-"collection,\nbody verification, and export validation.\n\n## "
-"Arguments\n- `Module` - Module definition AST node with name, "
-"exports, and items\n- `Env` - Type environment to use as base\n\n## "
-"Returns\n- `{ok, NewEnv, typecheck_result()}` - Success with "
-"updated environment\n- `{error, typecheck_error()}` - Type "
-"checking failure\n\n## Process\n1. **Module Scoping**: Creates "
-"module-scoped environment\n2. **Signature Collection**: First "
-"pass collects all function signatures  \n3. **Body Checking**: "
-"Second pass verifies function implementations\n4. **Export "
-"Validation**: Ensures all exported items exist and are well-typed\n\n"
-"## Example\n```erlang\nModule = #module_def{name = 'Math', "
-"exports = [{add, 2}], items = Functions},\nEnv = cure_types:extend_e"
-"nv(cure_typechecker:builtin_env(), custom_type, Type),\n{ok, "
-"NewEnv, Result} = cure_typechecker:check_module(Module, Env).\n```\n\n"
-"## Features\n- **Two-Pass Processing**: Allows mutual recursion "
-"between functions\n- **Export Verification**: Validates exported "
-"function signatures\n- **Scoped Environment**: Proper module-level "
-"scoping".
+-doc """
+Type checks a module definition with the given environment.
+
+Performs comprehensive module type checking including signature 
+collection, body verification, and export validation.
+
+## Arguments
+
+- `Module` - Module definition AST node with name, exports, and items
+- `Env` - Type environment to use as base
+
+## Returns
+
+- `{ok, NewEnv, typecheck_result()}` - Success with updated environment
+- `{error, typecheck_error()}` - Type checking failure
+
+## Process
+
+1. **Module Scoping**: Creates module-scoped environment
+2. **Signature Collection**: First pass collects all function signatures  
+3. **Body Checking**: Second pass verifies function implementations
+4. **Export Validation**: Ensures all exported items exist and are well-typed
+
+## Example
+
+```erlang
+Module = #module_def{name = 'Math', exports = [{add, 2}], items = Functions},
+Env = cure_types:extend_env(cure_typechecker:builtin_env(), custom_type, Type),
+{ok, NewEnv, Result} = cure_typechecker:check_module(Module, Env).
+```
+
+## Features
+
+- **Two-Pass Processing**: Allows mutual recursion between functions
+- **Export Verification**: Validates exported function signatures
+- **Scoped Environment**: Proper module-level scoping".
+""".
 
 check_module(
     #module_def{
@@ -354,14 +407,29 @@ check_module(
             {ok, Env, Result}
     end.
 
--doc "Type checks a function definition using the built-in environment.\n\n"
-"Convenience function that calls check_function/2 with the standard "
-"built-in\nenvironment.\n\n## Arguments\n- `Function` - Function "
-"definition AST node\n\n## Returns\n- `{ok, NewEnv, typecheck_result("
-")}` - Success with updated environment\n- `{error, typecheck_error()"
-"}` - Type checking failure\n\n## Example\n```erlang\nFunc = "
-"#function_def{name = add, params = Params, body = Body, ...},\n{ok, "
-"Env, Result} = cure_typechecker:check_function(Func).\n```".
+-doc """
+Type checks a function definition using the built-in environment.
+
+Convenience function that calls `check_function/2` with the standard 
+built-in environment.
+
+## Arguments
+
+- `Function` - Function definition AST node
+
+## Returns
+
+- `{ok, NewEnv, typecheck_result()}` - Success with updated environment
+- `{error, typecheck_error()}` - Type checking failure
+
+## Example
+
+```erlang
+
+Func = #function_def{name = add, params = Params, body = Body, ...},
+{ok, Env, Result} = cure_typechecker:check_function(Func).
+```
+""".
 
 check_function(Function) ->
     check_function(Function, builtin_env()).
@@ -533,10 +601,10 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
     case check_items(Items, FunctionEnv, new_result()) of
         Result = #typecheck_result{success = true} ->
             % Verify exported functions exist and have correct arities
-            io:format("[DEBUG MODULE] Body checking succeeded, now checking exports~n"),
+            cure_utils:debug("[MODULE] Body checking succeeded, now checking exports~n"),
             ExportSpecs = extract_export_specs(Exports, Items),
-            io:format("[DEBUG MODULE] Export specs: ~p~n", [ExportSpecs]),
-            io:format("[DEBUG MODULE] Items: ~p~n", [[element(1, I) || I <- Items]]),
+            cure_utils:debug("[MODULE] Export specs: ~p~n", [ExportSpecs]),
+            cure_utils:debug("[MODULE] Items: ~p~n", [[element(1, I) || I <- Items]]),
             case check_exports_new(ExportSpecs, Items) of
                 ok ->
                     {ok, cure_types:extend_env(Env, Name, {module_type, Name}), Result};
@@ -682,8 +750,8 @@ check_function_new(
             end
         catch
             error:function_clause:Stacktrace ->
-                io:format("ERROR: function_clause error in infer_type for function ~p~n", [Name]),
-                io:format("ERROR: Body tuple: ~p~n", [convert_expr_to_tuple(Body)]),
+                cure_utils:debug("ERROR: function_clause error in infer_type for function ~p~n", [Name]),
+                cure_utils:debug("ERROR: Body tuple: ~p~n", [convert_expr_to_tuple(Body)]),
                 io:format(
                     "ERROR: Environment size: ~p~n",
                     [
@@ -697,7 +765,7 @@ check_function_new(
                         )
                     ]
                 ),
-                io:format("ERROR: Stacktrace: ~p~n", [Stacktrace]),
+                cure_utils:debug("ERROR: Stacktrace: ~p~n", [Stacktrace]),
                 ErrorMsg3 =
                     #typecheck_error{
                         message = "Function clause error during type inference",
@@ -787,27 +855,7 @@ check_curify_function_new(
                     details = Details
                 },
             {ok, Env, error_result(ThrownError)}
-    end;
-%% Handle tuple-format curify function (for compatibility)
-check_curify_function_new(
-    {curify_function_def, Name, Params, ReturnType, Constraint, ErlModule, ErlFunc, ErlArity,
-        IsPrivate, Location},
-    Env
-) ->
-    check_curify_function_new(
-        #curify_function_def{
-            name = Name,
-            params = Params,
-            return_type = ReturnType,
-            constraint = Constraint,
-            erlang_module = ErlModule,
-            erlang_function = ErlFunc,
-            erlang_arity = ErlArity,
-            is_private = IsPrivate,
-            location = Location
-        },
-        Env
-    ).
+    end.
 
 %% Check import - New AST format
 check_import_new({import_def, Module, Items, _Location}, Env) ->
@@ -990,7 +1038,7 @@ load_stdlib_modules() ->
             CureFiles = [F || F <- Files, lists:suffix(".cure", F)],
             load_stdlib_files(StdLibPath, CureFiles, #{});
         {error, Reason} ->
-            io:format("Warning: Could not load stdlib directory ~s: ~p~n", [StdLibPath, Reason]),
+            cure_utils:debug("Warning: Could not load stdlib directory ~s: ~p~n", [StdLibPath, Reason]),
             #{}
     end.
 
@@ -1004,7 +1052,7 @@ load_stdlib_files(BasePath, [File | Rest], Acc) ->
             NewAcc = maps:merge(Acc, ModuleFunctions),
             load_stdlib_files(BasePath, Rest, NewAcc);
         {error, Reason} ->
-            io:format("Warning: Could not parse stdlib file ~s: ~p~n", [FilePath, Reason]),
+            cure_utils:debug("Warning: Could not parse stdlib file ~s: ~p~n", [FilePath, Reason]),
             load_stdlib_files(BasePath, Rest, Acc)
     end.
 
@@ -1068,19 +1116,6 @@ extract_functions_from_items_helper([Item | Rest], ModuleName, Acc) ->
             case IsPrivate of
                 false ->
                     FunctionType = create_function_type_from_signature_records(Params, ReturnType),
-                    Key = {ModuleName, FunctionName, length(Params)},
-                    NewAcc = maps:put(Key, FunctionType, Acc),
-                    extract_functions_from_items_helper(Rest, ModuleName, NewAcc);
-                true ->
-                    extract_functions_from_items_helper(Rest, ModuleName, Acc)
-            end;
-        % Handle curify function definitions (tuple format)
-        {curify_function_def, FunctionName, Params, ReturnType, _Constraint, _ErlModule, _ErlFunc,
-            _ErlArity, IsPrivate, _Location} ->
-            % Only extract public functions
-            case IsPrivate of
-                false ->
-                    FunctionType = create_function_type_from_signature(Params, ReturnType),
                     Key = {ModuleName, FunctionName, length(Params)},
                     NewAcc = maps:put(Key, FunctionType, Acc),
                     extract_functions_from_items_helper(Rest, ModuleName, NewAcc);
@@ -1570,8 +1605,8 @@ convert_type_with_env(#identifier_expr{name = Name}, Env) ->
                 true ->
                     % ERROR: Generic type parameters should be in the environment by now!
                     % This indicates the environment wasn't properly set up
-                    io:format("ERROR: Generic parameter ~p not found in environment!~n", [Name]),
-                    io:format("ERROR: This should not happen - creating emergency type variable~n"),
+                    cure_utils:debug("ERROR: Generic parameter ~p not found in environment!~n", [Name]),
+                    cure_utils:debug("ERROR: This should not happen - creating emergency type variable~n"),
                     cure_types:new_type_var(Name);
                 false ->
                     % It's a concrete type like Int, Bool, etc.
@@ -1631,7 +1666,7 @@ collect_function_signatures(Items, Env) ->
 collect_function_signatures_helper([], Env) ->
     Env;
 collect_function_signatures_helper([Item | Rest], Env) ->
-    io:format("[DEBUG COLLECT_SIG] Processing item: ~p~n", [element(1, Item)]),
+    cure_utils:debug("[COLLECT_SIG] Processing item: ~p~n", [element(1, Item)]),
     NewEnv =
         case Item of
             #function_def{
@@ -1659,9 +1694,9 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                     cure_types:extend_env(Env, Name, FuncType)
                 catch
                     Class:Error:Stacktrace ->
-                        io:format("ERROR SIG: Failed to pre-process function ~p signature~n", [Name]),
-                        io:format("ERROR SIG: Class: ~p, Error: ~p~n", [Class, Error]),
-                        io:format("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
+                        cure_utils:debug("ERROR SIG: Failed to pre-process function ~p signature~n", [Name]),
+                        cure_utils:debug("ERROR SIG: Class: ~p, Error: ~p~n", [Class, Error]),
+                        cure_utils:debug("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
                         Env
                 end;
             #curify_function_def{
@@ -1691,34 +1726,8 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                                 Name
                             ]
                         ),
-                        io:format("ERROR SIG: Class: ~p, Error: ~p~n", [Class, Error]),
-                        io:format("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
-                        Env
-                end;
-            {curify_function_def, Name, Params, ReturnType, _Constraint, _ErlModule, _ErlFunc,
-                _ErlArity, _IsPrivate, _Location} ->
-                % Create function type from curify signature (tuple format)
-                cure_utils:debug("[SIG] Pre-processing curify function ~p (tuple format)~n", [
-                    Name
-                ]),
-                try
-                    {ParamTypes, EnvWithParams} = process_parameters_new(Params, Env),
-                    % For curify, return type MUST be specified
-                    FinalReturnType = convert_type_with_env(ReturnType, EnvWithParams),
-                    FuncType = {function_type, ParamTypes, FinalReturnType},
-                    cure_utils:debug(
-                        "[SIG] Successfully pre-processed curify function ~p with type ~p~n",
-                        [Name, FuncType]
-                    ),
-                    cure_types:extend_env(Env, Name, FuncType)
-                catch
-                    Class:Error:Stacktrace ->
-                        io:format(
-                            "ERROR SIG: Failed to pre-process curify function ~p signature (tuple)~n",
-                            [Name]
-                        ),
-                        io:format("ERROR SIG: Class: ~p, Error: ~p~n", [Class, Error]),
-                        io:format("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
+                        cure_utils:debug("ERROR SIG: Class: ~p, Error: ~p~n", [Class, Error]),
+                        cure_utils:debug("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
                         Env
                 end;
             #type_def{name = _Name} ->
@@ -1736,7 +1745,7 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                 end;
             _ ->
                 % Non-function items don't need pre-processing
-                io:format("[DEBUG COLLECT_SIG] Unmatched item type: ~p~n", [Item]),
+                cure_utils:debug("[COLLECT_SIG] Unmatched item type: ~p~n", [Item]),
                 Env
         end,
     collect_function_signatures_helper(Rest, NewEnv).
@@ -2202,8 +2211,7 @@ process_parameters_new(Params, Env) ->
             fun(Param, AccEnv) ->
                 TypeExpr =
                     case Param of
-                        #param{type = T} -> T;
-                        {param, _Name, T, _Location} -> T
+                        #param{type = T} -> T
                     end,
                 extract_and_add_type_params_safe(TypeExpr, AccEnv)
             end,
@@ -2226,8 +2234,7 @@ process_parameters_new(
     % Handle both record and tuple format
     {Name, TypeExpr} =
         case Param of
-            #param{name = N, type = T} -> {N, T};
-            {param, N, T, _Location} -> {N, T}
+            #param{name = N, type = T} -> {N, T}
         end,
     % Convert the type expression using the environment with all type parameters
     cure_utils:debug("[PARAM] Processing parameter ~p with type ~p~n", [Name, TypeExpr]),
@@ -2322,7 +2329,7 @@ process_when_clause_constraint(Constraint, Env, _Location) ->
                 add_smt_constraints_to_env(SmtConstraints, Env);
             {error, Reason} ->
                 % Log the error but don't fail - continue with original environment
-                io:format("Warning: Could not convert constraint to SMT: ~p~n", [Reason]),
+                cure_utils:debug("Warning: Could not convert constraint to SMT: ~p~n", [Reason]),
                 Env
         end
     catch

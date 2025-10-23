@@ -7,7 +7,7 @@
 
 %% Run all performance tests
 run() ->
-    io:format("Running Simple Performance tests...~n"),
+    cure_utils:debug("Running Simple Performance tests...~n"),
 
     Tests = [
         fun test_lexer_performance_simple/0,
@@ -22,14 +22,14 @@ run() ->
     Passed = length([ok || ok <- Results]),
     Total = length(Results),
 
-    io:format("Performance tests: ~w/~w passed~n", [Passed, Total]),
+    cure_utils:debug("Performance tests: ~w/~w passed~n", [Passed, Total]),
 
     case Passed of
         Total ->
-            io:format("All performance tests passed!~n"),
+            cure_utils:debug("All performance tests passed!~n"),
             ok;
         _ ->
-            io:format("Some performance tests failed~n"),
+            cure_utils:debug("Some performance tests failed~n"),
             error
     end.
 
@@ -40,18 +40,18 @@ run_performance_test(TestFun) ->
         TestFun(),
         EndTime = erlang:monotonic_time(microsecond),
         Duration = EndTime - StartTime,
-        io:format("  Duration: ~w μs (~w ms)~n", [Duration, Duration div 1000]),
+        cure_utils:debug("  Duration: ~w μs (~w ms)~n", [Duration, Duration div 1000]),
         ok
     catch
         Error:Reason:Stack ->
-            io:format("❌ Performance test ~w failed: ~p:~p~n", [TestFun, Error, Reason]),
-            io:format("Stack: ~p~n", [Stack]),
+            cure_utils:debug("❌ Performance test ~w failed: ~p:~p~n", [TestFun, Error, Reason]),
+            cure_utils:debug("Stack: ~p~n", [Stack]),
             error
     end.
 
 %% Test 1: Lexer performance
 test_lexer_performance_simple() ->
-    io:format("✓ Testing lexer performance...~n"),
+    cure_utils:debug("✓ Testing lexer performance...~n"),
 
     % Generate some test data
     Numbers = [integer_to_list(N) ++ " " || N <- lists:seq(1, 1000)],
@@ -64,11 +64,11 @@ test_lexer_performance_simple() ->
     TokenCount = length(Tokens),
     true = TokenCount > 1000,
 
-    io:format("  ✓ Lexed ~w tokens from performance test~n", [TokenCount]).
+    cure_utils:debug("  ✓ Lexed ~w tokens from performance test~n", [TokenCount]).
 
 %% Test 2: Type checker performance
 test_type_checker_performance_simple() ->
-    io:format("✓ Testing type checker performance...~n"),
+    cure_utils:debug("✓ Testing type checker performance...~n"),
 
     % Create type environment
     TypeEnv = cure_typechecker:builtin_env(),
@@ -86,11 +86,11 @@ test_type_checker_performance_simple() ->
     SuccessCount = length([ok || {ok, _} <- Results]),
     100 = SuccessCount,
 
-    io:format("  ✓ Type checked ~w expressions~n", [SuccessCount]).
+    cure_utils:debug("  ✓ Type checked ~w expressions~n", [SuccessCount]).
 
 %% Test 3: Code generation performance
 test_codegen_performance_simple() ->
-    io:format("✓ Testing code generation performance...~n"),
+    cure_utils:debug("✓ Testing code generation performance...~n"),
 
     % Create multiple expressions for code generation
     Expressions = [
@@ -106,11 +106,11 @@ test_codegen_performance_simple() ->
 
     true = TotalInstructions > 0,
 
-    io:format("  ✓ Generated ~w BEAM instructions~n", [TotalInstructions]).
+    cure_utils:debug("  ✓ Generated ~w BEAM instructions~n", [TotalInstructions]).
 
 %% Test 4: FSM runtime performance
 test_fsm_runtime_performance_simple() ->
-    io:format("✓ Testing FSM runtime performance...~n"),
+    cure_utils:debug("✓ Testing FSM runtime performance...~n"),
 
     % Register a simple FSM type
     FSMType = perf_test_fsm,
@@ -142,11 +142,11 @@ test_fsm_runtime_performance_simple() ->
     [cure_fsm_runtime:stop_fsm(FSM) || FSM <- FSMs],
 
     TotalEvents = FSMCount * EventsPerFSM,
-    io:format("  ✓ Processed ~w events across ~w FSMs~n", [TotalEvents, FSMCount]).
+    cure_utils:debug("  ✓ Processed ~w events across ~w FSMs~n", [TotalEvents, FSMCount]).
 
 %% Test 5: Memory usage performance
 test_memory_usage_performance() ->
-    io:format("✓ Testing memory usage performance...~n"),
+    cure_utils:debug("✓ Testing memory usage performance...~n"),
 
     % Test memory usage of lexer operation
     LexerOperation = fun() ->
@@ -157,11 +157,11 @@ test_memory_usage_performance() ->
 
     {_Result, MemoryDelta} = measure_memory_usage(LexerOperation),
 
-    io:format("  ✓ Lexer operation memory delta: ~w bytes~n", [MemoryDelta]).
+    cure_utils:debug("  ✓ Lexer operation memory delta: ~w bytes~n", [MemoryDelta]).
 
 %% Test 6: Benchmark operations performance
 test_benchmark_operations() ->
-    io:format("✓ Testing benchmark operations...~n"),
+    cure_utils:debug("✓ Testing benchmark operations...~n"),
 
     % Benchmark a simple parsing operation
     ParseOperation = fun() ->
@@ -175,7 +175,7 @@ test_benchmark_operations() ->
     MaxTime = maps:get(max, BenchmarkResult),
     MinTime = maps:get(min, BenchmarkResult),
 
-    io:format("  ✓ Parse benchmark: avg=~w μs, max=~w μs, min=~w μs~n", [AvgTime, MaxTime, MinTime]).
+    cure_utils:debug("  ✓ Parse benchmark: avg=~w μs, max=~w μs, min=~w μs~n", [AvgTime, MaxTime, MinTime]).
 
 %% Helper functions
 

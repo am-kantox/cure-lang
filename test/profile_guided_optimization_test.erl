@@ -7,7 +7,7 @@
 
 %% Run profile-guided optimization tests
 run_profile_tests() ->
-    io:format("=== Testing Profile-guided Optimization System ===~n"),
+    cure_utils:debug("=== Testing Profile-guided Optimization System ===~n"),
     Tests = [
         fun test_profile_framework/0,
         fun test_profile_collection/0,
@@ -22,15 +22,15 @@ run_profile_tests() ->
     Results = lists:map(
         fun(Test) ->
             TestName = extract_test_name(Test),
-            io:format("Running ~s... ", [TestName]),
+            cure_utils:debug("Running ~s... ", [TestName]),
             try
                 Test(),
-                io:format("PASSED~n"),
+                cure_utils:debug("PASSED~n"),
                 ok
             catch
                 Error:Reason:Stack ->
-                    io:format("FAILED: ~p:~p~n", [Error, Reason]),
-                    io:format("  Stack: ~p~n", [Stack]),
+                    cure_utils:debug("FAILED: ~p:~p~n", [Error, Reason]),
+                    cure_utils:debug("  Stack: ~p~n", [Stack]),
                     {error, Reason}
             end
         end,
@@ -40,13 +40,13 @@ run_profile_tests() ->
     Passed = length([ok || ok <- Results]),
     Failed = length(Results) - Passed,
 
-    io:format("~nProfile-guided Optimization Tests Summary:~n"),
-    io:format("  Passed: ~w~n", [Passed]),
-    io:format("  Failed: ~w~n", [Failed]),
+    cure_utils:debug("~nProfile-guided Optimization Tests Summary:~n"),
+    cure_utils:debug("  Passed: ~w~n", [Passed]),
+    cure_utils:debug("  Failed: ~w~n", [Failed]),
 
     case Failed of
-        0 -> io:format("All profile-guided optimization tests passed!~n");
-        _ -> io:format("Some profile-guided optimization tests failed.~n")
+        0 -> cure_utils:debug("All profile-guided optimization tests passed!~n");
+        _ -> cure_utils:debug("Some profile-guided optimization tests failed.~n")
     end,
 
     {ok, #{passed => Passed, failed => Failed}}.
@@ -76,7 +76,7 @@ test_profile_framework() ->
     true = maps:is_key(execution_time_target, PerformanceTargets),
     true = maps:is_key(memory_usage_target, PerformanceTargets),
 
-    io:format(" [Profile framework initialized] "),
+    cure_utils:debug(" [Profile framework initialized] "),
     ok.
 
 %% Test runtime profile collection
@@ -106,7 +106,7 @@ test_profile_collection() ->
     RuntimeTypeUsage = collect_test_type_usage(SampleAST),
     true = is_map(RuntimeTypeUsage),
 
-    io:format(" [Runtime profiles collected] "),
+    cure_utils:debug(" [Runtime profiles collected] "),
     ok.
 
 %% Test adaptive function specialization
@@ -135,7 +135,7 @@ test_adaptive_specialization() ->
     true = maps:is_key(function_name, EnhancedSpec),
     true = maps:is_key(specialization_type, EnhancedSpec),
 
-    io:format(" [Adaptive specialization working] "),
+    cure_utils:debug(" [Adaptive specialization working] "),
     ok.
 
 %% Test dynamic hot path optimization
@@ -166,7 +166,7 @@ test_hot_path_optimization() ->
         HotPathOptimizations
     ),
 
-    io:format(" [Hot path optimization working] "),
+    cure_utils:debug(" [Hot path optimization working] "),
     ok.
 
 %% Test adaptive memory layout optimization
@@ -199,7 +199,7 @@ test_memory_layout_adaptation() ->
         AdaptiveLayouts
     ),
 
-    io:format(" [Memory layout adaptation working] "),
+    cure_utils:debug(" [Memory layout adaptation working] "),
     ok.
 
 %% Test performance feedback integration
@@ -227,7 +227,7 @@ test_performance_feedback() ->
     PerformanceOpts = generate_test_performance_optimizations(Priorities, PerformanceTargets),
     true = is_list(PerformanceOpts),
 
-    io:format(" [Performance feedback integration working] "),
+    cure_utils:debug(" [Performance feedback integration working] "),
     ok.
 
 %% Test complete adaptive optimization pipeline
@@ -254,7 +254,7 @@ test_adaptive_optimization() ->
     Priorities = maps:get(priorities, OptimizationOpportunities, []),
     true = is_list(Priorities),
 
-    io:format(" [Adaptive optimization pipeline working] "),
+    cure_utils:debug(" [Adaptive optimization pipeline working] "),
     ok.
 
 %% Test feedback integration with optimization system
@@ -279,7 +279,7 @@ test_feedback_integration() ->
     FeedbackSystem = create_test_performance_feedback_system(FeedbackData),
     true = maps:get(monitoring_enabled, FeedbackSystem),
 
-    io:format(" [Feedback integration working] "),
+    cure_utils:debug(" [Feedback integration working] "),
     ok.
 
 %% ============================================================================

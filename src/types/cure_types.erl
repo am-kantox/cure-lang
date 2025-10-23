@@ -1811,7 +1811,7 @@ infer_expr({fsm_spawn_expr, FsmName, InitArgs, InitState, Location}, Env) ->
                 true ->
                     % Infer types of initialization arguments
                     case infer_args(InitArgs, Env) of
-                        {ok, ArgTypes, ArgConstraints} ->
+                        {ok, _ArgTypes, ArgConstraints} ->
                             % Return a process type for this FSM
                             ProcessType = #process_type{
                                 fsm_type = {fsm_type, FsmName, States, MessageTypes},
@@ -1878,7 +1878,7 @@ infer_expr({fsm_receive_expr, Patterns, Timeout, Location}, Env) ->
         Error ->
             Error
     end;
-infer_expr({fsm_state_expr, Location}, Env) ->
+infer_expr({fsm_state_expr, _Location}, Env) ->
     % Type FSM current state access
     % Return the current state type from environment if available
     case lookup_env(Env, current_state) of
@@ -6264,17 +6264,12 @@ extract_message_types(_) ->
     ?TYPE_MESSAGE.
 
 %% Check if FSM type is well-formed
-is_well_formed_fsm_type(#fsm_type{name = Name, states = States, message_types = MessageTypes}) ->
-    is_atom(Name) andalso
-        is_list(States) andalso
-        length(States) > 0 andalso
-        lists:all(fun is_atom/1, States) andalso
-        is_list(MessageTypes) andalso
-        lists:all(fun is_well_formed_type/1, MessageTypes);
-is_well_formed_fsm_type(_) ->
-    false.
-
-is_well_formed_process_type(#process_type{fsm_type = FsmType, current_state = State}) ->
-    is_well_formed_fsm_type(FsmType) andalso is_atom(State);
-is_well_formed_process_type(_) ->
-    false.
+% is_well_formed_fsm_type(#fsm_type{name = Name, states = States, message_types = MessageTypes}) ->
+%     is_atom(Name) andalso
+%         is_list(States) andalso
+%         length(States) > 0 andalso
+%         lists:all(fun is_atom/1, States) andalso
+%         is_list(MessageTypes) andalso
+%         lists:all(fun is_well_formed_type/1, MessageTypes);
+% is_well_formed_fsm_type(_) ->
+%     false.

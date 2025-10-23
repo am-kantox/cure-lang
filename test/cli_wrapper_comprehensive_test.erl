@@ -25,7 +25,7 @@
 
 %% Run all comprehensive CLI wrapper tests
 run() ->
-    io:format("Running Comprehensive CLI Wrapper Tests...~n"),
+    cure_utils:debug("Running Comprehensive CLI Wrapper Tests...~n"),
 
     test_cure_wrapper_build_command(),
     test_cure_wrapper_missing_modules(),
@@ -33,14 +33,14 @@ run() ->
     test_stdlib_partial_compilation_failure(),
     test_std_list_length_function(),
 
-    io:format("All CLI wrapper comprehensive tests passed!~n").
+    cure_utils:debug("All CLI wrapper comprehensive tests passed!~n").
 
 %% ============================================================================
 %% Test 1: Cure wrapper script correctly executes "make all" for "build" command
 %% ============================================================================
 
 test_cure_wrapper_build_command() ->
-    io:format("Testing cure wrapper script build command execution...~n"),
+    cure_utils:debug("Testing cure wrapper script build command execution...~n"),
 
     % Test that the cure script handles the "build" command correctly
     % We'll simulate this by checking the behavior described in the cure script
@@ -62,14 +62,14 @@ test_cure_wrapper_build_command() ->
     BuildCommandPattern = "exec make -C \"${CURE_ROOT}\" all",
     ?assert(string:str(ScriptText, BuildCommandPattern) > 0),
 
-    io:format("✓ Cure wrapper build command test passed~n").
+    cure_utils:debug("✓ Cure wrapper build command test passed~n").
 
 %% ============================================================================
 %% Test 2: Cure wrapper script correctly reports missing required BEAM modules
 %% ============================================================================
 
 test_cure_wrapper_missing_modules() ->
-    io:format("Testing cure wrapper script missing modules reporting...~n"),
+    cure_utils:debug("Testing cure wrapper script missing modules reporting...~n"),
 
     % Read the cure wrapper script to verify missing module detection logic
     CureScriptPath = "/opt/Proyectos/Ammotion/cure/cure",
@@ -105,14 +105,14 @@ test_cure_wrapper_missing_modules() ->
     % Test the error reporting mechanism exists
     ?assert(string:str(ScriptText, "Run 'make all' to build all required components") > 0),
 
-    io:format("✓ Cure wrapper missing modules test passed~n").
+    cure_utils:debug("✓ Cure wrapper missing modules test passed~n").
 
 %% ============================================================================
 %% Test 3: cure_cli module correctly adds automatic standard library imports
 %% ============================================================================
 
 test_cli_automatic_stdlib_imports() ->
-    io:format("Testing cure_cli automatic standard library imports...~n"),
+    cure_utils:debug("Testing cure_cli automatic standard library imports...~n"),
 
     % Test the add_automatic_stdlib_imports function
     TestOptions = #compile_options{verbose = false},
@@ -152,14 +152,14 @@ test_cli_automatic_stdlib_imports() ->
     ?assertNot(cure_cli:has_explicit_module_or_imports("def main() = 42")),
     ?assertNot(cure_cli:has_explicit_module_or_imports("print(\"hello\")")),
 
-    io:format("✓ CLI automatic stdlib imports test passed~n").
+    cure_utils:debug("✓ CLI automatic stdlib imports test passed~n").
 
 %% ============================================================================
 %% Test 4: Standard library compilation process correctly reports partial failures
 %% ============================================================================
 
 test_stdlib_partial_compilation_failure() ->
-    io:format("Testing stdlib partial compilation failure reporting...~n"),
+    cure_utils:debug("Testing stdlib partial compilation failure reporting...~n"),
 
     % Test the error formatting functions for stdlib compilation failures
     TestPartialFailures = [
@@ -196,14 +196,14 @@ test_stdlib_partial_compilation_failure() ->
     ),
     ?assertEqual(error, cure_cli:convert_beam_to_source_path("invalid/path.beam")),
 
-    io:format("✓ Stdlib partial compilation failure test passed~n").
+    cure_utils:debug("✓ Stdlib partial compilation failure test passed~n").
 
 %% ============================================================================
 %% Test 5: Std.List.length function returns the simplified length for integer lists
 %% ============================================================================
 
 test_std_list_length_function() ->
-    io:format("Testing Std.List.length function behavior...~n"),
+    cure_utils:debug("Testing Std.List.length function behavior...~n"),
 
     % Test basic length function behavior for various list types
 
@@ -244,7 +244,7 @@ test_std_list_length_function() ->
     % Test 10: Very large integers
     ?assertEqual(3, test_list_length([999999999999, 888888888888, 777777777777])),
 
-    io:format("✓ Std.List.length function test passed~n").
+    cure_utils:debug("✓ Std.List.length function test passed~n").
 
 %% Helper function to test list length (uses Erlang's built-in length for verification)
 test_list_length(List) ->

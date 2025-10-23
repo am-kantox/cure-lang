@@ -684,8 +684,8 @@ Looks up an FSM definition by type name in the global registry.
 ## Example
 ```erlang
 case cure_fsm_runtime:lookup_fsm_definition(counter) of
-    {ok, Definition} -> io:format("Found FSM definition~n");
-    {error, not_found} -> io:format("FSM type not registered~n")
+    {ok, Definition} -> cure_utils:debug("Found FSM definition~n");
+    {error, not_found} -> cure_utils:debug("FSM type not registered~n")
 end.
 ```
 """.
@@ -1249,15 +1249,15 @@ apply_action_function(_, _) -> undefined.
 
 %% Log action messages
 log_action_message(debug, Message) ->
-    io:format("[FSM DEBUG] ~p~n", [Message]);
+    cure_utils:debug("[FSM DEBUG] ~p~n", [Message]);
 log_action_message(info, Message) ->
-    io:format("[FSM INFO] ~p~n", [Message]);
+    cure_utils:debug("[FSM INFO] ~p~n", [Message]);
 log_action_message(warning, Message) ->
-    io:format("[FSM WARNING] ~p~n", [Message]);
+    cure_utils:debug("[FSM WARNING] ~p~n", [Message]);
 log_action_message(error, Message) ->
-    io:format("[FSM ERROR] ~p~n", [Message]);
+    cure_utils:debug("[FSM ERROR] ~p~n", [Message]);
 log_action_message(_, Message) ->
-    io:format("[FSM LOG] ~p~n", [Message]).
+    cure_utils:debug("[FSM LOG] ~p~n", [Message]).
 
 %% Execute action with compiled action expression support
 execute_action(undefined, State, _EventData) ->

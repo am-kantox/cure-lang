@@ -9,7 +9,7 @@
 
 %% Run all Std.List tests
 run() ->
-    io:format("Running Std.List tests...~n"),
+    cure_utils:debug("Running Std.List tests...~n"),
     test_basic_list_operations(),
     test_list_construction(),
     test_list_transformation(),
@@ -17,14 +17,14 @@ run() ->
     test_list_predicates(),
     test_safe_operations(),
     test_edge_cases(),
-    io:format("All Std.List tests passed!~n").
+    cure_utils:debug("All Std.List tests passed!~n").
 
 %% ============================================================================
 %% Test 1: Basic list operations - length, head, tail, is_empty
 %% ============================================================================
 
 test_basic_list_operations() ->
-    io:format("Testing basic list operations...~n"),
+    cure_utils:debug("Testing basic list operations...~n"),
 
     % Test length/1 with various lists
     ?assertEqual(0, test_length([])),
@@ -55,7 +55,7 @@ test_basic_list_operations() ->
     ?assertEqual(false, test_is_empty([1])),
     ?assertEqual(false, test_is_empty([1, 2, 3])),
 
-    io:format("✓ Basic list operations test passed~n").
+    cure_utils:debug("✓ Basic list operations test passed~n").
 
 % Helper functions for basic operations
 test_length(List) -> length(List).
@@ -69,7 +69,7 @@ test_is_empty(_) -> false.
 %% ============================================================================
 
 test_list_construction() ->
-    io:format("Testing list construction...~n"),
+    cure_utils:debug("Testing list construction...~n"),
 
     % Test cons/2 (prepend element)
     ?assertEqual([1, 2, 3], test_cons(1, [2, 3])),
@@ -94,7 +94,7 @@ test_list_construction() ->
     % Test reverse with complex elements
     ?assertEqual([[3], [2], [1]], test_reverse([[1], [2], [3]])),
 
-    io:format("✓ List construction test passed~n").
+    cure_utils:debug("✓ List construction test passed~n").
 
 % Helper functions for construction
 test_cons(Element, List) -> [Element | List].
@@ -106,7 +106,7 @@ test_reverse(List) -> lists:reverse(List).
 %% ============================================================================
 
 test_list_transformation() ->
-    io:format("Testing list transformation...~n"),
+    cure_utils:debug("Testing list transformation...~n"),
 
     % Test map/2 with various functions
     Double = fun(X) -> X * 2 end,
@@ -145,7 +145,7 @@ test_list_transformation() ->
     Concat = fun(Str, Acc) -> Str ++ Acc end,
     ?assertEqual("abc", test_fold_right(["a", "b", "c"], "", Concat)),
 
-    io:format("✓ List transformation test passed~n").
+    cure_utils:debug("✓ List transformation test passed~n").
 
 % Helper functions for transformation
 test_map(List, Fun) ->
@@ -165,7 +165,7 @@ test_fold_right(List, Acc, Fun) ->
 %% ============================================================================
 
 test_list_access() ->
-    io:format("Testing list access operations...~n"),
+    cure_utils:debug("Testing list access operations...~n"),
 
     % Test nth/2 (0-based indexing assumed)
     TestList = [a, b, c, d, e],
@@ -197,7 +197,7 @@ test_list_access() ->
     % Drop more than available
     ?assertEqual([], test_drop([1, 2, 3], 5)),
 
-    io:format("✓ List access operations test passed~n").
+    cure_utils:debug("✓ List access operations test passed~n").
 
 % Helper functions for access
 test_nth(List, Index) ->
@@ -217,7 +217,7 @@ test_drop([_ | T], N) -> test_drop(T, N - 1).
 %% ============================================================================
 
 test_list_predicates() ->
-    io:format("Testing list predicates...~n"),
+    cure_utils:debug("Testing list predicates...~n"),
 
     % Test all/2
     IsPositive = fun(X) -> X > 0 end,
@@ -255,7 +255,7 @@ test_list_predicates() ->
     ?assertEqual(true, test_contains(["hello", "world"], "hello")),
     ?assertEqual(false, test_contains(["hello", "world"], "goodbye")),
 
-    io:format("✓ List predicates test passed~n").
+    cure_utils:debug("✓ List predicates test passed~n").
 
 % Helper functions for predicates
 test_all([], _) ->
@@ -282,7 +282,7 @@ test_contains(List, Element) ->
 %% ============================================================================
 
 test_safe_operations() ->
-    io:format("Testing safe operations...~n"),
+    cure_utils:debug("Testing safe operations...~n"),
 
     % Note: In the actual Cure implementation, these would return Option(T)
     % For this test, we simulate the behavior with simplified return values
@@ -305,7 +305,7 @@ test_safe_operations() ->
     ?assertEqual(none, test_safe_nth(TestList, -1)),
     ?assertEqual(none, test_safe_nth([], 0)),
 
-    io:format("✓ Safe operations test passed~n").
+    cure_utils:debug("✓ Safe operations test passed~n").
 
 % Helper functions for safe operations (simplified)
 test_safe_head([]) -> none;
@@ -330,7 +330,7 @@ test_safe_nth(List, Index) ->
 %% ============================================================================
 
 test_edge_cases() ->
-    io:format("Testing edge cases...~n"),
+    cure_utils:debug("Testing edge cases...~n"),
 
     % Test with very large lists
     LargeList = lists:seq(1, 1000),
@@ -366,4 +366,4 @@ test_edge_cases() ->
     ?assertEqual([], test_tail(Single)),
     ?assertEqual([42], test_reverse(Single)),
 
-    io:format("✓ Edge cases test passed~n").
+    cure_utils:debug("✓ Edge cases test passed~n").

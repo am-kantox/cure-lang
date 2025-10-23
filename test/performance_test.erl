@@ -8,7 +8,7 @@
 
 %% Run all performance tests
 run() ->
-    io:format("Running Performance tests...~n"),
+    cure_utils:debug("Running Performance tests...~n"),
 
     Tests = [
         fun test_lexer_performance/0,
@@ -23,14 +23,14 @@ run() ->
     Passed = length([ok || ok <- Results]),
     Total = length(Results),
 
-    io:format("Performance tests: ~w/~w passed~n", [Passed, Total]),
+    cure_utils:debug("Performance tests: ~w/~w passed~n", [Passed, Total]),
 
     case Passed of
         Total ->
-            io:format("All performance tests passed!~n"),
+            cure_utils:debug("All performance tests passed!~n"),
             ok;
         _ ->
-            io:format("Some performance tests failed~n"),
+            cure_utils:debug("Some performance tests failed~n"),
             error
     end.
 
@@ -41,18 +41,18 @@ run_performance_test(TestFun) ->
         TestFun(),
         EndTime = erlang:monotonic_time(microsecond),
         Duration = EndTime - StartTime,
-        io:format("  Duration: ~w μs (~w ms)~n", [Duration, Duration div 1000]),
+        cure_utils:debug("  Duration: ~w μs (~w ms)~n", [Duration, Duration div 1000]),
         ok
     catch
         Error:Reason:Stack ->
-            io:format("❌ Performance test ~w failed: ~p:~p~n", [TestFun, Error, Reason]),
-            io:format("Stack: ~p~n", [Stack]),
+            cure_utils:debug("❌ Performance test ~w failed: ~p:~p~n", [TestFun, Error, Reason]),
+            cure_utils:debug("Stack: ~p~n", [Stack]),
             error
     end.
 
 %% Test 1: Lexer performance with large input
 test_lexer_performance() ->
-    io:format("✓ Testing lexer performance...~n"),
+    cure_utils:debug("✓ Testing lexer performance...~n"),
 
     % Generate a large Cure program
 
@@ -67,11 +67,11 @@ test_lexer_performance() ->
     % Should have many tokens
     true = TokenCount > 5000,
 
-    io:format("  ✓ Lexed ~w tokens from large program~n", [TokenCount]).
+    cure_utils:debug("  ✓ Lexed ~w tokens from large program~n", [TokenCount]).
 
 %% Test 2: Parser performance
 test_parser_performance() ->
-    io:format("✓ Testing parser performance...~n"),
+    cure_utils:debug("✓ Testing parser performance...~n"),
 
     % Generate medium-sized program
 
@@ -94,11 +94,11 @@ test_parser_performance() ->
             throw({unexpected_ast_structure, AST})
     end,
 
-    io:format("  ✓ Parsed program with ~w functions~n", [length(AST#module_def.items)]).
+    cure_utils:debug("  ✓ Parsed program with ~w functions~n", [length(AST#module_def.items)]).
 
 %% Test 3: Type checker performance
 test_type_checker_performance() ->
-    io:format("✓ Testing type checker performance...~n"),
+    cure_utils:debug("✓ Testing type checker performance...~n"),
 
     % Create program with complex type relationships
     Program = generate_type_heavy_program(),
@@ -110,11 +110,11 @@ test_type_checker_performance() ->
     TypeEnv = cure_typechecker:builtin_env(),
     {ok, _TypedAST} = cure_typechecker:check_module(AST, TypeEnv),
 
-    io:format("  ✓ Type checked complex program successfully~n").
+    cure_utils:debug("  ✓ Type checked complex program successfully~n").
 
 %% Test 4: Code generation performance
 test_codegen_performance() ->
-    io:format("✓ Testing code generation performance...~n"),
+    cure_utils:debug("✓ Testing code generation performance...~n"),
 
     % Simple program for code generation
     Program = generate_codegen_program(),
@@ -129,11 +129,11 @@ test_codegen_performance() ->
     InstructionCount = length(Instructions),
     true = InstructionCount > 0,
 
-    io:format("  ✓ Generated ~w BEAM instructions~n", [InstructionCount]).
+    cure_utils:debug("  ✓ Generated ~w BEAM instructions~n", [InstructionCount]).
 
 %% Test 5: FSM runtime performance
 test_fsm_runtime_performance() ->
-    io:format("✓ Testing FSM runtime performance...~n"),
+    cure_utils:debug("✓ Testing FSM runtime performance...~n"),
 
     % Register a simple FSM type
     FSMType = test_counter_fsm,
@@ -164,11 +164,11 @@ test_fsm_runtime_performance() ->
     % Cleanup
     [cure_fsm_runtime:stop_fsm(FSM) || FSM <- FSMs],
 
-    io:format("  ✓ Processed ~w events across ~w FSMs~n", [EventCount, FSMCount]).
+    cure_utils:debug("  ✓ Processed ~w events across ~w FSMs~n", [EventCount, FSMCount]).
 
 %% Test 6: Large program compilation (end-to-end)
 test_large_program_compilation() ->
-    io:format("✓ Testing large program compilation...~n"),
+    cure_utils:debug("✓ Testing large program compilation...~n"),
 
     % Generate a large, complex program
     LargeProgram = generate_comprehensive_program(),
@@ -186,7 +186,7 @@ test_large_program_compilation() ->
     InstructionCount = length(Instructions),
     true = InstructionCount > 100,
 
-    io:format("  ✓ Compiled large program to ~w instructions~n", [InstructionCount]).
+    cure_utils:debug("  ✓ Compiled large program to ~w instructions~n", [InstructionCount]).
 
 %% Helper functions to generate test programs
 

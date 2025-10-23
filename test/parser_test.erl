@@ -19,7 +19,7 @@
 
 %% Run all tests
 run() ->
-    io:format("Running Cure parser tests...~n"),
+    cure_utils:debug("Running Cure parser tests...~n"),
     test_simple_function(),
     test_fsm(),
     test_import_basic(),
@@ -29,7 +29,7 @@ run() ->
     test_def_function_public_by_default(),
     test_export_list_restricts_access(),
     test_def_keyword_parsing(),
-    io:format("All parser tests passed!~n").
+    cure_utils:debug("All parser tests passed!~n").
 
 %% Test parsing a simple function
 test_simple_function() ->
@@ -42,7 +42,7 @@ test_simple_function() ->
     ?assertMatch(#function_def{name = add}, FunctionDef),
     ?assertEqual(2, length(FunctionDef#function_def.params)),
 
-    io:format("✓ Simple function parsing test passed~n").
+    cure_utils:debug("✓ Simple function parsing test passed~n").
 
 %% Test parsing an FSM
 test_fsm() ->
@@ -72,7 +72,7 @@ test_fsm() ->
     ?assertEqual('Zero', FSMDef#fsm_def.initial),
     ?assertEqual(2, length(FSMDef#fsm_def.state_defs)),
 
-    io:format("✓ FSM parsing test passed~n").
+    cure_utils:debug("✓ FSM parsing test passed~n").
 
 %% Test basic import without function list
 test_import_basic() ->
@@ -84,7 +84,7 @@ test_import_basic() ->
     [ImportDef] = AST,
     ?assertMatch(#import_def{module = 'Std', items = all}, ImportDef),
 
-    io:format("✓ Basic import parsing test passed~n").
+    cure_utils:debug("✓ Basic import parsing test passed~n").
 
 %% Test import with function/arity list
 test_import_function_list() ->
@@ -104,7 +104,7 @@ test_import_function_list() ->
     ?assertMatch(#function_import{name = sqrt, arity = 1}, Sqrt),
     ?assertMatch(#function_import{name = max, arity = 2}, Max),
 
-    io:format("✓ Function list import parsing test passed~n").
+    cure_utils:debug("✓ Function list import parsing test passed~n").
 
 %% Test import with mixed function/arity and plain identifiers
 test_import_mixed_list() ->
@@ -126,7 +126,7 @@ test_import_mixed_list() ->
     ?assertMatch(#function_import{name = sqrt, arity = 1}, Sqrt),
     ?assertEqual(ok, Ok),
 
-    io:format("✓ Mixed import list parsing test passed~n").
+    cure_utils:debug("✓ Mixed import list parsing test passed~n").
 
 %% Test complex import with many functions of different arities
 test_import_complex() ->
@@ -158,7 +158,7 @@ test_import_complex() ->
     ?assertMatch(#function_import{name = factorial, arity = 1}, Factorial),
     ?assertMatch(#function_import{name = lcm, arity = 2}, Lcm),
 
-    io:format("✓ Complex import parsing test passed~n").
+    cure_utils:debug("✓ Complex import parsing test passed~n").
 
 %% Test that functions declared with 'def' are public by default when not in an export list
 test_def_function_public_by_default() ->
@@ -189,7 +189,7 @@ test_def_function_public_by_default() ->
     ?assertMatch(#function_def{name = public_func, is_private = false}, Func1),
     ?assertMatch(#function_def{name = another_public, is_private = false}, Func2),
 
-    io:format("✓ Functions declared with 'def' are public by default test passed~n").
+    cure_utils:debug("✓ Functions declared with 'def' are public by default test passed~n").
 
 %% Test that functions not listed in a module's export list are inaccessible
 test_export_list_restricts_access() ->
@@ -236,7 +236,7 @@ test_export_list_restricts_access() ->
         Items
     ),
 
-    io:format("✓ Export list restricts access test passed~n").
+    cure_utils:debug("✓ Export list restricts access test passed~n").
 
 %% Test that the parser successfully processes function definitions using 'def' keyword
 test_def_keyword_parsing() ->
@@ -285,4 +285,4 @@ test_def_keyword_parsing() ->
     ?assertNotEqual(undefined, Func4#function_def.constraint),
     ?assertEqual(false, Func4#function_def.is_private),
 
-    io:format("✓ 'def' keyword parsing test passed~n").
+    cure_utils:debug("✓ 'def' keyword parsing test passed~n").

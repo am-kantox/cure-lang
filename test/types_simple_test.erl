@@ -16,12 +16,12 @@
 
 %% Run all simplified type system tests
 run() ->
-    io:format("Running Type System Simple tests...~n"),
+    cure_utils:debug("Running Type System Simple tests...~n"),
     test_basic_type_inference(),
     test_simple_function_checking(),
     test_list_type_inference(),
     test_basic_unification(),
-    io:format("All type system simple tests passed!~n").
+    cure_utils:debug("All type system simple tests passed!~n").
 
 %% Test basic type inference
 test_basic_type_inference() ->
@@ -46,7 +46,7 @@ test_basic_type_inference() ->
     ?assertMatch(#typecheck_result{success = true}, Result3),
     ?assertMatch({primitive_type, 'Bool'}, Result3#typecheck_result.type),
 
-    io:format("✓ Basic type inference test passed~n").
+    cure_utils:debug("✓ Basic type inference test passed~n").
 
 %% Test simple function type checking
 test_simple_function_checking() ->
@@ -73,7 +73,7 @@ test_simple_function_checking() ->
     Result = cure_typechecker:check_function(Function),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result),
 
-    io:format("✓ Simple function checking test passed~n").
+    cure_utils:debug("✓ Simple function checking test passed~n").
 
 %% Test list type inference
 test_list_type_inference() ->
@@ -93,7 +93,7 @@ test_list_type_inference() ->
     ?assertMatch(#typecheck_result{success = true}, Result),
     ?assertMatch({list_type, {primitive_type, 'Int'}, _}, Result#typecheck_result.type),
 
-    io:format("✓ List type inference test passed~n").
+    cure_utils:debug("✓ List type inference test passed~n").
 
 %% Test basic type unification
 test_basic_unification() ->
@@ -113,7 +113,7 @@ test_basic_unification() ->
     Result3 = cure_types:unify(TypeVar, Type1),
     ?assertMatch({ok, _}, Result3),
 
-    io:format("✓ Basic unification test passed~n").
+    cure_utils:debug("✓ Basic unification test passed~n").
 
 %% Helper functions
 create_location(Line, Column) ->

@@ -6,9 +6,9 @@
 
 %% Run all newly created unit test suites
 run() ->
-    io:format("~n=======================================================~n"),
-    io:format("Running All New CLI Wrapper and Standard Library Tests~n"),
-    io:format("=======================================================~n~n"),
+    cure_utils:debug("~n=======================================================~n"),
+    cure_utils:debug("Running All New CLI Wrapper and Standard Library Tests~n"),
+    cure_utils:debug("=======================================================~n~n"),
 
     TestResults = [
         run_test_suite("Comprehensive CLI Wrapper Tests", cli_wrapper_comprehensive_test),
@@ -18,18 +18,18 @@ run() ->
         run_test_suite("Std.List.length Function Tests", std_list_length_function_test)
     ],
 
-    io:format("~n=======================================================~n"),
-    io:format("Test Summary~n"),
-    io:format("=======================================================~n"),
+    cure_utils:debug("~n=======================================================~n"),
+    cure_utils:debug("Test Summary~n"),
+    cure_utils:debug("=======================================================~n"),
 
     {Passed, Failed} = lists:foldl(
         fun({Suite, Result}, {PassAcc, FailAcc}) ->
             case Result of
                 passed ->
-                    io:format("✓ ~s: PASSED~n", [Suite]),
+                    cure_utils:debug("✓ ~s: PASSED~n", [Suite]),
                     {PassAcc + 1, FailAcc};
                 {failed, Reason} ->
-                    io:format("✗ ~s: FAILED (~p)~n", [Suite, Reason]),
+                    cure_utils:debug("✗ ~s: FAILED (~p)~n", [Suite, Reason]),
                     {PassAcc, FailAcc + 1}
             end
         end,
@@ -37,31 +37,31 @@ run() ->
         TestResults
     ),
 
-    io:format("~nTotal: ~p passed, ~p failed~n", [Passed, Failed]),
+    cure_utils:debug("~nTotal: ~p passed, ~p failed~n", [Passed, Failed]),
 
     case Failed of
         0 ->
-            io:format("~nAll CLI wrapper and stdlib tests PASSED! 🎉~n"),
+            cure_utils:debug("~nAll CLI wrapper and stdlib tests PASSED! 🎉~n"),
             ok;
         _ ->
-            io:format("~nSome tests FAILED. Please review the output above.~n"),
+            cure_utils:debug("~nSome tests FAILED. Please review the output above.~n"),
             {error, {tests_failed, Failed}}
     end.
 
 %% Run a single test suite and capture the result
 run_test_suite(SuiteName, Module) ->
-    io:format("Running ~s...~n", [SuiteName]),
+    cure_utils:debug("Running ~s...~n", [SuiteName]),
     try
         Module:run(),
-        io:format("~s completed successfully.~n~n", [SuiteName]),
+        cure_utils:debug("~s completed successfully.~n~n", [SuiteName]),
         {SuiteName, passed}
     catch
         Error:Reason:Stack ->
-            io:format("~s FAILED: ~p:~p~n", [SuiteName, Error, Reason]),
+            cure_utils:debug("~s FAILED: ~p:~p~n", [SuiteName, Error, Reason]),
             case os:getenv("CURE_DEBUG") of
-                "1" -> io:format("Stack trace: ~p~n", [Stack]);
+                "1" -> cure_utils:debug("Stack trace: ~p~n", [Stack]);
                 _ -> ok
             end,
-            io:format("~n"),
+            cure_utils:debug("~n"),
             {SuiteName, {failed, {Error, Reason}}}
     end.

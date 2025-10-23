@@ -47,17 +47,17 @@ main(["start"]) ->
       halt(1)
   end;
 main(["--version"]) ->
-  io:format("Cure Language Server version 0.1.0~n", []),
+  cure_utils:debug("Cure Language Server version 0.1.0~n", []),
   halt(0);
 main(["--help"]) ->
-  io:format("Cure Language Server Protocol Implementation~n", []),
-  io:format("~n", []),
-  io:format("Usage:~n", []),
-  io:format("  cure-lsp [start]     Start the LSP server (default)~n", []),
-  io:format("  cure-lsp --version   Show version information~n", []),
-  io:format("  cure-lsp --help      Show this help message~n", []),
-  io:format("~n", []),
-  io:format("The server communicates via stdin/stdout using the Language "
+  cure_utils:debug("Cure Language Server Protocol Implementation~n", []),
+  cure_utils:debug("~n", []),
+  cure_utils:debug("Usage:~n", []),
+  cure_utils:debug("  cure-lsp [start]     Start the LSP server (default)~n", []),
+  cure_utils:debug("  cure-lsp --version   Show version information~n", []),
+  cure_utils:debug("  cure-lsp --help      Show this help message~n", []),
+  cure_utils:debug("~n", []),
+  cure_utils:debug("The server communicates via stdin/stdout using the Language "
             "Server Protocol.~n",
             []),
   halt(0);

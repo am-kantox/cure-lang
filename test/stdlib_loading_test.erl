@@ -16,7 +16,7 @@
 
 %% Run all stdlib loading tests
 run() ->
-    io:format("Running Cure Standard Library Loading tests...~n"),
+    cure_utils:debug("Running Cure Standard Library Loading tests...~n"),
     test_load_stdlib_modules(),
     test_extract_module_functions(),
     test_add_std_function_types(),
@@ -25,14 +25,14 @@ run() ->
     test_create_function_type_from_signature_records(),
     test_full_workflow(),
     test_error_handling(),
-    io:format("All standard library loading tests passed!~n").
+    cure_utils:debug("All standard library loading tests passed!~n").
 
 %% ============================================================================
 %% Test 1: load_stdlib_modules/0 successfully loads and parses all .cure files
 %% ============================================================================
 
 test_load_stdlib_modules() ->
-    io:format("Testing load_stdlib_modules/0...~n"),
+    cure_utils:debug("Testing load_stdlib_modules/0...~n"),
 
     % Clean process dictionary to ensure fresh load
     erase(stdlib_functions),
@@ -67,14 +67,14 @@ test_load_stdlib_modules() ->
     {ok, ComposeType} = maps:find({'Std.Core', compose, 2}, StdlibFunctions),
     ?assertMatch({function_type, [_, _], _}, ComposeType),
 
-    io:format("✓ load_stdlib_modules/0 test passed~n").
+    cure_utils:debug("✓ load_stdlib_modules/0 test passed~n").
 
 %% ============================================================================
 %% Test 2: extract_module_functions/1 correctly extracts public function definitions
 %% ============================================================================
 
 test_extract_module_functions() ->
-    io:format("Testing extract_module_functions/1...~n"),
+    cure_utils:debug("Testing extract_module_functions/1...~n"),
 
     % Create sample module AST with various function definitions
     SampleAST = [
@@ -141,14 +141,14 @@ test_extract_module_functions() ->
     EmptyFunctions = cure_typechecker:extract_module_functions([]),
     ?assertEqual(#{}, EmptyFunctions),
 
-    io:format("✓ extract_module_functions/1 test passed~n").
+    cure_utils:debug("✓ extract_module_functions/1 test passed~n").
 
 %% ============================================================================
 %% Test 3: add_std_function_types/1 populates environment correctly
 %% ============================================================================
 
 test_add_std_function_types() ->
-    io:format("Testing add_std_function_types/1...~n"),
+    cure_utils:debug("Testing add_std_function_types/1...~n"),
 
     % Create base environment
     Env = cure_typechecker:builtin_env(),
@@ -187,14 +187,14 @@ test_add_std_function_types() ->
     EnvWithStd2 = cure_typechecker:add_std_function_types(EnvWithStd),
     ?assert(is_record(EnvWithStd2, type_env)),
 
-    io:format("✓ add_std_function_types/1 test passed~n").
+    cure_utils:debug("✓ add_std_function_types/1 test passed~n").
 
 %% ============================================================================
 %% Test 4: get_stdlib_function_type/3 retrieves accurate types
 %% ============================================================================
 
 test_get_stdlib_function_type() ->
-    io:format("Testing get_stdlib_function_type/3...~n"),
+    cure_utils:debug("Testing get_stdlib_function_type/3...~n"),
 
     % Clean process dictionary for fresh test
     erase(stdlib_functions),
@@ -256,14 +256,14 @@ test_get_stdlib_function_type() ->
         cure_typechecker:get_stdlib_function_type('Std.Core', identity, 1)
     ),
 
-    io:format("✓ get_stdlib_function_type/3 test passed~n").
+    cure_utils:debug("✓ get_stdlib_function_type/3 test passed~n").
 
 %% ============================================================================
 %% Test 5: create_function_type_from_signature correctly constructs function types
 %% ============================================================================
 
 test_create_function_type_from_signature() ->
-    io:format("Testing create_function_type_from_signature/2...~n"),
+    cure_utils:debug("Testing create_function_type_from_signature/2...~n"),
 
     % Test with defined return type
     Params1 = [
@@ -315,14 +315,14 @@ test_create_function_type_from_signature() ->
     FuncType4 = cure_typechecker:create_function_type_from_signature(Params4, ReturnType4),
     ?assertMatch({function_type, [_, _], _}, FuncType4),
 
-    io:format("✓ create_function_type_from_signature/2 test passed~n").
+    cure_utils:debug("✓ create_function_type_from_signature/2 test passed~n").
 
 %% ============================================================================
 %% Test 6: create_function_type_from_signature_records handles record format
 %% ============================================================================
 
 test_create_function_type_from_signature_records() ->
-    io:format("Testing create_function_type_from_signature_records/2...~n"),
+    cure_utils:debug("Testing create_function_type_from_signature_records/2...~n"),
 
     % Test with record format parameters and defined return type
     Params1 = [
@@ -379,14 +379,14 @@ test_create_function_type_from_signature_records() ->
     ?assertEqual(2, length(ParamTypes4)),
     ?assertMatch({primitive_type, 'Bool'}, ActualReturnType4),
 
-    io:format("✓ create_function_type_from_signature_records/2 test passed~n").
+    cure_utils:debug("✓ create_function_type_from_signature_records/2 test passed~n").
 
 %% ============================================================================
 %% Integration Test: Full workflow from loading to type retrieval
 %% ============================================================================
 
 test_full_workflow() ->
-    io:format("Testing full stdlib loading workflow...~n"),
+    cure_utils:debug("Testing full stdlib loading workflow...~n"),
 
     % Clean state
     erase(stdlib_functions),
@@ -407,14 +407,14 @@ test_full_workflow() ->
     {ok, DirectType} = cure_typechecker:get_stdlib_function_type('Std.Core', identity, 1),
     ?assertMatch({function_type, _, _}, DirectType),
 
-    io:format("✓ Full stdlib loading workflow test passed~n").
+    cure_utils:debug("✓ Full stdlib loading workflow test passed~n").
 
 %% ============================================================================
 %% Error Handling Tests
 %% ============================================================================
 
 test_error_handling() ->
-    io:format("Testing error handling in stdlib loading...~n"),
+    cure_utils:debug("Testing error handling in stdlib loading...~n"),
 
     % Test with invalid directory (should return empty map)
     % This requires modifying the stdlib path temporarily
@@ -437,4 +437,4 @@ test_error_handling() ->
         cure_typechecker:get_stdlib_function_type(invalid_atom, func, -1)
     ),
 
-    io:format("✓ Error handling test passed~n").
+    cure_utils:debug("✓ Error handling test passed~n").

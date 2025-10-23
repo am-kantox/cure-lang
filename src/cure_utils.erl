@@ -12,7 +12,7 @@ debug(Format) ->
     Format :: io:format(),
     Data :: [term()].
 debug(Format, Data) when is_list(Format) ->
-    io:format("DEBUG: " ++ Format, Data).
+    cure_utils:debug("DEBUG: " ++ Format, Data).
 
 -else.
 

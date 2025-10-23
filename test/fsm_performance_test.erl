@@ -6,7 +6,7 @@
 
 %% Test FSM performance optimizations
 run() ->
-    io:format("=== Testing FSM Performance Optimizations ===~n"),
+    cure_utils:debug("=== Testing FSM Performance Optimizations ===~n"),
 
     Tests = [
         fun test_transition_lookup_performance/0,
@@ -24,29 +24,29 @@ run() ->
     Passed = length([ok || ok <- Results]),
     Failed = length(Results) - Passed,
 
-    io:format("~nFSM Performance Tests Summary:~n"),
-    io:format("  Passed: ~w~n", [Passed]),
-    io:format("  Failed: ~w~n", [Failed]),
+    cure_utils:debug("~nFSM Performance Tests Summary:~n"),
+    cure_utils:debug("  Passed: ~w~n", [Passed]),
+    cure_utils:debug("  Failed: ~w~n", [Failed]),
 
     case Failed of
-        0 -> io:format("All FSM performance tests passed!~n");
-        _ -> io:format("Some FSM performance tests failed.~n")
+        0 -> cure_utils:debug("All FSM performance tests passed!~n");
+        _ -> cure_utils:debug("Some FSM performance tests failed.~n")
     end,
 
     {ok, #{passed => Passed, failed => Failed}}.
 
 run_test(TestFun) ->
     TestName = extract_test_name(TestFun),
-    io:format("Running ~s... ", [TestName]),
+    cure_utils:debug("Running ~s... ", [TestName]),
     try
         TestFun(),
-        io:format("PASSED~n"),
+        cure_utils:debug("PASSED~n"),
         ok
     catch
         Error:Reason:Stack ->
-            io:format("FAILED~n"),
-            io:format("  Error: ~p:~p~n", [Error, Reason]),
-            io:format("  Stack: ~p~n", [Stack]),
+            cure_utils:debug("FAILED~n"),
+            cure_utils:debug("  Error: ~p:~p~n", [Error, Reason]),
+            cure_utils:debug("  Stack: ~p~n", [Stack]),
             {error, Reason}
     end.
 
@@ -95,7 +95,7 @@ test_transition_lookup_performance() ->
     EventsProcessed = 1000,
     AvgTimePerEvent = TotalTime / EventsProcessed,
 
-    io:format(" [Avg: ~.2f μs/event] ", [AvgTimePerEvent]),
+    cure_utils:debug(" [Avg: ~.2f μs/event] ", [AvgTimePerEvent]),
 
     % Cleanup
     cure_fsm_runtime:stop_fsm(FSMPid),
@@ -139,7 +139,7 @@ test_batch_event_processing() ->
 
     BatchEventTime = EndTime2 - StartTime2,
 
-    io:format(" [Single: ~w μs, Batch: ~w μs] ", [SingleEventTime, BatchEventTime]),
+    cure_utils:debug(" [Single: ~w μs, Batch: ~w μs] ", [SingleEventTime, BatchEventTime]),
 
     % Batch processing should be faster or at least not significantly slower
     true = BatchEventTime =< SingleEventTime * 1.5,
@@ -182,7 +182,7 @@ test_memory_optimization() ->
     % Get memory after many events
     FinalMemory = process_info(FSMPid, memory),
 
-    io:format(" [Memory: ~w -> ~w bytes] ", [InitialMemory, FinalMemory]),
+    cure_utils:debug(" [Memory: ~w -> ~w bytes] ", [InitialMemory, FinalMemory]),
 
     % Memory should be bounded due to history trimming
     {memory, InitialBytes} = InitialMemory,
@@ -238,7 +238,7 @@ test_registry_performance() ->
     LookupsPerformed = 1000,
     AvgLookupTime = LookupTime / LookupsPerformed,
 
-    io:format(" [Reg: ~w μs, Lookup: ~.2f μs/op] ", [RegistrationTime, AvgLookupTime]),
+    cure_utils:debug(" [Reg: ~w μs, Lookup: ~.2f μs/op] ", [RegistrationTime, AvgLookupTime]),
 
     % Lookups should be very fast (under 1 microsecond)
     true = AvgLookupTime < 1.0,
@@ -285,7 +285,7 @@ test_concurrent_fsm_scaling() ->
     EventEndTime = erlang:monotonic_time(microsecond),
     EventTime = EventEndTime - EventStartTime,
 
-    io:format(" [Create ~w FSMs: ~w μs, Events: ~w μs] ", [NumFSMs, CreateTime, EventTime]),
+    cure_utils:debug(" [Create ~w FSMs: ~w μs, Events: ~w μs] ", [NumFSMs, CreateTime, EventTime]),
 
     % Creation should be fast (under 100 μs per FSM)
     AvgCreateTime = CreateTime / NumFSMs,
@@ -327,7 +327,7 @@ test_timeout_performance() ->
     % 100 sets + 100 clears
     AvgTimeoutOpTime = TotalTime / 200,
 
-    io:format(" [Avg timeout op: ~.2f μs] ", [AvgTimeoutOpTime]),
+    cure_utils:debug(" [Avg timeout op: ~.2f μs] ", [AvgTimeoutOpTime]),
 
     % Timeout operations should be fast
     true = AvgTimeoutOpTime < 10.0,
@@ -367,7 +367,7 @@ benchmark_event_throughput() ->
     TotalTime = EndTime - StartTime,
     EventsPerSecond = (NumEvents * 1000000) / TotalTime,
 
-    io:format(" [Throughput: ~w events/sec] ", [round(EventsPerSecond)]),
+    cure_utils:debug(" [Throughput: ~w events/sec] ", [round(EventsPerSecond)]),
 
     % Should achieve at least 5K events per second
     true = EventsPerSecond > 5000,
@@ -401,7 +401,7 @@ benchmark_fsm_creation_speed() ->
     FSMsPerSecond = (NumFSMs * 1000000) / TotalTime,
     AvgCreationTime = TotalTime / NumFSMs,
 
-    io:format(" [Creation: ~w FSMs/sec, ~.2f μs/FSM] ", [round(FSMsPerSecond), AvgCreationTime]),
+    cure_utils:debug(" [Creation: ~w FSMs/sec, ~.2f μs/FSM] ", [round(FSMsPerSecond), AvgCreationTime]),
 
     % Should create at least 10K FSMs per second
     true = FSMsPerSecond > 10000,

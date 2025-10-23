@@ -9,7 +9,7 @@
 
 %% Run all Std.Core tests
 run() ->
-    io:format("Running Std.Core tests...~n"),
+    cure_utils:debug("Running Std.Core tests...~n"),
     test_compare_function(),
     test_boolean_operations(),
     test_comparison_operations(),
@@ -17,14 +17,14 @@ run() ->
     test_result_operations(),
     test_option_operations(),
     test_utility_functions(),
-    io:format("All Std.Core tests passed!~n").
+    cure_utils:debug("All Std.Core tests passed!~n").
 
 %% ============================================================================
 %% Test 1: Compare function - verify correct Ordering return values
 %% ============================================================================
 
 test_compare_function() ->
-    io:format("Testing compare function...~n"),
+    cure_utils:debug("Testing compare function...~n"),
 
     % Note: Since we don't have compiled Cure modules yet, we'll test the concept
     % In a real implementation, these would call 'Std.Core':compare/2
@@ -48,7 +48,7 @@ test_compare_function() ->
     test_compare_values("xyz", "abc", gt),
     test_compare_values("hello", "hello", eq),
 
-    io:format("✓ Compare function test passed~n").
+    cure_utils:debug("✓ Compare function test passed~n").
 
 % Helper function to test comparison logic
 test_compare_values(X, Y, Expected) ->
@@ -65,7 +65,7 @@ test_compare_values(X, Y, Expected) ->
 %% ============================================================================
 
 test_boolean_operations() ->
-    io:format("Testing boolean operations...~n"),
+    cure_utils:debug("Testing boolean operations...~n"),
 
     % Test not/1
     ?assertEqual(false, test_not(true)),
@@ -89,7 +89,7 @@ test_boolean_operations() ->
     ?assertEqual(true, test_xor(false, true)),
     ?assertEqual(false, test_xor(false, false)),
 
-    io:format("✓ Boolean operations test passed~n").
+    cure_utils:debug("✓ Boolean operations test passed~n").
 
 % Helper functions for boolean operations (simulating Cure functions)
 test_not(X) -> not X.
@@ -102,7 +102,7 @@ test_xor(X, Y) -> (X and not Y) or (not X and Y).
 %% ============================================================================
 
 test_comparison_operations() ->
-    io:format("Testing comparison operations...~n"),
+    cure_utils:debug("Testing comparison operations...~n"),
 
     % Test eq/2, ne/2
     ?assertEqual(true, test_eq(5, 5)),
@@ -123,7 +123,7 @@ test_comparison_operations() ->
     ?assertEqual(true, test_ge(5, 5)),
     ?assertEqual(true, test_ge(5, 3)),
 
-    io:format("✓ Comparison operations test passed~n").
+    cure_utils:debug("✓ Comparison operations test passed~n").
 
 % Helper functions for comparison operations
 test_eq(X, Y) -> X == Y.
@@ -138,7 +138,7 @@ test_ge(X, Y) -> X >= Y.
 %% ============================================================================
 
 test_min_max_clamp() ->
-    io:format("Testing min, max, clamp operations...~n"),
+    cure_utils:debug("Testing min, max, clamp operations...~n"),
 
     % Test minimum/2
     ?assertEqual(3, test_minimum(5, 3)),
@@ -163,7 +163,7 @@ test_min_max_clamp() ->
     % At maximum
     ?assertEqual(10, test_clamp(10, 5, 10)),
 
-    io:format("✓ Min, max, clamp operations test passed~n").
+    cure_utils:debug("✓ Min, max, clamp operations test passed~n").
 
 % Helper functions for min/max/clamp
 test_minimum(X, Y) -> min(X, Y).
@@ -175,7 +175,7 @@ test_clamp(Value, Min, Max) -> min(max(Value, Min), Max).
 %% ============================================================================
 
 test_result_operations() ->
-    io:format("Testing Result type operations...~n"),
+    cure_utils:debug("Testing Result type operations...~n"),
 
     % Test ok/1, error/1 constructors
     OkValue = test_ok(42),
@@ -209,7 +209,7 @@ test_result_operations() ->
     ?assertEqual({'Error', "fail"}, AndThenError),
     ?assertEqual({'Error', "division by zero"}, AndThenChainError),
 
-    io:format("✓ Result type operations test passed~n").
+    cure_utils:debug("✓ Result type operations test passed~n").
 
 % Helper functions for Result operations
 test_ok(Value) -> {'Ok', Value}.
@@ -230,7 +230,7 @@ test_and_then({'Error', Err}, _F) -> {'Error', Err}.
 %% ============================================================================
 
 test_option_operations() ->
-    io:format("Testing Option type operations...~n"),
+    cure_utils:debug("Testing Option type operations...~n"),
 
     % Test some/1, none/0 constructors
     SomeValue = test_some(42),
@@ -264,7 +264,7 @@ test_option_operations() ->
     ?assertEqual(10, SomeOr),
     ?assertEqual(99, NoneOr),
 
-    io:format("✓ Option type operations test passed~n").
+    cure_utils:debug("✓ Option type operations test passed~n").
 
 % Helper functions for Option operations
 test_some(Value) -> {'Some', Value}.
@@ -285,7 +285,7 @@ test_option_or('None', Default) -> Default.
 %% ============================================================================
 
 test_utility_functions() ->
-    io:format("Testing utility functions...~n"),
+    cure_utils:debug("Testing utility functions...~n"),
 
     % Test identity/1
     ?assertEqual(42, test_identity(42)),
@@ -317,7 +317,7 @@ test_utility_functions() ->
     % flip(subtract)(5, 8) = subtract(8, 5) = 8 - 5 = 3
     ?assertEqual(3, FlippedSubtract(5, 8)),
 
-    io:format("✓ Utility functions test passed~n").
+    cure_utils:debug("✓ Utility functions test passed~n").
 
 % Helper functions for utility operations
 test_identity(X) -> X.

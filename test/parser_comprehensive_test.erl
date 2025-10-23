@@ -16,17 +16,17 @@
 
 %% Run all comprehensive parser tests
 run() ->
-    io:format("Running Cure comprehensive parser tests...~n"),
+    cure_utils:debug("Running Cure comprehensive parser tests...~n"),
     test_keyword_function_names(),
     test_union_type_parsing(),
     test_type_constructor_parsing(),
     test_xor_function(),
     test_clamp_function(),
-    io:format("All comprehensive parser tests passed!~n").
+    cure_utils:debug("All comprehensive parser tests passed!~n").
 
 %% Test 1: Parser correctly handles keywords like "ok" or "not" being used as function names
 test_keyword_function_names() ->
-    io:format("Testing keyword function names parsing...~n"),
+    cure_utils:debug("Testing keyword function names parsing...~n"),
 
     % Test 'ok' as function name
     test_keyword_function_name("ok", ok),
@@ -43,7 +43,7 @@ test_keyword_function_names() ->
     % Test 'error' as function name
     test_keyword_function_name("error", error),
 
-    io:format("✓ Keyword function names parsing test passed~n").
+    cure_utils:debug("✓ Keyword function names parsing test passed~n").
 
 %% Helper function to test individual keyword function names
 test_keyword_function_name(Keyword, ExpectedAtom) ->
@@ -59,7 +59,7 @@ test_keyword_function_name(Keyword, ExpectedAtom) ->
 
 %% Test 2: Parser correctly constructs union types from definitions like "TypeA | TypeB"
 test_union_type_parsing() ->
-    io:format("Testing union type parsing...~n"),
+    cure_utils:debug("Testing union type parsing...~n"),
 
     % Test simple union type: TypeA | TypeB
     test_simple_union_type(),
@@ -70,7 +70,7 @@ test_union_type_parsing() ->
     % Test complex union with parameterized types: Result(T, E) | Option(T)
     test_complex_union_type(),
 
-    io:format("✓ Union type parsing test passed~n").
+    cure_utils:debug("✓ Union type parsing test passed~n").
 
 %% Test simple union type parsing
 test_simple_union_type() ->
@@ -137,7 +137,7 @@ test_complex_union_type() ->
 
 %% Test 3: Parser correctly identifies and processes type constructors with parameters
 test_type_constructor_parsing() ->
-    io:format("Testing type constructor parsing...~n"),
+    cure_utils:debug("Testing type constructor parsing...~n"),
 
     % Test Ok(T) constructor
     test_ok_constructor(),
@@ -154,7 +154,7 @@ test_type_constructor_parsing() ->
     % Test complex constructor with multiple parameters
     test_complex_constructor(),
 
-    io:format("✓ Type constructor parsing test passed~n").
+    cure_utils:debug("✓ Type constructor parsing test passed~n").
 
 %% Test Ok(T) constructor parsing
 test_ok_constructor() ->
@@ -228,7 +228,7 @@ test_complex_constructor() ->
 
 %% Test 4: `xor` function returns the correct boolean result for all possible input combinations
 test_xor_function() ->
-    io:format("Testing xor function behavior...~n"),
+    cure_utils:debug("Testing xor function behavior...~n"),
 
     % Test all four boolean combinations
     test_xor_true_true(),
@@ -236,7 +236,7 @@ test_xor_function() ->
     test_xor_false_true(),
     test_xor_false_false(),
 
-    io:format("✓ XOR function behavior test passed~n").
+    cure_utils:debug("✓ XOR function behavior test passed~n").
 
 %% Test xor(true, true) = false
 test_xor_true_true() ->
@@ -290,7 +290,7 @@ test_xor_false_false() ->
 
 %% Test 5: `clamp` function correctly constrains a value within specified min and max range
 test_clamp_function() ->
-    io:format("Testing clamp function behavior...~n"),
+    cure_utils:debug("Testing clamp function behavior...~n"),
 
     % Test clamp with value below minimum
     test_clamp_below_min(),
@@ -304,7 +304,7 @@ test_clamp_function() ->
     % Test clamp with value at boundaries
     test_clamp_at_boundaries(),
 
-    io:format("✓ Clamp function behavior test passed~n").
+    cure_utils:debug("✓ Clamp function behavior test passed~n").
 
 %% Test clamp with value below minimum (should return minimum)
 test_clamp_below_min() ->

@@ -9,7 +9,7 @@
 
 %% Run all extended syntax tests
 run() ->
-    io:format("Running Extended Syntax tests...~n"),
+    cure_utils:debug("Running Extended Syntax tests...~n"),
     setup(),
     try
         guards_in_match_test(),
@@ -17,7 +17,7 @@ run() ->
         import_arity_test(),
         complex_guards_test(),
         std_demo_parsing_test(),
-        io:format("All extended syntax tests passed!~n")
+        cure_utils:debug("All extended syntax tests passed!~n")
     after
         teardown(ok)
     end.

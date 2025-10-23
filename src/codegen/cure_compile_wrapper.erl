@@ -16,36 +16,36 @@ compile_source_file(SourceFile) ->
 
 compile_source_file(SourceFile, Options) ->
     try
-        io:format("Compiling ~s...~n", [SourceFile]),
+        cure_utils:debug("Compiling ~s...~n", [SourceFile]),
 
         % Step 1: Lexical analysis
         case cure_lexer:tokenize_file(SourceFile) of
             {ok, Tokens} ->
-                io:format("✓ Lexical analysis: ~p tokens~n", [length(Tokens)]),
+                cure_utils:debug("✓ Lexical analysis: ~p tokens~n", [length(Tokens)]),
 
                 % Step 2: Parsing
                 case cure_parser:parse(Tokens) of
                     {ok, AST} ->
-                        io:format("✓ Parsing: AST generated~n"),
+                        cure_utils:debug("✓ Parsing: AST generated~n"),
 
                         % Step 3: Module structure creation
                         case create_module_ast(AST, SourceFile) of
                             {ok, ModuleAST} ->
-                                io:format("✓ Module structure: Created~n"),
+                                cure_utils:debug("✓ Module structure: Created~n"),
                                 cure_utils:debug("Created ModuleAST: ~p~n", [ModuleAST]),
 
                                 % Step 4: Code generation
                                 cure_utils:debug("ModuleAST format: ~p~n", [ModuleAST]),
                                 case cure_codegen:compile_module(ModuleAST, Options) of
                                     {ok, Module} ->
-                                        io:format("✓ Code generation: Success~n"),
+                                        cure_utils:debug("✓ Code generation: Success~n"),
 
                                         % Step 5: BEAM generation
                                         ModuleName = maps:get(name, Module),
                                         BeamFile = atom_to_list(ModuleName) ++ ".beam",
                                         case cure_codegen:generate_beam_file(Module, BeamFile) of
                                             {ok, {LoadedName, Path}} ->
-                                                io:format("✓ BEAM generation: ~s~n", [Path]),
+                                                cure_utils:debug("✓ BEAM generation: ~s~n", [Path]),
                                                 {ok, {LoadedName, Path}};
                                             {error, BeamError} ->
                                                 {error,

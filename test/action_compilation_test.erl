@@ -39,12 +39,12 @@ run() ->
     run_all_tests().
 
 run_all_tests() ->
-    io:format("Running Action Compilation Test Suite~n"),
-    io:format("=====================================~n~n"),
+    cure_utils:debug("Running Action Compilation Test Suite~n"),
+    cure_utils:debug("=====================================~n~n"),
 
     Results = lists:map(
         fun({TestName, Description}) ->
-            io:format("~s: ~s~n", [TestName, Description]),
+            cure_utils:debug("~s: ~s~n", [TestName, Description]),
             Result =
                 try
                     case TestName of
@@ -74,10 +74,10 @@ run_all_tests() ->
 
             case Result of
                 {ok, Details} ->
-                    io:format("  ✓ PASSED~n~p~n~n", [Details]),
+                    cure_utils:debug("  ✓ PASSED~n~p~n~n", [Details]),
                     {TestName, passed, Details};
                 {error, ErrorReason} ->
-                    io:format("  ✗ FAILED: ~p~n~n", [ErrorReason]),
+                    cure_utils:debug("  ✗ FAILED: ~p~n~n", [ErrorReason]),
                     {TestName, failed, ErrorReason}
             end
         end,
@@ -88,16 +88,16 @@ run_all_tests() ->
     Failed = length([Result || {_, failed, _} = Result <- Results]),
     Total = length(Results),
 
-    io:format("Test Results: ~p/~p passed, ~p failed~n", [Passed, Total, Failed]),
+    cure_utils:debug("Test Results: ~p/~p passed, ~p failed~n", [Passed, Total, Failed]),
 
     case Failed of
         0 ->
-            io:format("All tests passed!~n"),
+            cure_utils:debug("All tests passed!~n"),
             ok;
         _ ->
-            io:format("Some tests failed.~n"),
+            cure_utils:debug("Some tests failed.~n"),
             FailedTests = [Name || {Name, failed, _} <- Results],
-            io:format("Failed tests: ~p~n", [FailedTests]),
+            cure_utils:debug("Failed tests: ~p~n", [FailedTests]),
             {failed, FailedTests}
     end.
 

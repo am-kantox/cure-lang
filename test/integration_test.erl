@@ -8,7 +8,7 @@
 
 %% Run all integration tests
 run() ->
-    io:format("Running Integration tests...~n"),
+    cure_utils:debug("Running Integration tests...~n"),
 
     Tests = [
         fun test_simple_module_compilation/0,
@@ -26,14 +26,14 @@ run() ->
     Passed = length([ok || ok <- Results]),
     Total = length(Results),
 
-    io:format("Integration tests: ~w/~w passed~n", [Passed, Total]),
+    cure_utils:debug("Integration tests: ~w/~w passed~n", [Passed, Total]),
 
     case Passed of
         Total ->
-            io:format("All integration tests passed!~n"),
+            cure_utils:debug("All integration tests passed!~n"),
             ok;
         _ ->
-            io:format("Some integration tests failed~n"),
+            cure_utils:debug("Some integration tests failed~n"),
             error
     end.
 
@@ -44,14 +44,14 @@ run_test(TestFun) ->
         ok
     catch
         Error:Reason:Stack ->
-            io:format("❌ Test ~w failed: ~p:~p~n", [TestFun, Error, Reason]),
-            io:format("Stack: ~p~n", [Stack]),
+            cure_utils:debug("❌ Test ~w failed: ~p:~p~n", [TestFun, Error, Reason]),
+            cure_utils:debug("Stack: ~p~n", [Stack]),
             error
     end.
 
 %% Test 1: Simple module compilation
 test_simple_module_compilation() ->
-    io:format("✓ Testing simple module compilation...~n"),
+    cure_utils:debug("✓ Testing simple module compilation...~n"),
 
     % Create a simple Cure program
     CureCode =
@@ -85,11 +85,11 @@ test_simple_module_compilation() ->
             throw({unexpected_ast, AST})
     end,
 
-    io:format("  ✓ Simple module compilation test passed~n").
+    cure_utils:debug("  ✓ Simple module compilation test passed~n").
 
 %% Test 2: Function with types
 test_function_with_types() ->
-    io:format("✓ Testing function with type annotations...~n"),
+    cure_utils:debug("✓ Testing function with type annotations...~n"),
 
     % Create function with types
     FuncCode = "def factorial(n: Nat): Pos = if n == 0 then 1 else n * factorial(n - 1)",
@@ -129,11 +129,11 @@ test_function_with_types() ->
             throw({unexpected_function_def, FuncDef})
     end,
 
-    io:format("  ✓ Function with types test passed~n").
+    cure_utils:debug("  ✓ Function with types test passed~n").
 
 %% Test 3: FSM compilation
 test_fsm_compilation() ->
-    io:format("✓ Testing FSM compilation...~n"),
+    cure_utils:debug("✓ Testing FSM compilation...~n"),
 
     % Create simple FSM
     FSMCode =
@@ -176,11 +176,11 @@ test_fsm_compilation() ->
             throw({unexpected_fsm_def, FSMDef})
     end,
 
-    io:format("  ✓ FSM compilation test passed~n").
+    cure_utils:debug("  ✓ FSM compilation test passed~n").
 
 %% Test 4: Basic dependent types
 test_dependent_types_basic() ->
-    io:format("✓ Testing basic dependent types...~n"),
+    cure_utils:debug("✓ Testing basic dependent types...~n"),
 
     % Create function with dependent type
     DepTypeCode = "def safe_head(list: List(T, n)) -> T when n > 0 = head(list)",
@@ -229,11 +229,11 @@ test_dependent_types_basic() ->
             throw({unexpected_function_def, FuncDef})
     end,
 
-    io:format("  ✓ Dependent types test passed~n").
+    cure_utils:debug("  ✓ Dependent types test passed~n").
 
 %% Test 5: Let expressions
 test_let_expressions() ->
-    io:format("✓ Testing let expressions...~n"),
+    cure_utils:debug("✓ Testing let expressions...~n"),
 
     % Create let expression
     LetCode = "let x = 42, y = x + 1 in x + y",
@@ -262,11 +262,11 @@ test_let_expressions() ->
             throw({unexpected_let_expr, LetExpr})
     end,
 
-    io:format("  ✓ Let expressions test passed~n").
+    cure_utils:debug("  ✓ Let expressions test passed~n").
 
 %% Test 6: Pattern matching
 test_pattern_matching() ->
-    io:format("✓ Testing pattern matching...~n"),
+    cure_utils:debug("✓ Testing pattern matching...~n"),
 
     % Create match expression
     MatchCode =
@@ -300,11 +300,11 @@ test_pattern_matching() ->
             throw({unexpected_match_expr, MatchExpr})
     end,
 
-    io:format("  ✓ Pattern matching test passed~n").
+    cure_utils:debug("  ✓ Pattern matching test passed~n").
 
 %% Test 7: Arithmetic operations
 test_arithmetic_operations() ->
-    io:format("✓ Testing arithmetic operations...~n"),
+    cure_utils:debug("✓ Testing arithmetic operations...~n"),
 
     % Create arithmetic expression
     ArithCode = "(2 + 3) * 4 - 1",
@@ -325,13 +325,13 @@ test_arithmetic_operations() ->
     TypeEnv = cure_typechecker:builtin_env(),
     {ok, _Type} = cure_typechecker:infer_type(ArithExpr, TypeEnv),
 
-    io:format("  ✓ Arithmetic operations test passed~n").
+    cure_utils:debug("  ✓ Arithmetic operations test passed~n").
 
 %% Additional helper functions for future integration tests
 
 %% Test end-to-end compilation pipeline
 test_full_compilation_pipeline() ->
-    io:format("✓ Testing full compilation pipeline...~n"),
+    cure_utils:debug("✓ Testing full compilation pipeline...~n"),
 
     % Simple program
     Program =
@@ -348,11 +348,11 @@ test_full_compilation_pipeline() ->
 
     {ok, _Instructions} = cure_codegen:compile_module(TypedAST, #{}),
 
-    io:format("  ✓ Full compilation pipeline test passed~n").
+    cure_utils:debug("  ✓ Full compilation pipeline test passed~n").
 
 %% Test error handling in compilation
 test_compilation_error_handling() ->
-    io:format("✓ Testing compilation error handling...~n"),
+    cure_utils:debug("✓ Testing compilation error handling...~n"),
 
     % Program with type error
 
@@ -367,13 +367,13 @@ test_compilation_error_handling() ->
         % This should fail with type error
         case cure_typechecker:check_function(AST, TypeEnv) of
             {error, _Reason} ->
-                io:format("  ✓ Correctly caught type error~n"),
+                cure_utils:debug("  ✓ Correctly caught type error~n"),
                 ok;
             {ok, _} ->
                 throw(expected_type_error)
         end
     catch
         _:_ ->
-            io:format("  ✓ Error handling working correctly~n"),
+            cure_utils:debug("  ✓ Error handling working correctly~n"),
             ok
     end.

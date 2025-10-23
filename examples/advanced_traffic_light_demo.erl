@@ -19,9 +19,9 @@
 -include("../src/fsm/cure_fsm_runtime.hrl").
 
 main(_Args) ->
-    io:format("~n╔══════════════════════════════════════════════════════════════╗~n"),
-    io:format("║  Advanced Traffic Light FSM Demo - Cure Programming Language ║~n"),
-    io:format("╚══════════════════════════════════════════════════════════════╝~n~n"),
+    cure_utils:debug("~n╔══════════════════════════════════════════════════════════════╗~n"),
+    cure_utils:debug("║  Advanced Traffic Light FSM Demo - Cure Programming Language ║~n"),
+    cure_utils:debug("╚══════════════════════════════════════════════════════════════╝~n~n"),
     
     %% Register the advanced traffic light FSM
     register_advanced_traffic_light(),
@@ -29,12 +29,12 @@ main(_Args) ->
     %% Run the demo
     run_demo(),
     
-    io:format("~n✓ Demo completed successfully!~n~n"),
+    cure_utils:debug("~n✓ Demo completed successfully!~n~n"),
     ok.
 
 %% Register an advanced traffic light FSM with all features
 register_advanced_traffic_light() ->
-    io:format("📝 Registering Advanced Traffic Light FSM...~n"),
+    cure_utils:debug("📝 Registering Advanced Traffic Light FSM...~n"),
     
     %% Action for transitioning from Red to Green
     RedToGreenAction = fun(State, _Event) ->
@@ -172,12 +172,12 @@ register_advanced_traffic_light() ->
         ]
     ),
     
-    io:format("   ✓ FSM registered with 4 states and sophisticated actions~n~n").
+    cure_utils:debug("   ✓ FSM registered with 4 states and sophisticated actions~n~n").
 
 %% Run the demonstration
 run_demo() ->
     %% Start FSM instance
-    io:format("🚦 Starting Traffic Light FSM...~n"),
+    cure_utils:debug("🚦 Starting Traffic Light FSM...~n"),
     InitialData = #{
         cycles_completed => 0,
         total_transitions => 0,
@@ -185,91 +185,91 @@ run_demo() ->
         vehicle_count => 0
     },
     {ok, FSM} = cure_fsm_runtime:start_fsm(advanced_traffic_light, InitialData),
-    io:format("   ✓ FSM started with PID: ~p~n~n", [FSM]),
+    cure_utils:debug("   ✓ FSM started with PID: ~p~n~n", [FSM]),
     
     %% Check initial state
     {ok, InitialState} = cure_fsm_runtime:get_state(FSM),
-    io:format("📍 Initial State: ~p~n~n", [InitialState]),
+    cure_utils:debug("📍 Initial State: ~p~n~n", [InitialState]),
     
     %% Simulate traffic light cycle
-    io:format("🔄 Starting traffic light cycle...~n~n"),
+    cure_utils:debug("🔄 Starting traffic light cycle...~n~n"),
     
     %% Red -> Green
-    io:format("   [1] Sending 'timer' event (Red -> Green)~n"),
+    cure_utils:debug("   [1] Sending 'timer' event (Red -> Green)~n"),
     cure_fsm_runtime:send_event(FSM, timer),
     timer:sleep(100),
     {ok, State1} = cure_fsm_runtime:get_state(FSM),
-    io:format("       Current State: ~p~n", [State1]),
+    cure_utils:debug("       Current State: ~p~n", [State1]),
     print_fsm_info(FSM, "After Red->Green"),
     
     %% Green -> Yellow (with vehicle detected)
-    io:format("~n   [2] Sending 'timer' event with vehicle data (Green -> Yellow)~n"),
+    cure_utils:debug("~n   [2] Sending 'timer' event with vehicle data (Green -> Yellow)~n"),
     cure_fsm_runtime:send_event(FSM, timer, #{vehicle_detected => true}),
     timer:sleep(100),
     {ok, State2} = cure_fsm_runtime:get_state(FSM),
-    io:format("       Current State: ~p~n", [State2]),
+    cure_utils:debug("       Current State: ~p~n", [State2]),
     print_fsm_info(FSM, "After Green->Yellow"),
     
     %% Yellow -> Red
-    io:format("~n   [3] Sending 'timer' event (Yellow -> Red)~n"),
+    cure_utils:debug("~n   [3] Sending 'timer' event (Yellow -> Red)~n"),
     cure_fsm_runtime:send_event(FSM, timer),
     timer:sleep(100),
     {ok, State3} = cure_fsm_runtime:get_state(FSM),
-    io:format("       Current State: ~p~n", [State3]),
+    cure_utils:debug("       Current State: ~p~n", [State3]),
     print_fsm_info(FSM, "After Yellow->Red"),
     
     %% Complete another cycle
-    io:format("~n   [4] Completing second cycle...~n"),
+    cure_utils:debug("~n   [4] Completing second cycle...~n"),
     cure_fsm_runtime:send_batch_events(FSM, [timer, timer, timer]),
     timer:sleep(100),
     {ok, State4} = cure_fsm_runtime:get_state(FSM),
-    io:format("       Current State: ~p~n", [State4]),
+    cure_utils:debug("       Current State: ~p~n", [State4]),
     print_fsm_info(FSM, "After second cycle"),
     
     %% Emergency stop
-    io:format("~n   [5] Triggering emergency stop~n"),
+    cure_utils:debug("~n   [5] Triggering emergency stop~n"),
     cure_fsm_runtime:send_event(FSM, emergency_stop, #{reason => "Pedestrian detected"}),
     timer:sleep(100),
     {ok, State5} = cure_fsm_runtime:get_state(FSM),
-    io:format("       Current State: ~p~n", [State5]),
+    cure_utils:debug("       Current State: ~p~n", [State5]),
     print_fsm_info(FSM, "After emergency stop"),
     
     %% Resume from maintenance
-    io:format("~n   [6] Resuming from maintenance~n"),
+    cure_utils:debug("~n   [6] Resuming from maintenance~n"),
     cure_fsm_runtime:send_event(FSM, resume),
     timer:sleep(100),
     {ok, State6} = cure_fsm_runtime:get_state(FSM),
-    io:format("       Current State: ~p~n", [State6]),
+    cure_utils:debug("       Current State: ~p~n", [State6]),
     print_fsm_info(FSM, "After resume"),
     
     %% Give extra time for all events to process
     timer:sleep(200),
     
     %% Show final statistics
-    io:format("~n~n═══════════════════════════════════════════════════════════~n"),
-    io:format("📊 Final Statistics~n"),
-    io:format("═══════════════════════════════════════════════════════════~n"),
+    cure_utils:debug("~n~n═══════════════════════════════════════════════════════════~n"),
+    cure_utils:debug("📊 Final Statistics~n"),
+    cure_utils:debug("═══════════════════════════════════════════════════════════~n"),
     print_detailed_info(FSM),
     
     %% Performance stats
     {ok, PerfStats} = cure_fsm_runtime:get_performance_stats(FSM),
-    io:format("~n⚡ Performance Metrics:~n"),
-    io:format("   • Events Processed: ~p~n", [PerfStats#fsm_perf_stats.events_processed]),
-    io:format("   • Avg Event Time: ~.2f μs~n", [float(PerfStats#fsm_perf_stats.avg_event_time)]),
-    io:format("   • Max Event Time: ~.2f μs~n", [float(PerfStats#fsm_perf_stats.max_event_time)]),
+    cure_utils:debug("~n⚡ Performance Metrics:~n"),
+    cure_utils:debug("   • Events Processed: ~p~n", [PerfStats#fsm_perf_stats.events_processed]),
+    cure_utils:debug("   • Avg Event Time: ~.2f μs~n", [float(PerfStats#fsm_perf_stats.avg_event_time)]),
+    cure_utils:debug("   • Max Event Time: ~.2f μs~n", [float(PerfStats#fsm_perf_stats.max_event_time)]),
     
     %% Clean up
     cure_fsm_runtime:stop_fsm(FSM),
-    io:format("~n   ✓ FSM stopped~n").
+    cure_utils:debug("~n   ✓ FSM stopped~n").
 
 %% Helper to print FSM info
 print_fsm_info(FSM, Label) ->
     {ok, Info} = cure_fsm_runtime:get_fsm_info(FSM),
     Data = maps:get(data, Info),
-    io:format("       ~s:~n", [Label]),
-    io:format("         • Cycles: ~p~n", [maps:get(cycles_completed, Data, 0)]),
-    io:format("         • Total Transitions: ~p~n", [maps:get(total_transitions, Data, 0)]),
-    io:format("         • Emergencies: ~p~n", [maps:get(emergency_count, Data, 0)]).
+    cure_utils:debug("       ~s:~n", [Label]),
+    cure_utils:debug("         • Cycles: ~p~n", [maps:get(cycles_completed, Data, 0)]),
+    cure_utils:debug("         • Total Transitions: ~p~n", [maps:get(total_transitions, Data, 0)]),
+    cure_utils:debug("         • Emergencies: ~p~n", [maps:get(emergency_count, Data, 0)]).
 
 %% Helper to print detailed info
 print_detailed_info(FSM) ->
@@ -280,15 +280,15 @@ print_detailed_info(FSM) ->
     Data = maps:get(data, Info),
     History = maps:get(event_history, Info),
     
-    io:format("   FSM Type: ~p~n", [FSMType]),
-    io:format("   Current State: ~p~n", [CurrentState]),
-    io:format("~n   State Data:~n"),
+    cure_utils:debug("   FSM Type: ~p~n", [FSMType]),
+    cure_utils:debug("   Current State: ~p~n", [CurrentState]),
+    cure_utils:debug("~n   State Data:~n"),
     maps:fold(fun(K, V, _) ->
-        io:format("     • ~p: ~p~n", [K, V])
+        cure_utils:debug("     • ~p: ~p~n", [K, V])
     end, ok, Data),
     
-    io:format("~n   Event History (last 5):~n"),
+    cure_utils:debug("~n   Event History (last 5):~n"),
     RecentHistory = lists:sublist(History, 5),
     lists:foreach(fun({Event, From, To, _Time}) ->
-        io:format("     • ~p: ~p -> ~p~n", [Event, From, To])
+        cure_utils:debug("     • ~p: ~p -> ~p~n", [Event, From, To])
     end, RecentHistory).

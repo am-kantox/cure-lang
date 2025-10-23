@@ -8,7 +8,7 @@
 
 %% Run all type optimizer tests
 run() ->
-    io:format("=== Testing Type-directed Optimization System ===~n"),
+    cure_utils:debug("=== Testing Type-directed Optimization System ===~n"),
     Tests = [
         fun test_type_information_collection/0,
         fun test_function_call_analysis/0,
@@ -30,29 +30,29 @@ run() ->
     Passed = length([ok || ok <- Results]),
     Failed = length(Results) - Passed,
 
-    io:format("~nType Optimizer Tests Summary:~n"),
-    io:format("  Passed: ~w~n", [Passed]),
-    io:format("  Failed: ~w~n", [Failed]),
+    cure_utils:debug("~nType Optimizer Tests Summary:~n"),
+    cure_utils:debug("  Passed: ~w~n", [Passed]),
+    cure_utils:debug("  Failed: ~w~n", [Failed]),
 
     case Failed of
-        0 -> io:format("All type optimizer tests passed!~n");
-        _ -> io:format("Some type optimizer tests failed.~n")
+        0 -> cure_utils:debug("All type optimizer tests passed!~n");
+        _ -> cure_utils:debug("Some type optimizer tests failed.~n")
     end,
 
     {ok, #{passed => Passed, failed => Failed}}.
 
 run_test(TestFun) ->
     TestName = extract_test_name(TestFun),
-    io:format("Running ~s... ", [TestName]),
+    cure_utils:debug("Running ~s... ", [TestName]),
     try
         TestFun(),
-        io:format("PASSED~n"),
+        cure_utils:debug("PASSED~n"),
         ok
     catch
         Error:Reason:Stack ->
-            io:format("FAILED~n"),
-            io:format("  Error: ~p:~p~n", [Error, Reason]),
-            io:format("  Stack: ~p~n", [Stack]),
+            cure_utils:debug("FAILED~n"),
+            cure_utils:debug("  Error: ~p:~p~n", [Error, Reason]),
+            cure_utils:debug("  Stack: ~p~n", [Stack]),
             {error, Reason}
     end.
 
@@ -120,7 +120,7 @@ test_function_call_analysis() ->
         CallSites
     ),
 
-    io:format(" [Calls: ~w functions] ", [maps:size(CallCounts)]),
+    cure_utils:debug(" [Calls: ~w functions] ", [maps:size(CallCounts)]),
 
     ok.
 
@@ -139,7 +139,7 @@ test_type_usage_patterns() ->
     UnknownUsage = maps:get({unknown_type}, TypeUsage, 0),
     true = UnknownUsage >= 0,
 
-    io:format(" [Types used: ~w] ", [maps:size(TypeUsage)]),
+    cure_utils:debug(" [Types used: ~w] ", [maps:size(TypeUsage)]),
 
     ok.
 
@@ -167,7 +167,7 @@ test_hot_path_identification() ->
         HotPaths
     ),
 
-    io:format(" [Hot paths: ~w] ", [length(HotPaths)]),
+    cure_utils:debug(" [Hot paths: ~w] ", [length(HotPaths)]),
 
     ok.
 
@@ -189,7 +189,7 @@ test_cold_code_detection() ->
         ColdCode
     ),
 
-    io:format(" [Cold functions: ~w] ", [length(ColdCode)]),
+    cure_utils:debug(" [Cold functions: ~w] ", [length(ColdCode)]),
 
     ok.
 
@@ -221,7 +221,7 @@ test_specialization_candidates() ->
         SpecCandidates
     ),
 
-    io:format(" [Specialization candidates: ~w] ", [maps:size(SpecCandidates)]),
+    cure_utils:debug(" [Specialization candidates: ~w] ", [maps:size(SpecCandidates)]),
 
     ok.
 
@@ -254,7 +254,7 @@ test_function_specialization_pass() ->
     % Should have more functions after specialization (original + specialized versions)
     true = SpecializedFuncCount >= OriginalFuncCount,
 
-    io:format(" [Original: ~w, Specialized: ~w functions] ", [
+    cure_utils:debug(" [Original: ~w, Specialized: ~w functions] ", [
         OriginalFuncCount, SpecializedFuncCount
     ]),
 
@@ -288,7 +288,7 @@ test_monomorphization_pass() ->
     % Should have same or more functions after monomorphization (original + monomorphic versions)
     true = MonomorphizedFuncCount >= OriginalFuncCount,
 
-    io:format(" [Original: ~w, Monomorphized: ~w functions] ", [
+    cure_utils:debug(" [Original: ~w, Monomorphized: ~w functions] ", [
         OriginalFuncCount, MonomorphizedFuncCount
     ]),
 
@@ -319,7 +319,7 @@ test_memory_layout_optimization() ->
     MemoryLayouts = TypeInfo#type_info.memory_layouts,
     true = is_map(MemoryLayouts),
 
-    io:format(" [Memory layouts analyzed: ~w] ", [maps:size(MemoryLayouts)]),
+    cure_utils:debug(" [Memory layouts analyzed: ~w] ", [maps:size(MemoryLayouts)]),
 
     ok.
 
@@ -338,7 +338,7 @@ test_optimization_framework() ->
     true = maps:is_key(optimizations_applied, Report),
     true = maps:is_key(specializations_generated, Report),
 
-    io:format(" [Optimization passes: complete] "),
+    cure_utils:debug(" [Optimization passes: complete] "),
 
     ok.
 
@@ -361,7 +361,7 @@ test_configuration_levels() ->
         Config3#optimization_config.max_specializations >
             Config2#optimization_config.max_specializations,
 
-    io:format(" [Config levels: 0-3 verified] "),
+    cure_utils:debug(" [Config levels: 0-3 verified] "),
 
     ok.
 
@@ -746,7 +746,7 @@ test_inlining_optimization() ->
     % Should have same or fewer functions after inlining (depends on cleanup)
     true = InlinedFuncCount >= 0,
 
-    io:format(" [Original: ~w, After inlining: ~w functions] ", [
+    cure_utils:debug(" [Original: ~w, After inlining: ~w functions] ", [
         OriginalFuncCount, InlinedFuncCount
     ]),
 
@@ -940,7 +940,7 @@ test_dead_code_elimination_with_types() ->
     % Should have fewer functions after dead code elimination
     true = CleanedFuncCount =< OriginalFuncCount,
 
-    io:format(" [Original: ~w, After DCE: ~w functions] ", [OriginalFuncCount, CleanedFuncCount]),
+    cure_utils:debug(" [Original: ~w, After DCE: ~w functions] ", [OriginalFuncCount, CleanedFuncCount]),
 
     ok.
 

@@ -6,7 +6,7 @@
 
 %% Run all match expression tests
 run_all_tests() ->
-    io:format("=== Running Match Expression Tests ===~n"),
+    cure_utils:debug("=== Running Match Expression Tests ===~n"),
 
     Tests = [
         fun test_literal_patterns/0,
@@ -29,7 +29,7 @@ run_all_tests() ->
                 {ok, Test}
             catch
                 Class:Reason:Stack ->
-                    io:format("Test ~p failed: ~p:~p~n~p~n", [Test, Class, Reason, Stack]),
+                    cure_utils:debug("Test ~p failed: ~p:~p~n~p~n", [Test, Class, Reason, Stack]),
                     {error, {Test, Class, Reason}}
             end
         end,
@@ -38,20 +38,20 @@ run_all_tests() ->
 
     {Passed, Failed} = lists:partition(fun({Tag, _}) -> Tag =:= ok end, Results),
 
-    io:format("~nTest Results: ~w passed, ~w failed~n", [length(Passed), length(Failed)]),
+    cure_utils:debug("~nTest Results: ~w passed, ~w failed~n", [length(Passed), length(Failed)]),
 
     case Failed of
         [] ->
-            io:format("ALL TESTS PASSED!~n"),
+            cure_utils:debug("ALL TESTS PASSED!~n"),
             ok;
         _ ->
-            io:format("SOME TESTS FAILED!~n"),
+            cure_utils:debug("SOME TESTS FAILED!~n"),
             {error, Failed}
     end.
 
 %% Test literal pattern parsing and compilation
 test_literal_patterns() ->
-    io:format("Testing literal patterns...~n"),
+    cure_utils:debug("Testing literal patterns...~n"),
 
     % Test parsing
     TestCode =
@@ -81,11 +81,11 @@ test_literal_patterns() ->
     % Cleanup
     file:delete("test_temp_literal.cure"),
 
-    io:format("  ✓ Literal patterns test passed~n").
+    cure_utils:debug("  ✓ Literal patterns test passed~n").
 
 %% Test constructor pattern parsing and compilation
 test_constructor_patterns() ->
-    io:format("Testing constructor patterns...~n"),
+    cure_utils:debug("Testing constructor patterns...~n"),
 
     TestCode =
         "def test_constructor(result) = match result do\n  Ok(value) -> value\n  Error(msg) -> 0\n  _ -> -1\nend",
@@ -110,11 +110,11 @@ test_constructor_patterns() ->
 
     file:delete("test_temp_constructor.cure"),
 
-    io:format("  ✓ Constructor patterns test passed~n").
+    cure_utils:debug("  ✓ Constructor patterns test passed~n").
 
 %% Test wildcard patterns
 test_wildcard_patterns() ->
-    io:format("Testing wildcard patterns...~n"),
+    cure_utils:debug("Testing wildcard patterns...~n"),
 
     TestCode = "def test_wildcard(x) = match x do\n  _ -> \"anything\"\nend",
 
@@ -125,11 +125,11 @@ test_wildcard_patterns() ->
 
     file:delete("test_temp_wildcard.cure"),
 
-    io:format("  ✓ Wildcard patterns test passed~n").
+    cure_utils:debug("  ✓ Wildcard patterns test passed~n").
 
 %% Test variable binding in patterns
 test_variable_binding() ->
-    io:format("Testing variable binding...~n"),
+    cure_utils:debug("Testing variable binding...~n"),
 
     TestCode =
         "def test_binding(result) = match result do\n  Ok(value) -> value + 1\n  Error(reason) -> reason\nend",
@@ -162,11 +162,11 @@ test_variable_binding() ->
 
     file:delete("test_temp_binding.cure"),
 
-    io:format("  ✓ Variable binding test passed~n").
+    cure_utils:debug("  ✓ Variable binding test passed~n").
 
 %% Test complex clause bodies
 test_complex_clause_bodies() ->
-    io:format("Testing complex clause bodies...~n"),
+    cure_utils:debug("Testing complex clause bodies...~n"),
 
     % Test complex expressions in clause bodies (function calls, nested operations)
     TestCode =
@@ -209,11 +209,11 @@ test_complex_clause_bodies() ->
 
     file:delete("test_temp_complex.cure"),
 
-    io:format("  ✓ Complex clause bodies test passed~n").
+    cure_utils:debug("  ✓ Complex clause bodies test passed~n").
 
 %% Test nested patterns
 test_nested_patterns() ->
-    io:format("Testing nested patterns...~n"),
+    cure_utils:debug("Testing nested patterns...~n"),
 
     % For now, test simple nesting
     TestCode = "def test_nested(x) = match x do\n  Ok(_) -> 1\n  Error(_) -> 0\nend",
@@ -225,11 +225,11 @@ test_nested_patterns() ->
 
     file:delete("test_temp_nested.cure"),
 
-    io:format("  ✓ Nested patterns test passed~n").
+    cure_utils:debug("  ✓ Nested patterns test passed~n").
 
 %% Test full compilation pipeline
 test_compilation_pipeline() ->
-    io:format("Testing full compilation pipeline...~n"),
+    cure_utils:debug("Testing full compilation pipeline...~n"),
 
     TestCode =
         "def test_pipeline(result) = match result do\n  Ok(42) -> \"found answer\"\n  Ok(x) -> \"found value\"\n  Error(msg) -> \"error occurred\"\n  _ -> \"unknown\"\nend",
@@ -260,11 +260,11 @@ test_compilation_pipeline() ->
 
     file:delete("test_temp_pipeline.cure"),
 
-    io:format("  ✓ Full compilation pipeline test passed~n").
+    cure_utils:debug("  ✓ Full compilation pipeline test passed~n").
 
 %% Test match expressions with three or more clauses
 test_match_three_or_more_clauses() ->
-    io:format("Testing match expressions with three or more clauses...~n"),
+    cure_utils:debug("Testing match expressions with three or more clauses...~n"),
 
     % Test with exactly three clauses
     TestCode3 =
@@ -334,11 +334,11 @@ test_match_three_or_more_clauses() ->
 
     file:delete("test_temp_five_clauses.cure"),
 
-    io:format("  ✓ Match expressions with three or more clauses test passed~n").
+    cure_utils:debug("  ✓ Match expressions with three or more clauses test passed~n").
 
 %% Test that parse_match_clause_body parses only a single expression
 test_parse_match_clause_body_single_expression() ->
-    io:format("Testing parse_match_clause_body parses single expression...~n"),
+    cure_utils:debug("Testing parse_match_clause_body parses single expression...~n"),
 
     % Test simple single expression in clause body
     TestCodeSimple = "def test_single_expr(x) = match x do\n  1 -> x + 5\n  _ -> 0\nend",
@@ -403,11 +403,11 @@ test_parse_match_clause_body_single_expression() ->
 
     file:delete("test_temp_function_call.cure"),
 
-    io:format("  ✓ Parse match clause body single expression test passed~n").
+    cure_utils:debug("  ✓ Parse match clause body single expression test passed~n").
 
 %% Test match expressions with multiple clauses do not require nested match statements
 test_match_multiple_clauses_no_nested() ->
-    io:format("Testing match multiple clauses without nested match statements...~n"),
+    cure_utils:debug("Testing match multiple clauses without nested match statements...~n"),
 
     % Test flat structure with multiple clauses (no nested matches)
     TestCodeFlat =
@@ -536,13 +536,13 @@ test_match_multiple_clauses_no_nested() ->
 
     file:delete("test_temp_complex_patterns.cure"),
 
-    io:format("  ✓ Match multiple clauses without nested match statements test passed~n").
+    cure_utils:debug("  ✓ Match multiple clauses without nested match statements test passed~n").
 
 %% Test multi-line syntax capabilities in match clause bodies
 %% Note: This tests complex single-line expressions that provide multi-line-like functionality
 %% True multi-line syntax with newlines in match clauses is not yet supported due to parser limitations
 test_multi_line_match_clause_bodies() ->
-    io:format("Testing multi-line syntax capabilities in match clause bodies...~n"),
+    cure_utils:debug("Testing multi-line syntax capabilities in match clause bodies...~n"),
 
     % Test 1: Complex nested expressions in clause bodies (single-line but conceptually multi-step)
     TestCodeComplex =
@@ -701,7 +701,7 @@ test_multi_line_match_clause_bodies() ->
 
     file:delete("test_temp_if_expressions.cure"),
 
-    io:format("  ✓ Multi-line syntax capabilities in match clause bodies test passed~n").
+    cure_utils:debug("  ✓ Multi-line syntax capabilities in match clause bodies test passed~n").
 
 %% Helper function to check if an expression contains nested match expressions
 contains_nested_match(#match_expr{}) ->

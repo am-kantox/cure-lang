@@ -10,23 +10,23 @@
 
 %% Test runner
 run() ->
-    io:format("~n=== Simple Pattern Matching Test ===~n"),
+    cure_utils:debug("~n=== Simple Pattern Matching Test ===~n"),
 
     try
         test_case_expression_basic(),
-        io:format("✓ Case expression basic test passed~n"),
+        cure_utils:debug("✓ Case expression basic test passed~n"),
 
         test_record_pattern_basic(),
-        io:format("✓ Record pattern basic test passed~n"),
+        cure_utils:debug("✓ Record pattern basic test passed~n"),
 
         test_constructor_pattern_basic(),
-        io:format("✓ Constructor pattern basic test passed~n"),
+        cure_utils:debug("✓ Constructor pattern basic test passed~n"),
 
-        io:format("All simple pattern matching tests passed!~n")
+        cure_utils:debug("All simple pattern matching tests passed!~n")
     catch
         Error:Reason:Stacktrace ->
-            io:format("Test failed: ~p:~p~n", [Error, Reason]),
-            io:format("Stacktrace: ~p~n", [Stacktrace])
+            cure_utils:debug("Test failed: ~p:~p~n", [Error, Reason]),
+            cure_utils:debug("Stacktrace: ~p~n", [Stacktrace])
     end.
 
 %% Test basic case expression parsing

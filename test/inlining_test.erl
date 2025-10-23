@@ -9,7 +9,7 @@
 
 %% Run all inlining tests
 run() ->
-    io:format("Running Inlining Pass tests...~n"),
+    cure_utils:debug("Running Inlining Pass tests...~n"),
     test_inline_small_functions(),
     test_inline_across_call_sites(),
     test_do_not_inline_large_functions(),
@@ -20,7 +20,7 @@ run() ->
     test_inline_with_pattern_matching(),
     test_inline_with_let_bindings(),
     test_inline_report_and_limits(),
-    io:format("All inlining pass tests passed!~n").
+    cure_utils:debug("All inlining pass tests passed!~n").
 
 %% Test that small functions are inlined
 test_inline_small_functions() ->
@@ -34,7 +34,7 @@ test_inline_small_functions() ->
     %% Should not find calls to 'add' anymore
     ?assertNot(lists:any(fun(C) -> get_call_name(C) == add end, CallSites)),
 
-    io:format("✓ Inline small functions test passed~n").
+    cure_utils:debug("✓ Inline small functions test passed~n").
 
 %% Test inlining applied across multiple call sites
 test_inline_across_call_sites() ->
@@ -49,7 +49,7 @@ test_inline_across_call_sites() ->
         lists:any(fun(C) -> lists:member(get_call_name(C), [small_add, tiny_helper]) end, Calls)
     ),
 
-    io:format("✓ Inline across call sites test passed~n").
+    cure_utils:debug("✓ Inline across call sites test passed~n").
 
 %% Ensure large functions are not inlined
 test_do_not_inline_large_functions() ->
@@ -62,7 +62,7 @@ test_do_not_inline_large_functions() ->
     %% big_function should remain as a call
     ?assert(lists:any(fun(C) -> get_call_name(C) == big_function end, Calls)),
 
-    io:format("✓ Do not inline large functions test passed~n").
+    cure_utils:debug("✓ Do not inline large functions test passed~n").
 
 %% Semantic equivalence check on simple arithmetic
 test_inline_preserves_semantics_simple() ->
@@ -75,7 +75,7 @@ test_inline_preserves_semantics_simple() ->
     {ok, _Env, _Result1} = cure_typechecker:check_function(get_function(AST, main)),
     {ok, _Env2, _Result2} = cure_typechecker:check_function(get_function(Inlined, main)),
 
-    io:format("✓ Semantic equivalence (types) test passed~n").
+    cure_utils:debug("✓ Semantic equivalence (types) test passed~n").
 
 %% Respect side effects: do not duplicate side effects when inlining
 test_inline_with_side_effects_respected() ->
@@ -89,7 +89,7 @@ test_inline_with_side_effects_respected() ->
     Duplicates = [C || C <- Calls, get_call_name(C) == print_once],
     ?assertEqual(1, length(Duplicates)),
 
-    io:format("✓ Inline with side effects respected test passed~n").
+    cure_utils:debug("✓ Inline with side effects respected test passed~n").
 
 %% Guard against inlining recursive functions
 test_inline_recursive_guarded() ->
@@ -102,7 +102,7 @@ test_inline_recursive_guarded() ->
     Calls = find_function_calls_in_program(Inlined),
     ?assert(lists:any(fun(C) -> get_call_name(C) == factorial end, Calls)),
 
-    io:format("✓ Inline recursive guarded test passed~n").
+    cure_utils:debug("✓ Inline recursive guarded test passed~n").
 
 %% Inline within higher-order contexts
 test_inline_higher_order_contexts() ->
@@ -115,7 +115,7 @@ test_inline_higher_order_contexts() ->
     %% small lambda body should remain but helper inlined inside map
     ?assertNot(lists:any(fun(C) -> get_call_name(C) == inc end, Calls)),
 
-    io:format("✓ Inline in higher-order contexts test passed~n").
+    cure_utils:debug("✓ Inline in higher-order contexts test passed~n").
 
 %% Inline with pattern matching in body
 test_inline_with_pattern_matching() ->
@@ -128,7 +128,7 @@ test_inline_with_pattern_matching() ->
     Calls = find_function_calls_in_program(Inlined),
     ?assertNot(lists:any(fun(C) -> get_call_name(C) == head_or_zero end, Calls)),
 
-    io:format("✓ Inline with pattern matching test passed~n").
+    cure_utils:debug("✓ Inline with pattern matching test passed~n").
 
 %% Inline when body contains let bindings
 test_inline_with_let_bindings() ->
@@ -140,7 +140,7 @@ test_inline_with_let_bindings() ->
     Calls = find_function_calls_in_program(Inlined),
     ?assertNot(lists:any(fun(C) -> get_call_name(C) == add3 end, Calls)),
 
-    io:format("✓ Inline with let bindings test passed~n").
+    cure_utils:debug("✓ Inline with let bindings test passed~n").
 
 %% Verify inlining report and limits
 test_inline_report_and_limits() ->
@@ -158,7 +158,7 @@ test_inline_report_and_limits() ->
     %% Expect some calls remain due to per-function limit
     ?assert(length(Calls) > 0),
 
-    io:format("✓ Inline report/limits test passed~n").
+    cure_utils:debug("✓ Inline report/limits test passed~n").
 
 %% ============================================================================
 %% Sample ASTs

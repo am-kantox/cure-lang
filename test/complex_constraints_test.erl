@@ -14,7 +14,7 @@
 
 %% Run all complex constraint tests
 run() ->
-    io:format("=== Complex Type Constraints Test Suite ===~n"),
+    cure_utils:debug("=== Complex Type Constraints Test Suite ===~n"),
 
     Results = [
         test_implication_constraints(),
@@ -31,30 +31,30 @@ run() ->
     Passed = length([R || R <- Results, R#test_result.passed]),
     Total = length(Results),
 
-    io:format("~n=== Test Summary ===~n"),
-    io:format("Passed: ~p/~p tests~n", [Passed, Total]),
+    cure_utils:debug("~n=== Test Summary ===~n"),
+    cure_utils:debug("Passed: ~p/~p tests~n", [Passed, Total]),
 
     % Report failures
     Failures = [R || R <- Results, not R#test_result.passed],
     lists:foreach(
         fun(#test_result{name = Name, details = Details}) ->
-            io:format("FAILED: ~s - ~p~n", [Name, Details])
+            cure_utils:debug("FAILED: ~s - ~p~n", [Name, Details])
         end,
         Failures
     ),
 
     case Passed of
         Total ->
-            io:format("All complex constraints tests PASSED!~n"),
+            cure_utils:debug("All complex constraints tests PASSED!~n"),
             ok;
         _ ->
-            io:format("~p tests FAILED~n", [Total - Passed]),
+            cure_utils:debug("~p tests FAILED~n", [Total - Passed]),
             error
     end.
 
 %% Test implication constraints
 test_implication_constraints() ->
-    io:format("Testing implication constraints...~n"),
+    cure_utils:debug("Testing implication constraints...~n"),
     try
         % Test A => B where A is satisfied
         PositiveInt = {refined_type, {primitive_type, 'Int'}, fun(X) -> X > 0 end},
@@ -85,7 +85,7 @@ test_implication_constraints() ->
 
 %% Test equivalence constraints
 test_equivalence_constraints() ->
-    io:format("Testing equivalence constraints...~n"),
+    cure_utils:debug("Testing equivalence constraints...~n"),
     try
         % Test A <=> B with matching predicates
         EvenInt1 = {refined_type, {primitive_type, 'Int'}, fun(X) -> X rem 2 =:= 0 end},
@@ -116,7 +116,7 @@ test_equivalence_constraints() ->
 
 %% Test bounds constraints
 test_bounds_constraints() ->
-    io:format("Testing bounds constraints...~n"),
+    cure_utils:debug("Testing bounds constraints...~n"),
     try
         % Test integer bounds
         IntType = {primitive_type, 'Int'},
@@ -155,7 +155,7 @@ test_bounds_constraints() ->
 
 %% Test invariant constraints
 test_invariant_constraints() ->
-    io:format("Testing invariant constraints...~n"),
+    cure_utils:debug("Testing invariant constraints...~n"),
     try
         % Test structural invariant for Vector type
         VectorType =
@@ -192,7 +192,7 @@ test_invariant_constraints() ->
 
 %% Test variance constraints
 test_variance_constraints() ->
-    io:format("Testing variance constraints...~n"),
+    cure_utils:debug("Testing variance constraints...~n"),
     try
         % Test covariance for List type
         ListType =
@@ -250,7 +250,7 @@ test_variance_constraints() ->
 
 %% Test dependent relations
 test_dependent_relations() ->
-    io:format("Testing dependent relations...~n"),
+    cure_utils:debug("Testing dependent relations...~n"),
     try
         % Test type predicate evaluation for Vector
         VectorType =
@@ -286,7 +286,7 @@ test_dependent_relations() ->
 
 %% Test complex refinement types
 test_complex_refinement_types() ->
-    io:format("Testing complex refinement types...~n"),
+    cure_utils:debug("Testing complex refinement types...~n"),
     try
         % Create a complex refinement type: positive even integers
         PositiveEvenInt =
@@ -322,7 +322,7 @@ test_complex_refinement_types() ->
 
 %% Test structural invariants
 test_structural_invariants() ->
-    io:format("Testing structural invariants...~n"),
+    cure_utils:debug("Testing structural invariants...~n"),
     try
         % Test Matrix type with structural invariants
         MatrixType =

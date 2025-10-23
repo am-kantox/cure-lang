@@ -54,8 +54,8 @@ run() ->
             "================================================================================~n"
     ),
 
-    io:format("Total test modules executed: ~p~n", [TotalModules]),
-    io:format("Total execution time: ~.3f seconds~n", [ElapsedTime]),
+    cure_utils:debug("Total test modules executed: ~p~n", [TotalModules]),
+    cure_utils:debug("Total execution time: ~.3f seconds~n", [ElapsedTime]),
 
     if
         TotalFailures == 0 ->
@@ -91,7 +91,7 @@ run() ->
 
 %% Run tests with detailed timing information
 run_with_timing() ->
-    io:format("~n🕐 Running Cure Standard Library tests with detailed timing...~n~n"),
+    cure_utils:debug("~n🕐 Running Cure Standard Library tests with detailed timing...~n~n"),
 
     TestModules = [
         {std_core_test, "Std.Core"},
@@ -105,7 +105,7 @@ run_with_timing() ->
 
     Results = lists:map(
         fun({Module, Name}) ->
-            io:format("⏱️  Starting ~s tests...~n", [Name]),
+            cure_utils:debug("⏱️  Starting ~s tests...~n", [Name]),
             ModuleStartTime = os:timestamp(),
 
             Result =
@@ -114,14 +114,14 @@ run_with_timing() ->
                     {ok, Name}
                 catch
                     Error:Reason ->
-                        io:format("❌ Error in ~s: ~p:~p~n", [Name, Error, Reason]),
+                        cure_utils:debug("❌ Error in ~s: ~p:~p~n", [Name, Error, Reason]),
                         {error, {Name, Error, Reason}}
                 end,
 
             ModuleEndTime = os:timestamp(),
             ElapsedTime = timer:now_diff(ModuleEndTime, ModuleStartTime) / 1000000,
 
-            io:format("⏱️  ~s completed in ~.3f seconds~n~n", [Name, ElapsedTime]),
+            cure_utils:debug("⏱️  ~s completed in ~.3f seconds~n~n", [Name, ElapsedTime]),
 
             {Result, ElapsedTime}
         end,
@@ -132,7 +132,7 @@ run_with_timing() ->
     TotalElapsedTime = timer:now_diff(TotalEndTime, TotalStartTime) / 1000000,
 
     % Print timing summary
-    io:format("~n📊 TIMING SUMMARY:~n"),
+    cure_utils:debug("~n📊 TIMING SUMMARY:~n"),
     lists:foreach(
         fun({{Status, Name}, Time}) ->
             StatusIcon =
@@ -140,12 +140,12 @@ run_with_timing() ->
                     ok -> "✅";
                     {error, _} -> "❌"
                 end,
-            io:format("  ~s ~s: ~.3f seconds~n", [StatusIcon, Name, Time])
+            cure_utils:debug("  ~s ~s: ~.3f seconds~n", [StatusIcon, Name, Time])
         end,
         Results
     ),
 
-    io:format("~n🏁 Total execution time: ~.3f seconds~n", [TotalElapsedTime]),
+    cure_utils:debug("~n🏁 Total execution time: ~.3f seconds~n", [TotalElapsedTime]),
 
     % Count successes and failures
     {Successes, Failures} = lists:foldl(
@@ -159,7 +159,7 @@ run_with_timing() ->
         Results
     ),
 
-    io:format("📈 Results: ~p passed, ~p failed~n", [Successes, Failures]),
+    cure_utils:debug("📈 Results: ~p passed, ~p failed~n", [Successes, Failures]),
 
     case Failures of
         0 -> ok;
@@ -168,7 +168,7 @@ run_with_timing() ->
 
 %% Run an individual test module
 run_individual(ModuleName) when is_atom(ModuleName) ->
-    io:format("~n🎯 Running individual test module: ~p~n", [ModuleName]),
+    cure_utils:debug("~n🎯 Running individual test module: ~p~n", [ModuleName]),
 
     case
         lists:member(ModuleName, [
@@ -181,22 +181,22 @@ run_individual(ModuleName) when is_atom(ModuleName) ->
             Result =
                 try
                     ModuleName:run(),
-                    io:format("✅ Module ~p completed successfully~n", [ModuleName]),
+                    cure_utils:debug("✅ Module ~p completed successfully~n", [ModuleName]),
                     ok
                 catch
                     Error:Reason:Stack ->
-                        io:format("❌ Module ~p failed: ~p:~p~n", [ModuleName, Error, Reason]),
-                        io:format("Stack trace: ~p~n", [Stack]),
+                        cure_utils:debug("❌ Module ~p failed: ~p:~p~n", [ModuleName, Error, Reason]),
+                        cure_utils:debug("Stack trace: ~p~n", [Stack]),
                         {error, {Error, Reason}}
                 end,
 
             EndTime = os:timestamp(),
             ElapsedTime = timer:now_diff(EndTime, StartTime) / 1000000,
-            io:format("⏱️  Execution time: ~.3f seconds~n", [ElapsedTime]),
+            cure_utils:debug("⏱️  Execution time: ~.3f seconds~n", [ElapsedTime]),
 
             Result;
         false ->
-            io:format("❌ Unknown test module: ~p~n", [ModuleName]),
+            cure_utils:debug("❌ Unknown test module: ~p~n", [ModuleName]),
             io:format(
                 "Available modules: std_core_test, std_io_test, std_list_test, std_math_test, std_string_test~n"
             ),
@@ -207,72 +207,72 @@ run_individual(ModuleName) when is_atom(ModuleName) ->
 run_test_module(Module, Description) ->
     put(test_modules, get(test_modules) + 1),
 
-    io:format("~n📋 Running: ~s~n", [Description]),
-    io:format("   Module: ~p~n", [Module]),
+    cure_utils:debug("~n📋 Running: ~s~n", [Description]),
+    cure_utils:debug("   Module: ~p~n", [Module]),
 
     try
         Module:run(),
-        io:format("   Status: ✅ PASSED~n")
+        cure_utils:debug("   Status: ✅ PASSED~n")
     catch
         Error:Reason:Stack ->
             put(test_failures, get(test_failures) + 1),
-            io:format("   Status: ❌ FAILED~n"),
-            io:format("   Error:  ~p:~p~n", [Error, Reason]),
-            io:format("   Stack:  ~p~n", [Stack])
+            cure_utils:debug("   Status: ❌ FAILED~n"),
+            cure_utils:debug("   Error:  ~p:~p~n", [Error, Reason]),
+            cure_utils:debug("   Stack:  ~p~n", [Stack])
     end.
 
 %% Print test coverage summary
 print_test_coverage_summary() ->
-    io:format("This test suite covers the following Cure standard library functions:~n~n"),
+    cure_utils:debug("This test suite covers the following Cure standard library functions:~n~n"),
 
-    io:format("📚 Std.Core:~n"),
-    io:format("  • compare/2 - Returns correct Ordering (Lt, Eq, Gt)~n"),
-    io:format("  • Boolean operations: not/1, and/2, or/2, xor/2~n"),
-    io:format("  • Comparison operations: eq/2, ne/2, lt/2, le/2, gt/2, ge/2~n"),
-    io:format("  • Min/max operations: minimum/2, maximum/2, clamp/3~n"),
-    io:format("  • Result type operations: ok/1, error/1, map_ok/2, and_then/2~n"),
-    io:format("  • Option type operations: some/1, none/0, map_option/2, flat_map_option/2~n"),
-    io:format("  • Utility functions: identity/1, compose/2, flip/1, const/1, apply/2, pipe/2~n~n"),
+    cure_utils:debug("📚 Std.Core:~n"),
+    cure_utils:debug("  • compare/2 - Returns correct Ordering (Lt, Eq, Gt)~n"),
+    cure_utils:debug("  • Boolean operations: not/1, and/2, or/2, xor/2~n"),
+    cure_utils:debug("  • Comparison operations: eq/2, ne/2, lt/2, le/2, gt/2, ge/2~n"),
+    cure_utils:debug("  • Min/max operations: minimum/2, maximum/2, clamp/3~n"),
+    cure_utils:debug("  • Result type operations: ok/1, error/1, map_ok/2, and_then/2~n"),
+    cure_utils:debug("  • Option type operations: some/1, none/0, map_option/2, flat_map_option/2~n"),
+    cure_utils:debug("  • Utility functions: identity/1, compose/2, flip/1, const/1, apply/2, pipe/2~n~n"),
 
-    io:format("🖨️  Std.IO:~n"),
-    io:format("  • print/1, println/1 - Confirmed to return Int (0) instead of Unit~n"),
-    io:format("  • Type-specific printing: print_int/1, print_float/1, print_bool/1~n"),
-    io:format("  • Input operations: read_line/0, read_int/0, read_float/0~n"),
-    io:format("  • Debug/error output: debug/1, error/1~n~n"),
+    cure_utils:debug("🖨️  Std.IO:~n"),
+    cure_utils:debug("  • print/1, println/1 - Confirmed to return Int (0) instead of Unit~n"),
+    cure_utils:debug("  • Type-specific printing: print_int/1, print_float/1, print_bool/1~n"),
+    cure_utils:debug("  • Input operations: read_line/0, read_int/0, read_float/0~n"),
+    cure_utils:debug("  • Debug/error output: debug/1, error/1~n~n"),
 
-    io:format("📝 Std.List:~n"),
-    io:format("  • Basic operations: length/1, head/1, tail/1, is_empty/1~n"),
-    io:format("  • Construction: cons/2, append/2, reverse/1~n"),
-    io:format("  • Transformation: map/2, filter/2, fold_left/3, fold_right/3~n"),
-    io:format("  • Access: nth/2, take/2, drop/2~n"),
-    io:format("  • Predicates: all/2, any/2, contains/2~n"),
-    io:format("  • Safe operations: safe_head/1, safe_tail/1, safe_nth/2~n~n"),
+    cure_utils:debug("📝 Std.List:~n"),
+    cure_utils:debug("  • Basic operations: length/1, head/1, tail/1, is_empty/1~n"),
+    cure_utils:debug("  • Construction: cons/2, append/2, reverse/1~n"),
+    cure_utils:debug("  • Transformation: map/2, filter/2, fold_left/3, fold_right/3~n"),
+    cure_utils:debug("  • Access: nth/2, take/2, drop/2~n"),
+    cure_utils:debug("  • Predicates: all/2, any/2, contains/2~n"),
+    cure_utils:debug("  • Safe operations: safe_head/1, safe_tail/1, safe_nth/2~n~n"),
 
-    io:format("🔢 Std.Math:~n"),
-    io:format("  • Constants: pi/0, e/0~n"),
-    io:format("  • Basic operations: abs/1, sign/1, negate/1~n"),
-    io:format("  • Arithmetic: add/2, subtract/2, multiply/2~n"),
-    io:format("  • Comparison: min/2, max/2, clamp/3~n"),
-    io:format("  • Advanced: power/2, factorial/1, fibonacci/1~n"),
-    io:format("  • All functions tested for numerical accuracy~n~n"),
+    cure_utils:debug("🔢 Std.Math:~n"),
+    cure_utils:debug("  • Constants: pi/0, e/0~n"),
+    cure_utils:debug("  • Basic operations: abs/1, sign/1, negate/1~n"),
+    cure_utils:debug("  • Arithmetic: add/2, subtract/2, multiply/2~n"),
+    cure_utils:debug("  • Comparison: min/2, max/2, clamp/3~n"),
+    cure_utils:debug("  • Advanced: power/2, factorial/1, fibonacci/1~n"),
+    cure_utils:debug("  • All functions tested for numerical accuracy~n~n"),
 
-    io:format("🔤 Std.String:~n"),
-    io:format("  • Basic operations: length/1, is_empty/1~n"),
-    io:format("  • Construction: concat/2, repeat/2~n"),
-    io:format("  • Conversion: to_upper/1, to_lower/1~n"),
-    io:format("  • Predicates: starts_with/2, ends_with/2~n"),
-    io:format("  • Manipulation: trim/1, reverse/1~n"),
-    io:format("  • Access: slice/3, take/2, drop/2~n"),
-    io:format("  • Note: Many functions currently return placeholder values~n~n"),
+    cure_utils:debug("🔤 Std.String:~n"),
+    cure_utils:debug("  • Basic operations: length/1, is_empty/1~n"),
+    cure_utils:debug("  • Construction: concat/2, repeat/2~n"),
+    cure_utils:debug("  • Conversion: to_upper/1, to_lower/1~n"),
+    cure_utils:debug("  • Predicates: starts_with/2, ends_with/2~n"),
+    cure_utils:debug("  • Manipulation: trim/1, reverse/1~n"),
+    cure_utils:debug("  • Access: slice/3, take/2, drop/2~n"),
+    cure_utils:debug("  • Note: Many functions currently return placeholder values~n~n"),
 
-    io:format("⚠️  IMPORTANT NOTES:~n"),
-    io:format("  • Tests are designed for the current Cure standard library implementation~n"),
+    cure_utils:debug("⚠️  IMPORTANT NOTES:~n"),
+    cure_utils:debug("  • Tests are designed for the current Cure standard library implementation~n"),
     io:format(
         "  • Some functions have placeholder implementations that return simplified values~n"
     ),
-    io:format("  • Tests validate both current behavior and expected future behavior~n"),
-    io:format("  • All tests use Erlang implementations to simulate Cure function behavior~n"),
-    io:format("  • Integration with actual Cure compiler will require minimal changes~n").
+    cure_utils:debug("  • Tests validate both current behavior and expected future behavior~n"),
+    cure_utils:debug("  • All tests use Erlang implementations to simulate Cure function behavior~n"),
+    cure_utils:debug("  • Integration with actual Cure compiler will require minimal changes~n").
 
 %% Utility function to get test statistics
 get_test_statistics() ->
@@ -300,23 +300,23 @@ run_category(Category) ->
         timing ->
             run_with_timing();
         _ ->
-            io:format("Unknown category: ~p~n", [Category]),
-            io:format("Available categories: core, io, list, math, string, all, timing~n"),
+            cure_utils:debug("Unknown category: ~p~n", [Category]),
+            cure_utils:debug("Available categories: core, io, list, math, string, all, timing~n"),
             {error, unknown_category}
     end.
 
 %% Function for quick testing during development
 quick_test() ->
-    io:format("🚀 Running quick test (core + math only)...~n"),
+    cure_utils:debug("🚀 Running quick test (core + math only)...~n"),
 
     try
         std_core_test:run(),
         std_math_test:run(),
-        io:format("✅ Quick test completed successfully~n"),
+        cure_utils:debug("✅ Quick test completed successfully~n"),
         ok
     catch
         Error:Reason ->
-            io:format("❌ Quick test failed: ~p:~p~n", [Error, Reason]),
+            cure_utils:debug("❌ Quick test failed: ~p:~p~n", [Error, Reason]),
             {error, {Error, Reason}}
     end.
 
@@ -324,7 +324,7 @@ quick_test() ->
 validate_test_modules() ->
     RequiredModules = [std_core_test, std_io_test, std_list_test, std_math_test, std_string_test],
 
-    io:format("🔍 Validating test module availability...~n"),
+    cure_utils:debug("🔍 Validating test module availability...~n"),
 
     Results = lists:map(
         fun(Module) ->
@@ -332,14 +332,14 @@ validate_test_modules() ->
                 false ->
                     case code:load_file(Module) of
                         {module, Module} ->
-                            io:format("  ✅ ~p: loaded~n", [Module]),
+                            cure_utils:debug("  ✅ ~p: loaded~n", [Module]),
                             {Module, ok};
                         {error, Reason} ->
-                            io:format("  ❌ ~p: failed to load (~p)~n", [Module, Reason]),
+                            cure_utils:debug("  ❌ ~p: failed to load (~p)~n", [Module, Reason]),
                             {Module, {error, Reason}}
                     end;
                 {file, _} ->
-                    io:format("  ✅ ~p: already loaded~n", [Module]),
+                    cure_utils:debug("  ✅ ~p: already loaded~n", [Module]),
                     {Module, ok}
             end
         end,
@@ -350,9 +350,9 @@ validate_test_modules() ->
 
     case Failures of
         [] ->
-            io:format("✅ All test modules available~n"),
+            cure_utils:debug("✅ All test modules available~n"),
             ok;
         _ ->
-            io:format("❌ Missing modules: ~p~n", [Failures]),
+            cure_utils:debug("❌ Missing modules: ~p~n", [Failures]),
             {error, {missing_modules, Failures}}
     end.

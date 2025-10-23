@@ -14,7 +14,7 @@ parse_let_expression_from_code(Code) ->
 
 %% Run all tests
 run() ->
-    io:format("Running Let Expression parser tests...~n"),
+    cure_utils:debug("Running Let Expression parser tests...~n"),
     test_explicit_let_in_syntax(),
     test_implicit_let_with_continuation(),
     test_implicit_let_without_body(),
@@ -22,11 +22,11 @@ run() ->
     test_is_let_body_continuation_terminators(),
     test_nested_let_expressions(),
     test_complex_let_expressions(),
-    io:format("All Let Expression tests passed!~n").
+    cure_utils:debug("All Let Expression tests passed!~n").
 
 %% Test Case 1: parse_let_expression correctly parses explicit let...in syntax
 test_explicit_let_in_syntax() ->
-    io:format("Testing explicit let...in syntax...~n"),
+    cure_utils:debug("Testing explicit let...in syntax...~n"),
 
     % Test simple let...in with identifier body
     Code1 = <<"def test() = let x = 42 in x">>,
@@ -50,11 +50,11 @@ test_explicit_let_in_syntax() ->
     ?assertMatch(#let_expr{}, LetExpr2),
     ?assertMatch(#binary_op_expr{op = '+'}, LetExpr2#let_expr.body),
 
-    io:format("✓ Explicit let...in syntax test passed~n").
+    cure_utils:debug("✓ Explicit let...in syntax test passed~n").
 
 %% Test Case 2: parse_let_expression correctly parses implicit syntax with body continuation
 test_implicit_let_with_continuation() ->
-    io:format("Testing implicit let syntax with body continuation...~n"),
+    cure_utils:debug("Testing implicit let syntax with body continuation...~n"),
 
     % Test implicit let with identifier continuation
     Code1 = <<"def test() = let x = 42 x">>,
@@ -98,11 +98,11 @@ test_implicit_let_with_continuation() ->
     ?assertMatch(#let_expr{}, LetExpr6),
     ?assertMatch(#literal_expr{value = "hello"}, LetExpr6#let_expr.body),
 
-    io:format("✓ Implicit let with body continuation test passed~n").
+    cure_utils:debug("✓ Implicit let with body continuation test passed~n").
 
 %% Test Case 3: parse_let_expression handles no explicit 'in' and no valid body
 test_implicit_let_without_body() ->
-    io:format("Testing implicit let syntax without body...~n"),
+    cure_utils:debug("Testing implicit let syntax without body...~n"),
 
     % Test let without body - should use variable as body
     Code1 = <<"def test() = let x = 42">>,
@@ -116,11 +116,11 @@ test_implicit_let_without_body() ->
     % Body should be the bound variable when no explicit body
     ?assertMatch(#identifier_expr{name = x}, LetExpr1#let_expr.body),
 
-    io:format("✓ Implicit let without body test passed~n").
+    cure_utils:debug("✓ Implicit let without body test passed~n").
 
 %% Test Case 4: is_let_body_continuation correctly identifies valid continuation tokens
 test_is_let_body_continuation_valid_tokens() ->
-    io:format("Testing is_let_body_continuation for valid tokens...~n"),
+    cure_utils:debug("Testing is_let_body_continuation for valid tokens...~n"),
 
     % Test implicit let expressions with different valid continuation tokens
     % These should all parse successfully as implicit let expressions
@@ -149,11 +149,11 @@ test_is_let_body_continuation_valid_tokens() ->
     Code6 = <<"def test() = let x = 42 \"hello\"">>,
     ?assertMatch(#function_def{body = #let_expr{}}, parse_let_expression_from_code(Code6)),
 
-    io:format("✓ Valid continuation tokens test passed~n").
+    cure_utils:debug("✓ Valid continuation tokens test passed~n").
 
 %% Test Case 5: is_let_body_continuation correctly identifies terminator tokens
 test_is_let_body_continuation_terminators() ->
-    io:format("Testing is_let_body_continuation for terminators...~n"),
+    cure_utils:debug("Testing is_let_body_continuation for terminators...~n"),
 
     % Test that let expressions properly terminate at end of function or context
     % These should parse as let expressions without explicit body
@@ -176,11 +176,11 @@ test_is_let_body_continuation_terminators() ->
     ?assertMatch(#match_clause{}, Clause),
     ?assertMatch(#let_expr{}, Clause#match_clause.body),
 
-    io:format("✓ Terminator tokens test passed~n").
+    cure_utils:debug("✓ Terminator tokens test passed~n").
 
 %% Test Case 6: Nested let expressions
 test_nested_let_expressions() ->
-    io:format("Testing nested let expressions...~n"),
+    cure_utils:debug("Testing nested let expressions...~n"),
 
     % Test nested let expressions
     Code1 = <<"def test() = let x = 1 in let y = 2 in x + y">>,
@@ -205,11 +205,11 @@ test_nested_let_expressions() ->
     InnerLet2 = LetExpr2#let_expr.body,
     ?assertMatch(#let_expr{}, InnerLet2),
 
-    io:format("✓ Nested let expressions test passed~n").
+    cure_utils:debug("✓ Nested let expressions test passed~n").
 
 %% Test Case 7: Complex let expressions
 test_complex_let_expressions() ->
-    io:format("Testing complex let expressions...~n"),
+    cure_utils:debug("Testing complex let expressions...~n"),
 
     % Test let with function call value
     Code1 = <<"def test() = let result = foo(1, 2) in result + 3">>,
@@ -231,4 +231,4 @@ test_complex_let_expressions() ->
     ?assertMatch(#binary_op_expr{op = '*'}, Binding2#binding.value),
     ?assertMatch(#binary_op_expr{op = '/'}, LetExpr2#let_expr.body),
 
-    io:format("✓ Complex let expressions test passed~n").
+    cure_utils:debug("✓ Complex let expressions test passed~n").

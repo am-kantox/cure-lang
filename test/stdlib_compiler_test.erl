@@ -9,16 +9,16 @@
 
 %% Run all compiler integration tests for stdlib
 run() ->
-    io:format("Running Standard Library Compiler Integration tests...~n"),
+    cure_utils:debug("Running Standard Library Compiler Integration tests...~n"),
     test_function_call_compilation(),
     test_capitalized_function_calls(),
     test_monadic_function_chains(),
     test_safe_div_compilation(),
-    io:format("All stdlib compiler integration tests passed!~n").
+    cure_utils:debug("All stdlib compiler integration tests passed!~n").
 
 %% Test that standard library function calls can be compiled
 test_function_call_compilation() ->
-    io:format("Testing function call compilation...~n"),
+    cure_utils:debug("Testing function call compilation...~n"),
 
     % Test that we can compile code that uses the new functions
     % We'll create a simple Cure program that uses these functions
@@ -44,11 +44,11 @@ test_function_call_compilation() ->
     ?assertMatch({'Ok', _}, cure_std:safe_divide(10, 2)),
     % Note: map_ok and bind_ok are now handled by Std.Core module
 
-    io:format("✓ Function call compilation test passed~n").
+    cure_utils:debug("✓ Function call compilation test passed~n").
 
 %% Test capitalized function calls
 test_capitalized_function_calls() ->
-    io:format("Testing capitalized function calls...~n"),
+    cure_utils:debug("Testing capitalized function calls...~n"),
 
     % Test that capitalized versions exist
     Exports = cure_std:module_info(exports),
@@ -102,11 +102,11 @@ test_capitalized_function_calls() ->
     ?assertMatch({'Some', _}, cure_std:'Some'(TestValue)),
     ?assertEqual('None', cure_std:'None'()),
 
-    io:format("✓ Capitalized function calls test passed~n").
+    cure_utils:debug("✓ Capitalized function calls test passed~n").
 
 %% Test monadic function chains
 test_monadic_function_chains() ->
-    io:format("Testing monadic function chains...~n"),
+    cure_utils:debug("Testing monadic function chains...~n"),
 
     % Test Result monadic chain
     InitialOk = cure_std:ok(10),
@@ -139,11 +139,11 @@ test_monadic_function_chains() ->
     % Check approximate equality
     ?assert(abs(SqrtValue - math:sqrt(24)) < 0.0001),
 
-    io:format("✓ Monadic function chains test passed~n").
+    cure_utils:debug("✓ Monadic function chains test passed~n").
 
 %% Test safe_div compilation and behavior
 test_safe_div_compilation() ->
-    io:format("Testing safe_div compilation and behavior...~n"),
+    cure_utils:debug("Testing safe_div compilation and behavior...~n"),
 
     % Test various safe_div scenarios
     TestCases = [
@@ -166,4 +166,4 @@ test_safe_div_compilation() ->
     % Note: More complex computations using bind_ok are now handled by Std.Core module
     % We can only test basic safe_div functionality here
 
-    io:format("✓ safe_div compilation and behavior test passed~n").
+    cure_utils:debug("✓ safe_div compilation and behavior test passed~n").
