@@ -2,6 +2,8 @@
 -export([new/0, add_module/3, get_symbol/2, find_references/2, get_completions/2]).
 -export([get_module_exports/2, get_functions/2]).
 
+-include("../src/parser/cure_ast.hrl").
+
 -record(symbol_table, {
     % ModuleName -> ModuleInfo
     modules = #{} :: map(),
@@ -46,48 +48,57 @@ new() ->
     #symbol_table{}.
 
 %% Add module to symbol table
-add_module(SymbolTable, Uri, AST) ->
-    case AST of
-        {module_def, ModName, Exports, Functions, FSMs, _Line} ->
-            ModInfo = #module_info{
-                name = ModName,
-                uri = Uri,
-                exports = Exports,
-                functions = [F || F <- Functions],
-                fsms = [Fsm || Fsm <- FSMs]
-            },
+add_module(SymbolTable, Uri, #module_def{name = ModName, exports = Exports, items = Items}) ->
+    % Separate functions and FSMs from items
+    Functions = [F || F <- Items, is_record(F, function_def)],
+    FSMs = [F || F <- Items, is_record(F, fsm_def)],
 
-            % Add module
-            NewModules = maps:put(ModName, ModInfo, SymbolTable#symbol_table.modules),
+    ModInfo = #module_info{
+        name = ModName,
+        uri = Uri,
+        exports = Exports,
+        functions = Functions,
+        fsms = FSMs
+    },
 
-            % Add functions
-            FuncMap = lists:foldl(
-                fun(FuncDef, Acc) ->
-                    add_function_to_map(ModName, FuncDef, Uri, Acc)
-                end,
-                SymbolTable#symbol_table.functions,
-                Functions
-            ),
+    % Add module
+    NewModules = maps:put(ModName, ModInfo, SymbolTable#symbol_table.modules),
 
-            % Add FSMs
-            FsmMap = lists:foldl(
-                fun(FsmDef, Acc) ->
-                    add_fsm_to_map(ModName, FsmDef, Uri, Acc)
-                end,
-                SymbolTable#symbol_table.fsms,
-                FSMs
-            ),
+    % Add functions
+    FuncMap = lists:foldl(
+        fun(FuncDef, Acc) ->
+            add_function_to_map(ModName, FuncDef, Uri, Acc)
+        end,
+        SymbolTable#symbol_table.functions,
+        Functions
+    ),
 
-            SymbolTable#symbol_table{
-                modules = NewModules,
-                functions = FuncMap,
-                fsms = FsmMap
-            };
-        _ ->
-            SymbolTable
-    end.
+    % Add FSMs
+    FsmMap = lists:foldl(
+        fun(FsmDef, Acc) ->
+            add_fsm_to_map(ModName, FsmDef, Uri, Acc)
+        end,
+        SymbolTable#symbol_table.fsms,
+        FSMs
+    ),
 
-add_function_to_map(Module, {function_def, Name, Arity, _Params, _Body, Line}, _Uri, Map) ->
+    SymbolTable#symbol_table{
+        modules = NewModules,
+        functions = FuncMap,
+        fsms = FsmMap
+    };
+add_module(SymbolTable, _Uri, _AST) ->
+    SymbolTable.
+
+add_function_to_map(
+    Module, #function_def{name = Name, params = Params, location = Location}, _Uri, Map
+) ->
+    Arity = length(Params),
+    Line =
+        case Location of
+            #location{line = L} -> L;
+            _ -> 0
+        end,
     Key = {Module, Name, Arity},
     FuncInfo = #function_info{
         module = Module,
@@ -101,12 +112,25 @@ add_function_to_map(Module, {function_def, Name, Arity, _Params, _Body, Line}, _
 add_function_to_map(_Module, _, _Uri, Map) ->
     Map.
 
-add_fsm_to_map(Module, {fsm_def, Name, States, _Transitions, Line}, _Uri, Map) ->
+add_fsm_to_map(Module, #fsm_def{name = Name, states = States, location = Location}, _Uri, Map) ->
+    Line =
+        case Location of
+            #location{line = L} -> L;
+            _ -> 0
+        end,
+    % Extract state names from state_def records
+    StateNames =
+        case States of
+            List when is_list(List) ->
+                [S || S <- List, is_atom(S)];
+            _ ->
+                []
+        end,
     Key = {Module, Name},
     FsmInfo = #fsm_info{
         module = Module,
         name = Name,
-        states = [S || {state, S, _} <- States],
+        states = StateNames,
         line = Line,
         doc = <<>>
     },
@@ -116,7 +140,7 @@ add_fsm_to_map(_Module, _, _Uri, Map) ->
 
 %% Get symbol information
 get_symbol(
-    #symbol_table{functions = Functions, fsms = FSMs}, {module, Module, function, Name, Arity}
+    #symbol_table{functions = Functions}, {module, Module, function, Name, Arity}
 ) ->
     case maps:get({Module, Name, Arity}, Functions, undefined) of
         undefined -> {error, not_found};

@@ -91,9 +91,11 @@ syn match cureRecordName "\v(record)\s+\zs[A-Z][a-zA-Z0-9_]*"
 syn match cureTypeAnnotation "\v\:\s*[A-Z][a-zA-Z0-9_]*"
 
 " Highlighting links
-hi def link cureKeyword Keyword
+" Use Statement for flow control keywords to get distinct color from types
+hi def link cureKeyword Statement
 hi def link cureBoolean Boolean
-hi def link cureConstructor Type
+" Use StorageClass for constructors to distinguish from types
+hi def link cureConstructor StorageClass
 hi def link cureOperator Operator
 hi def link cureDelimiter Delimiter
 hi def link cureNumber Number
@@ -106,12 +108,15 @@ hi def link cureAtom Constant
 hi def link cureQuotedAtom Constant
 hi def link cureComment Comment
 hi def link cureTodo Todo
+" Use Type for type names - distinct from keywords
 hi def link cureType Type
 hi def link cureIdentifier Identifier
 hi def link cureFunctionDef Function
-hi def link cureModule Structure
-hi def link cureFsmName Structure
-hi def link cureRecordName Structure
-hi def link cureTypeAnnotation Type
+" Use PreProc for module/structure definitions for better distinction
+hi def link cureModule PreProc
+hi def link cureFsmName PreProc
+hi def link cureRecordName PreProc
+" Use TypeDef for type annotations to distinguish from type names
+hi def link cureTypeAnnotation TypeDef
 
 let b:current_syntax = "cure"

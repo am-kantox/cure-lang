@@ -1,0 +1,11 @@
+module Example do
+  export [main/0, greet/1]
+  
+  import Std.Io [print/1]
+  
+  def main(): Unit =
+    greet("World")
+  
+  def greet(name: String): Unit =
+    print("Hello, " ++ name)
+end

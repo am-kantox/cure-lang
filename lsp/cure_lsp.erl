@@ -15,7 +15,9 @@
     % URI -> Document state
     documents = #{} :: map(),
     % URI -> Diagnostics
-    diagnostics = #{} :: map()
+    diagnostics = #{} :: map(),
+    % Symbol table for workspace
+    symbols = undefined
 }).
 
 %% Public API
@@ -31,7 +33,8 @@ stop() ->
 %% gen_server callbacks
 init(Options) ->
     Transport = proplists:get_value(transport, Options, stdio),
-    State = #state{transport = Transport},
+    SymbolTable = cure_lsp_symbols:new(),
+    State = #state{transport = Transport, symbols = SymbolTable},
     % Start stdin reader process
     spawn_link(fun() -> stdin_reader() end),
     {ok, State}.
@@ -257,8 +260,12 @@ handle_did_open(Params, State) ->
         version => Version
     },
 
+    % Update symbol table with this document
+    NewSymbols = update_symbols(Uri, Text, State#state.symbols),
+
     NewState = State#state{
-        documents = maps:put(Uri, Doc, State#state.documents)
+        documents = maps:put(Uri, Doc, State#state.documents),
+        symbols = NewSymbols
     },
 
     % Run diagnostics
@@ -279,8 +286,12 @@ handle_did_change(Params, State) ->
             NewText = apply_changes(maps:get(text, Doc), ContentChanges),
             NewDoc = Doc#{text => NewText, version => Version},
 
+            % Update symbol table
+            NewSymbols = update_symbols(Uri, NewText, State#state.symbols),
+
             NewState = State#state{
-                documents = maps:put(Uri, NewDoc, State#state.documents)
+                documents = maps:put(Uri, NewDoc, State#state.documents),
+                symbols = NewSymbols
             },
 
             % Run diagnostics
@@ -300,52 +311,126 @@ handle_did_close(Params, State) ->
 handle_did_save(_Params, State) ->
     State.
 
-handle_completion(Id, _Params, State) ->
-    % Placeholder for completion logic
+handle_completion(Id, Params, State) ->
+    TextDocument = maps:get(textDocument, Params),
+    Position = maps:get(position, Params),
+    Uri = maps:get(uri, TextDocument),
+    Line = maps:get(line, Position),
+    Character = maps:get(character, Position),
+
+    Completions =
+        case maps:get(Uri, State#state.documents, undefined) of
+            undefined ->
+                [];
+            Doc ->
+                Text = maps:get(text, Doc),
+                % Get word at cursor for filtering
+                case cure_lsp_document:get_word_at_position(Text, Line, Character) of
+                    {ok, Word} ->
+                        cure_lsp_symbols:get_completions(State#state.symbols, Word);
+                    _ ->
+                        % No word, return all completions
+                        cure_lsp_symbols:get_completions(State#state.symbols, <<>>)
+                end
+        end,
+
     Response = #{
         jsonrpc => <<"2.0">>,
         id => Id,
-        result => []
+        result => Completions
     },
     send_message(Response, State),
     State.
 
-handle_hover(Id, _Params, State) ->
-    % Placeholder for hover logic
+handle_hover(Id, Params, State) ->
+    TextDocument = maps:get(textDocument, Params),
+    Position = maps:get(position, Params),
+    Uri = maps:get(uri, TextDocument),
+    Line = maps:get(line, Position),
+    Character = maps:get(character, Position),
+
+    HoverResult =
+        case maps:get(Uri, State#state.documents, undefined) of
+            undefined ->
+                null;
+            Doc ->
+                Text = maps:get(text, Doc),
+                cure_lsp_analyzer:get_hover_info(Text, Line, Character)
+        end,
+
     Response = #{
         jsonrpc => <<"2.0">>,
         id => Id,
-        result => null
+        result => HoverResult
     },
     send_message(Response, State),
     State.
 
-handle_definition(Id, _Params, State) ->
-    % Placeholder for definition logic
+handle_definition(Id, Params, State) ->
+    TextDocument = maps:get(textDocument, Params),
+    Position = maps:get(position, Params),
+    Uri = maps:get(uri, TextDocument),
+    Line = maps:get(line, Position),
+    Character = maps:get(character, Position),
+
+    DefinitionResult =
+        case maps:get(Uri, State#state.documents, undefined) of
+            undefined ->
+                null;
+            Doc ->
+                Text = maps:get(text, Doc),
+                cure_lsp_analyzer:get_definition(Text, Line, Character)
+        end,
+
     Response = #{
         jsonrpc => <<"2.0">>,
         id => Id,
-        result => null
+        result => DefinitionResult
     },
     send_message(Response, State),
     State.
 
-handle_references(Id, _Params, State) ->
-    % Placeholder for references logic
+handle_references(Id, Params, State) ->
+    TextDocument = maps:get(textDocument, Params),
+    Position = maps:get(position, Params),
+    Uri = maps:get(uri, TextDocument),
+    Line = maps:get(line, Position),
+    Character = maps:get(character, Position),
+
+    References =
+        case maps:get(Uri, State#state.documents, undefined) of
+            undefined ->
+                [];
+            Doc ->
+                Text = maps:get(text, Doc),
+                cure_lsp_analyzer:get_references(Text, Line, Character)
+        end,
+
     Response = #{
         jsonrpc => <<"2.0">>,
         id => Id,
-        result => []
+        result => References
     },
     send_message(Response, State),
     State.
 
-handle_document_symbol(Id, _Params, State) ->
-    % Placeholder for document symbol logic
+handle_document_symbol(Id, Params, State) ->
+    TextDocument = maps:get(textDocument, Params),
+    Uri = maps:get(uri, TextDocument),
+
+    Symbols =
+        case maps:get(Uri, State#state.documents, undefined) of
+            undefined ->
+                [];
+            Doc ->
+                Text = maps:get(text, Doc),
+                cure_lsp_analyzer:extract_symbols(Text)
+        end,
+
     Response = #{
         jsonrpc => <<"2.0">>,
         id => Id,
-        result => []
+        result => Symbols
     },
     send_message(Response, State),
     State.
@@ -370,6 +455,20 @@ diagnose_document(Uri, Text, State) ->
     },
 
     send_message(Message, State).
+
+update_symbols(Uri, Text, SymbolTable) ->
+    % Parse the document and update symbol table
+    case cure_lexer:tokenize(binary_to_list(Text)) of
+        {ok, Tokens} ->
+            case cure_parser:parse(Tokens) of
+                {ok, AST} ->
+                    cure_lsp_symbols:add_module(SymbolTable, Uri, AST);
+                _ ->
+                    SymbolTable
+            end;
+        _ ->
+            SymbolTable
+    end.
 
 stdin_reader() ->
     % Open stdin as a port to read binary data

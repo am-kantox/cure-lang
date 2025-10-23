@@ -102,6 +102,15 @@ get_position_offset(#document{lines = Lines}, Line, Character) ->
     end.
 
 %% Get word at position (for hover/completion)
+get_word_at_position(Text, Line, Character) when is_binary(Text) ->
+    Lines = binary:split(Text, <<"\n">>, [global]),
+    case Line >= 0 andalso Line < length(Lines) of
+        true ->
+            LineText = lists:nth(Line + 1, Lines),
+            extract_word_at_position(LineText, Character);
+        false ->
+            {error, invalid_position}
+    end;
 get_word_at_position(#document{lines = Lines}, Line, Character) ->
     case get_line(#document{lines = Lines}, Line) of
         <<>> ->
