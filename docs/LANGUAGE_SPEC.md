@@ -419,7 +419,7 @@ refinement_type ::= type 'when' expr
 
 # Expressions
 expr ::= literal | identifier | function_call | match_expr
-       | case_expr | receive_expr | record_expr | list_expr | tuple_expr 
+       | receive_expr | record_expr | list_expr | tuple_expr 
        | binary_op | unary_op | lambda_expr | spawn_expr | send_expr | fsm_expr
 
 literal ::= INTEGER | FLOAT | STRING | ATOM | BOOLEAN | 'Ok' | 'Error' | 'Some' | 'None'
@@ -444,10 +444,6 @@ record_pattern ::= IDENTIFIER '{' field_pattern (',' field_pattern)* '}'
 field_pattern ::= IDENTIFIER ':' pattern | IDENTIFIER
 wildcard ::= '_'
 guard ::= 'when' expr
-
-# Conditional expressions
-case_expr ::= 'case' expr 'of' case_clause* 'end'
-case_clause ::= pattern guard? '->' expr
 
 # Process communication
 receive_expr ::= 'receive' 'do' receive_clause* 'end'

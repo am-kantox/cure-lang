@@ -8,7 +8,7 @@ if exists("b:current_syntax")
 endif
 
 " Keywords
-syn keyword cureKeyword def def_erl end do if then else match case of when let in as
+syn keyword cureKeyword def end do match when let in as
 syn keyword cureKeyword module import export process fsm state states initial event timeout
 syn keyword cureKeyword receive send spawn transition guard action invariant eventually always until property
 syn keyword cureKeyword record type fn

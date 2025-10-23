@@ -138,16 +138,6 @@ module PatternMatching do
       {x, y} -> "Point: (" ++ show(x) ++ ", " ++ show(y) ++ ")"
     end
 
-  # === CASE EXPRESSIONS (ALTERNATIVE SYNTAX) ===
-
-  def status_message(status: Status): String =
-    case status of
-      Active -> "System is running"
-      Inactive -> "System is stopped"
-      Pending -> "System is starting up"
-      Archived -> "System is archived"
-    end
-
   # === COMPLEX NESTED MATCHING ===
 
   def analyze_data(data: List(Result(Person, String))): String =

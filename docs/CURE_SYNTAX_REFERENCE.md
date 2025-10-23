@@ -415,15 +415,6 @@ match nested_result do
 end
 ```
 
-### Case Expressions (Alternative Syntax)
-```cure
-case expression of
-  pattern1 -> result1
-  pattern2 -> result2
-  _ -> default_result
-end
-```
-
 ## Dependent Types
 
 ### Length-Indexed Types ✅ **WORKING**

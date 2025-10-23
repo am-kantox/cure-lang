@@ -276,8 +276,6 @@ keywords() ->
         <<"end">> => 'end',
         <<"do">> => 'do',
         <<"match">> => 'match',
-        <<"case">> => 'case',
-        <<"of">> => 'of',
         <<"when">> => 'when',
         <<"let">> => 'let',
         <<"in">> => 'in',
