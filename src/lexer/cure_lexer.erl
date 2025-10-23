@@ -272,7 +272,6 @@ operators() ->
 keywords() ->
     #{
         <<"def">> => 'def',
-        <<"defp">> => 'defp',
         <<"def_erl">> => 'def_erl',
         <<"end">> => 'end',
         <<"do">> => 'do',

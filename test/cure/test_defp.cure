@@ -6,6 +6,6 @@ module TestDefp do
   def public_function(x: Int): Int =
     helper_function(x) + 1
 
-  defp helper_function(x: Int): Int =
+  def helper_function(x: Int): Int =
     x * 2
 end

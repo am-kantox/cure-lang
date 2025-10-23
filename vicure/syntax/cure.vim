@@ -8,7 +8,7 @@ if exists("b:current_syntax")
 endif
 
 " Keywords
-syn keyword cureKeyword def defp def_erl end do if then else match case of when let in as
+syn keyword cureKeyword def def_erl end do if then else match case of when let in as
 syn keyword cureKeyword module import export process fsm state states initial event timeout
 syn keyword cureKeyword receive send spawn transition guard action invariant eventually always until property
 syn keyword cureKeyword record type fn
@@ -76,7 +76,7 @@ syn match cureType "\v<[A-Z][a-zA-Z0-9_]*>"
 syn match cureIdentifier "\v<[a-z_][a-zA-Z0-9_?]*>"
 
 " Function definitions
-syn match cureFunctionDef "\v(def|defp|def_erl)\s+\zs[a-z_][a-zA-Z0-9_?]*"
+syn match cureFunctionDef "\v(def|def_erl)\s+\zs[a-z_][a-zA-Z0-9_?]*"
 
 " Module names
 syn match cureModule "\v(module|import)\s+\zs[A-Z][a-zA-Z0-9_]*"

@@ -43,8 +43,8 @@ def demo(): Unit =
   print("Result: " ++ show(result))
   ok
 
-# Private function
-defp helper(x: Int): String = int_to_string(x)
+# Helper function
+def helper(x: Int): String = int_to_string(x)
 ```
 
 ### Lambda Expressions

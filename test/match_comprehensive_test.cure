@@ -132,15 +132,15 @@ module MatchComprehensiveTest do
     end
 
   # Helper functions (would be built-ins in real implementation)
-  defp println(message: String): Unit = 
+  def println(message: String): Unit = 
     print(message ++ "\n")
 
-  defp print(message: String): Unit = 
+  def print(message: String): Unit = 
     ok
 
-  defp string_from_int(n: Int): String = 
+  def string_from_int(n: Int): String = 
     "42"  # Simplified for testing
 
-  defp (++)(a: String, b: String): String = 
+  def (++)(a: String, b: String): String = 
     a  # Simplified for testing
 end

@@ -163,14 +163,14 @@ module PatternMatching do
     end
 
   # Helper functions for the complex example
-  defp filter_successes(results: List(Result(Person, String))): List(Person) =
+  def filter_successes(results: List(Result(Person, String))): List(Person) =
     match results do
       [] -> []
       [Ok(person) | rest] -> [person | filter_successes(rest)]
       [Error(_) | rest] -> filter_successes(rest)
     end
 
-  defp filter_errors(results: List(Result(Person, String))): List(String) =
+  def filter_errors(results: List(Result(Person, String))): List(String) =
     match results do
       [] -> []
       [Ok(_) | rest] -> filter_errors(rest)

@@ -12,12 +12,12 @@ module TestBasicList do
       extract_first(list)
     end
 
-  defp extract_first(list: List(T)): T = 
+  def extract_first(list: List(T)): T = 
     list[0]  # This is simplified - would need proper head extraction
 
   def is_empty(list: List(T)): Bool =
     length(list) == 0
 
-  defp length(list: List(T)): Int =
+  def length(list: List(T)): Int =
     0  # Simplified for now
 end

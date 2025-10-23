@@ -97,7 +97,7 @@ Std.List.map
 ### Keywords
 Reserved words in Cure:
 ```cure
-def defp def_erl module import export fsm state states initial event
+def def def_erl module import export fsm state states initial event
 timeout match when if then else let in as do end fn process receive
 send spawn record type and or not ok error true false
 ```
@@ -171,7 +171,7 @@ def greet(name: String): Unit =
   ok
 
 # Private function
-defp helper_function(x: Int): String = show(x)
+def helper_function(x: Int): String = show(x)
 ```
 
 ### Functions with Dependent Types

@@ -27,22 +27,22 @@ module TestStdLib do
     z == 0
 
   # Helper functions (would normally import from modules)
-  defp list_head(list: List(T)): T =
+  def list_head(list: List(T)): T =
     match list do
       [h | _] -> h
     end
 
-  defp list_tail(list: List(T)): List(T) =
+  def list_tail(list: List(T)): List(T) =
     match list do  
       [_ | t] -> t
     end
 
-  defp list_is_empty(list: List(T)): Bool =
+  def list_is_empty(list: List(T)): Bool =
     match list do
       [] -> true
       _ -> false
     end
 
-  defp abs_value(x: Int): Int =
+  def abs_value(x: Int): Int =
     if x < 0 then -x else x end
 end

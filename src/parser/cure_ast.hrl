@@ -31,7 +31,7 @@
     return_type,
     constraint,
     body,
-    is_private,  % true for defp, false for def
+    is_private,  % determined by export list, not by keyword
     location
 }).
 

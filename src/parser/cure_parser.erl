@@ -325,8 +325,6 @@ parse_item(State) ->
             parse_module(State);
         def ->
             parse_function(State);
-        defp ->
-            parse_function(State);
         def_erl ->
             parse_erlang_function(State);
         record ->
@@ -490,8 +488,6 @@ parse_module_item(State) ->
     case get_token_type(current_token(State)) of
         def ->
             parse_function(State);
-        defp ->
-            parse_function(State);
         def_erl ->
             parse_erlang_function(State);
         record ->
@@ -511,11 +507,7 @@ parse_module_item(State) ->
 
 %% Parse function definition
 parse_function(State) ->
-    {DefToken, State1} =
-        case get_token_type(current_token(State)) of
-            def -> expect(State, def);
-            defp -> expect(State, defp)
-        end,
+    {DefToken, State1} = expect(State, def),
 
     % Allow certain keywords to be used as function names (same as export specs)
     {NameToken, State2} =
@@ -622,12 +614,8 @@ parse_function(State) ->
             _ -> ReturnType2
         end,
 
-    % Determine if this is a private function
-    IsPrivate =
-        case get_token_type(DefToken) of
-            defp -> true;
-            def -> false
-        end,
+    % All functions are private by default unless exported
+    IsPrivate = false,
 
     Location = get_token_location(DefToken),
     Function = #function_def{
@@ -3166,7 +3154,6 @@ is_end_of_body(State) ->
         'end' -> true;
         'else' -> true;
         'def' -> true;
-        'defp' -> true;
         'def_erl' -> true;
         % Record definitions end function body
         'record' -> true;

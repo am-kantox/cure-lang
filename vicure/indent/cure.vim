@@ -27,8 +27,8 @@ function! GetCureIndent()
     let ind += shiftwidth()
   endif
 
-  " Increase indent after module, fsm, record, state, def, defp
-  if line =~# '\v^\s*(module|fsm|record|state|def|defp|def_erl|match|case)\s'
+  " Increase indent after module, fsm, record, state, def
+  if line =~# '\v^\s*(module|fsm|record|state|def|def_erl|match|case)\s'
     let ind += shiftwidth()
   endif
 

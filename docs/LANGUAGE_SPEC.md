@@ -149,8 +149,8 @@ module Math do
   def factorial(n: Nat): Pos =
     if n == 0 then 1 else n * factorial(n - 1)
     
-  # Private function
-  defp helper_func(x) = x * 2
+  # Helper function
+  def helper_func(x) = x * 2
 end
 
 # 🚀 WORKING Import System!
@@ -353,7 +353,7 @@ item ::= function_def | def_erl_def | type_def | record_def | fsm_def
        | process_def | import_def | let_binding
 
 # Function definitions
-function_def ::= ('def' | 'defp') IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
+function_def ::= ('def') IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
 def_erl_def ::= 'def_erl' IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
 
 param_list ::= param (',' param)*
@@ -494,7 +494,7 @@ FLOAT ::= [0-9]+ '.' [0-9]+
 STRING ::= '"' ([^"\\] | '\\' .)* '"'
 ATOM ::= ':' IDENTIFIER | ':"' ([^"\\] | '\\' .)* '"'
 BOOLEAN ::= 'true' | 'false' 
-KEYWORD ::= 'def' | 'defp' | 'def_erl' | 'module' | 'import' | 'export' | 'fsm' 
+KEYWORD ::= 'def' | 'def_erl' | 'module' | 'import' | 'export' | 'fsm' 
            | 'state' | 'states' | 'initial' | 'event' | 'timeout' | 'match' | 'when'
            | 'if' | 'then' | 'else' | 'let' | 'in' | 'as' | 'do' | 'end' | 'fn'
            | 'process' | 'receive' | 'send' | 'spawn' | 'record' | 'type'
