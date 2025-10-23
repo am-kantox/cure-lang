@@ -66,7 +66,14 @@ cure input.cure --no-optimize      # Disable optimizations
     % Show help information
     help/0,
     % Show version information
-    version/0
+    version/0,
+    % Format error messages (exported for testing)
+    format_error/1,
+    format_compilation_error/1,
+    % Helper functions for testing
+    add_automatic_stdlib_imports/2,
+    has_explicit_module_or_imports/1,
+    convert_beam_to_source_path/1
 ]).
 
 -include("parser/cure_ast.hrl").

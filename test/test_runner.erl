@@ -54,7 +54,8 @@ run_basic_tests() ->
     Tests = [
         {fsm_simple_test, "FSM Runtime System"},
         {types_simple_test, "Type System & Inference"},
-        {codegen_simple_test, "Code Generation & BEAM"}
+        {codegen_simple_test, "Code Generation & BEAM"},
+        {cli_output_test, "CLI Output Messages"}
     ],
 
     Results = lists:map(fun run_test_suite/1, Tests),
