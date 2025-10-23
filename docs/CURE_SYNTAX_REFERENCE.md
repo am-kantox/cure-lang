@@ -697,7 +697,7 @@ dependent_type ::= IDENTIFIER '(' type_arg (',' type_arg)* ')'
 type_arg ::= type | expr
 
 # Expressions  
-expr ::= literal | identifier | function_call | match_expr | if_expr 
+expr ::= literal | identifier | function_call | match_expr
        | let_expr | binary_op | unary_op | lambda_expr | list_expr | tuple_expr
 
 literal ::= INTEGER | FLOAT | STRING | ATOM | BOOLEAN

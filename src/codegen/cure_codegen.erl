@@ -497,8 +497,26 @@ compile_function(AST, _Options) ->
 %% Module Compilation
 %% ============================================================================
 
+%% Pre-pass to register all type constructors before compiling functions
+register_all_type_constructors([], State) ->
+    State;
+register_all_type_constructors([Item | Rest], State) ->
+    NewState = case Item of
+        #type_def{} = TypeDef ->
+            register_type_constructors(TypeDef, State);
+        _ ->
+            State
+    end,
+    register_all_type_constructors(Rest, NewState).
+
 compile_module_items(Items, State) ->
-    compile_module_items(Items, State, []).
+    % Pre-pass: Register all type constructors first
+    StateWithConstructors = register_all_type_constructors(Items, State),
+    cure_utils:debug("[CODEGEN] Registered type constructors: ~p~n", [
+        maps:to_list(StateWithConstructors#codegen_state.type_constructors)
+    ]),
+    % Now compile all items with constructors available
+    compile_module_items(Items, StateWithConstructors, []).
 
 compile_module_items([], State, Acc) ->
     cure_utils:debug("[CODEGEN] Finished compiling items, accumulated ~p items~n", [length(Acc)]),
@@ -564,6 +582,7 @@ compile_module_item(#record_def{} = RecordDef, State) ->
     {ok, {record_def, RecordDef}, State};
 compile_module_item(#type_def{} = TypeDef, State) ->
     % Generate constructor functions for union types
+    % Note: Constructors are already registered in the pre-pass
     cure_utils:debug("Processing type_def: ~p~n", [TypeDef]),
     case generate_union_type_constructors(TypeDef, State) of
         {ok, ConstructorFunctions, NewState} ->
@@ -961,7 +980,6 @@ compile_expression(Expr, State) ->
         #identifier_expr{} -> compile_identifier(Expr, State);
         #binary_op_expr{} -> compile_binary_op(Expr, State);
         #function_call_expr{} -> compile_function_call(Expr, State);
-        #if_expr{} -> compile_if_expr(Expr, State);
         #let_expr{} -> compile_let_expr(Expr, State);
         #list_expr{} -> compile_list_expr(Expr, State);
         #cons_expr{} -> compile_cons_expr(Expr, State);
@@ -1017,24 +1035,46 @@ compile_identifier(#identifier_expr{name = Name, location = Location}, State) ->
                     ],
                     {Instructions, State};
                 false ->
-                    % Check if it's an imported function
-                    case find_imported_function(Name, State) of
-                        {ok, ImportedFunction} ->
-                            % Create a function reference to the imported function
-                            Instruction = #beam_instr{
-                                op = load_imported_function,
-                                args = [Name, ImportedFunction],
-                                location = Location
-                            },
-                            {[Instruction], State};
-                        not_found ->
-                            % Might be a global function
-                            Instruction = #beam_instr{
-                                op = load_global,
-                                args = [Name],
-                                location = Location
-                            },
-                            {[Instruction], State}
+                    % Check if it's a nullary constructor (zero-arity type constructor)
+                    % These should be compiled as function calls: Lt -> Lt()
+                    case is_nullary_constructor(Name, State) of
+                        true ->
+                            % Compile as a direct call instruction (avoiding recursion)
+                            % This is essentially what compile_function_call does, but inlined
+                            % to avoid infinite recursion
+                            Instructions = [
+                                #beam_instr{
+                                    op = load_global,
+                                    args = [Name],
+                                    location = Location
+                                },
+                                #beam_instr{
+                                    op = call,
+                                    args = [0],  % Zero arguments
+                                    location = Location
+                                }
+                            ],
+                            {Instructions, State};
+                        false ->
+                            % Check if it's an imported function
+                            case find_imported_function(Name, State) of
+                                {ok, ImportedFunction} ->
+                                    % Create a function reference to the imported function
+                                    Instruction = #beam_instr{
+                                        op = load_imported_function,
+                                        args = [Name, ImportedFunction],
+                                        location = Location
+                                    },
+                                    {[Instruction], State};
+                                not_found ->
+                                    % Might be a global function
+                                    Instruction = #beam_instr{
+                                        op = load_global,
+                                        args = [Name],
+                                        location = Location
+                                    },
+                                    {[Instruction], State}
+                            end
                     end
             end;
         {param, ParamName} ->
@@ -1162,6 +1202,16 @@ find_vector_param([#param{name = ParamName, type = Type} | Rest]) ->
 find_vector_param([_ | Rest]) ->
     find_vector_param(Rest).
 
+%% Check if identifier is a nullary (zero-arity) constructor
+%% These are type constructors like Lt, Eq, Gt, None that have no arguments
+is_nullary_constructor(Name, State) ->
+    % Check in the registered type constructors map
+    TypeConstructors = State#codegen_state.type_constructors,
+    case maps:get(Name, TypeConstructors, undefined) of
+        0 -> true;  % Zero-arity constructor
+        _ -> false  % Either doesn't exist or has non-zero arity
+    end.
+
 %% Find imported function by name (with any arity)
 find_imported_function(Name, State) ->
     ImportedFunctions = State#codegen_state.imported_functions,
@@ -1285,39 +1335,6 @@ compile_function_call(
     % Instructions: Function first, then Args, then Call
     Instructions = FuncInstructions ++ ArgInstructions ++ [CallInstruction],
     {Instructions, State2}.
-
-%% Compile if expressions
-compile_if_expr(
-    #if_expr{
-        condition = Condition,
-        then_branch = ThenBranch,
-        else_branch = ElseBranch,
-        location = Location
-    },
-    State
-) ->
-    {CondInstructions, State1} = compile_expression(Condition, State),
-    {ThenInstructions, State2} = compile_expression(ThenBranch, State1),
-    {ElseInstructions, State3} = compile_expression(ElseBranch, State2),
-
-    % Generate labels
-    {ElseLabel, State4} = new_label(State3),
-    {EndLabel, State5} = new_label(State4),
-
-    Instructions =
-        CondInstructions ++
-            [
-                #beam_instr{op = jump_if_false, args = [ElseLabel], location = Location}
-            ] ++ ThenInstructions ++
-            [
-                #beam_instr{op = jump, args = [EndLabel], location = Location},
-                #beam_instr{op = label, args = [ElseLabel], location = Location}
-            ] ++ ElseInstructions ++
-            [
-                #beam_instr{op = label, args = [EndLabel], location = Location}
-            ],
-
-    {Instructions, State5}.
 
 %% Compile type annotations (just compile the expression, ignore the type)
 compile_type_annotation(#type_annotation_expr{expr = Expr, type = _Type}, State) ->
@@ -1881,11 +1898,11 @@ new_temp_var(State) ->
     {TempVar, NewState}.
 
 %% Generate new label
-new_label(State) ->
-    Counter = State#codegen_state.label_counter,
-    Label = list_to_atom("label_" ++ integer_to_list(Counter)),
-    NewState = State#codegen_state{label_counter = Counter + 1},
-    {Label, NewState}.
+% new_label(State) ->
+%     Counter = State#codegen_state.label_counter,
+%     Label = list_to_atom("label_" ++ integer_to_list(Counter)),
+%     NewState = State#codegen_state{label_counter = Counter + 1},
+%     {Label, NewState}.
 
 %% Filter out type parameters from function parameters
 %% Type parameters are compile-time only and shouldn't appear in runtime function signatures
@@ -1928,9 +1945,6 @@ has_side_effects(#function_call_expr{function = Function}) ->
     end;
 % Let expressions can have side effects in bindings
 has_side_effects(#let_expr{}) ->
-    true;
-% If expressions can have side effects in branches
-has_side_effects(#if_expr{}) ->
     true;
 % Match expressions can have side effects
 has_side_effects(#match_expr{}) ->
@@ -2790,8 +2804,24 @@ compile_patterns_to_case_clauses_impl(
             #literal_expr{value = Value} ->
                 [compile_value_to_erlang_form(Value, Location)];
             #identifier_expr{name = Name} ->
-                % Variable reference in pattern match body
-                [{var, get_line_from_location(Location), Name}];
+                % Could be a variable reference or a nullary constructor
+                % Check if it's uppercase (constructor) or lowercase (variable/function)
+                Line = get_line_from_location(Location),
+                case atom_to_list(Name) of
+                    [First | _Rest] when First >= $A, First =< $Z ->
+                        % Uppercase - nullary constructor, generate call
+                        [{call, Line, {atom, Line, Name}, []}];
+                    _ ->
+                        % Lowercase - variable reference or function reference
+                        case is_function_name(Name) of
+                            true ->
+                                % Known function - use atom
+                                [{atom, Line, Name}];
+                            false ->
+                                % Unknown lowercase - treat as variable
+                                [{var, Line, Name}]
+                        end
+                end;
             _ ->
                 % For complex expressions, convert them to proper Erlang form
                 case convert_complex_body_to_erlang(Body, Location) of
@@ -3015,45 +3045,36 @@ convert_body_expression_to_erlang(_, _) ->
 convert_complex_body_to_erlang(#literal_expr{value = Value}, Location) ->
     {ok, compile_value_to_erlang_form(Value, Location)};
 convert_complex_body_to_erlang(#identifier_expr{name = Name}, Location) ->
-    % Function calls (both constructors and regular functions) should use atom references, not variables
-    % Variables in pattern match bodies should be references to bound variables from the pattern
-    % Function calls should be atoms that refer to functions
-    case is_function_name(Name) of
-        true ->
-            Line = get_line_from_location(Location),
-            % Check if this is a local user-defined function that needs a function reference
-            case
-                lists:member(Name, [
-                    add_five, add_folder_func, multiply_folder_func, add_mapper_func
-                ])
-            of
+    Line = get_line_from_location(Location),
+    % In match expression bodies, identifiers can be:
+    % 1. Variables bound in the pattern (should use {var, ...})
+    % 2. Function/constructor references (should use {atom, ...})
+    %
+    % Strategy:
+    % - If uppercase -> atom (constructor reference - will be called)
+    % - If lowercase and in known functions -> atom (function reference)
+    % - If lowercase and not known -> var (parameter or let-binding)
+    %
+    % NOTE: For standalone nullary constructors like Lt, they should ideally be parsed
+    % as function_call_expr with no args. But they come as identifier_expr, so we
+    % handle them by generating calls at the identifier level ONLY when standalone.
+    % However, we can't distinguish standalone from function-position here.
+    % Solution: Always treat uppercase as atoms, and generate the call wrapper
+    % at the function_call_expr level when we see a call with 0 args to uppercase function.
+    case atom_to_list(Name) of
+        [First | _Rest] when First >= $A, First =< $Z ->
+            % Uppercase name - constructor reference as atom
+            {ok, {atom, Line, Name}};
+        _ ->
+            % Lowercase identifier
+            case is_function_name(Name) of
                 true ->
-                    % Generate proper function reference for local functions
-                    % This creates fun ModuleName:FunctionName/Arity
-                    % For now, we'll use a generic approach and let the caller module be resolved at runtime
-                    Arity =
-                        case Name of
-                            add_five -> 1;
-                            add_folder_func -> 1;
-                            multiply_folder_func -> 1;
-                            add_mapper_func -> 1;
-                            % default to 1 for most test functions
-                            _ -> 1
-                        end,
-                    % Get the current module name - this is a simplified approach
-                    % In a proper implementation, this should be passed as context
-                    ModuleName =
-                        case get(current_module_name) of
-                            % fallback
-                            undefined -> 'TestModule';
-                            Module -> Module
-                        end,
-                    {ok, {'fun', Line, {function, ModuleName, Name, Arity}}};
+                    % Known function - use atom
+                    {ok, {atom, Line, Name}};
                 false ->
-                    {ok, {atom, Line, Name}}
-            end;
-        false ->
-            {ok, {var, get_line_from_location(Location), Name}}
+                    % Unknown lowercase - treat as variable
+                    {ok, {var, Line, Name}}
+            end
     end;
 convert_complex_body_to_erlang(#binary_op_expr{op = Op, left = Left, right = Right}, Location) ->
     Line = get_line_from_location(Location),
@@ -3100,27 +3121,6 @@ convert_complex_body_to_erlang(#let_expr{bindings = Bindings, body = Body}, Loca
                     error
             end;
         error ->
-            error
-    end;
-convert_complex_body_to_erlang(
-    #if_expr{condition = Condition, then_branch = ThenBranch, else_branch = ElseBranch}, Location
-) ->
-    Line = get_line_from_location(Location),
-    case
-        {
-            convert_complex_body_to_erlang(Condition, Location),
-            convert_complex_body_to_erlang(ThenBranch, Location),
-            convert_complex_body_to_erlang(ElseBranch, Location)
-        }
-    of
-        {{ok, CondForm}, {ok, ThenForm}, {ok, ElseForm}} ->
-            % Use case expression instead of if expression to avoid guard restrictions
-            {ok,
-                {'case', Line, CondForm, [
-                    {clause, Line, [{atom, Line, true}], [], [ThenForm]},
-                    {clause, Line, [{atom, Line, false}], [], [ElseForm]}
-                ]}};
-        _ ->
             error
     end;
 convert_complex_body_to_erlang(#list_expr{elements = Elements}, Location) ->
@@ -3219,6 +3219,12 @@ convert_complex_bindings_to_erlang([_ | Rest], Location) ->
     % Skip unsupported binding types for now
     convert_complex_bindings_to_erlang(Rest, Location).
 
+%% Check if a name is a constructor or known function
+%% Used in match expression bodies to distinguish function references from variables
+% is_constructor_or_known_function(Name) ->
+%     % Check if it's a known constructor or common function
+%     is_function_name(Name).
+
 %% Check if a name is a known function (constructor or regular function)
 %% This determines whether identifier should be treated as atom (function call) or var (variable reference)
 is_function_name('Ok') -> true;
@@ -3241,6 +3247,17 @@ is_function_name(map) -> true;
 is_function_name(filter) -> true;
 is_function_name(zip_with) -> true;
 is_function_name(reverse_helper) -> true;
+% Stdlib functions from various modules
+is_function_name(ok) -> true;
+is_function_name(error) -> true;
+is_function_name(nth) -> true;
+is_function_name(negate) -> true;
+is_function_name(multiply) -> true;
+is_function_name(power) -> true;
+is_function_name(subtract) -> true;
+is_function_name(add) -> true;
+is_function_name(min) -> true;
+is_function_name(max) -> true;
 % Common test and user-defined function names
 is_function_name(add_five) -> true;
 is_function_name(add_folder_func) -> true;
@@ -3605,6 +3622,28 @@ get_line_from_location(_) -> 1.
 %% ============================================================================
 %% Union Type Constructor Generation
 %% ============================================================================
+
+%% Register type constructors in the state so they can be recognized during compilation
+register_type_constructors(#type_def{definition = Definition}, State) ->
+    case extract_union_variants(Definition) of
+        {ok, Variants} ->
+            % Extract constructor names and arities
+            Constructors = lists:foldl(
+                fun(Variant, Acc) ->
+                    case extract_constructor_info(Variant) of
+                        {ok, Name, Arity} ->
+                            maps:put(Name, Arity, Acc);
+                        {error, _} ->
+                            Acc
+                    end
+                end,
+                State#codegen_state.type_constructors,
+                Variants
+            ),
+            State#codegen_state{type_constructors = Constructors};
+        _ ->
+            State
+    end.
 
 %% Generate constructor functions for union types
 %% For example: type Result(T, E) = Ok(T) | Error(E)

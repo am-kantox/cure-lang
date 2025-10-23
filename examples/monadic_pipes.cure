@@ -48,16 +48,22 @@ module MonadicPipes do
     |> map(fn(n) -> n * 100.0 end)
 
   def safe_sqrt(x: Float): Result(Float, String) =
-    if x >= 0.0 then Ok(sqrt(x))
-    else Error("Cannot take square root of negative number")
+    match x >= 0.0 do
+      true -> Ok(sqrt(x))
+      false -> Error("Cannot take square root of negative number")
+    end
 
   def safe_divide(x: Float, y: Float): Result(Float, String) =
-    if y != 0.0 then Ok(x / y)
-    else Error("Division by zero")
+    match y != 0.0 do
+      true -> Ok(x / y)
+      false -> Error("Division by zero")
+    end
 
   def safe_log(x: Float): Result(Float, String) =
-    if x > 0.0 then Ok(log(x))
-    else Error("Cannot take logarithm of non-positive number")
+    match x > 0.0 do
+      true -> Ok(log(x))
+      false -> Error("Cannot take logarithm of non-positive number")
+    end
 
   # === USER PROCESSING PIPELINE ===
 
@@ -84,25 +90,29 @@ module MonadicPipes do
     |> bind(validate_name)
 
   def validate_email(user: User): Result(User, ValidationError) =
-    if contains(user.email, "@") and contains(user.email, ".")
-    then Ok(user)
-    else Error(InvalidEmail)
+    match contains(user.email, "@") and contains(user.email, ".") do
+      true -> Ok(user)
+      false -> Error(InvalidEmail)
+    end
 
   def validate_age(user: User): Result(User, ValidationError) =
-    if user.age >= 13 and user.age <= 120
-    then Ok(user)
-    else Error(InvalidAge)
+    match user.age >= 13 and user.age <= 120 do
+      true -> Ok(user)
+      false -> Error(InvalidAge)
+    end
 
   def validate_name(user: User): Result(User, ValidationError) =
-    if length(user.name) >= 2 and length(user.name) <= 50
-    then Ok(user)
-    else Error(InvalidName)
+    match length(user.name) >= 2 and length(user.name) <= 50 do
+      true -> Ok(user)
+      false -> Error(InvalidName)
+    end
 
   def enrich_user(user: User): Result(User, ValidationError) =
     # Simulate external API call that might fail
-    if user.age > 100
-    then Error(NetworkError)
-    else Ok(user)
+    match user.age > 100 do
+      true -> Error(NetworkError)
+      false -> Ok(user)
+    end
 
   def normalize_user(user: User): ProcessedUser =
     ProcessedUser{
@@ -129,14 +139,16 @@ module MonadicPipes do
     end
 
   def get_user_profile(user: User): Option(String) =
-    if user.age >= 18
-    then Some(user.name ++ " - Adult")
-    else Some(user.name ++ " - Minor")
+    match user.age >= 18 do
+      true -> Some(user.name ++ " - Adult")
+      false -> Some(user.name ++ " - Minor")
+    end
 
   def format_profile(profile: String): Option(String) =
-    if length(profile) > 0
-    then Some("[" ++ profile ++ "]")
-    else None
+    match length(profile) > 0 do
+      true -> Some("[" ++ profile ++ "]")
+      false -> None
+    end
 
   # === LIST PROCESSING PIPES ===
 
@@ -183,14 +195,16 @@ module MonadicPipes do
 
   def async_fetch(input: String): AsyncResult(String) =
     # Simulate async operation
-    if length(input) > 0
-    then Complete(Ok("fetched: " ++ input))
-    else Complete(Error("Empty input"))
+    match length(input) > 0 do
+      true -> Complete(Ok("fetched: " ++ input))
+      false -> Complete(Error("Empty input"))
+    end
 
   def async_validate(data: String): AsyncResult(String) =
-    if contains(data, "fetched:")
-    then Complete(Ok(data))
-    else Complete(Error("Invalid data format"))
+    match contains(data, "fetched:") do
+      true -> Complete(Ok(data))
+      false -> Complete(Error("Invalid data format"))
+    end
 
   def async_transform(data: String): AsyncResult(String) =
     Complete(Ok(to_upper(data)))
@@ -224,11 +238,14 @@ module MonadicPipes do
        end)
 
   def validate_input(data: List(String)): Result(List(String), String) =
-    if length(data) == 0
-    then Error("Empty input data")
-    else if length(data) > 1000
-    then Error("Too much data")
-    else Ok(data)
+    match length(data) == 0 do
+      true -> Error("Empty input data")
+      false ->
+        match length(data) > 1000 do
+          true -> Error("Too much data")
+          false -> Ok(data)
+        end
+    end
 
   record DataItem do
     name: String
@@ -237,9 +254,10 @@ module MonadicPipes do
 
   def parse_json_like(item: String): Result(DataItem, String) =
     # Simplified JSON-like parsing
-    if contains(item, ":")
-    then Ok(DataItem{name: "parsed", score: 75})
-    else Error("Invalid format: " ++ item)
+    match contains(item, ":") do
+      true -> Ok(DataItem{name: "parsed", score: 75})
+      false -> Error("Invalid format: " ++ item)
+    end
 
   def sort_by_score(items: List(DataItem)): Result(List(DataItem), String) =
     Ok(sort_by(items, fn(item) -> item.score end))
@@ -268,9 +286,14 @@ module MonadicPipes do
   def to_title_case(s: String): String = s  # Simplified implementation
   def extract_domain(email: String): String = "example.com"  # Simplified
   def classify_age(age: Nat): String =
-    if age < 18 then "Minor"
-    else if age < 65 then "Adult"
-    else "Senior"
+    match age < 18 do
+      true -> "Minor"
+      false ->
+        match age < 65 do
+          true -> "Adult"
+          false -> "Senior"
+        end
+    end
 
   # === DEMONSTRATION FUNCTION ===
 

@@ -477,35 +477,13 @@ run_pipeline([{StageName, StageFunc} | RestStages], Input, Options) ->
 %% Type check AST (simplified version)
 type_check_ast(AST) ->
     try
-        TypeEnv = cure_typechecker:builtin_env(),
-        case AST of
-            [FirstItem | _] when is_record(FirstItem, module_def) ->
-                % Single module case - check the first (and should be only) module
-                case cure_typechecker:check_module(FirstItem, TypeEnv) of
-                    {ok, _NewEnv, Result} ->
-                        check_type_result(Result, AST);
-                    {error, Reason} ->
-                        cure_utils:debug("Type checking error: ~p~n", [Reason]),
-                        {error, Reason}
-                end;
-            Items when is_list(Items) ->
-                % Multiple top-level items - check them as a program
-                case cure_typechecker:check_program(Items) of
-                    {error, Reason} ->
-                        cure_utils:debug("Type checking error: ~p~n", [Reason]),
-                        {error, Reason};
-                    Result ->
-                        check_type_result(Result, AST)
-                end;
-            SingleItem ->
-                % Single non-module item - check as program with single item
-                case cure_typechecker:check_program([SingleItem]) of
-                    {error, Reason} ->
-                        cure_utils:debug("Type checking error: ~p~n", [Reason]),
-                        {error, Reason};
-                    Result ->
-                        check_type_result(Result, AST)
-                end
+        % Always use check_program - it handles all cases including modules
+        case cure_typechecker:check_program(AST) of
+            {error, Reason} ->
+                cure_utils:debug("Type checking error: ~p~n", [Reason]),
+                {error, Reason};
+            Result ->
+                check_type_result(Result, AST)
         end
     catch
         Class:Error:Stack ->

@@ -601,15 +601,6 @@ test_multi_line_match_clause_bodies() ->
                 body = #binary_op_expr{op = '*'}
             },
             #match_clause{
-                pattern = #tuple_pattern{
-                    elements = [
-                        #constructor_pattern{name = error}, #identifier_pattern{name = code}
-                    ]
-                },
-                % if expression
-                body = #if_expr{}
-            },
-            #match_clause{
                 pattern = #list_pattern{elements = []},
                 % function call
                 body = #function_call_expr{function = #identifier_expr{name = length}}
@@ -665,42 +656,6 @@ test_multi_line_match_clause_bodies() ->
 
     file:delete("test_temp_function_calls.cure"),
 
-    % Test 4: If expressions in match clauses (conceptually multi-line logic)
-    TestCodeIf =
-        "def test_if_expressions(input) = match input do\n  Some(x) -> if x > 10 then x * 2 else x + 5 end\n  None -> if 1 == 1 then 42 else 0 end\n  _ -> 99\nend",
-
-    file:write_file("test_temp_if_expressions.cure", TestCodeIf),
-
-    {ok, ASTIf} = cure_parser:parse_file("test_temp_if_expressions.cure"),
-
-    % Verify if expressions in match clauses
-    [{function_def, test_if_expressions, _, _, _, MatchExprIf, _}] = ASTIf,
-
-    #match_expr{
-        patterns = [
-            #match_clause{
-                pattern = #constructor_pattern{
-                    name = 'Some', args = [#identifier_pattern{name = x}]
-                },
-                % If expression with conditional logic
-                body = #if_expr{}
-            },
-            #match_clause{
-                pattern = #constructor_pattern{name = 'None', args = undefined},
-                % If expression
-                body = #if_expr{}
-            },
-            #match_clause{
-                pattern = #wildcard_pattern{},
-                body = #literal_expr{value = 99}
-            }
-        ]
-    } = MatchExprIf,
-
-    {ok, _ModulesIf} = cure_codegen:compile_program(ASTIf),
-
-    file:delete("test_temp_if_expressions.cure"),
-
     cure_utils:debug("  ✓ Multi-line syntax capabilities in match clause bodies test passed~n").
 
 %% Helper function to check if an expression contains nested match expressions
@@ -716,9 +671,6 @@ contains_nested_match(#list_expr{elements = Elements}) ->
     lists:any(fun contains_nested_match/1, Elements);
 contains_nested_match(#tuple_expr{elements = Elements}) ->
     lists:any(fun contains_nested_match/1, Elements);
-contains_nested_match(#if_expr{condition = Cond, then_branch = Then, else_branch = Else}) ->
-    contains_nested_match(Cond) orelse contains_nested_match(Then) orelse
-        contains_nested_match(Else);
 contains_nested_match(#let_expr{bindings = Bindings, body = Body}) ->
     BindingCheck = lists:any(
         fun(#binding{value = Value}) -> contains_nested_match(Value) end, Bindings

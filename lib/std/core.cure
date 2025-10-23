@@ -47,18 +47,32 @@ module Std.Core do
 
   # Boolean operations
   def not(x: Bool): Bool =
-    if x then false else true end
+    match x do
+      true -> false
+      false -> true
+    end
 
   def and(x: Bool, y: Bool): Bool =
-    if x then y else false end
+    match x do
+      true -> y
+      false -> false
+    end
 
   def or(x: Bool, y: Bool): Bool =
-    if x then true else y end
+    match x do
+      true -> true
+      false -> y
+    end
 
   def xor(x: Bool, y: Bool): Bool =
-    if x then 
-      if y then false else true end 
-    else y end
+    match x do
+      true ->
+        match y do
+          true -> false
+          false -> true
+        end
+      false -> y
+    end
 
   # Comparison operations
   def eq(x: T, y: T): Bool = x == y
@@ -69,18 +83,26 @@ module Std.Core do
   def ge(x: T, y: T): Bool = x >= y
 
   def compare(x: T, y: T): Ordering =
-    if x < y then Lt
-    else 
-      if x > y then Gt
-      else Eq
-      end
+    match x < y do
+      true -> Lt
+      false ->
+        match x > y do
+          true -> Gt
+          false -> Eq
+        end
     end
 
   def minimum(x: T, y: T): T =
-    if x <= y then x else y end
+    match x <= y do
+      true -> x
+      false -> y
+    end
 
   def maximum(x: T, y: T): T =
-    if x >= y then x else y end
+    match x >= y do
+      true -> x
+      false -> y
+    end
 
   def clamp(value: T, min_val: T, max_val: T): T =
     minimum(maximum(value, min_val), max_val)

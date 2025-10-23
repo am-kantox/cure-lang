@@ -683,13 +683,6 @@ find_call_sites_in_expr(
     maps:put(FuncName, [CallSite | ExistingCallSites], Acc);
 find_call_sites_in_expr(#block_expr{expressions = Exprs}, Acc) ->
     lists:foldl(fun find_call_sites_in_expr/2, Acc, Exprs);
-find_call_sites_in_expr(#if_expr{condition = Cond, then_branch = Then, else_branch = Else}, Acc) ->
-    Acc1 = find_call_sites_in_expr(Cond, Acc),
-    Acc2 = find_call_sites_in_expr(Then, Acc1),
-    case Else of
-        undefined -> Acc2;
-        _ -> find_call_sites_in_expr(Else, Acc2)
-    end;
 find_call_sites_in_expr(#let_expr{bindings = Bindings, body = Body}, Acc) ->
     Acc1 = lists:foldl(
         fun(#binding{value = Value}, A) ->
@@ -748,13 +741,6 @@ analyze_expr_type_usage(#function_call_expr{args = Args}, Acc) ->
     lists:foldl(fun analyze_expr_type_usage/2, Acc, Args);
 analyze_expr_type_usage(#block_expr{expressions = Exprs}, Acc) ->
     lists:foldl(fun analyze_expr_type_usage/2, Acc, Exprs);
-analyze_expr_type_usage(#if_expr{condition = Cond, then_branch = Then, else_branch = Else}, Acc) ->
-    Acc1 = analyze_expr_type_usage(Cond, Acc),
-    Acc2 = analyze_expr_type_usage(Then, Acc1),
-    case Else of
-        undefined -> Acc2;
-        _ -> analyze_expr_type_usage(Else, Acc2)
-    end;
 analyze_expr_type_usage(#let_expr{bindings = Bindings, body = Body}, Acc) ->
     Acc1 = lists:foldl(
         fun(#binding{value = Value}, A) ->
@@ -842,13 +828,6 @@ count_calls_in_expr(#function_call_expr{function = #identifier_expr{name = FuncN
     maps:put(FuncName, CurrentCount + 1, Acc);
 count_calls_in_expr(#block_expr{expressions = Exprs}, Acc) ->
     lists:foldl(fun count_calls_in_expr/2, Acc, Exprs);
-count_calls_in_expr(#if_expr{condition = Cond, then_branch = Then, else_branch = Else}, Acc) ->
-    Acc1 = count_calls_in_expr(Cond, Acc),
-    Acc2 = count_calls_in_expr(Then, Acc1),
-    case Else of
-        undefined -> Acc2;
-        _ -> count_calls_in_expr(Else, Acc2)
-    end;
 count_calls_in_expr(#let_expr{bindings = Bindings, body = Body}, Acc) ->
     Acc1 = lists:foldl(
         fun(#binding{value = Value}, A) ->
@@ -1556,19 +1535,6 @@ transform_expr_calls(#block_expr{expressions = Exprs} = BlockExpr, SpecLookup, C
         Exprs
     ),
     BlockExpr#block_expr{expressions = NewExprs};
-transform_expr_calls(
-    #if_expr{condition = Cond, then_branch = Then, else_branch = Else} = IfExpr,
-    SpecLookup,
-    Candidates
-) ->
-    NewCond = transform_expr_calls(Cond, SpecLookup, Candidates),
-    NewThen = transform_expr_calls(Then, SpecLookup, Candidates),
-    NewElse =
-        case Else of
-            undefined -> undefined;
-            _ -> transform_expr_calls(Else, SpecLookup, Candidates)
-        end,
-    IfExpr#if_expr{condition = NewCond, then_branch = NewThen, else_branch = NewElse};
 transform_expr_calls(#let_expr{bindings = Bindings, body = Body} = LetExpr, SpecLookup, Candidates) ->
     NewBindings = lists:map(
         fun(#binding{pattern = _Pattern, value = Value} = Binding) ->
@@ -1817,17 +1783,6 @@ transform_expr_for_monomorphization(#block_expr{expressions = Exprs} = BlockExpr
         Exprs
     ),
     BlockExpr#block_expr{expressions = NewExprs};
-transform_expr_for_monomorphization(
-    #if_expr{condition = Cond, then_branch = Then, else_branch = Else} = IfExpr, MonoLookup
-) ->
-    NewCond = transform_expr_for_monomorphization(Cond, MonoLookup),
-    NewThen = transform_expr_for_monomorphization(Then, MonoLookup),
-    NewElse =
-        case Else of
-            undefined -> undefined;
-            _ -> transform_expr_for_monomorphization(Else, MonoLookup)
-        end,
-    IfExpr#if_expr{condition = NewCond, then_branch = NewThen, else_branch = NewElse};
 transform_expr_for_monomorphization(
     #let_expr{bindings = Bindings, body = Body} = LetExpr, MonoLookup
 ) ->
@@ -2436,8 +2391,6 @@ count_statements_recursive(Statements) when is_list(Statements) ->
     lists:sum(lists:map(fun count_statements_recursive/1, Statements));
 count_statements_recursive(#block_expr{expressions = Stmts}) ->
     count_statements_recursive(Stmts);
-count_statements_recursive(#if_expr{then_branch = Then, else_branch = Else}) ->
-    count_statements_recursive(Then) + count_statements_recursive(Else);
 count_statements_recursive(#match_expr{patterns = Patterns}) ->
     % Simplified
     lists:sum([count_statements_recursive(1) || _Pattern <- Patterns]);
@@ -2451,8 +2404,6 @@ analyze_function_complexity(#function_def{body = Body}) ->
 %% Count complexity recursively
 count_complexity_recursive(Statements, Acc) when is_list(Statements) ->
     lists:foldl(fun count_complexity_recursive/2, Acc, Statements);
-count_complexity_recursive(#if_expr{}, Acc) ->
-    Acc + 1;
 count_complexity_recursive(#match_expr{patterns = Patterns}, Acc) ->
     Acc + length(Patterns);
 count_complexity_recursive(#let_expr{}, Acc) ->
@@ -2607,18 +2558,6 @@ calculate_call_site_impact(Location, ArgTypes, _FuncName) ->
 %% ============================================================================
 
 %% Transform nested statements for inlining
-transform_nested_statements(#block_expr{expressions = Stmts} = Block, InliningDecisions) ->
-    TransformedStmts = transform_statements_with_inlining(Stmts, InliningDecisions),
-    Block#block_expr{expressions = TransformedStmts};
-transform_nested_statements(
-    #if_expr{condition = Cond, then_branch = Then, else_branch = Else} = If, InliningDecisions
-) ->
-    TransformedCond = transform_statement_with_inlining(Cond, InliningDecisions),
-    TransformedThen = transform_statements_with_inlining(Then, InliningDecisions),
-    TransformedElse = transform_statements_with_inlining(Else, InliningDecisions),
-    If#if_expr{
-        condition = TransformedCond, then_branch = TransformedThen, else_branch = TransformedElse
-    };
 transform_nested_statements(Statement, _) ->
     Statement.
 
@@ -2804,28 +2743,6 @@ find_unreachable_in_function(_FuncName, Body, TypeInfo) ->
     find_unreachable_in_expression(Body, TypeInfo, []).
 
 %% Find unreachable code in expressions
-find_unreachable_in_expression(
-    #if_expr{condition = Cond, then_branch = Then, else_branch = Else, location = Location},
-    TypeInfo,
-    Acc
-) ->
-    % Check if condition is always true or false based on type analysis
-    case analyze_condition_reachability(Cond, TypeInfo) of
-        always_true ->
-            case Else of
-                undefined -> Acc;
-                _ -> [{unreachable_else_branch, Location} | Acc]
-            end;
-        always_false ->
-            [{unreachable_then_branch, Location} | Acc];
-        _ ->
-            % Recursively analyze branches
-            Acc1 = find_unreachable_in_expression(Then, TypeInfo, Acc),
-            case Else of
-                undefined -> Acc1;
-                _ -> find_unreachable_in_expression(Else, TypeInfo, Acc1)
-            end
-    end;
 find_unreachable_in_expression(
     #match_expr{patterns = Patterns, location = Location}, TypeInfo, Acc
 ) ->
@@ -3036,34 +2953,6 @@ transform_item_remove_unreachable(Item, _UnreachableSet) ->
     Item.
 
 %% Transform expression to remove unreachable branches
-transform_expr_remove_unreachable(
-    #if_expr{condition = Cond, then_branch = Then, else_branch = Else, location = Location} = If,
-    UnreachableSet
-) ->
-    % Check if this if-expression has unreachable branches
-    case sets:is_element({unreachable_else_branch, Location}, UnreachableSet) of
-        true ->
-            % Remove else branch
-            If#if_expr{else_branch = undefined};
-        false ->
-            case sets:is_element({unreachable_then_branch, Location}, UnreachableSet) of
-                true ->
-                    % Return else branch or undefined
-                    case Else of
-                        undefined -> #literal_expr{value = undefined, location = Location};
-                        _ -> Else
-                    end;
-                false ->
-                    % Recursively transform branches
-                    NewThen = transform_expr_remove_unreachable(Then, UnreachableSet),
-                    NewElse =
-                        case Else of
-                            undefined -> undefined;
-                            _ -> transform_expr_remove_unreachable(Else, UnreachableSet)
-                        end,
-                    If#if_expr{then_branch = NewThen, else_branch = NewElse}
-            end
-    end;
 transform_expr_remove_unreachable(#block_expr{expressions = Exprs} = Block, UnreachableSet) ->
     NewExprs = lists:map(
         fun(Expr) ->
@@ -4909,15 +4798,6 @@ extract_function_calls(#function_call_expr{function = #identifier_expr{name = Na
     [Name | ArgCalls];
 extract_function_calls(#block_expr{expressions = Exprs}) ->
     lists:flatmap(fun extract_function_calls/1, Exprs);
-extract_function_calls(#if_expr{condition = Cond, then_branch = Then, else_branch = Else}) ->
-    CondCalls = extract_function_calls(Cond),
-    ThenCalls = extract_function_calls(Then),
-    ElseCalls =
-        case Else of
-            undefined -> [];
-            _ -> extract_function_calls(Else)
-        end,
-    CondCalls ++ ThenCalls ++ ElseCalls;
 extract_function_calls(#let_expr{bindings = Bindings, body = Body}) ->
     BindingCalls = lists:flatmap(
         fun(#binding{value = Value}) ->

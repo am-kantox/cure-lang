@@ -75,8 +75,9 @@ module Std.List do
       [] -> []
       [h | t] -> 
         let filtered_tail = filter(t, predicate)
-        if predicate(h) then [h | filtered_tail]
-        else filtered_tail
+        match predicate(h) do
+          true -> [h | filtered_tail]
+          false -> filtered_tail
         end
     end
 
@@ -102,8 +103,9 @@ module Std.List do
 
   # Access
   def nth(list: List(T), index: Int, default: T): T =
-    if index <= 0 then head(list, default)
-    else nth(tail(list), index - 1, default)
+    match index <= 0 do
+      true -> head(list, default)
+      false -> nth(tail(list), index - 1, default)
     end
 
   # def take(list: List(T), n: Int): List(T) =
@@ -130,8 +132,9 @@ module Std.List do
     match list do
       [] -> false
       [h | t] ->
-        if h == element then true
-        else contains(t, element)
+        match h == element do
+          true -> true
+          false -> contains(t, element)
         end
     end
 

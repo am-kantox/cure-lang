@@ -305,12 +305,7 @@ sample_ast_recursive() ->
             params = [#param{name = n, type = #primitive_type{name = 'Int'}}],
             return_type = #primitive_type{name = 'Int'},
             constraint = undefined,
-            body = #if_expr{
-                condition = #binary_op_expr{
-                    op = '==', left = #identifier_expr{name = n}, right = #literal_expr{value = 0}
-                },
-                then_branch = #literal_expr{value = 1},
-                else_branch = #binary_op_expr{
+            body = #binary_op_expr{
                     op = '*',
                     left = #identifier_expr{name = n},
                     right = #function_call_expr{
@@ -323,7 +318,6 @@ sample_ast_recursive() ->
                             }
                         ]
                     }
-                }
             },
             location = #location{line = 1, column = 1}
         },
@@ -469,8 +463,6 @@ find_all_function_calls(#block_expr{expressions = Es}) ->
 find_all_function_calls(#let_expr{bindings = Bs, body = B}) ->
     lists:append([find_all_function_calls(X#binding.value) || X <- Bs]) ++
         find_all_function_calls(B);
-find_all_function_calls(#if_expr{condition = C, then_branch = T, else_branch = E}) ->
-    find_all_function_calls(C) ++ find_all_function_calls(T) ++ find_all_function_calls(E);
 find_all_function_calls(#match_expr{expr = E, patterns = Ps}) ->
     find_all_function_calls(E) ++
         lists:append([find_all_function_calls(P#match_clause.body) || P <- Ps]);

@@ -1793,8 +1793,6 @@ is_let_body_continuation(State) ->
         '[' -> true;
         % Tuple
         '{' -> true;
-        % if expression
-        'if' -> true;
         % match expression
         'match' -> true;
         % nested let expression
@@ -1867,7 +1865,6 @@ get_expr_location(#list_expr{location = Loc}) -> Loc;
 get_expr_location(#cons_expr{location = Loc}) -> Loc;
 get_expr_location(#type_annotation_expr{location = Loc}) -> Loc;
 get_expr_location(#tuple_expr{location = Loc}) -> Loc;
-get_expr_location(#if_expr{location = Loc}) -> Loc;
 get_expr_location(#let_expr{location = Loc}) -> Loc;
 get_expr_location(#block_expr{location = Loc}) -> Loc;
 get_expr_location(#string_interpolation_expr{location = Loc}) -> Loc;
@@ -2064,8 +2061,6 @@ parse_primary_expression(State) ->
                     parse_constructor_expression(State);
                 'error' ->
                     parse_constructor_expression(State);
-                'if' ->
-                    parse_if_expression(State);
                 'let' ->
                     parse_let_expression(State);
                 '[' ->
@@ -2221,28 +2216,6 @@ parse_argument_list(State, Acc) ->
             end
     end.
 
-%% Parse if expression
-parse_if_expression(State) ->
-    {_, State1} = expect(State, 'if'),
-    % Use binary_expression to avoid blocks
-    {Condition, State2} = parse_binary_expression(State1, 0),
-    {_, State3} = expect(State2, then),
-    % Use binary_expression to avoid blocks
-    {ThenBranch, State4} = parse_binary_expression(State3, 0),
-    {_, State5} = expect(State4, 'else'),
-    % Use binary_expression to avoid blocks
-    {ElseBranch, State6} = parse_binary_expression(State5, 0),
-    % Expect end token
-    {_, State7} = expect(State6, 'end'),
-
-    Location = get_token_location(current_token(State)),
-    IfExpr = #if_expr{
-        condition = Condition,
-        then_branch = ThenBranch,
-        else_branch = ElseBranch,
-        location = Location
-    },
-    {IfExpr, State7}.
 
 %% Parse let expression
 parse_let_expression(State) ->
@@ -2858,6 +2831,22 @@ parse_pattern(State) ->
                     },
                     {Pattern, State1}
             end;
+        true ->
+            {Token, State1} = expect(State, true),
+            Location = get_token_location(Token),
+            Pattern = #literal_pattern{
+                value = true,
+                location = Location
+            },
+            {Pattern, State1};
+        false ->
+            {Token, State1} = expect(State, false),
+            Location = get_token_location(Token),
+            Pattern = #literal_pattern{
+                value = false,
+                location = Location
+            },
+            {Pattern, State1};
         _ ->
             Token = current_token(State),
             throw({parse_error, {unexpected_token_in_pattern, get_token_type(Token)}, 0, 0})

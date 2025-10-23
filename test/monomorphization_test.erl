@@ -955,8 +955,6 @@ find_all_function_calls(#let_expr{bindings = Bindings, body = Body}) ->
     BindingCalls ++ BodyCalls;
 find_all_function_calls(#binary_op_expr{left = Left, right = Right}) ->
     find_all_function_calls(Left) ++ find_all_function_calls(Right);
-find_all_function_calls(#if_expr{condition = Cond, then_branch = Then, else_branch = Else}) ->
-    find_all_function_calls(Cond) ++ find_all_function_calls(Then) ++ find_all_function_calls(Else);
 find_all_function_calls(#match_expr{expr = Expr, patterns = Patterns}) ->
     ExprCalls = find_all_function_calls(Expr),
     PatternCalls = lists:append([find_all_function_calls(C#match_clause.body) || C <- Patterns]),

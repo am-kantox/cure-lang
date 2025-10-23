@@ -41,7 +41,6 @@ Expressions represent computations and values:
 - `binary_op_expr()` - Binary operations (+, -, *, etc.)
 - `unary_op_expr()` - Unary operations (-, not)
 - `match_expr()` - Pattern matching expressions
-- `if_expr()` - Conditional expressions
 - `let_expr()` - Let bindings
 - `list_expr()` - List literals
 - `tuple_expr()` - Tuple literals
@@ -252,7 +251,6 @@ This module integrates with:
     | identifier_expr()
     | function_call_expr()
     | match_expr()
-    | if_expr()
     | let_expr()
     | binary_op_expr()
     | unary_op_expr()
@@ -298,15 +296,6 @@ This module integrates with:
     location :: location()
 }).
 -type match_clause() :: #match_clause{}.
-
-%% If expressions
--record(if_expr, {
-    condition :: expr(),
-    then_branch :: expr(),
-    else_branch :: expr(),
-    location :: location()
-}).
--type if_expr() :: #if_expr{}.
 
 %% Let expressions
 -record(let_expr, {
@@ -522,7 +511,6 @@ This module integrates with:
     function_call_expr/0,
     match_expr/0,
     match_clause/0,
-    if_expr/0,
     let_expr/0,
     binding/0,
     binary_op_expr/0,

@@ -196,13 +196,6 @@
     location
 }).
 
-%% If expressions
--record(if_expr, {
-    condition,
-    then_branch,
-    else_branch,
-    location
-}).
 
 %% Let expressions
 -record(let_expr, {
@@ -401,7 +394,6 @@
                #identifier_expr{} |
                #function_call_expr{} |
                #match_expr{} |
-               #if_expr{} |
                #let_expr{} |
                #binary_op_expr{} |
                #unary_op_expr{} |

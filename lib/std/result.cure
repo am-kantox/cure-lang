@@ -14,11 +14,17 @@ module Std.Result do
   
   def ok(value: Int): Int =
     "Create Ok result (simplified)"
-    if value < 0 then 1 else value end  # Ensure positive
+    match value < 0 do
+      true -> 1
+      false -> value
+    end  # Ensure positive
 
   def error(code: Int): Int =
     "Create Error result (simplified)"
-    if code >= 0 then -1 else code end  # Ensure negative
+    match code >= 0 do
+      true -> -1
+      false -> code
+    end  # Ensure negative
 
   def is_ok(result: Int): Bool =
     "Check if result is Ok"
@@ -30,18 +36,30 @@ module Std.Result do
 
   def get_value(result: Int): Int =
     "Get Ok value (returns 0 if Error)"
-    if is_ok(result) then result else 0 end
+    match is_ok(result) do
+      true -> result
+      false -> 0
+    end
 
   def get_error(result: Int): Int =
     "Get Error code (returns 0 if Ok)"
-    if is_error(result) then -result else 0 end
+    match is_error(result) do
+      true -> -result
+      false -> 0
+    end
 
   def map_result(result: Int, f: Int -> Int): Int =
     "Map function over Ok value"
-    if is_ok(result) then ok(f(result)) else result end
+    match is_ok(result) do
+      true -> ok(f(result))
+      false -> result
+    end
 
   def map_error(result: Int, f: Int -> Int): Int =
     "Map function over Error value"
-    if is_error(result) then error(f(-result)) else result end
+    match is_error(result) do
+      true -> error(f(-result))
+      false -> result
+    end
 
 end

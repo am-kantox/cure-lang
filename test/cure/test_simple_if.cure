@@ -4,5 +4,8 @@ module Test do
   type Ordering = Lt | Eq | Gt
 
   def simple(x: T, y: T): Ordering =
-    if x < y then Lt else Eq end
+    match x < y do
+      true -> Lt
+      false -> Eq
+    end
 end

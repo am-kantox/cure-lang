@@ -418,7 +418,7 @@ refinement_type ::= type 'when' expr
                   | '{' IDENTIFIER ':' type '|' expr '}'
 
 # Expressions
-expr ::= literal | identifier | function_call | match_expr | if_expr 
+expr ::= literal | identifier | function_call | match_expr
        | case_expr | receive_expr | record_expr | list_expr | tuple_expr 
        | binary_op | unary_op | lambda_expr | spawn_expr | send_expr | fsm_expr
 
@@ -446,7 +446,6 @@ wildcard ::= '_'
 guard ::= 'when' expr
 
 # Conditional expressions
-if_expr ::= 'if' expr 'then' expr 'else' expr
 case_expr ::= 'case' expr 'of' case_clause* 'end'
 case_clause ::= pattern guard? '->' expr
 

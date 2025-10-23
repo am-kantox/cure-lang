@@ -1649,38 +1649,6 @@ infer_expr({unary_op_expr, Op, Operand, Location}, Env) ->
     end;
 infer_expr({function_call_expr, Function, Args, Location}, Env) ->
     infer_function_call_with_recursive_tracking(Function, Args, Location, Env);
-infer_expr({if_expr, Condition, ThenBranch, ElseBranch, Location}, Env) ->
-    case infer_expr(Condition, Env) of
-        {ok, CondType, CondConstraints} ->
-            BoolConstraint = #type_constraint{
-                left = CondType,
-                op = '=',
-                right = ?TYPE_BOOL,
-                location = Location
-            },
-            case infer_expr(ThenBranch, Env) of
-                {ok, ThenType, ThenConstraints} ->
-                    case infer_expr(ElseBranch, Env) of
-                        {ok, ElseType, ElseConstraints} ->
-                            UnifyConstraint = #type_constraint{
-                                left = ThenType,
-                                op = '=',
-                                right = ElseType,
-                                location = Location
-                            },
-                            AllConstraints =
-                                CondConstraints ++ ThenConstraints ++
-                                    ElseConstraints ++ [BoolConstraint, UnifyConstraint],
-                            {ok, ThenType, AllConstraints};
-                        Error ->
-                            Error
-                    end;
-                Error ->
-                    Error
-            end;
-        Error ->
-            Error
-    end;
 infer_expr({let_expr, Bindings, Body, _Location}, Env) ->
     infer_let_expr(Bindings, Body, Env, []);
 infer_expr({list_expr, Elements, Location}, Env) ->
@@ -2674,6 +2642,9 @@ infer_pattern_type({identifier_pattern, Name, _Location}, MatchType, Env) ->
     {ok, NewEnv, []};
 infer_pattern_type({wildcard_pattern, _Location}, _MatchType, Env) ->
     % Wildcard doesn't bind any variables
+    {ok, Env, []};
+infer_pattern_type({literal_pattern, _Value, _Location}, _MatchType, Env) ->
+    % Literal patterns (numbers, strings, booleans, atoms) don't bind variables
     {ok, Env, []};
 infer_pattern_type({constructor_pattern, ConstructorName, Args, _Location}, _MatchType, Env) ->
     % Handle constructor patterns like Ok(value), Error(err), Some(x), None
@@ -3925,56 +3896,6 @@ bidirectional_infer_impl(
                     AllConstraints = FuncConstraints ++ CallConstraints,
                     AllSteps = CallSteps ++ FuncSteps,
                     {ok, ResultType, AllConstraints, AllSteps};
-                Error ->
-                    Error
-            end;
-        Error ->
-            Error
-    end;
-bidirectional_infer_impl(
-    {if_expr, Condition, ThenBranch, ElseBranch, Location}, ExpectedType, Env, Constraints, Steps
-) ->
-    % Enhanced if expression inference
-    CondStep = {inference_step, condition_check, Condition, {primitive_type, 'Bool'}, Location},
-
-    case
-        bidirectional_infer_impl(Condition, {primitive_type, 'Bool'}, Env, Constraints, [
-            CondStep | Steps
-        ])
-    of
-        {ok, _CondType, CondConstraints, CondSteps} ->
-            % Infer both branches with the same expected type
-            case
-                bidirectional_infer_impl(ThenBranch, ExpectedType, Env, CondConstraints, CondSteps)
-            of
-                {ok, ThenType, ThenConstraints, ThenSteps} ->
-                    case
-                        bidirectional_infer_impl(
-                            ElseBranch, ExpectedType, Env, ThenConstraints, ThenSteps
-                        )
-                    of
-                        {ok, ElseType, ElseConstraints, ElseSteps} ->
-                            % Unify branch types or use expected type if available
-                            case ExpectedType of
-                                undefined ->
-                                    % Unify the two branch types
-                                    case unify(ThenType, ElseType) of
-                                        {ok, _} ->
-                                            UnifyStep =
-                                                {inference_step, branch_unification,
-                                                    {ThenType, ElseType}, ThenType, Location},
-                                            {ok, ThenType, ElseConstraints, [UnifyStep | ElseSteps]};
-                                        {error, Reason} ->
-                                            {error,
-                                                {branch_type_mismatch, ThenType, ElseType, Reason}}
-                                    end;
-                                Expected ->
-                                    % Both branches should already match expected type
-                                    {ok, Expected, ElseConstraints, ElseSteps}
-                            end;
-                        Error ->
-                            Error
-                    end;
                 Error ->
                     Error
             end;

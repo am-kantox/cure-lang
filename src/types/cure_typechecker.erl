@@ -141,8 +141,7 @@ operations can run concurrently on different ASTs.
 
 -export([
     check_program/1,
-    check_module/1, check_module/2,
-    check_function/1,
+    check_module/2,
     check_function/2,
     check_expression/2, check_expression/3,
     infer_type/2,
@@ -1143,14 +1142,6 @@ convert_expr_to_tuple(#function_call_expr{
 }) ->
     {function_call_expr, convert_expr_to_tuple(Function),
         [convert_expr_to_tuple(Arg) || Arg <- Args], Location};
-convert_expr_to_tuple(#if_expr{
-    condition = Condition,
-    then_branch = ThenBranch,
-    else_branch = ElseBranch,
-    location = Location
-}) ->
-    {if_expr, convert_expr_to_tuple(Condition), convert_expr_to_tuple(ThenBranch),
-        convert_expr_to_tuple(ElseBranch), Location};
 convert_expr_to_tuple(#let_expr{
     bindings = Bindings,
     body = Body,
@@ -1538,8 +1529,6 @@ get_expr_location(#identifier_expr{location = Loc}) ->
 get_expr_location(#binary_op_expr{location = Loc}) ->
     Loc;
 get_expr_location(#function_call_expr{location = Loc}) ->
-    Loc;
-get_expr_location(#if_expr{location = Loc}) ->
     Loc;
 get_expr_location(#let_expr{location = Loc}) ->
     Loc;

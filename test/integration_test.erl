@@ -118,12 +118,6 @@ test_function_with_types() ->
             case ReturnType of
                 {primitive_type, 'Pos'} -> ok;
                 _ -> throw({unexpected_return_type, ReturnType})
-            end,
-
-            % Check body is an if expression
-            case Body of
-                #if_expr{} -> ok;
-                _ -> throw({unexpected_body, Body})
             end;
         _ ->
             throw({unexpected_function_def, FuncDef})

@@ -32,8 +32,9 @@ module Std.Vector do
       [] -> []
       [h | t] -> 
         let filtered_tail = filter(t, predicate)
-        if predicate(h) then [h | filtered_tail]
-        else filtered_tail
+        match predicate(h) do
+          true -> [h | filtered_tail]
+          false -> filtered_tail
         end
     end
 
@@ -62,8 +63,9 @@ module Std.Vector do
     match v do
       [] -> false
       [h | t] ->
-        if h == element then true
-        else contains(t, element)
+        match h == element do
+          true -> true
+          false -> contains(t, element)
         end
     end
 

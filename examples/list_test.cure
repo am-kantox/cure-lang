@@ -81,8 +81,14 @@ module ListComprehensiveTest do
     let empty_result = is_empty(empty_list)      # Should be true
     let non_empty_result = is_empty(non_empty_list)  # Should be false
     # Convert booleans to integers for return (true=1, false=0)
-    let empty_val = if empty_result then 1 else 0 end
-    let non_empty_val = if non_empty_result then 1 else 0 end
+    let empty_val = match empty_result do
+      true -> 1
+      false -> 0
+    end
+    let non_empty_val = match non_empty_result do
+      true -> 1
+      false -> 0
+    end
     empty_val + non_empty_val  # Should be 1 + 0 = 1
 
   def demo_reverse(): List(Int) =
@@ -154,11 +160,26 @@ module ListComprehensiveTest do
     let contains_5 = contains(numbers, 5)      # Should be true (last element)
     let contains_empty = contains(empty_list, 1)  # Should be false
     # Convert booleans to integers for arithmetic
-    let val_3 = if contains_3 then 1 else 0 end
-    let val_10 = if contains_10 then 1 else 0 end
-    let val_1 = if contains_1 then 1 else 0 end
-    let val_5 = if contains_5 then 1 else 0 end
-    let val_empty = if contains_empty then 1 else 0 end
+    let val_3 = match contains_3 do
+      true -> 1
+      false -> 0
+    end
+    let val_10 = match contains_10 do
+      true -> 1
+      false -> 0
+    end
+    let val_1 = match contains_1 do
+      true -> 1
+      false -> 0
+    end
+    let val_5 = match contains_5 do
+      true -> 1
+      false -> 0
+    end
+    let val_empty = match contains_empty do
+      true -> 1
+      false -> 0
+    end
     val_3 + val_10 + val_1 + val_5 + val_empty  # Should be 1+0+1+1+0 = 3
 
   # ============================================================================
