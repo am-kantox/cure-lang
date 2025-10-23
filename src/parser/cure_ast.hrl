@@ -35,13 +35,16 @@
     location
 }).
 
-%% Erlang function definition (for Erlang interop)
--record(erlang_function_def, {
+%% Curify function definition (wraps Erlang functions)
+-record(curify_function_def, {
     name,
     params,
     return_type,
     constraint,
-    erlang_body,  % Raw Erlang code as string
+    erlang_module,   % Atom: Erlang module name
+    erlang_function, % Atom: Erlang function name
+    erlang_arity,    % Integer: Erlang function arity
+    is_private,      % Boolean: determined by export list
     location
 }).
 

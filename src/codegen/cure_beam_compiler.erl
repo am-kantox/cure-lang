@@ -6,7 +6,6 @@
     compile_instructions_to_forms/2,
     compile_function_to_erlang/2,
     compile_function_to_erlang/4,
-    compile_erlang_function_to_erlang/2,
     optimize_instructions/1,
     validate_erlang_forms/1
 ]).
@@ -64,21 +63,7 @@ compile_function_to_erlang(
             {ok, FunctionForm, StartLine + 20};
         {error, Reason} ->
             {error, Reason}
-    end;
-%% Compile an Erlang function (def_erl) to proper Erlang form
-compile_function_to_erlang(
-    #{
-        name := Name,
-        arity := Arity,
-        params := Params,
-        erlang_body := ErlangBody,
-        is_erlang_function := true
-    },
-    StartLine
-) ->
-    compile_erlang_function_to_erlang(
-        #{name => Name, arity => Arity, params => Params, erlang_body => ErlangBody}, StartLine
-    ).
+    end.
 
 %% Compile function with module context (module name and local functions)
 compile_function_to_erlang(
@@ -110,61 +95,96 @@ compile_function_to_erlang(
         {error, Reason} ->
             {error, Reason}
     end;
+%% Compile curify function with auto-conversion
 compile_function_to_erlang(
     #{
         name := Name,
         arity := Arity,
         params := Params,
-        erlang_body := ErlangBody,
-        is_erlang_function := true
+        erlang_module := ErlModule,
+        erlang_function := ErlFunc,
+        return_type := ReturnType,
+        is_curify_function := true
     },
     StartLine,
     _ModuleName,
     _LocalFunctions
 ) ->
-    compile_erlang_function_to_erlang(
-        #{name => Name, arity => Arity, params => Params, erlang_body => ErlangBody}, StartLine
+    compile_curify_function_to_erlang(
+        #{name => Name, arity => Arity, params => Params,
+          erlang_module => ErlModule, erlang_function => ErlFunc,
+          return_type => ReturnType},
+        StartLine
     ).
 
-%% Compile an Erlang function with raw Erlang body
-compile_erlang_function_to_erlang(
-    #{name := Name, arity := Arity, params := Params, erlang_body := ErlangBody}, StartLine
+%% Compile curify function with auto-conversion
+%% Generates a wrapper that calls the Erlang function and converts return values
+compile_curify_function_to_erlang(
+    #{name := Name, arity := Arity, params := Params,
+      erlang_module := ErlModule, erlang_function := ErlFunc,
+      return_type := ReturnType},
+    StartLine
 ) ->
     try
-        % For def_erl functions, we need to parse the raw Erlang code
-        % and insert it as the function body
         ParamVars = [{var, StartLine, Param} || Param <- Params],
-
-        % Create parameter mapping from uppercase to lowercase
-        ParamMapping = create_param_mapping(Params),
-
-        % Parse the raw Erlang code to convert it to proper Erlang abstract syntax
-        case parse_erlang_body(ErlangBody, StartLine, ParamMapping) of
-            {ok, ParsedBody} ->
-                FunctionForm =
-                    {function, StartLine, Name, Arity, [
-                        {clause, StartLine, ParamVars, [], ParsedBody}
-                    ]},
-                {ok, FunctionForm, StartLine + 20};
-            {error, ParseReason} ->
-                {error, {erlang_body_parse_failed, ParseReason}}
-        end
+        
+        % Generate the Erlang function call
+        ErlangCall = {call, StartLine,
+            {remote, StartLine,
+                {atom, StartLine, ErlModule},
+                {atom, StartLine, ErlFunc}},
+            ParamVars},
+        
+        % Wrap with return value conversion based on return type
+        Body = generate_return_conversion(ErlangCall, ReturnType, StartLine),
+        
+        FunctionForm =
+            {function, StartLine, Name, Arity, [
+                {clause, StartLine, ParamVars, [], [Body]}
+            ]},
+        {ok, FunctionForm, StartLine + 20}
     catch
         error:Reason:Stack ->
-            {error, {erlang_function_compilation_failed, Name, Reason, Stack}}
+            {error, {curify_function_compilation_failed, Name, Reason, Stack}}
     end.
 
-%% Create mapping from uppercase variable names to parameter names
-create_param_mapping(Params) ->
-    lists:foldl(
-        fun(Param, Acc) ->
-            % Map both uppercase and same-case versions
-            UpperParam = list_to_atom(string:uppercase(atom_to_list(Param))),
-            maps:put(UpperParam, Param, maps:put(Param, Param, Acc))
-        end,
-        #{},
-        Params
-    ).
+%% Generate return value conversion based on Cure return type
+generate_return_conversion(ErlangCall, ReturnType, Line) ->
+    % Check if return type is Result or Option (needs conversion)
+    case needs_result_conversion(ReturnType) of
+        true ->
+            % For Result types: convert {ok, Val} -> {ok, Val}, {error, Reason} -> {error, Reason}
+            % For other types that might return tuples: wrap in ok
+            % Use a case expression to handle the Erlang return value
+            {'case', Line, ErlangCall, [
+                % Match {ok, Value} -> keep as-is (already a Result)
+                {clause, Line,
+                    [{tuple, Line, [{atom, Line, ok}, {var, Line, 'Value'}]}],
+                    [],
+                    [{tuple, Line, [{atom, Line, ok}, {var, Line, 'Value'}]}]},
+                % Match {error, Reason} -> keep as-is (already a Result)
+                {clause, Line,
+                    [{tuple, Line, [{atom, Line, error}, {var, Line, 'Reason'}]}],
+                    [],
+                    [{tuple, Line, [{atom, Line, error}, {var, Line, 'Reason'}]}]},
+                % Match any other value -> wrap in ok
+                {clause, Line,
+                    [{var, Line, 'Other'}],
+                    [],
+                    [{tuple, Line, [{atom, Line, ok}, {var, Line, 'Other'}]}]}
+            ]};
+        false ->
+            % For non-Result types, return value as-is
+            ErlangCall
+    end.
+
+%% Check if return type needs Result conversion
+needs_result_conversion(ReturnType) ->
+    case ReturnType of
+        #primitive_type{name = 'Result'} -> true;
+        #dependent_type{name = 'Result'} -> true;
+        _ -> false
+    end.
 
 %% Create parameter variable mappings
 create_param_variables(Params, Line) ->
@@ -297,7 +317,7 @@ compile_load_local([VarName], Context) ->
 %% Load global function or variable - just push to stack, don't generate forms
 compile_load_global([Name], Context) ->
     Line = Context#compile_context.line,
-    ModuleName = Context#compile_context.module_name,
+    _ModuleName = Context#compile_context.module_name,
 
     % Check if this is a local function (defined in the current module)
     case is_local_function_reference(Name, Context) of
@@ -526,28 +546,8 @@ compile_call([Arity], Context) ->
                                         % Local function call - use simple atom call
                                         {call, Line, {atom, Line, FuncName}, Args};
                                     false ->
-                                        % Check if it's an imported function from the codegen state
-                                        ImportedFunctions =
-                                            NewContext#compile_context.imported_functions,
-                                        case maps:get(FuncName, ImportedFunctions, undefined) of
-                                            undefined ->
-                                                % Unknown function - assume local (will error at runtime if not found)
-                                                {call, Line, {atom, Line, FuncName}, Args};
-                                            ImportedFunc ->
-                                                % Get module from imported function metadata
-                                                Module = maps:get(module, ImportedFunc, undefined),
-                                                case Module of
-                                                    undefined ->
-                                                        % No module - treat as local
-                                                        {call, Line, {atom, Line, FuncName}, Args};
-                                                    _ ->
-                                                        % Remote call to imported module
-                                                        {call, Line,
-                                                            {remote, Line, {atom, Line, Module},
-                                                                {atom, Line, FuncName}},
-                                                            Args}
-                                                end
-                                        end
+                                        % Unknown function - assume local (will error at runtime if not found)
+                                        {call, Line, {atom, Line, FuncName}, Args}
                                 end;
                             {'fun', _, {function, {atom, _, ModName}, {atom, _, FuncName}, _}} when
                                 ModName =:= NewContext#compile_context.module_name
@@ -1295,139 +1295,6 @@ validate_erlang_forms(Forms) ->
             {error, {validation_error, Reason}}
     end.
 
-%% ============================================================================
-%% Erlang Code Parsing for def_erl
-%% ============================================================================
-
-%% Parse raw Erlang code string into Erlang abstract syntax
-%% This converts the tokenized Erlang body back to abstract forms
-% parse_erlang_body(ErlangBody, StartLine) ->
-%     parse_erlang_body(ErlangBody, StartLine, #{}).
-
-parse_erlang_body(ErlangBody, StartLine, ParamMapping) ->
-    % Parse the raw Erlang body string to Erlang abstract forms
-    % The ErlangBody comes from the parser as a string of valid Erlang code
-    try
-        % Trim and normalize the Erlang code
-        TrimmedBody = string:trim(ErlangBody),
-
-        % Add a dot at the end if not present (required for erl_scan)
-        CodeToParse =
-            case lists:last(TrimmedBody) of
-                $. -> TrimmedBody;
-                _ -> TrimmedBody ++ "."
-            end,
-
-        % Tokenize the Erlang code
-        case erl_scan:string(CodeToParse, StartLine) of
-            {ok, Tokens, _} ->
-                % Parse the tokens into abstract forms
-                case erl_parse:parse_exprs(Tokens) of
-                    {ok, Exprs} ->
-                        % Replace uppercase parameter names with actual parameter names
-                        MappedExprs = map_params_in_exprs(Exprs, ParamMapping),
-                        {ok, MappedExprs};
-                    {error, {_, erl_parse, Reason}} ->
-                        io:format("Erlang parse error: ~p~nCode: ~s~n", [Reason, CodeToParse]),
-                        {error, {parse_error, Reason}}
-                end;
-            {error, {_, erl_scan, Reason}, _} ->
-                io:format("Erlang scan error: ~p~nCode: ~s~n", [Reason, CodeToParse]),
-                {error, {scan_error, Reason}}
-        end
-    catch
-        error:CatchReason:Stack ->
-            io:format("Erlang body parsing exception: ~p~n~p~n", [CatchReason, Stack]),
-            {error, {exception, CatchReason}}
-    end.
-
-%% Map parameter names in parsed Erlang expressions
-%% Replaces uppercase parameter references (like S) with actual param names (like s)
-map_params_in_exprs(Exprs, ParamMapping) ->
-    [map_params_in_expr(Expr, ParamMapping) || Expr <- Exprs].
-
-map_params_in_expr({var, Line, VarName}, ParamMapping) ->
-    % Check if this variable should be mapped to a parameter
-    case maps:get(VarName, ParamMapping, undefined) of
-        undefined -> {var, Line, VarName};
-        MappedName -> {var, Line, MappedName}
-    end;
-map_params_in_expr({call, Line, Func, Args}, ParamMapping) ->
-    % Recursively map parameters in function calls
-    MappedFunc = map_params_in_expr(Func, ParamMapping),
-    MappedArgs = [map_params_in_expr(Arg, ParamMapping) || Arg <- Args],
-    {call, Line, MappedFunc, MappedArgs};
-map_params_in_expr({remote, Line, Module, Function}, ParamMapping) ->
-    % Remote calls like io:format
-    MappedModule = map_params_in_expr(Module, ParamMapping),
-    MappedFunction = map_params_in_expr(Function, ParamMapping),
-    {remote, Line, MappedModule, MappedFunction};
-map_params_in_expr({cons, Line, Head, Tail}, ParamMapping) ->
-    % List constructor [H|T]
-    MappedHead = map_params_in_expr(Head, ParamMapping),
-    MappedTail = map_params_in_expr(Tail, ParamMapping),
-    {cons, Line, MappedHead, MappedTail};
-map_params_in_expr({tuple, Line, Elements}, ParamMapping) ->
-    % Tuple constructor {A, B, C}
-    MappedElements = [map_params_in_expr(E, ParamMapping) || E <- Elements],
-    {tuple, Line, MappedElements};
-map_params_in_expr({op, Line, Op, Left, Right}, ParamMapping) ->
-    % Binary operators
-    MappedLeft = map_params_in_expr(Left, ParamMapping),
-    MappedRight = map_params_in_expr(Right, ParamMapping),
-    {op, Line, Op, MappedLeft, MappedRight};
-map_params_in_expr({op, Line, Op, Operand}, ParamMapping) ->
-    % Unary operators
-    MappedOperand = map_params_in_expr(Operand, ParamMapping),
-    {op, Line, Op, MappedOperand};
-map_params_in_expr({match, Line, Pattern, Expr}, ParamMapping) ->
-    % Pattern matching
-    MappedPattern = map_params_in_expr(Pattern, ParamMapping),
-    MappedExpr = map_params_in_expr(Expr, ParamMapping),
-    {match, Line, MappedPattern, MappedExpr};
-map_params_in_expr({block, Line, Exprs}, ParamMapping) ->
-    % begin ... end blocks
-    MappedExprs = [map_params_in_expr(E, ParamMapping) || E <- Exprs],
-    {block, Line, MappedExprs};
-map_params_in_expr(Expr, _ParamMapping) when is_atom(Expr); is_number(Expr); is_binary(Expr) ->
-    % Literals - no mapping needed
-    Expr;
-map_params_in_expr({atom, _, _} = Atom, _ParamMapping) ->
-    Atom;
-map_params_in_expr({integer, _, _} = Int, _ParamMapping) ->
-    Int;
-map_params_in_expr({float, _, _} = Float, _ParamMapping) ->
-    Float;
-map_params_in_expr({string, _, _} = String, _ParamMapping) ->
-    String;
-map_params_in_expr({nil, _} = Nil, _ParamMapping) ->
-    Nil;
-map_params_in_expr(Expr, _ParamMapping) ->
-    % For any unhandled expression types, return as-is
-    Expr.
-
-%% Parse simple Erlang expressions
-%% This is a simplified parser for common Erlang patterns
-% parse_simple_erlang_expression(ErlangCode, Line) ->
-%     parse_simple_erlang_expression(ErlangCode, Line, #{}).
-%
-% parse_simple_erlang_expression(ErlangCode, Line, ParamMapping) ->
-%     try
-%         % Handle common cases that def_erl will use
-%         TrimmedCode = string:trim(ErlangCode),
-%
-%         case TrimmedCode of
-%             "length ( " ++ Rest ->
-%                 % Handle length(list) calls
-%                 case parse_function_call("length", Rest, Line, ParamMapping) of
-%                     {ok, Call} -> {ok, Call};
-%                     error -> parse_as_simple_term(TrimmedCode, Line, ParamMapping)
-%                 end;
-%             "lists reverse ( " ++ Rest ->
-%                 % Handle lists:reverse(list) calls
-%                 case parse_remote_call("lists", "reverse", Rest, Line, ParamMapping) of
-%                     {ok, Call} -> {ok, Call};
-%                     error -> parse_as_simple_term(TrimmedCode, Line, ParamMapping)
 %                 end;
 %             _ when
 %                 TrimmedCode =:= "42" orelse
@@ -1638,19 +1505,7 @@ generate_monadic_pipe_form(Function, PipedValue, RestArgs, Line) ->
     LambdaCallArgs = [LambdaVar | RestArgs],
 
     % Create the function call inside the lambda
-    LambdaCall =
-        case Function of
-            {atom, _, FuncName} ->
-                case is_stdlib_function(FuncName) of
-                    true ->
-                        {call, Line, {remote, Line, {atom, Line, cure_std}, Function},
-                            LambdaCallArgs};
-                    false ->
-                        {call, Line, Function, LambdaCallArgs}
-                end;
-            _ ->
-                {call, Line, Function, LambdaCallArgs}
-        end,
+    LambdaCall = {call, Line, Function, LambdaCallArgs},
 
     % For monadic pipe, we need to wrap the result in a Result type
     % Since the functions expect raw values but pipe chain expects Results

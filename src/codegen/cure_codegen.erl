@@ -543,11 +543,31 @@ compile_module_item({function_def, Name, Params, Body, Location}, State) ->
         {error, Reason} ->
             {error, Reason}
     end;
-%% Handle Erlang function definition (def_erl)
+%% Handle curify function definition (both record and tuple formats)
+compile_module_item(CurifyFunc = #curify_function_def{}, State) ->
+    case compile_curify_function_impl(CurifyFunc, State) of
+        {ok, CompiledFunction, NewState} ->
+            {ok, CompiledFunction, NewState};
+        {error, Reason} ->
+            {error, Reason}
+    end;
 compile_module_item(
-    {erlang_function_def, Name, Params, _ReturnType, _Constraint, ErlangBody, Location}, State
+    {curify_function_def, Name, Params, ReturnType, _Constraint, ErlModule, ErlFunc, ErlArity,
+        _IsPrivate, Location},
+    State
 ) ->
-    case compile_erlang_function_impl(Name, Params, ErlangBody, Location, State) of
+    CurifyFunc = #curify_function_def{
+        name = Name,
+        params = Params,
+        return_type = ReturnType,
+        constraint = undefined,
+        erlang_module = ErlModule,
+        erlang_function = ErlFunc,
+        erlang_arity = ErlArity,
+        is_private = false,
+        location = Location
+    },
+    case compile_curify_function_impl(CurifyFunc, State) of
         {ok, CompiledFunction, NewState} ->
             {ok, CompiledFunction, NewState};
         {error, Reason} ->
@@ -843,29 +863,50 @@ compile_function_impl(
 % NOTE: Legacy function definition support (without constraint field) is now
 % handled by the main clause above since the pattern will match with constraint = undefined
 
-%% Compile Erlang function (def_erl)
-%% For def_erl functions, we generate a simple function that directly contains the raw Erlang code
-compile_erlang_function_impl(Name, Params, ErlangBody, Location, State) ->
+%% Compile curify function (wraps Erlang functions with auto-conversion)
+%% Generates a Cure function that calls the specified Erlang function
+%% and converts the return value to match the Cure signature
+compile_curify_function_impl(
+    #curify_function_def{
+        name = Name,
+        params = Params,
+        return_type = ReturnType,
+        erlang_module = ErlModule,
+        erlang_function = ErlFunc,
+        erlang_arity = ErlArity,
+        location = Location
+    },
+    State
+) ->
     try
-        % For def_erl functions, we create a function with raw Erlang code in the body
-        % This will be handled specially in the BEAM generation phase
         ParamList = [P#param.name || P <- Params],
+        
+        % Validate arity matches
+        case length(Params) of
+            ErlArity ->
+                ok;
+            ActualArity ->
+                throw({curify_arity_mismatch, Name, ActualArity, ErlArity})
+        end,
 
         FunctionCode = #{
             name => Name,
             arity => length(Params),
             params => ParamList,
-            % Store raw Erlang code
-            erlang_body => ErlangBody,
-            % Flag to identify this as def_erl
-            is_erlang_function => true,
+            % Store curify information
+            erlang_module => ErlModule,
+            erlang_function => ErlFunc,
+            erlang_arity => ErlArity,
+            return_type => ReturnType,
+            % Flag to identify this as curify
+            is_curify_function => true,
             location => Location
         },
 
         {ok, {function, FunctionCode}, State}
     catch
         error:CompileReason:Stack ->
-            {error, {erlang_function_compilation_failed, Name, CompileReason, Stack}}
+            {error, {curify_function_compilation_failed, Name, CompileReason, Stack}}
     end.
 
 %% Create parameter bindings for local variable map

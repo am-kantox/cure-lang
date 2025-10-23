@@ -1,15 +1,16 @@
 module Std.Io do
   export [
-    print/1, println/1, 
+    print/2, println/1, 
     debug/1, error/1
   ]
 
-  # Basic output operations - Erlang FFI
-  def_erl print(s: String): Int =
-    io:format("~ts", [S]), ok.
+  # Basic output operations - Erlang FFI wrapped with curify
+  # io:format/2 takes format string and list of args
+  curify print(format: String, args: List(String)): Unit = {io, format, 2}
 
-  def_erl println(s: String): Int =
-    io:format("~ts~n", [S]), ok.
+  # Helper function that wraps print for single string output
+  def println(s: String): Unit =
+    print("~ts~n", [s])
 
   # Debug and error output
   def debug(s: String): Int =

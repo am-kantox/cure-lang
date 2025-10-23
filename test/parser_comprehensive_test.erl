@@ -43,10 +43,6 @@ test_keyword_function_names() ->
     % Test 'error' as function name
     test_keyword_function_name("error", error),
 
-    % Test with def_erl as well
-    test_def_erl_keyword_function("not", 'not'),
-    test_def_erl_keyword_function("ok", ok),
-
     io:format("✓ Keyword function names parsing test passed~n").
 
 %% Helper function to test individual keyword function names
@@ -60,16 +56,6 @@ test_keyword_function_name(Keyword, ExpectedAtom) ->
     ?assertMatch(#function_def{name = ExpectedAtom}, FunctionDef),
     ?assertEqual(1, length(FunctionDef#function_def.params)).
 
-%% Helper function to test def_erl keyword function names
-test_def_erl_keyword_function(Keyword, ExpectedAtom) ->
-    Code = list_to_binary(io_lib:format("def_erl ~s(x: Bool): Bool = not X.", [Keyword])),
-    {ok, Tokens} = cure_lexer:tokenize(Code),
-    {ok, AST} = cure_parser:parse(Tokens),
-
-    ?assertEqual(1, length(AST)),
-    [ErlangFunctionDef] = AST,
-    ?assertMatch(#erlang_function_def{name = ExpectedAtom}, ErlangFunctionDef),
-    ?assertEqual(1, length(ErlangFunctionDef#erlang_function_def.params)).
 
 %% Test 2: Parser correctly constructs union types from definitions like "TypeA | TypeB"
 test_union_type_parsing() ->

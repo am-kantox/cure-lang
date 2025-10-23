@@ -263,12 +263,17 @@ check_item(
         {function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location},
         Env
     );
+%% Handle curify function definition (both record and tuple formats)
+check_item(CurifyFunc = #curify_function_def{}, Env) ->
+    check_curify_function_new(CurifyFunc, Env);
 check_item(
-    {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location},
+    {curify_function_def, Name, Params, ReturnType, Constraint, ErlModule, ErlFunc, ErlArity,
+        IsPrivate, Location},
     Env
 ) ->
-    check_erlang_function_new(
-        {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location},
+    check_curify_function_new(
+        {curify_function_def, Name, Params, ReturnType, Constraint, ErlModule, ErlFunc, ErlArity,
+            IsPrivate, Location},
         Env
     );
 check_item({import_def, Module, Items, Location}, Env) ->
@@ -712,13 +717,32 @@ check_function_new(
             {ok, Env, error_result(ThrownError)}
     end.
 
-%% Check Erlang function definition (def_erl) - New AST format
-%% For def_erl functions, we trust the type annotations and skip body type checking
-check_erlang_function_new(
-    {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location},
+%% Check curify function definition
+%% For curify functions, we trust the type annotations and validate the function signature matches
+check_curify_function_new(
+    #curify_function_def{
+        name = Name,
+        params = Params,
+        return_type = ReturnType,
+        constraint = Constraint,
+        erlang_module = _ErlModule,
+        erlang_function = _ErlFunc,
+        erlang_arity = ErlArity,
+        is_private = _IsPrivate,
+        location = Location
+    },
     Env
 ) ->
     try
+        % Validate arity matches parameter count (should already be validated by parser)
+        ParamCount = length(Params),
+        case ErlArity of
+            ParamCount ->
+                ok;
+            _ ->
+                throw({curify_arity_mismatch, ParamCount, ErlArity, Location})
+        end,
+
         % Convert parameters to type environment
         {ParamTypes, ParamEnv} = process_parameters_new(Params, Env),
 
@@ -741,15 +765,15 @@ check_erlang_function_new(
                 end
         end,
 
-        % For def_erl functions, the return type MUST be specified (enforced by parser)
-        % We trust the type annotation and don't check the Erlang body
+        % For curify functions, the return type MUST be specified (enforced by parser)
+        % We trust the type annotation and don't check the Erlang function
         case ReturnType of
             undefined ->
-                % This should never happen as parser enforces return type for def_erl
-                throw({missing_return_type_for_def_erl, Location});
+                % This should never happen as parser enforces return type for curify
+                throw({missing_return_type_for_curify, Location});
             _ ->
                 ExpectedReturnType = convert_type_with_env(ReturnType, ParamEnv),
-                % Use regular function_type for def_erl functions - the Erlang body is handled during codegen
+                % Use regular function_type - the Erlang function call is handled during codegen
                 FuncType = {function_type, ParamTypes, ExpectedReturnType},
                 NewEnv = cure_types:extend_env(Env, Name, FuncType),
                 {ok, NewEnv, success_result(FuncType)}
@@ -763,35 +787,27 @@ check_erlang_function_new(
                     details = Details
                 },
             {ok, Env, error_result(ThrownError)}
-    end.
-
-%% Add standard library function types parsed from stdlib files
-add_std_function_types(Env) ->
-    % Load all standard library function types
-    StdlibFunctions =
-        case get(stdlib_functions) of
-            undefined ->
-                Functions = load_stdlib_modules(),
-                put(stdlib_functions, Functions),
-                Functions;
-            Functions ->
-                Functions
-        end,
-
-    % Add all loaded stdlib functions to the environment
-    add_stdlib_functions_to_env(maps:to_list(StdlibFunctions), Env).
-
-%% Helper to add stdlib functions to environment
-add_stdlib_functions_to_env([], Env) ->
-    Env;
-add_stdlib_functions_to_env(
-    [{{_Module, FunctionName, _Arity}, FunctionType} | Rest],
+    end;
+%% Handle tuple-format curify function (for compatibility)
+check_curify_function_new(
+    {curify_function_def, Name, Params, ReturnType, Constraint, ErlModule, ErlFunc, ErlArity,
+        IsPrivate, Location},
     Env
 ) ->
-    % For imported functions, we add them with just the function name
-    % (not the fully qualified module name) since imports make them available locally
-    NewEnv = cure_types:extend_env(Env, FunctionName, FunctionType),
-    add_stdlib_functions_to_env(Rest, NewEnv).
+    check_curify_function_new(
+        #curify_function_def{
+            name = Name,
+            params = Params,
+            return_type = ReturnType,
+            constraint = Constraint,
+            erlang_module = ErlModule,
+            erlang_function = ErlFunc,
+            erlang_arity = ErlArity,
+            is_private = IsPrivate,
+            location = Location
+        },
+        Env
+    ).
 
 %% Check import - New AST format
 check_import_new({import_def, Module, Items, _Location}, Env) ->
@@ -1042,24 +1058,35 @@ extract_functions_from_items_helper([Item | Rest], ModuleName, Acc) ->
                 true ->
                     extract_functions_from_items_helper(Rest, ModuleName, Acc)
             end;
-        % Handle erlang function definitions (record format)
-        ErlangFuncDef when is_record(ErlangFuncDef, erlang_function_def) ->
-            FunctionName = ErlangFuncDef#erlang_function_def.name,
-            Params = ErlangFuncDef#erlang_function_def.params,
-            ReturnType = ErlangFuncDef#erlang_function_def.return_type,
-            % Erlang functions are always public
-            FunctionType = create_function_type_from_signature_records(Params, ReturnType),
-            Key = {ModuleName, FunctionName, length(Params)},
-            NewAcc = maps:put(Key, FunctionType, Acc),
-            extract_functions_from_items_helper(Rest, ModuleName, NewAcc);
-        % Handle erlang function definitions (tuple format)
-        {erlang_function_def, FunctionName, Params, ReturnType, _Constraint, _ErlangBody,
-            _Location} ->
-            % Convert tuple-format params to records for processing
-            FunctionType = create_function_type_from_signature(Params, ReturnType),
-            Key = {ModuleName, FunctionName, length(Params)},
-            NewAcc = maps:put(Key, FunctionType, Acc),
-            extract_functions_from_items_helper(Rest, ModuleName, NewAcc);
+        % Handle curify function definitions (record format)
+        CurifyFuncDef when is_record(CurifyFuncDef, curify_function_def) ->
+            FunctionName = CurifyFuncDef#curify_function_def.name,
+            Params = CurifyFuncDef#curify_function_def.params,
+            ReturnType = CurifyFuncDef#curify_function_def.return_type,
+            IsPrivate = CurifyFuncDef#curify_function_def.is_private,
+            % Only extract public functions
+            case IsPrivate of
+                false ->
+                    FunctionType = create_function_type_from_signature_records(Params, ReturnType),
+                    Key = {ModuleName, FunctionName, length(Params)},
+                    NewAcc = maps:put(Key, FunctionType, Acc),
+                    extract_functions_from_items_helper(Rest, ModuleName, NewAcc);
+                true ->
+                    extract_functions_from_items_helper(Rest, ModuleName, Acc)
+            end;
+        % Handle curify function definitions (tuple format)
+        {curify_function_def, FunctionName, Params, ReturnType, _Constraint, _ErlModule, _ErlFunc,
+            _ErlArity, IsPrivate, _Location} ->
+            % Only extract public functions
+            case IsPrivate of
+                false ->
+                    FunctionType = create_function_type_from_signature(Params, ReturnType),
+                    Key = {ModuleName, FunctionName, length(Params)},
+                    NewAcc = maps:put(Key, FunctionType, Acc),
+                    extract_functions_from_items_helper(Rest, ModuleName, NewAcc);
+                true ->
+                    extract_functions_from_items_helper(Rest, ModuleName, Acc)
+            end;
         _ ->
             extract_functions_from_items_helper(Rest, ModuleName, Acc)
     end.
@@ -1120,10 +1147,6 @@ create_function_type_from_signature_records(Params, ReturnType) ->
             ReturnTuple = convert_type_with_env(ReturnType, EnvWithAllTypeParams),
             {function_type, ParamTypes, ReturnTuple}
     end.
-
-%% Convert parameter record to tuple format
-convert_param_record_to_tuple(Param) when is_record(Param, param) ->
-    convert_type_to_tuple(Param#param.type).
 
 %% Cached standard library functions
 -spec get_stdlib_function_type(atom(), atom(), integer()) -> {ok, term()} | not_found.
@@ -1311,36 +1334,21 @@ check_exports([#export_spec{name = Name, arity = Arity} | RestExports], Items) -
                 false ->
                     {error, {export_arity_mismatch, Name, Arity, length(Params)}}
             end;
+        {ok, #curify_function_def{params = Params}} ->
+            case length(Params) =:= Arity of
+                true ->
+                    check_exports(RestExports, Items);
+                false ->
+                    {error, {export_arity_mismatch, Name, Arity, length(Params)}}
+            end;
         not_found ->
             {error, {exported_function_not_found, Name, Arity}}
     end.
 
 find_function(Name, [#function_def{name = Name} = Function | _]) ->
     {ok, Function};
-find_function(Name, [#erlang_function_def{name = Name, params = Params} | _]) ->
-    % Treat erlang_function_def like function_def for export checking
-    {ok, #function_def{
-        name = Name,
-        params = Params,
-        return_type = undefined,
-        constraint = undefined,
-        body = undefined,
-        is_private = false,
-        location = undefined
-    }};
-find_function(Name, [
-    {erlang_function_def, Name, Params, _ReturnType, _Constraint, _ErlangBody, _Location} | _
-]) ->
-    % Handle tuple-format erlang_function_def
-    {ok, #function_def{
-        name = Name,
-        params = Params,
-        return_type = undefined,
-        constraint = undefined,
-        body = undefined,
-        is_private = false,
-        location = undefined
-    }};
+find_function(Name, [#curify_function_def{name = Name} = Function | _]) ->
+    {ok, Function};
 find_function(Name, [_ | RestItems]) ->
     find_function(Name, RestItems);
 find_function(_Name, []) ->
@@ -1656,22 +1664,22 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                         io:format("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
                         Env
                 end;
-            #erlang_function_def{
+            #curify_function_def{
                 name = Name,
                 params = Params,
                 return_type = ReturnType
             } ->
-                % Create function type from def_erl signature (record format)
-                io:format(
-                    "[DEBUG RECORD ERLANG] Processing erlang function ~p in record format~n", [Name]
+                % Create function type from curify signature (record format)
+                cure_utils:debug(
+                    "[SIG] Pre-processing curify function ~p~n", [Name]
                 ),
                 try
                     {ParamTypes, EnvWithParams} = process_parameters_new(Params, Env),
-                    % For def_erl, return type MUST be specified
+                    % For curify, return type MUST be specified
                     FinalReturnType = convert_type_with_env(ReturnType, EnvWithParams),
                     FuncType = {function_type, ParamTypes, FinalReturnType},
                     cure_utils:debug(
-                        "[SIG] Successfully pre-processed erlang function ~p with type ~p~n", [
+                        "[SIG] Successfully pre-processed curify function ~p with type ~p~n", [
                             Name, FuncType
                         ]
                     ),
@@ -1679,7 +1687,7 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                 catch
                     Class:Error:Stacktrace ->
                         io:format(
-                            "ERROR SIG: Failed to pre-process erlang function ~p signature~n", [
+                            "ERROR SIG: Failed to pre-process curify function ~p signature~n", [
                                 Name
                             ]
                         ),
@@ -1687,27 +1695,26 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                         io:format("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
                         Env
                 end;
-            {erlang_function_def, Name, Params, ReturnType, _Constraint, _ErlangBody, _Location} ->
-                % Create function type from def_erl signature (tuple format)
-                io:format("[DEBUG TUPLE ERLANG] Processing erlang function ~p in tuple format~n", [
+            {curify_function_def, Name, Params, ReturnType, _Constraint, _ErlModule, _ErlFunc,
+                _ErlArity, _IsPrivate, _Location} ->
+                % Create function type from curify signature (tuple format)
+                cure_utils:debug("[SIG] Pre-processing curify function ~p (tuple format)~n", [
                     Name
                 ]),
                 try
                     {ParamTypes, EnvWithParams} = process_parameters_new(Params, Env),
-                    % For def_erl, return type MUST be specified
+                    % For curify, return type MUST be specified
                     FinalReturnType = convert_type_with_env(ReturnType, EnvWithParams),
                     FuncType = {function_type, ParamTypes, FinalReturnType},
-                    io:format(
-                        "[DEBUG TUPLE ERLANG] Successfully added ~p with type ~p to environment~n",
-                        [
-                            Name, FuncType
-                        ]
+                    cure_utils:debug(
+                        "[SIG] Successfully pre-processed curify function ~p with type ~p~n",
+                        [Name, FuncType]
                     ),
                     cure_types:extend_env(Env, Name, FuncType)
                 catch
                     Class:Error:Stacktrace ->
                         io:format(
-                            "ERROR SIG: Failed to pre-process erlang function ~p signature (tuple)~n",
+                            "ERROR SIG: Failed to pre-process curify function ~p signature (tuple)~n",
                             [Name]
                         ),
                         io:format("ERROR SIG: Class: ~p, Error: ~p~n", [Class, Error]),
@@ -2111,13 +2118,18 @@ check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) 
                     end
             end;
         {ok,
-            {erlang_function_def, _Name, Params, _ReturnType, _Constraint, _ErlangBody,
-                _UnusedLocation}} ->
-            case length(Params) =:= Arity of
+            {curify_function_def, _Name, Params, _ReturnType, _Constraint, _ErlModule,
+                _ErlFunc, _ErlArity, IsPrivate, _UnusedLocation}} ->
+            case IsPrivate of
                 true ->
-                    check_exports_new(RestExports, Items);
+                    {error, {cannot_export_private_function, Name, Arity}};
                 false ->
-                    {error, {export_arity_mismatch, Name, Arity, length(Params)}}
+                    case length(Params) =:= Arity of
+                        true ->
+                            check_exports_new(RestExports, Items);
+                        false ->
+                            {error, {export_arity_mismatch, Name, Arity, length(Params)}}
+                    end
             end;
         not_found ->
             {error, {exported_function_not_found, Name, Arity}}
@@ -2148,32 +2160,38 @@ find_function_new(
 find_function_new(
     Name,
     [
-        #erlang_function_def{
+        #curify_function_def{
             name = Name,
             params = Params,
             return_type = ReturnType,
             constraint = Constraint,
-            erlang_body = ErlangBody,
+            erlang_module = ErlModule,
+            erlang_function = ErlFunc,
+            erlang_arity = ErlArity,
+            is_private = IsPrivate,
             location = Location
         }
         | _
     ]
 ) ->
-    {ok, {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}};
+    {ok,
+        {curify_function_def, Name, Params, ReturnType, Constraint, ErlModule, ErlFunc, ErlArity,
+            IsPrivate, Location}};
 find_function_new(
     Name,
     [
-        {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}
+        {curify_function_def, Name, Params, ReturnType, Constraint, ErlModule, ErlFunc, ErlArity,
+            IsPrivate, Location}
         | _
     ]
 ) ->
-    % Fallback for old tuple-based format
-    {ok, {erlang_function_def, Name, Params, ReturnType, Constraint, ErlangBody, Location}};
-find_function_new(Name, [Item | RestItems]) ->
-    io:format("[DEBUG FIND] Looking for ~p, checking item ~p~n", [Name, element(1, Item)]),
+    % Fallback for tuple-based format
+    {ok,
+        {curify_function_def, Name, Params, ReturnType, Constraint, ErlModule, ErlFunc, ErlArity,
+            IsPrivate, Location}};
+find_function_new(Name, [_ | RestItems]) ->
     find_function_new(Name, RestItems);
-find_function_new(Name, []) ->
-    io:format("[DEBUG FIND] Function ~p not found!~n", [Name]),
+find_function_new(_Name, []) ->
     not_found.
 
 process_parameters_new(Params, Env) ->

@@ -325,8 +325,8 @@ parse_item(State) ->
             parse_module(State);
         def ->
             parse_function(State);
-        def_erl ->
-            parse_erlang_function(State);
+        curify ->
+            parse_curify_function(State);
         record ->
             parse_record_def(State);
         fsm ->
@@ -488,8 +488,8 @@ parse_module_item(State) ->
     case get_token_type(current_token(State)) of
         def ->
             parse_function(State);
-        def_erl ->
-            parse_erlang_function(State);
+        curify ->
+            parse_curify_function(State);
         record ->
             parse_record_def(State);
         fsm ->
@@ -629,9 +629,10 @@ parse_function(State) ->
     },
     {Function, State10}.
 
-%% Parse Erlang function definition
-parse_erlang_function(State) ->
-    {DefToken, State1} = expect(State, def_erl),
+%% Parse curify function definition
+%% Syntax: curify name(params): Type = {module, function, arity}
+parse_curify_function(State) ->
+    {DefToken, State1} = expect(State, curify),
 
     % Allow certain keywords to be used as function names (same as regular functions)
     {NameToken, State2} =
@@ -680,8 +681,8 @@ parse_erlang_function(State) ->
                         {_, State5b} = expect(State5, '->'),
                         parse_type(State5b);
                     false ->
-                        % For def_erl, return type is required for type safety
-                        throw({parse_error, {missing_return_type_for_def_erl}, 0, 0})
+                        % For curify, return type is required for type safety
+                        throw({parse_error, {missing_return_type_for_curify}, 0, 0})
                 end
         end,
 
@@ -695,18 +696,45 @@ parse_erlang_function(State) ->
         end,
 
     {_, State8} = expect(State7, '='),
-    {ErlangBody, State9} = parse_erlang_body(State8),
+    
+    % Parse the Erlang function reference tuple: {module, function, arity}
+    {_, State9} = expect(State8, '{'),
+    {ModuleToken, State10} = expect(State9, identifier),
+    ErlangModule = binary_to_atom(get_token_value(ModuleToken), utf8),
+    
+    {_, State11} = expect(State10, ','),
+    {FunctionToken, State12} = expect(State11, identifier),
+    ErlangFunction = binary_to_atom(get_token_value(FunctionToken), utf8),
+    
+    {_, State13} = expect(State12, ','),
+    {ArityToken, State14} = expect(State13, number),
+    ErlangArity = get_token_value(ArityToken),
+    
+    {_, State15} = expect(State14, '}'),
 
+    % Validate arity matches parameter count
+    ParamCount = length(Params),
+    case ErlangArity of
+        ParamCount ->
+            ok;
+        _ ->
+            throw({parse_error, {curify_arity_mismatch, ParamCount, ErlangArity}, 0, 0})
+    end,
+
+    IsPrivate = false,
     Location = get_token_location(DefToken),
-    ErlangFunction = #erlang_function_def{
+    CurifyFunction = #curify_function_def{
         name = Name,
         params = Params,
         return_type = ReturnType,
         constraint = Constraint,
-        erlang_body = ErlangBody,
+        erlang_module = ErlangModule,
+        erlang_function = ErlangFunction,
+        erlang_arity = ErlangArity,
+        is_private = IsPrivate,
         location = Location
     },
-    {ErlangFunction, State9}.
+    {CurifyFunction, State15}.
 
 %% Parse function parameters
 parse_parameters(State, Acc) ->
@@ -3154,7 +3182,6 @@ is_end_of_body(State) ->
         'end' -> true;
         'else' -> true;
         'def' -> true;
-        'def_erl' -> true;
         % Record definitions end function body
         'record' -> true;
         % Type definitions end function body
@@ -3417,121 +3444,6 @@ parse_action_arguments(State, Acc) ->
                     parse_action_arguments(State2, [Arg | Acc]);
                 false ->
                     {lists:reverse([Arg | Acc]), State1}
-            end
-    end.
-
-%% ============================================================================
-%% Erlang Body Parsing
-%% ============================================================================
-
-%% Parse raw Erlang code until we find a closing '.'
-%% This collects all tokens as raw text and doesn't try to parse them
-parse_erlang_body(State) ->
-    parse_erlang_tokens(State, []).
-
-%% Collect tokens until we find a '.' that ends the Erlang function
-parse_erlang_tokens(State, Acc) ->
-    case current_token(State) of
-        eof ->
-            throw({parse_error, {unexpected_eof_in_erlang_body}, 0, 0});
-        Token ->
-            case get_token_type(Token) of
-                '.' ->
-                    % Found the end of Erlang body
-                    ErlangCode = tokens_to_string(lists:reverse(Acc)),
-                    {ErlangCode, advance(State)};
-                _ ->
-                    % Add this token to the Erlang body and continue
-                    parse_erlang_tokens(advance(State), [Token | Acc])
-            end
-    end.
-
-%% Convert collected tokens back to a string representation
-tokens_to_string(Tokens) ->
-    % The lexer treats `:` followed by an identifier as an atom literal
-    % So when we see `identifier` `atom` sequence, we need to insert `:` between them
-    % for proper Erlang module:function syntax
-    reconstruct_erlang_tokens(Tokens, []).
-
-%% Reconstruct Erlang code from tokens, handling special cases
-reconstruct_erlang_tokens([], Acc) ->
-    string:join(lists:reverse(Acc), " ");
-reconstruct_erlang_tokens([Token], Acc) ->
-    TokenStr = token_to_string(Token),
-    string:join(lists:reverse([TokenStr | Acc]), " ");
-reconstruct_erlang_tokens([Token1, Token2 | Rest], Acc) ->
-    Type1 = get_token_type(Token1),
-    Type2 = get_token_type(Token2),
-    Str1 = token_to_string(Token1),
-    Str2 = token_to_string(Token2),
-
-    % Check if we need to insert a colon between identifier and atom
-    % This handles cases like io:format where lexer consumed the colon
-    case {Type1, Type2} of
-        {identifier, atom} ->
-            % This is likely a module:function call - reconstruct with colon
-            % Combine them as "module:function" and continue
-            Combined = Str1 ++ ":" ++ Str2,
-            reconstruct_erlang_tokens(Rest, [Combined | Acc]);
-        _ ->
-            % Normal case - add current token and continue
-            reconstruct_erlang_tokens([Token2 | Rest], [Str1 | Acc])
-    end.
-
-%% Convert a single token to its string representation
-token_to_string(Token) ->
-    case get_token_type(Token) of
-        identifier ->
-            binary_to_list(get_token_value(Token));
-        string ->
-            % For string literals in Erlang code, get value which should already have quotes
-            Value = get_token_value(Token),
-            % If value is binary, convert to list
-            ValueStr =
-                if
-                    is_binary(Value) -> binary_to_list(Value);
-                    is_list(Value) -> Value;
-                    true -> io_lib:format("~p", [Value])
-                end,
-            % Ensure quotes are present
-            case ValueStr of
-                % Already has quotes
-                [$" | _] -> ValueStr;
-                _ -> "\"" ++ ValueStr ++ "\""
-            end;
-        number ->
-            Value = get_token_value(Token),
-            if
-                is_integer(Value) -> integer_to_list(Value);
-                is_float(Value) -> float_to_list(Value)
-            end;
-        atom ->
-            atom_to_list(get_token_value(Token));
-        % Handle specific punctuation tokens
-        ':' ->
-            ":";
-        ',' ->
-            ",";
-        '(' ->
-            "(";
-        ')' ->
-            ")";
-        '[' ->
-            "[";
-        ']' ->
-            "]";
-        '{' ->
-            "{";
-        '}' ->
-            "}";
-        _ ->
-            % For other tokens, try to convert value to string
-            Value = get_token_value(Token),
-            if
-                is_atom(Value) -> atom_to_list(Value);
-                is_binary(Value) -> binary_to_list(Value);
-                is_list(Value) -> Value;
-                true -> io_lib:format("~p", [Value])
             end
     end.
 
