@@ -944,24 +944,46 @@ parse_fsm_transition(State) ->
             {_, State6} = expect(State5, '->'),
             {TargetToken, State7} = expect(State6, identifier),
             Target = binary_to_atom(get_token_value(TargetToken), utf8),
+            EventLocation = get_token_location(current_token(State)),
 
-            % Optional action with 'do'
+            % Optional action with 'do' - now accepts full expressions or function names
             {Action, State8} =
                 case match_token(State7, 'do') of
                     true ->
                         {_, State7a} = expect(State7, 'do'),
-                        parse_action_expression(State7a);
+                        % Check if it's a simple identifier (function name) or full expression
+                        case get_token_type(current_token(State7a)) of
+                            identifier ->
+                                % Could be function name - check if followed by 'end'
+                                {NameToken, State7b} = expect(State7a, identifier),
+                                case match_token(State7b, 'end') of
+                                    true ->
+                                        % Simple function name reference
+                                        Name = binary_to_atom(get_token_value(NameToken), utf8),
+                                        ActionLocation = get_token_location(NameToken),
+                                        {{function_ref, Name, ActionLocation}, State7b};
+                                    false ->
+                                        % Full expression starting with identifier
+                                        {Expr, State7c} = parse_expression(State7a),
+                                        {_, State7d} = expect(State7c, 'end'),
+                                        {Expr, State7d}
+                                end;
+                            _ ->
+                                % Other expression types
+                                {Expr, State7b} = parse_expression(State7a),
+                                {_, State7c} = expect(State7b, 'end'),
+                                {Expr, State7c}
+                        end;
                     false ->
                         {undefined, State7}
                 end,
 
-            Location = get_token_location(current_token(State)),
             Transition = #transition{
                 event = Event,
                 guard = Guard,
                 target = Target,
                 action = Action,
-                location = Location
+                location = EventLocation
             },
             {Transition, State8};
         timeout ->
@@ -983,24 +1005,46 @@ parse_fsm_transition(State) ->
             {_, State6} = expect(State5, '->'),
             {TargetToken, State7} = expect(State6, identifier),
             Target = binary_to_atom(get_token_value(TargetToken), utf8),
+            TimeoutLocation = get_token_location(current_token(State)),
 
-            % Optional action with 'do'
+            % Optional action with 'do' - now accepts full expressions or function names
             {Action, State8} =
                 case match_token(State7, 'do') of
                     true ->
                         {_, State7a} = expect(State7, 'do'),
-                        parse_action_expression(State7a);
+                        % Check if it's a simple identifier (function name) or full expression
+                        case get_token_type(current_token(State7a)) of
+                            identifier ->
+                                % Could be function name - check if followed by 'end'
+                                {NameToken, State7b} = expect(State7a, identifier),
+                                case match_token(State7b, 'end') of
+                                    true ->
+                                        % Simple function name reference
+                                        Name = binary_to_atom(get_token_value(NameToken), utf8),
+                                        ActionLocation = get_token_location(NameToken),
+                                        {{function_ref, Name, ActionLocation}, State7b};
+                                    false ->
+                                        % Full expression starting with identifier
+                                        {Expr, State7c} = parse_expression(State7a),
+                                        {_, State7d} = expect(State7c, 'end'),
+                                        {Expr, State7d}
+                                end;
+                            _ ->
+                                % Other expression types
+                                {Expr, State7b} = parse_expression(State7a),
+                                {_, State7c} = expect(State7b, 'end'),
+                                {Expr, State7c}
+                        end;
                     false ->
                         {undefined, State7}
                 end,
 
-            Location = get_token_location(current_token(State)),
             Transition = #transition{
                 event = TimeoutExpr,
                 guard = Guard,
                 target = Target,
                 action = Action,
-                location = Location
+                location = TimeoutLocation
             },
             {Transition, State8}
     end.

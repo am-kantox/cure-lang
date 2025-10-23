@@ -1,0 +1,300 @@
+# Record Usage Examples in Cure
+# This file demonstrates all features of records in the Cure language
+#
+# IMPORTANT NOTE: This file demonstrates the PARSING and SYNTAX of records.
+# The type system for records is still under development, so this file
+# may not compile completely but serves as documentation for record features.
+#
+# What this file demonstrates:
+# 1. Record Definition - Basic and parameterized
+# 2. Record Construction - Creating record instances
+# 3. Record Pattern Matching - Destructuring records
+# 4. Nested Records - Records containing other records
+# 5. Pattern Matching with Guards - Conditional matching
+
+module RecordUsage do
+  export [main/0]
+  
+  # === BASIC RECORD DEFINITIONS ===
+  
+  # Simple record with primitive types
+  record Person do
+    name: String
+    age: Int
+    email: String
+  end
+  
+  # Record with floating point fields
+  record Point2D do
+    x: Float
+    y: Float
+  end
+  
+  # Record with more complex types
+  record Employee do
+    id: Int
+    name: String
+    salary: Float
+    active: Bool
+  end
+  
+  # === PARAMETERIZED RECORD (GENERIC) ===
+  
+  # Record with type parameter
+  record Box(T) do
+    value: T
+    label: String
+  end
+  
+  # === NESTED RECORDS ===
+  
+  record Address do
+    street: String
+    city: String
+    zipcode: Int
+  end
+  
+  record Contact do
+    person: Person
+    address: Address
+    phone: String
+  end
+  
+  # === RECORD CONSTRUCTION ===
+  
+  def create_person(name: String, age: Int, email: String): Person =
+    Person{name: name, age: age, email: email}
+  
+  def create_point(x: Float, y: Float): Point2D =
+    Point2D{x: x, y: y}
+  
+  def create_employee(id: Int, name: String, salary: Float): Employee =
+    Employee{id: id, name: name, salary: salary, active: true}
+  
+  # Generic record construction
+  def create_box(value: Int, label: String): Box(Int) =
+    Box{value: value, label: label}
+  
+  # Nested record construction
+  def create_contact(person_name: String, person_age: Int, city: String): Contact =
+    let person = Person{name: person_name, age: person_age, email: "contact@example.com"}
+    let address = Address{street: "Main St", city: city, zipcode: 12345}
+    Contact{person: person, address: address, phone: "555-1234"}
+  
+  # === SIMPLE PATTERN MATCHING ===
+  
+  def greet_person(person: Person): String =
+    match person do
+      Person{name: name, age: age, email: _} ->
+        "Hello, " ++ name ++ "! You are " ++ show(age) ++ " years old."
+    end
+  
+  def describe_point(point: Point2D): String =
+    match point do
+      Point2D{x: 0.0, y: 0.0} ->
+        "Origin point (0, 0)"
+      Point2D{x: x, y: 0.0} ->
+        "Point on X-axis at x=" ++ show(x)
+      Point2D{x: 0.0, y: y} ->
+        "Point on Y-axis at y=" ++ show(y)
+      Point2D{x: x, y: y} ->
+        "Point at (" ++ show(x) ++ ", " ++ show(y) ++ ")"
+    end
+  
+  # === PATTERN MATCHING WITH GUARDS ===
+  
+  def classify_person(person: Person): String =
+    match person do
+      Person{name: name, age: age, email: _} when age < 18 ->
+        name ++ " is a minor"
+      Person{name: name, age: age, email: _} when age >= 18 and age < 65 ->
+        name ++ " is an adult"
+      Person{name: name, age: age, email: _} when age >= 65 ->
+        name ++ " is a senior"
+    end
+  
+  def check_employee_status(emp: Employee): String =
+    match emp do
+      Employee{name: name, active: true, salary: sal} when sal > 100000.0 ->
+        name ++ " is a high-earning active employee"
+      Employee{name: name, active: true, salary: _} ->
+        name ++ " is an active employee"
+      Employee{name: name, active: false, salary: _} ->
+        name ++ " is inactive"
+    end
+  
+  # === SPECIFIC VALUE MATCHING ===
+  
+  def check_specific_person(person: Person): String =
+    match person do
+      Person{name: "Alice", age: _, email: _} ->
+        "This is Alice!"
+      Person{name: "Bob", age: age, email: _} ->
+        "This is Bob, age " ++ show(age)
+      Person{name: name, age: _, email: "admin@company.com"} ->
+        "Admin user: " ++ name
+      Person{name: name, age: _, email: _} ->
+        "Regular user: " ++ name
+    end
+  
+  # === NESTED RECORD PATTERN MATCHING ===
+  
+  def describe_contact(contact: Contact): String =
+    match contact do
+      Contact{person: Person{name: name, age: age, email: _}, 
+              address: Address{city: city, street: _, zipcode: _},
+              phone: phone} ->
+        name ++ " (age " ++ show(age) ++ ") lives in " ++ city ++ ", phone: " ++ phone
+    end
+  
+  def check_contact_city(contact: Contact): String =
+    match contact do
+      Contact{person: Person{name: name, age: _, email: _},
+              address: Address{city: "New York", street: _, zipcode: _},
+              phone: _} ->
+        name ++ " lives in New York"
+      Contact{person: Person{name: name, age: _, email: _},
+              address: Address{city: "Boston", street: _, zipcode: _},
+              phone: _} ->
+        name ++ " lives in Boston"
+      Contact{person: Person{name: name, age: _, email: _},
+              address: Address{city: city, street: _, zipcode: _},
+              phone: _} ->
+        name ++ " lives in " ++ city
+    end
+  
+  # === PARTIAL FIELD EXTRACTION ===
+  
+  def get_person_name(person: Person): String =
+    match person do
+      Person{name: name, age: _, email: _} -> name
+    end
+  
+  def get_employee_salary(emp: Employee): Float =
+    match emp do
+      Employee{id: _, name: _, salary: salary, active: _} -> salary
+    end
+  
+  # === WILDCARD PATTERNS ===
+  
+  def is_adult(person: Person): Bool =
+    match person do
+      Person{name: _, age: age, email: _} when age >= 18 -> true
+      Person{name: _, age: _, email: _} -> false
+    end
+  
+  def point_in_first_quadrant(point: Point2D): Bool =
+    match point do
+      Point2D{x: x, y: y} when x > 0.0 and y > 0.0 -> true
+      Point2D{x: _, y: _} -> false
+    end
+  
+  # === DEMONSTRATION FUNCTION ===
+  
+  def main(): Unit =
+    println("╔════════════════════════════════════════════╗")
+    println("║  Record Usage Examples in Cure Language   ║")
+    println("╚════════════════════════════════════════════╝")
+    println("")
+    
+    # === Basic Construction and Pattern Matching ===
+    println("=== Basic Record Construction ===")
+    let alice = create_person("Alice", 30, "alice@example.com")
+    let bob = create_person("Bob", 17, "bob@school.edu")
+    let charlie = Person{name: "Charlie", age: 70, email: "charlie@retired.org"}
+    
+    println(greet_person(alice))
+    println(greet_person(bob))
+    println(greet_person(charlie))
+    println("")
+    
+    # === Classification with Guards ===
+    println("=== Person Classification ===")
+    println(classify_person(alice))
+    println(classify_person(bob))
+    println(classify_person(charlie))
+    println("")
+    
+    # === Specific Value Matching ===
+    println("=== Specific Person Matching ===")
+    println(check_specific_person(alice))
+    println(check_specific_person(bob))
+    let admin = Person{name: "Admin", age: 40, email: "admin@company.com"}
+    println(check_specific_person(admin))
+    println("")
+    
+    # === Point Record Examples ===
+    println("=== Point2D Record Examples ===")
+    let origin = create_point(0.0, 0.0)
+    let point_x = create_point(5.0, 0.0)
+    let point_y = create_point(0.0, 3.0)
+    let point_xy = Point2D{x: 4.0, y: 7.0}
+    
+    println(describe_point(origin))
+    println(describe_point(point_x))
+    println(describe_point(point_y))
+    println(describe_point(point_xy))
+    println("")
+    
+    # === Employee Records ===
+    println("=== Employee Record Examples ===")
+    let emp1 = create_employee(1, "David", 120000.0)
+    let emp2 = create_employee(2, "Emma", 75000.0)
+    let emp3 = Employee{id: 3, name: "Frank", salary: 50000.0, active: false}
+    
+    println(check_employee_status(emp1))
+    println(check_employee_status(emp2))
+    println(check_employee_status(emp3))
+    println("")
+    
+    # === Generic Records ===
+    println("=== Generic Record (Box) Examples ===")
+    let int_box = create_box(42, "Integer Box")
+    match int_box do
+      Box{value: val, label: lbl} ->
+        println("Box labeled '" ++ lbl ++ "' contains: " ++ show(val))
+    end
+    println("")
+    
+    # === Nested Records ===
+    println("=== Nested Record Examples ===")
+    let contact1 = create_contact("Grace", 28, "New York")
+    let contact2 = create_contact("Henry", 35, "Boston")
+    let contact3 = create_contact("Iris", 42, "Chicago")
+    
+    println(describe_contact(contact1))
+    println(describe_contact(contact2))
+    println(describe_contact(contact3))
+    println("")
+    
+    println(check_contact_city(contact1))
+    println(check_contact_city(contact2))
+    println(check_contact_city(contact3))
+    println("")
+    
+    # === Field Extraction ===
+    println("=== Field Extraction Examples ===")
+    println("Alice's name: " ++ get_person_name(alice))
+    println("Emma's salary: " ++ show(get_employee_salary(emp2)))
+    println("")
+    
+    # === Boolean Tests ===
+    println("=== Boolean Tests with Records ===")
+    let is_alice_adult = is_adult(alice)
+    let is_bob_adult = is_adult(bob)
+    println("Is Alice an adult? " ++ show(is_alice_adult))
+    println("Is Bob an adult? " ++ show(is_bob_adult))
+    
+    let in_quad1 = point_in_first_quadrant(point_xy)
+    let origin_in_quad1 = point_in_first_quadrant(origin)
+    println("Is point (4.0, 7.0) in first quadrant? " ++ show(in_quad1))
+    println("Is origin in first quadrant? " ++ show(origin_in_quad1))
+    println("")
+    
+    println("╔════════════════════════════════════════════╗")
+    println("║  ✓ All record operations completed!       ║")
+    println("╚════════════════════════════════════════════╝")
+    
+    ok
+
+end

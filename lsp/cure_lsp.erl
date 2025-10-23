@@ -458,11 +458,12 @@ diagnose_document(Uri, Text, State) ->
 
 update_symbols(Uri, Text, SymbolTable) ->
     % Parse the document and update symbol table
-    TextBin = if
-        is_binary(Text) -> Text;
-        is_list(Text) -> list_to_binary(Text);
-        true -> <<>>
-    end,
+    TextBin =
+        if
+            is_binary(Text) -> Text;
+            is_list(Text) -> list_to_binary(Text);
+            true -> <<>>
+        end,
     case cure_lexer:tokenize(TextBin) of
         {ok, Tokens} ->
             case cure_parser:parse(Tokens) of

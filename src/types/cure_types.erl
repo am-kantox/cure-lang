@@ -1033,6 +1033,23 @@ unify_impl(
     % Convert imported function type to regular function type for unification
     FunctionType2 = {function_type, Params2, Return2},
     unify_impl({function_type, Params1, Return1}, FunctionType2, Subst);
+%% Support for record types - unify only if same record name
+unify_impl({record_type, Name}, {record_type, Name}, Subst) ->
+    {ok, Subst};
+unify_impl({record_type, Name1, _Fields1}, {record_type, Name2, _Fields2}, Subst) when
+    Name1 =:= Name2
+->
+    % Records with same name unify (fields are checked during construction/pattern matching)
+    {ok, Subst};
+%% Allow record_type to unify with primitive_type of same name (for declaration compatibility)
+unify_impl({record_type, Name}, {primitive_type, Name}, Subst) ->
+    {ok, Subst};
+unify_impl({primitive_type, Name}, {record_type, Name}, Subst) ->
+    {ok, Subst};
+unify_impl({record_type, Name, _}, {primitive_type, Name}, Subst) ->
+    {ok, Subst};
+unify_impl({primitive_type, Name}, {record_type, Name, _}, Subst) ->
+    {ok, Subst};
 unify_impl(Type1, Type2, _Subst) ->
     {error, {unification_failed, Type1, Type2}}.
 

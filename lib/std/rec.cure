@@ -1,0 +1,12 @@
+# Cure Standard Library - Rec Module
+# Provides operations for working with records (maps)
+
+module Std.Rec do
+  export [get/2, put/3, new/0]
+
+  curify get(field: Atom, map: Any): Any = {maps, get, 2}
+
+  curify put(field: Atom, value: Any, map: Any): Any = {maps, put, 3}
+
+  curify new(): Any = {maps, new, 0}
+end

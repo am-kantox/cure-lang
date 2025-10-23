@@ -393,6 +393,10 @@ compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) 
                 State
         end,
 
+    % Store imported functions in process dictionary for pattern body conversion
+    ImportedFuncs = StateWithImports#codegen_state.imported_functions,
+    put(imported_functions_map, ImportedFuncs),
+
     case compile_module_items(Items, StateWithImports) of
         {ok, CompiledState} ->
             generate_beam_module(CompiledState);
@@ -428,6 +432,9 @@ compile_module(#module_def{name = Name, exports = Exports, items = Items} = Modu
                 cure_utils:debug("Old path import processing failed: ~p~n", [Error]),
                 State
         end,
+
+    % Store imported functions in process dictionary for pattern body conversion
+    put(imported_functions_map, StateWithImports#codegen_state.imported_functions),
 
     case compile_module_items(Items, StateWithImports) of
         {ok, CompiledState} ->
@@ -579,8 +586,19 @@ compile_module_item(#fsm_def{} = FSM, State) ->
             {error, Reason}
     end;
 compile_module_item(#record_def{} = RecordDef, State) ->
-    % Record definitions generate type information and constructor functions
-    {ok, {record_def, RecordDef}, State};
+    % Record definitions generate Erlang record declarations
+    % Records in Erlang are defined at compile time and used as tagged tuples
+    #record_def{name = RecordName, fields = Fields} = RecordDef,
+
+    % Register the record definition in the state for later use
+    NewRecords = maps:put(RecordName, RecordDef, State#codegen_state.type_constructors),
+    NewState = State#codegen_state{type_constructors = NewRecords},
+
+    % Generate Erlang record attribute for the module
+    FieldDefs = generate_erlang_record_fields(Fields),
+    RecordAttr = {record, RecordName, FieldDefs},
+
+    {ok, {record_def, RecordAttr}, NewState};
 compile_module_item(#type_def{} = TypeDef, State) ->
     % Generate constructor functions for union types
     % Note: Constructors are already registered in the pre-pass
@@ -1979,42 +1997,55 @@ generate_guard_check_instruction(Location) ->
 %% BEAM Module Generation
 %% ============================================================================
 
-%% Separate different types of functions in the functions list
+%% Separate different types of items in the functions list
 separate_functions(Functions) ->
-    separate_functions(Functions, [], [], []).
+    separate_functions(Functions, [], [], [], []).
 
-separate_functions([], RegularAcc, FSMAcc, ConstructorAcc) ->
+separate_functions([], RegularAcc, FSMAcc, ConstructorAcc, RecordAcc) ->
     cure_utils:debug("[SEPARATE] Regular functions: ~p~n", [length(RegularAcc)]),
     cure_utils:debug("[SEPARATE] FSM functions: ~p~n", [length(FSMAcc)]),
     cure_utils:debug("[SEPARATE] Constructor functions: ~p~n", [length(ConstructorAcc)]),
-    {lists:reverse(RegularAcc), lists:reverse(FSMAcc), lists:reverse(ConstructorAcc)};
-separate_functions([{function, F} | Rest], RegularAcc, FSMAcc, ConstructorAcc) ->
+    cure_utils:debug("[SEPARATE] Record definitions: ~p~n", [length(RecordAcc)]),
+    {
+        lists:reverse(RegularAcc),
+        lists:reverse(FSMAcc),
+        lists:reverse(ConstructorAcc),
+        lists:reverse(RecordAcc)
+    };
+separate_functions([{function, F} | Rest], RegularAcc, FSMAcc, ConstructorAcc, RecordAcc) ->
     % Wrapped regular function
-    separate_functions(Rest, [F | RegularAcc], FSMAcc, ConstructorAcc);
-separate_functions([{fsm, FSM} | Rest], RegularAcc, FSMAcc, ConstructorAcc) ->
+    separate_functions(Rest, [F | RegularAcc], FSMAcc, ConstructorAcc, RecordAcc);
+separate_functions([{fsm, FSM} | Rest], RegularAcc, FSMAcc, ConstructorAcc, RecordAcc) ->
     % FSM definition
-    separate_functions(Rest, RegularAcc, [FSM | FSMAcc], ConstructorAcc);
+    separate_functions(Rest, RegularAcc, [FSM | FSMAcc], ConstructorAcc, RecordAcc);
+separate_functions(
+    [{record_def, RecordAttr} | Rest], RegularAcc, FSMAcc, ConstructorAcc, RecordAcc
+) ->
+    % Record definition attribute
+    separate_functions(Rest, RegularAcc, FSMAcc, ConstructorAcc, [RecordAttr | RecordAcc]);
 separate_functions(
     [{function, _Line, _Name, _Arity, _Clauses} = ErlangFunction | Rest],
     RegularAcc,
     FSMAcc,
-    ConstructorAcc
+    ConstructorAcc,
+    RecordAcc
 ) ->
     % Erlang abstract form (constructor function)
-    separate_functions(Rest, RegularAcc, FSMAcc, [ErlangFunction | ConstructorAcc]);
-separate_functions([F | Rest], RegularAcc, FSMAcc, ConstructorAcc) when is_map(F) ->
+    separate_functions(Rest, RegularAcc, FSMAcc, [ErlangFunction | ConstructorAcc], RecordAcc);
+separate_functions([F | Rest], RegularAcc, FSMAcc, ConstructorAcc, RecordAcc) when is_map(F) ->
     % Unwrapped regular function (map format)
-    separate_functions(Rest, [F | RegularAcc], FSMAcc, ConstructorAcc);
-separate_functions([_Other | Rest], RegularAcc, FSMAcc, ConstructorAcc) ->
+    separate_functions(Rest, [F | RegularAcc], FSMAcc, ConstructorAcc, RecordAcc);
+separate_functions([_Other | Rest], RegularAcc, FSMAcc, ConstructorAcc, RecordAcc) ->
     % Skip unknown items
-    separate_functions(Rest, RegularAcc, FSMAcc, ConstructorAcc).
+    separate_functions(Rest, RegularAcc, FSMAcc, ConstructorAcc, RecordAcc).
 
 generate_beam_module(State) ->
-    % Extract different types of functions from the functions list
-    {RegularFunctions, FSMDefinitions, ConstructorFunctions} =
+    % Extract different types of items from the functions list
+    {RegularFunctions, FSMDefinitions, ConstructorFunctions, RecordDefinitions} =
         separate_functions(State#codegen_state.functions),
 
     cure_utils:debug("BEAM generation - Constructor functions: ~p~n", [ConstructorFunctions]),
+    cure_utils:debug("BEAM generation - Record definitions: ~p~n", [RecordDefinitions]),
     cure_utils:debug("BEAM generation - Exports: ~p~n", [State#codegen_state.exports]),
 
     % Extract FSM functions and flatten them
@@ -2028,7 +2059,9 @@ generate_beam_module(State) ->
         name => State#codegen_state.module_name,
         exports => State#codegen_state.exports,
         functions => AllFunctions,
+        record_definitions => RecordDefinitions,
         fsm_definitions => FSMDefinitions,
+        imported_functions => State#codegen_state.imported_functions,
         attributes => generate_module_attributes(State),
         optimization_level => State#codegen_state.optimization_level
     },
@@ -2076,6 +2109,9 @@ convert_exports(ExportList, Items) ->
         all ->
             extract_all_functions(Items);
         {export_list, Exports, _Location} ->
+            convert_export_specs(Exports);
+        Exports when is_list(Exports) ->
+            % Handle plain list of export_spec tuples
             convert_export_specs(Exports);
         _ ->
             []
@@ -2141,7 +2177,7 @@ process_imports([_ | Rest], State) ->
 resolve_and_load_module(Module, Imports, State) ->
     case find_module_file(Module) of
         {ok, ModuleFile} ->
-            case compile_and_extract_functions(ModuleFile, Imports, State) of
+            case compile_and_extract_functions(ModuleFile, Module, Imports, State) of
                 {ok, ImportedFunctions, NewState} ->
                     % Add imported functions to the state
                     CurrentImports = State#codegen_state.imported_functions,
@@ -2183,12 +2219,12 @@ find_in_paths(RelativePath, [SearchPath | Rest]) ->
     end.
 
 %% Compile module and extract requested functions
-compile_and_extract_functions(ModuleFile, Imports, State) ->
+compile_and_extract_functions(ModuleFile, Module, Imports, State) ->
     case cure_lexer:tokenize_file(ModuleFile) of
         {ok, Tokens} ->
             case cure_parser:parse(Tokens) of
                 {ok, AST} ->
-                    case extract_functions_from_ast(AST, Imports) of
+                    case extract_functions_from_ast(AST, Module, Imports) of
                         {ok, Functions} ->
                             {ok, Functions, State};
                         {error, Reason} ->
@@ -2202,15 +2238,15 @@ compile_and_extract_functions(ModuleFile, Imports, State) ->
     end.
 
 %% Extract functions from parsed AST based on import specifications
-extract_functions_from_ast(AST, all) ->
+extract_functions_from_ast(AST, Module, all) ->
     % Import all exported functions
-    case find_exported_functions(AST) of
+    case find_exported_functions(AST, Module) of
         {ok, Functions} -> {ok, Functions};
         {error, Reason} -> {error, Reason}
     end;
-extract_functions_from_ast(AST, Imports) when is_list(Imports) ->
+extract_functions_from_ast(AST, Module, Imports) when is_list(Imports) ->
     % Import specific functions
-    case find_exported_functions(AST) of
+    case find_exported_functions(AST, Module) of
         {ok, AllFunctions} ->
             RequestedFunctions = filter_requested_functions(AllFunctions, Imports),
             {ok, RequestedFunctions};
@@ -2219,39 +2255,39 @@ extract_functions_from_ast(AST, Imports) when is_list(Imports) ->
     end.
 
 %% Find all exported functions in an AST
-find_exported_functions(AST) ->
+find_exported_functions(AST, Module) ->
     case AST of
         [#module_def{items = Items, exports = Exports}] ->
-            extract_exported_function_bodies(Items, Exports);
+            extract_exported_function_bodies(Items, Module, Exports);
         Items when is_list(Items) ->
             % List of items without module wrapper
-            extract_all_function_bodies(Items);
+            extract_all_function_bodies(Items, Module);
         _ ->
             {error, {unsupported_ast_format, AST}}
     end.
 
 %% Extract function bodies for all functions
-extract_all_function_bodies(Items) ->
-    Functions = extract_function_bodies(Items, []),
+extract_all_function_bodies(Items, Module) ->
+    Functions = extract_function_bodies(Items, Module, []),
     {ok, Functions}.
 
 %% Extract function bodies for exported functions only
-extract_exported_function_bodies(Items, Exports) ->
-    AllFunctions = extract_function_bodies(Items, []),
+extract_exported_function_bodies(Items, Module, Exports) ->
+    AllFunctions = extract_function_bodies(Items, Module, []),
     ExportedFunctions = filter_by_exports(AllFunctions, Exports),
     {ok, ExportedFunctions}.
 
 %% Extract function bodies from items
-extract_function_bodies([], Acc) ->
+extract_function_bodies([], _Module, Acc) ->
     maps:from_list(lists:reverse(Acc));
-extract_function_bodies([#function_def{name = Name, params = Params, body = Body} | Rest], Acc) ->
+extract_function_bodies([#function_def{name = Name, params = Params, body = Body} | Rest], Module, Acc) ->
     Arity = length(Params),
     FunctionKey = {Name, Arity},
-    FunctionData = #{name => Name, arity => Arity, params => Params, body => Body},
-    extract_function_bodies(Rest, [{FunctionKey, FunctionData} | Acc]);
-extract_function_bodies([_ | Rest], Acc) ->
+    FunctionData = #{name => Name, arity => Arity, module => Module, params => Params, body => Body},
+    extract_function_bodies(Rest, Module, [{FunctionKey, FunctionData} | Acc]);
+extract_function_bodies([_ | Rest], Module, Acc) ->
     % Skip non-function items
-    extract_function_bodies(Rest, Acc).
+    extract_function_bodies(Rest, Module, Acc).
 
 %% Filter functions by export list
 filter_by_exports(AllFunctions, []) ->
@@ -2399,29 +2435,31 @@ extract_single_function_export(_) ->
 convert_to_erlang_forms(Module) ->
     try
         % Handle both compiled modules (maps) and standalone functions
-        {ModuleName, RawExports, Functions, FSMDefinitions, Attributes} =
+        {ModuleName, RawExports, Functions, RecordDefinitions, FSMDefinitions, ImportedFunctions, Attributes} =
             case Module of
                 % Case 1: It's a proper module map
                 #{name := Name, exports := ModuleExports, functions := Funcs} = ModuleMap ->
                     ModuleFSMs = maps:get(fsm_definitions, ModuleMap, []),
+                    ModuleRecords = maps:get(record_definitions, ModuleMap, []),
+                    ModuleImports = maps:get(imported_functions, ModuleMap, #{}),
                     ModuleAttrs = maps:get(attributes, ModuleMap, []),
-                    {Name, ModuleExports, Funcs, ModuleFSMs, ModuleAttrs};
+                    {Name, ModuleExports, Funcs, ModuleRecords, ModuleFSMs, ModuleImports, ModuleAttrs};
                 % Case 2: It's a standalone function wrapped in a tuple
                 {function, FunctionMap} when is_map(FunctionMap) ->
                     FuncName = maps:get(name, FunctionMap),
                     FuncArity = maps:get(arity, FunctionMap),
                     DefaultModuleName = test_module,
                     DefaultExports = [{FuncName, FuncArity}],
-                    {DefaultModuleName, DefaultExports, [FunctionMap], [], []};
+                    {DefaultModuleName, DefaultExports, [FunctionMap], [], [], #{}, []};
                 % Case 3: It's a map that looks like a function
                 #{name := Name, arity := Arity} = FunctionMap ->
                     DefaultModuleName = test_module,
                     DefaultExports = [{Name, Arity}],
-                    {DefaultModuleName, DefaultExports, [FunctionMap], [], []};
+                    {DefaultModuleName, DefaultExports, [FunctionMap], [], [], #{}, []};
                 % Case 4: Legacy format - try to extract what we can
                 _ ->
                     DefaultModuleName = test_module,
-                    {DefaultModuleName, [], [], [], []}
+                    {DefaultModuleName, [], [], [], [], #{}, []}
             end,
         % Auto-generate exports from functions if no exports specified
         % For BEAM generation, we need to include ALL functions (exported and local)
@@ -2480,8 +2518,17 @@ convert_to_erlang_forms(Module) ->
                     ]
             end,
 
+        % Add record definitions as attributes
+        RecordForms = convert_record_definitions_to_forms(
+            RecordDefinitions,
+            3 + length(CompileAttrs)
+        ),
+
         % Add custom attributes (including FSM types)
-        AttributeForms = convert_attributes_to_forms(Attributes, 3 + length(CompileAttrs)),
+        AttributeForms = convert_attributes_to_forms(
+            Attributes,
+            3 + length(CompileAttrs) + length(RecordForms)
+        ),
 
         % Add on_load hook for FSM registration if FSMs present
         LoadHook =
@@ -2490,19 +2537,23 @@ convert_to_erlang_forms(Module) ->
                     [];
                 _ ->
                     [
-                        {attribute, 3 + length(CompileAttrs) + length(AttributeForms), on_load,
-                            {register_fsms, 0}}
+                        {attribute,
+                            3 + length(CompileAttrs) + length(RecordForms) + length(AttributeForms),
+                            on_load, {register_fsms, 0}}
                     ]
             end,
 
         % Set current module name for function reference generation
         put(current_module_name, ModuleName),
+        % Store imported functions in process dictionary for pattern body conversion
+        put(imported_functions_map, ImportedFunctions),
 
-        % Convert functions to forms
+        % Convert functions to forms with imported functions for import resolution
         FunctionForms = convert_functions_to_forms(
             Functions,
-            4 + length(CompileAttrs) + length(AttributeForms) + length(LoadHook),
-            ModuleName
+            4 + length(CompileAttrs) + length(RecordForms) + length(AttributeForms) + length(LoadHook),
+            ModuleName,
+            ImportedFunctions
         ),
 
         % Add FSM registration function if needed
@@ -2514,14 +2565,16 @@ convert_to_erlang_forms(Module) ->
                     [
                         generate_fsm_registration_function(
                             FSMDefinitions,
-                            4 + length(CompileAttrs) + length(AttributeForms) + length(LoadHook) +
+                            4 + length(CompileAttrs) + length(RecordForms) + length(AttributeForms) +
+                                length(LoadHook) +
                                 length(FunctionForms)
                         )
                     ]
             end,
 
         Forms =
-            BaseAttributes ++ CompileAttrs ++ AttributeForms ++ LoadHook ++ FunctionForms ++
+            BaseAttributes ++ CompileAttrs ++ RecordForms ++ AttributeForms ++ LoadHook ++
+                FunctionForms ++
                 FSMRegisterFunc,
 
         % Debug: Show a sample of the generated forms
@@ -2579,27 +2632,31 @@ convert_to_erlang_forms(Module) ->
 %     LocalFunctions = extract_local_functions_map(Functions),
 %     convert_functions_to_forms(Functions, LineStart, [], undefined, LocalFunctions).
 
-%% Convert compiled functions to Erlang forms with module name
-convert_functions_to_forms(Functions, LineStart, ModuleName) ->
+%% Convert compiled functions to Erlang forms with module name and imports
+convert_functions_to_forms(Functions, LineStart, ModuleName, ImportedFunctions) ->
     % Extract local functions map for context
     LocalFunctions = extract_local_functions_map(Functions),
     cure_utils:debug("[LOCAL_FUNCS] Module ~p has local functions: ~p~n", [
         ModuleName, maps:to_list(LocalFunctions)
     ]),
-    convert_functions_to_forms(Functions, LineStart, [], ModuleName, LocalFunctions).
+    cure_utils:debug("[IMPORTED_FUNCS] Module ~p has imported functions: ~p~n", [
+        ModuleName, maps:to_list(ImportedFunctions)
+    ]),
+    convert_functions_to_forms(Functions, LineStart, [], ModuleName, LocalFunctions, ImportedFunctions).
 
-convert_functions_to_forms([], _Line, Acc, _ModuleName, _LocalFunctions) ->
+convert_functions_to_forms([], _Line, Acc, _ModuleName, _LocalFunctions, _ImportedFunctions) ->
     cure_utils:debug("[CONVERT] Converted ~p functions to forms~n", [length(Acc)]),
     lists:reverse(Acc);
-convert_functions_to_forms([Function | RestFunctions], Line, Acc, ModuleName, LocalFunctions) ->
-    case convert_function_to_form(Function, Line, ModuleName, LocalFunctions) of
+convert_functions_to_forms([Function | RestFunctions], Line, Acc, ModuleName, LocalFunctions, ImportedFunctions) ->
+    case convert_function_to_form(Function, Line, ModuleName, LocalFunctions, ImportedFunctions) of
         {ok, Form, NextLine} ->
             convert_functions_to_forms(
-                RestFunctions, NextLine, [Form | Acc], ModuleName, LocalFunctions
+                RestFunctions, NextLine, [Form | Acc], ModuleName, LocalFunctions, ImportedFunctions
             );
-        {error, _Reason} ->
-            % Skip invalid functions for now
-            convert_functions_to_forms(RestFunctions, Line + 1, Acc, ModuleName, LocalFunctions)
+        {error, Reason} ->
+            % Skip invalid functions but log the error
+            cure_utils:debug("[CONVERT] Failed to convert function to form: ~p~n", [Reason]),
+            convert_functions_to_forms(RestFunctions, Line + 1, Acc, ModuleName, LocalFunctions, ImportedFunctions)
     end.
 
 %% Extract local functions map for context
@@ -2661,7 +2718,7 @@ extract_local_functions_map(Functions) ->
 %     convert_function_to_form(Function, Line, undefined, #{}).
 
 %% Convert a single function to Erlang abstract form with module context
-convert_function_to_form(Function, Line, ModuleName, LocalFunctions) ->
+convert_function_to_form(Function, Line, ModuleName, LocalFunctions, ImportedFunctions) ->
     % Check if this is already an Erlang abstract form (from union type constructors)
     case Function of
         {function, _FormLine, Name, Arity, Clauses} ->
@@ -2684,10 +2741,10 @@ convert_function_to_form(Function, Line, ModuleName, LocalFunctions) ->
                             {error, Reason}
                     end;
                 _ ->
-                    % Use new function with module context
+                    % Use new function with module context and imported functions
                     case
                         cure_beam_compiler:compile_function_to_erlang(
-                            Function, Line, ModuleName, LocalFunctions
+                            Function, Line, ModuleName, LocalFunctions, ImportedFunctions
                         )
                     of
                         {ok, FunctionForm, NextLine} ->
@@ -2700,6 +2757,20 @@ convert_function_to_form(Function, Line, ModuleName, LocalFunctions) ->
             cure_utils:debug("Unknown function format: ~p~n", [Function]),
             {error, {unknown_function_format, Function}}
     end.
+
+%% Convert record definitions to Erlang attribute forms
+convert_record_definitions_to_forms(RecordDefinitions, StartLine) ->
+    convert_record_definitions_to_forms(RecordDefinitions, StartLine, []).
+
+convert_record_definitions_to_forms([], _Line, Acc) ->
+    lists:reverse(Acc);
+convert_record_definitions_to_forms([{record, RecordName, Fields} | Rest], Line, Acc) ->
+    % Create record attribute: -record(RecordName, [Fields]).
+    Form = {attribute, Line, record, {RecordName, Fields}},
+    convert_record_definitions_to_forms(Rest, Line + 1, [Form | Acc]);
+convert_record_definitions_to_forms([_ | Rest], Line, Acc) ->
+    % Skip invalid record definitions
+    convert_record_definitions_to_forms(Rest, Line, Acc).
 
 %% Convert attributes to Erlang abstract forms
 convert_attributes_to_forms(Attributes, StartLine) ->
@@ -3104,7 +3175,23 @@ convert_complex_body_to_erlang(#function_call_expr{function = Function, args = A
             cure_utils:debug("Function form: ~p~n", [FunctionForm]),
             case convert_complex_args_to_erlang(Args, Location) of
                 {ok, ArgForms} ->
-                    CallForm = {call, Line, FunctionForm, ArgForms},
+                    % Check if this is a call to an imported function and convert to remote call if needed
+                    FinalFunctionForm = case FunctionForm of
+                        {atom, _, FuncName} ->
+                            % Check if this function is imported
+                            ImportResult = get_imported_function_info(FuncName, length(ArgForms)),
+                            case ImportResult of
+                                {ok, ModuleName} ->
+                                    % Generate remote call
+                                    {remote, Line, {atom, Line, ModuleName}, {atom, Line, FuncName}};
+                                not_found ->
+                                    % Keep as local call
+                                    FunctionForm
+                            end;
+                        _ ->
+                            FunctionForm
+                    end,
+                    CallForm = {call, Line, FinalFunctionForm, ArgForms},
                     cure_utils:debug("Generated call form: ~p~n", [CallForm]),
                     {ok, CallForm};
                 error ->
@@ -3223,6 +3310,46 @@ convert_complex_bindings_to_erlang([_ | Rest], Location) ->
     % Skip unsupported binding types for now
     convert_complex_bindings_to_erlang(Rest, Location).
 
+%% Get imported function info (module name) for a given function name and arity
+%% Checks process dictionary for imported functions stored during conversion
+get_imported_function_info(FuncName, Arity) ->
+    ImportedFunctions = get(imported_functions_map),
+    case ImportedFunctions of
+        undefined ->
+            not_found;
+        ImportedFunctions when is_map(ImportedFunctions) ->
+            % Try {Name, Arity} tuple first
+            LookupResult = maps:get({FuncName, Arity}, ImportedFunctions, undefined),
+            case LookupResult of
+                undefined ->
+                    % Try plain name
+                    case maps:get(FuncName, ImportedFunctions, undefined) of
+                        undefined ->
+                            not_found;
+                        ImportInfo when is_map(ImportInfo) ->
+                            case maps:get(module, ImportInfo, undefined) of
+                                undefined -> 
+                                    not_found;
+                                ModName -> 
+                                    {ok, ModName}
+                            end;
+                        _ ->
+                            not_found
+                    end;
+                ImportInfo when is_map(ImportInfo) ->
+                    case maps:get(module, ImportInfo, undefined) of
+                        undefined -> 
+                            not_found;
+                        ModName -> 
+                            {ok, ModName}
+                    end;
+                _ ->
+                    not_found
+            end;
+        _ ->
+            not_found
+    end.
+
 %% Check if a name is a constructor or known function
 %% Used in match expression bodies to distinguish function references from variables
 % is_constructor_or_known_function(Name) ->
@@ -3267,6 +3394,9 @@ is_function_name(add_five) -> true;
 is_function_name(add_folder_func) -> true;
 is_function_name(multiply_folder_func) -> true;
 is_function_name(add_mapper_func) -> true;
+% I/O functions (commonly imported from Std.Io)
+is_function_name(print) -> true;
+is_function_name(println) -> true;
 % NOTE: 'f' is typically a parameter variable, not a function name
 % is_function_name(f) -> true;
 % Add more function names as needed
@@ -3757,6 +3887,27 @@ extract_constructor_info(#dependent_type{name = Name, params = Params}) ->
     {ok, Name, length(Params)};
 extract_constructor_info(Variant) ->
     {error, {unsupported_variant, Variant}}.
+
+%% Helper function to generate Erlang record field definitions from record fields
+generate_erlang_record_fields(Fields) ->
+    [generate_erlang_record_field(Field) || Field <- Fields].
+
+generate_erlang_record_field(#record_field_def{
+    name = FieldName, type = _Type, default_value = DefaultValue
+}) ->
+    % Generate Erlang record field: {record_field, Line, {atom, Line, FieldName}}
+    % or {record_field, Line, {atom, Line, FieldName}, DefaultExpr} if default exists
+    Line = 0,
+    case DefaultValue of
+        undefined ->
+            {record_field, Line, {atom, Line, FieldName}};
+        _ ->
+            % Convert default value to Erlang form
+            DefaultForm = compile_value_to_erlang_form(
+                DefaultValue, {location, Line, 1, undefined}
+            ),
+            {record_field, Line, {atom, Line, FieldName}, DefaultForm}
+    end.
 
 %% Create constructor function as Erlang AST
 create_constructor_function(ConstructorName, 0, _State) ->

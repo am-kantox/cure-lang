@@ -1,0 +1,19 @@
+# Cure Standard Library - System Module
+# Provides system-level operations
+
+module Std.System do
+  export [
+    system_time/1, monotonic_time/0, timestamp/0
+  ]
+
+  # Get the current system time with specified precision
+  # Precision can be: second, millisecond, microsecond, nanosecond
+  curify system_time(precision: Atom): Int = {erlang, system_time, 1}
+
+  # Get monotonic time (always increasing)
+  curify monotonic_time(): Int = {erlang, monotonic_time, 0}
+
+  # Get the current timestamp as {MegaSecs, Secs, MicroSecs}
+  curify timestamp(): Any = {erlang, timestamp, 0}
+
+end

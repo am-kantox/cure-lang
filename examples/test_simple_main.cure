@@ -1,0 +1,15 @@
+# Test simple main without records
+module TestSimpleMain do
+  export [main/0, helper/0]
+  
+  import Std.Io [println/1]
+  
+  def helper(): Unit =
+    println("Helper called")
+  
+  def main(): Unit =
+    println("Main")
+    helper()
+    println("Done")
+    ()
+end

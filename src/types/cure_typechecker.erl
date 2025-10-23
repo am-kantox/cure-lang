@@ -304,9 +304,20 @@ check_item(FSM = #fsm_def{}, Env) ->
     check_fsm(FSM, Env);
 check_item(TypeDef = #type_def{}, Env) ->
     check_type_definition(TypeDef, Env);
-check_item({record_def, RecordName, _TypeParams, Fields, _Location}, Env) ->
-    % For now, just add the record type to the environment
+check_item(
+    #record_def{
+        name = RecordName, type_params = _TypeParams, fields = Fields, location = _Location
+    },
+    Env
+) ->
+    % Convert field types to internal representation
+    ConvertedFields = [convert_record_field_def(F) || F <- Fields],
     % Create a record type from the field definitions
+    RecordType = {record_type, RecordName, ConvertedFields},
+    NewEnv = cure_types:extend_env(Env, RecordName, RecordType),
+    {ok, NewEnv, success_result(RecordType)};
+check_item({record_def, RecordName, _TypeParams, Fields, _Location}, Env) ->
+    % Fallback for tuple format
     RecordType = {record_type, RecordName, Fields},
     NewEnv = cure_types:extend_env(Env, RecordName, RecordType),
     {ok, NewEnv, success_result(RecordType)}.
@@ -1182,6 +1193,13 @@ convert_expr_to_tuple(#cons_expr{
     ConvertedElements = [convert_expr_to_tuple(E) || E <- Elements],
     ConvertedTail = convert_expr_to_tuple(Tail),
     {cons_expr, ConvertedElements, ConvertedTail, Location};
+convert_expr_to_tuple(#record_expr{
+    name = Name,
+    fields = Fields,
+    location = Location
+}) ->
+    ConvertedFields = [convert_field_expr_to_tuple(F) || F <- Fields],
+    {record_expr, Name, ConvertedFields, Location};
 convert_expr_to_tuple(Expr) ->
     % Fallback - return as-is for unsupported expressions
     Expr.
@@ -1237,6 +1255,9 @@ convert_pattern_to_tuple(#constructor_pattern{
     {constructor_pattern, Name, ConvertedArgs, Location};
 convert_pattern_to_tuple(Pattern) ->
     Pattern.
+
+convert_field_expr_to_tuple(#field_expr{name = Name, value = Value, location = Location}) ->
+    {field_expr, Name, convert_expr_to_tuple(Value), Location}.
 
 convert_block_to_lets([LastExpr], _Location) ->
     convert_expr_to_tuple(LastExpr);
@@ -2033,6 +2054,11 @@ convert_field_pattern_to_tuple(#field_pattern{
     location = Location
 }) ->
     {field_pattern, Name, convert_pattern_to_tuple(Pattern), Location}.
+
+convert_record_field_def(#record_field_def{
+    name = Name, type = Type, default_value = Default, location = Location
+}) ->
+    {record_field_def, Name, convert_type_to_tuple(Type), Default, Location}.
 
 %% When clause constraint processing with SMT solver integration
 process_when_clause_constraint(Constraint, Env, _Location) ->
