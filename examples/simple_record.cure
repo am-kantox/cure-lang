@@ -1,0 +1,55 @@
+# Simple Record Examples in Cure
+# Basic demonstration of record construction and pattern matching
+
+module SimpleRecord do
+  export [main/0, greet/1, check_point/1]
+  
+  import Std.Io [println/1]
+  
+  # === BASIC RECORD DEFINITIONS ===
+  
+  record Person do
+    name: String
+    age: Int
+  end
+  
+  record Point do
+    x: Float
+    y: Float
+  end
+  
+  # === BASIC PATTERN MATCHING ===
+  
+  def greet(p: Person): Unit =
+    match p do
+      Person{name: n, age: a} ->
+        println("Hello!")
+    end
+  
+  def check_point(pt: Point): Unit =
+    match pt do
+      Point{x: 0.0, y: 0.0} ->
+        println("Origin")
+      Point{x: _, y: _} ->
+        println("Point")
+    end
+  
+  # === DEMONSTRATION ===
+  
+  def main(): Int =
+    println("=== Simple Record Demo ===")
+    
+    let alice = Person{name: "Alice", age: 30}
+    greet(alice)
+    
+    let origin = Point{x: 0.0, y: 0.0}
+    check_point(origin)
+    
+    let p = Point{x: 5.0, y: 3.0}
+    check_point(p)
+    
+    println("=== Done! ===")
+    
+    0
+
+end

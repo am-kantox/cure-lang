@@ -6,6 +6,7 @@
     compile_instructions_to_forms/2,
     compile_function_to_erlang/2,
     compile_function_to_erlang/4,
+    compile_function_to_erlang/5,
     optimize_instructions/1,
     validate_erlang_forms/1
 ]).
@@ -31,7 +32,8 @@
     temp_counter = 0,
     stack = [],
     module_name = undefined,
-    local_functions = #{}
+    local_functions = #{},
+    imported_functions = #{}
 }).
 
 %% ============================================================================
@@ -109,6 +111,66 @@ compile_function_to_erlang(
     StartLine,
     _ModuleName,
     _LocalFunctions
+) ->
+    compile_curify_function_to_erlang(
+        #{
+            name => Name,
+            arity => Arity,
+            params => Params,
+            erlang_module => ErlModule,
+            erlang_function => ErlFunc,
+            return_type => ReturnType
+        },
+        StartLine
+    ).
+
+%% Compile function with module context and imported functions
+compile_function_to_erlang(
+    #{
+        name := Name,
+        arity := Arity,
+        params := Params,
+        instructions := Instructions
+    },
+    StartLine,
+    ModuleName,
+    LocalFunctions,
+    ImportedFunctions
+) ->
+    Context = #compile_context{
+        line = StartLine,
+        variables = create_param_variables(Params, StartLine),
+        module_name = ModuleName,
+        local_functions = LocalFunctions,
+        imported_functions = ImportedFunctions
+    },
+
+    case compile_instructions_to_forms(Instructions, Context) of
+        {ok, Body, _FinalContext} ->
+            ParamVars = [{var, StartLine, Param} || Param <- Params],
+            FunctionForm =
+                {function, StartLine, Name, Arity, [
+                    {clause, StartLine, ParamVars, [], Body}
+                ]},
+            {ok, FunctionForm, StartLine + 20};
+        {error, Reason} ->
+            {error, Reason}
+    end;
+%% Compile curify function with auto-conversion (5-arg version)
+compile_function_to_erlang(
+    #{
+        name := Name,
+        arity := Arity,
+        params := Params,
+        erlang_module := ErlModule,
+        erlang_function := ErlFunc,
+        return_type := ReturnType,
+        is_curify_function := true
+    },
+    StartLine,
+    _ModuleName,
+    _LocalFunctions,
+    _ImportedFunctions
 ) ->
     compile_curify_function_to_erlang(
         #{
@@ -256,6 +318,7 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         make_list -> compile_make_list(Args, NewContext);
         make_cons -> compile_make_cons(Args, NewContext);
         make_tuple -> compile_make_tuple(Args, NewContext);
+        make_record -> compile_make_record(Args, NewContext);
         make_lambda -> compile_make_lambda(Args, NewContext);
         match_tagged_tuple -> compile_match_tagged_tuple(Args, NewContext);
         match_result_tuple -> compile_match_result_tuple(Args, NewContext);
@@ -552,8 +615,15 @@ compile_call([Arity], Context) ->
                                         % Local function call - use simple atom call
                                         {call, Line, {atom, Line, FuncName}, Args};
                                     false ->
-                                        % Unknown function - assume local (will error at runtime if not found)
-                                        {call, Line, {atom, Line, FuncName}, Args}
+                                        % Check if it's an imported function
+                                        case is_imported_function_reference(FuncName, Arity, NewContext) of
+                                            {true, ModName} ->
+                                                % Imported function - generate remote call
+                                                {call, Line, {remote, Line, {atom, Line, ModName}, {atom, Line, FuncName}}, Args};
+                                            false ->
+                                                % Unknown function - assume local (will error at runtime if not found)
+                                                {call, Line, {atom, Line, FuncName}, Args}
+                                        end
                                 end;
                             {'fun', _, {function, {atom, _, ModName}, {atom, _, FuncName}, _}} when
                                 ModName =:= NewContext#compile_context.module_name
@@ -608,6 +678,29 @@ compile_make_tuple([Count], Context) ->
             % Build tuple from elements
             TupleForm = {tuple, Line, Elements},
             {ok, [], push_stack(TupleForm, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% Create record from stack elements
+%% Args: [RecordName, FieldNames, FieldCount]
+%% Stack: field values (in order)
+compile_make_record([RecordName, FieldNames, FieldCount], Context) ->
+    case pop_n_from_stack(FieldCount, Context) of
+        {FieldValues, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Build record creation: #RecordName{field1=Val1, field2=Val2, ...}
+            % In Erlang abstract form, records are represented as:
+            % {record, Line, RecordName, [FieldAssignments]}
+            FieldAssignments = lists:zipwith(
+                fun(FieldName, FieldValue) ->
+                    {record_field, Line, {atom, Line, FieldName}, FieldValue}
+                end,
+                FieldNames,
+                FieldValues
+            ),
+            RecordForm = {record, Line, RecordName, FieldAssignments},
+            {ok, [], push_stack(RecordForm, NewContext)};
         Error ->
             Error
     end.
@@ -998,6 +1091,34 @@ is_local_function_reference(Name, Context) ->
         undefined -> false;
         Arity when is_integer(Arity) -> {true, Arity};
         _ -> false
+    end.
+
+%% Check if a name refers to an imported function from another module
+%% Returns {true, ModuleName} if it's imported, false otherwise
+is_imported_function_reference(Name, Arity, Context) ->
+    ImportedFunctions = Context#compile_context.imported_functions,
+    % Try lookup with {Name, Arity} tuple first
+    case maps:get({Name, Arity}, ImportedFunctions, undefined) of
+        undefined ->
+            % Try plain name lookup (for imports that don't specify arity)
+            case maps:get(Name, ImportedFunctions, undefined) of
+                undefined ->
+                    false;
+                ImportInfo when is_map(ImportInfo) ->
+                    case maps:get(module, ImportInfo, undefined) of
+                        undefined -> false;
+                        ModName -> {true, ModName}
+                    end;
+                _ ->
+                    false
+            end;
+        ImportInfo when is_map(ImportInfo) ->
+            case maps:get(module, ImportInfo, undefined) of
+                undefined -> false;
+                ModName -> {true, ModName}
+            end;
+        _ ->
+            false
     end.
 
 %% Check if function should be routed to cure_std (legacy runtime functions)
