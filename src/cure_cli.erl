@@ -149,22 +149,22 @@ main(Args) ->
             {compile, Filename, Options} ->
                 case compile_file(Filename, Options) of
                     {ok, OutputFile} ->
-                        cure_utils:debug("Successfully compiled ~s -> ~s~n", [Filename, OutputFile]),
+                        io:format("Successfully compiled ~s -> ~s~n", [Filename, OutputFile]),
                         halt(?EXIT_SUCCESS);
                     {error, Reason} ->
-                        cure_utils:debug("Error: ~s~n", [format_error(Reason)]),
+                        io:format("Error: ~s~n", [format_error(Reason)]),
                         halt(?EXIT_ERROR)
                 end;
             {error, Message} ->
-                cure_utils:debug("Error: ~s~n", [Message]),
-                cure_utils:debug("Use 'cure --help' for usage information.~n"),
+                io:format("Error: ~s~n", [Message]),
+                io:format("Use 'cure --help' for usage information.~n"),
                 halt(?EXIT_USAGE)
         end
     catch
         Error:CatchReason:Stack ->
-            cure_utils:debug("Internal error: ~p:~p~n", [Error, CatchReason]),
+            io:format("Internal error: ~p:~p~n", [Error, CatchReason]),
             case os:getenv("CURE_DEBUG") of
-                "1" -> cure_utils:debug("Stack trace: ~p~n", [Stack]);
+                "1" -> io:format("Stack trace: ~p~n", [Stack]);
                 _ -> ok
             end,
             halt(?EXIT_ERROR)

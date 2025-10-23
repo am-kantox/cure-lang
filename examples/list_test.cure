@@ -58,7 +58,7 @@ module ListComprehensiveTest do
   
   def demo_concat(): List(Int) =
     let l1 = [1, 2]
-    let l2 = [3, 4, 5]
+    let l2 = [3, 4]
     let result = concat([l1, l2])
     result
 
