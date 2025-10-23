@@ -696,20 +696,20 @@ parse_curify_function(State) ->
         end,
 
     {_, State8} = expect(State7, '='),
-    
+
     % Parse the Erlang function reference tuple: {module, function, arity}
     {_, State9} = expect(State8, '{'),
     {ModuleToken, State10} = expect(State9, identifier),
     ErlangModule = binary_to_atom(get_token_value(ModuleToken), utf8),
-    
+
     {_, State11} = expect(State10, ','),
     {FunctionToken, State12} = expect(State11, identifier),
     ErlangFunction = binary_to_atom(get_token_value(FunctionToken), utf8),
-    
+
     {_, State13} = expect(State12, ','),
     {ArityToken, State14} = expect(State13, number),
     ErlangArity = get_token_value(ArityToken),
-    
+
     {_, State15} = expect(State14, '}'),
 
     % Validate arity matches parameter count

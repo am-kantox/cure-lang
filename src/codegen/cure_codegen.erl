@@ -372,7 +372,7 @@ compile_module(ModuleAST) ->
 compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) ->
     cure_utils:debug("Compiling module ~p with imports ~p~n", [Name, Imports]),
     % Using new AST format compilation path
-    ConvertedExports = convert_exports_new(Exports, Items),
+    ConvertedExports = convert_exports(Exports, Items),
     State = #codegen_state{
         module_name = Name,
         exports = ConvertedExports,
@@ -383,7 +383,7 @@ compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) 
 
     % Process imports first
     StateWithImports =
-        case process_imports_new(Imports, State) of
+        case process_imports(Imports, State) of
             {ok, ImportState} ->
                 cure_utils:debug("Import processing succeeded~n"),
                 ImportState;
@@ -409,9 +409,10 @@ compile_module(#module_def{name = Name, exports = Exports, items = Items} = Modu
     ],
     cure_utils:debug("Found imports: ~p~n", [Imports]),
     % Using old AST format compilation path
+    ConvertedExports = convert_exports(Exports, Items),
     State = #codegen_state{
         module_name = Name,
-        exports = convert_exports(Exports),
+        exports = ConvertedExports,
         optimization_level = proplists:get_value(optimize, Options, 0),
         type_info = cure_typechecker:builtin_env(),
         imported_functions = #{}
@@ -419,7 +420,7 @@ compile_module(#module_def{name = Name, exports = Exports, items = Items} = Modu
 
     % Process imports from items list
     StateWithImports =
-        case process_imports_new(Imports, State) of
+        case process_imports(Imports, State) of
             {ok, ImportState} ->
                 cure_utils:debug("Old path import processing succeeded~n"),
                 ImportState;
@@ -858,7 +859,7 @@ compile_curify_function_impl(
 ) ->
     try
         ParamList = [P#param.name || P <- Params],
-        
+
         % Validate arity matches
         case length(Params) of
             ErlArity ->
@@ -2051,12 +2052,8 @@ extract_constructor_exports(ConstructorFunctions) ->
         ConstructorFunctions
     ).
 
-%% Convert export specifications
-convert_exports(Exports) ->
-    [{Name, Arity} || #export_spec{name = Name, arity = Arity} <- Exports].
-
 %% Convert exports for new AST format
-convert_exports_new(ExportList, Items) ->
+convert_exports(ExportList, Items) ->
     case ExportList of
         all ->
             extract_all_functions(Items);
@@ -2106,21 +2103,21 @@ convert_export_specs([_ | Rest]) ->
     convert_export_specs(Rest).
 
 %% Process imports for new AST format
-process_imports_new([], State) ->
+process_imports([], State) ->
     {ok, State};
-process_imports_new([{import_def, Module, Imports, _Location} | Rest], State) ->
+process_imports([{import_def, Module, Imports, _Location} | Rest], State) ->
     cure_utils:debug("Processing import ~p with items ~p~n", [Module, Imports]),
     case resolve_and_load_module(Module, Imports, State) of
         {ok, NewState} ->
             cure_utils:debug("Successfully imported ~p~n", [Module]),
-            process_imports_new(Rest, NewState);
+            process_imports(Rest, NewState);
         {error, Reason} ->
             cure_utils:debug("Warning: Failed to import ~p: ~p~n", [Module, Reason]),
             % Continue with other imports
-            process_imports_new(Rest, State)
+            process_imports(Rest, State)
     end;
-process_imports_new([_ | Rest], State) ->
-    process_imports_new(Rest, State).
+process_imports([_ | Rest], State) ->
+    process_imports(Rest, State).
 
 %% Resolve and load a module for import
 resolve_and_load_module(Module, Imports, State) ->

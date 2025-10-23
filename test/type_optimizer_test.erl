@@ -940,7 +940,9 @@ test_dead_code_elimination_with_types() ->
     % Should have fewer functions after dead code elimination
     true = CleanedFuncCount =< OriginalFuncCount,
 
-    cure_utils:debug(" [Original: ~w, After DCE: ~w functions] ", [OriginalFuncCount, CleanedFuncCount]),
+    cure_utils:debug(" [Original: ~w, After DCE: ~w functions] ", [
+        OriginalFuncCount, CleanedFuncCount
+    ]),
 
     ok.
 

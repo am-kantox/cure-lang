@@ -56,7 +56,6 @@ test_keyword_function_name(Keyword, ExpectedAtom) ->
     ?assertMatch(#function_def{name = ExpectedAtom}, FunctionDef),
     ?assertEqual(1, length(FunctionDef#function_def.params)).
 
-
 %% Test 2: Parser correctly constructs union types from definitions like "TypeA | TypeB"
 test_union_type_parsing() ->
     cure_utils:debug("Testing union type parsing...~n"),

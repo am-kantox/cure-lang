@@ -401,7 +401,9 @@ benchmark_fsm_creation_speed() ->
     FSMsPerSecond = (NumFSMs * 1000000) / TotalTime,
     AvgCreationTime = TotalTime / NumFSMs,
 
-    cure_utils:debug(" [Creation: ~w FSMs/sec, ~.2f μs/FSM] ", [round(FSMsPerSecond), AvgCreationTime]),
+    cure_utils:debug(" [Creation: ~w FSMs/sec, ~.2f μs/FSM] ", [
+        round(FSMsPerSecond), AvgCreationTime
+    ]),
 
     % Should create at least 10K FSMs per second
     true = FSMsPerSecond > 10000,

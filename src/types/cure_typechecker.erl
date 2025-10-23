@@ -266,13 +266,13 @@ check_items([Item | RestItems], Env, Result) ->
 
 %% Check single top-level item - Updated for new AST format
 check_item({module_def, Name, Imports, Exports, Items, Location}, Env) ->
-    check_module_new({module_def, Name, Imports, Exports, Items, Location}, Env);
+    check_module({module_def, Name, Imports, Exports, Items, Location}, Env);
 check_item({module_def, Name, Exports, Items, Location}, Env) ->
     % Parser format without imports field - add empty imports
-    check_module_new({module_def, Name, [], Exports, Items, Location}, Env);
+    check_module({module_def, Name, [], Exports, Items, Location}, Env);
 check_item({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
     % Fallback for old tuple-based format without is_private field
-    check_function_new(
+    check_function(
         {function_def, Name, Params, ReturnType, Constraint, Body, false, Location},
         Env
     );
@@ -281,7 +281,7 @@ check_item(
     Env
 ) ->
     % New tuple format with is_private field
-    check_function_new(
+    check_function(
         {function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location},
         Env
     );
@@ -291,13 +291,13 @@ check_item(
         IsPrivate, Location},
     Env
 ) ->
-    check_curify_function_new(
+    check_curify_function(
         {curify_function_def, Name, Params, ReturnType, Constraint, ErlModule, ErlFunc, ErlArity,
             IsPrivate, Location},
         Env
     );
 check_item({import_def, Module, Items, Location}, Env) ->
-    check_import_new({import_def, Module, Items, Location}, Env);
+    check_import({import_def, Module, Items, Location}, Env);
 check_item({export_list, ExportSpecs}, Env) ->
     % Export lists are handled during module checking - just pass through
     {ok, Env, success_result({export_list, ExportSpecs})};
@@ -311,239 +311,6 @@ check_item({record_def, RecordName, _TypeParams, Fields, _Location}, Env) ->
     RecordType = {record_type, RecordName, Fields},
     NewEnv = cure_types:extend_env(Env, RecordName, RecordType),
     {ok, NewEnv, success_result(RecordType)}.
-
--doc """
-Type checks a module definition using the built-in environment.
-Convenience function that calls `check_module/2` with the standard
-built-in environment.
-
-## Arguments
-
-- `Module` - Module definition AST node
-
-## Returns
-
-- `{ok, NewEnv, typecheck_result()}` — Success with updated environment
-- `{error, typecheck_error()}` — Type checking failure
-
-## Example
-
-```erlang
-
-Module = #module_def{
-            name = 'MyModule',
-            exports = Exports,
-            items = Items},
-{ok, Env, Result} = cure_typechecker:check_module(Module).
-```
-""".
-
-check_module(Module) ->
-    check_module(Module, builtin_env()).
-
--doc """
-Type checks a module definition with the given environment.
-
-Performs comprehensive module type checking including signature 
-collection, body verification, and export validation.
-
-## Arguments
-
-- `Module` - Module definition AST node with name, exports, and items
-- `Env` - Type environment to use as base
-
-## Returns
-
-- `{ok, NewEnv, typecheck_result()}` - Success with updated environment
-- `{error, typecheck_error()}` - Type checking failure
-
-## Process
-
-1. **Module Scoping**: Creates module-scoped environment
-2. **Signature Collection**: First pass collects all function signatures  
-3. **Body Checking**: Second pass verifies function implementations
-4. **Export Validation**: Ensures all exported items exist and are well-typed
-
-## Example
-
-```erlang
-Module = #module_def{name = 'Math', exports = [{add, 2}], items = Functions},
-Env = cure_types:extend_env(cure_typechecker:builtin_env(), custom_type, Type),
-{ok, NewEnv, Result} = cure_typechecker:check_module(Module, Env).
-```
-
-## Features
-
-- **Two-Pass Processing**: Allows mutual recursion between functions
-- **Export Verification**: Validates exported function signatures
-- **Scoped Environment**: Proper module-level scoping".
-""".
-
-check_module(
-    #module_def{
-        name = Name,
-        exports = Exports,
-        items = Items
-    },
-    Env
-) ->
-    % Create module-scoped environment
-    ModuleEnv = cure_types:extend_env(Env, module, Name),
-
-    % Two-pass processing: collect function signatures first, then check bodies
-    FunctionEnv = collect_function_signatures(Items, ModuleEnv),
-
-    % Check all items in the module with function signatures available
-    case check_items(Items, FunctionEnv, new_result()) of
-        Result = #typecheck_result{success = true} ->
-            % Verify exported functions exist and have correct arities
-            case check_exports(Exports, Items) of
-                ok ->
-                    {ok, cure_types:extend_env(Env, Name, {module_type, Name}), Result};
-                {error, ExportError} ->
-                    {error, ExportError}
-            end;
-        Result ->
-            {ok, Env, Result}
-    end.
-
--doc """
-Type checks a function definition using the built-in environment.
-
-Convenience function that calls `check_function/2` with the standard 
-built-in environment.
-
-## Arguments
-
-- `Function` - Function definition AST node
-
-## Returns
-
-- `{ok, NewEnv, typecheck_result()}` - Success with updated environment
-- `{error, typecheck_error()}` - Type checking failure
-
-## Example
-
-```erlang
-
-Func = #function_def{name = add, params = Params, body = Body, ...},
-{ok, Env, Result} = cure_typechecker:check_function(Func).
-```
-""".
-
-check_function(Function) ->
-    check_function(Function, builtin_env()).
-
-check_function(
-    #function_def{
-        name = Name,
-        params = Params,
-        return_type = ReturnType,
-        constraint = Constraint,
-        body = Body,
-        is_private = _,
-        location = Location
-    },
-    Env
-) ->
-    try
-        % Convert parameters to type environment
-        {ParamTypes, ParamEnv} = process_parameters(Params, Env),
-
-        % Also extract type parameters from return type
-        EnvWithReturnTypeParams =
-            case ReturnType of
-                undefined ->
-                    ParamEnv;
-                _ ->
-                    extract_and_add_type_params(ReturnType, ParamEnv)
-            end,
-
-        % Check constraint if present
-        case Constraint of
-            undefined ->
-                ok;
-            _ ->
-                case
-                    cure_types:infer_type(
-                        convert_expr_to_tuple(Constraint), EnvWithReturnTypeParams
-                    )
-                of
-                    {ok, InferenceResult} ->
-                        ConstraintType = element(2, InferenceResult),
-                        case cure_types:unify(ConstraintType, {primitive_type, 'Bool'}) of
-                            {ok, _} ->
-                                ok;
-                            {error, Reason} ->
-                                throw({constraint_not_bool, Reason, Location})
-                        end;
-                    {error, Reason} ->
-                        throw({constraint_inference_failed, Reason, Location})
-                end
-        end,
-
-        % Check function body
-        case cure_types:infer_type(convert_expr_to_tuple(Body), EnvWithReturnTypeParams) of
-            {ok, InferenceResult2} ->
-                BodyType = element(2, InferenceResult2),
-                % Check return type if specified
-                case ReturnType of
-                    undefined ->
-                        % Function type is inferred
-                        FuncType = {function_type, ParamTypes, BodyType},
-                        cure_utils:debug(
-                            "Adding function ~p to env with inferred type: ~p~n",
-                            [Name, FuncType]
-                        ),
-                        NewEnv = cure_types:extend_env(Env, Name, FuncType),
-                        {ok, NewEnv, success_result(FuncType)};
-                    _ ->
-                        % Check body matches declared return type
-                        ExpectedReturnType = convert_type_to_tuple(ReturnType),
-                        cure_utils:debug(
-                            "Function ~p - body type: ~p, expected: ~p~n",
-                            [Name, BodyType, ExpectedReturnType]
-                        ),
-                        case cure_types:unify(BodyType, ExpectedReturnType) of
-                            {ok, _} ->
-                                FuncType = {function_type, ParamTypes, ExpectedReturnType},
-                                cure_utils:debug("Adding function ~p to env with type: ~p~n", [
-                                    Name, FuncType
-                                ]),
-                                NewEnv = cure_types:extend_env(Env, Name, FuncType),
-                                {ok, NewEnv, success_result(FuncType)};
-                            {error, UnifyReason} ->
-                                ErrorMsg =
-                                    #typecheck_error{
-                                        message =
-                                            "Function body type doesn't match declared return type",
-                                        location = Location,
-                                        details =
-                                            {type_mismatch, ExpectedReturnType, BodyType,
-                                                UnifyReason}
-                                    },
-                                {ok, Env, error_result(ErrorMsg)}
-                        end
-                end;
-            {error, InferReason} ->
-                ErrorMsg2 =
-                    #typecheck_error{
-                        message = "Failed to infer function body type",
-                        location = Location,
-                        details = {inference_failed, InferReason}
-                    },
-                {ok, Env, error_result(ErrorMsg2)}
-        end
-    catch
-        {ErrorType, Details, ErrorLocation} ->
-            ThrownError =
-                #typecheck_error{
-                    message = format_error_type(ErrorType),
-                    location = ErrorLocation,
-                    details = Details
-                },
-            {ok, Env, error_result(ThrownError)}
-    end.
 
 %% Check FSM definition
 check_fsm(
@@ -578,7 +345,7 @@ check_fsm(
     end.
 
 %% Check module definition - New AST format
-check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
+check_module({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
     % Create module-scoped environment
     ModuleEnv = cure_types:extend_env(Env, module, Name),
 
@@ -605,7 +372,7 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
             ExportSpecs = extract_export_specs(Exports, Items),
             cure_utils:debug("[MODULE] Export specs: ~p~n", [ExportSpecs]),
             cure_utils:debug("[MODULE] Items: ~p~n", [[element(1, I) || I <- Items]]),
-            case check_exports_new(ExportSpecs, Items) of
+            case check_exports(ExportSpecs, Items) of
                 ok ->
                     {ok, cure_types:extend_env(Env, Name, {module_type, Name}), Result};
                 {error, ExportError} ->
@@ -617,22 +384,22 @@ check_module_new({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
 
 %% Check function definition - New AST format
 % 7-parameter format (old format without is_private)
-check_function_new(
+check_function(
     {function_def, Name, Params, ReturnType, Constraint, Body, Location},
     Env
 ) ->
-    check_function_new(
+    check_function(
         {function_def, Name, Params, ReturnType, Constraint, Body, false, Location},
         Env
     );
 % 8-parameter format (new format with is_private)
-check_function_new(
+check_function(
     {function_def, Name, Params, ReturnType, Constraint, Body, _IsPrivate, Location},
     Env
 ) ->
     try
         % Convert parameters to type environment and extract type parameters
-        {ParamTypes, ParamEnv} = process_parameters_new(Params, Env),
+        {ParamTypes, ParamEnv} = process_parameters(Params, Env),
 
         % Also extract type parameters from return type if present
         EnvWithReturnTypeParams =
@@ -750,7 +517,9 @@ check_function_new(
             end
         catch
             error:function_clause:Stacktrace ->
-                cure_utils:debug("ERROR: function_clause error in infer_type for function ~p~n", [Name]),
+                cure_utils:debug("ERROR: function_clause error in infer_type for function ~p~n", [
+                    Name
+                ]),
                 cure_utils:debug("ERROR: Body tuple: ~p~n", [convert_expr_to_tuple(Body)]),
                 io:format(
                     "ERROR: Environment size: ~p~n",
@@ -787,7 +556,7 @@ check_function_new(
 
 %% Check curify function definition
 %% For curify functions, we trust the type annotations and validate the function signature matches
-check_curify_function_new(
+check_curify_function(
     #curify_function_def{
         name = Name,
         params = Params,
@@ -812,7 +581,7 @@ check_curify_function_new(
         end,
 
         % Convert parameters to type environment
-        {ParamTypes, ParamEnv} = process_parameters_new(Params, Env),
+        {ParamTypes, ParamEnv} = process_parameters(Params, Env),
 
         % Check constraint if present (same as regular functions)
         case Constraint of
@@ -858,8 +627,8 @@ check_curify_function_new(
     end.
 
 %% Check import - New AST format
-check_import_new({import_def, Module, Items, _Location}, Env) ->
-    case check_import_items_new(Module, Items, Env) of
+check_import({import_def, Module, Items, _Location}, Env) ->
+    case check_import_items(Module, Items, Env) of
         {ok, NewEnv} ->
             ImportType = {import_type, Module, Items},
             {ok, NewEnv, success_result(ImportType)};
@@ -1038,7 +807,9 @@ load_stdlib_modules() ->
             CureFiles = [F || F <- Files, lists:suffix(".cure", F)],
             load_stdlib_files(StdLibPath, CureFiles, #{});
         {error, Reason} ->
-            cure_utils:debug("Warning: Could not load stdlib directory ~s: ~p~n", [StdLibPath, Reason]),
+            cure_utils:debug("Warning: Could not load stdlib directory ~s: ~p~n", [
+                StdLibPath, Reason
+            ]),
             #{}
     end.
 
@@ -1337,57 +1108,6 @@ builtin_env() ->
     Env14.
 
 %% Helper functions
-process_parameters(Params, Env) ->
-    process_parameters(Params, Env, [], Env).
-
-process_parameters([], _OrigEnv, TypesAcc, EnvAcc) ->
-    {lists:reverse(TypesAcc), EnvAcc};
-process_parameters(
-    [#param{name = Name, type = TypeExpr} | RestParams],
-    OrigEnv,
-    TypesAcc,
-    EnvAcc
-) ->
-    ParamType = convert_type_to_tuple(TypeExpr),
-
-    % Extract type parameters from dependent types and add them to environment
-    % but only add new type parameters, not ones that already exist
-    EnvWithTypeParams = extract_and_add_type_params_safe(TypeExpr, EnvAcc),
-
-    % Add the parameter itself to environment
-    NewEnvAcc = cure_types:extend_env(EnvWithTypeParams, Name, ParamType),
-    process_parameters(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc).
-
-check_exports([], _Items) ->
-    ok;
-check_exports([#export_spec{name = Name, arity = Arity} | RestExports], Items) ->
-    case find_function(Name, Items) of
-        {ok, #function_def{params = Params}} ->
-            case length(Params) =:= Arity of
-                true ->
-                    check_exports(RestExports, Items);
-                false ->
-                    {error, {export_arity_mismatch, Name, Arity, length(Params)}}
-            end;
-        {ok, #curify_function_def{params = Params}} ->
-            case length(Params) =:= Arity of
-                true ->
-                    check_exports(RestExports, Items);
-                false ->
-                    {error, {export_arity_mismatch, Name, Arity, length(Params)}}
-            end;
-        not_found ->
-            {error, {exported_function_not_found, Name, Arity}}
-    end.
-
-find_function(Name, [#function_def{name = Name} = Function | _]) ->
-    {ok, Function};
-find_function(Name, [#curify_function_def{name = Name} = Function | _]) ->
-    {ok, Function};
-find_function(Name, [_ | RestItems]) ->
-    find_function(Name, RestItems);
-find_function(_Name, []) ->
-    not_found.
 
 check_state_definitions(StateDefs, States) ->
     % Check that all defined states are in the states list
@@ -1605,8 +1325,12 @@ convert_type_with_env(#identifier_expr{name = Name}, Env) ->
                 true ->
                     % ERROR: Generic type parameters should be in the environment by now!
                     % This indicates the environment wasn't properly set up
-                    cure_utils:debug("ERROR: Generic parameter ~p not found in environment!~n", [Name]),
-                    cure_utils:debug("ERROR: This should not happen - creating emergency type variable~n"),
+                    cure_utils:debug("ERROR: Generic parameter ~p not found in environment!~n", [
+                        Name
+                    ]),
+                    cure_utils:debug(
+                        "ERROR: This should not happen - creating emergency type variable~n"
+                    ),
                     cure_types:new_type_var(Name);
                 false ->
                     % It's a concrete type like Int, Bool, etc.
@@ -1678,7 +1402,7 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                 % Create function type from signature
                 cure_utils:debug("[SIG] Pre-processing function signature for ~p~n", [Name]),
                 try
-                    {ParamTypes, EnvWithParams} = process_parameters_new(Params, Env),
+                    {ParamTypes, EnvWithParams} = process_parameters(Params, Env),
                     FinalReturnType =
                         case ReturnType of
                             undefined ->
@@ -1694,7 +1418,9 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                     cure_types:extend_env(Env, Name, FuncType)
                 catch
                     Class:Error:Stacktrace ->
-                        cure_utils:debug("ERROR SIG: Failed to pre-process function ~p signature~n", [Name]),
+                        cure_utils:debug(
+                            "ERROR SIG: Failed to pre-process function ~p signature~n", [Name]
+                        ),
                         cure_utils:debug("ERROR SIG: Class: ~p, Error: ~p~n", [Class, Error]),
                         cure_utils:debug("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
                         Env
@@ -1709,7 +1435,7 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                     "[SIG] Pre-processing curify function ~p~n", [Name]
                 ),
                 try
-                    {ParamTypes, EnvWithParams} = process_parameters_new(Params, Env),
+                    {ParamTypes, EnvWithParams} = process_parameters(Params, Env),
                     % For curify, return type MUST be specified
                     FinalReturnType = convert_type_with_env(ReturnType, EnvWithParams),
                     FuncType = {function_type, ParamTypes, FinalReturnType},
@@ -2084,7 +1810,7 @@ infer_dependent_type(Expr, Env) ->
 process_imports([], Env) ->
     {ok, Env};
 process_imports([Import | RestImports], Env) ->
-    case check_import_new(Import, Env) of
+    case check_import(Import, Env) of
         {ok, NewEnv, _Result} ->
             process_imports(RestImports, NewEnv);
         {error, Error} ->
@@ -2108,10 +1834,10 @@ extract_export_specs(ExportSpecs, _Items) when is_list(ExportSpecs) ->
 extract_export_specs([_ | RestExports], Items) ->
     extract_export_specs(RestExports, Items).
 
-check_exports_new([], _Items) ->
+check_exports([], _Items) ->
     ok;
-check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) ->
-    case find_function_new(Name, Items) of
+check_exports([{export_spec, Name, Arity, _Location} | RestExports], Items) ->
+    case find_function(Name, Items) of
         {ok,
             {function_def, _Name, Params, _ReturnType, _Constraint, _Body, IsPrivate,
                 _UnusedLocation}} ->
@@ -2121,21 +1847,21 @@ check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) 
                 false ->
                     case length(Params) =:= Arity of
                         true ->
-                            check_exports_new(RestExports, Items);
+                            check_exports(RestExports, Items);
                         false ->
                             {error, {export_arity_mismatch, Name, Arity, length(Params)}}
                     end
             end;
         {ok,
-            {curify_function_def, _Name, Params, _ReturnType, _Constraint, _ErlModule,
-                _ErlFunc, _ErlArity, IsPrivate, _UnusedLocation}} ->
+            {curify_function_def, _Name, Params, _ReturnType, _Constraint, _ErlModule, _ErlFunc,
+                _ErlArity, IsPrivate, _UnusedLocation}} ->
             case IsPrivate of
                 true ->
                     {error, {cannot_export_private_function, Name, Arity}};
                 false ->
                     case length(Params) =:= Arity of
                         true ->
-                            check_exports_new(RestExports, Items);
+                            check_exports(RestExports, Items);
                         false ->
                             {error, {export_arity_mismatch, Name, Arity, length(Params)}}
                     end
@@ -2144,7 +1870,7 @@ check_exports_new([{export_spec, Name, Arity, _Location} | RestExports], Items) 
             {error, {exported_function_not_found, Name, Arity}}
     end.
 
-find_function_new(
+find_function(
     Name,
     [
         #function_def{
@@ -2160,13 +1886,13 @@ find_function_new(
     ]
 ) ->
     {ok, {function_def, Name, Params, ReturnType, Constraint, Body, IsPrivate, Location}};
-find_function_new(
+find_function(
     Name,
     [{function_def, Name, Params, ReturnType, Constraint, Body, Location} | _]
 ) ->
     % Fallback for old tuple-based format without is_private field
     {ok, {function_def, Name, Params, ReturnType, Constraint, Body, false, Location}};
-find_function_new(
+find_function(
     Name,
     [
         #curify_function_def{
@@ -2186,7 +1912,7 @@ find_function_new(
     {ok,
         {curify_function_def, Name, Params, ReturnType, Constraint, ErlModule, ErlFunc, ErlArity,
             IsPrivate, Location}};
-find_function_new(
+find_function(
     Name,
     [
         {curify_function_def, Name, Params, ReturnType, Constraint, ErlModule, ErlFunc, ErlArity,
@@ -2198,12 +1924,12 @@ find_function_new(
     {ok,
         {curify_function_def, Name, Params, ReturnType, Constraint, ErlModule, ErlFunc, ErlArity,
             IsPrivate, Location}};
-find_function_new(Name, [_ | RestItems]) ->
-    find_function_new(Name, RestItems);
-find_function_new(_Name, []) ->
+find_function(Name, [_ | RestItems]) ->
+    find_function(Name, RestItems);
+find_function(_Name, []) ->
     not_found.
 
-process_parameters_new(Params, Env) ->
+process_parameters(Params, Env) ->
     % First pass: collect all type parameters from all parameters
     cure_utils:debug("Extracting type parameters from all params: ~p~n", [Params]),
     EnvWithAllTypeParams =
@@ -2221,11 +1947,11 @@ process_parameters_new(Params, Env) ->
     cure_utils:debug("Environment after extracting all type params~n"),
 
     % Second pass: process parameters with full type environment
-    process_parameters_new(Params, Env, [], EnvWithAllTypeParams).
+    process_parameters(Params, Env, [], EnvWithAllTypeParams).
 
-process_parameters_new([], _OrigEnv, TypesAcc, EnvAcc) ->
+process_parameters([], _OrigEnv, TypesAcc, EnvAcc) ->
     {lists:reverse(TypesAcc), EnvAcc};
-process_parameters_new(
+process_parameters(
     [Param | RestParams],
     OrigEnv,
     TypesAcc,
@@ -2242,22 +1968,22 @@ process_parameters_new(
     cure_utils:debug("[PARAM] Converted ~p to type ~p~n", [TypeExpr, ParamType]),
     % Add the parameter itself to environment
     NewEnvAcc = cure_types:extend_env(EnvAcc, Name, ParamType),
-    process_parameters_new(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc).
+    process_parameters(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc).
 
-check_import_items_new(Module, Items, Env) ->
-    import_items_new(Module, Items, Env).
+check_import_items(Module, Items, Env) ->
+    import_items(Module, Items, Env).
 
-import_items_new(_Module, [], AccEnv) ->
+import_items(_Module, [], AccEnv) ->
     {ok, AccEnv};
-import_items_new(Module, [Item | RestItems], AccEnv) ->
-    case import_item_new(Module, Item, AccEnv) of
+import_items(Module, [Item | RestItems], AccEnv) ->
+    case import_item(Module, Item, AccEnv) of
         {ok, NewAccEnv} ->
-            import_items_new(Module, RestItems, NewAccEnv);
+            import_items(Module, RestItems, NewAccEnv);
         {error, Error} ->
             {error, Error}
     end.
 
-import_item_new(Module, {function_import, Name, Arity, _Alias, _Location}, Env) ->
+import_item(Module, {function_import, Name, Arity, _Alias, _Location}, Env) ->
     cure_utils:debug(
         "[IMPORT] Processing function_import ~p/~p from ~p~n",
         [Name, Arity, Module]
@@ -2265,7 +1991,7 @@ import_item_new(Module, {function_import, Name, Arity, _Alias, _Location}, Env) 
     FunctionType = create_imported_function_type(Module, Name, Arity),
     NewEnv = cure_types:extend_env(Env, Name, FunctionType),
     {ok, NewEnv};
-import_item_new(Module, {aliased_import, OriginalName, Alias, _Location}, Env) ->
+import_item(Module, {aliased_import, OriginalName, Alias, _Location}, Env) ->
     % Import with alias: "import Module [name as alias]"
     cure_utils:debug(
         "[IMPORT] Processing aliased_import ~p as ~p from ~p~n",
@@ -2282,7 +2008,7 @@ import_item_new(Module, {aliased_import, OriginalName, Alias, _Location}, Env) -
     FunctionType = create_imported_function_type(Module, OriginalName, DefaultArity),
     NewEnv = cure_types:extend_env(Env, Alias, FunctionType),
     {ok, NewEnv};
-import_item_new(Module, Identifier, Env) when is_atom(Identifier) ->
+import_item(Module, Identifier, Env) when is_atom(Identifier) ->
     cure_utils:debug(
         "[IMPORT] Processing atom identifier ~p from ~p~n",
         [Identifier, Module]

@@ -111,33 +111,42 @@ compile_function_to_erlang(
     _LocalFunctions
 ) ->
     compile_curify_function_to_erlang(
-        #{name => Name, arity => Arity, params => Params,
-          erlang_module => ErlModule, erlang_function => ErlFunc,
-          return_type => ReturnType},
+        #{
+            name => Name,
+            arity => Arity,
+            params => Params,
+            erlang_module => ErlModule,
+            erlang_function => ErlFunc,
+            return_type => ReturnType
+        },
         StartLine
     ).
 
 %% Compile curify function with auto-conversion
 %% Generates a wrapper that calls the Erlang function and converts return values
 compile_curify_function_to_erlang(
-    #{name := Name, arity := Arity, params := Params,
-      erlang_module := ErlModule, erlang_function := ErlFunc,
-      return_type := ReturnType},
+    #{
+        name := Name,
+        arity := Arity,
+        params := Params,
+        erlang_module := ErlModule,
+        erlang_function := ErlFunc,
+        return_type := ReturnType
+    },
     StartLine
 ) ->
     try
         ParamVars = [{var, StartLine, Param} || Param <- Params],
-        
+
         % Generate the Erlang function call
-        ErlangCall = {call, StartLine,
-            {remote, StartLine,
-                {atom, StartLine, ErlModule},
-                {atom, StartLine, ErlFunc}},
-            ParamVars},
-        
+        ErlangCall =
+            {call, StartLine,
+                {remote, StartLine, {atom, StartLine, ErlModule}, {atom, StartLine, ErlFunc}},
+                ParamVars},
+
         % Wrap with return value conversion based on return type
         Body = generate_return_conversion(ErlangCall, ReturnType, StartLine),
-        
+
         FunctionForm =
             {function, StartLine, Name, Arity, [
                 {clause, StartLine, ParamVars, [], [Body]}
@@ -158,20 +167,17 @@ generate_return_conversion(ErlangCall, ReturnType, Line) ->
             % Use a case expression to handle the Erlang return value
             {'case', Line, ErlangCall, [
                 % Match {ok, Value} -> keep as-is (already a Result)
-                {clause, Line,
-                    [{tuple, Line, [{atom, Line, ok}, {var, Line, 'Value'}]}],
-                    [],
-                    [{tuple, Line, [{atom, Line, ok}, {var, Line, 'Value'}]}]},
+                {clause, Line, [{tuple, Line, [{atom, Line, ok}, {var, Line, 'Value'}]}], [], [
+                    {tuple, Line, [{atom, Line, ok}, {var, Line, 'Value'}]}
+                ]},
                 % Match {error, Reason} -> keep as-is (already a Result)
-                {clause, Line,
-                    [{tuple, Line, [{atom, Line, error}, {var, Line, 'Reason'}]}],
-                    [],
-                    [{tuple, Line, [{atom, Line, error}, {var, Line, 'Reason'}]}]},
+                {clause, Line, [{tuple, Line, [{atom, Line, error}, {var, Line, 'Reason'}]}], [], [
+                    {tuple, Line, [{atom, Line, error}, {var, Line, 'Reason'}]}
+                ]},
                 % Match any other value -> wrap in ok
-                {clause, Line,
-                    [{var, Line, 'Other'}],
-                    [],
-                    [{tuple, Line, [{atom, Line, ok}, {var, Line, 'Other'}]}]}
+                {clause, Line, [{var, Line, 'Other'}], [], [
+                    {tuple, Line, [{atom, Line, ok}, {var, Line, 'Other'}]}
+                ]}
             ]};
         false ->
             % For non-Result types, return value as-is

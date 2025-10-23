@@ -175,7 +175,9 @@ test_benchmark_operations() ->
     MaxTime = maps:get(max, BenchmarkResult),
     MinTime = maps:get(min, BenchmarkResult),
 
-    cure_utils:debug("  ✓ Parse benchmark: avg=~w μs, max=~w μs, min=~w μs~n", [AvgTime, MaxTime, MinTime]).
+    cure_utils:debug("  ✓ Parse benchmark: avg=~w μs, max=~w μs, min=~w μs~n", [
+        AvgTime, MaxTime, MinTime
+    ]).
 
 %% Helper functions
 

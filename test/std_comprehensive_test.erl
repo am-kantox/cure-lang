@@ -231,8 +231,12 @@ print_test_coverage_summary() ->
     cure_utils:debug("  • Comparison operations: eq/2, ne/2, lt/2, le/2, gt/2, ge/2~n"),
     cure_utils:debug("  • Min/max operations: minimum/2, maximum/2, clamp/3~n"),
     cure_utils:debug("  • Result type operations: ok/1, error/1, map_ok/2, and_then/2~n"),
-    cure_utils:debug("  • Option type operations: some/1, none/0, map_option/2, flat_map_option/2~n"),
-    cure_utils:debug("  • Utility functions: identity/1, compose/2, flip/1, const/1, apply/2, pipe/2~n~n"),
+    cure_utils:debug(
+        "  • Option type operations: some/1, none/0, map_option/2, flat_map_option/2~n"
+    ),
+    cure_utils:debug(
+        "  • Utility functions: identity/1, compose/2, flip/1, const/1, apply/2, pipe/2~n~n"
+    ),
 
     cure_utils:debug("🖨️  Std.IO:~n"),
     cure_utils:debug("  • print/1, println/1 - Confirmed to return Int (0) instead of Unit~n"),
@@ -266,12 +270,16 @@ print_test_coverage_summary() ->
     cure_utils:debug("  • Note: Many functions currently return placeholder values~n~n"),
 
     cure_utils:debug("⚠️  IMPORTANT NOTES:~n"),
-    cure_utils:debug("  • Tests are designed for the current Cure standard library implementation~n"),
+    cure_utils:debug(
+        "  • Tests are designed for the current Cure standard library implementation~n"
+    ),
     io:format(
         "  • Some functions have placeholder implementations that return simplified values~n"
     ),
     cure_utils:debug("  • Tests validate both current behavior and expected future behavior~n"),
-    cure_utils:debug("  • All tests use Erlang implementations to simulate Cure function behavior~n"),
+    cure_utils:debug(
+        "  • All tests use Erlang implementations to simulate Cure function behavior~n"
+    ),
     cure_utils:debug("  • Integration with actual Cure compiler will require minimal changes~n").
 
 %% Utility function to get test statistics
