@@ -990,16 +990,28 @@ compile_missing_stdlib_files(MissingBeamFiles) ->
         MissingBeamFiles
     ),
 
-    % Compile each source file individually
+    % Compile each source file individually using direct compilation to avoid recursion
     Results = lists:map(
         fun(SourceFile) ->
             cure_utils:debug("  Compiling ~s...~n", [SourceFile]),
-            case os:cmd(io_lib:format("./cure '~s' --verbose 2>&1", [SourceFile])) of
-                CompileOutput ->
-                    case string:str(CompileOutput, "Successfully compiled") of
-                        0 -> {error, {individual_compile_failed, SourceFile, CompileOutput}};
-                        _ -> ok
-                    end
+            % Call compile_file directly instead of using ./cure to avoid infinite recursion
+            % Use minimal options since this is stdlib compilation
+            StdlibOpts = #compile_options{
+                output_dir = "_build/ebin",
+                debug_info = true,
+                warnings = false,
+                verbose = false,
+                type_check = false,  % Skip type checking for stdlib to avoid circular deps
+                optimize = false,
+                fsm_runtime = false,
+                stdlib_paths = []
+            },
+            case compile_file(SourceFile, StdlibOpts) of
+                {ok, OutputFile} ->
+                    cure_utils:debug("    Successfully compiled ~s~n", [OutputFile]),
+                    ok;
+                {error, Reason} ->
+                    {error, {individual_compile_failed, SourceFile, Reason}}
             end
         end,
         SourceFiles
