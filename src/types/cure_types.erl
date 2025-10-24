@@ -150,6 +150,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     % Type inference
     infer_type/2, infer_type/3,
     infer_dependent_type/2,
+    instantiate_type_if_function/1,
 
     % Enhanced type inference
     enhanced_infer_type/2, enhanced_infer_type/3,
@@ -1101,27 +1102,60 @@ unify_lengths(Len1, Len2, Subst) when Len1 =/= undefined, Len2 =/= undefined ->
                 ConcreteLen, TypeVar
             ]),
             unify_impl(ConcreteLen, TypeVar, Subst);
-        _ ->
-            % Enhanced length checking with evaluation - but be more permissive
-            case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
-                {{ok, N}, {ok, N}} when is_integer(N) ->
-                    % Same evaluated length
-                    {ok, Subst};
-                {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
-                    % Different evaluated lengths - this should fail for dependent types
+        % Handle primitive type variables (e.g., {primitive_type, n})
+        {{primitive_type, VarName}, ConcreteLen} when is_atom(VarName) ->
+            case is_generic_type_variable_name(VarName) of
+                true ->
                     cure_utils:debug(
-                        "Length mismatch detected: ~p vs ~p~n", [
-                            N1, N2
+                        "(regular) Unifying primitive type variable ~p with concrete length ~p~n", [
+                            VarName, ConcreteLen
                         ]
                     ),
-                    {error, {length_mismatch, N1, N2}};
-                _ ->
-                    % Fall back to structural comparison - also be permissive
-                    {ok, Subst}
-            end
+                    % Type variable can unify with any concrete length
+                    {ok, Subst};
+                false ->
+                    % Not a type variable, fall through to evaluation
+                    evaluate_and_compare_lengths(Len1, Len2, Subst)
+            end;
+        {ConcreteLen, {primitive_type, VarName}} when is_atom(VarName) ->
+            case is_generic_type_variable_name(VarName) of
+                true ->
+                    cure_utils:debug(
+                        "(regular) Unifying concrete length ~p with primitive type variable ~p~n", [
+                            ConcreteLen, VarName
+                        ]
+                    ),
+                    % Type variable can unify with any concrete length
+                    {ok, Subst};
+                false ->
+                    % Not a type variable, fall through to evaluation
+                    evaluate_and_compare_lengths(Len1, Len2, Subst)
+            end;
+        _ ->
+            % Enhanced length checking with evaluation - but be more permissive
+            evaluate_and_compare_lengths(Len1, Len2, Subst)
     end;
 unify_lengths(_, _, Subst) ->
     {ok, Subst}.
+
+%% Helper function to evaluate and compare lengths
+evaluate_and_compare_lengths(Len1, Len2, Subst) ->
+    case {evaluate_length_expr(Len1), evaluate_length_expr(Len2)} of
+        {{ok, N}, {ok, N}} when is_integer(N) ->
+            % Same evaluated length
+            {ok, Subst};
+        {{ok, N1}, {ok, N2}} when is_integer(N1), is_integer(N2), N1 =/= N2 ->
+            % Different evaluated lengths - this should fail for dependent types
+            cure_utils:debug(
+                "Length mismatch detected: ~p vs ~p~n", [
+                    N1, N2
+                ]
+            ),
+            {error, {length_mismatch, N1, N2}};
+        _ ->
+            % Fall back to structural comparison - also be permissive
+            {ok, Subst}
+    end.
 
 %% Enhanced strict length unification that uses recursive context
 unify_lengths_strict_with_context(Len1, Len2, Subst, RecState) ->
@@ -1655,7 +1689,9 @@ infer_expr({identifier_expr, Name, Location}, Env) ->
         undefined ->
             {error, {unbound_variable, Name, Location}};
         Type ->
-            {ok, Type, []}
+            % Freshly instantiate function types to ensure polymorphism
+            InstantiatedType = instantiate_type_if_function(Type),
+            {ok, InstantiatedType, []}
     end;
 infer_expr({binary_op_expr, Op, Left, Right, Location}, Env) ->
     case infer_expr(Left, Env) of
@@ -1928,14 +1964,8 @@ infer_function_call_with_recursive_tracking(Function, Args, Location, Env) ->
                     % Look up the identifier in the environment
                     case lookup_env(Env, FunctionName) of
                         undefined ->
-                            % Try recursive call inference
-                            case infer_recursive_function_call(FunctionName, Args, Env, RecState) of
-                                {ok, ResultType, Constraints, UpdatedState} ->
-                                    put(recursive_state, UpdatedState),
-                                    {ok, ResultType, Constraints};
-                                {error, _} ->
-                                    infer_function_call_standard(Function, Args, Location, Env)
-                            end;
+                            % Unbound - use standard inference which will error
+                            infer_function_call_standard(Function, Args, Location, Env);
                         ConstructorType ->
                             % Check if it's a nullary constructor (not a function type)
                             case is_constructor_type(ConstructorType) of
@@ -1943,35 +1973,14 @@ infer_function_call_with_recursive_tracking(Function, Args, Location, Env) ->
                                     % This is a nullary constructor - return its type directly
                                     {ok, ConstructorType, []};
                                 false ->
-                                    % This is a function - proceed with normal inference
-                                    case
-                                        infer_recursive_function_call(
-                                            FunctionName, Args, Env, RecState
-                                        )
-                                    of
-                                        {ok, ResultType, Constraints, UpdatedState} ->
-                                            put(recursive_state, UpdatedState),
-                                            {ok, ResultType, Constraints};
-                                        {error, {unbound_function, _}} ->
-                                            infer_function_call_standard(
-                                                Function, Args, Location, Env
-                                            );
-                                        {error, Reason} ->
-                                            {error, Reason}
-                                    end
+                                    % This is a function - proceed with standard inference
+                                    infer_function_call_standard(Function, Args, Location, Env)
                             end
                     end;
                 _ ->
-                    % Non-empty args - proceed with normal function call inference
-                    case infer_recursive_function_call(FunctionName, Args, Env, RecState) of
-                        {ok, ResultType, Constraints, UpdatedState} ->
-                            put(recursive_state, UpdatedState),
-                            {ok, ResultType, Constraints};
-                        {error, {unbound_function, _}} ->
-                            infer_function_call_standard(Function, Args, Location, Env);
-                        {error, Reason} ->
-                            {error, Reason}
-                    end
+                    % Non-empty args - use standard inference which freshly instantiates
+                    % polymorphic functions each time
+                    infer_function_call_standard(Function, Args, Location, Env)
             end;
         _ ->
             % Complex function expression, use standard inference
@@ -2132,6 +2141,13 @@ validate_refined_type_assignment(
 validate_refined_type_assignment(_ValueExpr, _InferredType, _ExpectedType, _Location) ->
     % For non-literal expressions or non-refined types, no additional validation needed
     ok.
+
+%% Instantiate a type if it's a function type, otherwise return as-is
+instantiate_type_if_function(Type) ->
+    case instantiate_function_type(Type) of
+        {ok, InstantiatedType, _} -> InstantiatedType;
+        {error, {not_function_type, _}} -> Type
+    end.
 
 %% Instantiate function type with fresh type variables while preserving sharing
 instantiate_function_type({function_type, ParamTypes, ReturnType}) ->
@@ -2343,6 +2359,12 @@ update_param_value(#type_param{name = _Name, value = _OldValue} = Param, NewValu
 update_param_value(_Param, NewValue) ->
     % Fallback - create new param structure
     #type_param{name = undefined, value = NewValue}.
+
+%% Check if a type is an imported function type
+is_imported_function_type({imported_function_type, _, _, _, _}) ->
+    true;
+is_imported_function_type(_) ->
+    false.
 
 %% Check if a type is a nullary constructor (value type, not function type)
 is_constructor_type({function_type, _, _}) ->
@@ -2642,15 +2664,28 @@ infer_let_expr([{binding, Pattern, Value, _Location} | RestBindings], Body, Env,
         {ok, ValueType, ValueConstraints} ->
             case infer_pattern(Pattern) of
                 {ok, PatternType, VarName} ->
-                    UnifyConstraint = #type_constraint{
-                        left = PatternType,
-                        op = '=',
-                        right = ValueType,
-                        location = undefined
-                    },
-                    NewEnv = extend_env(Env, VarName, ValueType),
-                    AllConstraints = Constraints ++ ValueConstraints ++ [UnifyConstraint],
-                    infer_let_expr(RestBindings, Body, NewEnv, AllConstraints);
+                    % Solve constraints for this binding immediately to create proper scoping
+                    % This prevents type variables from different bindings from interfering
+                    BindingConstraints =
+                        ValueConstraints ++
+                            [
+                                #type_constraint{
+                                    left = PatternType,
+                                    op = '=',
+                                    right = ValueType,
+                                    location = undefined
+                                }
+                            ],
+                    case solve_constraints(BindingConstraints) of
+                        {ok, Subst} ->
+                            % Apply substitution to get concrete type for this binding
+                            ConcreteValueType = apply_substitution(ValueType, Subst),
+                            NewEnv = extend_env(Env, VarName, ConcreteValueType),
+                            % Continue with remaining bindings, keeping original constraints
+                            infer_let_expr(RestBindings, Body, NewEnv, Constraints);
+                        {error, Reason} ->
+                            {error, {binding_constraint_failed, VarName, Reason}}
+                    end;
                 Error ->
                     Error
             end;

@@ -14,22 +14,7 @@ Verify it works:
 ./cure-lsp --version
 ```
 
-## Step 2: Install JSX Dependency (if needed)
-
-The LSP server requires the `jsx` JSON library. Install it with:
-
-```bash
-rebar3 get-deps
-rebar3 compile
-```
-
-Update your cure-lsp escript shebang if needed to include the jsx path:
-```bash
-#!/usr/bin/env escript
-%%! -pa _build/ebin -pa _build/lsp -pa _build/lib -pa _deps/jsx/ebin
-```
-
-## Step 3: Configure NeoVim
+## Step 2: Configure NeoVim
 
 Add to your NeoVim configuration (`~/.config/nvim/init.lua`):
 
@@ -68,7 +53,7 @@ vim.filetype.add({
 })
 ```
 
-## Step 4: Test It
+## Step 3: Test It
 
 1. Open a `.cure` file in NeoVim:
    ```bash
@@ -82,7 +67,7 @@ vim.filetype.add({
 
 3. You should see "cure_lsp: attached" and the client running.
 
-## Step 5: Use LSP Features
+## Step 4: Use LSP Features
 
 - **Diagnostics**: Syntax errors will appear automatically
 - **Go to definition**: Press `gd` on a function name
@@ -91,13 +76,6 @@ vim.filetype.add({
 - **Auto-complete**: Use `<C-x><C-o>` or your completion plugin
 
 ## Troubleshooting
-
-### "jsx not found" error
-Install jsx dependency:
-```bash
-cd /opt/Proyectos/Ammotion/cure
-rebar3 get-deps
-```
 
 ### LSP not attaching
 Check the LSP log:

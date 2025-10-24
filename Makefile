@@ -184,18 +184,8 @@ install: compiler
 	# TODO: Add installation logic
 
 # Build LSP server
-lsp: compiler $(LSP_BEAM_FILES) lsp-deps lsp-scripts
+lsp: compiler $(LSP_BEAM_FILES) lsp-scripts
 	@echo "Cure LSP server built successfully"
-
-# Fetch and build LSP dependencies (jsx)
-lsp-deps:
-	@echo "Building LSP dependencies (jsx)..."
-	@if command -v rebar3 >/dev/null 2>&1; then \
-		rebar3 compile; \
-	else \
-		echo "Warning: rebar3 not found. JSX may not be available."; \
-		echo "Install rebar3 or manually provide jsx in _build/default/lib/jsx/ebin"; \
-	fi
 
 # Create LSP executable scripts
 lsp-scripts:

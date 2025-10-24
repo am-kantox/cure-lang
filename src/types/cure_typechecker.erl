@@ -1200,6 +1200,7 @@ get_stdlib_function_type(Module, Name, Arity) ->
         undefined ->
             not_found;
         FunctionType ->
+            % Return the function type as-is; instantiation happens at lookup time
             {ok, FunctionType}
     end.
 

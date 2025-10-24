@@ -18,22 +18,9 @@ main(["start"]) ->
     filename:join(ScriptDir, "_build/ebin"),
     filename:join(ScriptDir, "_build/lsp"),
     filename:join(ScriptDir, "_build/lib"),
-    filename:join(ScriptDir, "_build/lib/std"),
-    filename:join(ScriptDir, "_build/default/lib/jsx/ebin")
+    filename:join(ScriptDir, "_build/lib/std")
   ],
   lists:foreach(fun code:add_pathz/1, Paths),
-
-  % Check if jsx is available (needed for JSON encoding/decoding)
-  case code:which(jsx) of
-    non_existing ->
-      io:format(standard_error, "Error: jsx library not found. Please install jsx:~n", []),
-      io:format(standard_error, "  1. Add jsx to rebar.config dependencies~n", []),
-      io:format(standard_error, "  2. Or install via: rebar3 get-deps~n", []),
-      io:format(standard_error, "Paths searched: ~p~n", [Paths]),
-      halt(1);
-    _ ->
-      ok
-  end,
 
   % Start the LSP server
   case cure_lsp:start() of

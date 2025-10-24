@@ -129,14 +129,62 @@ parse_header_lines([Line | Rest], ContentLength) ->
 
 decode_json(Binary) ->
     try
-        {ok, jsx:decode(Binary, [return_maps, {labels, atom}])}
+        Decoded = json:decode(Binary),
+        % Convert keys to atoms for compatibility with existing code
+        {ok, atomize_keys(Decoded)}
     catch
         _:Error ->
             {error, Error}
     end.
 
 encode_json(Term) ->
-    jsx:encode(Term).
+    % Convert atom keys to binary for json:encode
+    PreparedTerm = binarize_keys(Term),
+    % json:encode returns an iolist, convert to binary
+    iolist_to_binary(json:encode(PreparedTerm)).
+
+%% Helper functions for key conversion
+atomize_keys(Map) when is_map(Map) ->
+    maps:fold(
+        fun(K, V, Acc) ->
+            Key =
+                if
+                    is_binary(K) ->
+                        try
+                            binary_to_existing_atom(K, utf8)
+                        catch
+                            _:_ -> K
+                        end;
+                    true ->
+                        K
+                end,
+            maps:put(Key, atomize_keys(V), Acc)
+        end,
+        #{},
+        Map
+    );
+atomize_keys(List) when is_list(List) ->
+    [atomize_keys(Item) || Item <- List];
+atomize_keys(Other) ->
+    Other.
+
+binarize_keys(Map) when is_map(Map) ->
+    maps:fold(
+        fun(K, V, Acc) ->
+            Key =
+                if
+                    is_atom(K) -> atom_to_binary(K, utf8);
+                    true -> K
+                end,
+            maps:put(Key, binarize_keys(V), Acc)
+        end,
+        #{},
+        Map
+    );
+binarize_keys(List) when is_list(List) ->
+    [binarize_keys(Item) || Item <- List];
+binarize_keys(Other) ->
+    Other.
 
 send_message(Message, State) ->
     Json = encode_json(Message),

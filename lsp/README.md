@@ -183,25 +183,10 @@ To add a new LSP feature:
 
 The LSP server requires:
 
-- **jsx**: JSON encoding/decoding library
+- **Erlang/OTP 27+**: For native `json` module support
 - **Cure compiler**: Lexer, parser, and type checker
 
-### Installing jsx
-
-Add to `rebar.config`:
-
-```erlang
-{deps, [
-    {jsx, "3.1.0"}
-]}.
-```
-
-Then run:
-
-```bash
-rebar3 get-deps
-rebar3 compile
-```
+No external dependencies are needed - the LSP uses Erlang's built-in `json` module for JSON encoding/decoding.
 
 ## Protocol Implementation Status
 
@@ -235,10 +220,10 @@ rebar3 compile
 
 ## Known Issues
 
-1. **JSX dependency**: Currently requires manual installation of jsx library
-2. **Incremental sync**: May have edge cases with multi-line edits
-3. **Symbol resolution**: Cross-module references need workspace indexing
-4. **Type information**: Hover info needs integration with type inference
+1. **Incremental sync**: May have edge cases with multi-line edits
+2. **Symbol resolution**: Cross-module references need workspace indexing
+3. **Type information**: Hover info needs integration with type inference
+4. **Completion**: Currently returns basic completions, needs context-aware filtering
 
 ## Contributing
 

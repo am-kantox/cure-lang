@@ -68,7 +68,15 @@ extract_symbols_from_parse({ok, AST}) ->
 extract_symbols_from_parse(_) ->
     [].
 
-extract_symbols_from_ast(#module_def{name = ModName, items = Items}) ->
+%% Handle list of modules (parser returns a list)
+extract_symbols_from_ast([ModuleDef | _Rest]) when is_record(ModuleDef, module_def) ->
+    extract_symbols_from_module(ModuleDef);
+extract_symbols_from_ast(ModuleDef) when is_record(ModuleDef, module_def) ->
+    extract_symbols_from_module(ModuleDef);
+extract_symbols_from_ast(_) ->
+    [].
+
+extract_symbols_from_module(#module_def{name = ModName, items = Items}) ->
     Functions = [F || F <- Items, is_record(F, function_def)],
     FSMs = [F || F <- Items, is_record(F, fsm_def)],
     FunctionSymbols = lists:map(fun extract_function_symbol/1, Functions),
@@ -86,9 +94,7 @@ extract_symbols_from_ast(#module_def{name = ModName, items = Items}) ->
                 start => #{line => 0, character => 0}, 'end' => #{line => 0, character => 10}
             }
         }
-    ] ++ FunctionSymbols ++ FSMSymbols;
-extract_symbols_from_ast(_) ->
-    [].
+    ] ++ FunctionSymbols ++ FSMSymbols.
 
 extract_function_symbol(#function_def{name = Name, params = Params, location = Location}) ->
     Arity = length(Params),
@@ -141,7 +147,15 @@ get_definition(Text, Line, Character) ->
             null
     end.
 
-find_definition_in_ast(#module_def{name = _ModName, items = Items} = AST, Line, Character) ->
+%% Handle list of modules or single module
+find_definition_in_ast([ModuleDef | _], Line, Character) when is_record(ModuleDef, module_def) ->
+    find_definition_in_module(ModuleDef, Line, Character);
+find_definition_in_ast(ModuleDef, Line, Character) when is_record(ModuleDef, module_def) ->
+    find_definition_in_module(ModuleDef, Line, Character);
+find_definition_in_ast(_, _, _) ->
+    null.
+
+find_definition_in_module(#module_def{name = _ModName, items = Items} = AST, Line, Character) ->
     % First, find what symbol the cursor is on
     case find_symbol_at_position(AST, Line, Character) of
         {ok, SymbolName, SymbolType} ->
@@ -149,38 +163,77 @@ find_definition_in_ast(#module_def{name = _ModName, items = Items} = AST, Line, 
             find_symbol_definition(Items, SymbolName, SymbolType);
         _ ->
             null
-    end;
-find_definition_in_ast(_, _, _) ->
-    null.
+    end.
 
 %% Find what symbol is at the given position
 find_symbol_at_position(#module_def{items = Items}, Line, Character) ->
     % Walk through items and find if cursor is on any identifier
-    find_symbol_in_items(Items, Line, Character).
+    % We need to pass the full list to determine function boundaries
+    find_symbol_in_items_with_bounds(Items, Line, Character).
 
-find_symbol_in_items([], _Line, _Character) ->
+find_symbol_in_items_with_bounds(Items, Line, Character) ->
+    find_symbol_in_items_with_bounds(Items, Line, Character, undefined).
+
+find_symbol_in_items_with_bounds([], _Line, _Character, _PrevEnd) ->
     {error, not_found};
-find_symbol_in_items([Item | Rest], Line, Character) ->
-    case find_symbol_in_item(Item, Line, Character) of
+find_symbol_in_items_with_bounds([Item | Rest], Line, Character, _PrevEnd) ->
+    % Get next item's start line to determine current item's end
+    NextStartLine = case Rest of
+        [NextItem | _] -> get_item_start_line(NextItem);
+        [] -> undefined  % Last item, no next item
+    end,
+    case find_symbol_in_item_with_end(Item, Line, Character, NextStartLine) of
         {ok, _, _} = Result -> Result;
-        _ -> find_symbol_in_items(Rest, Line, Character)
+        _ -> find_symbol_in_items_with_bounds(Rest, Line, Character, get_item_end_line(Item))
     end.
 
-find_symbol_in_item(#function_def{name = Name, location = Location}, Line, _Character) ->
+%% Get the starting line of an item
+get_item_start_line(#function_def{location = #location{line = L}}) -> L;
+get_item_start_line(#fsm_def{location = #location{line = L}}) -> L;
+get_item_start_line(_) -> undefined.
+
+get_item_end_line(#function_def{location = #location{line = L}}) -> L;
+get_item_end_line(#fsm_def{location = #location{line = L}}) -> L;
+get_item_end_line(_) -> undefined.
+
+%% Check if cursor is within an item's bounds
+%% NextStartLine is the line where the next item starts (or undefined for last item)
+find_symbol_in_item_with_end(#function_def{name = Name, location = Location}, Line, _Character, NextStartLine) ->
     case Location of
-        #location{line = L} when L =:= Line + 1 ->
-            {ok, Name, function};
+        #location{line = FuncLine} ->
+            CursorLine = Line + 1,  % LSP line numbers are 0-indexed
+            % Function ends at the line before the next function/fsm/end
+            FuncEndLine = case NextStartLine of
+                undefined -> FuncLine + 1000;  % Last item in module
+                NextLine -> NextLine - 1
+            end,
+            if
+                CursorLine >= FuncLine andalso CursorLine =< FuncEndLine ->
+                    {ok, Name, function};
+                true ->
+                    {error, not_found}
+            end;
         _ ->
             {error, not_found}
     end;
-find_symbol_in_item(#fsm_def{name = Name, location = Location}, Line, _Character) ->
+find_symbol_in_item_with_end(#fsm_def{name = Name, location = Location}, Line, _Character, NextStartLine) ->
     case Location of
-        #location{line = L} when L =:= Line + 1 ->
-            {ok, Name, fsm};
+        #location{line = FsmLine} ->
+            CursorLine = Line + 1,
+            FsmEndLine = case NextStartLine of
+                undefined -> FsmLine + 1000;
+                NextLine -> NextLine - 1
+            end,
+            if
+                CursorLine >= FsmLine andalso CursorLine =< FsmEndLine ->
+                    {ok, Name, fsm};
+                true ->
+                    {error, not_found}
+            end;
         _ ->
             {error, not_found}
     end;
-find_symbol_in_item(_, _, _) ->
+find_symbol_in_item_with_end(_, _, _, _) ->
     {error, not_found}.
 
 %% Find the definition location for a symbol
@@ -236,7 +289,15 @@ get_references(Text, Line, Character) ->
             []
     end.
 
-find_references_in_ast(#module_def{items = Items} = AST, Line, Character) ->
+%% Handle list of modules or single module
+find_references_in_ast([ModuleDef | _], Line, Character) when is_record(ModuleDef, module_def) ->
+    find_references_in_module(ModuleDef, Line, Character);
+find_references_in_ast(ModuleDef, Line, Character) when is_record(ModuleDef, module_def) ->
+    find_references_in_module(ModuleDef, Line, Character);
+find_references_in_ast(_, _, _) ->
+    [].
+
+find_references_in_module(#module_def{items = Items} = AST, Line, Character) ->
     % First, find what symbol the cursor is on
     case find_symbol_at_position(AST, Line, Character) of
         {ok, SymbolName, _SymbolType} ->
@@ -244,9 +305,7 @@ find_references_in_ast(#module_def{items = Items} = AST, Line, Character) ->
             find_all_references(Items, SymbolName);
         _ ->
             []
-    end;
-find_references_in_ast(_, _, _) ->
-    [].
+    end.
 
 %% Find all references to a symbol in the AST
 find_all_references(Items, SymbolName) ->
@@ -325,7 +384,15 @@ get_hover_info(Text, Line, Character) ->
             null
     end.
 
-get_hover_from_ast(#module_def{items = Items} = AST, Line, Character) ->
+%% Handle list of modules or single module
+get_hover_from_ast([ModuleDef | _], Line, Character) when is_record(ModuleDef, module_def) ->
+    get_hover_from_module(ModuleDef, Line, Character);
+get_hover_from_ast(ModuleDef, Line, Character) when is_record(ModuleDef, module_def) ->
+    get_hover_from_module(ModuleDef, Line, Character);
+get_hover_from_ast(_, _, _) ->
+    null.
+
+get_hover_from_module(#module_def{items = Items} = AST, Line, Character) ->
     % Find what symbol the cursor is on
     case find_symbol_at_position(AST, Line, Character) of
         {ok, SymbolName, SymbolType} ->
@@ -333,9 +400,7 @@ get_hover_from_ast(#module_def{items = Items} = AST, Line, Character) ->
             get_symbol_hover_info(Items, SymbolName, SymbolType);
         _ ->
             null
-    end;
-get_hover_from_ast(_, _, _) ->
-    null.
+    end.
 
 %% Get hover information for a specific symbol
 get_symbol_hover_info(Items, SymbolName, function) ->

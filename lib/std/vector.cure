@@ -11,7 +11,7 @@ module Std.Vector do
   ]
 
   # Basic operations
-  def length(v: Vector(T, n)): Int = n
+  def length(v: Vector(T, n)): Nat = n
 
   def is_empty(v: Vector(T, n)): Bool = n == 0
 
