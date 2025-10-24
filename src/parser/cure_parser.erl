@@ -289,6 +289,14 @@ get_token_location(Token) when is_record(Token, token) ->
 get_token_location(_) ->
     #location{line = 0, column = 0, file = undefined}.
 
+%% Get token line and column as tuple
+get_token_line_col(Token) when is_record(Token, token) ->
+    {Token#token.line, Token#token.column};
+get_token_line_col(eof) ->
+    {0, 0};
+get_token_line_col(_) ->
+    {0, 0}.
+
 %% Expect a specific token type and consume it
 expect(State, TokenType) ->
     case match_token(State, TokenType) of
@@ -297,10 +305,9 @@ expect(State, TokenType) ->
             {Token, advance(State)};
         false ->
             Current = current_token(State),
+            {Line, Col} = get_token_line_col(Current),
             throw(
-                {parse_error, {expected, TokenType, got, get_token_type(Current)},
-                    % TODO: proper location
-                    0, 0}
+                {parse_error, {expected, TokenType, got, get_token_type(Current)}, Line, Col}
             )
     end.
 
@@ -337,7 +344,8 @@ parse_item(State) ->
             parse_import(State);
         _ ->
             Token = current_token(State),
-            throw({parse_error, {unexpected_token, get_token_type(Token)}, 0, 0})
+            {Line, Col} = get_token_line_col(Token),
+            throw({parse_error, {unexpected_token, get_token_type(Token)}, Line, Col})
     end.
 
 %% Parse module definition
@@ -504,7 +512,8 @@ parse_module_item(State) ->
             parse_export(State);
         _ ->
             Token = current_token(State),
-            throw({parse_error, {unexpected_token, get_token_type(Token)}, 0, 0})
+            {Line, Col} = get_token_line_col(Token),
+            throw({parse_error, {unexpected_token, get_token_type(Token)}, Line, Col})
     end.
 
 %% Parse function definition
