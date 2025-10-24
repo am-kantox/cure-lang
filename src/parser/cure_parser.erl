@@ -2122,6 +2122,10 @@ parse_primary_expression(State) ->
                     parse_constructor_expression(State);
                 'None' ->
                     parse_constructor_expression(State);
+                'Zero' ->
+                    parse_constructor_expression(State);
+                'Succ' ->
+                    parse_constructor_expression(State);
                 'ok' ->
                     parse_constructor_expression(State);
                 'error' ->
@@ -2895,6 +2899,34 @@ parse_pattern(State) ->
                     },
                     {Pattern, State1}
             end;
+        'Zero' ->
+            {Token, State1} = expect(State, 'Zero'),
+            Location = get_token_location(Token),
+            % Zero is a nullary constructor - no arguments
+            Pattern = #constructor_pattern{
+                name = 'Zero',
+                args = [],
+                location = Location
+            },
+            {Pattern, State1};
+        'Succ' ->
+            {Token, State1} = expect(State, 'Succ'),
+            Location = get_token_location(Token),
+            case match_token(State1, '(') of
+                true ->
+                    {_, State2} = expect(State1, '('),
+                    {InnerPattern, State3} = parse_pattern(State2),
+                    {_, State4} = expect(State3, ')'),
+                    Pattern = #constructor_pattern{
+                        name = 'Succ',
+                        args = [InnerPattern],
+                        location = Location
+                    },
+                    {Pattern, State4};
+                false ->
+                    % Succ without arguments is malformed
+                    throw({parse_error, {succ_requires_argument}, 0, 0})
+            end;
         true ->
             {Token, State1} = expect(State, true),
             Location = get_token_location(Token),
@@ -3116,6 +3148,8 @@ parse_constructor_expression(State) ->
             'Error' -> expect(State, 'Error');
             'Some' -> expect(State, 'Some');
             'None' -> expect(State, 'None');
+            'Zero' -> expect(State, 'Zero');
+            'Succ' -> expect(State, 'Succ');
             'ok' -> expect(State, 'ok');
             'error' -> expect(State, 'error')
         end,
@@ -3126,6 +3160,8 @@ parse_constructor_expression(State) ->
             'Error' -> 'Error';
             'Some' -> 'Some';
             'None' -> 'None';
+            'Zero' -> 'Zero';
+            'Succ' -> 'Succ';
             'ok' -> ok;
             'error' -> error;
             _ -> get_token_value(Token)

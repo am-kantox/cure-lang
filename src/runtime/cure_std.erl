@@ -100,7 +100,10 @@ type system and Erlang's dynamic typing.
     create_counter/1,
     list_to_string/1,
     join_ints/2,
-    show/1
+    show/1,
+    % Nat type constructors
+    'Zero'/0,
+    'Succ'/1
 ]).
 
 % NOTE: Most standard library functions are now implemented in Cure itself (lib/std/)
@@ -470,3 +473,69 @@ show(Value) when is_tuple(Value) ->
     end;
 show(_Value) ->
     "unknown".
+
+%% ============================================================================
+%% Nat Type Constructors
+%% ============================================================================
+
+-doc """
+Nat type nullary constructor representing zero.
+
+In Cure's Peano encoding of natural numbers:
+- Zero represents 0
+- Succ(Zero) represents 1
+- Succ(Succ(Zero)) represents 2, etc.
+
+## Returns
+- 0 (represented as integer for runtime efficiency)
+
+## Example
+```erlang
+cure_std:'Zero'().  %% Returns: 0
+```
+
+## Usage in Cure
+```cure
+def length(list: List(T)): Nat =
+  match list do
+    [] -> Zero
+    [_ | t] -> Succ(length(t))
+  end
+```
+
+## Type
+- Zero : Nat
+""".
+'Zero'() ->
+    0.
+
+-doc """
+Nat type unary constructor representing successor.
+
+Takes a natural number and returns its successor (n+1).
+This is the inductive case of Peano-encoded natural numbers.
+
+## Arguments
+- `N` - A natural number (Nat)
+
+## Returns
+- N+1 (next natural number)
+
+## Example
+```erlang
+cure_std:'Succ'(0).        %% Returns: 1 (successor of Zero)
+cure_std:'Succ'(5).        %% Returns: 6 (successor of 5)
+```
+
+## Usage in Cure
+```cure
+let one = Succ(Zero)
+let two = Succ(Succ(Zero))
+let three = Succ(two)
+```
+
+## Type
+- Succ : Nat -> Nat
+""".
+'Succ'(N) when is_integer(N), N >= 0 ->
+    N + 1.

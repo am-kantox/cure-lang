@@ -66,7 +66,7 @@ module ListComprehensiveTest do
   # New test functions for all remaining Std.List exported functions
   # ============================================================================
 
-  def demo_length(): Int =
+  def demo_length(): Nat =
     let empty_list = []
     let short_list = [1, 2, 3]
     let long_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -144,11 +144,11 @@ module ListComprehensiveTest do
     let numbers = [10, 20, 30, 40, 50]
     let empty_list = []
     let default_value = 999
-    let first_element = nth(numbers, 0, default_value)   # Should be 10
-    # let third_element = nth(numbers, 2, default_value)   # Should be 30
-    # let last_element = nth(numbers, 4, default_value)    # Should be 50
-    # let out_of_bounds = nth(numbers, 10, default_value)  # Should be 999
-    # let from_empty = nth(empty_list, 0, default_value)   # Should be 999
+    let first_element = nth(numbers, Zero, default_value)   # Should be 10
+    # let third_element = nth(numbers, Succ(Succ(Zero)), default_value)   # Should be 30
+    # let last_element = nth(numbers, Succ(Succ(Succ(Succ(Zero)))), default_value)    # Should be 50
+    # let out_of_bounds = nth(numbers, Succ(Succ(Succ(Succ(Succ(Succ(Succ(Succ(Succ(Succ(Zero)))))))))), default_value)  # Should be 999
+    # let from_empty = nth(empty_list, Zero, default_value)   # Should be 999
     first_element # + third_element + last_element # + out_of_bounds + from_empty  # Should be 10+30+50+999+999 = 2088
 
   def demo_contains(): Int =

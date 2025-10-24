@@ -1076,6 +1076,13 @@ builtin_env() ->
     Env6 = cure_types:extend_env(Env5_1, 'Nat', {refined_type, 'Int', fun(N) -> N >= 0 end}),
     Env7 = cure_types:extend_env(Env6, 'Pos', {refined_type, 'Int', fun(N) -> N > 0 end}),
 
+    % Add Nat constructors
+    % Zero : Nat (nullary constructor)
+    Env7_1 = cure_types:extend_env(Env7, 'Zero', {primitive_type, 'Nat'}),
+    % Succ : Nat -> Nat (unary constructor)
+    SuccType = {function_type, [{primitive_type, 'Nat'}], {primitive_type, 'Nat'}},
+    Env7_2 = cure_types:extend_env(Env7_1, 'Succ', SuccType),
+
     % Add built-in functions
     % map : (A -> B) -> [A] -> [B]
     MapType =
@@ -1085,7 +1092,7 @@ builtin_env() ->
                 {list_type, cure_types:new_type_var(), undefined}
             ],
             {list_type, cure_types:new_type_var(), undefined}},
-    Env8 = cure_types:extend_env(Env7, map, MapType),
+    Env8 = cure_types:extend_env(Env7_2, map, MapType),
 
     % filter : (A -> Bool) -> [A] -> [A]
     FilterType =

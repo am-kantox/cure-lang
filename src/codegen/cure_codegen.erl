@@ -263,6 +263,13 @@ validate_options(Options) ->
 
 %% Create a new compilation state
 new_state() ->
+    % Register builtin Nat type constructors
+    BuiltinConstructors = #{
+        % Nullary constructor
+        'Zero' => 0,
+        % Unary constructor
+        'Succ' => 1
+    },
     #codegen_state{
         module_name = undefined,
         exports = [],
@@ -272,7 +279,8 @@ new_state() ->
         label_counter = 0,
         constants = #{},
         type_info = cure_typechecker:builtin_env(),
-        optimization_level = 0
+        optimization_level = 0,
+        type_constructors = BuiltinConstructors
     }.
 
 %% ============================================================================
@@ -373,12 +381,20 @@ compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) 
     cure_utils:debug("Compiling module ~p with imports ~p~n", [Name, Imports]),
     % Using new AST format compilation path
     ConvertedExports = convert_exports(Exports, Items),
+    % Register builtin Nat type constructors
+    BuiltinConstructors = #{
+        % Nullary constructor
+        'Zero' => 0,
+        % Unary constructor
+        'Succ' => 1
+    },
     State = #codegen_state{
         module_name = Name,
         exports = ConvertedExports,
         optimization_level = proplists:get_value(optimize, Options, 0),
         type_info = cure_typechecker:builtin_env(),
-        imported_functions = #{}
+        imported_functions = #{},
+        type_constructors = BuiltinConstructors
     },
 
     % Process imports first
@@ -393,9 +409,21 @@ compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) 
                 State
         end,
 
-    % Store imported functions in process dictionary for pattern body conversion
+    % Store imported functions in ETS for pattern body conversion
     ImportedFuncs = StateWithImports#codegen_state.imported_functions,
-    put(imported_functions_map, ImportedFuncs),
+    TableName = cure_codegen_context,
+    case ets:info(TableName) of
+        undefined ->
+            ets:new(TableName, [named_table, public, set]);
+        _ ->
+            ok
+    end,
+    ets:insert(TableName, {imported_functions_map, ImportedFuncs}),
+
+    % Extract local function names/arities from AST before compilation
+    % This allows is_function_name to work during pattern compilation
+    LocalFuncs = extract_function_names_from_items(Items),
+    ets:insert(TableName, {local_functions_map, LocalFuncs}),
 
     case compile_module_items(Items, StateWithImports) of
         {ok, CompiledState} ->
@@ -414,12 +442,20 @@ compile_module(#module_def{name = Name, exports = Exports, items = Items} = Modu
     cure_utils:debug("Found imports: ~p~n", [Imports]),
     % Using old AST format compilation path
     ConvertedExports = convert_exports(Exports, Items),
+    % Register builtin Nat type constructors
+    BuiltinConstructors = #{
+        % Nullary constructor
+        'Zero' => 0,
+        % Unary constructor
+        'Succ' => 1
+    },
     State = #codegen_state{
         module_name = Name,
         exports = ConvertedExports,
         optimization_level = proplists:get_value(optimize, Options, 0),
         type_info = cure_typechecker:builtin_env(),
-        imported_functions = #{}
+        imported_functions = #{},
+        type_constructors = BuiltinConstructors
     },
 
     % Process imports from items list
@@ -433,8 +469,21 @@ compile_module(#module_def{name = Name, exports = Exports, items = Items} = Modu
                 State
         end,
 
-    % Store imported functions in process dictionary for pattern body conversion
-    put(imported_functions_map, StateWithImports#codegen_state.imported_functions),
+    % Store imported functions in ETS for pattern body conversion
+    TableName = cure_codegen_context,
+    case ets:info(TableName) of
+        undefined ->
+            ets:new(TableName, [named_table, public, set]);
+        _ ->
+            ok
+    end,
+    ets:insert(
+        TableName, {imported_functions_map, StateWithImports#codegen_state.imported_functions}
+    ),
+
+    % Extract local function names/arities from AST before compilation (old AST format)
+    LocalFuncs = extract_function_names_from_items(Items),
+    ets:insert(TableName, {local_functions_map, LocalFuncs}),
 
     case compile_module_items(Items, StateWithImports) of
         {ok, CompiledState} ->
@@ -1055,26 +1104,18 @@ compile_identifier(#identifier_expr{name = Name, location = Location}, State) ->
                     {Instructions, State};
                 false ->
                     % Check if it's a nullary constructor (zero-arity type constructor)
-                    % These should be compiled as function calls: Lt -> Lt()
+                    % When we see a bare identifier that's a nullary constructor, just load it.
+                    % The call instruction will be added if it's used in a function_call_expr.
                     case is_nullary_constructor(Name, State) of
                         true ->
-                            % Compile as a direct call instruction (avoiding recursion)
-                            % This is essentially what compile_function_call does, but inlined
-                            % to avoid infinite recursion
-                            Instructions = [
-                                #beam_instr{
-                                    op = load_global,
-                                    args = [Name],
-                                    location = Location
-                                },
-                                #beam_instr{
-                                    op = call,
-                                    % Zero arguments
-                                    args = [0],
-                                    location = Location
-                                }
-                            ],
-                            {Instructions, State};
+                            % Just load the constructor name - don't call it yet
+                            % The call will happen when this is used in function_call_expr
+                            Instruction = #beam_instr{
+                                op = load_global,
+                                args = [Name],
+                                location = Location
+                            },
+                            {[Instruction], State};
                         false ->
                             % Check if it's an imported function
                             case find_imported_function(Name, State) of
@@ -1943,12 +1984,10 @@ is_likely_type_parameter(ParamName) when is_atom(ParamName) ->
     case ParamStr of
         % Single letter uppercase (T, U, V, etc.) - likely type parameters
         [C] when C >= $A, C =< $Z -> true;
-        % Single letter lowercase that's commonly used for type-level values
-        "n" -> true;
-        "k" -> true;
-        "m" -> true;
-        "i" -> true;
-        "j" -> true;
+        % NOTE: We don't filter single-letter lowercase names like "n", "k", "m", "i", "j"
+        % because they're commonly used as runtime parameters (e.g., from_nat(n: Nat))
+        % In a dependent type system, these could be either type-level or runtime parameters.
+        % Proper filtering would require examining the parameter's type annotation.
         % Other patterns
         _ -> false
     end;
@@ -2387,7 +2426,15 @@ generate_beam_file(Module, OutputPath) ->
     case convert_to_erlang_forms(Module) of
         {ok, Forms} ->
             % The on_load attribute must be preserved - ensure it's not optimized out
-            case compile:forms(Forms, [binary, return_errors, return_warnings, no_auto_import]) of
+            case
+                compile:forms(Forms, [
+                    binary,
+                    return_errors,
+                    return_warnings,
+                    no_auto_import,
+                    nowarn_undefined_function
+                ])
+            of
                 {ok, ModuleName, Binary, _Warnings} ->
                     case file:write_file(OutputPath, Binary) of
                         ok -> {ok, {ModuleName, OutputPath}};
@@ -2502,7 +2549,9 @@ convert_to_erlang_forms(Module) ->
         cure_utils:debug("[EXPORTS] Module ~p exports: ~p~n", [ModuleName, ExportsWithRegistration]),
         BaseAttributes = [
             {attribute, 1, module, ModuleName},
-            {attribute, 2, export, ExportsWithRegistration}
+            {attribute, 2, export, ExportsWithRegistration},
+            % Import Nat constructors from cure_std
+            {attribute, 3, import, {cure_std, [{'Zero', 0}, {'Succ', 1}]}}
         ],
 
         % Add compile attributes (include FSM header if FSMs present)
@@ -2551,8 +2600,22 @@ convert_to_erlang_forms(Module) ->
 
         % Set current module name for function reference generation
         put(current_module_name, ModuleName),
-        % Store imported functions in process dictionary for pattern body conversion
-        put(imported_functions_map, ImportedFunctions),
+
+        % Create or clear ETS table for compilation context
+        TableName = cure_codegen_context,
+        case ets:info(TableName) of
+            undefined ->
+                ets:new(TableName, [named_table, public, set]);
+            _ ->
+                ets:delete_all_objects(TableName)
+        end,
+
+        % Store imported functions in ETS for pattern body conversion
+        ets:insert(TableName, {imported_functions_map, ImportedFunctions}),
+
+        % Store local functions in ETS for identifier resolution
+        LocalFunctions = extract_local_functions_map(Functions),
+        ets:insert(TableName, {local_functions_map, LocalFunctions}),
 
         % Convert functions to forms with imported functions for import resolution
         FunctionForms = convert_functions_to_forms(
@@ -2671,6 +2734,27 @@ convert_functions_to_forms(
                 RestFunctions, Line + 1, Acc, ModuleName, LocalFunctions, ImportedFunctions
             )
     end.
+
+%% Extract function names and arities from module items (before compilation)
+%% This is used to populate the ETS table early so pattern compilation can work
+extract_function_names_from_items(Items) ->
+    lists:foldl(
+        fun(Item, Acc) ->
+            case Item of
+                #function_def{name = Name, params = Params} ->
+                    Arity = length(Params),
+                    maps:put(Name, Arity, Acc);
+                {function_def, Name, Params, _Body, _Location} ->
+                    Arity = length(Params),
+                    maps:put(Name, Arity, Acc);
+                _ ->
+                    % Skip non-function items
+                    Acc
+            end
+        end,
+        #{},
+        Items
+    ).
 
 %% Extract local functions map for context
 extract_local_functions_map(Functions) ->
@@ -2872,42 +2956,63 @@ compile_patterns_to_case_clauses_impl(
     Acc,
     State
 ) ->
-    % Convert pattern to Erlang pattern form
-    ErlangPattern = convert_pattern_to_erlang_form(Pattern, Location),
+    % Check if this is a Succ pattern that needs special handling
+    {ErlangPattern, ExtraGuards, BodyPrologue} = 
+        case Pattern of
+            #constructor_pattern{name = 'Succ', args = [#identifier_pattern{name = VarName}]} ->
+                % Succ(pred) pattern: match any positive integer, bind pred = value - 1
+                Line = get_line_from_location(Location),
+                TempVar = list_to_atom("_Succ_" ++ atom_to_list(VarName)),
+                Pat = {var, Line, TempVar},
+                % Guard: TempVar > 0
+                GuardExpr = {op, Line, '>', {var, Line, TempVar}, {integer, Line, 0}},
+                % Body prologue: VarName = TempVar - 1
+                Prologue = {match, Line, {var, Line, VarName}, 
+                           {op, Line, '-', {var, Line, TempVar}, {integer, Line, 1}}},
+                {Pat, [GuardExpr], [Prologue]};
+            _ ->
+                {convert_pattern_to_erlang_form(Pattern, Location), [], []}
+        end,
 
-    % Convert guard to Erlang guard form if present
-    ErlangGuard =
+    % Convert user-provided guard to Erlang guard form if present
+    UserGuards =
         case Guard of
             undefined -> [];
             _ -> [convert_guard_to_erlang_form(Guard, Location)]
         end,
+    
+    % Combine extra guards from pattern with user guards
+    ErlangGuard = case ExtraGuards ++ UserGuards of
+        [] -> [];
+        Guards -> [Guards]
+    end,
 
     % For complex expressions, we need to create a more sophisticated approach
     % Instead of trying to convert complex expressions directly to Erlang forms,
     % we'll create a function call that executes the compiled instructions
 
     % First, try simple conversions for basic cases
-    ErlangBody =
+    BodyLine = get_line_from_location(Location),
+    BaseErlangBody =
         case Body of
             #literal_expr{value = Value} ->
                 [compile_value_to_erlang_form(Value, Location)];
             #identifier_expr{name = Name} ->
                 % Could be a variable reference or a nullary constructor
                 % Check if it's uppercase (constructor) or lowercase (variable/function)
-                Line = get_line_from_location(Location),
                 case atom_to_list(Name) of
                     [First | _Rest] when First >= $A, First =< $Z ->
                         % Uppercase - nullary constructor, generate call
-                        [{call, Line, {atom, Line, Name}, []}];
+                        [{call, BodyLine, {atom, BodyLine, Name}, []}];
                     _ ->
                         % Lowercase - variable reference or function reference
                         case is_function_name(Name) of
                             true ->
                                 % Known function - use atom
-                                [{atom, Line, Name}];
+                                [{atom, BodyLine, Name}];
                             false ->
                                 % Unknown lowercase - treat as variable
-                                [{var, Line, Name}]
+                                [{var, BodyLine, Name}]
                         end
                 end;
             _ ->
@@ -2917,13 +3022,15 @@ compile_patterns_to_case_clauses_impl(
                         [ErlangForm];
                     error ->
                         % Fallback - this should not happen with proper implementation
-                        Line = get_line_from_location(Location),
                         [
-                            {call, Line, {remote, Line, {atom, Line, erlang}, {atom, Line, error}},
-                                [{atom, Line, unimplemented_body_expression}]}
+                            {call, BodyLine, {remote, BodyLine, {atom, BodyLine, erlang}, {atom, BodyLine, error}},
+                                [{atom, BodyLine, unimplemented_body_expression}]}
                         ]
                 end
         end,
+    
+    % Prepend body prologue (for Succ pattern variable bindings)
+    ErlangBody = BodyPrologue ++ BaseErlangBody,
 
     % Create Erlang case clause
     CaseClause =
@@ -2998,26 +3105,51 @@ convert_cons_pattern_to_erlang([HeadElement | RestElements], Tail, Line) ->
 
 %% Convert constructor patterns to Erlang tuple patterns
 %% None -> {none}, Some(value) -> {some, Value}, Ok(value) -> {ok, Value}, etc.
+%% Special handling for Nat constructors which use integer representation
 convert_constructor_pattern_to_erlang_form(ConstructorName, Args, Line, Location) ->
-    % Convert constructor name to lowercase atom for Erlang representation
-    ErlangConstructorName = normalize_constructor_name(ConstructorName),
-    ConstructorAtom = {atom, Line, ErlangConstructorName},
+    % Special case for Nat constructors (Zero and Succ)
+    % These use integer representation in cure_std, not tagged tuples
+    case ConstructorName of
+        'Zero' ->
+            % Zero matches integer 0
+            {integer, Line, 0};
+        'Succ' ->
+            case Args of
+                [#identifier_pattern{name = VarName}] ->
+                    % Succ(pred) pattern:
+                    % Match any positive integer and bind the variable to (value - 1)
+                    % We use a fresh variable for the actual value, then bind pred = value - 1
+                    % Pattern: _SuccN when _SuccN > 0
+                    % Body will have: VarName = _SuccN - 1
+                    % For now, just match a variable - we'll need special handling in the clause
+                    {var, Line, VarName};
+                _ ->
+                    % Malformed Succ pattern or complex nested pattern
+                    % Match any integer (will need guards to ensure > 0)
+                    {var, Line, '_SuccValue'}
+            end;
+        _ ->
+            % Standard constructor pattern (for Option, Result, etc.)
+            % Convert constructor name to lowercase atom for Erlang representation
+            ErlangConstructorName = normalize_constructor_name(ConstructorName),
+            ConstructorAtom = {atom, Line, ErlangConstructorName},
 
-    case Args of
-        undefined ->
-            % Constructor with no arguments: None -> {none}
-            {tuple, Line, [ConstructorAtom]};
-        [] ->
-            % Constructor with empty argument list: None() -> {none}
-            {tuple, Line, [ConstructorAtom]};
-        [SingleArg] ->
-            % Constructor with single argument: Some(value) -> {some, Value}
-            ArgPattern = convert_pattern_to_erlang_form(SingleArg, Location),
-            {tuple, Line, [ConstructorAtom, ArgPattern]};
-        MultipleArgs ->
-            % Constructor with multiple arguments: Constructor(a, b, c) -> {constructor, A, B, C}
-            ArgPatterns = [convert_pattern_to_erlang_form(Arg, Location) || Arg <- MultipleArgs],
-            {tuple, Line, [ConstructorAtom | ArgPatterns]}
+            case Args of
+                undefined ->
+                    % Constructor with no arguments: None -> {none}
+                    {tuple, Line, [ConstructorAtom]};
+                [] ->
+                    % Constructor with empty argument list: None() -> {none}
+                    {tuple, Line, [ConstructorAtom]};
+                [SingleArg] ->
+                    % Constructor with single argument: Some(value) -> {some, Value}
+                    ArgPattern = convert_pattern_to_erlang_form(SingleArg, Location),
+                    {tuple, Line, [ConstructorAtom, ArgPattern]};
+                MultipleArgs ->
+                    % Constructor with multiple arguments: Constructor(a, b, c) -> {constructor, A, B, C}
+                    ArgPatterns = [convert_pattern_to_erlang_form(Arg, Location) || Arg <- MultipleArgs],
+                    {tuple, Line, [ConstructorAtom | ArgPatterns]}
+            end
     end.
 
 %% Convert record patterns to Erlang record patterns
@@ -3328,9 +3460,19 @@ convert_complex_bindings_to_erlang([_ | Rest], Location) ->
     convert_complex_bindings_to_erlang(Rest, Location).
 
 %% Get imported function info (module name) for a given function name and arity
-%% Checks process dictionary for imported functions stored during conversion
+%% Checks ETS table for imported functions stored during conversion
 get_imported_function_info(FuncName, Arity) ->
-    ImportedFunctions = get(imported_functions_map),
+    TableName = cure_codegen_context,
+    ImportedFunctions =
+        case ets:info(TableName) of
+            undefined ->
+                undefined;
+            _ ->
+                case ets:lookup(TableName, imported_functions_map) of
+                    [{imported_functions_map, Map}] -> Map;
+                    [] -> undefined
+                end
+        end,
     case ImportedFunctions of
         undefined ->
             not_found;
@@ -3375,49 +3517,80 @@ get_imported_function_info(FuncName, Arity) ->
 
 %% Check if a name is a known function (constructor or regular function)
 %% This determines whether identifier should be treated as atom (function call) or var (variable reference)
-is_function_name('Ok') -> true;
-is_function_name('Error') -> true;
-is_function_name('Some') -> true;
-is_function_name('None') -> true;
-is_function_name('Lt') -> true;
-is_function_name('Eq') -> true;
-is_function_name('Gt') -> true;
-% Common stdlib functions that might appear in pattern match bodies
-is_function_name(length) -> true;
-is_function_name(append) -> true;
-is_function_name(concat) -> true;
-is_function_name(fold) -> true;
-is_function_name(contains) -> true;
-is_function_name(reverse) -> true;
-is_function_name(head) -> true;
-is_function_name(tail) -> true;
-is_function_name(map) -> true;
-is_function_name(filter) -> true;
-is_function_name(zip_with) -> true;
-is_function_name(reverse_helper) -> true;
-% Stdlib functions from various modules
-is_function_name(ok) -> true;
-is_function_name(error) -> true;
-is_function_name(nth) -> true;
-is_function_name(negate) -> true;
-is_function_name(multiply) -> true;
-is_function_name(power) -> true;
-is_function_name(subtract) -> true;
-is_function_name(add) -> true;
-is_function_name(min) -> true;
-is_function_name(max) -> true;
-% Common test and user-defined function names
-is_function_name(add_five) -> true;
-is_function_name(add_folder_func) -> true;
-is_function_name(multiply_folder_func) -> true;
-is_function_name(add_mapper_func) -> true;
-% I/O functions (commonly imported from Std.Io)
-is_function_name(print) -> true;
-is_function_name(println) -> true;
-% NOTE: 'f' is typically a parameter variable, not a function name
-% is_function_name(f) -> true;
-% Add more function names as needed
-is_function_name(_) -> false.
+%% Uses dynamic lookup in local_functions_map and imported_functions_map stored in ETS
+is_function_name(Name) ->
+    % Check uppercase constructors first (type constructors like Ok, Error, Some, None, Lt, Eq, Gt)
+    case atom_to_list(Name) of
+        [First | _] when First >= $A, First =< $Z ->
+            % Uppercase - likely a constructor
+            true;
+        _ ->
+            % Lowercase - check if it's a local or imported function
+            TableName = cure_codegen_context,
+            {LocalFunctions, ImportedFunctions} =
+                case ets:info(TableName) of
+                    undefined ->
+                        {undefined, undefined};
+                    _ ->
+                        Local =
+                            case ets:lookup(TableName, local_functions_map) of
+                                [{local_functions_map, LMap}] -> LMap;
+                                [] -> undefined
+                            end,
+                        Imported =
+                            case ets:lookup(TableName, imported_functions_map) of
+                                [{imported_functions_map, IMap}] -> IMap;
+                                [] -> undefined
+                            end,
+                        {Local, Imported}
+                end,
+
+            cure_utils:debug("[is_function_name] Checking ~p~n", [Name]),
+            cure_utils:debug("  LocalFunctions: ~p~n", [LocalFunctions]),
+            cure_utils:debug("  ImportedFunctions: ~p~n", [ImportedFunctions]),
+
+            % Check if it exists as a local function (any arity)
+            IsLocal =
+                case LocalFunctions of
+                    undefined ->
+                        false;
+                    LocalMap when is_map(LocalMap) ->
+                        % Check if Name is a key in the map (Name -> Arity)
+                        Result = maps:is_key(Name, LocalMap),
+                        cure_utils:debug("  IsLocal for ~p: ~p~n", [Name, Result]),
+                        Result;
+                    _ ->
+                        false
+                end,
+
+            % Check if it exists as an imported function
+            IsImported =
+                case ImportedFunctions of
+                    undefined ->
+                        false;
+                    ImportMap when is_map(ImportMap) ->
+                        % Check both {Name, _} keys and plain Name keys
+                        ImportResult =
+                            maps:is_key(Name, ImportMap) orelse
+                                lists:any(
+                                    fun
+                                        ({K, _}) when is_tuple(K) ->
+                                            element(1, K) =:= Name;
+                                        (_) ->
+                                            false
+                                    end,
+                                    maps:to_list(ImportMap)
+                                ),
+                        cure_utils:debug("  IsImported for ~p: ~p~n", [Name, ImportResult]),
+                        ImportResult;
+                    _ ->
+                        false
+                end,
+
+            FinalResult = IsLocal orelse IsImported,
+            cure_utils:debug("  Final result for ~p: ~p~n", [Name, FinalResult]),
+            FinalResult
+    end.
 
 %% Helper function to build proper list forms
 build_list_form([], Line) ->

@@ -53,14 +53,14 @@ def replicate(n: Nat, x: T): List(T, n) =
   if n == 0 then [] else x :: replicate(n-1, x)
 
 # Pattern matching function
-def length(list: List(T)) -> Nat =
+def length(list: List(T)): Nat =
   match list do
     [] -> 0
     [_|tail] -> 1 + length(tail)
   end
 
 # Function with constraints
-def safe_divide(x: Int, y: Int) -> Int when y != 0 = x / y
+def safe_divide(x: Int, y: Int): Int when y != 0 = x / y
 
 # Function with Unit return type
 def print_message(msg: String): Unit =
@@ -602,22 +602,6 @@ import Std [Result, Option, ok, error]       # Error handling
 import Std.List [map/2, filter/2, fold_left/3]  # List operations
 import Std.Math [abs/1, sqrt/1, sin/1]      # Mathematical functions
 import Std.FSM [spawn/2, send_event/2]      # FSM utilities
-```
-
-### Erlang/Elixir Interoperability
-```erlang
-%% Calling Cure from Erlang
--module(example).
--export([test/0]).
-
-test() ->
-    % Call Cure functions
-    42 = math_utils:abs(-42),
-    [2,4,6] = list_utils:map(fun(X) -> X * 2 end, [1,2,3]),
-    
-    % Use Cure FSMs in supervision trees
-    {ok, Counter} = cure_fsm_runtime:spawn_fsm('Counter', 0),
-    ok = cure_fsm_runtime:send_event(Counter, increment).
 ```
 
 ## Performance Characteristics

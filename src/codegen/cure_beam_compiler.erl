@@ -137,6 +137,17 @@ compile_function_to_erlang(
     LocalFunctions,
     ImportedFunctions
 ) ->
+    % Ensure ETS table has the current context for pattern conversion
+    TableName = cure_codegen_context,
+    case ets:info(TableName) of
+        undefined ->
+            ets:new(TableName, [named_table, public, set]);
+        _ ->
+            ok
+    end,
+    ets:insert(TableName, {local_functions_map, LocalFunctions}),
+    ets:insert(TableName, {imported_functions_map, ImportedFunctions}),
+
     Context = #compile_context{
         line = StartLine,
         variables = create_param_variables(Params, StartLine),
@@ -609,27 +620,60 @@ compile_call([Arity], Context) ->
                     CallForm =
                         case Function of
                             {atom, _, FuncName} ->
-                                % Check if it's a local function first
-                                case is_local_function_reference(FuncName, NewContext) of
-                                    {true, _Arity} ->
-                                        % Local function call - use simple atom call
-                                        {call, Line, {atom, Line, FuncName}, Args};
-                                    false ->
-                                        % Check if it's an imported function
-                                        case
-                                            is_imported_function_reference(
-                                                FuncName, Arity, NewContext
-                                            )
-                                        of
-                                            {true, ModName} ->
-                                                % Imported function - generate remote call
-                                                {call, Line,
-                                                    {remote, Line, {atom, Line, ModName},
-                                                        {atom, Line, FuncName}},
-                                                    Args};
+                                % Check if it's a Nat constructor (Zero, Succ)
+                                case FuncName of
+                                    'Zero' ->
+                                        % Zero is a builtin Nat constructor from cure_std
+                                        {call, Line,
+                                            {remote, Line, {atom, Line, cure_std},
+                                                {atom, Line, 'Zero'}},
+                                            Args};
+                                    'Succ' ->
+                                        % Succ is a builtin Nat constructor from cure_std
+                                        {call, Line,
+                                            {remote, Line, {atom, Line, cure_std},
+                                                {atom, Line, 'Succ'}},
+                                            Args};
+                                    _ ->
+                                        % Check if it's a local function first
+                                        case is_local_function_reference(FuncName, NewContext) of
+                                            {true, _Arity} ->
+                                                % Local function call - use simple atom call
+                                                {call, Line, {atom, Line, FuncName}, Args};
                                             false ->
-                                                % Unknown function - assume local (will error at runtime if not found)
-                                                {call, Line, {atom, Line, FuncName}, Args}
+                                                % Check if it's an imported function
+                                                case
+                                                    is_imported_function_reference(
+                                                        FuncName, Arity, NewContext
+                                                    )
+                                                of
+                                                    {true, ModName} ->
+                                                        % Imported function - generate remote call
+                                                        {call, Line,
+                                                            {remote, Line, {atom, Line, ModName},
+                                                                {atom, Line, FuncName}},
+                                                            Args};
+                                                    false ->
+                                                        % Check if it's Zero or Succ (Nat constructors)
+                                                        case FuncName of
+                                                            'Zero' ->
+                                                                {call, Line,
+                                                                    {remote, Line,
+                                                                        {atom, Line, cure_std},
+                                                                        {atom, Line, 'Zero'}},
+                                                                    Args};
+                                                            'Succ' ->
+                                                                {call, Line,
+                                                                    {remote, Line,
+                                                                        {atom, Line, cure_std},
+                                                                        {atom, Line, 'Succ'}},
+                                                                    Args};
+                                                            _ ->
+                                                                % Unknown function - assume local (will error at runtime if not found)
+                                                                {call, Line, {atom, Line, FuncName},
+                                                                    Args}
+                                                        end
+                                                end
                                         end
                                 end;
                             {'fun', _, {function, {atom, _, ModName}, {atom, _, FuncName}, _}} when
