@@ -13,7 +13,7 @@
 ## - Type-safe arithmetic at the type level
 
 module NatDemo do
-  export [plus/2, times/2, from_nat/1, demo/0]
+  export [plus/2, times/2, from_nat/1, main/0]
 
   import Std.Show [show/1]
   import Std.Io [println/1]
@@ -49,7 +49,7 @@ module NatDemo do
     end
   
   ## Demo function showing Nat operations
-  def demo(): Nat =
+  def main(): Nat =
     let two = Succ(Succ(Zero))
     let three = Succ(Succ(Succ(Zero)))
     

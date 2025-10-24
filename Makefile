@@ -45,7 +45,7 @@ LSP_BEAM_FILES = $(patsubst $(LSP_DIR)/%.erl,$(LSP_EBIN_DIR)/%.beam,$(LSP_SRC))
 # Compiler options
 ERLC_OPTS = +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(EBIN_DIR)
 
-.PHONY: all clean test test-basic test-integration test-performance docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-shell
+.PHONY: all clean test test-basic test-integration test-performance docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-deps lsp-scripts lsp-shell
 
 all: setup compiler stdlib
 
@@ -184,8 +184,24 @@ install: compiler
 	# TODO: Add installation logic
 
 # Build LSP server
-lsp: compiler $(LSP_BEAM_FILES)
+lsp: compiler $(LSP_BEAM_FILES) lsp-deps lsp-scripts
 	@echo "Cure LSP server built successfully"
+
+# Fetch and build LSP dependencies (jsx)
+lsp-deps:
+	@echo "Building LSP dependencies (jsx)..."
+	@if command -v rebar3 >/dev/null 2>&1; then \
+		rebar3 compile; \
+	else \
+		echo "Warning: rebar3 not found. JSX may not be available."; \
+		echo "Install rebar3 or manually provide jsx in _build/default/lib/jsx/ebin"; \
+	fi
+
+# Create LSP executable scripts
+lsp-scripts:
+	@echo "Creating LSP executable scripts..."
+	@chmod +x cure-lsp cure-lsp.sh
+	@echo "LSP scripts are now executable"
 
 # Development shell
 shell: compiler
