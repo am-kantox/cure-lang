@@ -1786,14 +1786,14 @@ infer_expr({cons_expr, Elements, Tail, Location}, Env) ->
                     Error
             end
     end;
-infer_expr({record_expr, RecordName, Fields, _Location}, Env) ->
+infer_expr({record_expr, RecordName, Fields, Location}, Env) ->
     % Type a record construction expression: RecordName{field1: value1, field2: value2}
     case lookup_env(Env, RecordName) of
         undefined ->
             {error, {unbound_record_type, RecordName}};
-        {record_type, RecordName, _RecordFields} ->
-            % For now, just check that all field values can be typed
-            case infer_record_fields(Fields, Env) of
+        {record_type, RecordName, RecordFields} ->
+            % Check field values against expected field types with refined type validation
+            case infer_and_validate_record_fields(Fields, RecordFields, Env, Location) of
                 {ok, FieldConstraints} ->
                     % Return the record type
                     {ok, {record_type, RecordName}, FieldConstraints};
@@ -2043,6 +2043,95 @@ infer_record_fields([{field_expr, _FieldName, ValueExpr, _Location} | RestFields
         Error ->
             Error
     end.
+
+%% Type inference and validation for record field expressions with refined type checking
+infer_and_validate_record_fields([], _RecordFields, _Env, _RecordLocation) ->
+    {ok, []};
+infer_and_validate_record_fields(
+    [{field_expr, FieldName, ValueExpr, FieldLocation} | RestFields],
+    RecordFields,
+    Env,
+    RecordLocation
+) ->
+    % Find the expected type for this field
+    case find_record_field_type(FieldName, RecordFields) of
+        undefined ->
+            {error, {unknown_field, FieldName, FieldLocation}};
+        ExpectedFieldType ->
+            % Infer the type of the value expression
+            case infer_expr(ValueExpr, Env) of
+                {ok, ValueType, ValueConstraints} ->
+                    % Validate refined type constraints if the field is a refined type
+                    case
+                        validate_refined_type_assignment(
+                            ValueExpr, ValueType, ExpectedFieldType, FieldLocation
+                        )
+                    of
+                        ok ->
+                            % Continue with rest of fields
+                            case
+                                infer_and_validate_record_fields(
+                                    RestFields, RecordFields, Env, RecordLocation
+                                )
+                            of
+                                {ok, RestConstraints} ->
+                                    {ok, ValueConstraints ++ RestConstraints};
+                                Error ->
+                                    Error
+                            end;
+                        {error, Reason} ->
+                            {error, Reason}
+                    end;
+                Error ->
+                    Error
+            end
+    end.
+
+%% Validate that a value satisfies refined type constraints
+validate_refined_type_assignment(
+    {literal_expr, Value, _},
+    _InferredType,
+    {refined_type, _BaseType, Predicate},
+    Location
+) when is_function(Predicate, 1) ->
+    % For literal expressions assigned to refined types, check the predicate
+    try
+        case Predicate(Value) of
+            true ->
+                ok;
+            false ->
+                {error,
+                    {refined_type_constraint_violated, Value,
+                        "value does not satisfy type constraint", Location}}
+        end
+    catch
+        _:_ ->
+            {error, {refined_type_check_failed, Value, Location}}
+    end;
+validate_refined_type_assignment(
+    {unary_op_expr, '-', {literal_expr, Value, _}, _},
+    _InferredType,
+    {refined_type, _BaseType, Predicate},
+    Location
+) when is_function(Predicate, 1), is_integer(Value) ->
+    % For unary minus on integer literals, evaluate and check
+    NegValue = -Value,
+    try
+        case Predicate(NegValue) of
+            true ->
+                ok;
+            false ->
+                {error,
+                    {refined_type_constraint_violated, NegValue,
+                        "value does not satisfy type constraint", Location}}
+        end
+    catch
+        _:_ ->
+            {error, {refined_type_check_failed, NegValue, Location}}
+    end;
+validate_refined_type_assignment(_ValueExpr, _InferredType, _ExpectedType, _Location) ->
+    % For non-literal expressions or non-refined types, no additional validation needed
+    ok.
 
 %% Instantiate function type with fresh type variables while preserving sharing
 instantiate_function_type({function_type, ParamTypes, ReturnType}) ->

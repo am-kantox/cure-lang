@@ -40,7 +40,7 @@ module SimpleRecord do
   def main(): Int =
     println("=== Simple Record Demo ===")
     
-    let alice = Person{name: "Alice", age: -30}
+    let alice = Person{name: "Alice", age: 30}
     greet(alice)
     
     let origin = Point{x: 0.0, y: 0.0}

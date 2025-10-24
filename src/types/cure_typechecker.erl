@@ -310,15 +310,16 @@ check_item(
     },
     Env
 ) ->
-    % Convert field types to internal representation
-    ConvertedFields = [convert_record_field_def(F) || F <- Fields],
+    % Convert field types to internal representation and resolve type names from environment
+    ConvertedFields = [convert_and_resolve_record_field_def(F, Env) || F <- Fields],
     % Create a record type from the field definitions
     RecordType = {record_type, RecordName, ConvertedFields},
     NewEnv = cure_types:extend_env(Env, RecordName, RecordType),
     {ok, NewEnv, success_result(RecordType)};
 check_item({record_def, RecordName, _TypeParams, Fields, _Location}, Env) ->
-    % Fallback for tuple format
-    RecordType = {record_type, RecordName, Fields},
+    % Fallback for tuple format - also resolve type names
+    ConvertedFields = [convert_and_resolve_record_field_tuple(F, Env) || F <- Fields],
+    RecordType = {record_type, RecordName, ConvertedFields},
     NewEnv = cure_types:extend_env(Env, RecordName, RecordType),
     {ok, NewEnv, success_result(RecordType)}.
 
@@ -2059,6 +2060,44 @@ convert_record_field_def(#record_field_def{
     name = Name, type = Type, default_value = Default, location = Location
 }) ->
     {record_field_def, Name, convert_type_to_tuple(Type), Default, Location}.
+
+%% Convert record field definition and resolve type names from environment
+convert_and_resolve_record_field_def(
+    #record_field_def{
+        name = Name, type = Type, default_value = Default, location = Location
+    },
+    Env
+) ->
+    ConvertedType = convert_type_to_tuple(Type),
+    % Resolve the type name from environment to get refined types
+    ResolvedType = resolve_type_from_env(ConvertedType, Env),
+    {record_field_def, Name, ResolvedType, Default, Location}.
+%% Resolve a type expression by looking up type names in the environment
+resolve_type_from_env({primitive_type, TypeName}, Env) ->
+    % Look up the type name in the environment
+    case cure_types:lookup_env(Env, TypeName) of
+        undefined ->
+            % Type not in environment, keep as primitive
+            {primitive_type, TypeName};
+        {refined_type, _, _} = RefinedType ->
+            % Found a refined type definition, use it
+            RefinedType;
+        _OtherType ->
+            % For other types, keep the original primitive type
+            {primitive_type, TypeName}
+    end;
+resolve_type_from_env(Type, _Env) ->
+    % For other types, return as-is
+    Type.
+
+%% Convert tuple format record field and resolve types
+convert_and_resolve_record_field_tuple({record_field_def, Name, Type, Default, Location}, Env) ->
+    % For tuple format fields, resolve the type
+    ResolvedType = resolve_type_from_env(Type, Env),
+    {record_field_def, Name, ResolvedType, Default, Location};
+convert_and_resolve_record_field_tuple(Field, _Env) ->
+    % Pass through other formats
+    Field.
 
 %% When clause constraint processing with SMT solver integration
 process_when_clause_constraint(Constraint, Env, _Location) ->
