@@ -210,6 +210,13 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     type_to_string/1,
     is_generic_type_variable_name/1,
 
+    % Nat type helpers
+    nat_zero/0,
+    nat_succ/1,
+    nat_from_int/1,
+    nat_to_int/1,
+    is_nat_type/1,
+
     % DEBUG: Temporary exports for debugging vector param extraction
     extract_vector_params/1,
     extract_param_info/2,
@@ -451,9 +458,20 @@ concurrent environments. The module is otherwise stateless and thread-safe.
 -define(TYPE_MESSAGE, {primitive_type, 'Message'}).
 -define(TYPE_TIMEOUT, {primitive_type, 'Timeout'}).
 
-%% Dependent types
--define(TYPE_NAT, {refined_type, 'Int', fun(N) -> N >= 0 end}).
+%% Dependent types (refined types)
+-define(TYPE_NAT_REFINED, {refined_type, 'Int', fun(N) -> N >= 0 end}).
 -define(TYPE_POS, {refined_type, 'Int', fun(N) -> N > 0 end}).
+
+%% Nat type as algebraic data type (Peano encoding, like Idris)
+%% data Nat = Zero | Succ Nat
+-define(TYPE_NAT,
+    {union_type, 'Nat',
+        [
+            {'Zero', {primitive_type, 'Nat'}},
+            {'Succ', {function_type, [{primitive_type, 'Nat'}], {primitive_type, 'Nat'}}}
+        ],
+        undefined}
+).
 
 -doc """
 Creates a new unique type variable without a specific name.
@@ -6211,3 +6229,144 @@ extract_message_types(_) ->
 %         lists:all(fun is_well_formed_type/1, MessageTypes);
 % is_well_formed_fsm_type(_) ->
 %     false.
+
+%% ===== NAT TYPE HELPERS (PEANO ENCODING) =====
+
+-doc """
+Constructs the Zero value of the Nat type.
+
+In Peano encoding, Zero is the base case for natural numbers,
+similar to Idris's Z constructor.
+
+## Returns
+- An expression representing Zero : Nat
+
+## Example
+```erlang
+Zero = cure_types:nat_zero(),
+%% Results in an identifier expression representing Zero
+```
+""".
+nat_zero() ->
+    {identifier_expr, 'Zero', undefined}.
+
+-doc """
+Constructs the successor of a natural number.
+
+In Peano encoding, Succ(n) represents n+1,
+similar to Idris's S constructor.
+
+## Arguments
+- `Nat` - A natural number expression
+
+## Returns
+- An expression representing Succ(Nat) : Nat
+
+## Example
+```erlang
+One = cure_types:nat_succ(cure_types:nat_zero()),
+Two = cure_types:nat_succ(One),
+%% Results in Succ(Succ(Zero))
+```
+""".
+nat_succ(Nat) ->
+    {function_call_expr, {identifier_expr, 'Succ', undefined}, [Nat], undefined}.
+
+-doc """
+Converts an Erlang integer to Peano-encoded Nat.
+
+Creates a chain of Succ constructors wrapping Zero,
+representing the given non-negative integer.
+
+## Arguments
+- `N` - Non-negative integer
+
+## Returns
+- `{ok, NatExpr}` - Peano-encoded natural number
+- `{error, negative_integer}` - If N < 0
+
+## Example
+```erlang
+{ok, Three} = cure_types:nat_from_int(3),
+%% Results in Succ(Succ(Succ(Zero)))
+```
+""".
+nat_from_int(0) ->
+    {ok, nat_zero()};
+nat_from_int(N) when is_integer(N), N > 0 ->
+    {ok, Pred} = nat_from_int(N - 1),
+    {ok, nat_succ(Pred)};
+nat_from_int(_) ->
+    {error, negative_integer}.
+
+-doc """
+Converts a Peano-encoded Nat to an Erlang integer.
+
+Unwraps the chain of Succ constructors to compute
+the integer value.
+
+## Arguments
+- `NatExpr` - Peano-encoded natural number expression
+
+## Returns
+- `{ok, Integer}` - The integer value
+- `{error, invalid_nat}` - If not a valid Nat expression
+
+## Example
+```erlang
+{ok, Three} = cure_types:nat_from_int(3),
+{ok, 3} = cure_types:nat_to_int(Three).
+```
+""".
+nat_to_int({identifier_expr, 'Zero', _}) ->
+    {ok, 0};
+nat_to_int({function_call_expr, {identifier_expr, 'Succ', _}, [Pred], _}) ->
+    case nat_to_int(Pred) of
+        {ok, N} -> {ok, N + 1};
+        Error -> Error
+    end;
+nat_to_int(_) ->
+    {error, invalid_nat}.
+
+-doc """
+Checks if a type expression represents the Nat type.
+
+Recognizes both the algebraic Nat type (union type with Zero/Succ)
+and the refined Nat type (non-negative integers).
+
+## Arguments
+- `Type` - Type expression to check
+
+## Returns
+- `true` - If the type is Nat or Nat-related
+- `false` - Otherwise
+
+## Example
+```erlang
+true = cure_types:is_nat_type({primitive_type, 'Nat'}),
+true = cure_types:is_nat_type({union_type, 'Nat', _, _}),
+true = cure_types:is_nat_type({refined_type, 'Int', ...}).
+```
+""".
+is_nat_type({primitive_type, 'Nat'}) ->
+    true;
+is_nat_type({union_type, 'Nat', _, _}) ->
+    true;
+is_nat_type({refined_type, 'Int', Pred}) when is_function(Pred, 1) ->
+    % Check if it's the refined Nat type (Int >= 0)
+    try Pred(0) of
+        true ->
+            try Pred(-1) of
+                % Likely the Nat refinement
+                false -> true;
+                true -> false
+            catch
+                _:_ -> false
+            end;
+        false ->
+            false
+    catch
+        _:_ -> false
+    end;
+is_nat_type(_) ->
+    false.

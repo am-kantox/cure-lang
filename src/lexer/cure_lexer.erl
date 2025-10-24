@@ -314,6 +314,9 @@ keywords() ->
         <<"Some">> => 'Some',
         <<"None">> => 'None',
         <<"Unit">> => 'Unit',
+        <<"Nat">> => 'Nat',
+        <<"Zero">> => 'Zero',
+        <<"Succ">> => 'Succ',
         <<"ok">> => 'ok',
         <<"error">> => 'error'
     }.

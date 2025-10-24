@@ -51,7 +51,7 @@ module Std do
     const/1, apply/2, pipe/2,
     
     # Show functions
-    show/1, print/1,
+    show/1, print/1, println/1
   ]
 
 end

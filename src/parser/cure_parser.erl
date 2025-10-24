@@ -1426,7 +1426,28 @@ parse_primary_type(State) ->
                 location = Location
             },
             {Type, State1};
+        'Nat' ->
+            {NatToken, State1} = expect(State, 'Nat'),
+            Location = get_token_location(NatToken),
+            Type = #primitive_type{
+                name = 'Nat',
+                location = Location
+            },
+            {Type, State1};
         % Type constructors for union types
+        'Zero' ->
+            {ZeroToken, State1} = expect(State, 'Zero'),
+            Location = get_token_location(ZeroToken),
+            % Zero is a nullary constructor for Nat
+            Type = #primitive_type{
+                name = 'Zero',
+                location = Location
+            },
+            {Type, State1};
+        'Succ' ->
+            {SuccToken, State1} = expect(State, 'Succ'),
+            Location = get_token_location(SuccToken),
+            parse_type_constructor('Succ', Location, State1);
         'Ok' ->
             {OkToken, State1} = expect(State, 'Ok'),
             Location = get_token_location(OkToken),

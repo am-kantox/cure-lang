@@ -10,7 +10,7 @@ module SimpleRecord do
   
   record Person do
     name: String
-    age: Int
+    age: Nat
   end
   
   record Point do
@@ -22,8 +22,9 @@ module SimpleRecord do
   
   def greet(p: Person): Unit =
     match p do
-      Person{name: n, age: a} ->
-        println("Hello!")
+      Person{name: n, age: _} ->
+        println("Hello, " ++ n ++ "!")
+        # println("Hello, " ++ p.name ++ "!")
     end
   
   def check_point(pt: Point): Unit =
@@ -39,7 +40,7 @@ module SimpleRecord do
   def main(): Int =
     println("=== Simple Record Demo ===")
     
-    let alice = Person{name: "Alice", age: 30}
+    let alice = Person{name: "Alice", age: -30}
     greet(alice)
     
     let origin = Point{x: 0.0, y: 0.0}

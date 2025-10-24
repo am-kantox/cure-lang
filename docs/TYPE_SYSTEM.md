@@ -29,7 +29,42 @@ Float    # 64-bit IEEE floating point: 3.14, -2.5, 1.0e10
 String   # UTF-8 strings: "hello", "world"
 Bool     # Boolean values: true, false
 Atom     # Symbolic constants: :ok, :error, :undefined
+Nat      # Natural numbers (Peano encoding): Zero, Succ(n)
 ```
+
+### Nat Type (Peano Encoding)
+
+Cure provides an algebraic `Nat` type using Peano encoding, similar to Idris:
+
+```cure
+# Algebraic definition (like Idris)
+data Nat = Zero | Succ Nat
+
+# Examples
+Zero                    # 0
+Succ(Zero)             # 1
+Succ(Succ(Zero))       # 2
+Succ(Succ(Succ(Zero))) # 3
+
+# Recursive functions on Nat
+def plus(x: Nat, y: Nat): Nat =
+  match x do
+    Zero -> y
+    Succ(pred) -> Succ(plus(pred, y))
+  end
+
+def times(x: Nat, y: Nat): Nat =
+  match x do
+    Zero -> Zero
+    Succ(pred) -> plus(y, times(pred, y))
+  end
+```
+
+The Nat type enables:
+- **Compile-time arithmetic verification**: Length-indexed vectors, sized arrays
+- **Totality checking**: All pattern matches on Nat are exhaustive
+- **Type-level computation**: Dependent types can compute with Nat values
+- **Idris-style dependent programming**: Familiar Peano arithmetic
 
 ### Composite Types
 
@@ -67,8 +102,9 @@ Int{min..max} where min <= max
 Types can be refined with boolean predicates:
 
 ```cure
-# Natural numbers (non-negative integers)
-Nat = Int where x >= 0
+# Natural numbers as refined type (compile-time refinement)
+# Note: Cure also provides algebraic Nat (Zero | Succ) for Peano encoding
+NatRefined = Int where x >= 0
 
 # Positive integers  
 Pos = Int where x > 0

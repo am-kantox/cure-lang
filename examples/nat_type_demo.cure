@@ -1,0 +1,75 @@
+## Nat Type Demo - Peano Encoding (like Idris)
+## 
+## In Cure, Nat is defined as an algebraic data type:
+##   data Nat = Zero | Succ Nat
+##
+## This is similar to Idris's definition:
+##   data Nat = Z | S Nat
+##
+## Peano encoding allows:
+## - Compile-time verification of natural number properties
+## - Totality checking for recursive functions
+## - Dependent types with Nat indices (Vector(T, n: Nat))
+## - Type-safe arithmetic at the type level
+
+module NatDemo do
+  export [plus/2, times/2, to_nat/1, from_nat/1, demo/0]
+  
+  ## Create natural numbers from Peano encoding
+  ## Zero represents 0
+  ## Succ(Zero) represents 1
+  ## Succ(Succ(Zero)) represents 2, etc.
+  
+  ## Addition for Nat type
+  ## Recursive definition: plus Zero n = n
+  ##                      plus (Succ m) n = Succ (plus m n)
+  def plus(x: Nat, y: Nat): Nat =
+    match x do
+      Zero -> y
+      Succ(pred) -> Succ(plus(pred, y))
+    end
+  
+  ## Multiplication for Nat type
+  ## Recursive definition: times Zero n = Zero
+  ##                      times (Succ m) n = plus n (times m n)
+  def times(x: Nat, y: Nat): Nat =
+    match x do
+      Zero -> Zero
+      Succ(pred) -> plus(y, times(pred, y))
+    end
+  
+  ## Convert integer to Nat
+  def to_nat(n: Int): Nat =
+    if n <= 0 then
+      Zero
+    else
+      Succ(to_nat(n - 1))
+    end
+  
+  ## Convert Nat to integer
+  def from_nat(n: Nat): Int =
+    match n do
+      Zero -> 0
+      Succ(pred) -> 1 + from_nat(pred)
+    end
+  
+  ## Demo function showing Nat operations
+  def demo(): Unit =
+    let two = Succ(Succ(Zero))
+    let three = Succ(Succ(Succ(Zero)))
+    
+    ## Addition: 2 + 3 = 5
+    let five = plus(two, three)
+    print("2 + 3 = " ++ show(from_nat(five)))
+    
+    ## Multiplication: 2 * 3 = 6
+    let six = times(two, three)
+    print("2 * 3 = " ++ show(from_nat(six)))
+    
+    ## Convert from Int to Nat and back
+    let seven_nat = to_nat(7)
+    let seven_int = from_nat(seven_nat)
+    print("Convert 7 to Nat and back: " ++ show(seven_int))
+    
+    ok
+end

@@ -616,10 +616,17 @@ compile_call([Arity], Context) ->
                                         {call, Line, {atom, Line, FuncName}, Args};
                                     false ->
                                         % Check if it's an imported function
-                                        case is_imported_function_reference(FuncName, Arity, NewContext) of
+                                        case
+                                            is_imported_function_reference(
+                                                FuncName, Arity, NewContext
+                                            )
+                                        of
                                             {true, ModName} ->
                                                 % Imported function - generate remote call
-                                                {call, Line, {remote, Line, {atom, Line, ModName}, {atom, Line, FuncName}}, Args};
+                                                {call, Line,
+                                                    {remote, Line, {atom, Line, ModName},
+                                                        {atom, Line, FuncName}},
+                                                    Args};
                                             false ->
                                                 % Unknown function - assume local (will error at runtime if not found)
                                                 {call, Line, {atom, Line, FuncName}, Args}

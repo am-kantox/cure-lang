@@ -2280,10 +2280,14 @@ extract_exported_function_bodies(Items, Module, Exports) ->
 %% Extract function bodies from items
 extract_function_bodies([], _Module, Acc) ->
     maps:from_list(lists:reverse(Acc));
-extract_function_bodies([#function_def{name = Name, params = Params, body = Body} | Rest], Module, Acc) ->
+extract_function_bodies(
+    [#function_def{name = Name, params = Params, body = Body} | Rest], Module, Acc
+) ->
     Arity = length(Params),
     FunctionKey = {Name, Arity},
-    FunctionData = #{name => Name, arity => Arity, module => Module, params => Params, body => Body},
+    FunctionData = #{
+        name => Name, arity => Arity, module => Module, params => Params, body => Body
+    },
     extract_function_bodies(Rest, Module, [{FunctionKey, FunctionData} | Acc]);
 extract_function_bodies([_ | Rest], Module, Acc) ->
     % Skip non-function items
@@ -2435,7 +2439,8 @@ extract_single_function_export(_) ->
 convert_to_erlang_forms(Module) ->
     try
         % Handle both compiled modules (maps) and standalone functions
-        {ModuleName, RawExports, Functions, RecordDefinitions, FSMDefinitions, ImportedFunctions, Attributes} =
+        {ModuleName, RawExports, Functions, RecordDefinitions, FSMDefinitions, ImportedFunctions,
+            Attributes} =
             case Module of
                 % Case 1: It's a proper module map
                 #{name := Name, exports := ModuleExports, functions := Funcs} = ModuleMap ->
@@ -2443,7 +2448,8 @@ convert_to_erlang_forms(Module) ->
                     ModuleRecords = maps:get(record_definitions, ModuleMap, []),
                     ModuleImports = maps:get(imported_functions, ModuleMap, #{}),
                     ModuleAttrs = maps:get(attributes, ModuleMap, []),
-                    {Name, ModuleExports, Funcs, ModuleRecords, ModuleFSMs, ModuleImports, ModuleAttrs};
+                    {Name, ModuleExports, Funcs, ModuleRecords, ModuleFSMs, ModuleImports,
+                        ModuleAttrs};
                 % Case 2: It's a standalone function wrapped in a tuple
                 {function, FunctionMap} when is_map(FunctionMap) ->
                     FuncName = maps:get(name, FunctionMap),
@@ -2551,7 +2557,8 @@ convert_to_erlang_forms(Module) ->
         % Convert functions to forms with imported functions for import resolution
         FunctionForms = convert_functions_to_forms(
             Functions,
-            4 + length(CompileAttrs) + length(RecordForms) + length(AttributeForms) + length(LoadHook),
+            4 + length(CompileAttrs) + length(RecordForms) + length(AttributeForms) +
+                length(LoadHook),
             ModuleName,
             ImportedFunctions
         ),
@@ -2642,12 +2649,16 @@ convert_functions_to_forms(Functions, LineStart, ModuleName, ImportedFunctions) 
     cure_utils:debug("[IMPORTED_FUNCS] Module ~p has imported functions: ~p~n", [
         ModuleName, maps:to_list(ImportedFunctions)
     ]),
-    convert_functions_to_forms(Functions, LineStart, [], ModuleName, LocalFunctions, ImportedFunctions).
+    convert_functions_to_forms(
+        Functions, LineStart, [], ModuleName, LocalFunctions, ImportedFunctions
+    ).
 
 convert_functions_to_forms([], _Line, Acc, _ModuleName, _LocalFunctions, _ImportedFunctions) ->
     cure_utils:debug("[CONVERT] Converted ~p functions to forms~n", [length(Acc)]),
     lists:reverse(Acc);
-convert_functions_to_forms([Function | RestFunctions], Line, Acc, ModuleName, LocalFunctions, ImportedFunctions) ->
+convert_functions_to_forms(
+    [Function | RestFunctions], Line, Acc, ModuleName, LocalFunctions, ImportedFunctions
+) ->
     case convert_function_to_form(Function, Line, ModuleName, LocalFunctions, ImportedFunctions) of
         {ok, Form, NextLine} ->
             convert_functions_to_forms(
@@ -2656,7 +2667,9 @@ convert_functions_to_forms([Function | RestFunctions], Line, Acc, ModuleName, Lo
         {error, Reason} ->
             % Skip invalid functions but log the error
             cure_utils:debug("[CONVERT] Failed to convert function to form: ~p~n", [Reason]),
-            convert_functions_to_forms(RestFunctions, Line + 1, Acc, ModuleName, LocalFunctions, ImportedFunctions)
+            convert_functions_to_forms(
+                RestFunctions, Line + 1, Acc, ModuleName, LocalFunctions, ImportedFunctions
+            )
     end.
 
 %% Extract local functions map for context
@@ -3176,21 +3189,25 @@ convert_complex_body_to_erlang(#function_call_expr{function = Function, args = A
             case convert_complex_args_to_erlang(Args, Location) of
                 {ok, ArgForms} ->
                     % Check if this is a call to an imported function and convert to remote call if needed
-                    FinalFunctionForm = case FunctionForm of
-                        {atom, _, FuncName} ->
-                            % Check if this function is imported
-                            ImportResult = get_imported_function_info(FuncName, length(ArgForms)),
-                            case ImportResult of
-                                {ok, ModuleName} ->
-                                    % Generate remote call
-                                    {remote, Line, {atom, Line, ModuleName}, {atom, Line, FuncName}};
-                                not_found ->
-                                    % Keep as local call
-                                    FunctionForm
-                            end;
-                        _ ->
-                            FunctionForm
-                    end,
+                    FinalFunctionForm =
+                        case FunctionForm of
+                            {atom, _, FuncName} ->
+                                % Check if this function is imported
+                                ImportResult = get_imported_function_info(
+                                    FuncName, length(ArgForms)
+                                ),
+                                case ImportResult of
+                                    {ok, ModuleName} ->
+                                        % Generate remote call
+                                        {remote, Line, {atom, Line, ModuleName},
+                                            {atom, Line, FuncName}};
+                                    not_found ->
+                                        % Keep as local call
+                                        FunctionForm
+                                end;
+                            _ ->
+                                FunctionForm
+                        end,
                     CallForm = {call, Line, FinalFunctionForm, ArgForms},
                     cure_utils:debug("Generated call form: ~p~n", [CallForm]),
                     {ok, CallForm};
@@ -3328,9 +3345,9 @@ get_imported_function_info(FuncName, Arity) ->
                             not_found;
                         ImportInfo when is_map(ImportInfo) ->
                             case maps:get(module, ImportInfo, undefined) of
-                                undefined -> 
+                                undefined ->
                                     not_found;
-                                ModName -> 
+                                ModName ->
                                     {ok, ModName}
                             end;
                         _ ->
@@ -3338,9 +3355,9 @@ get_imported_function_info(FuncName, Arity) ->
                     end;
                 ImportInfo when is_map(ImportInfo) ->
                     case maps:get(module, ImportInfo, undefined) of
-                        undefined -> 
+                        undefined ->
                             not_found;
-                        ModName -> 
+                        ModName ->
                             {ok, ModName}
                     end;
                 _ ->
