@@ -477,7 +477,9 @@ collect_exports_helper([Item | Rest], ExportsAcc, ItemsAcc, _) ->
 parse_module_items(State, Acc) ->
     case get_token_type(current_token(State)) of
         'end' ->
-            {lists:reverse(Acc), State};
+            % Group function clauses before returning
+            GroupedItems = group_function_clauses(lists:reverse(Acc)),
+            {GroupedItems, State};
         _ ->
             {Item, State1} = parse_module_item(State),
             parse_module_items(State1, [Item | Acc])
@@ -618,11 +620,27 @@ parse_function(State) ->
     IsPrivate = false,
 
     Location = get_token_location(DefToken),
-    Function = #function_def{
-        name = Name,
+
+    % Create a function_clause for the new multi-clause representation
+    Clause = #function_clause{
         params = Params,
         return_type = FinalReturnType,
         constraint = Constraint,
+        body = Body,
+        location = Location
+    },
+
+    % Create function_def with both new (clauses) and old (params/body) fields for backward compatibility
+    Function = #function_def{
+        name = Name,
+        % New: list of clauses
+        clauses = [Clause],
+        % DEPRECATED: kept for backward compatibility
+        params = Params,
+        return_type = FinalReturnType,
+        % DEPRECATED: kept for backward compatibility
+        constraint = Constraint,
+        % DEPRECATED: kept for backward compatibility
         body = Body,
         is_private = IsPrivate,
         location = Location
@@ -3624,3 +3642,55 @@ match_operator_ahead(State) ->
         [] ->
             false
     end.
+
+%% Group multiple function definitions with the same name/arity into multi-clause functions
+%% This enables Erlang-style multi-clause function definitions
+group_function_clauses(Items) ->
+    group_function_clauses_helper(Items, #{}, []).
+
+group_function_clauses_helper([], _FuncMap, Acc) ->
+    lists:reverse(Acc);
+group_function_clauses_helper([Item | Rest], FuncMap, Acc) ->
+    case Item of
+        #function_def{name = Name, clauses = [Clause]} ->
+            % Get arity from the clause
+            Arity = length(Clause#function_clause.params),
+            Key = {Name, Arity},
+
+            case maps:get(Key, FuncMap, undefined) of
+                undefined ->
+                    % First occurrence - add to map with a placeholder in Acc
+                    NewFuncMap = maps:put(Key, {Item, length(Acc)}, FuncMap),
+                    group_function_clauses_helper(Rest, NewFuncMap, [Item | Acc]);
+                {ExistingFunc, Position} ->
+                    % Merge clauses into existing function
+                    #function_def{clauses = ExistingClauses} = ExistingFunc,
+                    MergedFunc = ExistingFunc#function_def{
+                        clauses = ExistingClauses ++ [Clause],
+                        % Clear deprecated fields for multi-clause functions
+                        params = undefined,
+                        body = undefined,
+                        constraint = undefined
+                    },
+                    % Update the function in both map and accumulator
+                    NewFuncMap = maps:put(Key, {MergedFunc, Position}, FuncMap),
+                    NewAcc = update_list_at_position(Acc, Position, MergedFunc),
+                    group_function_clauses_helper(Rest, NewFuncMap, NewAcc)
+            end;
+        _ ->
+            % Not a function definition, keep as-is
+            group_function_clauses_helper(Rest, FuncMap, [Item | Acc])
+    end.
+
+%% Helper to update a list element at a specific position (counting from the end)
+update_list_at_position(List, Position, NewValue) ->
+    Reversed = lists:reverse(List),
+    Updated = update_at_index(Reversed, Position, NewValue),
+    lists:reverse(Updated).
+
+update_at_index([_ | Rest], 0, NewValue) ->
+    [NewValue | Rest];
+update_at_index([H | Rest], Index, NewValue) when Index > 0 ->
+    [H | update_at_index(Rest, Index - 1, NewValue)];
+update_at_index([], _, _) ->
+    [].

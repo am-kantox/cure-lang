@@ -269,6 +269,9 @@ check_item({module_def, Name, Imports, Exports, Items, Location}, Env) ->
 check_item({module_def, Name, Exports, Items, Location}, Env) ->
     % Parser format without imports field - add empty imports
     check_module({module_def, Name, [], Exports, Items, Location}, Env);
+check_item(FuncDef = #function_def{}, Env) ->
+    % Handle function_def record (supports both single and multi-clause)
+    check_function(FuncDef, Env);
 check_item({function_def, Name, Params, ReturnType, Constraint, Body, Location}, Env) ->
     % Fallback for old tuple-based format without is_private field
     check_function(
@@ -394,6 +397,39 @@ check_module({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
     end.
 
 %% Check function definition - New AST format
+% Record format with multi-clause support
+check_function(
+    #function_def{
+        name = Name,
+        clauses = Clauses,
+        params = Params,
+        return_type = ReturnType,
+        constraint = Constraint,
+        body = Body,
+        is_private = IsPrivate,
+        location = Location
+    },
+    Env
+) when Clauses =/= undefined andalso length(Clauses) > 0 ->
+    % Multi-clause function - check each clause
+    cure_utils:debug("[CHECK_FUNC] Checking multi-clause function ~p~n", [Name]),
+    check_multiclause_function(Name, Clauses, Location, Env);
+check_function(
+    #function_def{
+        name = Name,
+        params = Params,
+        return_type = ReturnType,
+        constraint = Constraint,
+        body = Body,
+        is_private = IsPrivate,
+        location = Location
+    },
+    Env
+) ->
+    % Single-clause function (record format, backward compatible)
+    check_single_clause_function(
+        Name, Params, ReturnType, Constraint, Body, IsPrivate, Location, Env
+    );
 % 7-parameter format (old format without is_private)
 check_function(
     {function_def, Name, Params, ReturnType, Constraint, Body, Location},
@@ -563,6 +599,187 @@ check_function(
                     details = Details
                 },
             {ok, Env, error_result(ThrownError)}
+    end.
+
+%% Check single-clause function (extracted from original check_function)
+check_single_clause_function(Name, Params, ReturnType, Constraint, Body, _IsPrivate, Location, Env) ->
+    try
+        % Convert parameters to type environment and extract type parameters
+        {ParamTypes, ParamEnv} = process_parameters(Params, Env),
+
+        % Also extract type parameters from return type if present
+        EnvWithReturnTypeParams =
+            case ReturnType of
+                undefined ->
+                    ParamEnv;
+                _ ->
+                    cure_utils:debug("[RETURN] Processing return type ~p~n", [ReturnType]),
+                    extract_and_add_type_params(ReturnType, ParamEnv)
+            end,
+
+        % Check and process constraint if present
+        FinalEnv =
+            case Constraint of
+                undefined ->
+                    EnvWithReturnTypeParams;
+                _ ->
+                    % First check that constraint is boolean
+                    case
+                        cure_types:infer_type(
+                            convert_expr_to_tuple(Constraint), EnvWithReturnTypeParams
+                        )
+                    of
+                        {ok, InferenceResult} ->
+                            ConstraintType = element(2, InferenceResult),
+                            case cure_types:unify(ConstraintType, {primitive_type, 'Bool'}) of
+                                {ok, _} ->
+                                    % Convert constraint to SMT and add to environment
+                                    process_when_clause_constraint(
+                                        Constraint, EnvWithReturnTypeParams, Location
+                                    );
+                                {error, Reason} ->
+                                    throw({constraint_not_bool, Reason, Location})
+                            end;
+                        {error, Reason} ->
+                            throw({constraint_inference_failed, Reason, Location})
+                    end
+            end,
+
+        % Check function body with constraint-enhanced environment
+        cure_utils:debug("About to infer type for function ~p body~n", [Name]),
+        cure_utils:debug("Body AST: ~p~n", [Body]),
+        try
+            BodyTuple = convert_expr_to_tuple(Body),
+            cure_utils:debug("Converted body to tuple: ~p~n", [BodyTuple]),
+            BodyInferenceResult = cure_types:infer_type(BodyTuple, FinalEnv),
+            cure_utils:debug("Type inference result: ~p~n", [BodyInferenceResult]),
+            case BodyInferenceResult of
+                {ok, InferenceResult2} ->
+                    BodyType = element(2, InferenceResult2),
+                    % Check return type if specified
+                    case ReturnType of
+                        undefined ->
+                            % Function type is inferred
+                            FuncType = {function_type, ParamTypes, BodyType},
+                            cure_utils:debug(
+                                "Adding function ~p (new AST) with inferred type: ~p~n",
+                                [Name, FuncType]
+                            ),
+                            NewEnv = cure_types:extend_env(Env, Name, FuncType),
+                            {ok, NewEnv, success_result(FuncType)};
+                        _ ->
+                            % Check body matches declared return type
+                            ExpectedReturnType = convert_type_with_env(ReturnType, FinalEnv),
+                            case cure_types:unify(BodyType, ExpectedReturnType) of
+                                {ok, _} ->
+                                    FuncType = {function_type, ParamTypes, ExpectedReturnType},
+                                    cure_utils:debug(
+                                        "Adding function ~p (new AST) with explicit type: ~p~n",
+                                        [Name, FuncType]
+                                    ),
+                                    NewEnv = cure_types:extend_env(Env, Name, FuncType),
+                                    {ok, NewEnv, success_result(FuncType)};
+                                {error, UnifyReason} ->
+                                    ErrorMsg =
+                                        #typecheck_error{
+                                            message =
+                                                "Function body type doesn't match declared return type",
+                                            location = Location,
+                                            details =
+                                                {type_mismatch, ExpectedReturnType, BodyType,
+                                                    UnifyReason}
+                                        },
+                                    {ok, Env, error_result(ErrorMsg)}
+                            end
+                    end;
+                {error, InferReason} ->
+                    cure_utils:debug("FUNCTION BODY INFERENCE FAILED ***~n"),
+                    cure_utils:debug("  *** Function: ~p~n", [Name]),
+                    cure_utils:debug("  *** Body: ~p~n", [Body]),
+                    cure_utils:debug("  *** Error: ~p~n", [InferReason]),
+                    ErrorMsg2 =
+                        #typecheck_error{
+                            message = "Failed to infer function body type",
+                            location = Location,
+                            details = {inference_failed, InferReason}
+                        },
+                    {ok, Env, error_result(ErrorMsg2)}
+            end
+        catch
+            error:function_clause:Stacktrace ->
+                cure_utils:debug("ERROR: function_clause error in infer_type for function ~p~n", [
+                    Name
+                ]),
+                ErrorMsg3 =
+                    #typecheck_error{
+                        message = "Function clause error during type inference",
+                        location = Location,
+                        details = {function_clause_error, Stacktrace}
+                    },
+                {ok, Env, error_result(ErrorMsg3)}
+        end
+    catch
+        {ErrorType, Details, ErrorLocation} ->
+            ThrownError =
+                #typecheck_error{
+                    message = format_error_type(ErrorType),
+                    location = ErrorLocation,
+                    details = Details
+                },
+            {ok, Env, error_result(ThrownError)}
+    end.
+
+%% Check multi-clause function
+check_multiclause_function(Name, Clauses, Location, Env) ->
+    cure_utils:debug("[MULTICLAUSE] Checking ~p clauses for function ~p~n", [
+        length(Clauses), Name
+    ]),
+
+    % Check each clause individually
+    ClauseResults = lists:map(
+        fun(Clause) ->
+            #function_clause{
+                params = Params,
+                return_type = ReturnType,
+                constraint = Constraint,
+                body = Body
+            } = Clause,
+
+            % Check this clause as if it were a single function
+            check_single_clause_function(
+                Name, Params, ReturnType, Constraint, Body, false, Location, Env
+            )
+        end,
+        Clauses
+    ),
+
+    % Collect any errors from clause checking
+    ClauseErrors = lists:flatten(
+        lists:map(
+            fun(Result) ->
+                case Result of
+                    {ok, _, #typecheck_result{errors = Errors}} -> Errors;
+                    _ -> []
+                end
+            end,
+            ClauseResults
+        )
+    ),
+
+    % If all clauses pass, the function signature was already added during signature collection
+    case ClauseErrors of
+        [] ->
+            % All clauses type-checked successfully
+            % The function signature with union types was already added to Env
+            {ok, Env, success_result({multiclause_function, Name})};
+        Errors ->
+            % Some clauses failed
+            {ok, Env, #typecheck_result{
+                success = false,
+                type = undefined,
+                errors = Errors,
+                warnings = []
+            }}
     end.
 
 %% Check curify function definition
@@ -1403,6 +1620,94 @@ convert_type_param_to_tuple(TypeParam) ->
     % Handle non-record type parameters
     convert_type_to_tuple(TypeParam).
 
+%% Derive function signature from multiple clauses (union types)
+derive_multiclause_signature(Name, Clauses, Env) ->
+    cure_utils:debug("[MULTICLAUSE] Deriving signature for ~p from ~p clauses~n", [
+        Name, length(Clauses)
+    ]),
+
+    % Process each clause and collect parameter and return types
+    ClauseTypes = lists:map(
+        fun(Clause) ->
+            #function_clause{
+                params = Params,
+                return_type = ReturnType
+            } = Clause,
+            {ParamTypes, EnvWithParams} = process_parameters(Params, Env),
+            FinalReturnType =
+                case ReturnType of
+                    undefined -> cure_types:new_type_var();
+                    _ -> convert_type_with_env(ReturnType, EnvWithParams)
+                end,
+            {ParamTypes, FinalReturnType}
+        end,
+        Clauses
+    ),
+
+    % Extract parameter types for each position and create unions
+    % All clauses must have the same arity
+    [{FirstParamTypes, FirstReturnType} | RestTypes] = ClauseTypes,
+    Arity = length(FirstParamTypes),
+
+    % Verify all clauses have same arity
+    AllSameArity = lists:all(
+        fun({ParamTypes, _}) ->
+            length(ParamTypes) =:= Arity
+        end,
+        RestTypes
+    ),
+
+    case AllSameArity of
+        false ->
+            cure_utils:debug("ERROR: Multi-clause function ~p has inconsistent arity~n", [Name]),
+            Env;
+        true ->
+            % Create union types for each parameter position
+            UnionParamTypes = lists:foldl(
+                fun(ParamIndex, Acc) ->
+                    % Collect the type at this position from all clauses
+                    TypesAtPosition = lists:map(
+                        fun({ParamTypes, _}) ->
+                            lists:nth(ParamIndex, ParamTypes)
+                        end,
+                        ClauseTypes
+                    ),
+
+                    % Create union type if types differ, otherwise use single type
+                    UnionType =
+                        case lists:usort(TypesAtPosition) of
+                            [SingleType] ->
+                                % All clauses have same type at this position
+                                SingleType;
+                            MultipleTypes ->
+                                % Different types - create union
+                                {union_type, MultipleTypes}
+                        end,
+
+                    [UnionType | Acc]
+                end,
+                [],
+                lists:seq(1, Arity)
+            ),
+
+            % Reverse to get correct order
+            FinalParamTypes = lists:reverse(UnionParamTypes),
+
+            % Create union type for return types
+            AllReturnTypes = lists:map(fun({_, RT}) -> RT end, ClauseTypes),
+            UnionReturnType =
+                case lists:usort(AllReturnTypes) of
+                    [SingleReturnType] ->
+                        SingleReturnType;
+                    MultipleReturnTypes ->
+                        {union_type, MultipleReturnTypes}
+                end,
+
+            FuncType = {function_type, FinalParamTypes, UnionReturnType},
+            cure_utils:debug("[MULTICLAUSE] Derived type for ~p: ~p~n", [Name, FuncType]),
+            cure_types:extend_env(Env, Name, FuncType)
+    end.
+
 %% Two-pass processing: collect function signatures first
 collect_function_signatures(Items, Env) ->
     collect_function_signatures_helper(Items, Env).
@@ -1415,11 +1720,35 @@ collect_function_signatures_helper([Item | Rest], Env) ->
         case Item of
             #function_def{
                 name = Name,
+                clauses = Clauses,
+                params = Params,
+                return_type = ReturnType,
+                is_private = _
+            } when Clauses =/= undefined andalso length(Clauses) > 0 ->
+                % Multi-clause function - derive union types from all clauses
+                cure_utils:debug(
+                    "[SIG] Pre-processing multi-clause function ~p with ~p clauses~n", [
+                        Name, length(Clauses)
+                    ]
+                ),
+                try
+                    derive_multiclause_signature(Name, Clauses, Env)
+                catch
+                    Class:Error:Stacktrace ->
+                        cure_utils:debug(
+                            "ERROR SIG: Failed to pre-process multi-clause function ~p~n", [Name]
+                        ),
+                        cure_utils:debug("ERROR SIG: Class: ~p, Error: ~p~n", [Class, Error]),
+                        cure_utils:debug("ERROR SIG: Stacktrace: ~p~n", [Stacktrace]),
+                        Env
+                end;
+            #function_def{
+                name = Name,
                 params = Params,
                 return_type = ReturnType,
                 is_private = _
             } ->
-                % Create function type from signature
+                % Single-clause function (backward compatibility)
                 cure_utils:debug("[SIG] Pre-processing function signature for ~p~n", [Name]),
                 try
                     {ParamTypes, EnvWithParams} = process_parameters(Params, Env),

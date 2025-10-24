@@ -24,14 +24,25 @@
     location
 }).
 
+%% Function clause (for multi-clause functions)
+-record(function_clause, {
+    params,          % Parameters with types for this clause
+    return_type,     % Return type for this specific clause (optional)
+    constraint,      % Guard/constraint for this clause (optional)
+    body,            % Function body for this clause
+    location         % Source location
+}).
+
 %% Function definition
+%% Supports both single-clause (backward compatible) and multi-clause functions
 -record(function_def, {
     name,
-    params,
-    return_type,
-    constraint,
-    body,
-    is_private,  % determined by export list, not by keyword
+    clauses,         % List of #function_clause{} records (new multi-clause support)
+    params,          % DEPRECATED: kept for backward compatibility, use clauses instead
+    return_type,     % Union of all clause return types (derived)
+    constraint,      % DEPRECATED: kept for backward compatibility
+    body,            % DEPRECATED: kept for backward compatibility
+    is_private,      % determined by export list, not by keyword
     location
 }).
 

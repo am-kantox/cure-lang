@@ -875,6 +875,22 @@ resolve_function_arity(_Module, _FunctionName) ->
 compile_function_impl(
     #function_def{
         name = Name,
+        clauses = Clauses,
+        params = Params,
+        body = Body,
+        constraint = Constraint,
+        location = Location
+    } = _Function,
+    State
+) when Clauses =/= undefined andalso length(Clauses) > 1 ->
+    % Multi-clause function - compile each clause as a separate BEAM function clause
+    cure_utils:debug("[CODEGEN] Compiling multi-clause function ~p with ~p clauses~n", [
+        Name, length(Clauses)
+    ]),
+    compile_multiclause_function(Name, Clauses, Location, State);
+compile_function_impl(
+    #function_def{
+        name = Name,
         params = Params,
         body = Body,
         constraint = Constraint,
@@ -928,6 +944,127 @@ compile_function_impl(
     end.
 % NOTE: Legacy function definition support (without constraint field) is now
 % handled by the main clause above since the pattern will match with constraint = undefined
+
+%% Compile multi-clause function into BEAM-compatible Erlang function clauses
+compile_multiclause_function(Name, Clauses, Location, State) ->
+    try
+        % Filter out type parameters from all clauses
+        FilteredClauses = lists:map(
+            fun(#function_clause{params = Params} = Clause) ->
+                RuntimeParams = filter_runtime_params(Params),
+                Clause#function_clause{params = RuntimeParams}
+            end,
+            Clauses
+        ),
+
+        % Verify all clauses have the same arity
+        Arity =
+            case verify_clause_arities(FilteredClauses) of
+                {ok, ArityVal} ->
+                    ArityVal;
+                {error, ArityError} ->
+                    throw(ArityError)
+            end,
+
+        % Compile each clause into Erlang abstract form
+        FunctionClauses = lists:map(
+            fun(Clause) ->
+                compile_single_function_clause(Clause, Name, Location, State)
+            end,
+            FilteredClauses
+        ),
+
+        % Generate function code map
+        FirstClause = hd(FilteredClauses),
+        ClauseParams = FirstClause#function_clause.params,
+        ParamList = [P#param.name || P <- ClauseParams],
+        FunctionCode = #{
+            name => Name,
+            arity => Arity,
+            params => ParamList,
+            % Store clauses for later conversion to Erlang abstract forms
+            clauses => FunctionClauses,
+            is_multiclause => true,
+            location => Location
+        },
+
+        {ok, {function, FunctionCode}, State}
+    catch
+        error:CompileReason:Stack ->
+            {error, {multiclause_function_compilation_failed, Name, CompileReason, Stack}}
+    end.
+
+%% Verify all clauses have the same arity
+verify_clause_arities([]) ->
+    {error, no_clauses};
+verify_clause_arities([#function_clause{params = Params} | Rest]) ->
+    Arity = length(Params),
+    case all_clauses_have_arity(Rest, Arity) of
+        true -> {ok, Arity};
+        false -> {error, {mismatched_arities, Arity}}
+    end.
+
+all_clauses_have_arity([], _Arity) ->
+    true;
+all_clauses_have_arity([#function_clause{params = Params} | Rest], Arity) ->
+    case length(Params) of
+        Arity -> all_clauses_have_arity(Rest, Arity);
+        _ -> false
+    end.
+
+%% Compile a single function clause (pattern, guard, body) into instructions
+compile_single_function_clause(
+    #function_clause{
+        params = Params,
+        body = Body,
+        constraint = Constraint,
+        location = ClauseLocation
+    },
+    FunctionName,
+    _FunctionLocation,
+    State
+) ->
+    % Create function compilation context for this clause
+    FunctionInfo = #{
+        name => FunctionName,
+        params => Params,
+        dimension_bindings => extract_dimension_bindings(Params)
+    },
+    ClauseState = State#codegen_state{
+        local_vars = create_param_bindings(Params),
+        temp_counter = 0,
+        label_counter = 0,
+        current_function = FunctionInfo
+    },
+
+    % Compile guard if present
+    {GuardInstructions, State1} =
+        case Constraint of
+            undefined ->
+                {[], ClauseState};
+            _ ->
+                case cure_guard_compiler:compile_guard(Constraint, ClauseState) of
+                    {ok, Instructions, NewState} ->
+                        {
+                            Instructions ++ [generate_guard_check_instruction(ClauseLocation)],
+                            NewState
+                        };
+                    {error, Reason} ->
+                        throw({guard_compilation_failed, Reason})
+                end
+        end,
+
+    % Compile body
+    {BodyInstructions, _FinalState} = compile_expression(Body, State1),
+
+    % Return clause info (params, guard, body instructions)
+    #{
+        params => Params,
+        param_names => [P#param.name || P <- Params],
+        guard_instructions => GuardInstructions,
+        body_instructions => BodyInstructions,
+        location => ClauseLocation
+    }.
 
 %% Compile curify function (wraps Erlang functions with auto-conversion)
 %% Generates a Cure function that calls the specified Erlang function
@@ -2741,7 +2878,15 @@ extract_function_names_from_items(Items) ->
     lists:foldl(
         fun(Item, Acc) ->
             case Item of
-                #function_def{name = Name, params = Params} ->
+                #function_def{name = Name, clauses = Clauses, params = Params} when
+                    Clauses =/= undefined, length(Clauses) > 0
+                ->
+                    % Multi-clause function - get arity from first clause
+                    FirstClause = hd(Clauses),
+                    Arity = length(FirstClause#function_clause.params),
+                    maps:put(Name, Arity, Acc);
+                #function_def{name = Name, params = Params} when Params =/= undefined ->
+                    % Single-clause function
                     Arity = length(Params),
                     maps:put(Name, Arity, Acc);
                 {function_def, Name, Params, _Body, _Location} ->
@@ -2957,7 +3102,7 @@ compile_patterns_to_case_clauses_impl(
     State
 ) ->
     % Check if this is a Succ pattern that needs special handling
-    {ErlangPattern, ExtraGuards, BodyPrologue} = 
+    {ErlangPattern, ExtraGuards, BodyPrologue} =
         case Pattern of
             #constructor_pattern{name = 'Succ', args = [#identifier_pattern{name = VarName}]} ->
                 % Succ(pred) pattern: match any positive integer, bind pred = value - 1
@@ -2967,8 +3112,9 @@ compile_patterns_to_case_clauses_impl(
                 % Guard: TempVar > 0
                 GuardExpr = {op, Line, '>', {var, Line, TempVar}, {integer, Line, 0}},
                 % Body prologue: VarName = TempVar - 1
-                Prologue = {match, Line, {var, Line, VarName}, 
-                           {op, Line, '-', {var, Line, TempVar}, {integer, Line, 1}}},
+                Prologue =
+                    {match, Line, {var, Line, VarName},
+                        {op, Line, '-', {var, Line, TempVar}, {integer, Line, 1}}},
                 {Pat, [GuardExpr], [Prologue]};
             _ ->
                 {convert_pattern_to_erlang_form(Pattern, Location), [], []}
@@ -2980,12 +3126,13 @@ compile_patterns_to_case_clauses_impl(
             undefined -> [];
             _ -> [convert_guard_to_erlang_form(Guard, Location)]
         end,
-    
+
     % Combine extra guards from pattern with user guards
-    ErlangGuard = case ExtraGuards ++ UserGuards of
-        [] -> [];
-        Guards -> [Guards]
-    end,
+    ErlangGuard =
+        case ExtraGuards ++ UserGuards of
+            [] -> [];
+            Guards -> [Guards]
+        end,
 
     % For complex expressions, we need to create a more sophisticated approach
     % Instead of trying to convert complex expressions directly to Erlang forms,
@@ -3023,12 +3170,14 @@ compile_patterns_to_case_clauses_impl(
                     error ->
                         % Fallback - this should not happen with proper implementation
                         [
-                            {call, BodyLine, {remote, BodyLine, {atom, BodyLine, erlang}, {atom, BodyLine, error}},
+                            {call, BodyLine,
+                                {remote, BodyLine, {atom, BodyLine, erlang},
+                                    {atom, BodyLine, error}},
                                 [{atom, BodyLine, unimplemented_body_expression}]}
                         ]
                 end
         end,
-    
+
     % Prepend body prologue (for Succ pattern variable bindings)
     ErlangBody = BodyPrologue ++ BaseErlangBody,
 
@@ -3147,7 +3296,10 @@ convert_constructor_pattern_to_erlang_form(ConstructorName, Args, Line, Location
                     {tuple, Line, [ConstructorAtom, ArgPattern]};
                 MultipleArgs ->
                     % Constructor with multiple arguments: Constructor(a, b, c) -> {constructor, A, B, C}
-                    ArgPatterns = [convert_pattern_to_erlang_form(Arg, Location) || Arg <- MultipleArgs],
+                    ArgPatterns = [
+                        convert_pattern_to_erlang_form(Arg, Location)
+                     || Arg <- MultipleArgs
+                    ],
                     {tuple, Line, [ConstructorAtom | ArgPatterns]}
             end
     end.

@@ -124,6 +124,37 @@ compile_function_to_erlang(
         StartLine
     ).
 
+%% Compile multi-clause function
+compile_function_to_erlang(
+    #{
+        name := Name,
+        arity := Arity,
+        is_multiclause := true,
+        clauses := ClauseInfos
+    },
+    StartLine,
+    ModuleName,
+    LocalFunctions,
+    ImportedFunctions
+) ->
+    % Ensure ETS table has the current context
+    TableName = cure_codegen_context,
+    case ets:info(TableName) of
+        undefined ->
+            ets:new(TableName, [named_table, public, set]);
+        _ ->
+            ok
+    end,
+    ets:insert(TableName, {local_functions_map, LocalFunctions}),
+    ets:insert(TableName, {imported_functions_map, ImportedFunctions}),
+
+    % Compile each clause to Erlang abstract form
+    {ErlangClauses, NextLine} = compile_multiple_clauses(
+        ClauseInfos, StartLine, ModuleName, LocalFunctions, ImportedFunctions
+    ),
+
+    FunctionForm = {function, StartLine, Name, Arity, ErlangClauses},
+    {ok, FunctionForm, NextLine};
 %% Compile function with module context and imported functions
 compile_function_to_erlang(
     #{
@@ -880,6 +911,55 @@ compile_make_lambda([_LambdaName, ParamNames, BodyInstructions, _Arity], Context
             {ok, [], push_stack(LambdaForm, Context)};
         {error, Reason} ->
             {error, {lambda_body_compilation_failed, Reason}}
+    end.
+
+%% Compile multiple function clauses to Erlang abstract forms
+compile_multiple_clauses(ClauseInfos, StartLine, ModuleName, LocalFunctions, ImportedFunctions) ->
+    compile_multiple_clauses(
+        ClauseInfos, StartLine, ModuleName, LocalFunctions, ImportedFunctions, []
+    ).
+
+compile_multiple_clauses([], CurrentLine, _ModuleName, _LocalFunctions, _ImportedFunctions, Acc) ->
+    {lists:reverse(Acc), CurrentLine};
+compile_multiple_clauses(
+    [ClauseInfo | Rest], CurrentLine, ModuleName, LocalFunctions, ImportedFunctions, Acc
+) ->
+    #{
+        param_names := ParamNames,
+        guard_instructions := GuardInstructions,
+        body_instructions := BodyInstructions
+    } = ClauseInfo,
+
+    % Create context for this clause
+    Context = #compile_context{
+        line = CurrentLine,
+        variables = create_param_variables(ParamNames, CurrentLine),
+        module_name = ModuleName,
+        local_functions = LocalFunctions,
+        imported_functions = ImportedFunctions
+    },
+
+    % Compile guard if present
+    Guards =
+        case GuardInstructions of
+            [] ->
+                [];
+            _ ->
+                % For now, guards are not fully supported in this path
+                % Guards would need special compilation - placeholder for future implementation
+                []
+        end,
+
+    % Compile body
+    case compile_instructions_to_forms(BodyInstructions, Context) of
+        {ok, BodyForms, _FinalContext} ->
+            ParamVars = [{var, CurrentLine, Param} || Param <- ParamNames],
+            Clause = {clause, CurrentLine, ParamVars, Guards, BodyForms},
+            compile_multiple_clauses(
+                Rest, CurrentLine + 5, ModuleName, LocalFunctions, ImportedFunctions, [Clause | Acc]
+            );
+        {error, Reason} ->
+            throw({clause_compilation_failed, Reason})
     end.
 
 %% Tagged tuple matching (for records like Ok(value), Error(msg))
