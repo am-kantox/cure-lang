@@ -178,10 +178,12 @@ find_symbol_in_items_with_bounds([], _Line, _Character, _PrevEnd) ->
     {error, not_found};
 find_symbol_in_items_with_bounds([Item | Rest], Line, Character, _PrevEnd) ->
     % Get next item's start line to determine current item's end
-    NextStartLine = case Rest of
-        [NextItem | _] -> get_item_start_line(NextItem);
-        [] -> undefined  % Last item, no next item
-    end,
+    NextStartLine =
+        case Rest of
+            [NextItem | _] -> get_item_start_line(NextItem);
+            % Last item, no next item
+            [] -> undefined
+        end,
     case find_symbol_in_item_with_end(Item, Line, Character, NextStartLine) of
         {ok, _, _} = Result -> Result;
         _ -> find_symbol_in_items_with_bounds(Rest, Line, Character, get_item_end_line(Item))
@@ -198,15 +200,20 @@ get_item_end_line(_) -> undefined.
 
 %% Check if cursor is within an item's bounds
 %% NextStartLine is the line where the next item starts (or undefined for last item)
-find_symbol_in_item_with_end(#function_def{name = Name, location = Location}, Line, _Character, NextStartLine) ->
+find_symbol_in_item_with_end(
+    #function_def{name = Name, location = Location}, Line, _Character, NextStartLine
+) ->
     case Location of
         #location{line = FuncLine} ->
-            CursorLine = Line + 1,  % LSP line numbers are 0-indexed
+            % LSP line numbers are 0-indexed
+            CursorLine = Line + 1,
             % Function ends at the line before the next function/fsm/end
-            FuncEndLine = case NextStartLine of
-                undefined -> FuncLine + 1000;  % Last item in module
-                NextLine -> NextLine - 1
-            end,
+            FuncEndLine =
+                case NextStartLine of
+                    % Last item in module
+                    undefined -> FuncLine + 1000;
+                    NextLine -> NextLine - 1
+                end,
             if
                 CursorLine >= FuncLine andalso CursorLine =< FuncEndLine ->
                     {ok, Name, function};
@@ -216,14 +223,17 @@ find_symbol_in_item_with_end(#function_def{name = Name, location = Location}, Li
         _ ->
             {error, not_found}
     end;
-find_symbol_in_item_with_end(#fsm_def{name = Name, location = Location}, Line, _Character, NextStartLine) ->
+find_symbol_in_item_with_end(
+    #fsm_def{name = Name, location = Location}, Line, _Character, NextStartLine
+) ->
     case Location of
         #location{line = FsmLine} ->
             CursorLine = Line + 1,
-            FsmEndLine = case NextStartLine of
-                undefined -> FsmLine + 1000;
-                NextLine -> NextLine - 1
-            end,
+            FsmEndLine =
+                case NextStartLine of
+                    undefined -> FsmLine + 1000;
+                    NextLine -> NextLine - 1
+                end,
             if
                 CursorLine >= FsmLine andalso CursorLine =< FsmEndLine ->
                     {ok, Name, fsm};

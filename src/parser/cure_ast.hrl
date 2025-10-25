@@ -288,6 +288,21 @@
     location
 }).
 
+%% Field access expressions (record.field)
+-record(field_access_expr, {
+    record,    % Expression evaluating to a record
+    field,     % Atom: field name
+    location
+}).
+
+%% Record update expressions (Record{old | field: value})
+-record(record_update_expr, {
+    name,      % Record type name
+    base,      % Expression for the base record
+    fields,    % List of #field_expr{} records
+    location
+}).
+
 %% String interpolation expressions
 -record(string_interpolation_expr, {
     parts,   % List of {string_part, String} | {expr, Expression}
@@ -411,6 +426,8 @@
                #list_expr{} |
                #tuple_expr{} |
                #record_expr{} |
+               #field_access_expr{} |
+               #record_update_expr{} |
                #lambda_expr{} |
                #fsm_spawn_expr{} |
                #fsm_send_expr{} |

@@ -281,13 +281,23 @@ get_token_value(Token) ->
 
 %% Get token location
 get_token_location(Token) when is_record(Token, token) ->
+    get_token_location(Token, undefined);
+get_token_location(_) ->
+    #location{line = 0, column = 0, file = undefined}.
+
+%% Get token location with filename
+get_token_location(Token, Filename) when is_record(Token, token) ->
     #location{
         line = Token#token.line,
         column = Token#token.column,
-        file = undefined
+        file = Filename
     };
-get_token_location(_) ->
-    #location{line = 0, column = 0, file = undefined}.
+get_token_location(_, Filename) ->
+    #location{line = 0, column = 0, file = Filename}.
+
+%% Get location from parser state and token
+get_location(#parser_state{filename = Filename}, Token) ->
+    get_token_location(Token, Filename).
 
 %% Get token line and column as tuple
 get_token_line_col(Token) when is_record(Token, token) ->
@@ -1960,6 +1970,9 @@ get_expr_location(#tuple_expr{location = Loc}) -> Loc;
 get_expr_location(#let_expr{location = Loc}) -> Loc;
 get_expr_location(#block_expr{location = Loc}) -> Loc;
 get_expr_location(#string_interpolation_expr{location = Loc}) -> Loc;
+get_expr_location(#field_access_expr{location = Loc}) -> Loc;
+get_expr_location(#record_update_expr{location = Loc}) -> Loc;
+get_expr_location(#record_expr{location = Loc}) -> Loc;
 get_expr_location(#primitive_type{location = Loc}) -> Loc;
 get_expr_location(#dependent_type{location = Loc}) -> Loc;
 get_expr_location(_) -> #location{line = 0, column = 0, file = undefined}.
@@ -1967,7 +1980,56 @@ get_expr_location(_) -> #location{line = 0, column = 0, file = undefined}.
 %% Parse binary expressions with precedence
 parse_binary_expression(State, MinPrec) ->
     {Left, State1} = parse_primary_expression(State),
-    parse_binary_rest(State1, Left, MinPrec).
+    {Postfix, State2} = parse_postfix_operators(State1, Left),
+    parse_binary_rest(State2, Postfix, MinPrec).
+
+%% Parse postfix operators like field access (.field)
+parse_postfix_operators(State, Expr) ->
+    case current_token(State) of
+        eof ->
+            {Expr, State};
+        Token ->
+            case get_token_type(Token) of
+                '.' ->
+                    % Could be field access or module qualification
+                    % Peek ahead to see if next token is identifier followed by '('
+                    {_, State1} = expect(State, '.'),
+                    case current_token(State1) of
+                        eof ->
+                            % Incomplete, return as-is
+                            {Expr, State};
+                        NextToken ->
+                            case get_token_type(NextToken) of
+                                identifier ->
+                                    {FieldToken, State2} = expect(State1, identifier),
+                                    FieldName = binary_to_atom(get_token_value(FieldToken), utf8),
+                                    FieldLocation = get_token_location(FieldToken),
+
+                                    % Check if this is module.function(args) pattern
+                                    case {Expr, match_token(State2, '(')} of
+                                        {#identifier_expr{}, true} ->
+                                            % This is module qualification, not field access
+                                            % Return the original expression and backtrack
+                                            % We'll handle this in the old code path
+                                            {Expr, State};
+                                        _ ->
+                                            % Field access: expr.field
+                                            FieldAccess = #field_access_expr{
+                                                record = Expr,
+                                                field = FieldName,
+                                                location = FieldLocation
+                                            },
+                                            % Continue checking for more postfix operators
+                                            parse_postfix_operators(State2, FieldAccess)
+                                    end;
+                                _ ->
+                                    {Expr, State}
+                            end
+                    end;
+                _ ->
+                    {Expr, State}
+            end
+    end.
 
 parse_binary_rest(State, Left, MinPrec) ->
     case current_token(State) of
@@ -2211,7 +2273,7 @@ parse_identifier_or_call(State) ->
             'ok' -> ok;
             'error' -> error
         end,
-    Location = get_token_location(Token),
+    Location = get_location(State, Token),
 
     % Check for function call (identifier followed by '.')
     case match_token(State1, '.') of
@@ -2228,7 +2290,7 @@ parse_identifier_or_call(State) ->
                     % Create qualified function call
                     ModuleExpr = #identifier_expr{name = Name, location = Location},
                     FuncExpr = #identifier_expr{
-                        name = FuncName, location = get_token_location(FuncToken)
+                        name = FuncName, location = get_location(State3, FuncToken)
                     },
                     QualifiedFunc = #binary_op_expr{
                         op = '.',
@@ -2246,7 +2308,7 @@ parse_identifier_or_call(State) ->
                     % Module.function without call
                     ModuleExpr = #identifier_expr{name = Name, location = Location},
                     FuncExpr = #identifier_expr{
-                        name = FuncName, location = get_token_location(FuncToken)
+                        name = FuncName, location = get_location(State3, FuncToken)
                     },
                     QualifiedExpr = #binary_op_expr{
                         op = '.',
@@ -2272,19 +2334,66 @@ parse_identifier_or_call(State) ->
                     },
                     {CallExpr, State4};
                 false ->
-                    % Check for record construction
+                    % Check for record construction or update
                     case match_token(State1, '{') of
                         true ->
-                            % Record construction: RecordName{field: value, ...}
+                            % Could be Record{field: value, ...} or Record{base | field: value, ...}
                             {_, State2} = expect(State1, '{'),
-                            {Fields, State3} = parse_record_expr_fields(State2, []),
-                            {_, State4} = expect(State3, '}'),
-                            RecordExpr = #record_expr{
-                                name = Name,
-                                fields = Fields,
-                                location = Location
-                            },
-                            {RecordExpr, State4};
+
+                            % Check for update syntax (base | fields)
+                            case is_identifier_token(current_token(State2)) of
+                                true ->
+                                    % Peek ahead to see if there's a '|' after the identifier
+                                    {MaybeBase, State3} = parse_expression(State2),
+                                    case match_token(State3, '|') of
+                                        true ->
+                                            % Record update: Record{base | field: value}
+                                            {_, State4} = expect(State3, '|'),
+                                            {Fields, State5} = parse_record_expr_fields(State4, []),
+                                            {_, State6} = expect(State5, '}'),
+                                            UpdateExpr = #record_update_expr{
+                                                name = Name,
+                                                base = MaybeBase,
+                                                fields = Fields,
+                                                location = Location
+                                            },
+                                            {UpdateExpr, State6};
+                                        false ->
+                                            % Regular construction, but we already parsed first field name
+                                            % We need to reparse as field_name: value
+                                            % This is a limitation - for now, error out and reparse
+                                            % For simplicity, check if next is ':'
+                                            case match_token(State3, ':') of
+                                                true ->
+                                                    % Back up and parse as regular construction
+                                                    {Fields, State4} = parse_record_expr_fields(
+                                                        State2, []
+                                                    ),
+                                                    {_, State5} = expect(State4, '}'),
+                                                    RecordExpr = #record_expr{
+                                                        name = Name,
+                                                        fields = Fields,
+                                                        location = Location
+                                                    },
+                                                    {RecordExpr, State5};
+                                                false ->
+                                                    throw(
+                                                        {parse_error,
+                                                            expected_colon_or_pipe_in_record, 0, 0}
+                                                    )
+                                            end
+                                    end;
+                                false ->
+                                    % Not an identifier, must be regular construction
+                                    {Fields, State3} = parse_record_expr_fields(State2, []),
+                                    {_, State4} = expect(State3, '}'),
+                                    RecordExpr = #record_expr{
+                                        name = Name,
+                                        fields = Fields,
+                                        location = Location
+                                    },
+                                    {RecordExpr, State4}
+                            end;
                         false ->
                             % Simple identifier
                             Expr = #identifier_expr{
@@ -2321,7 +2430,7 @@ parse_let_expression(State) ->
     {Value, State4} = parse_let_value_expression(State3),
 
     VarName = binary_to_atom(get_token_value(BindingVar), utf8),
-    Location = get_token_location(BindingVar),
+    Location = get_location(State2, BindingVar),
 
     % Create a simple identifier pattern for the binding
     Pattern = #identifier_pattern{
@@ -3636,6 +3745,13 @@ parse_record_expr_fields(State, Acc) ->
                 false ->
                     {lists:reverse([Field | Acc]), State3}
             end
+    end.
+
+%% Check if current token is an identifier
+is_identifier_token(Token) ->
+    case Token of
+        eof -> false;
+        _ -> get_token_type(Token) =:= identifier
     end.
 
 %% Check if there's an operator token after the current identifier

@@ -1824,10 +1824,17 @@ infer_expr({cons_expr, Elements, Tail, Location}, Env) ->
     end;
 infer_expr({record_expr, RecordName, Fields, Location}, Env) ->
     % Type a record construction expression: RecordName{field1: value1, field2: value2}
-    case lookup_env(Env, RecordName) of
+    io:format("[INFER] Looking up record type for ~p~n", [RecordName]),
+    LookupResult = lookup_env(Env, RecordName),
+    io:format("[INFER] Lookup result for ~p: ~200p~n", [RecordName, LookupResult]),
+    case LookupResult of
         undefined ->
+            io:format("[INFER] Record ~p not found in environment~n", [RecordName]),
             {error, {unbound_record_type, RecordName}};
         {record_type, RecordName, RecordFields} ->
+            io:format("[INFER] Found record type ~p with ~p fields~n", [
+                RecordName, length(RecordFields)
+            ]),
             % Check field values against expected field types with refined type validation
             case infer_and_validate_record_fields(Fields, RecordFields, Env, Location) of
                 {ok, FieldConstraints} ->
@@ -1837,7 +1844,67 @@ infer_expr({record_expr, RecordName, Fields, Location}, Env) ->
                     Error
             end;
         _Other ->
+            io:format("[INFER] Record ~p lookup returned non-matching type: ~200p~n", [
+                RecordName, _Other
+            ]),
             {error, {not_record_type, RecordName}}
+    end;
+infer_expr({field_access_expr, RecordExpr, FieldName, Location}, Env) ->
+    % Type a field access expression: record.field
+    case infer_expr(RecordExpr, Env) of
+        {ok, {record_type, RecordTypeName}, RecordConstraints} ->
+            % Look up record type definition to get field type
+            case lookup_env(Env, RecordTypeName) of
+                undefined ->
+                    {error, {unbound_record_type, RecordTypeName}};
+                {record_type, RecordTypeName, RecordFields} ->
+                    % Find the field in the record type
+                    case lists:keyfind(FieldName, 1, RecordFields) of
+                        {FieldName, FieldType} ->
+                            {ok, FieldType, RecordConstraints};
+                        false ->
+                            {error, {undefined_field, FieldName, RecordTypeName, Location}}
+                    end;
+                _Other ->
+                    {error, {not_record_type, RecordTypeName}}
+            end;
+        {ok, OtherType, _} ->
+            {error, {field_access_on_non_record, OtherType, Location}};
+        Error ->
+            Error
+    end;
+infer_expr({record_update_expr, RecordName, BaseExpr, Fields, Location}, Env) ->
+    % Type a record update expression: Record{base | field: value}
+    % First infer the base expression type
+    case infer_expr(BaseExpr, Env) of
+        {ok, BaseType, BaseConstraints} ->
+            % Check that base type matches the record type
+            case lookup_env(Env, RecordName) of
+                undefined ->
+                    {error, {unbound_record_type, RecordName}};
+                {record_type, RecordName, RecordFields} ->
+                    % Create constraint: base type must be the same record type
+                    ExpectedType = {record_type, RecordName},
+                    BaseConstraint = #type_constraint{
+                        left = BaseType,
+                        op = '=',
+                        right = ExpectedType,
+                        location = Location
+                    },
+                    % Check update field values against expected field types
+                    case infer_and_validate_record_fields(Fields, RecordFields, Env, Location) of
+                        {ok, FieldConstraints} ->
+                            % Return the record type
+                            {ok, {record_type, RecordName},
+                                BaseConstraints ++ [BaseConstraint] ++ FieldConstraints};
+                        Error ->
+                            Error
+                    end;
+                _Other ->
+                    {error, {not_record_type, RecordName}}
+            end;
+        Error ->
+            Error
     end;
 infer_expr({fsm_spawn_expr, FsmName, InitArgs, InitState, Location}, Env) ->
     % Type FSM spawn expression

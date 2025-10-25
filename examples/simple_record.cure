@@ -21,11 +21,8 @@ module SimpleRecord do
   # === BASIC PATTERN MATCHING ===
   
   def greet(p: Person): Unit =
-    match p do
-      Person{name: n, age: _} ->
-        println("Hello, " ++ n ++ "!")
-        # println("Hello, " ++ p.name ++ "!")
-    end
+    # Both pattern matching and direct field access work
+    println("Hello, " ++ p.name ++ "!")
   
   def check_point(pt: Point): Unit =
     match pt do

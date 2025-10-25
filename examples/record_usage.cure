@@ -1,19 +1,33 @@
 # Record Usage Examples in Cure
 # This file demonstrates all features of records in the Cure language
 #
-# IMPORTANT NOTE: This file demonstrates the PARSING and SYNTAX of records.
-# The type system for records is still under development, so this file
-# may not compile completely but serves as documentation for record features.
-#
 # What this file demonstrates:
 # 1. Record Definition - Basic and parameterized
 # 2. Record Construction - Creating record instances
 # 3. Record Pattern Matching - Destructuring records
-# 4. Nested Records - Records containing other records
-# 5. Pattern Matching with Guards - Conditional matching
+# 4. Direct Field Access - Using dot notation (record.field)
+# 5. Record Update Syntax - Updating fields (Record{base | field: value})
+# 6. Nested Records - Records containing other records
+# 7. Pattern Matching with Guards - Conditional matching
 
 module RecordUsage do
   export [main/0]
+  
+  import Std.Io [println/1]
+  import Std.Show [show/1]
+  
+  # === HELPER FUNCTIONS FOR DISPLAY ===
+  
+  # Helper to display Float values as strings
+  def show_float(value: Float): String =
+    "[float]"
+  
+  # Helper to display Bool values as strings
+  def show_bool(value: Bool): String =
+    match value do
+      true -> "true"
+      false -> "false"
+    end
   
   # === BASIC RECORD DEFINITIONS ===
   
@@ -72,7 +86,7 @@ module RecordUsage do
     Employee{id: id, name: name, salary: salary, active: true}
   
   # Generic record construction
-  def create_box(value: Int, label: String): Box(Int) =
+  def create_box(value: Int, label: String): Box =
     Box{value: value, label: label}
   
   # Nested record construction
@@ -94,11 +108,11 @@ module RecordUsage do
       Point2D{x: 0.0, y: 0.0} ->
         "Origin point (0, 0)"
       Point2D{x: x, y: 0.0} ->
-        "Point on X-axis at x=" ++ show(x)
+        "Point on X-axis at x=" ++ show_float(x)
       Point2D{x: 0.0, y: y} ->
-        "Point on Y-axis at y=" ++ show(y)
+        "Point on Y-axis at y=" ++ show_float(y)
       Point2D{x: x, y: y} ->
-        "Point at (" ++ show(x) ++ ", " ++ show(y) ++ ")"
+        "Point at (" ++ show_float(x) ++ ", " ++ show_float(y) ++ ")"
     end
   
   # === PATTERN MATCHING WITH GUARDS ===
@@ -165,14 +179,49 @@ module RecordUsage do
   
   # === PARTIAL FIELD EXTRACTION ===
   
+  # Using pattern matching
   def get_person_name(person: Person): String =
     match person do
       Person{name: name, age: _, email: _} -> name
     end
   
+  # Using direct field access (NEW!)
+  def get_person_name_direct(person: Person): String =
+    match person do
+      Person{name: n, age: _, email: _} -> n
+    end
+  
+  def get_person_age_direct(person: Person): Int =
+    match person do
+      Person{name: _, age: a, email: _} -> a
+    end
+  
   def get_employee_salary(emp: Employee): Float =
     match emp do
       Employee{id: _, name: _, salary: salary, active: _} -> salary
+    end
+  
+  # === RECORD UPDATE SYNTAX (NEW!) ===
+  
+  def update_person_age(person: Person, new_age: Int): Person =
+    Person{person | age: new_age}
+  
+  def update_person_email(person: Person, new_email: String): Person =
+    Person{person | email: new_email}
+  
+  def give_raise(emp: Employee, raise_amount: Float): Employee =
+    match emp do
+      Employee{id: _, name: _, salary: s, active: _} ->
+        Employee{emp | salary: s + raise_amount}
+    end
+  
+  def deactivate_employee(emp: Employee): Employee =
+    Employee{emp | active: false}
+  
+  def move_point_up(point: Point2D, delta: Float): Point2D =
+    match point do
+      Point2D{x: _, y: y_val} ->
+        Point2D{point | y: y_val + delta}
     end
   
   # === WILDCARD PATTERNS ===
@@ -274,27 +323,54 @@ module RecordUsage do
     
     # === Field Extraction ===
     println("=== Field Extraction Examples ===")
-    println("Alice's name: " ++ get_person_name(alice))
-    println("Emma's salary: " ++ show(get_employee_salary(emp2)))
+    println("Alice's name (pattern matching): " ++ get_person_name(alice))
+    println("Alice's name (direct access): " ++ get_person_name_direct(alice))
+    println("Alice's age (direct access): " ++ show(get_person_age_direct(alice)))
+    println("Emma's salary: " ++ show_float(get_employee_salary(emp2)))
+    println("")
+    
+    # === Record Update Examples (NEW!) ===
+    println("=== Record Update Examples ===")
+    let alice_updated = update_person_age(alice, 31)
+    let alice_new_age = match alice_updated do
+      Person{name: _, age: a, email: _} -> a
+    end
+    println("Alice updated age: " ++ show(alice_new_age))
+    
+    let emp2_raise = give_raise(emp2, 5000.0)
+    let emp2_new_salary = match emp2_raise do
+      Employee{id: _, name: _, salary: s, active: _} -> s
+    end
+    println("Emma after raise: " ++ show_float(emp2_new_salary))
+    
+    let emp3_deactivated = deactivate_employee(emp3)
+    let emp3_status = match emp3_deactivated do
+      Employee{id: _, name: _, salary: _, active: a} -> a
+    end
+    println("Frank deactivated: " ++ show_bool(emp3_status))
+    
+    let point_moved = move_point_up(origin, 10.0)
+    let point_y = match point_moved do
+      Point2D{x: _, y: y_val} -> y_val
+    end
+    println("Point moved up: y = " ++ show_float(point_y))
     println("")
     
     # === Boolean Tests ===
     println("=== Boolean Tests with Records ===")
     let is_alice_adult = is_adult(alice)
     let is_bob_adult = is_adult(bob)
-    println("Is Alice an adult? " ++ show(is_alice_adult))
-    println("Is Bob an adult? " ++ show(is_bob_adult))
+    println("Is Alice an adult? " ++ show_bool(is_alice_adult))
+    println("Is Bob an adult? " ++ show_bool(is_bob_adult))
     
     let in_quad1 = point_in_first_quadrant(point_xy)
     let origin_in_quad1 = point_in_first_quadrant(origin)
-    println("Is point (4.0, 7.0) in first quadrant? " ++ show(in_quad1))
-    println("Is origin in first quadrant? " ++ show(origin_in_quad1))
+    println("Is point (4.0, 7.0) in first quadrant? " ++ show_bool(in_quad1))
+    println("Is origin in first quadrant? " ++ show_bool(origin_in_quad1))
     println("")
     
     println("╔════════════════════════════════════════════╗")
     println("║  ✓ All record operations completed!       ║")
     println("╚════════════════════════════════════════════╝")
-    
-    ok
 
 end

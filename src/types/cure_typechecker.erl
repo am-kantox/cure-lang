@@ -455,7 +455,7 @@ check_function(
                     ParamEnv;
                 _ ->
                     cure_utils:debug("[RETURN] Processing return type ~p~n", [ReturnType]),
-                    extract_and_add_type_params(ReturnType, ParamEnv)
+                    extract_and_add_type_params_safe(ReturnType, ParamEnv)
             end,
 
         % Check and process constraint if present
@@ -614,7 +614,7 @@ check_single_clause_function(Name, Params, ReturnType, Constraint, Body, _IsPriv
                     ParamEnv;
                 _ ->
                     cure_utils:debug("[RETURN] Processing return type ~p~n", [ReturnType]),
-                    extract_and_add_type_params(ReturnType, ParamEnv)
+                    extract_and_add_type_params_safe(ReturnType, ParamEnv)
             end,
 
         % Check and process constraint if present
@@ -1426,6 +1426,20 @@ convert_expr_to_tuple(#record_expr{
 }) ->
     ConvertedFields = [convert_field_expr_to_tuple(F) || F <- Fields],
     {record_expr, Name, ConvertedFields, Location};
+convert_expr_to_tuple(#field_access_expr{
+    record = Record,
+    field = Field,
+    location = Location
+}) ->
+    {field_access_expr, convert_expr_to_tuple(Record), Field, Location};
+convert_expr_to_tuple(#record_update_expr{
+    name = Name,
+    base = Base,
+    fields = Fields,
+    location = Location
+}) ->
+    ConvertedFields = [convert_field_expr_to_tuple(F) || F <- Fields],
+    {record_update_expr, Name, convert_expr_to_tuple(Base), ConvertedFields, Location};
 convert_expr_to_tuple(Expr) ->
     % Fallback - return as-is for unsupported expressions
     Expr.
@@ -1576,15 +1590,15 @@ convert_type_with_env(#identifier_expr{name = Name}, Env) ->
                     {primitive_type, Name}
             end;
         TypeVar ->
-            % Found in environment - MUST reuse existing type variable
+            % Found in environment - MUST reuse existing binding
             cure_utils:debug("Found ~p in environment, reusing: ~p~n", [Name, TypeVar]),
             case cure_types:is_type_var(TypeVar) of
-                % It's already a proper type_var record - REUSE IT!
+                % It's a type variable - REUSE IT!
                 true ->
                     TypeVar;
-                % It's something else, treat as primitive
+                % It's something else (record type, etc.) - return as-is
                 false ->
-                    {primitive_type, Name}
+                    TypeVar
             end
     end;
 convert_type_with_env(Type, _Env) ->
@@ -1717,7 +1731,7 @@ collect_function_signatures_helper([], Env) ->
     Env;
 collect_function_signatures_helper([Item | Rest], Env) ->
     cure_utils:debug("[COLLECT_SIG] Processing item: ~p~n", [element(1, Item)]),
-    NewEnv =
+    UpdatedEnv =
         case Item of
             #function_def{
                 name = Name,
@@ -1759,7 +1773,9 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                                 cure_types:new_type_var();
                             _ ->
                                 cure_utils:debug("[SIG] Converting return type ~p~n", [ReturnType]),
-                                convert_type_with_env(ReturnType, EnvWithParams)
+                                RawReturnType = convert_type_with_env(ReturnType, EnvWithParams),
+                                % Normalize record types to simplified form (without fields)
+                                normalize_record_type(RawReturnType)
                         end,
                     FuncType = {function_type, ParamTypes, FinalReturnType},
                     cure_utils:debug("[SIG] Successfully pre-processed ~p with type ~p~n", [
@@ -1819,12 +1835,73 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                     _:_ ->
                         Env
                 end;
+            #record_def{
+                name = RecordName, type_params = _TypeParams, fields = Fields, location = _Location
+            } ->
+                % Add record definitions to environment during signature collection
+                % We convert fields but DON'T resolve types yet (to avoid circular dependency)
+                io:format(
+                    "[COLLECT_SIG] Pre-processing record definition (record format) ~p with ~p fields~n",
+                    [RecordName, length(Fields)]
+                ),
+                try
+                    % Just convert field types without resolving from environment
+                    ConvertedFields = [
+                        begin
+                            Name = F#record_field_def.name,
+                            Type = convert_type_to_tuple(F#record_field_def.type),
+                            Default = F#record_field_def.default_value,
+                            Location = F#record_field_def.location,
+                            {record_field_def, Name, Type, Default, Location}
+                        end
+                     || F <- Fields
+                    ],
+                    RecordType = {record_type, RecordName, ConvertedFields},
+                    NewEnv = cure_types:extend_env(Env, RecordName, RecordType),
+                    io:format(
+                        "[COLLECT_SIG] Successfully added record type (record format) ~p to environment~n",
+                        [RecordName]
+                    ),
+                    NewEnv
+                catch
+                    Error:Reason:Stacktrace ->
+                        io:format(
+                            "[COLLECT_SIG] ERROR adding record (record format) ~p: ~p:~p~n", [
+                                RecordName, Error, Reason
+                            ]
+                        ),
+                        io:format("[COLLECT_SIG] Stacktrace: ~p~n", [Stacktrace]),
+                        Env
+                end;
+            {record_def, RecordName, _TypeParams, Fields, _Location} ->
+                % Tuple format fallback
+                io:format(
+                    "[COLLECT_SIG] Pre-processing record definition (tuple) ~p with ~p fields~n", [
+                        RecordName, length(Fields)
+                    ]
+                ),
+                try
+                    % Fields are already in tuple format, just use them
+                    RecordType = {record_type, RecordName, Fields},
+                    NewRecordEnv = cure_types:extend_env(Env, RecordName, RecordType),
+                    io:format("[COLLECT_SIG] Successfully added record type ~p to environment~n", [
+                        RecordName
+                    ]),
+                    NewRecordEnv
+                catch
+                    Error:Reason:Stacktrace ->
+                        io:format("[COLLECT_SIG] ERROR adding record ~p: ~p:~p~n", [
+                            RecordName, Error, Reason
+                        ]),
+                        io:format("[COLLECT_SIG] Stacktrace: ~p~n", [Stacktrace]),
+                        Env
+                end;
             _ ->
                 % Non-function items don't need pre-processing
                 cure_utils:debug("[COLLECT_SIG] Unmatched item type: ~p~n", [Item]),
                 Env
         end,
-    collect_function_signatures_helper(Rest, NewEnv).
+    collect_function_signatures_helper(Rest, UpdatedEnv).
 
 %% Result construction helpers
 new_result() ->
@@ -2013,20 +2090,34 @@ extract_type_params_helper_safe(
     extract_type_params_helper_safe(ReturnType, Env1);
 % Handle tuple-form primitive types with location
 extract_type_params_helper_safe({primitive_type, Name, _Location}, Env) ->
-    % Check if it's a generic type variable and add it
-    case is_generic_type_var(Name) of
-        true ->
-            extract_type_param_value_safe(#primitive_type{name = Name}, Env);
-        false ->
+    % Check if it's already in the environment (like a record type) FIRST
+    case cure_types:lookup_env(Env, Name) of
+        undefined ->
+            % Not in environment - check if it's a generic type variable
+            case is_generic_type_var(Name) of
+                true ->
+                    extract_type_param_value_safe(#primitive_type{name = Name}, Env);
+                false ->
+                    Env
+            end;
+        _ExistingType ->
+            % Already in environment (e.g., a record type), don't override
             Env
     end;
 % Handle tuple-form primitive types without location
 extract_type_params_helper_safe({primitive_type, Name}, Env) ->
-    % Check if it's a generic type variable and add it
-    case is_generic_type_var(Name) of
-        true ->
-            extract_type_param_value_safe(#primitive_type{name = Name}, Env);
-        false ->
+    % Check if it's already in the environment (like a record type) FIRST
+    case cure_types:lookup_env(Env, Name) of
+        undefined ->
+            % Not in environment - check if it's a generic type variable
+            case is_generic_type_var(Name) of
+                true ->
+                    extract_type_param_value_safe(#primitive_type{name = Name}, Env);
+                false ->
+                    Env
+            end;
+        _ExistingType ->
+            % Already in environment (e.g., a record type), don't override
             Env
     end;
 % Handle tuple-form dependent types
@@ -2060,11 +2151,18 @@ extract_type_params_helper_safe(
             extract_type_param_value_safe(LengthExpr, Env1)
     end;
 extract_type_params_helper_safe(#identifier_expr{name = Name}, Env) ->
-    % Handle identifier expressions - if they're generic type variables, add them
-    case is_generic_type_var(Name) of
-        true ->
-            extract_type_param_value_safe(#primitive_type{name = Name}, Env);
-        false ->
+    % Handle identifier expressions - check environment first, then if they're generic type variables
+    case cure_types:lookup_env(Env, Name) of
+        undefined ->
+            % Not in environment - check if it's a generic type variable
+            case is_generic_type_var(Name) of
+                true ->
+                    extract_type_param_value_safe(#primitive_type{name = Name}, Env);
+                false ->
+                    Env
+            end;
+        _ExistingType ->
+            % Already in environment, don't override
             Env
     end;
 extract_type_params_helper_safe(_, Env) ->
@@ -2562,3 +2660,11 @@ add_smt_constraints_to_env(SmtConstraints, Env) ->
 %% Check if a name represents a generic type variable (T, E, U, etc.)
 is_generic_type_var(Name) ->
     cure_types:is_generic_type_variable_name(Name).
+
+%% Normalize record types to simplified form for function signatures
+normalize_record_type({record_type, RecordName, _Fields}) ->
+    % Return simplified form without fields
+    {record_type, RecordName};
+normalize_record_type(Type) ->
+    % Non-record types pass through unchanged
+    Type.

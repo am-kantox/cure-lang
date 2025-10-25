@@ -1196,6 +1196,8 @@ compile_expression(Expr, State) ->
         #string_interpolation_expr{} -> compile_string_interpolation(Expr, State);
         #type_annotation_expr{} -> compile_type_annotation(Expr, State);
         #record_expr{} -> compile_record_expr(Expr, State);
+        #record_update_expr{} -> compile_record_update_expr(Expr, State);
+        #field_access_expr{} -> compile_field_access_expr(Expr, State);
         % Note: pipe operators are parsed as binary_op_expr with op = '|>'
         % Note: constructor expressions are parsed as function_call_expr
         _ -> {error, {unsupported_expression, Expr}}
@@ -1611,6 +1613,47 @@ compile_record_expr(#record_expr{name = RecordName, fields = Fields, location = 
     },
 
     Instructions = FieldInstructions ++ [RecordInstruction],
+    {Instructions, State1}.
+
+%% Compile record update expressions
+compile_record_update_expr(
+    #record_update_expr{name = RecordName, base = BaseExpr, fields = Fields, location = Location},
+    State
+) ->
+    % Compile base record expression
+    {BaseInstructions, State1} = compile_expression(BaseExpr, State),
+
+    % Compile field values
+    {FieldInstructions, State2} = compile_record_field_exprs(Fields, State1),
+
+    % Create field name list for the record update
+    FieldNames = [Field#field_expr.name || Field <- Fields],
+
+    % Generate record update instruction
+    UpdateInstruction = #beam_instr{
+        op = update_record,
+        args = [RecordName, FieldNames, length(Fields)],
+        location = Location
+    },
+
+    Instructions = BaseInstructions ++ FieldInstructions ++ [UpdateInstruction],
+    {Instructions, State2}.
+
+%% Compile field access expressions
+compile_field_access_expr(
+    #field_access_expr{record = RecordExpr, field = FieldName, location = Location}, State
+) ->
+    % Compile the record expression
+    {RecordInstructions, State1} = compile_expression(RecordExpr, State),
+
+    % Generate field access instruction
+    FieldAccessInstruction = #beam_instr{
+        op = record_field_access,
+        args = [FieldName],
+        location = Location
+    },
+
+    Instructions = RecordInstructions ++ [FieldAccessInstruction],
     {Instructions, State1}.
 
 %% Compile record field expressions

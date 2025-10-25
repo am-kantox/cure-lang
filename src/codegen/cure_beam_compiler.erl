@@ -361,6 +361,8 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         make_cons -> compile_make_cons(Args, NewContext);
         make_tuple -> compile_make_tuple(Args, NewContext);
         make_record -> compile_make_record(Args, NewContext);
+        update_record -> compile_update_record(Args, NewContext);
+        record_field_access -> compile_record_field_access(Args, NewContext);
         make_lambda -> compile_make_lambda(Args, NewContext);
         match_tagged_tuple -> compile_match_tagged_tuple(Args, NewContext);
         match_result_tuple -> compile_match_result_tuple(Args, NewContext);
@@ -783,6 +785,50 @@ compile_make_record([RecordName, FieldNames, FieldCount], Context) ->
             ),
             RecordForm = {record, Line, RecordName, FieldAssignments},
             {ok, [], push_stack(RecordForm, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% Update record fields
+%% Args: [RecordName, FieldNames, FieldCount]
+%% Stack: base record, then field values (in order)
+compile_update_record([RecordName, FieldNames, FieldCount], Context) ->
+    case pop_n_from_stack(FieldCount + 1, Context) of
+        {[BaseRecord | FieldValues], NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Build record update: BaseRecord#RecordName{field1=Val1, field2=Val2, ...}
+            % In Erlang abstract form: {record, Line, BaseRecord, RecordName, FieldAssignments}
+            FieldAssignments = lists:zipwith(
+                fun(FieldName, FieldValue) ->
+                    {record_field, Line, {atom, Line, FieldName}, FieldValue}
+                end,
+                FieldNames,
+                FieldValues
+            ),
+            RecordUpdateForm = {record, Line, BaseRecord, RecordName, FieldAssignments},
+            {ok, [], push_stack(RecordUpdateForm, NewContext)};
+        Error ->
+            Error
+    end.
+
+%% Access record field
+%% Args: [FieldName]
+%% Stack: record expression
+compile_record_field_access([FieldName], Context) ->
+    case pop_stack(Context) of
+        {RecordExpr, NewContext} ->
+            Line = NewContext#compile_context.line,
+            % Build field access: RecordExpr#record_name.field
+            % We need to infer the record name from the record expression type
+            % For now, we'll use a generic record access pattern
+            % In Erlang abstract form: {record_field, Line, RecordExpr, RecordName, {atom, Line, FieldName}}
+            % However, we don't have RecordName here, so we'll use element/2 as fallback
+            % This is a limitation - proper implementation needs type information
+            % For now, generate a call to a helper function
+            FieldAccessForm =
+                {call, Line, {remote, Line, {atom, Line, cure_runtime}, {atom, Line, record_field}},
+                    [RecordExpr, {atom, Line, FieldName}]},
+            {ok, [], push_stack(FieldAccessForm, NewContext)};
         Error ->
             Error
     end.

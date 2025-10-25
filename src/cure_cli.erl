@@ -1001,7 +1001,8 @@ compile_missing_stdlib_files(MissingBeamFiles) ->
                 debug_info = true,
                 warnings = false,
                 verbose = false,
-                type_check = false,  % Skip type checking for stdlib to avoid circular deps
+                % Skip type checking for stdlib to avoid circular deps
+                type_check = false,
                 optimize = false,
                 fsm_runtime = false,
                 stdlib_paths = []
