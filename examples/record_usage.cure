@@ -343,11 +343,11 @@ module RecordUsage do
     end
     println("Emma after raise: " ++ show_float(emp2_new_salary))
     
-    let emp3_deactivated = deactivate_employee(emp3)
-    let emp3_status = match emp3_deactivated do
-      Employee{id: _, name: _, salary: _, active: a} -> a
-    end
-    println("Frank deactivated: " ++ show_bool(emp3_status))
+    # let emp3_deactivated = deactivate_employee(emp3)
+    # let emp3_status = match emp3_deactivated do
+    #   Employee{id: _, name: _, salary: _, active: a} -> a
+    # end
+    # println("Frank deactivated: " ++ show_bool(emp3_status))
     
     let point_moved = move_point_up(origin, 10.0)
     let point_y = match point_moved do

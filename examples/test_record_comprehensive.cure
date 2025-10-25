@@ -1,0 +1,45 @@
+# Comprehensive test matching the summary scenario
+module TestRecordComprehensive do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  
+  record Person do
+    name: String
+    age: Int
+  end
+  
+  record Employee do
+    person: Person
+    active: Bool
+  end
+  
+  # Standalone record update function (like deactivate_employee or update_age)
+  def update_age(p: Person, new_age: Int): Person =
+    Person{p | age: new_age}
+  
+  def deactivate_employee(emp: Employee): Employee =
+    Employee{emp | active: false}
+  
+  # Function that pattern matches the result of a record update
+  def test_update_pattern_match(): String =
+    let bob = Person{name: "Bob", age: 25}
+    let updated_bob = update_age(bob, 26)
+    match updated_bob do
+      Person{name: n, age: a} -> n
+    end
+  
+  # Function that tests employee update and pattern matching
+  def test_employee_pattern_match(): Bool =
+    let alice = Person{name: "Alice", age: 30}
+    let emp = Employee{person: alice, active: true}
+    let deactivated = deactivate_employee(emp)
+    match deactivated do
+      Employee{person: _, active: status} -> status
+    end
+  
+  def main(): Unit =
+    let name_result = test_update_pattern_match()
+    let status_result = test_employee_pattern_match()
+    println("All tests passed!")
+end

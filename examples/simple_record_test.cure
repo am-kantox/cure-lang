@@ -1,0 +1,48 @@
+# Simple record test to isolate the issue
+
+module SimpleRecordTest do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  
+  record Person do
+    name: String
+    age: Int
+  end
+  
+  def create_person(n: String, a: Int): Person =
+    Person{name: n, age: a}
+  
+  def update_age(p: Person, new_age: Int): Person =
+    Person{p | age: new_age}
+  
+  def get_age(p: Person): Int =
+    match p do
+      Person{name: _, age: a} -> a
+    end
+  
+  def main(): Unit =
+    println("=== Simple Record Test ===")
+    
+    # Test 1: Direct construction and match
+    let p1 = Person{name: "Alice", age: 30}
+    let age1 = match p1 do
+      Person{name: _, age: a} -> a
+    end
+    println("Test 1 - Direct construction match: OK")
+    
+    # Test 2: Function construction and match
+    let p2 = create_person("Bob", 25)
+    let age2 = get_age(p2)
+    println("Test 2 - Function construction match: OK")
+    
+    # Test 3: Update and match
+    let p3 = update_age(p2, 26)
+    println("About to match p3...")
+    let age3 = match p3 do
+      Person{name: _, age: a} -> a
+    end
+    println("Test 3 - Update and match: OK")
+    
+    println("All tests passed!")
+end

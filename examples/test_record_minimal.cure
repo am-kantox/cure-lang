@@ -1,0 +1,38 @@
+# Minimal reproduction from record_usage.cure
+
+module TestRecordMinimal do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  import Std.Show [show/1]
+  
+  record Person do
+    name: String
+    age: Int
+    email: String
+  end
+  
+  record Employee do
+    id: Int
+    name: String
+    salary: Float
+    active: Bool
+  end
+  
+  def show_bool(value: Bool): String =
+    match value do
+      true -> "true"
+      false -> "false"
+    end
+  
+  def deactivate_employee(emp: Employee): Employee =
+    Employee{emp | active: false}
+  
+  def main(): Unit =
+    let emp3 = Employee{id: 3, name: "Frank", salary: 50000.0, active: false}
+    let emp3_deactivated = deactivate_employee(emp3)
+    let emp3_status = match emp3_deactivated do
+      Employee{id: _, name: _, salary: _, active: a} -> a
+    end
+    println("Frank deactivated: " ++ show_bool(emp3_status))
+end

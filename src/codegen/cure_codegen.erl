@@ -643,6 +643,17 @@ compile_module_item(#record_def{} = RecordDef, State) ->
     NewRecords = maps:put(RecordName, RecordDef, State#codegen_state.type_constructors),
     NewState = State#codegen_state{type_constructors = NewRecords},
 
+    % Store field order in ETS for pattern matching
+    FieldOrder = [Field#record_field_def.name || Field <- Fields],
+    cure_utils:debug("[RECORD_DEF] Storing field order for ~p: ~p~n", [RecordName, FieldOrder]),
+    TableName = cure_codegen_context,
+    case ets:info(TableName) of
+        undefined -> ets:new(TableName, [named_table, public, set]);
+        _ -> ok
+    end,
+    ets:insert(TableName, {{record_fields, RecordName}, FieldOrder}),
+    cure_utils:debug("[RECORD_DEF] Stored in ETS: ~p~n", [{{record_fields, RecordName}, FieldOrder}]),
+
     % Generate Erlang record attribute for the module
     FieldDefs = generate_erlang_record_fields(Fields),
     RecordAttr = {record, RecordName, FieldDefs},
@@ -2605,6 +2616,11 @@ Generated BEAM files are fully compatible with:
 generate_beam_file(Module, OutputPath) ->
     case convert_to_erlang_forms(Module) of
         {ok, Forms} ->
+            % Debug: Print record definitions
+            RecordForms = [F || F = {attribute, _, record, _} <- Forms],
+            io:format(standard_error, "~n=== RECORD DEFINITIONS ===~n", []),
+            lists:foreach(fun(F) -> io:format(standard_error, "~p~n", [F]) end, RecordForms),
+            io:format(standard_error, "=== END RECORDS ===~n~n", []),
             % The on_load attribute must be preserved - ensure it's not optimized out
             case
                 compile:forms(Forms, [
@@ -2612,7 +2628,8 @@ generate_beam_file(Module, OutputPath) ->
                     return_errors,
                     return_warnings,
                     no_auto_import,
-                    nowarn_undefined_function
+                    nowarn_undefined_function,
+                    debug_info
                 ])
             of
                 {ok, ModuleName, Binary, _Warnings} ->
@@ -3348,11 +3365,45 @@ convert_constructor_pattern_to_erlang_form(ConstructorName, Args, Line, Location
     end.
 
 %% Convert record patterns to Erlang record patterns
-%% #person{name = Name, age = Age} -> {record, Line, person, [...fields...]}
+%% Person{name: n, age: a} -> #'Person'{name = N, age = A} (record pattern)
 convert_record_pattern_to_erlang_form(RecordName, Fields, Line, Location) ->
-    % Convert field patterns to Erlang record field patterns
+    % Convert field patterns to Erlang record_field forms
     ErlangFields = [convert_field_pattern_to_erlang_form(Field, Location) || Field <- Fields],
+    % Generate Erlang record pattern: #RecordName{field1 = Pattern1, field2 = Pattern2, ...}
     {record, Line, RecordName, ErlangFields}.
+
+%% Get record field order from ETS table (stored during type checking)
+get_record_field_order(RecordName) ->
+    TableName = cure_codegen_context,
+    cure_utils:debug("[FIELD_ORDER] Looking up fields for record: ~p~n", [RecordName]),
+    case ets:info(TableName) of
+        undefined -> 
+            cure_utils:debug("[FIELD_ORDER] ETS table not found~n"),
+            not_found;
+        _ ->
+            case ets:lookup(TableName, {record_fields, RecordName}) of
+                [{_, FieldOrder}] -> 
+                    cure_utils:debug("[FIELD_ORDER] Found field order: ~p~n", [FieldOrder]),
+                    {ok, FieldOrder};
+                [] -> 
+                    cure_utils:debug("[FIELD_ORDER] No field order found~n"),
+                    not_found
+            end
+    end.
+
+%% Create ordered field patterns based on record definition order
+create_ordered_field_patterns(Fields, FieldOrder, Location) ->
+    % Create a map from field name to pattern
+    FieldMap = maps:from_list([
+        {Field#field_pattern.name, Field#field_pattern.pattern}
+     || Field <- Fields
+    ]),
+    % Generate patterns in the order defined by the record
+    [begin
+         Pattern = maps:get(FieldName, FieldMap, #wildcard_pattern{location = Location}),
+         convert_pattern_to_erlang_form(Pattern, Location)
+     end
+     || FieldName <- FieldOrder].
 
 %% Convert field patterns within records
 convert_field_pattern_to_erlang_form(
@@ -3608,6 +3659,36 @@ convert_complex_body_to_erlang(#match_expr{expr = Expr, patterns = Patterns}, Lo
         error ->
             error
     end;
+convert_complex_body_to_erlang(
+    #record_update_expr{name = RecordName, base = BaseExpr, fields = Fields}, Location
+) ->
+    Line = get_line_from_location(Location),
+    cure_utils:debug("Converting record update for ~p with ~p fields~n", [RecordName, length(Fields)]),
+    case convert_complex_body_to_erlang(BaseExpr, Location) of
+        {ok, BaseForm} ->
+            case convert_record_field_values_to_erlang(Fields, Location) of
+                {ok, FieldForms} ->
+                    % Build record update: BaseRecord#RecordName{field1=Val1, field2=Val2, ...}
+                    % In Erlang abstract form: {record, Line, BaseRecord, RecordName, FieldAssignments}
+                    FieldNames = [Field#field_expr.name || Field <- Fields],
+                    FieldAssignments = lists:zipwith(
+                        fun(FieldName, FieldForm) ->
+                            {record_field, Line, {atom, Line, FieldName}, FieldForm}
+                        end,
+                        FieldNames,
+                        FieldForms
+                    ),
+                    RecordUpdateForm = {record, Line, BaseForm, RecordName, FieldAssignments},
+                    cure_utils:debug("[RECORD_UPDATE] Generated for ~p: ~p~n", [RecordName, RecordUpdateForm]),
+                    cure_utils:debug("[RECORD_UPDATE] BaseForm: ~p~n", [BaseForm]),
+                    cure_utils:debug("[RECORD_UPDATE] FieldAssignments: ~p~n", [FieldAssignments]),
+                    {ok, RecordUpdateForm};
+                error ->
+                    error
+            end;
+        error ->
+            error
+    end;
 convert_complex_body_to_erlang(_, _) ->
     error.
 
@@ -3653,6 +3734,25 @@ convert_complex_bindings_to_erlang([#binding{pattern = Pattern, value = Value} |
 convert_complex_bindings_to_erlang([_ | Rest], Location) ->
     % Skip unsupported binding types for now
     convert_complex_bindings_to_erlang(Rest, Location).
+
+%% Helper function to convert record field values
+convert_record_field_values_to_erlang([], _Location) ->
+    {ok, []};
+convert_record_field_values_to_erlang([#field_expr{value = Value} | Rest], Location) ->
+    case convert_complex_body_to_erlang(Value, Location) of
+        {ok, ValueForm} ->
+            case convert_record_field_values_to_erlang(Rest, Location) of
+                {ok, RestForms} ->
+                    {ok, [ValueForm | RestForms]};
+                error ->
+                    error
+            end;
+        error ->
+            error
+    end;
+convert_record_field_values_to_erlang([_ | Rest], Location) ->
+    % Skip unsupported field types
+    convert_record_field_values_to_erlang(Rest, Location).
 
 %% Get imported function info (module name) for a given function name and arity
 %% Checks ETS table for imported functions stored during conversion
