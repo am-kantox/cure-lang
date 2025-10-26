@@ -454,14 +454,23 @@ concurrent environments. The module is otherwise stateless and thread-safe.
 
 %% FSM primitive types
 -define(TYPE_PID, {primitive_type, 'Pid'}).
--define(TYPE_FSMID, {primitive_type, 'FsmId'}).
--define(TYPE_STATE, {primitive_type, 'State'}).
--define(TYPE_MESSAGE, {primitive_type, 'Message'}).
--define(TYPE_TIMEOUT, {primitive_type, 'Timeout'}).
 
-%% NamedValue type - represents {Atom, T} tuple for use in structures like Map
-%% NamedValue(T) is syntactic sugar for tuple type {Atom, T}
--define(TYPE_NAMEDVALUE(T), {tuple_type, [{primitive_type, 'Atom'}, T], undefined}).
+%% Infinity primitive type for timeout values
+-define(TYPE_INFINITY, {primitive_type, 'Infinity'}).
+
+%% Timeout type - refined type accepting non-negative integers or Infinity
+-define(TYPE_TIMEOUT,
+    {union_type, 'Timeout',
+        [
+            {refined_type, 'Int', fun(N) -> is_integer(N) andalso N >= 0 end},
+            ?TYPE_INFINITY
+        ],
+        undefined}
+).
+
+%% Pair type - represents {KT, VT} tuple for key-value pairs in structures like Map
+%% Pair(KT, VT) is syntactic sugar for tuple type {KT, VT}
+-define(TYPE_PAIR(KT, VT), {tuple_type, [KT, VT], undefined}).
 
 %% Dependent types (refined types)
 -define(TYPE_NAT_REFINED, {refined_type, 'Int', fun(N) -> N >= 0 end}).
@@ -893,42 +902,51 @@ unify_impl(
             cure_utils:debug("Failed to extract vector params (right): ~p~n", [Reason]),
             {error, {invalid_vector_params_right, Reason}}
     end;
-%% NamedValue(T) unification - expand to {Atom, T} tuple type
+%% Pair(KT, VT) unification - expand to {KT, VT} tuple type
 unify_impl(
-    {dependent_type, 'NamedValue', Params1},
-    {dependent_type, 'NamedValue', Params2},
+    {dependent_type, 'Pair', Params1},
+    {dependent_type, 'Pair', Params2},
     Subst
-) when length(Params1) =:= 1, length(Params2) =:= 1 ->
-    % Extract the type parameter T from NamedValue(T)
-    [Param1] = Params1,
-    [Param2] = Params2,
-    T1 = extract_type_param_value(Param1),
-    T2 = extract_type_param_value(Param2),
-    % Unify the T parameters
-    unify_impl(T1, T2, Subst);
-%% Bridge: NamedValue(T) unifies with tuple type {Atom, T}
+) when length(Params1) =:= 2, length(Params2) =:= 2 ->
+    % Extract the type parameters KT and VT from Pair(KT, VT)
+    [KTParam1, VTParam1] = Params1,
+    [KTParam2, VTParam2] = Params2,
+    KT1 = extract_type_param_value(KTParam1),
+    VT1 = extract_type_param_value(VTParam1),
+    KT2 = extract_type_param_value(KTParam2),
+    VT2 = extract_type_param_value(VTParam2),
+    % Unify both key and value type parameters
+    case unify_impl(KT1, KT2, Subst) of
+        {ok, Subst1} ->
+            unify_impl(VT1, VT2, Subst1);
+        Error ->
+            Error
+    end;
+%% Bridge: Pair(KT, VT) unifies with tuple type {KT, VT}
 unify_impl(
-    {dependent_type, 'NamedValue', Params},
+    {dependent_type, 'Pair', Params},
     TupleType = #tuple_type{element_types = ElemTypes},
     Subst
-) when length(Params) =:= 1, length(ElemTypes) =:= 2 ->
-    [Param] = Params,
-    T = extract_type_param_value(Param),
-    case ElemTypes of
-        [#primitive_type{name = 'Atom'}, T2] ->
-            % Unify T with the second element type
-            unify_impl(T, T2, Subst);
-        _ ->
-            {error, {namedvalue_tuple_mismatch, ElemTypes}}
+) when length(Params) =:= 2, length(ElemTypes) =:= 2 ->
+    [KTParam, VTParam] = Params,
+    KT = extract_type_param_value(KTParam),
+    VT = extract_type_param_value(VTParam),
+    [KT2, VT2] = ElemTypes,
+    % Unify both key and value types
+    case unify_impl(KT, KT2, Subst) of
+        {ok, Subst1} ->
+            unify_impl(VT, VT2, Subst1);
+        Error ->
+            Error
     end;
 unify_impl(
     TupleType = #tuple_type{element_types = ElemTypes},
-    {dependent_type, 'NamedValue', Params},
+    {dependent_type, 'Pair', Params},
     Subst
-) when length(Params) =:= 1, length(ElemTypes) =:= 2 ->
+) when length(Params) =:= 2, length(ElemTypes) =:= 2 ->
     % Symmetric case
-    unify_impl({dependent_type, 'NamedValue', Params}, TupleType, Subst);
-%% Generic dependent type unification (AFTER specific Vector and NamedValue cases)
+    unify_impl({dependent_type, 'Pair', Params}, TupleType, Subst);
+%% Generic dependent type unification (AFTER specific Vector and Pair cases)
 unify_impl(
     {dependent_type, Name1, Params1},
     {dependent_type, Name2, Params2},
@@ -2004,7 +2022,9 @@ infer_expr({fsm_send_expr, Target, Message, Location}, Env) ->
     end;
 infer_expr({fsm_receive_expr, Patterns, Timeout, Location}, Env) ->
     % Type FSM receive expression
-    case infer_match_clauses(Patterns, ?TYPE_MESSAGE, Env) of
+    % Create a type variable for the message type (will be defined in standard library)
+    MessageTypeVar = new_type_var(),
+    case infer_match_clauses(Patterns, MessageTypeVar, Env) of
         {ok, ResultType, PatternConstraints} ->
             TimeoutConstraints =
                 case Timeout of
@@ -2031,9 +2051,11 @@ infer_expr({fsm_receive_expr, Patterns, Timeout, Location}, Env) ->
 infer_expr({fsm_state_expr, _Location}, Env) ->
     % Type FSM current state access
     % Return the current state type from environment if available
+    % State type will be defined in the standard library
     case lookup_env(Env, current_state) of
         undefined ->
-            {ok, ?TYPE_STATE, []};
+            % Create a type variable for the state type
+            {ok, new_type_var(), []};
         StateType ->
             {ok, StateType, []}
     end;
@@ -3277,17 +3299,14 @@ type_to_string(?TYPE_ATOM) ->
     "Atom";
 type_to_string(?TYPE_PID) ->
     "Pid";
-type_to_string(?TYPE_FSMID) ->
-    "FsmId";
-type_to_string(?TYPE_STATE) ->
-    "State";
-type_to_string(?TYPE_MESSAGE) ->
-    "Message";
+type_to_string(?TYPE_INFINITY) ->
+    "Infinity";
 type_to_string(?TYPE_TIMEOUT) ->
     "Timeout";
-type_to_string({dependent_type, 'NamedValue', [Param]}) ->
-    T = extract_type_param_value(Param),
-    "NamedValue(" ++ type_to_string(T) ++ ")";
+type_to_string({dependent_type, 'Pair', [KTParam, VTParam]}) ->
+    KT = extract_type_param_value(KTParam),
+    VT = extract_type_param_value(VTParam),
+    "Pair(" ++ type_to_string(KT) ++ ", " ++ type_to_string(VT) ++ ")";
 type_to_string(#type_var{id = Id, name = undefined}) ->
     "T" ++ integer_to_list(Id);
 type_to_string(#type_var{name = Name}) when Name =/= undefined ->
@@ -3327,8 +3346,7 @@ create_derived_length_var(_, Suffix) ->
 is_well_formed_type({primitive_type, Name}) when
     Name =:= 'Int' orelse Name =:= 'Float' orelse Name =:= 'String' orelse
         Name =:= 'Bool' orelse Name =:= 'Atom' orelse Name =:= 'Nat' orelse
-        Name =:= 'Pid' orelse Name =:= 'FsmId' orelse Name =:= 'State' orelse
-        Name =:= 'Message' orelse Name =:= 'Timeout'
+        Name =:= 'Pid' orelse Name =:= 'Infinity'
 ->
     true;
 is_well_formed_type(#type_var{}) ->
@@ -6452,10 +6470,11 @@ create_message_type_constraint(ProcessType, MessageType, Location) ->
 extract_message_types(#process_type{fsm_type = {fsm_type, _Name, _States, MessageTypes}}) ->
     {union_type, MessageTypes, undefined};
 extract_message_types(?TYPE_PID) ->
-    % Generic PID can receive any message
-    ?TYPE_MESSAGE;
+    % Generic PID can receive any message (type variable)
+    new_type_var();
 extract_message_types(_) ->
-    ?TYPE_MESSAGE.
+    % Unknown process type - use type variable
+    new_type_var().
 
 %% Check if FSM type is well-formed
 % is_well_formed_fsm_type(#fsm_type{name = Name, states = States, message_types = MessageTypes}) ->

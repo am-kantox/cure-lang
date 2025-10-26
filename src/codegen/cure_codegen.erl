@@ -3377,15 +3377,15 @@ get_record_field_order(RecordName) ->
     TableName = cure_codegen_context,
     cure_utils:debug("[FIELD_ORDER] Looking up fields for record: ~p~n", [RecordName]),
     case ets:info(TableName) of
-        undefined -> 
+        undefined ->
             cure_utils:debug("[FIELD_ORDER] ETS table not found~n"),
             not_found;
         _ ->
             case ets:lookup(TableName, {record_fields, RecordName}) of
-                [{_, FieldOrder}] -> 
+                [{_, FieldOrder}] ->
                     cure_utils:debug("[FIELD_ORDER] Found field order: ~p~n", [FieldOrder]),
                     {ok, FieldOrder};
-                [] -> 
+                [] ->
                     cure_utils:debug("[FIELD_ORDER] No field order found~n"),
                     not_found
             end
@@ -3399,11 +3399,13 @@ create_ordered_field_patterns(Fields, FieldOrder, Location) ->
      || Field <- Fields
     ]),
     % Generate patterns in the order defined by the record
-    [begin
-         Pattern = maps:get(FieldName, FieldMap, #wildcard_pattern{location = Location}),
-         convert_pattern_to_erlang_form(Pattern, Location)
-     end
-     || FieldName <- FieldOrder].
+    [
+        begin
+            Pattern = maps:get(FieldName, FieldMap, #wildcard_pattern{location = Location}),
+            convert_pattern_to_erlang_form(Pattern, Location)
+        end
+     || FieldName <- FieldOrder
+    ].
 
 %% Convert field patterns within records
 convert_field_pattern_to_erlang_form(
@@ -3663,7 +3665,9 @@ convert_complex_body_to_erlang(
     #record_update_expr{name = RecordName, base = BaseExpr, fields = Fields}, Location
 ) ->
     Line = get_line_from_location(Location),
-    cure_utils:debug("Converting record update for ~p with ~p fields~n", [RecordName, length(Fields)]),
+    cure_utils:debug("Converting record update for ~p with ~p fields~n", [
+        RecordName, length(Fields)
+    ]),
     case convert_complex_body_to_erlang(BaseExpr, Location) of
         {ok, BaseForm} ->
             case convert_record_field_values_to_erlang(Fields, Location) of
@@ -3679,7 +3683,9 @@ convert_complex_body_to_erlang(
                         FieldForms
                     ),
                     RecordUpdateForm = {record, Line, BaseForm, RecordName, FieldAssignments},
-                    cure_utils:debug("[RECORD_UPDATE] Generated for ~p: ~p~n", [RecordName, RecordUpdateForm]),
+                    cure_utils:debug("[RECORD_UPDATE] Generated for ~p: ~p~n", [
+                        RecordName, RecordUpdateForm
+                    ]),
                     cure_utils:debug("[RECORD_UPDATE] BaseForm: ~p~n", [BaseForm]),
                     cure_utils:debug("[RECORD_UPDATE] FieldAssignments: ~p~n", [FieldAssignments]),
                     {ok, RecordUpdateForm};

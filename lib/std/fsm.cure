@@ -4,12 +4,19 @@
 module Std.Fsm do
   export []
 
-  type Payload = List(NamedValue)
-  type Event = NamedValue
+  type Payload = List(Pair(Atom, Any))
+  type FsmName = Pair(Atom, Any)
+  type Event = Pair(Atom, Payload)
+  type State = Atom
 
-#   record FsmState do
-#     pid: Pid
-#     payload: Payload
-#   end  
+  record FsmState do
+    pid: Pid
+    payload: Payload
+    states: List(State)
+    # transitions: List(Pair(State, Event))
+  end
+
+  ## Example
+  
 
 end
