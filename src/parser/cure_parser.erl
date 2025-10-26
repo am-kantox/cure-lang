@@ -875,27 +875,76 @@ parse_record_field(State) ->
     {Field, State3}.
 
 %% Parse FSM definition
+%% Supports two syntaxes:
+%% 1. Old: fsm Name do states: [...] initial: ... state Name do ... end end end
+%% 2. New Mermaid-style: fsm RecordType{field: value, ...} do State --> |event| State end
 parse_fsm(State) ->
     {_, State1} = expect(State, fsm),
+
+    % Parse FSM name
     {NameToken, State2} = expect(State1, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
-    {_, State3} = expect(State2, do),
+    FSMName = binary_to_atom(get_token_value(NameToken), utf8),
 
-    {States, State4} = parse_fsm_states_declaration(State3),
-    {Initial, State5} = parse_fsm_initial(State4),
-    {StateDefs, State6} = parse_fsm_state_definitions(State5, []),
+    % Check if this is new Mermaid-style (has '{') or old style (has 'do' directly)
+    case match_token(State2, '{') of
+        true ->
+            % New Mermaid-style syntax
+            % Parse record literal for initial payload
+            {_, State3} = expect(State2, '{'),
+            {InitialPayload, State4} = parse_record_fields_literal(State3, []),
+            {_, State5} = expect(State4, '}'),
 
-    {_, State7} = expect(State6, 'end'),
+            {_, State6} = expect(State5, do),
 
-    Location = get_token_location(NameToken),
-    FSM = #fsm_def{
-        name = Name,
-        states = States,
-        initial = Initial,
-        state_defs = StateDefs,
-        location = Location
-    },
-    {FSM, State7}.
+            % Parse Mermaid-style transitions
+            {Transitions, State7} = parse_mermaid_transitions(State6, []),
+
+            {_, State8} = expect(State7, 'end'),
+
+            % Extract states from transitions and build state_defs
+            {States, StateDefs} = build_state_defs_from_transitions(Transitions),
+
+            % Initial state is the first state in the transition list
+            Initial =
+                case States of
+                    [FirstState | _] -> FirstState;
+                    [] -> undefined
+                end,
+
+            Location = get_token_location(NameToken),
+            FSM = #fsm_def{
+                name = FSMName,
+                states = States,
+                initial = Initial,
+                state_defs = StateDefs,
+                location = Location
+            },
+            {FSM, State8};
+        false ->
+            % Old style syntax
+            {_, State3} = expect(State2, do),
+
+            % Parse states declaration
+            {States, State4} = parse_fsm_states_declaration(State3),
+
+            % Parse initial state
+            {Initial, State5} = parse_fsm_initial(State4),
+
+            % Parse state definitions
+            {StateDefs, State6} = parse_fsm_state_definitions(State5, []),
+
+            {_, State7} = expect(State6, 'end'),
+
+            Location = get_token_location(NameToken),
+            FSM = #fsm_def{
+                name = FSMName,
+                states = States,
+                initial = Initial,
+                state_defs = StateDefs,
+                location = Location
+            },
+            {FSM, State7}
+    end.
 
 %% Parse states declaration: states: [State1, State2, ...]
 parse_fsm_states_declaration(State) ->
@@ -910,8 +959,28 @@ parse_fsm_states_declaration(State) ->
 parse_fsm_initial(State) ->
     {_, State1} = expect(State, initial),
     {_, State2} = expect(State1, ':'),
-    {StateToken, State3} = expect(State2, identifier),
-    Initial = binary_to_atom(get_token_value(StateToken), utf8),
+    % Accept identifiers and constructor tokens as state names
+    {StateToken, State3} =
+        case get_token_type(current_token(State2)) of
+            identifier -> expect(State2, identifier);
+            'Zero' -> expect(State2, 'Zero');
+            'Succ' -> expect(State2, 'Succ');
+            'Ok' -> expect(State2, 'Ok');
+            'Error' -> expect(State2, 'Error');
+            'Some' -> expect(State2, 'Some');
+            'None' -> expect(State2, 'None');
+            _ -> expect(State2, identifier)
+        end,
+    Initial =
+        case get_token_type(StateToken) of
+            identifier -> binary_to_atom(get_token_value(StateToken), utf8);
+            'Zero' -> 'Zero';
+            'Succ' -> 'Succ';
+            'Ok' -> 'Ok';
+            'Error' -> 'Error';
+            'Some' -> 'Some';
+            'None' -> 'None'
+        end,
     {Initial, State3}.
 
 %% Parse FSM state definitions
@@ -929,8 +998,28 @@ parse_fsm_state_definitions(State, Acc) ->
 %% Parse single FSM state definition
 parse_fsm_state_definition(State) ->
     {_, State1} = expect(State, state),
-    {NameToken, State2} = expect(State1, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    % Accept identifiers and constructor tokens as state names
+    {NameToken, State2} =
+        case get_token_type(current_token(State1)) of
+            identifier -> expect(State1, identifier);
+            'Zero' -> expect(State1, 'Zero');
+            'Succ' -> expect(State1, 'Succ');
+            'Ok' -> expect(State1, 'Ok');
+            'Error' -> expect(State1, 'Error');
+            'Some' -> expect(State1, 'Some');
+            'None' -> expect(State1, 'None');
+            _ -> expect(State1, identifier)
+        end,
+    Name =
+        case get_token_type(NameToken) of
+            identifier -> binary_to_atom(get_token_value(NameToken), utf8);
+            'Zero' -> 'Zero';
+            'Succ' -> 'Succ';
+            'Ok' -> 'Ok';
+            'Error' -> 'Error';
+            'Some' -> 'Some';
+            'None' -> 'None'
+        end,
     {_, State3} = expect(State2, do),
 
     {Transitions, State4} = parse_fsm_transitions(State3, []),
@@ -979,8 +1068,28 @@ parse_fsm_transition(State) ->
                 end,
 
             {_, State6} = expect(State5, '->'),
-            {TargetToken, State7} = expect(State6, identifier),
-            Target = binary_to_atom(get_token_value(TargetToken), utf8),
+            % Accept identifiers and constructor tokens as target state names
+            {TargetToken, State7} =
+                case get_token_type(current_token(State6)) of
+                    identifier -> expect(State6, identifier);
+                    'Zero' -> expect(State6, 'Zero');
+                    'Succ' -> expect(State6, 'Succ');
+                    'Ok' -> expect(State6, 'Ok');
+                    'Error' -> expect(State6, 'Error');
+                    'Some' -> expect(State6, 'Some');
+                    'None' -> expect(State6, 'None');
+                    _ -> expect(State6, identifier)
+                end,
+            Target =
+                case get_token_type(TargetToken) of
+                    identifier -> binary_to_atom(get_token_value(TargetToken), utf8);
+                    'Zero' -> 'Zero';
+                    'Succ' -> 'Succ';
+                    'Ok' -> 'Ok';
+                    'Error' -> 'Error';
+                    'Some' -> 'Some';
+                    'None' -> 'None'
+                end,
             EventLocation = get_token_location(current_token(State)),
 
             % Optional action with 'do' - now accepts full expressions or function names
@@ -1040,8 +1149,28 @@ parse_fsm_transition(State) ->
                 end,
 
             {_, State6} = expect(State5, '->'),
-            {TargetToken, State7} = expect(State6, identifier),
-            Target = binary_to_atom(get_token_value(TargetToken), utf8),
+            % Accept identifiers and constructor tokens as target state names
+            {TargetToken, State7} =
+                case get_token_type(current_token(State6)) of
+                    identifier -> expect(State6, identifier);
+                    'Zero' -> expect(State6, 'Zero');
+                    'Succ' -> expect(State6, 'Succ');
+                    'Ok' -> expect(State6, 'Ok');
+                    'Error' -> expect(State6, 'Error');
+                    'Some' -> expect(State6, 'Some');
+                    'None' -> expect(State6, 'None');
+                    _ -> expect(State6, identifier)
+                end,
+            Target =
+                case get_token_type(TargetToken) of
+                    identifier -> binary_to_atom(get_token_value(TargetToken), utf8);
+                    'Zero' -> 'Zero';
+                    'Succ' -> 'Succ';
+                    'Ok' -> 'Ok';
+                    'Error' -> 'Error';
+                    'Some' -> 'Some';
+                    'None' -> 'None'
+                end,
             TimeoutLocation = get_token_location(current_token(State)),
 
             % Optional action with 'do' - now accepts full expressions or function names
@@ -1086,14 +1215,154 @@ parse_fsm_transition(State) ->
             {Transition, State8}
     end.
 
+%% ============================================================================
+%% New Mermaid-style FSM Parsing Functions
+%% ============================================================================
+
+%% Parse record field literals for initial payload: {field: value, field: value}
+parse_record_fields_literal(State, Acc) ->
+    case match_token(State, '}') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {FieldNameToken, State1} = expect(State, identifier),
+            FieldName = binary_to_atom(get_token_value(FieldNameToken), utf8),
+            {_, State2} = expect(State1, ':'),
+            {Value, State3} = parse_primary_expression(State2),
+
+            Field = {FieldName, Value},
+
+            case match_token(State3, ',') of
+                true ->
+                    {_, State4} = expect(State3, ','),
+                    parse_record_fields_literal(State4, [Field | Acc]);
+                false ->
+                    {lists:reverse([Field | Acc]), State3}
+            end
+    end.
+
+%% Parse Mermaid-style transitions: State --> |event| TargetState
+parse_mermaid_transitions(State, Acc) ->
+    case match_token(State, 'end') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {Transition, State1} = parse_single_mermaid_transition(State),
+            parse_mermaid_transitions(State1, [Transition | Acc])
+    end.
+
+%% Parse a single Mermaid transition: FromState --> |event| ToState
+parse_single_mermaid_transition(State) ->
+    % Parse from state
+    {FromStateToken, State1} = expect(State, identifier),
+    FromState = binary_to_atom(get_token_value(FromStateToken), utf8),
+    FromLocation = get_token_location(FromStateToken),
+
+    % Expect -->
+    {_, State2} = expect(State1, '-->'),
+
+    % Expect |event|
+    {_, State3} = expect(State2, '|'),
+    {EventToken, State4} = expect(State3, identifier),
+    EventName = binary_to_atom(get_token_value(EventToken), utf8),
+    {_, State5} = expect(State4, '|'),
+
+    % Parse to state
+    {ToStateToken, State6} = expect(State5, identifier),
+    ToState = binary_to_atom(get_token_value(ToStateToken), utf8),
+
+    % Create transition record
+    % Event is just the atom for the handler function name
+    EventAtom = #identifier_expr{
+        name = EventName,
+        location = get_token_location(EventToken)
+    },
+
+    Transition = #transition{
+        event = EventAtom,
+        guard = undefined,
+        target = ToState,
+        action = undefined,
+        timeout = undefined,
+        location = FromLocation
+    },
+
+    % Store the from state with the transition for later grouping
+    {{FromState, Transition}, State6}.
+
+%% Build state_defs from flat list of transitions
+%% Input: List of {FromState, Transition}
+%% Output: {UniqueStates, StateDefs}
+build_state_defs_from_transitions(TransitionList) ->
+    % Group transitions by from state
+    StateMap = lists:foldl(
+        fun({FromState, Transition}, Acc) ->
+            Transitions = maps:get(FromState, Acc, []),
+            maps:put(FromState, [Transition | Transitions], Acc)
+        end,
+        #{},
+        TransitionList
+    ),
+
+    % Extract all unique states (from and to)
+    AllStates = lists:foldl(
+        fun({FromState, Transition}, Acc) ->
+            ToState = Transition#transition.target,
+            sets:add_element(FromState, sets:add_element(ToState, Acc))
+        end,
+        sets:new(),
+        TransitionList
+    ),
+
+    UniqueStatesList = sets:to_list(AllStates),
+
+    % Build state_defs for each state
+    StateDefs = lists:map(
+        fun(StateName) ->
+            StateTransitions = lists:reverse(maps:get(StateName, StateMap, [])),
+            #state_def{
+                name = StateName,
+                transitions = StateTransitions,
+                location =
+                    case StateTransitions of
+                        [First | _] -> First#transition.location;
+                        [] -> #location{line = 0, column = 0, file = undefined}
+                    end
+            }
+        end,
+        UniqueStatesList
+    ),
+
+    {UniqueStatesList, StateDefs}.
+
 %% Parse list of atoms/identifiers (backwards compatibility)
 parse_atom_list(State, Acc) ->
     case match_token(State, ']') of
         true ->
             {lists:reverse(Acc), State};
         false ->
-            {Token, State1} = expect(State, identifier),
-            Atom = binary_to_atom(get_token_value(Token), utf8),
+            % Accept identifiers and constructor tokens as state names
+            {Token, State1} =
+                case get_token_type(current_token(State)) of
+                    identifier -> expect(State, identifier);
+                    'Zero' -> expect(State, 'Zero');
+                    'Succ' -> expect(State, 'Succ');
+                    'Ok' -> expect(State, 'Ok');
+                    'Error' -> expect(State, 'Error');
+                    'Some' -> expect(State, 'Some');
+                    'None' -> expect(State, 'None');
+                    _ -> expect(State, identifier)
+                end,
+            Atom =
+                case get_token_type(Token) of
+                    identifier -> binary_to_atom(get_token_value(Token), utf8);
+                    'Zero' -> 'Zero';
+                    'Succ' -> 'Succ';
+                    'Ok' -> 'Ok';
+                    'Error' -> 'Error';
+                    'Some' -> 'Some';
+                    'None' -> 'None'
+                end,
             case match_token(State1, ',') of
                 true ->
                     {_, State2} = expect(State1, ','),

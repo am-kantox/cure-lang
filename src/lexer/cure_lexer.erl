@@ -239,6 +239,7 @@ operators() ->
     #{
         <<"=">> => '=',
         <<"->">> => '->',
+        <<"-->">> => '-->',
         <<":">> => ':',
         <<";">> => ';',
         <<",">> => ',',
@@ -387,8 +388,26 @@ scan_tokens(<<C, Rest/binary>>, Line, Column, Acc) when
         end,
     Token = #token{type = TokenType, value = Value, line = Line, column = Column},
     scan_tokens(NewRest, Line, NewColumn, [Token | Acc]);
+%% Three-character operators (check first for longest match)
+scan_tokens(<<C1, C2, C3, Rest/binary>>, Line, Column, Acc) ->
+    ThreeChar = <<C1, C2, C3>>,
+    case maps:get(ThreeChar, operators(), undefined) of
+        undefined ->
+            % Try two-character operators
+            scan_two_char(<<C1, C2, C3, Rest/binary>>, Line, Column, Acc);
+        Op ->
+            Token = #token{type = Op, value = Op, line = Line, column = Column},
+            scan_tokens(Rest, Line, Column + 3, [Token | Acc])
+    end;
 %% Two-character operators
-scan_tokens(<<C1, C2, Rest/binary>>, Line, Column, Acc) ->
+scan_tokens(Binary, Line, Column, Acc) when byte_size(Binary) >= 2 ->
+    scan_two_char(Binary, Line, Column, Acc);
+%% Single character (including single-char operators)
+scan_tokens(Binary, Line, Column, Acc) ->
+    scan_single_char(Binary, Line, Column, Acc).
+
+%% Handle two-character operators
+scan_two_char(<<C1, C2, Rest/binary>>, Line, Column, Acc) ->
     TwoChar = <<C1, C2>>,
     case maps:get(TwoChar, operators(), undefined) of
         undefined ->
@@ -398,8 +417,7 @@ scan_tokens(<<C1, C2, Rest/binary>>, Line, Column, Acc) ->
             Token = #token{type = Op, value = Op, line = Line, column = Column},
             scan_tokens(Rest, Line, Column + 2, [Token | Acc])
     end;
-%% Single character (including single-char operators)
-scan_tokens(Binary, Line, Column, Acc) ->
+scan_two_char(Binary, Line, Column, Acc) ->
     scan_single_char(Binary, Line, Column, Acc).
 
 %% Handle single character tokens

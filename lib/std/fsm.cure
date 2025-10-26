@@ -2,21 +2,69 @@
 # Provides operations for working with FSMs
 
 module Std.Fsm do
-  export []
+  export [
+    start_fsm/1,
+    fsm_cast/2,
+    fsm_advertise/2,
+    fsm_state/1,
+    FsmName,
+    FsmError,
+    EventName,
+    StateName,
+    Event,
+    EventPayload,
+    State
+  ]
 
-  type Payload = List(Pair(Atom, Any))
-  type FsmName = Pair(Atom, Any)
-  type Event = Pair(Atom, Payload)
-  type State = Atom
+  # Core FSM types
+  type FsmName = Atom
+  type FsmError = Atom  # Error types like :invalid_state, :invalid_transition, etc.
+  type EventName = Atom
+  type StateName = Atom
+  type EventPayload = List(Pair(Atom, Any))  # Event-specific data
+  type Event = Pair(EventName, EventPayload)
+  
+  # State is a pair of state name and payload
+  # Payload can be any type (record, list, etc.) - determined by FSM definition
+  type State = Pair(StateName, Any)
+  
+  # Transition handler signature:
+  # (from_state, event, current_payload) -> Result(new_state_with_payload, error)
+  type TransitionHandler = (StateName, Event, Any) -> Result(State, FsmError)
 
-  record FsmState do
-    pid: Pid
-    payload: Payload
-    states: List(State)
-    # transitions: List(Pair(State, Event))
+  record FsmDefinition do
+    initial_state: StateName
+    initial_payload: Any
+    transitions: List(Pair(Pair(StateName, EventName), TransitionHandler))
   end
 
-  ## Example
-  
+  record FsmState do
+    definition: FsmDefinition
+    current_state: StateName
+    current_payload: Any
+  end
+
+  # Start an FSM instance with the module's FSM definition
+  # Returns a Pid for the FSM process
+  def start_fsm(module: Module): Pid =
+    # TODO: Implementation will spawn a process that maintains FSM state
+    # and handles events via message passing
+    undefined
+
+  # Send an event to an FSM (by Pid or registered name)
+  # Asynchronous - fire and forget
+  def fsm_cast(target: Pid | FsmName, event: Event): None =
+    # TODO: Send message to FSM process
+    undefined
+
+  # Register a name for an FSM process
+  def fsm_advertise(pid: Pid, name: FsmName): None =
+    # TODO: Register the process with the given name
+    undefined
+
+  # Query the current state of an FSM
+  def fsm_state(target: Pid | FsmName): Result(State, FsmError) =
+    # TODO: Query FSM process for current state and payload
+    undefined
 
 end

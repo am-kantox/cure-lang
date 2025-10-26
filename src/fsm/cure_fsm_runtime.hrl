@@ -15,6 +15,7 @@
     name,                  % FSM type name (atom)
     states,                % List of state names
     initial_state,         % Initial state name
+    initial_payload,       % Initial payload value (from fsm RecordType{...} declaration)
     transitions,           % Transition table: #{State => #{Event => {Target, Guard, Action}}}
     timeouts               % Timeout table: #{State => {Timeout, Target}}
 }).

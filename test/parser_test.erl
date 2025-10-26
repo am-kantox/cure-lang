@@ -5,6 +5,7 @@
     run/0,
     test_simple_function/0,
     test_fsm/0,
+    test_mermaid_fsm_parsing/0,
     test_import_basic/0,
     test_import_function_list/0,
     test_import_mixed_list/0,
@@ -73,6 +74,36 @@ test_fsm() ->
     ?assertEqual(2, length(FSMDef#fsm_def.state_defs)),
 
     cure_utils:debug("✓ FSM parsing test passed~n").
+
+%% Test parsing FSM with Mermaid-style syntax
+test_mermaid_fsm_parsing() ->
+    Code =
+        <<
+            "fsm TurnstilePayload{coins_inserted: 0, people_passed: 0} do\n"
+            "    Locked --> |insert_coin| Ready\n"
+            "    Ready --> |push| Unlocked\n"
+            "    Unlocked --> |pass| Locked\n"
+            "end"
+        >>,
+
+    {ok, Tokens} = cure_lexer:tokenize(Code),
+    io:format("Tokens: ~p~n", [Tokens]),
+    {ok, AST} = cure_parser:parse(Tokens),
+    io:format("AST: ~p~n", [AST]),
+
+    ?assertEqual(1, length(AST)),
+    [FSMDef] = AST,
+    ?assertMatch(#fsm_def{name = 'TurnstilePayload'}, FSMDef),
+
+    % Check that states are extracted correctly
+    States = FSMDef#fsm_def.states,
+    ?assertEqual(3, length(States)),
+
+    % Check that state_defs are built correctly
+    StateDefs = FSMDef#fsm_def.state_defs,
+    ?assertEqual(3, length(StateDefs)),
+
+    cure_utils:debug("✓ Mermaid FSM parsing test passed~n").
 
 %% Test basic import without function list
 test_import_basic() ->
