@@ -1,0 +1,46 @@
+module AtomDemo do
+  export [
+    get_status/0, process_result/1, compare_atoms/2,
+    get_color/0, describe_status/1, atom_match_example/1
+  ]
+
+  # Basic atom return
+  def get_status(): Atom = :ok
+
+  # Atom as parameter and return
+  def process_result(status: Atom): Atom =
+    match status do
+      :ok -> :success
+      :error -> :failure
+      _ -> :unknown
+    end
+
+  # Comparing atoms
+  def compare_atoms(a: Atom, b: Atom): Bool =
+    a == b
+
+  # Using quoted atoms with spaces
+  def get_color(): Atom =
+    'light blue'
+
+  # Pattern matching with atoms
+  def describe_status(status: Atom): String =
+    match status do
+      :ok -> "Everything is fine"
+      :error -> "Something went wrong"
+      :pending -> "Waiting for response"
+      :cancelled -> "Operation was cancelled"
+      _ -> "Unknown status"
+    end
+
+  # Comprehensive atom matching example
+  def atom_match_example(input: Atom): Int =
+    match input do
+      :first -> 1
+      :second -> 2
+      :third -> 3
+      'special atom' -> 100
+      _ -> 0
+    end
+
+end

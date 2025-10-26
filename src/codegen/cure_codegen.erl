@@ -222,6 +222,7 @@ local state that is not shared between threads.
     convert_list_pattern_to_erlang_form/3,
     convert_pattern_to_erlang_form/2,
     compile_patterns_to_case_clauses/2,
+    compile_value_to_erlang_form/2,
 
     % Configuration and options
     default_options/0,

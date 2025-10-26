@@ -1,0 +1,5 @@
+module AtomSimpleTest do
+  export [test1/0]
+  
+  def test1(): Atom = :hello
+end

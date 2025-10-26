@@ -3301,7 +3301,7 @@ type_to_string(?TYPE_PID) ->
     "Pid";
 type_to_string(?TYPE_INFINITY) ->
     "Infinity";
-type_to_string(?TYPE_TIMEOUT) ->
+type_to_string({union_type, 'Timeout', _, _}) ->
     "Timeout";
 type_to_string({dependent_type, 'Pair', [KTParam, VTParam]}) ->
     KT = extract_type_param_value(KTParam),
