@@ -14,7 +14,6 @@
 module AdvancedTrafficLight do
   export [main/0]
 
-  import Std.Rec [get/2, put/3, new/0]
   import Std.System [system_time/1]
 
   # FSM State record structure (matches cure_fsm_runtime.hrl)
@@ -33,15 +32,12 @@ module AdvancedTrafficLight do
 
   # Advanced Traffic Light FSM with guards and actions
   fsm AdvancedTrafficLight do
-    states: [Red, Green, Yellow, Maintenance]
-    initial: Red
-
     # Red state - waiting at stop
-    state Red do
+    Red ->
       # Transition to Green when timer expires (with action)
-      event(:timer) -> Green do red_to_green_action end
+      Timer -> red_to_green_action
       # Emergency transition to Maintenance
-      event(:emergency_stop) -> Maintenance do emergency_action end
+      EmergencyStop -> emergency_action
     end
 
     # Green state - traffic flowing
@@ -199,11 +195,12 @@ module AdvancedTrafficLight do
 
   # === DEMO EXECUTION ===
 
-  def main(): Unit =
-    :cure_utils.debug("~n╔══════════════════════════════════════════════════════════════╗~n")
-    :cure_utils.debug("║  Advanced Traffic Light FSM Demo - Cure Programming Language ║~n")
-    :cure_utils.debug("╚══════════════════════════════════════════════════════════════╝~n~n")
-    :cure_utils.debug("✓ Demo completed successfully!~n~n")
-    ok
+  def main(): Int =
+    println("╔══════════════════════════════════════════════════════════════╗")
+    println("║  Advanced Traffic Light FSM Demo - Cure Programming Language ║")
+    println("╚══════════════════════════════════════════════════════════════╝")
+    println("✓ Demo completed successfully!~n~n")
+   
+    0
 
 end

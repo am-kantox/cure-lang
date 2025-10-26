@@ -1,0 +1,15 @@
+# Cure Standard Library - FSM Module
+# Provides operations for working with FSMs
+
+module Std.Fsm do
+  export []
+
+  type Payload = List(NamedValue)
+  type Event = NamedValue
+
+#   record FsmState do
+#     pid: Pid
+#     payload: Payload
+#   end  
+
+end

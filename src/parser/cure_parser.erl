@@ -1471,6 +1471,14 @@ parse_primary_type(State) ->
                 location = Location
             },
             {Type, State1};
+        'Atom' ->
+            {AtomToken, State1} = expect(State, 'Atom'),
+            Location = get_token_location(AtomToken),
+            Type = #primitive_type{
+                name = 'Atom',
+                location = Location
+            },
+            {Type, State1};
         % Type constructors for union types
         'Zero' ->
             {ZeroToken, State1} = expect(State, 'Zero'),

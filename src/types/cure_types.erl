@@ -459,6 +459,10 @@ concurrent environments. The module is otherwise stateless and thread-safe.
 -define(TYPE_MESSAGE, {primitive_type, 'Message'}).
 -define(TYPE_TIMEOUT, {primitive_type, 'Timeout'}).
 
+%% NamedValue type - represents {Atom, T} tuple for use in structures like Map
+%% NamedValue(T) is syntactic sugar for tuple type {Atom, T}
+-define(TYPE_NAMEDVALUE(T), {tuple_type, [{primitive_type, 'Atom'}, T], undefined}).
+
 %% Dependent types (refined types)
 -define(TYPE_NAT_REFINED, {refined_type, 'Int', fun(N) -> N >= 0 end}).
 -define(TYPE_POS, {refined_type, 'Int', fun(N) -> N > 0 end}).
@@ -857,6 +861,11 @@ unify_impl({list_type, Elem1, Len1}, {list_type, Elem2, Len2}, Subst) ->
         Error ->
             Error
     end;
+%% Tuple type unification
+unify_impl(#tuple_type{element_types = Elems1}, #tuple_type{element_types = Elems2}, Subst) when
+    length(Elems1) =:= length(Elems2)
+->
+    unify_lists(Elems1, Elems2, Subst);
 %% Direct Vector to Vector unification with strict length checking (MUST come before generic dependent_type)
 unify_impl(
     {dependent_type, 'Vector', Params1},
@@ -884,7 +893,42 @@ unify_impl(
             cure_utils:debug("Failed to extract vector params (right): ~p~n", [Reason]),
             {error, {invalid_vector_params_right, Reason}}
     end;
-%% Generic dependent type unification (AFTER specific Vector case)
+%% NamedValue(T) unification - expand to {Atom, T} tuple type
+unify_impl(
+    {dependent_type, 'NamedValue', Params1},
+    {dependent_type, 'NamedValue', Params2},
+    Subst
+) when length(Params1) =:= 1, length(Params2) =:= 1 ->
+    % Extract the type parameter T from NamedValue(T)
+    [Param1] = Params1,
+    [Param2] = Params2,
+    T1 = extract_type_param_value(Param1),
+    T2 = extract_type_param_value(Param2),
+    % Unify the T parameters
+    unify_impl(T1, T2, Subst);
+%% Bridge: NamedValue(T) unifies with tuple type {Atom, T}
+unify_impl(
+    {dependent_type, 'NamedValue', Params},
+    TupleType = #tuple_type{element_types = ElemTypes},
+    Subst
+) when length(Params) =:= 1, length(ElemTypes) =:= 2 ->
+    [Param] = Params,
+    T = extract_type_param_value(Param),
+    case ElemTypes of
+        [#primitive_type{name = 'Atom'}, T2] ->
+            % Unify T with the second element type
+            unify_impl(T, T2, Subst);
+        _ ->
+            {error, {namedvalue_tuple_mismatch, ElemTypes}}
+    end;
+unify_impl(
+    TupleType = #tuple_type{element_types = ElemTypes},
+    {dependent_type, 'NamedValue', Params},
+    Subst
+) when length(Params) =:= 1, length(ElemTypes) =:= 2 ->
+    % Symmetric case
+    unify_impl({dependent_type, 'NamedValue', Params}, TupleType, Subst);
+%% Generic dependent type unification (AFTER specific Vector and NamedValue cases)
 unify_impl(
     {dependent_type, Name1, Params1},
     {dependent_type, Name2, Params2},
@@ -3241,6 +3285,9 @@ type_to_string(?TYPE_MESSAGE) ->
     "Message";
 type_to_string(?TYPE_TIMEOUT) ->
     "Timeout";
+type_to_string({dependent_type, 'NamedValue', [Param]}) ->
+    T = extract_type_param_value(Param),
+    "NamedValue(" ++ type_to_string(T) ++ ")";
 type_to_string(#type_var{id = Id, name = undefined}) ->
     "T" ++ integer_to_list(Id);
 type_to_string(#type_var{name = Name}) when Name =/= undefined ->
