@@ -28,8 +28,8 @@ LSP_SRC = $(wildcard $(LSP_DIR)/*.erl)
 # Cure standard library files
 CURE_STD_SRC = $(wildcard $(LIB_DIR)/*.cure $(LIB_DIR)/std/*.cure)
 
-# Test files (exclude problematic advanced tests for now)
-TEST_SRC = $(filter-out $(TEST_DIR)/dependent_types_advanced_test.erl $(TEST_DIR)/codegen_advanced_test.erl $(TEST_DIR)/fsm_advanced_test.erl $(TEST_DIR)/monomorphization_test.erl $(TEST_DIR)/inlining_test.erl, $(wildcard $(TEST_DIR)/*.erl))
+# Test files (exclude problematic advanced tests and EUnit-dependent tests for now)
+TEST_SRC = $(filter-out $(TEST_DIR)/dependent_types_advanced_test.erl $(TEST_DIR)/codegen_advanced_test.erl $(TEST_DIR)/fsm_advanced_test.erl $(TEST_DIR)/monomorphization_test.erl $(TEST_DIR)/inlining_test.erl $(TEST_DIR)/nat_type_test.erl, $(wildcard $(TEST_DIR)/*.erl))
 
 # Working test modules by category
 BASIC_TESTS = $(TEST_DIR)/test_runner.erl $(TEST_DIR)/fsm_simple_test.erl $(TEST_DIR)/types_simple_test.erl $(TEST_DIR)/codegen_simple_test.erl

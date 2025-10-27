@@ -6,20 +6,19 @@
 debug(Format) ->
     debug(Format, []).
 
--ifdef(debug).
-
 -spec debug(Format, Data) -> ok when
     Format :: io:format(),
     Data :: [term()].
+-ifdef(debug).
+
 debug(Format, Data) when is_list(Format) ->
-    cure_utils:debug("DEBUG: " ++ Format, Data).
+    io:format(Format, Data);
+debug(Format, Data) ->
+    io:format("~p ~p~n", [Format, Data]).
 
 -else.
 
--spec debug(Format, Data) -> ok when
-    Format :: io:format(),
-    Data :: [term()].
-debug(Format, _Data) when is_list(Format) ->
+debug(_, _) ->
     ok.
 
 -endif.

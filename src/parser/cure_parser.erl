@@ -891,7 +891,7 @@ parse_fsm(State) ->
             % New Mermaid-style syntax
             % Parse record literal for initial payload
             {_, State3} = expect(State2, '{'),
-            {InitialPayload, State4} = parse_record_fields_literal(State3, []),
+            {_InitialPayload, State4} = parse_record_fields_literal(State3, []),
             {_, State5} = expect(State4, '}'),
 
             {_, State6} = expect(State5, do),
@@ -1097,8 +1097,28 @@ parse_fsm_transition(State) ->
                 case match_token(State7, 'do') of
                     true ->
                         {_, State7a} = expect(State7, 'do'),
-                        % Check if it's a simple identifier (function name) or full expression
+                        % Check for specialized action keywords or use generic expression parsing
                         case get_token_type(current_token(State7a)) of
+                            'if' ->
+                                % Conditional action: if condition then action else action end
+                                {ActionExpr, State7b} = parse_conditional_action(State7a),
+                                {_, State7c} = expect(State7b, 'end'),
+                                {ActionExpr, State7c};
+                            'log' ->
+                                % Logging action: log(level, message)
+                                {ActionExpr, State7b} = parse_log_action(State7a),
+                                {_, State7c} = expect(State7b, 'end'),
+                                {ActionExpr, State7c};
+                            'emit' ->
+                                % Event emission action: emit(event) or emit(event, data)
+                                {ActionExpr, State7b} = parse_emit_action(State7a),
+                                {_, State7c} = expect(State7b, 'end'),
+                                {ActionExpr, State7c};
+                            '{' ->
+                                % Action sequence or structured action
+                                {ActionExpr, State7b} = parse_action_expression(State7a),
+                                {_, State7c} = expect(State7b, 'end'),
+                                {ActionExpr, State7c};
                             identifier ->
                                 % Could be function name - check if followed by 'end'
                                 {NameToken, State7b} = expect(State7a, identifier),
@@ -1178,8 +1198,28 @@ parse_fsm_transition(State) ->
                 case match_token(State7, 'do') of
                     true ->
                         {_, State7a} = expect(State7, 'do'),
-                        % Check if it's a simple identifier (function name) or full expression
+                        % Check for specialized action keywords or use generic expression parsing
                         case get_token_type(current_token(State7a)) of
+                            'if' ->
+                                % Conditional action: if condition then action else action end
+                                {ActionExpr, State7b} = parse_conditional_action(State7a),
+                                {_, State7c} = expect(State7b, 'end'),
+                                {ActionExpr, State7c};
+                            'log' ->
+                                % Logging action: log(level, message)
+                                {ActionExpr, State7b} = parse_log_action(State7a),
+                                {_, State7c} = expect(State7b, 'end'),
+                                {ActionExpr, State7c};
+                            'emit' ->
+                                % Event emission action: emit(event) or emit(event, data)
+                                {ActionExpr, State7b} = parse_emit_action(State7a),
+                                {_, State7c} = expect(State7b, 'end'),
+                                {ActionExpr, State7c};
+                            '{' ->
+                                % Action sequence or structured action
+                                {ActionExpr, State7b} = parse_action_expression(State7a),
+                                {_, State7c} = expect(State7b, 'end'),
+                                {ActionExpr, State7c};
                             identifier ->
                                 % Could be function name - check if followed by 'end'
                                 {NameToken, State7b} = expect(State7a, identifier),

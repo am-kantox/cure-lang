@@ -26,11 +26,11 @@ module Std.Fsm do
   
   # State is a pair of state name and payload
   # Payload can be any type (record, list, etc.) - determined by FSM definition
-  type State = Pair(StateName, Any)
+  type State = Any
   
   # Transition handler signature:
   # (from_state, event, current_payload) -> Result(new_state_with_payload, error)
-  type TransitionHandler = (StateName, Event, Any) -> Result(State, FsmError)
+  type TransitionHandler = Pair(Event, Pair(StateName, State)) -> Result(Pair(StateName, State), FsmError)
 
   record FsmDefinition do
     initial_state: StateName
@@ -46,7 +46,7 @@ module Std.Fsm do
 
   # Start an FSM instance with the module's FSM definition
   # Returns a Pid for the FSM process
-  def start_fsm(module: Module): Pid =
+  def start_fsm(mod: Module): Pid =
     # TODO: Implementation will spawn a process that maintains FSM state
     # and handles events via message passing
     undefined

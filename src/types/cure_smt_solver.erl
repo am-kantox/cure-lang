@@ -190,6 +190,7 @@ operations can run concurrently without interference.
     new_constraint/3,
     arithmetic_constraint/3,
     equality_constraint/2,
+    inequality_constraint/3,
     implication_constraint/2,
 
     % Pattern matching inference
