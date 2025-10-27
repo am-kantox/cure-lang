@@ -156,7 +156,13 @@ operations can run concurrently on different ASTs.
     extract_module_functions/1,
     get_stdlib_function_type/3,
     create_function_type_from_signature/2,
-    create_function_type_from_signature_records/2
+    create_function_type_from_signature_records/2,
+    % Helper functions used by cure_types
+    extract_and_add_type_params/2,
+    extract_type_params_helper/2,
+    extract_type_param_value/2,
+    convert_record_field_def/1,
+    convert_and_resolve_record_field_tuple/2
 ]).
 
 % Add compatibility function for tests
@@ -1495,7 +1501,7 @@ verify_fsm_properties(Name, States, _Initial, TransitionGraph, Env) ->
             cure_utils:debug("[FSM_SMT] FSM is non-deterministic at: ~p~n", [Conflicts]),
             % Non-determinism is allowed, handlers decide actual transition
             ok;
-        {error, Error} ->
+        {error, _Error} ->
             % {error, Error}
             ok
     end,
@@ -1509,7 +1515,7 @@ verify_fsm_properties(Name, States, _Initial, TransitionGraph, Env) ->
             cure_utils:debug("[FSM_SMT] Liveness warning: ~p~n", [LivenessWarning]),
             % Return warning but don't fail (some FSMs may intentionally have cycles)
             ok;
-        {error, LivenessError} ->
+        {error, _LivenessError} ->
             % {error, LivenessError}
             ok
     end,
@@ -2055,7 +2061,7 @@ collect_function_signatures_helper([Item | Rest], Env) ->
             } ->
                 % Add record definitions to environment during signature collection
                 % We convert fields but DON'T resolve types yet (to avoid circular dependency)
-                io:format(
+                cure_utils:debug(
                     "[COLLECT_SIG] Pre-processing record definition (record format) ~p with ~p fields~n",
                     [RecordName, length(Fields)]
                 ),
@@ -2073,19 +2079,19 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                     ],
                     RecordType = {record_type, RecordName, ConvertedFields},
                     NewEnv = cure_types:extend_env(Env, RecordName, RecordType),
-                    io:format(
+                    cure_utils:debug(
                         "[COLLECT_SIG] Successfully added record type (record format) ~p to environment~n",
                         [RecordName]
                     ),
                     NewEnv
                 catch
                     Error:Reason:Stacktrace ->
-                        io:format(
+                        cure_utils:debug(
                             "[COLLECT_SIG] ERROR adding record (record format) ~p: ~p:~p~n", [
                                 RecordName, Error, Reason
                             ]
                         ),
-                        io:format("[COLLECT_SIG] Stacktrace: ~p~n", [Stacktrace]),
+                        cure_utils:debug("[COLLECT_SIG] Stacktrace: ~p~n", [Stacktrace]),
                         Env
                 end
         end,
@@ -3038,7 +3044,7 @@ find_states_reaching_terminals(TerminalStates, ReverseGraph) ->
 
 %% Verify guard constraints using SMT solver
 %% Checks that guards are satisfiable and don't conflict
-verify_guard_constraints(States, TransitionGraph, Env) ->
+verify_guard_constraints(_States, TransitionGraph, Env) ->
     cure_utils:debug("[FSM_GUARDS] Verifying guard constraints~n"),
 
     % Extract all transitions with guards from the enhanced graph
@@ -3153,7 +3159,7 @@ check_conflicting_guards(Transitions, Env) ->
 
     % For each event, check if guards conflict
     Results = maps:fold(
-        fun(Event, EventTransitions, Acc) ->
+        fun(_Event, EventTransitions, Acc) ->
             case check_guards_conflict(EventTransitions, Env) of
                 ok -> Acc;
                 {warning, Warning} -> [Warning | Acc];
@@ -3182,7 +3188,7 @@ group_transitions_by_event(Transitions) ->
     ).
 
 %% Check if guards for the same event conflict
-check_guards_conflict(EventTransitions, Env) when length(EventTransitions) < 2 ->
+check_guards_conflict(EventTransitions, _Env) when length(EventTransitions) < 2 ->
     % Less than 2 transitions - no conflict possible
     ok;
 check_guards_conflict(EventTransitions, Env) ->
@@ -3202,7 +3208,7 @@ check_guards_conflict(EventTransitions, Env) ->
     end.
 
 %% Check if all guards are mutually exclusive
-all_guards_mutually_exclusive(Guards, Env) ->
+all_guards_mutually_exclusive(_Guards, _Env) ->
     % Simplified check - would use SMT solver to verify
     % For now, return unknown
     unknown.

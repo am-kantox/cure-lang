@@ -2,7 +2,7 @@ module Std.Io do
   export [
     print_raw/2,
     print/1, println/1, 
-    debug/1, error/1
+    debug/1, io_error/1
   ]
 
   # Basic output operations - Erlang FFI wrapped with curify
@@ -22,7 +22,7 @@ module Std.Io do
     # Print debug message to stderr
     0  # Simplified return
 
-  def error(s: String): Int =
+  def io_error(s: String): Int =
     # Print error message to stderr
     0  # Simplified return
 end

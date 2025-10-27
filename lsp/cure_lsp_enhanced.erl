@@ -112,7 +112,7 @@ quick_fixes_for_diagnostic(#{message := Msg} = _Diag, Uri) ->
             []
     end.
 
-generate_refactorings(Text, Range, Uri) ->
+generate_refactorings(_Text, Range, Uri) ->
     [
         #{
             title => <<"Extract function">>,
@@ -143,7 +143,7 @@ generate_refactorings(Text, Range, Uri) ->
         }
     ].
 
-generate_smt_actions(Text, Range, Uri) ->
+generate_smt_actions(_Text, Range, Uri) ->
     % SMT-enhanced actions for dependent types
     [
         #{

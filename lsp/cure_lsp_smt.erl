@@ -82,10 +82,16 @@ extract_param_type_constraints(#param{name = Name, type = Type, location = _Loc}
 extract_param_type_constraints(_) ->
     [].
 
-extract_return_type_constraints(_RetType, _Body) ->
+extract_return_type_constraints(RetType, Body) ->
     % Match return type with inferred type from body
-    % Simplified for now - actual implementation would check constraints
-    [].
+    InferredType = infer_expression_type(Body),
+    case InferredType of
+        unknown ->
+            [];
+        _ ->
+            % Generate constraint that declared type equals inferred type
+            [type_equality_constraint(RetType, InferredType, return_value)]
+    end.
 
 extract_expression_constraints(#let_expr{bindings = Bindings, body = Body}) ->
     BindingConstraints = lists:flatmap(fun extract_binding_constraints/1, Bindings),
@@ -173,7 +179,7 @@ extract_type_param_constraints({Name, Constraint}) ->
 extract_type_param_constraints(_) ->
     [].
 
-extract_dependent_constraints(FuncName, Params, RetType, Body) ->
+extract_dependent_constraints(_FuncName, Params, _RetType, Body) ->
     % For functions with dependent types, extract constraints on type indices
     % Example: safe_tail(xs: List(T, n)) -> List(T, n-1) where n > 0
     case has_dependent_params(Params) of
@@ -346,7 +352,7 @@ check_exhaustiveness(#match_expr{expr = Expr, patterns = Patterns}) ->
 check_exhaustiveness(_) ->
     unknown.
 
-check_pattern_exhaustiveness(Patterns) ->
+check_pattern_exhaustiveness(_Patterns) ->
     % Generate exhaustiveness check constraints
     % For now, return empty list (placeholder)
     [].
@@ -500,12 +506,12 @@ guard_to_smt_constraints(Guard) ->
     % Convert guard expression to SMT constraints
     extract_expression_constraints(Guard).
 
-type_equality_constraint(Type1, Type2, VarName) ->
+type_equality_constraint(Type1, Type2, _VarName) ->
     % Create constraint that Type1 and Type2 are equal for variable
-    cure_smt_solver:equality_constraint(
-        cure_smt_solver:variable_term(list_to_atom(atom_to_list(VarName) ++ "_type")),
-        cure_smt_solver:constant_term(Type1)
-    ).
+    % Used for type unification: assert that Type1 and Type2 are equivalent
+    Term1 = cure_smt_solver:constant_term(Type1),
+    Term2 = cure_smt_solver:constant_term(Type2),
+    cure_smt_solver:equality_constraint(Term1, Term2).
 
 type_to_smt_constraint(Type) ->
     % Convert type to SMT constraint representing all values of that type

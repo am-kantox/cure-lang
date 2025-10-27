@@ -6,14 +6,7 @@ module Std.Fsm do
     start_fsm/1,
     fsm_cast/2,
     fsm_advertise/2,
-    fsm_state/1,
-    FsmName,
-    FsmError,
-    EventName,
-    StateName,
-    Event,
-    EventPayload,
-    State
+    fsm_state/1
   ]
 
   # Core FSM types
@@ -46,25 +39,26 @@ module Std.Fsm do
 
   # Start an FSM instance with the module's FSM definition
   # Returns a Pid for the FSM process
-  def start_fsm(mod: Module): Pid =
-    # TODO: Implementation will spawn a process that maintains FSM state
-    # and handles events via message passing
-    undefined
+  # TODO: Implementation will spawn a process that maintains FSM state
+  # and handles events via message passing
+  # Placeholder implementation - returns any atom cast to Pid type
+  def start_fsm(mod: Int): Int =
+    0
 
   # Send an event to an FSM (by Pid or registered name)
   # Asynchronous - fire and forget
-  def fsm_cast(target: Pid | FsmName, event: Event): None =
-    # TODO: Send message to FSM process
-    undefined
+  # TODO: Send message to FSM process
+  def fsm_cast(target: Pid | FsmName, evt: Event): Int =
+    0
 
   # Register a name for an FSM process
-  def fsm_advertise(pid: Pid, name: FsmName): None =
-    # TODO: Register the process with the given name
-    undefined
+  # TODO: Register the process with the given name
+  def fsm_advertise(pid: Pid, name: FsmName): Int =
+    0
 
   # Query the current state of an FSM
-  def fsm_state(target: Pid | FsmName): Result(State, FsmError) =
-    # TODO: Query FSM process for current state and payload
-    undefined
+  # TODO: Query FSM process for current state and payload
+  def fsm_state(target: Pid | FsmName): Int =
+    0
 
 end

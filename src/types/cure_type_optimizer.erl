@@ -2,6 +2,216 @@
 %% Framework for optimizations based on type information
 -module(cure_type_optimizer).
 
+%% Suppress warnings for work-in-progress optimization functions
+-compile(
+    {nowarn_unused_function, [
+        add_monomorphic_functions_to_ast/2,
+        all_call_sites_type_incompatible/2,
+        analyze_access_pattern/1,
+        analyze_arithmetic_patterns/1,
+        analyze_body_optimizations/2,
+        analyze_call_graph_for_unused_functions/2,
+        analyze_call_optimization_potential/3,
+        analyze_comparison_patterns/1,
+        analyze_condition_reachability/2,
+        analyze_dispatch_patterns/1,
+        analyze_function_call_patterns/1,
+        analyze_function_memory_access/1,
+        analyze_function_type_complexity/1,
+        analyze_memory_access_patterns/1,
+        analyze_param_optimizations/2,
+        analyze_profile_optimization_opportunities/1,
+        analyze_type_usage_patterns/1,
+        apply_adaptive_memory_layout_optimization/3,
+        apply_adaptive_memory_layouts_to_ast/2,
+        apply_adaptive_optimizations/2,
+        apply_adaptive_specializations_to_ast/2,
+        apply_beam_generation_pass/2,
+        apply_dead_code_elimination/2,
+        apply_dynamic_hot_path_optimization/3,
+        apply_feedback_driven_specialization/3,
+        apply_hot_path_optimizations_to_ast/2,
+        apply_inlining_optimizations/2,
+        apply_performance_feedback_optimization/3,
+        apply_performance_optimizations_to_ast/2,
+        apply_profile_guided_optimization_pass/2,
+        apply_single_hot_path_optimization/2,
+        apply_single_memory_layout/2,
+        apply_single_performance_optimization/2,
+        apply_single_specialization/2,
+        apply_type_based_peephole_optimizations/2,
+        are_all_float_params/1,
+        are_all_integer_params/1,
+        build_hot_path_sequence/3,
+        build_monomorphic_lookup/1,
+        build_path_sequence/5,
+        build_type_dispatch_table/1,
+        calculate_arithmetic_optimization_benefit/1,
+        calculate_call_depth/2,
+        calculate_combined_priority/1,
+        calculate_comparison_optimization_benefit/1,
+        calculate_dispatch_optimization_benefit/1,
+        calculate_expression_complexity/1,
+        calculate_hot_path_optimization_potential/2,
+        calculate_locality_score/1,
+        calculate_memory_optimization_potential/1,
+        calculate_optimization_priorities/3,
+        calculate_path_frequency/2,
+        calculate_specialization_benefit/3,
+        calculate_type_complexity/1,
+        calculate_types_complexity/1,
+        can_use_float_operation/2,
+        can_use_integer_add/1,
+        classify_expression_type/1,
+        classify_type/1,
+        classify_type_tuple/1,
+        cleanup_inlined_functions/2,
+        collect_runtime_profiles/2,
+        collect_runtime_type_usage/1,
+        count_function_type_diversity/2,
+        count_memory_optimized_functions/1,
+        count_operation_type/2,
+        count_optimized_paths/1,
+        count_specialized_functions/1,
+        count_specialized_opcodes/1,
+        count_type_operations/1,
+        create_adaptive_specialization/2,
+        create_optimized_calling_conventions/1,
+        create_parameter_substitution_map/2,
+        create_performance_feedback_system/1,
+        detect_sequential_pattern/1,
+        detect_unreachable_branches_impl/4,
+        detect_unreachable_branches_with_types/3,
+        eliminate_redundant_type_operations/2,
+        enhance_existing_specialization/3,
+        estimate_execution_frequencies/2,
+        estimate_performance_improvement/1,
+        extract_arithmetic_patterns/1,
+        extract_arithmetic_patterns_from_type/1,
+        extract_base_type/1,
+        extract_body_types/1,
+        extract_comparison_patterns/1,
+        extract_comparison_patterns_from_type/1,
+        extract_dispatch_patterns/1,
+        extract_dispatch_patterns_from_type/1,
+        extract_expression_types/1,
+        extract_function_calls/1,
+        extract_inlined_function_info/1,
+        extract_memory_operations/1,
+        extract_monomorphic_functions/1,
+        extract_optimization_data/1,
+        extract_param_types/1,
+        extract_pattern_memory_ops/1,
+        extract_type_info_for_beam/1,
+        extract_type_pattern/1,
+        find_dead_polymorphic_instances/2,
+        find_function_def/2,
+        find_hottest_call/3,
+        find_redundant_checks_impl/3,
+        find_redundant_in_expression/3,
+        find_unreachable_in_expression/3,
+        find_unreachable_in_function/3,
+        find_unreachable_patterns/2,
+        find_unreachable_type_branches/2,
+        find_unused_type_definitions/2,
+        generate_adaptive_memory_layouts/2,
+        generate_adaptive_specializations/2,
+        generate_arithmetic_opcodes/1,
+        generate_beam_for_functions/2,
+        generate_comparison_opcodes/1,
+        generate_dispatch_opcodes/1,
+        generate_dynamic_hot_path_optimizations/2,
+        generate_expr_instructions/3,
+        generate_function_beam_instructions/2,
+        generate_hot_path_performance_opt/2,
+        generate_memory_performance_opt/2,
+        generate_optimized_call/4,
+        generate_performance_driven_optimizations/2,
+        generate_specialization_id/2,
+        generate_specialization_performance_opt/2,
+        generate_specialized_arithmetic_opcode/1,
+        generate_specialized_comparison_opcode/1,
+        generate_specialized_dispatch_opcode/1,
+        generate_specialized_opcodes/2,
+        generate_typed_body_instructions/3,
+        generate_typed_param_loading/2,
+        generate_typed_return_sequence/1,
+        get_call_site_type_info/1,
+        get_function_call_signature/2,
+        get_function_type_mappings/1,
+        get_function_type_signature/2,
+        get_memory_layout_optimizations/1,
+        get_parameter_types/1,
+        get_return_type/1,
+        has_specialized_version/1,
+        identify_body_optimizations/2,
+        identify_fully_inlined_functions/1,
+        identify_hot_path_functions/1,
+        identify_hot_path_opportunities/2,
+        identify_memory_optimization_opportunities/1,
+        identify_runtime_hot_paths/2,
+        identify_specialization_opportunities/2,
+        identify_type_specific_dead_code_patterns/3,
+        identify_unused_functions_with_types/3,
+        infer_comparable_type/1,
+        infer_expr_type_with_context/2,
+        infer_numeric_type/1,
+        init_adaptive_optimization_context/2,
+        init_adaptive_thresholds/0,
+        init_beam_generation_context/1,
+        init_opcode_mappings/0,
+        init_performance_metrics/0,
+        init_performance_targets/0,
+        init_profile_collector/0,
+        inline_function_body/3,
+        inline_function_call/2,
+        is_comparable_type/1,
+        is_concrete_simple/1,
+        is_entry_point/1,
+        is_exported_function/1,
+        is_hot_path_function/2,
+        is_memory_operation/1,
+        is_monomorphic_signature/1,
+        is_numeric_type/1,
+        is_pattern_matchable_type/1,
+        is_type_guaranteed_by_signature/2,
+        is_type_operation/1,
+        lookup_function_definition/1,
+        merge_pattern_counts/2,
+        optimize_instructions_with_types/3,
+        optimize_register_usage/2,
+        remove_dead_code_patterns/2,
+        remove_empty_modules/1,
+        remove_redundant_type_checks/2,
+        remove_unreachable_branches/2,
+        remove_unused_functions/2,
+        remove_unused_functions_advanced/2,
+        substitute_in_statement/2,
+        substitute_parameters_in_body/2,
+        transform_ast_remove_patterns/2,
+        transform_ast_remove_redundant_checks/2,
+        transform_ast_remove_unreachable/2,
+        transform_ast_with_inlining/2,
+        transform_calls_for_monomorphization/2,
+        transform_expression_with_inlining/2,
+        transform_expr_for_monomorphization/2,
+        transform_expr_remove_redundant/2,
+        transform_expr_remove_unreachable/2,
+        transform_item_for_monomorphization/2,
+        transform_item_remove_redundant/2,
+        transform_item_remove_unreachable/2,
+        transform_item_with_inlining/2,
+        transform_nested_statements/2,
+        transform_statements_with_inlining/2,
+        transform_statement_with_inlining/2,
+        type_matches/2,
+        types_are_compatible/2,
+        types_equivalent/2,
+        type_to_signature/1,
+        verify_ast_consistency/1
+    ]}
+).
+
 -moduledoc """
 # Cure Programming Language - Type-directed Optimizer
 
@@ -260,12 +470,10 @@ Generates detailed reports including:
 }).
 
 %% Type aliases
--type optimization_context() :: #optimization_context{}.
 -type optimization_config() :: #optimization_config{}.
 -type type_info() :: #type_info{}.
 -type usage_statistics() :: #usage_statistics{}.
 -type specialization_map() :: #specialization_map{}.
--type type_expr() :: term().
 -type call_site_info() :: {location(), [type_expr()]}.
 -type usage_frequency() :: non_neg_integer().
 -type type_instantiation() :: {[type_expr()], type_expr()}.
@@ -275,7 +483,6 @@ Generates detailed reports including:
 -type specialization_candidate() :: {[type_expr()], cost_benefit_analysis()}.
 -type specialized_function() :: {atom(), [type_expr()], function_def()}.
 -type cost_benefit_analysis() :: {cost(), benefit()}.
--type location() :: #location{}.
 -type function_def() :: #function_def{}.
 -type alignment() :: pos_integer().
 -type size() :: non_neg_integer().
@@ -945,7 +1152,7 @@ generate_specialized_functions(SpecMap) ->
                     Acc;
                 _ ->
                     SpecializedVersions = lists:map(
-                        fun({TypePattern, _CostBenefit}) ->
+                        fun({TypePattern, _CB}) ->
                             SpecName = generate_specialized_name(FuncName, TypePattern),
                             SpecDef = create_specialized_function(FuncName, TypePattern, SpecName),
                             {SpecName, TypePattern, SpecDef}
@@ -3017,7 +3224,7 @@ transform_expr_remove_redundant(Expr, _RedundantSet) ->
     Expr.
 
 %% Transform AST to remove dead code patterns
-transform_ast_remove_patterns(AST, DeadPatterns) ->
+transform_ast_remove_patterns(AST, _DeadPatterns) ->
     % Simplified implementation for now
     AST.
 
@@ -3288,7 +3495,7 @@ generate_expr_instructions(#block_expr{expressions = Exprs}, FunctionType, BeamC
         end,
         Exprs
     );
-generate_expr_instructions(Expr, _FunctionType, _BeamContext) ->
+generate_expr_instructions(_Expr, _FunctionType, _BeamContext) ->
     % Default case for unhandled expressions
     [#beam_instr{op = load_literal, args = [unknown_expr], location = undefined}].
 
@@ -3391,7 +3598,7 @@ create_optimized_calling_conventions(TypeInfo) ->
     ).
 
 %% Generate type-specialized opcodes
-generate_specialized_opcodes(TypeInfo, FunctionsWithBeam) ->
+generate_specialized_opcodes(TypeInfo, _FunctionsWithBeam) ->
     TypeUsagePatterns = maps:get(type_usage_patterns, TypeInfo),
 
     % Identify common type operations that can be specialized
@@ -3461,7 +3668,7 @@ eliminate_redundant_type_operations(Instructions, FunctionType) ->
     ).
 
 %% Optimize register usage based on context
-optimize_register_usage(Instructions, BeamContext) ->
+optimize_register_usage(Instructions, _BeamContext) ->
     % Simplified register optimization
     Instructions.
 
@@ -3684,7 +3891,7 @@ get_function_call_signature(FuncName, BeamContext) ->
 %% Analyze call optimization potential
 analyze_call_optimization_potential(FuncName, Arity, Signature) ->
     case Signature of
-        {function_type, ParamTypes, ReturnType} ->
+        {function_type, ParamTypes, _ReturnType} ->
             % Check if all parameters are integers
             case {length(ParamTypes) =:= Arity, are_all_integer_params(ParamTypes)} of
                 {true, true} ->
@@ -4304,7 +4511,7 @@ apply_adaptive_optimizations(AST, AdaptiveContext) ->
 
 %% Collect runtime profiles from AST execution patterns
 collect_runtime_profiles(AST, AdaptiveContext) ->
-    ProfileCollector = maps:get(profile_collector, AdaptiveContext),
+    _ProfileCollector = maps:get(profile_collector, AdaptiveContext),
 
     % Analyze function call patterns
     CallPatterns = analyze_function_call_patterns(AST),
@@ -4526,7 +4733,7 @@ analyze_function_call_patterns(AST) ->
     CallPatterns.
 
 %% Estimate execution frequencies based on call patterns
-estimate_execution_frequencies(AST, CallPatterns) ->
+estimate_execution_frequencies(_AST, CallPatterns) ->
     % Simple heuristic: functions with more calls are executed more frequently
     maps:fold(
         fun(FuncName, Pattern, Acc) ->
@@ -4577,7 +4784,7 @@ collect_runtime_type_usage(AST) ->
     TypeUsage = lists:foldl(
         fun(Item, Acc) ->
             case Item of
-                #function_def{name = Name, params = Params, body = Body} ->
+                #function_def{name = _Name, params = Params, body = Body} ->
                     ParamTypes = extract_param_types(Params),
                     BodyTypes = extract_body_types(Body),
                     FuncTypeUsage = ParamTypes ++ BodyTypes,
@@ -4699,7 +4906,7 @@ generate_adaptive_specializations(Opportunities, ExistingOptimizations) ->
     ).
 
 %% Generate dynamic hot path optimizations
-generate_dynamic_hot_path_optimizations(HotPathOpportunities, ProfileCollector) ->
+generate_dynamic_hot_path_optimizations(HotPathOpportunities, _ProfileCollector) ->
     lists:map(
         fun({HotPath, OpportunityData}) ->
             PathFreq = maps:get(frequency, OpportunityData),
@@ -4724,7 +4931,7 @@ generate_dynamic_hot_path_optimizations(HotPathOpportunities, ProfileCollector) 
 
 %% Generate adaptive memory layouts
 generate_adaptive_memory_layouts(MemoryOpportunities, ExistingOptimizations) ->
-    ExistingLayouts = maps:get(beam_generation, ExistingOptimizations, #{}),
+    _ExistingLayouts = maps:get(beam_generation, ExistingOptimizations, #{}),
 
     maps:fold(
         fun(FuncName, OpportunityData, Acc) ->
@@ -4838,7 +5045,7 @@ build_hot_path_sequence(StartFunc, AST, ExecutionFrequencies) ->
     % Max depth 5
     build_path_sequence(StartFunc, AST, ExecutionFrequencies, [StartFunc], 5).
 
-build_path_sequence(CurrentFunc, AST, ExecutionFreqs, Path, 0) ->
+build_path_sequence(_CurrentFunc, _AST, _ExecutionFreqs, Path, 0) ->
     lists:reverse(Path);
 build_path_sequence(CurrentFunc, AST, ExecutionFreqs, Path, Depth) ->
     % Find the most frequently called function from current function
@@ -4961,7 +5168,7 @@ calculate_specialization_benefit(FuncName, TypeUsage, Freq) ->
     BaseBenefit.
 
 %% Count function type diversity
-count_function_type_diversity(FuncName, TypeUsage) ->
+count_function_type_diversity(_FuncName, TypeUsage) ->
     % Simple heuristic: count different types used
     TypeCount = maps:size(TypeUsage),
     case TypeCount of

@@ -1,57 +1,16 @@
 # Cure Standard Library - Main Module
-# Re-exports core functionality for easy importing
+# The std library is organized into separate modules:
+#   - Std.Core: core types and functions
+#   - Std.Io: I/O operations  
+#   - Std.Show: string conversion
+#   - Std.Math: mathematical functions
+#   - Std.List: list operations
+#   - Std.Vector: vector operations
+#   - Std.Fsm: FSM support
+#   - Std.Rec: record/map operations
+#   - Std.Result: result type operations
+#   - Std.System: system-level operations
 
 module Std do
-  # Re-export core types and functions
-  import Std.Core [
-    # Types
-    Result, Option, Ordering,
-    
-    # Core functions
-    identity/1, compose/2, flip/1,
-    not/1, and/2, or/2, xor/2,
-    eq/2, ne/2, lt/2, le/2, gt/2, ge/2, compare/2,
-    min/2, max/2, clamp/3,
-    
-    # Option/Result operations
-    ok/1, error/1, some/1, none/0,
-    is_ok/1, is_error/1, is_some/1, is_none/1,
-    map_ok/2, map_error/2, and_then/2,
-    map_option/2, flat_map_option/2, option_or/2,
-    
-    # Utility functions
-    const/1, apply/2, pipe/2
-  ]
-  
-  # Re-export IO functions
-  import Std.Io [
-    # Standard IO
-    print/1, println/1, 
-    debug/1, error/1
-  ]
-
-  # Re-export Show functions
-  import Std.Show [
-    # String conversion
-    show/1
-  ]
-
-  # Export all re-imported functions
-  export [
-    # Core types and functions
-    Result, Option, Ordering,
-    identity/1, compose/2, flip/1,
-    not/1, and/2, or/2, xor/2,
-    eq/2, ne/2, lt/2, le/2, gt/2, ge/2, compare/2,
-    min/2, max/2, clamp/3,
-    ok/1, error/1, some/1, none/0,
-    is_ok/1, is_error/1, is_some/1, is_none/1,
-    map_ok/2, map_error/2, and_then/2,
-    map_option/2, flat_map_option/2, option_or/2,
-    const/1, apply/2, pipe/2,
-    
-    # Show functions
-    show/1, print/1, println/1
-  ]
-
+  export []
 end

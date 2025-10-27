@@ -2,6 +2,14 @@
 %% Generates BEAM bytecode from typed Cure AST
 -module(cure_codegen).
 
+%% Suppress warnings for work-in-progress helper functions
+-compile(
+    {nowarn_unused_function, [
+        get_record_field_order/1,
+        create_ordered_field_patterns/3
+    ]}
+).
+
 -moduledoc """
 # Cure Programming Language - BEAM Code Generator
 
@@ -888,9 +896,9 @@ compile_function_impl(
     #function_def{
         name = Name,
         clauses = Clauses,
-        params = Params,
-        body = Body,
-        constraint = Constraint,
+        params = _Params,
+        body = _Body,
+        constraint = _Constraint,
         location = Location
     } = _Function,
     State
@@ -2939,7 +2947,7 @@ extract_function_names_from_items(Items) ->
     lists:foldl(
         fun(Item, Acc) ->
             case Item of
-                #function_def{name = Name, clauses = Clauses, params = Params} when
+                #function_def{name = Name, clauses = Clauses, params = _Params} when
                     Clauses =/= undefined, length(Clauses) > 0
                 ->
                     % Multi-clause function - get arity from first clause

@@ -925,7 +925,7 @@ unify_impl(
 %% Bridge: Pair(KT, VT) unifies with tuple type {KT, VT}
 unify_impl(
     {dependent_type, 'Pair', Params},
-    TupleType = #tuple_type{element_types = ElemTypes},
+    _TupleType = #tuple_type{element_types = ElemTypes},
     Subst
 ) when length(Params) =:= 2, length(ElemTypes) =:= 2 ->
     [KTParam, VTParam] = Params,
@@ -2065,7 +2065,7 @@ infer_expr(Expr, _Env) ->
 %% Enhanced function call inference with recursive tracking
 infer_function_call_with_recursive_tracking(Function, Args, Location, Env) ->
     % Check if we have a recursive state in the process dictionary
-    RecState =
+    _RecState =
         case get(recursive_state) of
             undefined ->
                 NewState = new_recursive_state(),
@@ -2169,22 +2169,6 @@ infer_literal_type(S) when is_list(S) -> ?TYPE_STRING;
 infer_literal_type(B) when is_boolean(B) -> ?TYPE_BOOL;
 infer_literal_type(unit) -> {primitive_type, 'Unit'};
 infer_literal_type(A) when is_atom(A) -> ?TYPE_ATOM.
-
-%% Type inference for record field expressions
-infer_record_fields([], _Env) ->
-    {ok, []};
-infer_record_fields([{field_expr, _FieldName, ValueExpr, _Location} | RestFields], Env) ->
-    case infer_expr(ValueExpr, Env) of
-        {ok, _ValueType, ValueConstraints} ->
-            case infer_record_fields(RestFields, Env) of
-                {ok, RestConstraints} ->
-                    {ok, ValueConstraints ++ RestConstraints};
-                Error ->
-                    Error
-            end;
-        Error ->
-            Error
-    end.
 
 %% Type inference and validation for record field expressions with refined type checking
 infer_and_validate_record_fields([], _RecordFields, _Env, _RecordLocation) ->
@@ -2492,12 +2476,6 @@ update_param_value(#type_param{name = _Name, value = _OldValue} = Param, NewValu
 update_param_value(_Param, NewValue) ->
     % Fallback - create new param structure
     #type_param{name = undefined, value = NewValue}.
-
-%% Check if a type is an imported function type
-is_imported_function_type({imported_function_type, _, _, _, _}) ->
-    true;
-is_imported_function_type(_) ->
-    false.
 
 %% Check if a type is a nullary constructor (value type, not function type)
 is_constructor_type({function_type, _, _}) ->
