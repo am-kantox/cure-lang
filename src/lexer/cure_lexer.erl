@@ -358,7 +358,9 @@ scan_tokens(<<$:, $:, Rest/binary>>, Line, Column, Acc) ->
     scan_tokens(Rest, Line, Column + 2, [Token | Acc]);
 scan_tokens(<<$:, Rest/binary>>, Line, Column, Acc) ->
     case Rest of
-        <<C, _/binary>> when C >= $a, C =< $z; C >= $A, C =< $Z; C =:= $_ ->
+        <<C, _/binary>> when
+            (C >= $a andalso C =< $z) orelse (C >= $A andalso C =< $Z) orelse C =:= $_
+        ->
             {Atom, NewRest, NewColumn} = scan_atom(Rest, Column + 1, <<>>),
             Token = #token{type = atom, value = Atom, line = Line, column = Column},
             scan_tokens(NewRest, Line, NewColumn, [Token | Acc]);
@@ -373,7 +375,7 @@ scan_tokens(<<C, Rest/binary>>, Line, Column, Acc) when C >= $0, C =< $9 ->
     scan_tokens(NewRest, Line, NewColumn, [Token | Acc]);
 %% Identifiers and keywords
 scan_tokens(<<C, Rest/binary>>, Line, Column, Acc) when
-    C >= $a, C =< $z; C >= $A, C =< $Z; C =:= $_
+    (C >= $a andalso C =< $z) orelse (C >= $A andalso C =< $Z) orelse C =:= $_
 ->
     {Identifier, NewRest, NewColumn} = scan_identifier(<<C, Rest/binary>>, Column, <<>>),
     TokenType =
@@ -583,7 +585,7 @@ scan_one_token(<<C, Rest/binary>>, Line, Column) when C >= $0, C =< $9 ->
     {Token, NewRest, Line, NewColumn};
 %% Identifiers and keywords
 scan_one_token(<<C, Rest/binary>>, Line, Column) when
-    C >= $a, C =< $z; C >= $A, C =< $Z; C =:= $_
+    (C >= $a andalso C =< $z) orelse (C >= $A andalso C =< $Z) orelse C =:= $_
 ->
     {Identifier, NewRest, NewColumn} = scan_identifier(<<C, Rest/binary>>, Column, <<>>),
     TokenType =
@@ -622,7 +624,8 @@ scan_one_token(<<>>, _Line, _Column) ->
 
 %% Scan atom
 scan_atom(<<C, Rest/binary>>, Column, Acc) when
-    C >= $a, C =< $z; C >= $A, C =< $Z; C >= $0, C =< $9; C =:= $_; C =:= $?
+    (C >= $a andalso C =< $z) orelse (C >= $A andalso C =< $Z) orelse (C >= $0 andalso C =< $9) orelse
+        C =:= $_ orelse C =:= $?
 ->
     scan_atom(Rest, Column + 1, <<Acc/binary, C>>);
 scan_atom(Rest, Column, Acc) ->
@@ -660,7 +663,8 @@ scan_float(Rest, Column, Acc) ->
 
 %% Scan identifier
 scan_identifier(<<C, Rest/binary>>, Column, Acc) when
-    C >= $a, C =< $z; C >= $A, C =< $Z; C >= $0, C =< $9; C =:= $_; C =:= $?
+    (C >= $a andalso C =< $z) orelse (C >= $A andalso C =< $Z) orelse (C >= $0 andalso C =< $9) orelse
+        C =:= $_ orelse C =:= $?
 ->
     scan_identifier(Rest, Column + 1, <<Acc/binary, C>>);
 scan_identifier(Rest, Column, Acc) ->

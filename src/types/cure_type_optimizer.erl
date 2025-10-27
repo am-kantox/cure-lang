@@ -841,9 +841,12 @@ initialize_optimization_context(Config) ->
     }.
 
 %% Analysis functions (concrete implementations)
+collect_function_types(AST) when is_list(AST) ->
+    FunctionTypes = #{},
+    collect_function_types_impl(AST, FunctionTypes);
 collect_function_types(AST) ->
     FunctionTypes = #{},
-    collect_function_types_impl(AST, FunctionTypes).
+    collect_function_types_impl([AST], FunctionTypes).
 
 collect_function_types_impl([], Acc) ->
     Acc;
@@ -861,9 +864,12 @@ collect_function_types_impl([Item | Rest], Acc) ->
         end,
     collect_function_types_impl(Rest, NewAcc).
 
+collect_call_sites(AST) when is_list(AST) ->
+    CallSites = #{},
+    collect_call_sites_impl(AST, CallSites);
 collect_call_sites(AST) ->
     CallSites = #{},
-    collect_call_sites_impl(AST, CallSites).
+    collect_call_sites_impl([AST], CallSites).
 
 collect_call_sites_impl([], Acc) ->
     Acc;
@@ -902,9 +908,12 @@ find_call_sites_in_expr(#let_expr{bindings = Bindings, body = Body}, Acc) ->
 find_call_sites_in_expr(_, Acc) ->
     Acc.
 
+collect_type_usage_patterns(AST) when is_list(AST) ->
+    TypeUsage = #{},
+    collect_type_usage_impl(AST, TypeUsage);
 collect_type_usage_patterns(AST) ->
     TypeUsage = #{},
-    collect_type_usage_impl(AST, TypeUsage).
+    collect_type_usage_impl([AST], TypeUsage).
 
 collect_type_usage_impl([], Acc) ->
     Acc;
@@ -960,9 +969,12 @@ analyze_expr_type_usage(#let_expr{bindings = Bindings, body = Body}, Acc) ->
 analyze_expr_type_usage(_, Acc) ->
     Acc.
 
+collect_monomorphic_instances(AST) when is_list(AST) ->
+    MonoInstances = #{},
+    collect_mono_instances_impl(AST, MonoInstances);
 collect_monomorphic_instances(AST) ->
     MonoInstances = #{},
-    collect_mono_instances_impl(AST, MonoInstances).
+    collect_mono_instances_impl([AST], MonoInstances).
 
 collect_mono_instances_impl([], Acc) ->
     Acc;
@@ -990,9 +1002,12 @@ find_mono_instances_in_item(#module_def{items = Items}, Acc) ->
 find_mono_instances_in_item(_, Acc) ->
     Acc.
 
+analyze_memory_layouts(AST) when is_list(AST) ->
+    MemoryLayouts = #{},
+    analyze_memory_layouts_impl(AST, MemoryLayouts);
 analyze_memory_layouts(AST) ->
     MemoryLayouts = #{},
-    analyze_memory_layouts_impl(AST, MemoryLayouts).
+    analyze_memory_layouts_impl([AST], MemoryLayouts).
 
 analyze_memory_layouts_impl([], Acc) ->
     Acc;
@@ -1013,9 +1028,12 @@ analyze_item_memory_layout(#function_def{params = Params}, Acc) ->
 analyze_item_memory_layout(_, Acc) ->
     Acc.
 
+count_function_calls(AST) when is_list(AST) ->
+    CallCounts = #{},
+    count_calls_impl(AST, CallCounts);
 count_function_calls(AST) ->
     CallCounts = #{},
-    count_calls_impl(AST, CallCounts).
+    count_calls_impl([AST], CallCounts).
 
 count_calls_impl([], Acc) ->
     Acc;

@@ -1473,6 +1473,35 @@ compile_binary_op(
     State
 ) ->
     case Op of
+        '.' ->
+            % Dot operator: field access or module-qualified call
+            % Convert to field access expression
+            case Right of
+                #identifier_expr{name = FieldName, location = FieldLoc} ->
+                    % This is field access: Left.FieldName
+                    compile_field_access_expr(
+                        #field_access_expr{
+                            record = Left,
+                            field = FieldName,
+                            location = FieldLoc
+                        },
+                        State
+                    );
+                _ ->
+                    % Not a simple identifier, might be complex module qualification
+                    % Fall through to regular binary op handling
+                    {LeftInstructions, State1} = compile_expression(Left, State),
+                    {RightInstructions, State2} = compile_expression(Right, State1),
+
+                    BinaryOpInstruction = #beam_instr{
+                        op = binary_op,
+                        args = [Op],
+                        location = Location
+                    },
+
+                    Instructions = LeftInstructions ++ RightInstructions ++ [BinaryOpInstruction],
+                    {Instructions, State2}
+            end;
         '|>' ->
             % Monadic pipe operator: Left |> Right with automatic ok() wrapping and error propagation
             % The first argument is wrapped with ok(arg), then each pipe operation:

@@ -818,16 +818,13 @@ compile_record_field_access([FieldName], Context) ->
     case pop_stack(Context) of
         {RecordExpr, NewContext} ->
             Line = NewContext#compile_context.line,
-            % Build field access: RecordExpr#record_name.field
-            % We need to infer the record name from the record expression type
-            % For now, we'll use a generic record access pattern
-            % In Erlang abstract form: {record_field, Line, RecordExpr, RecordName, {atom, Line, FieldName}}
-            % However, we don't have RecordName here, so we'll use element/2 as fallback
-            % This is a limitation - proper implementation needs type information
-            % For now, generate a call to a helper function
-            FieldAccessForm =
-                {call, Line, {remote, Line, {atom, Line, cure_runtime}, {atom, Line, record_field}},
-                    [RecordExpr, {atom, Line, FieldName}]},
+            % Try to determine field position from ETS table
+            % The record field order is stored during record definition compilation
+            % Format: {{record_fields, RecordName}, [field1, field2, ...]}
+
+            % For now, we'll use cure_runtime:record_field/2 as a fallback
+            % But we could improve this by trying to infer the record type from context
+            FieldAccessForm = generate_field_access_form(RecordExpr, FieldName, Line),
             {ok, [], push_stack(FieldAccessForm, NewContext)};
         Error ->
             Error
@@ -1828,3 +1825,79 @@ generate_monadic_pipe_form(Function, PipedValue, RestArgs, Line) ->
     {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, and_then}}, [
         LambdaFunction, WrappedValue
     ]}.
+
+%% ============================================================================
+%% Record Field Access Helpers
+%% ============================================================================
+
+%% Generate field access form for records
+%% Tries to use type information from ETS to generate efficient element/2 calls
+%% Falls back to runtime helper if type information is not available
+generate_field_access_form(RecordExpr, FieldName, Line) ->
+    % Check if we can determine the record type from the expression
+    case try_infer_record_type(RecordExpr) of
+        {ok, RecordType} ->
+            % We know the record type, try to find field position
+            case lookup_field_position(RecordType, FieldName) of
+                {ok, Position} ->
+                    % Generate element/2 call with known position
+                    % Records are tuples: {RecordTag, Field1, Field2, ...}
+                    % So field positions are 2-based (position 1 is the tag)
+                    {call, Line, {atom, Line, element}, [
+                        % +1 because element/2 is 1-indexed
+                        {integer, Line, Position + 1},
+                        RecordExpr
+                    ]};
+                error ->
+                    % Field not found in record definition, use runtime helper
+                    {call, Line,
+                        {remote, Line, {atom, Line, cure_runtime}, {atom, Line, record_field}}, [
+                            RecordExpr,
+                            {atom, Line, FieldName}
+                        ]}
+            end;
+        error ->
+            % Cannot determine record type, use runtime helper
+            {call, Line, {remote, Line, {atom, Line, cure_runtime}, {atom, Line, record_field}}, [
+                RecordExpr,
+                {atom, Line, FieldName}
+            ]}
+    end.
+
+%% Try to infer record type from expression
+try_infer_record_type({record, _Line, RecordName, _Fields}) ->
+    % Direct record construction: #RecordName{...}
+    {ok, RecordName};
+try_infer_record_type({tuple, _Line, [{atom, _Line2, RecordTag} | _Rest]}) ->
+    % Tuple literal with atom tag: {'RecordName', ...}
+    {ok, RecordTag};
+try_infer_record_type(_) ->
+    % Cannot determine type from expression
+    error.
+
+%% Lookup field position in record definition from ETS
+lookup_field_position(RecordType, FieldName) ->
+    TableName = cure_codegen_context,
+    case ets:info(TableName) of
+        undefined ->
+            error;
+        _ ->
+            case ets:lookup(TableName, {record_fields, RecordType}) of
+                [{{record_fields, RecordType}, FieldList}] ->
+                    % Find the position of FieldName in FieldList
+                    case find_field_index(FieldName, FieldList, 1) of
+                        {ok, Index} -> {ok, Index};
+                        error -> error
+                    end;
+                [] ->
+                    error
+            end
+    end.
+
+%% Find index of field in field list
+find_field_index(_FieldName, [], _Index) ->
+    error;
+find_field_index(FieldName, [FieldName | _Rest], Index) ->
+    {ok, Index};
+find_field_index(FieldName, [_ | Rest], Index) ->
+    find_field_index(FieldName, Rest, Index + 1).

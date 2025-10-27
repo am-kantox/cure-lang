@@ -417,7 +417,25 @@ check_fsm(
                             of
                                 ok ->
                                     FSMType = {fsm_type, Name, States, Initial},
-                                    NewEnv = cure_types:extend_env(Env, Name, FSMType),
+                                    % Check if there's already a record type with this name
+                                    % If so, keep the record type and add FSM under a different key
+                                    NewEnv =
+                                        case cure_types:lookup_env(Env, Name) of
+                                            {record_type, _, _} = RecordType ->
+                                                % Preserve record type under original name
+                                                % Add FSM type under {fsm, Name} key
+                                                Env1 = cure_types:extend_env(
+                                                    Env, {fsm, Name}, FSMType
+                                                ),
+                                                % Also add under plain name for compatibility
+                                                Env2 = cure_types:extend_env(
+                                                    Env1, Name, RecordType
+                                                ),
+                                                Env2;
+                                            _ ->
+                                                % No conflict, just add FSM type
+                                                cure_types:extend_env(Env, Name, FSMType)
+                                        end,
                                     {ok, NewEnv, ResultWithHandlers};
                                 {error, SmtError} ->
                                     {ok, Env, add_error(ResultWithHandlers, SmtError)}
@@ -446,7 +464,19 @@ check_module({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
 
     % Two-pass processing: first collect all function signatures, then check bodies
     % Pass 1: Collect function signatures and add them to environment
-    FunctionEnv = collect_function_signatures(Items, ImportEnv),
+    FunctionEnv0 = collect_function_signatures(Items, ImportEnv),
+
+    % Add module name as an FSM type alias if there's an FSM defined with a record name
+    % This allows patterns like: fsm RecordType{...} do ... end and start_fsm(ModuleName)
+    FunctionEnv =
+        case find_fsm_with_record_name(Items) of
+            {ok, FSMName, States, Initial} ->
+                % Add module name as an alias to the FSM
+                FSMType = {fsm_type, FSMName, States, Initial},
+                cure_types:extend_env(FunctionEnv0, Name, FSMType);
+            not_found ->
+                FunctionEnv0
+        end,
 
     % Pass 2: Check all items with function signatures in environment
     case check_items(Items, FunctionEnv, new_result()) of
@@ -1411,7 +1441,22 @@ builtin_env() ->
     OkFunctionType = {function_type, [], {primitive_type, 'Unit'}},
     Env14 = cure_types:extend_env(Env13, ok, OkFunctionType),
 
-    Env14.
+    % Add Result type constructors
+    % Ok: T -> T (simplified - Ok just returns its argument for now)
+    % Error: E -> E (simplified - Error just returns its argument for now)
+    % In a full implementation, these would wrap in union types
+    TVar = cure_types:new_type_var('T'),
+    EVar = cure_types:new_type_var('E'),
+
+    % Ok(value) constructor - identity function for now
+    OkConstructorType = {function_type, [TVar], TVar},
+    Env15 = cure_types:extend_env(Env14, 'Ok', OkConstructorType),
+
+    % Error(error) constructor - identity function for now
+    ErrorConstructorType = {function_type, [EVar], EVar},
+    Env16 = cure_types:extend_env(Env15, 'Error', ErrorConstructorType),
+
+    Env16.
 
 %% Helper functions
 
@@ -1661,6 +1706,8 @@ convert_expr_to_tuple(#record_update_expr{
 }) ->
     ConvertedFields = [convert_field_expr_to_tuple(F) || F <- Fields],
     {record_update_expr, Name, convert_expr_to_tuple(Base), ConvertedFields, Location};
+convert_expr_to_tuple(#tuple_expr{elements = Elements, location = Location}) ->
+    {tuple_expr, [convert_expr_to_tuple(E) || E <- Elements], Location};
 convert_expr_to_tuple(Expr) ->
     % Fallback - return as-is for unsupported expressions
     Expr.
@@ -1751,6 +1798,9 @@ convert_type_to_tuple(#function_type{params = Params, return_type = ReturnType})
     ConvertedParams = [convert_type_to_tuple(P) || P <- Params],
     ConvertedReturn = convert_type_to_tuple(ReturnType),
     {function_type, ConvertedParams, ConvertedReturn};
+convert_type_to_tuple(#tuple_type{element_types = ElementTypes, location = Location}) ->
+    ConvertedElements = [convert_type_to_tuple(E) || E <- ElementTypes],
+    {tuple_type, ConvertedElements, Location};
 convert_type_to_tuple(#identifier_expr{name = Name}) when
     Name =:= 'Float' orelse
         Name =:= 'Int' orelse
@@ -1770,8 +1820,22 @@ convert_type_with_env({function_type, ParamTypes, ReturnType, _Location}, Env) -
     ConvertedReturn = convert_type_with_env(ReturnType, Env),
     {function_type, ConvertedParams, ConvertedReturn};
 % Handle primitive_type in tuple format (from parser) - must come before record format
-convert_type_with_env({primitive_type, Name, _Location}, _Env) ->
-    {primitive_type, Name};
+convert_type_with_env({primitive_type, Name, _Location}, Env) ->
+    % Check if this "primitive" type name actually refers to a record or other defined type
+    case cure_types:lookup_env(Env, Name) of
+        undefined ->
+            % Not in environment, treat as primitive
+            {primitive_type, Name};
+        {record_type, _, _} = RecordType ->
+            % It's actually a record type!
+            RecordType;
+        {fsm_type, _, _, _} = FSMType ->
+            % It's an FSM type
+            FSMType;
+        OtherType ->
+            % Some other defined type
+            OtherType
+    end;
 % Handle dependent_type in tuple format (from parser) - must come before record format
 convert_type_with_env({dependent_type, Name, Params, _Location}, Env) ->
     ConvertedParams = [convert_type_param_with_env(P, Env) || P <- Params],
@@ -1944,6 +2008,14 @@ derive_multiclause_signature(Name, Clauses, Env) ->
             cure_types:extend_env(Env, Name, FuncType)
     end.
 
+%% Helper to find FSM definition that uses a record as payload
+find_fsm_with_record_name([]) ->
+    not_found;
+find_fsm_with_record_name([#fsm_def{name = Name, states = States, initial = Initial} | _]) ->
+    {ok, Name, States, Initial};
+find_fsm_with_record_name([_ | Rest]) ->
+    find_fsm_with_record_name(Rest).
+
 %% Two-pass processing: collect function signatures first
 collect_function_signatures(Items, Env) ->
     collect_function_signatures_helper(Items, Env).
@@ -2093,7 +2165,21 @@ collect_function_signatures_helper([Item | Rest], Env) ->
                         ),
                         cure_utils:debug("[COLLECT_SIG] Stacktrace: ~p~n", [Stacktrace]),
                         Env
-                end
+                end;
+            {import_def, _Module, _Items, _Location} ->
+                % Import definitions are skipped during signature collection
+                % They will be processed during the check_items phase
+                cure_utils:debug(
+                    "[COLLECT_SIG] Skipping import_def during signature collection~n"
+                ),
+                Env;
+            _ ->
+                % Skip any other items during signature collection
+                cure_utils:debug(
+                    "[COLLECT_SIG] Skipping unknown item type ~p during signature collection~n",
+                    [element(1, Item)]
+                ),
+                Env
         end,
     collect_function_signatures_helper(Rest, UpdatedEnv).
 
@@ -2653,10 +2739,26 @@ import_item(Module, Identifier, Env) when is_atom(Identifier) ->
         "[IMPORT] Processing atom identifier ~p from ~p~n",
         [Identifier, Module]
     ),
-    % Assume it's a function with arity 1 by default
-    FunctionType = create_imported_function_type(Module, Identifier, 1),
-    NewEnv = cure_types:extend_env(Env, Identifier, FunctionType),
-    {ok, NewEnv}.
+    % Check if this is a known type alias
+    case is_type_alias(Module, Identifier) of
+        {true, TypeDef} ->
+            % Import as a type alias
+            cure_utils:debug("[IMPORT] ~p is a type alias: ~p~n", [Identifier, TypeDef]),
+            NewEnv = cure_types:extend_env(Env, Identifier, TypeDef),
+            {ok, NewEnv};
+        false ->
+            % Assume it's a function with arity 1 by default
+            FunctionType = create_imported_function_type(Module, Identifier, 1),
+            NewEnv = cure_types:extend_env(Env, Identifier, FunctionType),
+            {ok, NewEnv}
+    end.
+
+%% Check if an identifier is a type alias from a module
+is_type_alias('Std.Fsm', 'StateName') -> {true, {primitive_type, 'Atom'}};
+is_type_alias('Std.Fsm', 'Event') -> {true, {primitive_type, 'Int'}};
+is_type_alias('Std.Fsm', 'FsmError') -> {true, {primitive_type, 'Atom'}};
+is_type_alias('Std.Fsm', 'State') -> {true, {primitive_type, 'Int'}};
+is_type_alias(_Module, _Identifier) -> false.
 
 %% Additional converter functions
 convert_param_to_tuple({param, Name, TypeExpr, Location}) ->

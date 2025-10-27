@@ -2131,7 +2131,7 @@ parse_type_parameter_binary_rest(State, Left, MinPrec) ->
 %% Parse expression for match clause body - parse single expression only
 parse_match_clause_body(State) ->
     % Parse a single expression for the match clause body
-    % Don't try to parse blocks or sequences - keep it simple
+    % The expression can be compound (like a let expression with a body)
     parse_binary_expression(State, 0).
 
 %% Parse let value expression that stops at 'in' keyword
@@ -2206,6 +2206,8 @@ is_let_body_continuation(State) ->
         number -> true;
         % Literal
         string -> true;
+        % Atom literal
+        atom -> true;
         % Parenthesized expression
         '(' -> true;
         % List
@@ -2218,6 +2220,13 @@ is_let_body_continuation(State) ->
         'let' -> true;
         % lambda
         'fn' -> true;
+        % Constructor keywords
+        'Ok' -> true;
+        'Error' -> true;
+        'Some' -> true;
+        'None' -> true;
+        'ok' -> true;
+        'error' -> true;
         % These tokens suggest end of let expression
 
         % End of match/if/etc
@@ -2252,13 +2261,19 @@ parse_expression_or_block(State) ->
 %% Check if we should continue parsing as a block
 is_block_continuation(State) ->
     % Check if next token starts a new expression or statement
+    % Be conservative: only continue for tokens that CLEARLY start a new statement
     case current_token(State) of
         eof ->
             false;
         Token ->
             case get_token_type(Token) of
                 'let' -> true;
-                % Could be function call
+                'match' -> true;
+                'case' -> true;
+                'if' -> true;
+                % Function calls with known constructors
+
+                % Re-enable but be more careful in other places
                 identifier -> true;
                 _ -> false
             end
@@ -2423,6 +2438,12 @@ parse_primary_expression(State) ->
             case get_token_type(Token) of
                 identifier ->
                     parse_identifier_or_call(State);
+                'state' ->
+                    parse_identifier_or_call(State);
+                'event' ->
+                    parse_identifier_or_call(State);
+                'action' ->
+                    parse_identifier_or_call(State);
                 '-' ->
                     % Unary minus
                     {_, State1} = expect(State, '-'),
@@ -2582,13 +2603,19 @@ parse_identifier_or_call(State) ->
             identifier -> expect(State, identifier);
             'ok' -> expect(State, 'ok');
             'error' -> expect(State, 'error');
+            'state' -> expect(State, 'state');
+            'event' -> expect(State, 'event');
+            'action' -> expect(State, 'action');
             _ -> expect(State, identifier)
         end,
     Name =
         case get_token_type(Token) of
             identifier -> binary_to_atom(get_token_value(Token), utf8);
             'ok' -> ok;
-            'error' -> error
+            'error' -> error;
+            'state' -> state;
+            'event' -> event;
+            'action' -> action
         end,
     Location = get_location(State, Token),
 
@@ -2778,7 +2805,9 @@ parse_let_expression(State) ->
             % Check if there's another expression that could be the body
             case is_let_body_continuation(State4) of
                 true ->
-                    {Body, State5} = parse_expression(State4),
+                    % Parse a single expression as the body, not a block
+                    % This prevents the parser from continuing past match clause boundaries
+                    {Body, State5} = parse_binary_expression(State4, 0),
                     LetExpr = #let_expr{
                         bindings = [Binding],
                         body = Body,
@@ -2995,10 +3024,22 @@ parse_match_clause(State) ->
 
 %% Parse patterns
 parse_pattern(State) ->
-    case get_token_type(current_token(State)) of
-        identifier ->
-            {Token, State1} = expect(State, identifier),
-            Name = binary_to_atom(get_token_value(Token), utf8),
+    TokenType = get_token_type(current_token(State)),
+    % Allow certain keywords to be used as identifier patterns (like 'state')
+    IsIdentifierLike =
+        TokenType =:= identifier orelse
+            TokenType =:= 'state' orelse
+            TokenType =:= 'event' orelse
+            TokenType =:= 'action',
+    case TokenType of
+        _ when IsIdentifierLike ->
+            {Token, State1} = expect(State, TokenType),
+            Name =
+                case TokenType of
+                    identifier -> binary_to_atom(get_token_value(Token), utf8);
+                    % For keywords, use the atom directly
+                    _ -> TokenType
+                end,
             Location = get_token_location(Token),
 
             % Check for wildcard pattern

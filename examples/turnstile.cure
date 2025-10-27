@@ -5,9 +5,9 @@
 module Turnstile do
   export [main/0]
   
-  import Std.Fsm [start_fsm/1, fsm_cast/2, fsm_advertise/2, fsm_state/1, StateName, Event, FsmError, State]
+  import Std.Fsm [start_fsm/1, fsm_cast/2, fsm_advertise/2, fsm_state/1, StateName, Event, FsmError]
   import Std.Io [println/1]
-  import Std.Result [Result, Ok, Error]
+  import Std.Core [ok/1, error/1]
   import Std.Show [show/1]
   
   # Payload record - tracks turnstile statistics
@@ -31,7 +31,7 @@ module Turnstile do
   # Handler: Insert coin
   # - When Locked->Unlocked: unlock and increment coin counter
   # - When Unlocked->Unlocked: increment coin counter (redundant coin)
-  def coin(from: StateName, event: Event, payload: TurnstilePayload): Result(State, FsmError) =
+  def coin(from: StateName, evt: Event, payload: TurnstilePayload): Result({Atom, TurnstilePayload}, FsmError) =
     let new_payload = TurnstilePayload{
       coins_inserted: payload.coins_inserted + 1,
       people_passed: payload.people_passed,
@@ -43,12 +43,12 @@ module Turnstile do
       :Unlocked -> :Unlocked  # Stay unlocked if already unlocked
       _ -> from  # Shouldn't happen, but stay in current state
     end
-    Ok({next_state, new_payload})
+    ok({next_state, new_payload})
   
   # Handler: Push through turnstile
   # - When Locked->Locked: stay locked, increment denied attempts
   # - When Unlocked->Locked: lock and increment people passed
-  def push(from: StateName, event: Event, payload: TurnstilePayload): Result(State, FsmError) =
+  def push(from: StateName, evt: Event, payload: TurnstilePayload): Result({Atom, TurnstilePayload}, FsmError) =
     match from do
       :Locked ->
         # Trying to push while locked - denied!
@@ -57,7 +57,7 @@ module Turnstile do
           people_passed: payload.people_passed,
           denied_attempts: payload.denied_attempts + 1
         }
-        Ok({:Locked, new_payload})
+        ok({:Locked, new_payload})
       
       :Unlocked ->
         # Push while unlocked - person passes through, lock again
@@ -66,9 +66,9 @@ module Turnstile do
           people_passed: payload.people_passed + 1,
           denied_attempts: payload.denied_attempts
         }
-        Ok({:Locked, new_payload})
+        ok({:Locked, new_payload})
       
-      _ -> Error(:invalid_state)
+      _ -> error(:invalid_state)
     end
   
   # === DEMO ===
@@ -84,42 +84,24 @@ module Turnstile do
     fsm_advertise(fsm_pid, :main_turnstile)
     
     # Check initial state
-    match fsm_state(:main_turnstile) do
-      Ok({state, payload}) ->
-        println("Initial state: " ++ show(state))
-        println("Initial payload: coins=" ++ show(payload.coins_inserted) ++ ", passed=" ++ show(payload.people_passed))
-      Error(e) ->
-        println("Error getting state: " ++ show(e))
-    end
+    let result = fsm_state(:main_turnstile)
+    println(show(result))
     
     println("")
     
     # Scenario 1: Try to push while locked (should be denied)
     println("→ Pushing while locked...")
     fsm_cast(:main_turnstile, {:push, []})
-    match fsm_state(:main_turnstile) do
-      Ok({state, payload}) ->
-        println("  State: " ++ show(state) ++ " | Denied: " ++ show(payload.denied_attempts))
-      _ -> println("  Error")
-    end
+    let result = fsm_state(:main_turnstile)
+    println(show(result))
     
     # Scenario 2: Insert coin (should unlock)
     println("→ Inserting coin...")
     fsm_cast(:main_turnstile, {:coin, []})
-    match fsm_state(:main_turnstile) do
-      Ok({state, payload}) ->
-        println("  State: " ++ show(state) ++ " | Coins: " ++ show(payload.coins_inserted))
-      _ -> println("  Error")
-    end
     
     # Scenario 3: Push through (should lock again and count passage)
     println("→ Pushing through...")
     fsm_cast(:main_turnstile, {:push, []})
-    match fsm_state(:main_turnstile) do
-      Ok({state, payload}) ->
-        println("  State: " ++ show(state) ++ " | Passed: " ++ show(payload.people_passed))
-      _ -> println("  Error")
-    end
     
     # Scenario 4: Insert another coin
     println("→ Inserting second coin...")
@@ -131,16 +113,9 @@ module Turnstile do
     
     # Final state
     println("")
-    match fsm_state(:main_turnstile) do
-      Ok({state, payload}) ->
-        println("=== Final State ===")
-        println("State: " ++ show(state))
-        println("Coins inserted: " ++ show(payload.coins_inserted))
-        println("People passed: " ++ show(payload.people_passed))
-        println("Denied attempts: " ++ show(payload.denied_attempts))
-      Error(e) ->
-        println("Error: " ++ show(e))
-    end
+    println("=== Final State ===")
+    let result = fsm_state(:main_turnstile)
+    println(show(result))
     
     0
   

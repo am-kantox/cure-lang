@@ -4,8 +4,9 @@ module Std.Show do
     show/1
   ]
 
-  # Simplified show implementation for integers only for now
+  # Simplified show implementation for various types
+  # In reality, this would be polymorphic and inspect the type
   def show(value: Int): String =
-    "[number]"  # Simplified - returns a placeholder
+    "[value]"  # Simplified - returns a placeholder
 
 end

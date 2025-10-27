@@ -870,8 +870,22 @@ unify_impl({list_type, Elem1, Len1}, {list_type, Elem2, Len2}, Subst) ->
         Error ->
             Error
     end;
-%% Tuple type unification
+%% Tuple type unification - record format
 unify_impl(#tuple_type{element_types = Elems1}, #tuple_type{element_types = Elems2}, Subst) when
+    length(Elems1) =:= length(Elems2)
+->
+    unify_lists(Elems1, Elems2, Subst);
+%% Tuple type unification - simple tuple format {tuple_type, Elems, Loc}
+unify_impl({tuple_type, Elems1, _Loc1}, {tuple_type, Elems2, _Loc2}, Subst) when
+    length(Elems1) =:= length(Elems2)
+->
+    unify_lists(Elems1, Elems2, Subst);
+%% Bridge: tuple_type record with tuple_type tuple
+unify_impl(#tuple_type{element_types = Elems1}, {tuple_type, Elems2, _Loc}, Subst) when
+    length(Elems1) =:= length(Elems2)
+->
+    unify_lists(Elems1, Elems2, Subst);
+unify_impl({tuple_type, Elems1, _Loc}, #tuple_type{element_types = Elems2}, Subst) when
     length(Elems1) =:= length(Elems2)
 ->
     unify_lists(Elems1, Elems2, Subst);
@@ -1131,10 +1145,30 @@ unify_impl({record_type, Name, _}, {primitive_type, Name}, Subst) ->
     {ok, Subst};
 unify_impl({primitive_type, Name}, {record_type, Name, _}, Subst) ->
     {ok, Subst};
+%% Union type unification - a type unifies with a union if it unifies with any variant
+unify_impl(Type, {union_type, Variants}, Subst) ->
+    % Try to unify Type with each variant in the union
+    try_unify_with_union_variants(Type, Variants, Subst);
+unify_impl({union_type, Variants}, Type, Subst) ->
+    % Symmetric case
+    try_unify_with_union_variants(Type, Variants, Subst);
 unify_impl(Type1, Type2, _Subst) ->
     {error, {unification_failed, Type1, Type2}}.
 
 %% Helper functions for unification
+try_unify_with_union_variants(_Type, [], _Subst) ->
+    % No variants left to try - unification failed
+    {error, no_matching_union_variant};
+try_unify_with_union_variants(Type, [Variant | RestVariants], Subst) ->
+    case unify_impl(Type, Variant, Subst) of
+        {ok, NewSubst} ->
+            % Successfully unified with this variant
+            {ok, NewSubst};
+        {error, _} ->
+            % Try next variant
+            try_unify_with_union_variants(Type, RestVariants, Subst)
+    end.
+
 unify_lists([], [], Subst) ->
     {ok, Subst};
 unify_lists([H1 | T1], [H2 | T2], Subst) ->
@@ -1755,6 +1789,10 @@ infer_expr({identifier_expr, Name, Location}, Env) ->
             InstantiatedType = instantiate_type_if_function(Type),
             {ok, InstantiatedType, []}
     end;
+infer_expr({binary_op_expr, '.', Left, {identifier_expr, FieldName, _}, Location}, Env) ->
+    % Special case: field access is parsed as binary operator
+    % Convert to field access expression
+    infer_expr({field_access_expr, Left, FieldName, Location}, Env);
 infer_expr({binary_op_expr, Op, Left, Right, Location}, Env) ->
     case infer_expr(Left, Env) of
         {ok, LeftType, LeftConstraints} ->
@@ -1915,20 +1953,28 @@ infer_expr({field_access_expr, RecordExpr, FieldName, Location}, Env) ->
     % Type a field access expression: record.field
     case infer_expr(RecordExpr, Env) of
         {ok, {record_type, RecordTypeName}, RecordConstraints} ->
-            % Look up record type definition to get field type
+            % Simplified record type without fields - look up full definition
             case lookup_env(Env, RecordTypeName) of
                 undefined ->
                     {error, {unbound_record_type, RecordTypeName}};
                 {record_type, RecordTypeName, RecordFields} ->
                     % Find the field in the record type
-                    case lists:keyfind(FieldName, 1, RecordFields) of
-                        {FieldName, FieldType} ->
+                    case find_record_field(FieldName, RecordFields) of
+                        {ok, FieldType} ->
                             {ok, FieldType, RecordConstraints};
-                        false ->
+                        not_found ->
                             {error, {undefined_field, FieldName, RecordTypeName, Location}}
                     end;
                 _Other ->
                     {error, {not_record_type, RecordTypeName}}
+            end;
+        {ok, {record_type, RecordTypeName, RecordFields}, RecordConstraints} ->
+            % Full record type with fields already available
+            case find_record_field(FieldName, RecordFields) of
+                {ok, FieldType} ->
+                    {ok, FieldType, RecordConstraints};
+                not_found ->
+                    {error, {undefined_field, FieldName, RecordTypeName, Location}}
             end;
         {ok, OtherType, _} ->
             {error, {field_access_on_non_record, OtherType, Location}};
@@ -2058,6 +2104,14 @@ infer_expr({fsm_state_expr, _Location}, Env) ->
             {ok, new_type_var(), []};
         StateType ->
             {ok, StateType, []}
+    end;
+infer_expr({tuple_expr, Elements, Location}, Env) ->
+    % Type a tuple expression: (elem1, elem2, ...)
+    case infer_tuple_elements(Elements, Env, [], []) of
+        {ok, ElementTypes, AllConstraints} ->
+            {ok, #tuple_type{element_types = ElementTypes, location = Location}, AllConstraints};
+        Error ->
+            Error
     end;
 infer_expr(Expr, _Env) ->
     {error, {unsupported_expression, Expr}}.
@@ -2825,6 +2879,18 @@ infer_list_elements([Elem | RestElems], ElemType, Env, Constraints) ->
             Error
     end.
 
+infer_tuple_elements([], _Env, ElementTypes, Constraints) ->
+    {ok, lists:reverse(ElementTypes), Constraints};
+infer_tuple_elements([Elem | RestElems], Env, ElementTypes, Constraints) ->
+    case infer_expr(Elem, Env) of
+        {ok, ElemType, ElemConstraints} ->
+            infer_tuple_elements(
+                RestElems, Env, [ElemType | ElementTypes], Constraints ++ ElemConstraints
+            );
+        Error ->
+            Error
+    end.
+
 infer_match_clauses([], _MatchType, _Env) ->
     % No patterns - should not happen in valid code
     {error, no_match_patterns};
@@ -3039,6 +3105,13 @@ infer_record_field_patterns(
                 Error ->
                     Error
             end
+    end.
+
+%% Find a field in a record definition and return its type
+find_record_field(FieldName, RecordFields) ->
+    case find_record_field_type(FieldName, RecordFields) of
+        undefined -> not_found;
+        FieldType -> {ok, FieldType}
     end.
 
 %% Find the type of a field in a record definition

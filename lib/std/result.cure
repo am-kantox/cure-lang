@@ -1,30 +1,24 @@
 module Std.Result do
   export [
-    # Result constructors
-    ok/1, error/1,
-    
     # Result operations
+    ok/1, error/1,
     is_ok/1, is_error/1,
     get_value/1, get_error/1,
     map_result/2, map_error/2
   ]
 
-  # Simplified Result implementation using integers
-  # Positive = Ok(value), Negative = Error(code)
+  # Result type using variant constructors
+  # Result(T, E) = Ok(T) | Error(E)
+  # For now, we use a simplified implementation with tuples
   
+  # Constructor functions that return Result type
   def ok(value: Int): Int =
-    "Create Ok result (simplified)"
-    match value < 0 do
-      true -> 1
-      false -> value
-    end  # Ensure positive
+    "Create Ok result"
+    value
 
-  def error(code: Int): Int =
-    "Create Error result (simplified)"
-    match code >= 0 do
-      true -> -1
-      false -> code
-    end  # Ensure negative
+  def error(err: Int): Int =
+    "Create Error result"
+    err
 
   def is_ok(result: Int): Bool =
     "Check if result is Ok"

@@ -82,13 +82,13 @@ module Std.Core do
   def gt(x: T, y: T): Bool = x > y
   def ge(x: T, y: T): Bool = x >= y
 
-  def compare(x: T, y: T): Ordering =
+  def compare(x: T, y: T): Atom =
     match x < y do
-      true -> Lt
+      true -> :lt
       false ->
         match x > y do
-          true -> Gt
-          false -> Eq
+          true -> :gt
+          false -> :eq
         end
     end
 

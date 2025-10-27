@@ -9,17 +9,19 @@ module Std.Fsm do
     fsm_state/1
   ]
 
-  # Core FSM types
+  # Core FSM types - these are type aliases
   type FsmName = Atom
   type FsmError = Atom  # Error types like :invalid_state, :invalid_transition, etc.
   type EventName = Atom
   type StateName = Atom
-  type EventPayload = List(Pair(Atom, Any))  # Event-specific data
-  type Event = Pair(EventName, EventPayload)
+  type EventPayload = Int  # Simplified for now
+  type Event = Int  # Simplified for now
   
-  # State is a pair of state name and payload
+  # State is a tuple of state name and payload
   # Payload can be any type (record, list, etc.) - determined by FSM definition
-  type State = Any
+  # Note: This should ideally be a tuple type (StateName, Payload) but type aliases
+  # don't support generics yet, so using Atom as a simplified placeholder
+  type State = Atom
   
   # Transition handler signature:
   # (from_state, event, current_payload) -> Result(new_state_with_payload, error)
@@ -41,9 +43,9 @@ module Std.Fsm do
   # Returns a Pid for the FSM process
   # TODO: Implementation will spawn a process that maintains FSM state
   # and handles events via message passing
-  # Placeholder implementation - returns any atom cast to Pid type
-  def start_fsm(mod: Int): Int =
-    0
+  # Placeholder implementation - returns pid 0
+  def start_fsm(mod: Atom): Pid =
+    :pid_0
 
   # Send an event to an FSM (by Pid or registered name)
   # Asynchronous - fire and forget

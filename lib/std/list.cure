@@ -18,10 +18,10 @@ module Std.List do
   ]
 
   # Basic operations
-  def length(list: List(T)): Nat =
+  def length(list: List(T)): Int =
     match list do
-      [] -> Zero
-      [_ | t] -> Succ(length(t))
+      [] -> 0
+      [_ | t] -> 1 + length(t)
     end
 
   def is_empty(list: List(T)): Bool =
@@ -102,10 +102,10 @@ module Std.List do
     end
 
   # Access
-  def nth(list: List(T), index: Nat, default: T): T =
+  def nth(list: List(T), index: Int, default: T): T =
     match index do
-      Zero -> head(list, default)
-      Succ(pred) -> nth(tail(list), pred, default)
+      0 -> head(list, default)
+      _ -> nth(tail(list), index - 1, default)
     end
 
   # def take(list: List(T), n: Int): List(T) =

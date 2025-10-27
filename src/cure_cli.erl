@@ -55,6 +55,8 @@ cure input.cure --no-optimize      # Disable optimizations
     compile_file/1,
     % Compile with options
     compile_file/2,
+    % Wrapper for erl -s invocation (takes list of atoms)
+    compile_file_from_shell/1,
     %% Convert compile options to codegen options
     compile_opts_to_codegen_opts/1,
     %% Get module information from AST (simplified, for future use)
@@ -263,7 +265,13 @@ compile_file("examples/hello.cure").
 
 """.
 compile_file(Filename) ->
-    compile_file(Filename, #compile_options{}).
+    % Handle atom filenames from erl -s invocation
+    FilenameStr =
+        case is_atom(Filename) of
+            true -> atom_to_list(Filename);
+            false -> Filename
+        end,
+    compile_file(FilenameStr, #compile_options{}).
 
 -doc """
 Compile a .cure file with specified compilation options.
@@ -317,12 +325,25 @@ compile_file("input.cure", Options).
 
 """.
 compile_file(Filename, Options) ->
-    case filelib:is_regular(Filename) of
+    % Handle atom filenames from erl -s invocation
+    FilenameStr =
+        case is_atom(Filename) of
+            true -> atom_to_list(Filename);
+            false -> Filename
+        end,
+    case filelib:is_regular(FilenameStr) of
         false ->
-            {error, {file_not_found, Filename}};
+            {error, {file_not_found, FilenameStr}};
         true ->
-            compile_file_impl(Filename, Options)
+            compile_file_impl(FilenameStr, Options)
     end.
+
+%% Wrapper for invocation via erl -s (takes list of atoms)
+compile_file_from_shell([FilenameAtom]) when is_atom(FilenameAtom) ->
+    compile_file(atom_to_list(FilenameAtom), #compile_options{});
+compile_file_from_shell(Args) ->
+    io:format("Error: Invalid arguments to compile_file_from_shell: ~p~n", [Args]),
+    halt(1).
 
 %% Implementation of file compilation
 compile_file_impl(Filename, Options) ->
@@ -398,6 +419,12 @@ compile_source(Filename, Source, Options) ->
         {"Type Checking", fun(AST) ->
             case Options#compile_options.type_check of
                 true -> type_check_ast(AST);
+                false -> {ok, AST}
+            end
+        end},
+        {"Type-directed Optimization", fun(AST) ->
+            case Options#compile_options.optimize of
+                true -> optimize_ast(AST, Options);
                 false -> {ok, AST}
             end
         end},
@@ -547,6 +574,45 @@ check_type_result(Result, AST) ->
         _ ->
             cure_utils:debug("Warning: Type check result is not a tuple: ~p~n", [Result]),
             {error, invalid_type_check_result}
+    end.
+
+%% Optimize AST using type-directed optimizations
+optimize_ast(AST, Options) ->
+    try
+        if
+            Options#compile_options.verbose ->
+                io:format("  Running type-directed optimizations...~n");
+            true ->
+                ok
+        end,
+
+        % Call the type optimizer with default configuration
+        case cure_type_optimizer:optimize_program(AST) of
+            {ok, OptimizedAST, Report} ->
+                if
+                    Options#compile_options.verbose ->
+                        io:format("  Optimization completed successfully~n"),
+                        io:format("  Optimization report: ~p~n", [Report]);
+                    true ->
+                        ok
+                end,
+                {ok, OptimizedAST};
+            {error, Reason} ->
+                io:format("  Optimization error: ~p~n", [Reason]),
+                % Fall back to unoptimized AST if optimization fails
+                io:format("  Warning: Optimization failed, continuing with unoptimized AST~n"),
+                {ok, AST}
+        end
+    catch
+        Class:Error:Stack ->
+            % If optimization fails with exception, continue with unoptimized AST
+            io:format("  Error: Optimization failed with exception ~p:~p~n", [Class, Error]),
+            case os:getenv("CURE_DEBUG") of
+                "1" -> io:format("  Stack trace: ~p~n", [Stack]);
+                _ -> ok
+            end,
+            io:format("  Warning: Optimization failed, continuing with unoptimized AST~n"),
+            {ok, AST}
     end.
 
 -doc """
