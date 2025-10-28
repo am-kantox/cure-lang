@@ -65,7 +65,15 @@ def sort<T: Ord>(xs: List(T)) -> List(T) = ...
 
 #### Implementation
 ```erlang
-check_where_clause(WhereClause, Env, Location) ->\n    % Parse where clause into constraint list\n    case parse_where_clause_constraints(WhereClause) of\n        {ok, Constraints} ->\n            check_trait_constraints(Constraints, Env, Location);\n        {error, Reason} ->\n            {error, #typecheck_error{...}}\n    end.\n```
+check_where_clause(WhereClause, Env, Location) ->
+  % Parse where clause into constraint list
+  case parse_where_clause_constraints(WhereClause) of
+    {ok, Constraints} ->
+      check_trait_constraints(Constraints, Env, Location);
+    {error, Reason} ->
+      {error, #typecheck_error{...}}
+  end.
+```
 
 **New Functions**:
 - `parse_where_clause_constraints/1` - Parses where clause expressions
@@ -84,7 +92,18 @@ check_where_clause(WhereClause, Env, Location) ->\n    % Parse where clause into
 
 #### Implementation
 ```erlang
-check_method_body_type(MethodName, SigParams, SigReturnType, Body, Env, Location) ->\n    % Add parameters to environment\n    {_ParamTypes, EnvWithParams} = process_parameters(SigParams, Env),\n    \n    % Infer body type\n    BodyTuple = convert_expr_to_tuple(Body),\n    case cure_types:infer_type(BodyTuple, EnvWithParams) of\n        {ok, InferenceResult} ->\n            BodyType = element(2, InferenceResult),\n            % Check body type matches signature return type\n            ...\n```
+check_method_body_type(MethodName, SigParams, SigReturnType, Body, Env, Location) ->
+  % Add parameters to environment
+  {_ParamTypes, EnvWithParams} = process_parameters(SigParams, Env),
+
+  % Infer body type
+  BodyTuple = convert_expr_to_tuple(Body),
+  case cure_types:infer_type(BodyTuple, EnvWithParams) of
+    {ok, InferenceResult} ->
+      BodyType = element(2, InferenceResult),
+      % Check body type matches signature return type
+      ...
+```
 
 **Features**:
 - Full type inference for method bodies
@@ -95,7 +114,18 @@ check_method_body_type(MethodName, SigParams, SigReturnType, Body, Env, Location
 
 **Example**:
 ```cure
-trait Show {\n    def show(self: Self) -> String\n}\n\nimpl Show for Int {\n    def show(self: Int) -> String = int_to_string(self)\n    %            ^                      ^\n    %            |                      |\n    %     Declared type          Inferred type\n    % These must unify!\n}\n```
+trait Show {
+  def show(self: Self) -> String
+}
+
+impl Show for Int {
+  def show(self: Int) -> String = int_to_string(self)
+  %        ^                                    ^
+  %        |                                    |
+  %   Declared type                       Inferred type
+  % These must unify!
+}
+```
 
 ### 2.3 Associated Type Checking
 
@@ -103,7 +133,21 @@ trait Show {\n    def show(self: Self) -> String\n}\n\nimpl Show for Int {\n    
 
 #### Implementation
 ```erlang
-check_impl_associated_types(AssocTypes, TraitDef, Env, Location) ->\n    % Get required associated types from trait definition\n    RequiredAssocTypes = get_required_associated_types(TraitDef),\n    \n    % Check all required associated types are provided\n    RequiredNames = [Name || #associated_type{name = Name} <- RequiredAssocTypes],\n    ProvidedNames = maps:keys(AssocTypes),\n    MissingAssocTypes = RequiredNames -- ProvidedNames,\n    \n    case MissingAssocTypes of\n        [] ->\n            verify_associated_type_bounds(AssocTypes, RequiredAssocTypes, Env, Location);\n        Missing ->\n            {error, ...}\n    end.\n```
+check_impl_associated_types(AssocTypes, TraitDef, Env, Location) ->
+  % Get required associated types from trait definition
+  RequiredAssocTypes = get_required_associated_types(TraitDef),
+  % Check all required associated types are provided
+  RequiredNames = [Name || #associated_type{name = Name} <- RequiredAssocTypes],
+  ProvidedNames = maps:keys(AssocTypes),
+  MissingAssocTypes = RequiredNames -- ProvidedNames,
+
+  case MissingAssocTypes of
+    [] ->
+      verify_associated_type_bounds(AssocTypes, RequiredAssocTypes, Env, Location);
+    Missing ->
+      {error, ...}
+  end.
+```
 
 **New Functions**:
 - `check_impl_associated_types/4` - Validates associated type implementations
@@ -121,8 +165,16 @@ check_impl_associated_types(AssocTypes, TraitDef, Env, Location) ->\n    % Get r
 
 **Example**:
 ```cure
-trait Container {\n    type Item\n    def insert(self: Self, item: Item) -> Self\n}\n\nimpl Container for Vec {\n    type Item = Int  % Must provide Item!\n    def insert(self: Vec, item: Int) -> Vec = ...\n}\n```
+trait Container {
+  type Item
+    def insert(self: Self, item: Item) -> Self
+  }
 
+  impl Container for Vec {
+    type Item = Int  % Must provide Item!
+    def insert(self: Vec, item: Int) -> Vec = ...
+  }
+```
 ---
 
 ## 3. Monomorphization Pipeline ✅
@@ -133,7 +185,27 @@ trait Container {\n    type Item\n    def insert(self: Self, item: Item) -> Self
 
 #### Implementation
 ```erlang
-transform_ast_for_monomorphization(AST, MonomorphicInstances) when is_list(AST) ->\n    lists:map(\n        fun(Item) -> transform_item_for_mono(Item, MonomorphicInstances) end,\n        AST\n    ).\n\ntransform_item_for_mono(#module_def{items = Items} = Module, Instances) ->\n    NewItems = lists:flatmap(\n        fun(Item) ->\n            case Item of\n                #function_def{name = Name} = FuncDef ->\n                    TransformedFunc = transform_function_calls(FuncDef, Instances),\n                    [TransformedFunc];\n                _ ->\n                    [Item]\n            end\n        end,\n        Items\n    ),\n    Module#module_def{items = NewItems}.\n```
+transform_ast_for_monomorphization(AST, MonomorphicInstances) when is_list(AST) ->
+    lists:map(
+        fun(Item) -> transform_item_for_mono(Item, MonomorphicInstances) end,
+        AST
+    ).
+
+transform_item_for_mono(#module_def{items = Items} = Module, Instances) ->
+    NewItems = lists:flatmap(
+        fun(Item) ->
+            case Item of
+                #function_def{name = Name} = FuncDef ->
+                    TransformedFunc = transform_function_calls(FuncDef, Instances),
+                    [TransformedFunc];
+                _ ->
+                    [Item]
+            end
+        end,
+        Items
+    ),
+    Module#module_def{items = NewItems}.
+```
 
 **Features**:
 - Traverses entire AST recursively
@@ -150,19 +222,74 @@ transform_ast_for_monomorphization(AST, MonomorphicInstances) when is_list(AST) 
 
 **Unreachable Function Detection**:
 ```erlang
-find_unreachable_functions_by_type(AST, TypeInfo) ->\n    AllFunctions = collect_all_function_names(AST),\n    CallSites = TypeInfo#type_info.call_sites,\n    CalledFunctions = maps:keys(CallSites),\n    \n    % Protect exported and entry point functions\n    ExportedFunctions = find_exported_functions(AST),\n    EntryPoints = find_entry_points(AST),\n    ProtectedFunctions = ExportedFunctions ++ EntryPoints,\n    \n    % Unreachable = All - Called - Protected\n    (AllFunctions -- CalledFunctions) -- ProtectedFunctions.\n```
+find_unreachable_functions_by_type(AST, TypeInfo) ->
+    AllFunctions = collect_all_function_names(AST),
+    CallSites = TypeInfo#type_info.call_sites,
+    CalledFunctions = maps:keys(CallSites),
+    
+    % Protect exported and entry point functions
+    ExportedFunctions = find_exported_functions(AST),
+    EntryPoints = find_entry_points(AST),
+    ProtectedFunctions = ExportedFunctions ++ EntryPoints,
+    
+    % Unreachable = All - Called - Protected
+    (AllFunctions -- CalledFunctions) -- ProtectedFunctions.
+```
 
 **Pattern Analysis**:
 ```erlang
-find_unreachable_patterns_by_types(AST, TypeInfo) ->\n    % Analyze match expressions for unreachable patterns\n    lists:flatmap(\n        fun(Item) ->\n            case Item of\n                #function_def{name = Name, body = Body} ->\n                    find_unreachable_patterns_in_expr(Body, FuncType);\n                _ -> []\n            end\n        end,\n        AST\n    ).\n```
+find_unreachable_patterns_by_types(AST, TypeInfo) ->
+    % Analyze match expressions for unreachable patterns
+    lists:flatmap(
+        fun(Item) ->
+            case Item of
+                #function_def{name = Name, body = Body} ->
+                    find_unreachable_patterns_in_expr(Body, FuncType);
+                _ -> []
+            end
+        end,
+        AST
+    ).
+```
 
 **Redundant Check Detection**:
 ```erlang
-find_redundant_type_checks(AST, TypeInfo) ->\n    % Find type checks that are redundant given type information\n    lists:flatmap(\n        fun(Item) ->\n            case Item of\n                #function_def{name = Name, body = Body} ->\n                    find_redundant_checks_in_expr(Body, FuncType);\n                _ -> []\n            end\n        end,\n        AST\n    ).\n```
+find_redundant_type_checks(AST, TypeInfo) ->
+    % Find type checks that are redundant given type information
+    lists:flatmap(
+        fun(Item) ->
+            case Item of
+                #function_def{name = Name, body = Body} ->
+                    find_redundant_checks_in_expr(Body, FuncType);
+                _ -> []
+            end
+        end,
+        AST
+    ).
+```
 
 **Dead Function Removal**:
 ```erlang
-filter_dead_functions(AST, DeadFunctions) when is_list(AST) ->\n    lists:map(\n        fun(Item) -> filter_dead_from_item(Item, DeadFunctions) end,\n        AST\n    ).\n\nfilter_dead_from_item(#module_def{items = Items} = Module, DeadFunctions) ->\n    NewItems = lists:filter(\n        fun(Item) ->\n            case Item of\n                #function_def{name = Name} ->\n                    not lists:member(Name, DeadFunctions);\n                _ ->\n                    true\n            end\n        end,\n        Items\n    ),\n    Module#module_def{items = NewItems}.\n```
+filter_dead_functions(AST, DeadFunctions) when is_list(AST) ->
+    lists:map(
+        fun(Item) -> filter_dead_from_item(Item, DeadFunctions) end,
+        AST
+    ).
+
+filter_dead_from_item(#module_def{items = Items} = Module, DeadFunctions) ->
+    NewItems = lists:filter(
+        fun(Item) ->
+            case Item of
+                #function_def{name = Name} ->
+                    not lists:member(Name, DeadFunctions);
+                _ ->
+                    true
+            end
+        end,
+        Items
+    ),
+    Module#module_def{items = NewItems}.
+```
 
 **Features**:
 - Identifies unreachable functions using call graph analysis
@@ -178,11 +305,62 @@ filter_dead_functions(AST, DeadFunctions) when is_list(AST) ->\n    lists:map(\n
 
 #### Implementation
 ```erlang
-transform_ast_for_inlining(AST, InliningMap) when map_size(InliningMap) =:= 0 ->\n    AST;  % Fast path for no inlining\ntransform_ast_for_inlining(AST, InliningMap) when is_list(AST) ->\n    lists:map(\n        fun(Item) -> transform_item_for_inlining(Item, InliningMap) end,\n        AST\n    ).\n\ntransform_item_for_inlining(#module_def{items = Items} = Module, InliningMap) ->\n    % Build function definition map for lookup\n    FuncDefs = collect_function_definitions_impl(Items, #{}),\n    \n    % Transform each function, inlining calls where appropriate\n    NewItems = lists:map(\n        fun(Item) ->\n            case Item of\n                #function_def{body = Body} = FuncDef ->\n                    NewBody = inline_in_expression(Body, InliningMap, FuncDefs),\n                    FuncDef#function_def{body = NewBody};\n                _ -> Item\n            end\n        end,\n        Items\n    ),\n    Module#module_def{items = NewItems}.\n```
+transform_ast_for_inlining(AST, InliningMap) when map_size(InliningMap) =:= 0 ->
+    AST;  % Fast path for no inlining
+transform_ast_for_inlining(AST, InliningMap) when is_list(AST) ->
+    lists:map(
+        fun(Item) -> transform_item_for_inlining(Item, InliningMap) end,
+        AST
+    ).
+
+transform_item_for_inlining(#module_def{items = Items} = Module, InliningMap) ->
+    % Build function definition map for lookup
+    FuncDefs = collect_function_definitions_impl(Items, #{}),
+    
+    % Transform each function, inlining calls where appropriate
+    NewItems = lists:map(
+        fun(Item) ->
+            case Item of
+                #function_def{body = Body} = FuncDef ->
+                    NewBody = inline_in_expression(Body, InliningMap, FuncDefs),
+                    FuncDef#function_def{body = NewBody};
+                _ -> Item
+            end
+        end,
+        Items
+    ),
+    Module#module_def{items = NewItems}.
+```
 
 **Expression-Level Inlining**:
 ```erlang
-inline_in_expression(#function_call_expr{\n    function = #identifier_expr{name = FuncName},\n    args = Args\n} = CallExpr, InliningMap, FuncDefs) ->\n    case maps:get(FuncName, InliningMap, undefined) of\n        true ->\n            case maps:get(FuncName, FuncDefs, undefined) of\n                #function_def{params = Params, body = Body} ->\n                    % Create substitution map\n                    SubstMap = lists:foldl(\n                        fun({#param{name = ParamName}, Arg}, Acc) ->\n                            maps:put(ParamName, Arg, Acc)\n                        end,\n                        #{},\n                        lists:zip(Params, Args)\n                    ),\n                    % Substitute parameters in body\n                    substitute_in_expression(Body, SubstMap, InliningMap, FuncDefs);\n                _ ->\n                    % Can't inline\n                    ...\n            end;\n        _ ->\n            % Not marked for inlining\n            ...\n    end.\n```
+inline_in_expression(#function_call_expr{
+    function = #identifier_expr{name = FuncName},
+    args = Args
+} = CallExpr, InliningMap, FuncDefs) ->
+    case maps:get(FuncName, InliningMap, undefined) of
+        true ->
+            case maps:get(FuncName, FuncDefs, undefined) of
+                #function_def{params = Params, body = Body} ->
+                    % Create substitution map
+                    SubstMap = lists:foldl(
+                        fun({#param{name = ParamName}, Arg}, Acc) ->
+                            maps:put(ParamName, Arg, Acc)
+                        end,
+                        #{},
+                        lists:zip(Params, Args)
+                    ),
+                    % Substitute parameters in body
+                    substitute_in_expression(Body, SubstMap, InliningMap, FuncDefs);
+                _ ->
+                    % Can't inline
+                    ...
+            end;
+        _ ->
+            % Not marked for inlining
+            ...
+    end.
+```
 
 **Features**:
 - Fast path when inlining map is empty
@@ -199,7 +377,15 @@ inline_in_expression(#function_call_expr{\n    function = #identifier_expr{name 
 
 #### Implementation
 ```erlang
-cleanup_after_dead_code_removal(AST, DeadCodeAnalysis) ->\n    % Remove unreachable patterns\n    UnreachablePatterns = maps:get(unreachable_patterns, DeadCodeAnalysis, []),\n    AST1 = remove_unreachable_patterns(AST, UnreachablePatterns),\n    \n    % Remove redundant checks\n    RedundantChecks = maps:get(redundant_checks, DeadCodeAnalysis, []),\n    remove_redundant_checks(AST1, RedundantChecks).\n```
+cleanup_after_dead_code_removal(AST, DeadCodeAnalysis) ->
+    % Remove unreachable patterns
+    UnreachablePatterns = maps:get(unreachable_patterns, DeadCodeAnalysis, []),
+    AST1 = remove_unreachable_patterns(AST, UnreachablePatterns),
+    
+    % Remove redundant checks
+    RedundantChecks = maps:get(redundant_checks, DeadCodeAnalysis, []),
+    remove_redundant_checks(AST1, RedundantChecks).
+```
 
 **Features**:
 - Removes unreachable patterns from match expressions
@@ -213,14 +399,14 @@ cleanup_after_dead_code_removal(AST, DeadCodeAnalysis) ->\n    % Remove unreacha
 
 ### Code Added
 
-| Component | Lines | Functions |
-|-----------|-------|-----------|
-| Bounded Polymorphism | ~190 | 6 |
-| Trait System | ~230 | 10 |
-| Monomorphization | ~300 | 12 |
-| Dead Code Elimination | ~145 | 6 |
-| Inlining | ~85 | 5 |
-| **Total** | **~950** | **39** |
+| Component             | Lines | Functions |
+|-----------------------|-------|-----------|
+| Bounded Polymorphism  | ~190  | 6         |
+| Trait System          | ~230  | 10        |
+| Monomorphization      | ~300  | 12        |
+| Dead Code Elimination | ~145  | 6         |
+| Inlining              | ~85   | 5         |
+| **Total**             | **~950** | **39** |
 
 ### Files Modified
 
