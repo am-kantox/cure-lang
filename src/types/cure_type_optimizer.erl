@@ -711,21 +711,321 @@ analyze_dead_code_with_types(AST, Context) ->
         redundant_checks => RedundantChecks
     }.
 
-%% Missing stub functions for dead code analysis
-find_unreachable_functions_by_type(_AST, _TypeInfo) -> [].
+%% Find unreachable functions using type information
+find_unreachable_functions_by_type(AST, TypeInfo) ->
+    % Collect all function definitions
+    AllFunctions = collect_all_function_names(AST),
 
-find_unreachable_patterns_by_types(_AST, _TypeInfo) -> [].
+    % Get call sites from type info
+    CallSites = TypeInfo#type_info.call_sites,
 
-find_redundant_type_checks(_AST, _TypeInfo) -> [].
+    % Find functions that are never called
+    CalledFunctions = maps:keys(CallSites),
 
-%% Missing stub functions for transformations
-transform_ast_for_monomorphization(AST, _MonomorphicInstances) -> AST.
+    % Find exported and entry point functions (never considered dead)
+    ExportedFunctions = find_exported_functions(AST),
+    EntryPoints = find_entry_points(AST),
+    ProtectedFunctions = ExportedFunctions ++ EntryPoints,
 
-transform_ast_for_inlining(AST, _InliningMap) -> AST.
+    % Unreachable = All - Called - Protected
+    Unreachable = (AllFunctions -- CalledFunctions) -- ProtectedFunctions,
 
-filter_dead_functions(AST, _DeadFunctions) -> AST.
+    cure_utils:debug("[DCE] Found ~p unreachable functions~n", [length(Unreachable)]),
+    Unreachable.
 
-cleanup_after_dead_code_removal(AST, _DeadCodeAnalysis) -> AST.
+%% Find unreachable patterns using type analysis
+find_unreachable_patterns_by_types(AST, TypeInfo) ->
+    % Find patterns that can never match based on type information
+    FunctionTypes = TypeInfo#type_info.function_types,
+
+    UnreachablePatterns = lists:flatmap(
+        fun(Item) ->
+            case Item of
+                #function_def{name = Name, body = Body} ->
+                    % Get function's type signature
+                    case maps:get(Name, FunctionTypes, undefined) of
+                        undefined ->
+                            [];
+                        FuncType ->
+                            find_unreachable_patterns_in_expr(Body, FuncType)
+                    end;
+                #module_def{items = Items} ->
+                    find_unreachable_patterns_by_types(Items, TypeInfo);
+                _ ->
+                    []
+            end
+        end,
+        if
+            is_list(AST) -> AST;
+            true -> [AST]
+        end
+    ),
+
+    cure_utils:debug("[DCE] Found ~p unreachable patterns~n", [length(UnreachablePatterns)]),
+    UnreachablePatterns.
+
+%% Find unreachable patterns in expression
+find_unreachable_patterns_in_expr(#match_expr{patterns = Patterns, expr = Expr}, FuncType) ->
+    % Check if any match clauses are unreachable based on expr type
+    lists:filtermap(
+        fun(Clause) ->
+            #match_clause{pattern = Pattern} = Clause,
+            case is_pattern_unreachable(Pattern, Expr, FuncType) of
+                true -> {true, {unreachable_pattern, Pattern}};
+                false -> false
+            end
+        end,
+        Patterns
+    );
+find_unreachable_patterns_in_expr(_, _FuncType) ->
+    [].
+
+%% Check if pattern is unreachable
+is_pattern_unreachable(_Pattern, _Value, _FuncType) ->
+    % Placeholder: would use type inference to determine if pattern can never match
+    false.
+
+%% Find redundant type checks
+find_redundant_type_checks(AST, TypeInfo) ->
+    % Find type checks that are redundant given type information
+    FunctionTypes = TypeInfo#type_info.function_types,
+
+    RedundantChecks = lists:flatmap(
+        fun(Item) ->
+            case Item of
+                #function_def{name = Name, body = Body} ->
+                    % Get function's type signature
+                    case maps:get(Name, FunctionTypes, undefined) of
+                        undefined ->
+                            [];
+                        FuncType ->
+                            find_redundant_checks_in_expr(Body, FuncType)
+                    end;
+                #module_def{items = Items} ->
+                    find_redundant_type_checks(Items, TypeInfo);
+                _ ->
+                    []
+            end
+        end,
+        if
+            is_list(AST) -> AST;
+            true -> [AST]
+        end
+    ),
+
+    cure_utils:debug("[DCE] Found ~p redundant type checks~n", [length(RedundantChecks)]),
+    RedundantChecks.
+
+%% Find redundant checks in expression
+find_redundant_checks_in_expr(#binary_op_expr{op = Op, left = Left} = Expr, FuncType) when
+    Op =:= 'is_integer'; Op =:= 'is_atom'; Op =:= 'is_list'
+->
+    % Check if type is already known from signature
+    case infer_expr_type(Left) of
+        {ok, InferredType} ->
+            case is_type_check_redundant(Op, InferredType, FuncType) of
+                true -> [{redundant_check, Expr}];
+                false -> []
+            end;
+        _ ->
+            []
+    end;
+find_redundant_checks_in_expr(_, _FuncType) ->
+    [].
+
+%% Check if type check is redundant
+is_type_check_redundant(_Op, _InferredType, _FuncType) ->
+    % Placeholder: would check if inferred type makes check redundant
+    false.
+
+%% Helper: Find exported functions
+find_exported_functions(AST) when is_list(AST) ->
+    lists:flatmap(fun find_exported_functions/1, AST);
+find_exported_functions(#module_def{exports = Exports}) ->
+    [Name || #export_spec{name = Name} <- Exports];
+find_exported_functions(_) ->
+    [].
+
+%% Transform AST for monomorphization
+transform_ast_for_monomorphization(AST, MonomorphicInstances) when is_list(AST) ->
+    % Transform each item in the AST
+    lists:map(
+        fun(Item) -> transform_item_for_mono(Item, MonomorphicInstances) end,
+        AST
+    );
+transform_ast_for_monomorphization(AST, MonomorphicInstances) ->
+    transform_item_for_mono(AST, MonomorphicInstances).
+
+%% Transform individual AST item for monomorphization
+transform_item_for_mono(#module_def{items = Items} = Module, Instances) ->
+    % Add specialized functions and transform calls in existing functions
+    NewItems = lists:flatmap(
+        fun(Item) ->
+            case Item of
+                #function_def{name = Name} = FuncDef ->
+                    % Transform function body to use specialized calls
+                    TransformedFunc = transform_function_calls(FuncDef, Instances),
+                    % Note: Specialized versions should be generated in Phase 3.2
+                    % This phase just transforms calls
+                    [TransformedFunc];
+                _ ->
+                    [Item]
+            end
+        end,
+        Items
+    ),
+    Module#module_def{items = NewItems};
+transform_item_for_mono(Item, _Instances) ->
+    Item.
+
+%% Transform function calls to use specialized versions
+transform_function_calls(#function_def{body = Body} = FuncDef, Instances) ->
+    NewBody = transform_expr_for_monomorphization(Body, Instances),
+    FuncDef#function_def{body = NewBody};
+transform_function_calls(FuncDef, _Instances) ->
+    FuncDef.
+
+%% Transform AST for inlining
+transform_ast_for_inlining(AST, InliningMap) when map_size(InliningMap) =:= 0 ->
+    AST;
+transform_ast_for_inlining(AST, InliningMap) when is_list(AST) ->
+    lists:map(
+        fun(Item) -> transform_item_for_inlining(Item, InliningMap) end,
+        AST
+    );
+transform_ast_for_inlining(AST, InliningMap) ->
+    transform_item_for_inlining(AST, InliningMap).
+
+%% Transform item for inlining
+transform_item_for_inlining(#module_def{items = Items} = Module, InliningMap) ->
+    % Build function definition map for lookup
+    FuncDefs = collect_function_definitions_impl(Items, #{}),
+
+    % Transform each function, inlining calls where appropriate
+    NewItems = lists:map(
+        fun(Item) ->
+            case Item of
+                #function_def{body = Body} = FuncDef ->
+                    NewBody = inline_in_expression(Body, InliningMap, FuncDefs),
+                    FuncDef#function_def{body = NewBody};
+                _ ->
+                    Item
+            end
+        end,
+        Items
+    ),
+    Module#module_def{items = NewItems};
+transform_item_for_inlining(Item, _InliningMap) ->
+    Item.
+
+%% Inline function calls in expression
+inline_in_expression(
+    #function_call_expr{
+        function = #identifier_expr{name = FuncName},
+        args = Args
+    } = CallExpr,
+    InliningMap,
+    FuncDefs
+) ->
+    % Check if this call should be inlined
+    case maps:get(FuncName, InliningMap, undefined) of
+        true ->
+            % Inline the function
+            case maps:get(FuncName, FuncDefs, undefined) of
+                #function_def{params = Params, body = Body} when length(Params) =:= length(Args) ->
+                    % Create substitution map
+                    SubstMap = lists:foldl(
+                        fun({#param{name = ParamName}, Arg}, Acc) ->
+                            maps:put(ParamName, Arg, Acc)
+                        end,
+                        #{},
+                        lists:zip(Params, Args)
+                    ),
+                    % Substitute parameters in body
+                    substitute_in_expression(Body, SubstMap, InliningMap, FuncDefs);
+                _ ->
+                    % Can't inline, transform args
+                    NewArgs = [inline_in_expression(Arg, InliningMap, FuncDefs) || Arg <- Args],
+                    CallExpr#function_call_expr{args = NewArgs}
+            end;
+        _ ->
+            % Not inlined, transform args
+            NewArgs = [inline_in_expression(Arg, InliningMap, FuncDefs) || Arg <- Args],
+            CallExpr#function_call_expr{args = NewArgs}
+    end;
+inline_in_expression(#binary_op_expr{left = Left, right = Right} = Expr, InliningMap, FuncDefs) ->
+    Expr#binary_op_expr{
+        left = inline_in_expression(Left, InliningMap, FuncDefs),
+        right = inline_in_expression(Right, InliningMap, FuncDefs)
+    };
+inline_in_expression(Expr, _InliningMap, _FuncDefs) ->
+    Expr.
+
+%% Substitute variables in expression
+substitute_in_expression(#identifier_expr{name = Name} = Expr, SubstMap, _InliningMap, _FuncDefs) ->
+    maps:get(Name, SubstMap, Expr);
+substitute_in_expression(#function_call_expr{args = Args} = Expr, SubstMap, InliningMap, FuncDefs) ->
+    NewArgs = [substitute_in_expression(Arg, SubstMap, InliningMap, FuncDefs) || Arg <- Args],
+    inline_in_expression(Expr#function_call_expr{args = NewArgs}, InliningMap, FuncDefs);
+substitute_in_expression(
+    #binary_op_expr{left = Left, right = Right} = Expr, SubstMap, InliningMap, FuncDefs
+) ->
+    Expr#binary_op_expr{
+        left = substitute_in_expression(Left, SubstMap, InliningMap, FuncDefs),
+        right = substitute_in_expression(Right, SubstMap, InliningMap, FuncDefs)
+    };
+substitute_in_expression(Expr, _SubstMap, _InliningMap, _FuncDefs) ->
+    Expr.
+
+%% Filter dead functions from AST
+filter_dead_functions(AST, DeadFunctions) when is_list(AST) ->
+    lists:map(
+        fun(Item) -> filter_dead_from_item(Item, DeadFunctions) end,
+        AST
+    );
+filter_dead_functions(AST, DeadFunctions) ->
+    filter_dead_from_item(AST, DeadFunctions).
+
+%% Filter dead functions from item
+filter_dead_from_item(#module_def{items = Items} = Module, DeadFunctions) ->
+    NewItems = lists:filter(
+        fun(Item) ->
+            case Item of
+                #function_def{name = Name} ->
+                    not lists:member(Name, DeadFunctions);
+                _ ->
+                    true
+            end
+        end,
+        Items
+    ),
+    Module#module_def{items = NewItems};
+filter_dead_from_item(Item, _DeadFunctions) ->
+    Item.
+
+%% Cleanup after dead code removal
+cleanup_after_dead_code_removal(AST, DeadCodeAnalysis) ->
+    % Remove unreachable patterns
+    UnreachablePatterns = maps:get(unreachable_patterns, DeadCodeAnalysis, []),
+    AST1 = remove_unreachable_patterns(AST, UnreachablePatterns),
+
+    % Remove redundant checks
+    RedundantChecks = maps:get(redundant_checks, DeadCodeAnalysis, []),
+    remove_redundant_checks(AST1, RedundantChecks).
+
+%% Remove unreachable patterns
+remove_unreachable_patterns(AST, []) ->
+    AST;
+remove_unreachable_patterns(AST, _Patterns) ->
+    % TODO: Implement pattern removal
+    AST.
+
+%% Remove redundant checks
+remove_redundant_checks(AST, []) ->
+    AST;
+remove_redundant_checks(AST, _Checks) ->
+    % TODO: Implement redundant check removal
+    AST.
 
 %% Missing helper functions
 collect_function_definitions(AST) ->
@@ -1567,29 +1867,6 @@ filter_profitable_candidates(CandidateList) ->
         end,
         CandidateList
     ).
-
-%% Generate specialized function name (legacy)
-generate_specialized_name_legacy(FuncName, TypePattern) ->
-    TypeSuffix = create_type_suffix(TypePattern),
-    SpecName = list_to_atom(atom_to_list(FuncName) ++ "_spec_" ++ TypeSuffix),
-    SpecName.
-
-%% Create type suffix for specialized function name
-create_type_suffix(TypePattern) ->
-    TypeStrings = lists:map(fun type_to_string/1, TypePattern),
-    string:join(TypeStrings, "_").
-
-%% Convert type to string representation
-type_to_string({primitive_type, Name}) ->
-    string:to_lower(atom_to_list(Name));
-type_to_string({list_type}) ->
-    "list";
-type_to_string({function_type}) ->
-    "func";
-type_to_string({unknown_type}) ->
-    "unk";
-type_to_string(_) ->
-    "gen".
 
 %% Create specialized function definition
 create_specialized_function(OriginalFuncName, TypePattern, SpecName) ->
@@ -5852,7 +6129,6 @@ generate_specialized_name(BaseName, TypeArgs) ->
 type_to_name_suffix({primitive_type, Name}) -> atom_to_list(Name);
 type_to_name_suffix({list_type, ElemType, _}) -> "List_" ++ type_to_name_suffix(ElemType);
 type_to_name_suffix({tuple_type, _, _}) -> "Tuple";
-type_to_name_suffix(#tuple_type{}) -> "Tuple";
 type_to_name_suffix(_) -> "T".
 
 %% Create type substitution map from type params to type args

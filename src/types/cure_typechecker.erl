@@ -987,11 +987,14 @@ check_polymorphic_function(
                             _ -> convert_type_with_env(ReturnType, FinalEnv)
                         end},
 
+                % Extract constraints from type parameters with bounds
+                Constraints = extract_type_param_constraints(TypeParams, Env),
+                cure_utils:debug("[POLY] Extracted constraints: ~p~n", [Constraints]),
+
                 % Wrap in poly_type for polymorphic function
                 PolyFuncType = #poly_type{
                     type_params = TypeParams,
-                    % TODO: Handle bounded polymorphism
-                    constraints = [],
+                    constraints = Constraints,
                     body_type = MonoFuncType,
                     location = Location
                 },
@@ -3759,10 +3762,23 @@ check_trait_methods([_ | Rest], Env, Location) ->
 %% Check where clause
 check_where_clause(undefined, _Env, _Location) ->
     ok;
-check_where_clause(_WhereClause, _Env, _Location) ->
-    % TODO: Implement proper where clause checking
-    % For now, accept all where clauses
-    ok.
+check_where_clause(WhereClause, Env, Location) ->
+    % Where clause should be an expression that evaluates to constraint satisfaction
+    % For trait bounds, we need to verify each bound in the clause
+    cure_utils:debug("[WHERE] Checking where clause: ~p~n", [WhereClause]),
+
+    % Convert where clause to constraint list
+    case parse_where_clause_constraints(WhereClause) of
+        {ok, Constraints} ->
+            % Verify each constraint
+            check_trait_constraints(Constraints, Env, Location);
+        {error, Reason} ->
+            {error, #typecheck_error{
+                message = "Invalid where clause",
+                location = Location,
+                details = Reason
+            }}
+    end.
 
 %% Get required methods from trait definition
 get_required_methods(TraitDef) when is_tuple(TraitDef) ->
@@ -3822,9 +3838,8 @@ check_each_impl_method(
         false ->
             % Extra method (allowed)
             check_each_impl_method(Rest, RequiredMethods, Env, Location);
-        #method_signature{} ->
+        #method_signature{params = SigParams, return_type = SigReturnType} ->
             % Check body type matches signature
-            % TODO: Full type checking of method body
             case Body of
                 undefined ->
                     {error, #typecheck_error{
@@ -3833,16 +3848,45 @@ check_each_impl_method(
                         details = {missing_body, Name}
                     }};
                 _ ->
-                    check_each_impl_method(Rest, RequiredMethods, Env, Location)
+                    % Full type checking of method body
+                    case
+                        check_method_body_type(Name, SigParams, SigReturnType, Body, Env, Location)
+                    of
+                        ok ->
+                            check_each_impl_method(Rest, RequiredMethods, Env, Location);
+                        {error, Error} ->
+                            {error, Error}
+                    end
             end
     end;
 check_each_impl_method([_ | Rest], RequiredMethods, Env, Location) ->
     check_each_impl_method(Rest, RequiredMethods, Env, Location).
 
 %% Check implementation associated types
-check_impl_associated_types(_AssocTypes, _TraitDef, _Env, _Location) ->
-    % TODO: Implement associated type checking
-    ok.
+check_impl_associated_types(AssocTypes, TraitDef, Env, Location) ->
+    % Get required associated types from trait definition
+    RequiredAssocTypes = get_required_associated_types(TraitDef),
+
+    cure_utils:debug("[TRAIT] Checking associated types: ~p against ~p~n", [
+        maps:keys(AssocTypes), RequiredAssocTypes
+    ]),
+
+    % Check all required associated types are provided
+    RequiredNames = [Name || #associated_type{name = Name} <- RequiredAssocTypes],
+    ProvidedNames = maps:keys(AssocTypes),
+    MissingAssocTypes = RequiredNames -- ProvidedNames,
+
+    case MissingAssocTypes of
+        [] ->
+            % Verify each provided associated type satisfies bounds
+            verify_associated_type_bounds(AssocTypes, RequiredAssocTypes, Env, Location);
+        Missing ->
+            {error, #typecheck_error{
+                message = io_lib:format("Missing associated type definitions: ~p", [Missing]),
+                location = Location,
+                details = {missing_associated_types, Missing}
+            }}
+    end.
 
 %% Resolve type expression
 resolve_type(undefined, _Env) ->
@@ -3884,3 +3928,193 @@ store_trait_impl(Env, TraitName, ForType, TraitImpl) ->
     % Store under special key for trait implementations
     ImplKey = {trait_impl, TraitName, ForType},
     cure_types:extend_env(Env, ImplKey, TraitImpl).
+
+%% ============================================================================
+%% Bounded Polymorphism and Trait Constraint Checking
+%% ============================================================================
+
+%% Extract trait constraints from type parameters with bounds
+extract_type_param_constraints(TypeParams, _Env) ->
+    lists:flatmap(
+        fun(Param) ->
+            case Param of
+                % Type parameter with bounds: T: Trait1 + Trait2
+                #type_param_decl{name = TypeVar, bounds = Bounds} when Bounds =/= [] ->
+                    % Create constraint for each bound
+                    [{trait_bound, TypeVar, Bound} || Bound <- Bounds];
+                % Simple type parameter without bounds
+                _ ->
+                    []
+            end
+        end,
+        TypeParams
+    ).
+
+%% Parse where clause into constraint list
+parse_where_clause_constraints(WhereClause) ->
+    % Where clause can be:
+    % - Single constraint: T: Eq
+    % - Multiple constraints: T: Eq, U: Ord
+    % - Complex expressions
+    try
+        Constraints = extract_constraints_from_expr(WhereClause),
+        {ok, Constraints}
+    catch
+        _:Reason ->
+            {error, {parse_failed, Reason}}
+    end.
+
+%% Extract constraints from expression
+extract_constraints_from_expr(#binary_op_expr{op = ',', left = Left, right = Right}) ->
+    % Multiple constraints separated by comma
+    extract_constraints_from_expr(Left) ++ extract_constraints_from_expr(Right);
+extract_constraints_from_expr(#binary_op_expr{op = ':', left = TypeVar, right = TraitExpr}) ->
+    % Single bound: T: Trait
+    case {TypeVar, TraitExpr} of
+        {#identifier_expr{name = TVar}, #identifier_expr{name = TraitName}} ->
+            [{trait_bound, TVar, TraitName}];
+        _ ->
+            []
+    end;
+extract_constraints_from_expr(_) ->
+    [].
+
+%% Check trait constraints are satisfied
+check_trait_constraints([], _Env, _Location) ->
+    ok;
+check_trait_constraints([{trait_bound, TypeVar, TraitName} | Rest], Env, Location) ->
+    % Verify trait exists
+    case lookup_trait(TraitName, Env) of
+        {ok, _TraitDef} ->
+            cure_utils:debug("[CONSTRAINT] Verified trait bound ~p: ~p~n", [TypeVar, TraitName]),
+            check_trait_constraints(Rest, Env, Location);
+        error ->
+            {error, #typecheck_error{
+                message = io_lib:format("Trait ~p not found for bound on ~p", [TraitName, TypeVar]),
+                location = Location,
+                details = {undefined_trait, TraitName}
+            }}
+    end;
+check_trait_constraints([_ | Rest], Env, Location) ->
+    check_trait_constraints(Rest, Env, Location).
+
+%% Check method body type against signature
+check_method_body_type(MethodName, SigParams, SigReturnType, Body, Env, Location) ->
+    cure_utils:debug("[METHOD] Type checking body of method ~p~n", [MethodName]),
+
+    try
+        % Add parameters to environment
+        {_ParamTypes, EnvWithParams} = process_parameters(SigParams, Env),
+
+        % Infer body type
+        BodyTuple = convert_expr_to_tuple(Body),
+        case cure_types:infer_type(BodyTuple, EnvWithParams) of
+            {ok, InferenceResult} ->
+                BodyType = element(2, InferenceResult),
+
+                % Check body type matches signature return type
+                case SigReturnType of
+                    undefined ->
+                        % No declared return type, accept body type
+                        ok;
+                    _ ->
+                        ExpectedType = convert_type_with_env(SigReturnType, EnvWithParams),
+                        case cure_types:unify(BodyType, ExpectedType) of
+                            {ok, _} ->
+                                cure_utils:debug("[METHOD] Body type ~p matches signature ~p~n", [
+                                    BodyType, ExpectedType
+                                ]),
+                                ok;
+                            {error, Reason} ->
+                                {error, #typecheck_error{
+                                    message = io_lib:format(
+                                        "Method ~p body type ~p does not match signature ~p",
+                                        [MethodName, BodyType, ExpectedType]
+                                    ),
+                                    location = Location,
+                                    details = {type_mismatch, Reason}
+                                }}
+                        end
+                end;
+            {error, Reason} ->
+                {error, #typecheck_error{
+                    message = io_lib:format("Failed to infer type for method ~p body", [MethodName]),
+                    location = Location,
+                    details = {inference_failed, Reason}
+                }}
+        end
+    catch
+        _:Error ->
+            {error, #typecheck_error{
+                message = io_lib:format("Exception while checking method ~p", [MethodName]),
+                location = Location,
+                details = {exception, Error}
+            }}
+    end.
+
+%% Get required associated types from trait definition
+get_required_associated_types(#trait_def{associated_types = AssocTypes}) ->
+    AssocTypes;
+get_required_associated_types({trait_type, _Name, _TypeParams, _Methods, AssocTypes}) ->
+    AssocTypes;
+get_required_associated_types(_) ->
+    [].
+
+%% Verify associated type bounds are satisfied
+verify_associated_type_bounds(AssocTypes, RequiredAssocTypes, Env, Location) ->
+    % For each provided associated type, verify it satisfies the bounds
+    Results = maps:fold(
+        fun(Name, ProvidedType, Acc) ->
+            case find_associated_type_def(Name, RequiredAssocTypes) of
+                {ok, #associated_type{bounds = Bounds}} ->
+                    case verify_type_satisfies_bounds(ProvidedType, Bounds, Env, Location) of
+                        ok -> Acc;
+                        {error, Error} -> [Error | Acc]
+                    end;
+                not_found ->
+                    % Extra associated type (allowed, just ignore)
+                    Acc
+            end
+        end,
+        [],
+        AssocTypes
+    ),
+
+    case Results of
+        [] -> ok;
+        [Error | _] -> {error, Error}
+    end.
+
+%% Find associated type definition by name
+find_associated_type_def(Name, AssocTypes) ->
+    case lists:keyfind(Name, #associated_type.name, AssocTypes) of
+        false -> not_found;
+        AssocType -> {ok, AssocType}
+    end.
+
+%% Verify a type satisfies trait bounds
+verify_type_satisfies_bounds(_Type, [], _Env, _Location) ->
+    ok;
+verify_type_satisfies_bounds(Type, [Bound | Rest], Env, Location) ->
+    % Check if there's a trait implementation for Type implementing Bound
+    case check_trait_implementation_exists(Type, Bound, Env) of
+        true ->
+            verify_type_satisfies_bounds(Type, Rest, Env, Location);
+        false ->
+            {error, #typecheck_error{
+                message = io_lib:format("Type ~p does not implement required trait ~p", [
+                    Type, Bound
+                ]),
+                location = Location,
+                details = {missing_trait_impl, Type, Bound}
+            }}
+    end.
+
+%% Check if a trait implementation exists for a type
+check_trait_implementation_exists(Type, TraitName, Env) ->
+    % Look for implementation in environment
+    ImplKey = {trait_impl, TraitName, Type},
+    case cure_types:lookup_env(Env, ImplKey) of
+        {ok, _} -> true;
+        error -> false
+    end.
