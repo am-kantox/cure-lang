@@ -45,7 +45,7 @@ LSP_BEAM_FILES = $(patsubst $(LSP_DIR)/%.erl,$(LSP_EBIN_DIR)/%.beam,$(LSP_SRC))
 # Compiler options
 ERLC_OPTS = +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(EBIN_DIR)
 
-.PHONY: all clean test test-basic test-integration test-performance docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-deps lsp-scripts lsp-shell
+.PHONY: all clean clean-all test test-basic test-integration test-performance docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-deps lsp-scripts lsp-shell
 
 all: setup compiler stdlib
 
@@ -153,6 +153,15 @@ clean:
 	find . -name "*.failed" -delete 2>/dev/null || true
 	@echo "Build artifacts cleaned"
 
+# Clean all artifacts including documentation and caches
+clean-all: clean
+	@echo "Cleaning all artifacts..."
+	rm -rf docs/_build
+	rm -rf .rebar3
+	find . -name "*.beam" -delete 2>/dev/null || true
+	find . -name "erl_crash.dump" -delete 2>/dev/null || true
+	@echo "All artifacts cleaned"
+
 # Run tests
 test: tests
 	@echo "Running Cure compiler test suite..."
@@ -174,9 +183,22 @@ test-performance: tests
 	$(ERL) -pa $(EBIN_DIR) -pa $(LIB_EBIN_DIR) -pa $(LIB_EBIN_DIR)/std -noshell -s test_runner run_performance -s init stop
 
 # Generate documentation
-docs:
+docs: compiler
 	@echo "Generating documentation..."
-	# TODO: Add documentation generation
+	@mkdir -p docs/_build
+	@echo "Generating EDoc documentation for Erlang modules..."
+	@$(ERL) -noshell -pa $(EBIN_DIR) -eval '
+		Modules = [cure_lexer, cure_parser, cure_ast, cure_typechecker, cure_types, 
+		           cure_codegen, cure_fsm_runtime, cure_error_reporter, 
+		           cure_lsp_server, cure_guard_codegen, cure_smt_solver], 
+		edoc:application(cure, [{dir, "docs/_build"}, 
+		                        {modules, Modules}, 
+		                        {overview, "README.md"}, 
+		                        {title, "Cure Programming Language"}, 
+		                        {preprocess, true}]), 
+		init:stop().'
+	@echo "Documentation generated in docs/_build/"
+	@echo "Open docs/_build/index.html in your browser"
 
 # Install the compiler
 install: compiler
@@ -247,7 +269,8 @@ help:
 	@echo "  test-integration - Run only integration tests"
 	@echo "  test-performance - Run performance benchmark tests"
 	@echo "  clean      - Remove build artifacts"
-	@echo "  docs       - Generate documentation"
+	@echo "  clean-all  - Remove all artifacts including docs and caches"
+	@echo "  docs       - Generate HTML documentation"
 	@echo "  install    - Install the compiler"
 	@echo "  shell      - Start Erlang shell with Cure modules loaded"
 	@echo "  lsp-shell  - Start Erlang shell with LSP modules loaded"
