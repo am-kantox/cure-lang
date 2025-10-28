@@ -315,6 +315,10 @@ check_item(FSM = #fsm_def{}, Env) ->
     check_fsm(FSM, Env);
 check_item(TypeDef = #type_def{}, Env) ->
     check_type_definition(TypeDef, Env);
+check_item(TraitDef = #trait_def{}, Env) ->
+    check_trait_def(TraitDef, Env);
+check_item(TraitImpl = #trait_impl{}, Env) ->
+    check_trait_impl(TraitImpl, Env);
 check_item(
     #record_def{
         name = RecordName, type_params = _TypeParams, fields = Fields, location = _Location
@@ -497,10 +501,11 @@ check_module({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
     end.
 
 %% Check function definition - New AST format
-% Record format with multi-clause support
+% Record format with multi-clause support (with polymorphic type params)
 check_function(
     #function_def{
         name = Name,
+        type_params = TypeParams,
         clauses = Clauses,
         params = _Params,
         return_type = _ReturnType,
@@ -512,11 +517,21 @@ check_function(
     Env
 ) when Clauses =/= undefined andalso length(Clauses) > 0 ->
     % Multi-clause function - check each clause
-    cure_utils:debug("[CHECK_FUNC] Checking multi-clause function ~p~n", [Name]),
-    check_multiclause_function(Name, Clauses, Location, Env);
+    cure_utils:debug("[CHECK_FUNC] Checking multi-clause function ~p with type params ~p~n", [
+        Name, TypeParams
+    ]),
+    case TypeParams of
+        undefined ->
+            check_multiclause_function(Name, Clauses, Location, Env);
+        [] ->
+            check_multiclause_function(Name, Clauses, Location, Env);
+        _ ->
+            check_multiclause_polymorphic_function(Name, TypeParams, Clauses, Location, Env)
+    end;
 check_function(
     #function_def{
         name = Name,
+        type_params = TypeParams,
         params = Params,
         return_type = ReturnType,
         constraint = Constraint,
@@ -526,10 +541,24 @@ check_function(
     },
     Env
 ) ->
-    % Single-clause function (record format, backward compatible)
-    check_single_clause_function(
-        Name, Params, ReturnType, Constraint, Body, IsPrivate, Location, Env
-    );
+    % Single-clause function (record format, may be polymorphic)
+    case TypeParams of
+        undefined ->
+            % No type params - regular monomorphic function
+            check_single_clause_function(
+                Name, Params, ReturnType, Constraint, Body, IsPrivate, Location, Env
+            );
+        [] ->
+            % Empty type params list - regular monomorphic function
+            check_single_clause_function(
+                Name, Params, ReturnType, Constraint, Body, IsPrivate, Location, Env
+            );
+        _ ->
+            % Polymorphic function with type parameters
+            check_polymorphic_function(
+                Name, TypeParams, Params, ReturnType, Constraint, Body, IsPrivate, Location, Env
+            )
+    end;
 % 7-parameter format (old format without is_private)
 check_function(
     {function_def, Name, Params, ReturnType, Constraint, Body, Location},
@@ -874,6 +903,169 @@ check_multiclause_function(Name, Clauses, Location, Env) ->
             {ok, Env, success_result({multiclause_function, Name})};
         Errors ->
             % Some clauses failed
+            {ok, Env, #typecheck_result{
+                success = false,
+                type = undefined,
+                errors = Errors,
+                warnings = []
+            }}
+    end.
+
+%% Check polymorphic function with type parameters
+check_polymorphic_function(
+    Name, TypeParams, Params, ReturnType, Constraint, Body, _IsPrivate, Location, Env
+) ->
+    cure_utils:debug("[POLY] Checking polymorphic function ~p with type params ~p~n", [
+        Name, TypeParams
+    ]),
+    try
+        % Extract type parameter names
+        TypeParamNames = cure_types:extract_type_param_names(TypeParams),
+        cure_utils:debug("[POLY] Type parameter names: ~p~n", [TypeParamNames]),
+
+        % Add type parameters as type variables to the environment
+        EnvWithTypeParams = lists:foldl(
+            fun(TParamName, AccEnv) ->
+                % Treat type parameters as primitive types in the environment during checking
+                cure_types:extend_env(AccEnv, TParamName, {primitive_type, TParamName})
+            end,
+            Env,
+            TypeParamNames
+        ),
+
+        % Process function parameters in the type-parameter-enhanced environment
+        {ParamTypes, ParamEnv} = process_parameters(Params, EnvWithTypeParams),
+
+        % Process return type if present
+        EnvWithReturnTypeParams =
+            case ReturnType of
+                undefined ->
+                    ParamEnv;
+                _ ->
+                    cure_utils:debug("[POLY] Processing return type ~p~n", [ReturnType]),
+                    extract_and_add_type_params_safe(ReturnType, ParamEnv)
+            end,
+
+        % Check and process constraint if present
+        FinalEnv =
+            case Constraint of
+                undefined ->
+                    EnvWithReturnTypeParams;
+                _ ->
+                    case
+                        cure_types:infer_type(
+                            convert_expr_to_tuple(Constraint), EnvWithReturnTypeParams
+                        )
+                    of
+                        {ok, InferenceResult} ->
+                            ConstraintType = element(2, InferenceResult),
+                            case cure_types:unify(ConstraintType, {primitive_type, 'Bool'}) of
+                                {ok, _} ->
+                                    process_when_clause_constraint(
+                                        Constraint, EnvWithReturnTypeParams, Location
+                                    );
+                                {error, Reason} ->
+                                    throw({constraint_not_bool, Reason, Location})
+                            end;
+                        {error, Reason} ->
+                            throw({constraint_inference_failed, Reason, Location})
+                    end
+            end,
+
+        % Check function body
+        cure_utils:debug("[POLY] Checking body for function ~p~n", [Name]),
+        BodyTuple = convert_expr_to_tuple(Body),
+        case cure_types:infer_type(BodyTuple, FinalEnv) of
+            {ok, InferenceResult2} ->
+                BodyType = element(2, InferenceResult2),
+
+                % Construct the polymorphic function type
+                MonoFuncType =
+                    {function_type, ParamTypes,
+                        case ReturnType of
+                            undefined -> BodyType;
+                            _ -> convert_type_with_env(ReturnType, FinalEnv)
+                        end},
+
+                % Wrap in poly_type for polymorphic function
+                PolyFuncType = #poly_type{
+                    type_params = TypeParams,
+                    % TODO: Handle bounded polymorphism
+                    constraints = [],
+                    body_type = MonoFuncType,
+                    location = Location
+                },
+
+                cure_utils:debug("[POLY] Adding polymorphic function ~p with type: ~p~n", [
+                    Name, PolyFuncType
+                ]),
+                NewEnv = cure_types:extend_env(Env, Name, PolyFuncType),
+                {ok, NewEnv, success_result(PolyFuncType)};
+            {error, InferReason} ->
+                cure_utils:debug("[POLY] Failed to infer body type: ~p~n", [InferReason]),
+                ErrorMsg =
+                    #typecheck_error{
+                        message = "Failed to infer polymorphic function body type",
+                        location = Location,
+                        details = {inference_failed, InferReason}
+                    },
+                {ok, Env, error_result(ErrorMsg)}
+        end
+    catch
+        {ErrorType, Details, ErrorLocation} ->
+            ThrownError =
+                #typecheck_error{
+                    message = format_error_type(ErrorType),
+                    location = ErrorLocation,
+                    details = Details
+                },
+            {ok, Env, error_result(ThrownError)}
+    end.
+
+%% Check multi-clause polymorphic function
+check_multiclause_polymorphic_function(Name, TypeParams, Clauses, Location, Env) ->
+    cure_utils:debug(
+        "[POLY-MULTI] Checking ~p clauses for polymorphic function ~p with type params ~p~n", [
+            length(Clauses), Name, TypeParams
+        ]
+    ),
+
+    % Check each clause as polymorphic functions
+    ClauseResults = lists:map(
+        fun(Clause) ->
+            #function_clause{
+                params = Params,
+                return_type = ReturnType,
+                constraint = Constraint,
+                body = Body
+            } = Clause,
+
+            % Check this clause as a polymorphic function
+            check_polymorphic_function(
+                Name, TypeParams, Params, ReturnType, Constraint, Body, false, Location, Env
+            )
+        end,
+        Clauses
+    ),
+
+    % Collect any errors
+    ClauseErrors = lists:flatten(
+        lists:map(
+            fun(Result) ->
+                case Result of
+                    {ok, _, #typecheck_result{errors = Errors}} -> Errors;
+                    _ -> []
+                end
+            end,
+            ClauseResults
+        )
+    ),
+
+    % If all clauses pass, return success
+    case ClauseErrors of
+        [] ->
+            {ok, Env, success_result({polymorphic_multiclause_function, Name})};
+        Errors ->
             {ok, Env, #typecheck_result{
                 success = false,
                 type = undefined,
@@ -1391,7 +1583,8 @@ builtin_env() ->
     Env5_1 = cure_types:extend_env(Env5, 'Unit', {primitive_type, 'Unit'}),
 
     % Add dependent types
-    Env6 = cure_types:extend_env(Env5_1, 'Nat', {refined_type, 'Int', fun(N) -> N >= 0 end}),
+    % Use primitive Nat type (algebraic with Zero/Succ constructors)
+    Env6 = cure_types:extend_env(Env5_1, 'Nat', {primitive_type, 'Nat'}),
     Env7 = cure_types:extend_env(Env6, 'Pos', {refined_type, 'Int', fun(N) -> N > 0 end}),
 
     % Add Nat constructors
@@ -3314,3 +3507,380 @@ all_guards_mutually_exclusive(_Guards, _Env) ->
     % Simplified check - would use SMT solver to verify
     % For now, return unknown
     unknown.
+
+%% ============================================================================
+%% Trait System Type Checking - Phase 4.3
+%% ============================================================================
+
+%% Check trait definition
+check_trait_def(
+    #trait_def{
+        name = Name,
+        type_params = TypeParams,
+        methods = Methods,
+        supertraits = Supertraits,
+        associated_types = AssociatedTypes,
+        location = Location
+    },
+    Env
+) ->
+    cure_utils:debug("[TRAIT] Checking trait definition: ~p~n", [Name]),
+
+    % Step 1: Check supertraits exist
+    SupertraitCheck = check_supertraits(Supertraits, Env, Location),
+
+    case SupertraitCheck of
+        {error, Error} ->
+            {ok, Env, error_result(Error)};
+        ok ->
+            % Step 2: Create type parameters environment
+            TypeParamEnv = add_trait_type_params_to_env(TypeParams, Env),
+
+            % Step 3: Check associated types
+            AssocTypeResult = check_associated_types(AssociatedTypes, TypeParamEnv, Location),
+
+            case AssocTypeResult of
+                {error, Error} ->
+                    {ok, Env, error_result(Error)};
+                ok ->
+                    % Step 4: Check method signatures
+                    MethodResult = check_trait_methods(Methods, TypeParamEnv, Location),
+
+                    case MethodResult of
+                        {error, Error} ->
+                            {ok, Env, error_result(Error)};
+                        ok ->
+                            % Step 5: Add trait to environment
+                            TraitType = {trait_type, Name, TypeParams, Methods, AssociatedTypes},
+                            NewEnv = cure_types:extend_env(Env, Name, TraitType),
+
+                            % Store trait definition for later lookup
+                            TraitDefEnv = store_trait_def(
+                                NewEnv,
+                                Name,
+                                #trait_def{
+                                    name = Name,
+                                    type_params = TypeParams,
+                                    methods = Methods,
+                                    supertraits = Supertraits,
+                                    associated_types = AssociatedTypes,
+                                    location = Location
+                                }
+                            ),
+
+                            {ok, TraitDefEnv, success_result(TraitType)}
+                    end
+            end
+    end.
+
+%% Check trait implementation
+check_trait_impl(
+    #trait_impl{
+        trait_name = TraitName,
+        type_params = TypeParams,
+        for_type = ForType,
+        where_clause = WhereClause,
+        methods = Methods,
+        associated_types = AssocTypes,
+        location = Location
+    },
+    Env
+) ->
+    cure_utils:debug("[TRAIT] Checking trait impl: ~p for ~p~n", [TraitName, ForType]),
+
+    % Step 1: Check trait exists
+    case lookup_trait(TraitName, Env) of
+        {ok, TraitDef} ->
+            % Step 2: Create environment with type parameters
+            TypeParamEnv = add_trait_type_params_to_env(TypeParams, Env),
+
+            % Step 3: Resolve the type being implemented for
+            case resolve_type(ForType, TypeParamEnv) of
+                {ok, ResolvedType} ->
+                    % Step 4: Check where clause if present
+                    WhereResult = check_where_clause(WhereClause, TypeParamEnv, Location),
+
+                    case WhereResult of
+                        {error, Error} ->
+                            {ok, Env, error_result(Error)};
+                        ok ->
+                            % Step 5: Check all required methods are implemented
+                            RequiredMethods = get_required_methods(TraitDef),
+                            MethodCheckResult = check_impl_methods(
+                                Methods,
+                                RequiredMethods,
+                                ResolvedType,
+                                TypeParamEnv,
+                                Location
+                            ),
+
+                            case MethodCheckResult of
+                                {error, Error} ->
+                                    {ok, Env, error_result(Error)};
+                                ok ->
+                                    % Step 6: Check associated types
+                                    AssocResult = check_impl_associated_types(
+                                        AssocTypes,
+                                        TraitDef,
+                                        TypeParamEnv,
+                                        Location
+                                    ),
+
+                                    case AssocResult of
+                                        {error, Error} ->
+                                            {ok, Env, error_result(Error)};
+                                        ok ->
+                                            % Step 7: Store implementation for method resolution
+                                            ImplEnv = store_trait_impl(
+                                                Env,
+                                                TraitName,
+                                                ResolvedType,
+                                                #trait_impl{
+                                                    trait_name = TraitName,
+                                                    type_params = TypeParams,
+                                                    for_type = ForType,
+                                                    where_clause = WhereClause,
+                                                    methods = Methods,
+                                                    associated_types = AssocTypes,
+                                                    location = Location
+                                                }
+                                            ),
+
+                                            {ok, ImplEnv,
+                                                success_result(
+                                                    {trait_impl, TraitName, ResolvedType}
+                                                )}
+                                    end
+                            end
+                    end;
+                {error, Reason} ->
+                    Error = #typecheck_error{
+                        message = "Failed to resolve implementation type",
+                        location = Location,
+                        details = Reason
+                    },
+                    {ok, Env, error_result(Error)}
+            end;
+        error ->
+            Error = #typecheck_error{
+                message = io_lib:format("Trait ~p not found", [TraitName]),
+                location = Location,
+                details = {undefined_trait, TraitName}
+            },
+            {ok, Env, error_result(Error)}
+    end.
+
+%% Helper functions for trait checking
+
+%% Check supertraits exist
+check_supertraits([], _Env, _Location) ->
+    ok;
+check_supertraits([Supertrait | Rest], Env, Location) ->
+    case lookup_trait(Supertrait, Env) of
+        {ok, _} ->
+            check_supertraits(Rest, Env, Location);
+        error ->
+            {error, #typecheck_error{
+                message = io_lib:format("Supertrait ~p not found", [Supertrait]),
+                location = Location,
+                details = {undefined_trait, Supertrait}
+            }}
+    end.
+
+%% Add trait type parameters to environment
+add_trait_type_params_to_env([], Env) ->
+    Env;
+add_trait_type_params_to_env([Param | Rest], Env) when is_atom(Param) ->
+    % Simple type parameter
+    NewEnv = cure_types:extend_env(Env, Param, {type_var, Param}),
+    add_trait_type_params_to_env(Rest, NewEnv);
+add_trait_type_params_to_env([#type_param_decl{name = Name, bounds = _Bounds} | Rest], Env) ->
+    % Type parameter with bounds
+    NewEnv = cure_types:extend_env(Env, Name, {type_var, Name}),
+    add_trait_type_params_to_env(Rest, NewEnv);
+add_trait_type_params_to_env([_ | Rest], Env) ->
+    % Unknown format, skip
+    add_trait_type_params_to_env(Rest, Env).
+
+%% Check associated types
+check_associated_types([], _Env, _Location) ->
+    ok;
+check_associated_types([#associated_type{name = _Name, bounds = Bounds} | Rest], Env, Location) ->
+    % Check bounds are valid traits
+    case check_supertraits(Bounds, Env, Location) of
+        ok ->
+            check_associated_types(Rest, Env, Location);
+        Error ->
+            Error
+    end;
+check_associated_types([_ | Rest], Env, Location) ->
+    check_associated_types(Rest, Env, Location).
+
+%% Check trait method signatures
+check_trait_methods([], _Env, _Location) ->
+    ok;
+check_trait_methods(
+    [#method_signature{name = _Name, params = Params, return_type = RetType} | Rest], Env, Location
+) ->
+    % Check parameter types are valid
+    ParamsCheck = lists:all(
+        fun(#param{type = Type}) ->
+            case resolve_type(Type, Env) of
+                {ok, _} -> true;
+                {error, _} -> false
+            end
+        end,
+        Params
+    ),
+
+    case ParamsCheck of
+        false ->
+            {error, #typecheck_error{
+                message = "Invalid parameter type in method signature",
+                location = Location,
+                details = invalid_param_type
+            }};
+        true ->
+            % Check return type is valid
+            case resolve_type(RetType, Env) of
+                {ok, _} ->
+                    check_trait_methods(Rest, Env, Location);
+                {error, Reason} ->
+                    {error, #typecheck_error{
+                        message = "Invalid return type in method signature",
+                        location = Location,
+                        details = Reason
+                    }}
+            end
+    end;
+check_trait_methods([_ | Rest], Env, Location) ->
+    check_trait_methods(Rest, Env, Location).
+
+%% Check where clause
+check_where_clause(undefined, _Env, _Location) ->
+    ok;
+check_where_clause(_WhereClause, _Env, _Location) ->
+    % TODO: Implement proper where clause checking
+    % For now, accept all where clauses
+    ok.
+
+%% Get required methods from trait definition
+get_required_methods(TraitDef) when is_tuple(TraitDef) ->
+    case element(1, TraitDef) of
+        trait_type ->
+            % {trait_type, Name, TypeParams, Methods, AssocTypes}
+            element(4, TraitDef);
+        _ ->
+            []
+    end;
+get_required_methods(#trait_def{methods = Methods}) ->
+    % Filter out methods with default implementations
+    lists:filter(
+        fun(#method_signature{default_impl = DefaultImpl}) ->
+            DefaultImpl =:= undefined
+        end,
+        Methods
+    );
+get_required_methods(_) ->
+    [].
+
+%% Check implementation methods
+check_impl_methods(ImplMethods, RequiredMethods, _TargetType, Env, Location) ->
+    % Get names of implemented methods
+    ImplMethodNames = [Name || #method_impl{name = Name} <- ImplMethods],
+
+    % Get names of required methods
+    RequiredMethodNames = [
+        Name
+     || #method_signature{name = Name, default_impl = DefaultImpl} <- RequiredMethods,
+        DefaultImpl =:= undefined
+    ],
+
+    % Check all required methods are implemented
+    MissingMethods = RequiredMethodNames -- ImplMethodNames,
+
+    case MissingMethods of
+        [] ->
+            % Check each implementation matches signature
+            check_each_impl_method(ImplMethods, RequiredMethods, Env, Location);
+        _ ->
+            {error, #typecheck_error{
+                message = io_lib:format("Missing method implementations: ~p", [MissingMethods]),
+                location = Location,
+                details = {missing_methods, MissingMethods}
+            }}
+    end.
+
+%% Check each implementation method
+check_each_impl_method([], _RequiredMethods, _Env, _Location) ->
+    ok;
+check_each_impl_method(
+    [#method_impl{name = Name, body = Body} | Rest], RequiredMethods, Env, Location
+) ->
+    % Find corresponding signature
+    case lists:keyfind(Name, #method_signature.name, RequiredMethods) of
+        false ->
+            % Extra method (allowed)
+            check_each_impl_method(Rest, RequiredMethods, Env, Location);
+        #method_signature{} ->
+            % Check body type matches signature
+            % TODO: Full type checking of method body
+            case Body of
+                undefined ->
+                    {error, #typecheck_error{
+                        message = "Method implementation missing body",
+                        location = Location,
+                        details = {missing_body, Name}
+                    }};
+                _ ->
+                    check_each_impl_method(Rest, RequiredMethods, Env, Location)
+            end
+    end;
+check_each_impl_method([_ | Rest], RequiredMethods, Env, Location) ->
+    check_each_impl_method(Rest, RequiredMethods, Env, Location).
+
+%% Check implementation associated types
+check_impl_associated_types(_AssocTypes, _TraitDef, _Env, _Location) ->
+    % TODO: Implement associated type checking
+    ok.
+
+%% Resolve type expression
+resolve_type(undefined, _Env) ->
+    {ok, undefined};
+resolve_type(Type, Env) when is_atom(Type) ->
+    case cure_types:lookup_env(Env, Type) of
+        {ok, ResolvedType} ->
+            {ok, ResolvedType};
+        error ->
+            {ok, {primitive_type, Type}}
+    end;
+resolve_type(#primitive_type{name = Name}, _Env) ->
+    {ok, {primitive_type, Name}};
+resolve_type({primitive_type, Name}, _Env) ->
+    {ok, {primitive_type, Name}};
+resolve_type(Type, _Env) ->
+    % For other types, return as-is
+    {ok, Type}.
+
+%% Lookup trait definition
+lookup_trait(TraitName, Env) ->
+    case cure_types:lookup_env(Env, TraitName) of
+        {ok, {trait_type, _, _, _, _} = TraitType} ->
+            {ok, TraitType};
+        {ok, _} ->
+            error;
+        error ->
+            error
+    end.
+
+%% Store trait definition in environment
+store_trait_def(Env, TraitName, TraitDef) ->
+    % Store under special key for trait definitions
+    TraitKey = {trait_def, TraitName},
+    cure_types:extend_env(Env, TraitKey, TraitDef).
+
+%% Store trait implementation
+store_trait_impl(Env, TraitName, ForType, TraitImpl) ->
+    % Store under special key for trait implementations
+    ImplKey = {trait_impl, TraitName, ForType},
+    cure_types:extend_env(Env, ImplKey, TraitImpl).

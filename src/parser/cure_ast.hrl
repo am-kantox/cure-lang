@@ -37,6 +37,7 @@
 %% Supports both single-clause (backward compatible) and multi-clause functions
 -record(function_def, {
     name,
+    type_params,     % List of type parameter atoms (e.g., ['T', 'U']) for polymorphic functions
     clauses,         % List of #function_clause{} records (new multi-clause support)
     params,          % DEPRECATED: kept for backward compatibility, use clauses instead
     return_type,     % Union of all clause return types (derived)
@@ -62,7 +63,8 @@
 %% Type definition
 -record(type_def, {
     name,
-    params,
+    type_params,     % List of type parameter atoms for polymorphic types (e.g., ['T'])
+    params,          % Constructor parameters
     definition,
     constraint,
     location
@@ -309,6 +311,16 @@
     location
 }).
 
+%% Qualified method call (e.g., Trait::method) - Phase 4: Traits
+-record(qualified_call_expr, {
+    trait_name,      % Optional trait name for disambiguation
+    type_args,       % Optional explicit type arguments
+    method_name,     % Method name
+    receiver,        % Optional receiver expression (for method syntax)
+    args,            % Method arguments
+    location         % Source location
+}).
+
 %% Primitive types
 -record(primitive_type, {
     name,
@@ -366,6 +378,22 @@
 -record(process_type, {
     fsm_type,      % The FSM type this process implements
     current_state, % Current state (for refinement types)
+    location
+}).
+
+%% Type parameter declaration (for explicit bounds/constraints)
+-record(type_param_decl, {
+    name,            % Atom: type parameter name (e.g., 'T')
+    bounds,          % List of type bounds/constraints (e.g., ['Eq', 'Ord'])
+    kind,            % Optional: kind annotation for higher-kinded types
+    location
+}).
+
+%% Polymorphic type (forall quantification)
+-record(poly_type, {
+    type_params,     % List of type parameter atoms or #type_param_decl{}
+    constraints,     % List of type constraints (for bounded polymorphism)
+    body_type,       % The actual type expression
     location
 }).
 
@@ -432,7 +460,8 @@
                #fsm_spawn_expr{} |
                #fsm_send_expr{} |
                #fsm_receive_expr{} |
-               #fsm_state_expr{}.
+               #fsm_state_expr{} |
+               #qualified_call_expr{}.  % Phase 4: Trait method calls
 
 -type pattern() :: #wildcard_pattern{} |
                   #literal_pattern{} |
@@ -459,4 +488,78 @@
 -type type_param() :: #type_param{}.
 -type state_def() :: #state_def{}.
 -type transition() :: #transition{}.
+
+%% ============================================================================
+%% Trait System (Ad-hoc Polymorphism) - Phase 4
+%% ============================================================================
+
+%% Trait definition - defines a set of methods that types can implement
+%% Similar to type classes in Haskell or traits in Rust
+-record(trait_def, {
+    name,            % Atom: trait name (e.g., 'Eq', 'Show', 'Ord')
+    type_params,     % List of type parameters [atom()] (e.g., ['Self'])
+    methods,         % List of #method_signature{} records
+    supertraits,     % List of trait names this trait extends (e.g., ['Eq'] for Ord)
+    associated_types,% List of #associated_type{} for associated types
+    location         % Source location
+}).
+
+%% Method signature within a trait
+-record(method_signature, {
+    name,            % Atom: method name
+    type_params,     % Optional additional type parameters for this method
+    params,          % List of #param{} - method parameters
+    return_type,     % Return type expression
+    default_impl,    % Optional default implementation (expr())
+    location         % Source location
+}).
+
+%% Associated type declaration in trait
+-record(associated_type, {
+    name,            % Atom: associated type name
+    bounds,          % List of trait bounds (optional)
+    default,         % Optional default type
+    location         % Source location
+}).
+
+%% Trait implementation for a specific type
+-record(trait_impl, {
+    trait_name,      % Atom: name of trait being implemented
+    type_params,     % Type parameters for polymorphic implementations
+    for_type,        % Type expression this trait is being implemented for
+    where_clause,    % Optional where clause for bounds (list of constraints)
+    methods,         % List of #method_impl{} - method implementations
+    associated_types,% Map of associated type name -> concrete type
+    location         % Source location
+}).
+
+%% Method implementation within a trait impl
+-record(method_impl, {
+    name,            % Atom: method name
+    params,          % List of #param{}
+    return_type,     % Return type (optional, can be inferred from trait)
+    body,            % Method body (expr())
+    location         % Source location
+}).
+
+%% Trait bound/constraint on a type parameter
+%% Used in function signatures and trait definitions
+-record(trait_bound, {
+    type_param,      % Atom: type parameter being constrained
+    trait_name,      % Atom: trait that must be implemented
+    location         % Source location
+}).
+
+%% Where clause for complex trait bounds
+-record(where_clause, {
+    constraints,     % List of #trait_bound{} or #type_equality{}
+    location         % Source location
+}).
+
+%% Type equality constraint (e.g., T::Item = U)
+-record(type_equality, {
+    left,            % Type expression or associated type projection
+    right,           % Type expression
+    location         % Source location
+}).
 

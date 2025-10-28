@@ -411,7 +411,24 @@ Generates detailed reports including:
     % Context management
     initialize_optimization_context/1,
     find_optimization_opportunities/2,
-    analyze_program_types/1
+    analyze_program_types/1,
+
+    % Polymorphic instantiation tracking (Phase 3.1)
+    collect_poly_instantiation_sites/1,
+    collect_poly_instantiations_from_module/1,
+    collect_poly_instantiations_from_function/1,
+    collect_poly_instantiations_from_expr/2,
+    track_polymorphic_call/3,
+
+    % Monomorphization implementation (Phase 3.2-3.4)
+    monomorphize_ast/2,
+    generate_specialized_variants/2,
+    create_monomorphic_function/3,
+    specialize_function_body/3,
+    transform_ast_with_specializations/2,
+    replace_poly_calls_in_expr/2,
+    eliminate_unused_specializations/2,
+    find_reachable_functions/2
 ]).
 
 -include("../parser/cure_ast.hrl").
@@ -1551,8 +1568,8 @@ filter_profitable_candidates(CandidateList) ->
         CandidateList
     ).
 
-%% Generate specialized function name
-generate_specialized_name(FuncName, TypePattern) ->
+%% Generate specialized function name (legacy)
+generate_specialized_name_legacy(FuncName, TypePattern) ->
     TypeSuffix = create_type_suffix(TypePattern),
     SpecName = list_to_atom(atom_to_list(FuncName) ++ "_spec_" ++ TypeSuffix),
     SpecName.
@@ -1815,7 +1832,9 @@ generate_concrete_instances(FuncName, ConcreteTypesList) ->
     lists:map(
         fun(ConcreteTypes) ->
             MonomorphicName = generate_monomorphic_name(FuncName, ConcreteTypes),
-            MonomorphicDef = create_monomorphic_function(FuncName, ConcreteTypes, MonomorphicName),
+            MonomorphicDef = create_monomorphic_function_legacy(
+                FuncName, ConcreteTypes, MonomorphicName
+            ),
             {MonomorphicName, ConcreteTypes, MonomorphicDef}
         end,
         ConcreteTypesList
@@ -1846,8 +1865,8 @@ mono_type_to_string({record_type, Name}) ->
 mono_type_to_string(_) ->
     "gen".
 
-%% Create monomorphic function definition
-create_monomorphic_function(OriginalFuncName, ConcreteTypes, MonoName) ->
+%% Create monomorphic function definition (legacy)
+create_monomorphic_function_legacy(OriginalFuncName, ConcreteTypes, MonoName) ->
     % Create a monomorphic version with concrete types
     #function_def{
         name = MonoName,
@@ -5449,3 +5468,752 @@ estimate_performance_improvement(PerformanceOptimizations) ->
         0,
         PerformanceOptimizations
     ).
+
+%% ============================================================================
+%% Main Entry Point for Monomorphization
+%% ============================================================================
+
+%% Monomorphize polymorphic functions in the AST
+monomorphize_ast(AST, Config) when is_list(AST) ->
+    % Phase 3.1: Collect polymorphic call sites
+    CallSites = collect_call_sites(AST),
+
+    % Phase 3.2: Generate specialized function variants
+    Specializations = generate_specializations(AST, CallSites, Config),
+
+    % Phase 3.3: Transform AST to call specialized versions
+    TransformedAST = transform_ast_with_specializations(AST, Specializations),
+
+    % Phase 3.4: Eliminate unused specializations and original polymorphic functions
+    eliminate_unused_specializations(TransformedAST, Specializations);
+monomorphize_ast(#module_def{} = Module, Config) ->
+    % Apply monomorphization to module
+    [MonomorphizedModule] = monomorphize_ast([Module], Config),
+    MonomorphizedModule;
+monomorphize_ast(Other, _Config) ->
+    Other.
+
+%% ============================================================================
+%% Phase 3.1: Collect Instantiation Sites
+%% ============================================================================
+
+%% Collect all instantiation sites of polymorphic functions in the program
+%% Returns a map: FunctionName => [{TypeArgs, Location, CallContext}]
+collect_poly_instantiation_sites(AST) when is_list(AST) ->
+    % AST is a list of modules/items
+    lists:foldl(
+        fun(Item, Acc) ->
+            ItemSites = collect_poly_instantiations_from_item(Item),
+            merge_instantiation_maps(Acc, ItemSites)
+        end,
+        #{},
+        AST
+    );
+collect_poly_instantiation_sites(AST) ->
+    % Single item
+    collect_poly_instantiations_from_item(AST).
+
+%% Collect from a single item (module, function, etc.)
+collect_poly_instantiations_from_item(#module_def{items = Items}) ->
+    collect_poly_instantiation_sites(Items);
+collect_poly_instantiations_from_item(#function_def{} = FuncDef) ->
+    collect_poly_instantiations_from_function(FuncDef);
+collect_poly_instantiations_from_item(_) ->
+    #{}.
+
+%% Collect from module
+collect_poly_instantiations_from_module(#module_def{items = Items}) ->
+    lists:foldl(
+        fun(Item, Acc) ->
+            ItemSites = collect_poly_instantiations_from_item(Item),
+            merge_instantiation_maps(Acc, ItemSites)
+        end,
+        #{},
+        Items
+    ).
+
+%% Collect from function definition
+collect_poly_instantiations_from_function(#function_def{
+    name = FuncName,
+    clauses = Clauses,
+    body = _Body,
+    location = Location
+}) when Clauses =/= undefined, length(Clauses) > 0 ->
+    % Multi-clause function
+    lists:foldl(
+        fun(#function_clause{body = ClauseBody}, Acc) ->
+            Context = #{function => FuncName, location => Location},
+            BodySites = collect_poly_instantiations_from_expr(ClauseBody, Context),
+            merge_instantiation_maps(Acc, BodySites)
+        end,
+        #{},
+        Clauses
+    );
+collect_poly_instantiations_from_function(#function_def{
+    name = FuncName,
+    body = Body,
+    location = Location
+}) when Body =/= undefined ->
+    % Single clause function
+    Context = #{function => FuncName, location => Location},
+    collect_poly_instantiations_from_expr(Body, Context);
+collect_poly_instantiations_from_function(_) ->
+    #{}.
+
+%% Collect from expression with context
+collect_poly_instantiations_from_expr({function_call_expr, Function, Args, Location}, Context) ->
+    % Check if this is a call to a polymorphic function
+    CallSites =
+        case Function of
+            {identifier_expr, FuncName, _} ->
+                % Look up function type in context if available
+                case maps:get(type_env, Context, undefined) of
+                    undefined ->
+                        % No type info, track as potential polymorphic call
+                        track_polymorphic_call(FuncName, Args, Location);
+                    TypeEnv ->
+                        % Check if function is polymorphic
+                        case cure_types:lookup_env(TypeEnv, FuncName) of
+                            #poly_type{type_params = TypeParams} when TypeParams =/= [] ->
+                                % Polymorphic function - infer type arguments from args
+                                track_polymorphic_call(FuncName, Args, Location);
+                            _ ->
+                                #{}
+                        end
+                end;
+            _ ->
+                #{}
+        end,
+
+    % Recursively collect from arguments
+    ArgSites = lists:foldl(
+        fun(Arg, Acc) ->
+            ArgSites0 = collect_poly_instantiations_from_expr(Arg, Context),
+            merge_instantiation_maps(Acc, ArgSites0)
+        end,
+        #{},
+        Args
+    ),
+
+    merge_instantiation_maps(CallSites, ArgSites);
+collect_poly_instantiations_from_expr({let_expr, Bindings, Body, _Location}, Context) ->
+    % Collect from bindings
+    BindingSites = lists:foldl(
+        fun({binding, _Pattern, Value, _Loc}, Acc) ->
+            ValueSites = collect_poly_instantiations_from_expr(Value, Context),
+            merge_instantiation_maps(Acc, ValueSites)
+        end,
+        #{},
+        Bindings
+    ),
+
+    % Collect from body
+    BodySites = collect_poly_instantiations_from_expr(Body, Context),
+    merge_instantiation_maps(BindingSites, BodySites);
+collect_poly_instantiations_from_expr({match_expr, MatchExpr, Patterns, _Location}, Context) ->
+    % Collect from match expression
+    MatchSites = collect_poly_instantiations_from_expr(MatchExpr, Context),
+
+    % Collect from pattern clauses
+    PatternSites = lists:foldl(
+        fun({match_clause, _Pattern, _Guard, Body, _Loc}, Acc) ->
+            BodySites = collect_poly_instantiations_from_expr(Body, Context),
+            merge_instantiation_maps(Acc, BodySites)
+        end,
+        #{},
+        Patterns
+    ),
+
+    merge_instantiation_maps(MatchSites, PatternSites);
+collect_poly_instantiations_from_expr({lambda_expr, _Params, Body, _Location}, Context) ->
+    collect_poly_instantiations_from_expr(Body, Context);
+collect_poly_instantiations_from_expr({list_expr, Elements, _Location}, Context) ->
+    lists:foldl(
+        fun(Elem, Acc) ->
+            ElemSites = collect_poly_instantiations_from_expr(Elem, Context),
+            merge_instantiation_maps(Acc, ElemSites)
+        end,
+        #{},
+        Elements
+    );
+collect_poly_instantiations_from_expr({tuple_expr, Elements, _Location}, Context) ->
+    lists:foldl(
+        fun(Elem, Acc) ->
+            ElemSites = collect_poly_instantiations_from_expr(Elem, Context),
+            merge_instantiation_maps(Acc, ElemSites)
+        end,
+        #{},
+        Elements
+    );
+collect_poly_instantiations_from_expr({binary_op_expr, _Op, Left, Right, _Location}, Context) ->
+    LeftSites = collect_poly_instantiations_from_expr(Left, Context),
+    RightSites = collect_poly_instantiations_from_expr(Right, Context),
+    merge_instantiation_maps(LeftSites, RightSites);
+collect_poly_instantiations_from_expr({unary_op_expr, _Op, Operand, _Location}, Context) ->
+    collect_poly_instantiations_from_expr(Operand, Context);
+collect_poly_instantiations_from_expr({block_expr, Expressions, _Location}, Context) ->
+    lists:foldl(
+        fun(Expr, Acc) ->
+            ExprSites = collect_poly_instantiations_from_expr(Expr, Context),
+            merge_instantiation_maps(Acc, ExprSites)
+        end,
+        #{},
+        Expressions
+    );
+collect_poly_instantiations_from_expr(_, _Context) ->
+    % Literals, identifiers, and other leaf expressions
+    #{}.
+
+%% Track a polymorphic function call
+track_polymorphic_call(FuncName, Args, Location) ->
+    % Create instantiation site record
+    Site = #{
+        % Will be inferred during type checking
+        type_args => infer,
+        location => Location,
+        arg_count => length(Args),
+        context => call_site
+    },
+
+    % Return map with this function's instantiation
+    #{FuncName => [Site]}.
+
+%% Merge two instantiation maps
+merge_instantiation_maps(Map1, Map2) ->
+    maps:fold(
+        fun(FuncName, Sites, Acc) ->
+            ExistingSites = maps:get(FuncName, Acc, []),
+            maps:put(FuncName, ExistingSites ++ Sites, Acc)
+        end,
+        Map1,
+        Map2
+    ).
+
+%% ============================================================================
+%% Phase 3.2: Generate Specialized Function Variants
+%% ============================================================================
+
+%% Generate specialized function variants from collected call sites
+generate_specializations(AST, CallSites, _Config) ->
+    % Find all polymorphic functions in the AST
+    PolyFunctions = find_polymorphic_functions(AST),
+
+    % For each polymorphic function and its call sites, generate specializations
+    maps:fold(
+        fun(FuncName, TypeArgsList, Acc) ->
+            case maps:get(FuncName, PolyFunctions, undefined) of
+                % Function not found
+                undefined ->
+                    Acc;
+                FuncDef ->
+                    % Generate a specialized variant for each unique type argument combination
+                    Variants = lists:map(
+                        fun(TypeArgs) ->
+                            create_monomorphic_function(FuncDef, TypeArgs, FuncName)
+                        end,
+                        TypeArgsList
+                    ),
+                    maps:put(FuncName, Variants, Acc)
+            end
+        end,
+        #{},
+        CallSites
+    ).
+
+%% Generate specialized (monomorphic) variants for polymorphic functions
+%% Takes: AST and instantiation sites map from Phase 3.1
+%% Returns: Map of FunctionName => [SpecializedFunction]
+generate_specialized_variants(AST, InstantiationSites) ->
+    % Group instantiation sites by unique type arguments
+    UniqueInstantiations = group_by_type_args(InstantiationSites),
+    generate_specializations(AST, UniqueInstantiations, undefined).
+
+%% Group instantiation sites by unique type arguments
+group_by_type_args(InstantiationSites) ->
+    maps:map(
+        fun(_FuncName, Sites) ->
+            % Extract unique type argument combinations
+            TypeArgSets = lists:foldl(
+                fun(Site, Acc) ->
+                    TypeArgs = maps:get(type_args, Site, []),
+                    case TypeArgs of
+                        % Skip inference for now
+                        infer -> Acc;
+                        _ -> sets:add_element(TypeArgs, Acc)
+                    end
+                end,
+                sets:new(),
+                Sites
+            ),
+            sets:to_list(TypeArgSets)
+        end,
+        InstantiationSites
+    ).
+
+%% Find all polymorphic function definitions in AST
+find_polymorphic_functions(AST) when is_list(AST) ->
+    lists:foldl(
+        fun(Item, Acc) ->
+            maps:merge(Acc, find_polymorphic_functions(Item))
+        end,
+        #{},
+        AST
+    );
+find_polymorphic_functions(#module_def{items = Items}) ->
+    find_polymorphic_functions(Items);
+find_polymorphic_functions(#function_def{name = Name, type_params = TypeParams} = FuncDef) when
+    TypeParams =/= undefined, TypeParams =/= []
+->
+    % This is a polymorphic function
+    #{Name => FuncDef};
+find_polymorphic_functions(_) ->
+    #{}.
+
+%% Create a monomorphic (specialized) version of a polymorphic function
+create_monomorphic_function(
+    #function_def{
+        name = _OrigName,
+        type_params = TypeParams,
+        clauses = Clauses,
+        params = Params,
+        return_type = ReturnType,
+        body = Body,
+        is_private = IsPrivate,
+        location = Location
+    },
+    TypeArgs,
+    BaseName
+) ->
+    % Generate specialized function name: identity_Int, map_Int_String, etc.
+    SpecializedName = generate_specialized_name(BaseName, TypeArgs),
+
+    % Create type substitution map
+    TypeSubst = create_type_substitution(TypeParams, TypeArgs),
+
+    % Specialize the function body and types
+    SpecializedClauses =
+        case Clauses of
+            undefined ->
+                undefined;
+            [] ->
+                [];
+            _ ->
+                lists:map(
+                    fun(
+                        #function_clause{
+                            params = ClauseParams,
+                            return_type = ClauseRetType,
+                            constraint = Constraint,
+                            body = ClauseBody,
+                            location = ClauseLoc
+                        }
+                    ) ->
+                        #function_clause{
+                            params = specialize_params(ClauseParams, TypeSubst),
+                            return_type = specialize_type(ClauseRetType, TypeSubst),
+                            % Constraints should already be resolved
+                            constraint = Constraint,
+                            body = specialize_function_body(ClauseBody, TypeSubst, BaseName),
+                            location = ClauseLoc
+                        }
+                    end,
+                    Clauses
+                )
+        end,
+
+    SpecializedBody =
+        case Body of
+            undefined -> undefined;
+            _ -> specialize_function_body(Body, TypeSubst, BaseName)
+        end,
+
+    % Create monomorphic function (no type params)
+    #function_def{
+        name = SpecializedName,
+        % Monomorphic
+        type_params = [],
+        clauses = SpecializedClauses,
+        params = specialize_params(Params, TypeSubst),
+        return_type = specialize_type(ReturnType, TypeSubst),
+        % Constraints resolved during specialization
+        constraint = undefined,
+        body = SpecializedBody,
+        is_private = IsPrivate,
+        location = Location
+    }.
+
+%% Generate specialized function name
+generate_specialized_name(BaseName, TypeArgs) ->
+    TypeSuffix = lists:map(fun type_to_name_suffix/1, TypeArgs),
+    SuffixStr = string:join(TypeSuffix, "_"),
+    list_to_atom(atom_to_list(BaseName) ++ "_" ++ SuffixStr).
+
+%% Convert type to name suffix
+type_to_name_suffix({primitive_type, Name}) -> atom_to_list(Name);
+type_to_name_suffix({list_type, ElemType, _}) -> "List_" ++ type_to_name_suffix(ElemType);
+type_to_name_suffix({tuple_type, _, _}) -> "Tuple";
+type_to_name_suffix(#tuple_type{}) -> "Tuple";
+type_to_name_suffix(_) -> "T".
+
+%% Create type substitution map from type params to type args
+create_type_substitution(TypeParams, TypeArgs) ->
+    ParamNames = cure_types:extract_type_param_names(TypeParams),
+    maps:from_list(lists:zip(ParamNames, TypeArgs)).
+
+%% Specialize function parameters
+specialize_params(Params, TypeSubst) when is_list(Params) ->
+    lists:map(
+        fun(#param{name = Name, type = Type, location = Loc}) ->
+            #param{
+                name = Name,
+                type = specialize_type(Type, TypeSubst),
+                location = Loc
+            }
+        end,
+        Params
+    );
+specialize_params(Params, _TypeSubst) ->
+    Params.
+
+%% Specialize a type expression using substitution
+specialize_type(undefined, _TypeSubst) ->
+    undefined;
+specialize_type({primitive_type, Name}, TypeSubst) ->
+    case maps:get(Name, TypeSubst, undefined) of
+        undefined -> {primitive_type, Name};
+        SpecializedType -> SpecializedType
+    end;
+specialize_type({function_type, Params, Return}, TypeSubst) ->
+    {function_type, [specialize_type(P, TypeSubst) || P <- Params],
+        specialize_type(Return, TypeSubst)};
+specialize_type({list_type, ElemType, Length}, TypeSubst) ->
+    {list_type, specialize_type(ElemType, TypeSubst), Length};
+specialize_type({dependent_type, Name, Params}, TypeSubst) ->
+    {dependent_type, Name, [specialize_type_param(P, TypeSubst) || P <- Params]};
+specialize_type(Type, _TypeSubst) ->
+    Type.
+
+%% Specialize type parameter
+specialize_type_param(#type_param{name = Name, value = Value, location = Loc}, TypeSubst) ->
+    #type_param{
+        name = Name,
+        value = specialize_type(Value, TypeSubst),
+        location = Loc
+    };
+specialize_type_param(Param, _TypeSubst) ->
+    Param.
+
+%% Specialize function body by substituting type parameters
+specialize_function_body(Body, TypeSubst, OrigFuncName) ->
+    specialize_expr(Body, TypeSubst, OrigFuncName).
+
+%% Specialize expressions
+specialize_expr({function_call_expr, Function, Args, Location}, TypeSubst, OrigFuncName) ->
+    % Check if this is a recursive call to the original polymorphic function
+    SpecializedFunc =
+        case Function of
+            {identifier_expr, FuncName, FLoc} when FuncName =:= OrigFuncName ->
+                % Recursive call - will be handled in Phase 3.3
+                {identifier_expr, FuncName, FLoc};
+            _ ->
+                specialize_expr(Function, TypeSubst, OrigFuncName)
+        end,
+    {function_call_expr, SpecializedFunc,
+        [specialize_expr(Arg, TypeSubst, OrigFuncName) || Arg <- Args], Location};
+specialize_expr({let_expr, Bindings, Body, Location}, TypeSubst, OrigFuncName) ->
+    SpecBindings = lists:map(
+        fun({binding, Pattern, Value, Loc}) ->
+            {binding, Pattern, specialize_expr(Value, TypeSubst, OrigFuncName), Loc}
+        end,
+        Bindings
+    ),
+    {let_expr, SpecBindings, specialize_expr(Body, TypeSubst, OrigFuncName), Location};
+specialize_expr({lambda_expr, Params, Body, Location}, TypeSubst, OrigFuncName) ->
+    {lambda_expr, Params, specialize_expr(Body, TypeSubst, OrigFuncName), Location};
+specialize_expr({match_expr, Expr, Patterns, Location}, TypeSubst, OrigFuncName) ->
+    SpecPatterns = lists:map(
+        fun({match_clause, Pattern, Guard, Body, Loc}) ->
+            {match_clause, Pattern, Guard, specialize_expr(Body, TypeSubst, OrigFuncName), Loc}
+        end,
+        Patterns
+    ),
+    {match_expr, specialize_expr(Expr, TypeSubst, OrigFuncName), SpecPatterns, Location};
+specialize_expr({list_expr, Elements, Location}, TypeSubst, OrigFuncName) ->
+    {list_expr, [specialize_expr(E, TypeSubst, OrigFuncName) || E <- Elements], Location};
+specialize_expr({tuple_expr, Elements, Location}, TypeSubst, OrigFuncName) ->
+    {tuple_expr, [specialize_expr(E, TypeSubst, OrigFuncName) || E <- Elements], Location};
+specialize_expr({binary_op_expr, Op, Left, Right, Location}, TypeSubst, OrigFuncName) ->
+    {binary_op_expr, Op, specialize_expr(Left, TypeSubst, OrigFuncName),
+        specialize_expr(Right, TypeSubst, OrigFuncName), Location};
+specialize_expr({unary_op_expr, Op, Operand, Location}, TypeSubst, OrigFuncName) ->
+    {unary_op_expr, Op, specialize_expr(Operand, TypeSubst, OrigFuncName), Location};
+specialize_expr({block_expr, Expressions, Location}, TypeSubst, OrigFuncName) ->
+    {block_expr, [specialize_expr(E, TypeSubst, OrigFuncName) || E <- Expressions], Location};
+specialize_expr(Expr, _TypeSubst, _OrigFuncName) ->
+    % Literals, identifiers, and other expressions
+    Expr.
+
+%% ============================================================================
+%% Phase 3.3: Transform Calls to Specialized Versions
+%% ============================================================================
+
+%% Transform AST to replace polymorphic function calls with specialized versions
+transform_ast_with_specializations(AST, Specializations) when is_list(AST) ->
+    lists:map(
+        fun(Item) -> transform_item_with_specializations(Item, Specializations) end,
+        AST
+    );
+transform_ast_with_specializations(AST, Specializations) ->
+    transform_item_with_specializations(AST, Specializations).
+
+transform_item_with_specializations(#module_def{items = Items} = Module, Specializations) ->
+    % Add specialized functions to module and transform existing ones
+    SpecializedFunctions = lists:flatten(maps:values(Specializations)),
+    TransformedItems = lists:map(
+        fun(Item) -> transform_item_with_specializations(Item, Specializations) end,
+        Items
+    ),
+    Module#module_def{items = TransformedItems ++ SpecializedFunctions};
+transform_item_with_specializations(
+    #function_def{
+        name = _Name,
+        type_params = TypeParams,
+        clauses = Clauses,
+        body = Body
+    } = FuncDef,
+    Specializations
+) ->
+    % Don't transform polymorphic function definitions themselves
+    % but transform their bodies to call specialized versions
+    case TypeParams of
+        % Monomorphic function, transform calls
+        [] ->
+            TransformedClauses =
+                case Clauses of
+                    undefined ->
+                        undefined;
+                    [] ->
+                        [];
+                    _ ->
+                        lists:map(
+                            fun(#function_clause{body = ClauseBody} = Clause) ->
+                                Clause#function_clause{
+                                    body = replace_poly_calls_in_expr(ClauseBody, Specializations)
+                                }
+                            end,
+                            Clauses
+                        )
+                end,
+            TransformedBody =
+                case Body of
+                    undefined -> undefined;
+                    _ -> replace_poly_calls_in_expr(Body, Specializations)
+                end,
+            FuncDef#function_def{clauses = TransformedClauses, body = TransformedBody};
+        _ ->
+            % Polymorphic function - keep for now, will be removed in Phase 3.4
+            FuncDef
+    end;
+transform_item_with_specializations(Item, _Specializations) ->
+    Item.
+
+%% Replace polymorphic function calls with specialized versions in expressions
+replace_poly_calls_in_expr({function_call_expr, Function, Args, Location}, Specializations) ->
+    % Check if this calls a polymorphic function
+    case Function of
+        {identifier_expr, FuncName, _FLoc} ->
+            case maps:get(FuncName, Specializations, undefined) of
+                undefined ->
+                    % Not a polymorphic function or no specializations
+                    {function_call_expr, Function,
+                        [replace_poly_calls_in_expr(Arg, Specializations) || Arg <- Args],
+                        Location};
+                Variants ->
+                    % Polymorphic function - select appropriate specialization
+                    % For now, use first variant (should infer from arg types)
+                    case Variants of
+                        [#function_def{name = SpecName} | _] ->
+                            {function_call_expr, {identifier_expr, SpecName, Location},
+                                [replace_poly_calls_in_expr(Arg, Specializations) || Arg <- Args],
+                                Location};
+                        [] ->
+                            % No variants, keep original
+                            {function_call_expr, Function,
+                                [replace_poly_calls_in_expr(Arg, Specializations) || Arg <- Args],
+                                Location}
+                    end
+            end;
+        _ ->
+            {function_call_expr, replace_poly_calls_in_expr(Function, Specializations),
+                [replace_poly_calls_in_expr(Arg, Specializations) || Arg <- Args], Location}
+    end;
+replace_poly_calls_in_expr({let_expr, Bindings, Body, Location}, Specializations) ->
+    TransBindings = lists:map(
+        fun({binding, Pattern, Value, Loc}) ->
+            {binding, Pattern, replace_poly_calls_in_expr(Value, Specializations), Loc}
+        end,
+        Bindings
+    ),
+    {let_expr, TransBindings, replace_poly_calls_in_expr(Body, Specializations), Location};
+replace_poly_calls_in_expr({match_expr, Expr, Patterns, Location}, Specializations) ->
+    TransPatterns = lists:map(
+        fun({match_clause, Pattern, Guard, Body, Loc}) ->
+            {match_clause, Pattern, Guard, replace_poly_calls_in_expr(Body, Specializations), Loc}
+        end,
+        Patterns
+    ),
+    {match_expr, replace_poly_calls_in_expr(Expr, Specializations), TransPatterns, Location};
+replace_poly_calls_in_expr({lambda_expr, Params, Body, Location}, Specializations) ->
+    {lambda_expr, Params, replace_poly_calls_in_expr(Body, Specializations), Location};
+replace_poly_calls_in_expr({list_expr, Elements, Location}, Specializations) ->
+    {list_expr, [replace_poly_calls_in_expr(E, Specializations) || E <- Elements], Location};
+replace_poly_calls_in_expr({tuple_expr, Elements, Location}, Specializations) ->
+    {tuple_expr, [replace_poly_calls_in_expr(E, Specializations) || E <- Elements], Location};
+replace_poly_calls_in_expr({binary_op_expr, Op, Left, Right, Location}, Specializations) ->
+    {binary_op_expr, Op, replace_poly_calls_in_expr(Left, Specializations),
+        replace_poly_calls_in_expr(Right, Specializations), Location};
+replace_poly_calls_in_expr({unary_op_expr, Op, Operand, Location}, Specializations) ->
+    {unary_op_expr, Op, replace_poly_calls_in_expr(Operand, Specializations), Location};
+replace_poly_calls_in_expr({block_expr, Expressions, Location}, Specializations) ->
+    {block_expr, [replace_poly_calls_in_expr(E, Specializations) || E <- Expressions], Location};
+replace_poly_calls_in_expr(Expr, _Specializations) ->
+    % Literals, identifiers, and other leaf expressions
+    Expr.
+
+%% ============================================================================
+%% Phase 3.4: Dead Code Elimination for Unused Specializations
+%% ============================================================================
+
+%% Eliminate unused specialized functions and original polymorphic functions
+eliminate_unused_specializations(AST, Specializations) when is_list(AST) ->
+    % Find all reachable functions from entry points
+    EntryPoints = find_entry_points(AST),
+    ReachableFunctions = find_reachable_functions(AST, EntryPoints),
+
+    % Filter AST to keep only reachable functions
+    lists:map(
+        fun(Item) -> eliminate_unused_in_item(Item, ReachableFunctions, Specializations) end,
+        AST
+    );
+eliminate_unused_specializations(AST, Specializations) ->
+    EntryPoints = find_entry_points([AST]),
+    ReachableFunctions = find_reachable_functions([AST], EntryPoints),
+    eliminate_unused_in_item(AST, ReachableFunctions, Specializations).
+
+%% Find entry points (exported functions, main, etc.)
+find_entry_points(AST) when is_list(AST) ->
+    lists:foldl(
+        fun(Item, Acc) -> sets:union(Acc, find_entry_points(Item)) end,
+        sets:new(),
+        AST
+    );
+find_entry_points(#module_def{exports = Exports, items = Items}) ->
+    % Exported functions are entry points
+    ExportedNames = sets:from_list([Name || #export_spec{name = Name} <- Exports]),
+    % Also check for 'main' function
+    FunctionNames = lists:filtermap(
+        fun
+            (#function_def{name = Name}) -> {true, Name};
+            (_) -> false
+        end,
+        Items
+    ),
+    MainSet =
+        case lists:member(main, FunctionNames) of
+            true -> sets:add_element(main, sets:new());
+            false -> sets:new()
+        end,
+    sets:union(ExportedNames, MainSet);
+find_entry_points(_) ->
+    sets:new().
+
+%% Find all functions reachable from entry points
+find_reachable_functions(AST, EntryPoints) ->
+    % Build call graph
+    CallGraph = build_call_graph(AST),
+    % Traverse from entry points
+    traverse_call_graph(CallGraph, sets:to_list(EntryPoints), sets:new()).
+
+%% Build call graph (function -> [called functions])
+build_call_graph(AST) when is_list(AST) ->
+    lists:foldl(
+        fun(Item, Acc) -> maps:merge(Acc, build_call_graph(Item)) end,
+        #{},
+        AST
+    );
+build_call_graph(#module_def{items = Items}) ->
+    build_call_graph(Items);
+build_call_graph(#function_def{name = Name, body = Body, clauses = Clauses}) ->
+    CalledFunctions =
+        case Clauses of
+            undefined -> find_called_functions(Body);
+            [] -> find_called_functions(Body);
+            _ -> sets:union([find_called_functions(C#function_clause.body) || C <- Clauses])
+        end,
+    #{Name => CalledFunctions};
+build_call_graph(_) ->
+    #{}.
+
+%% Find all functions called in an expression
+find_called_functions({function_call_expr, {identifier_expr, FuncName, _}, Args, _}) ->
+    ArgCalls = sets:union([find_called_functions(Arg) || Arg <- Args]),
+    sets:add_element(FuncName, ArgCalls);
+find_called_functions({let_expr, Bindings, Body, _}) ->
+    BindingCalls = sets:union([find_called_functions(V) || {binding, _, V, _} <- Bindings]),
+    sets:union(BindingCalls, find_called_functions(Body));
+find_called_functions({match_expr, Expr, Patterns, _}) ->
+    ExprCalls = find_called_functions(Expr),
+    PatternCalls = sets:union([find_called_functions(B) || {match_clause, _, _, B, _} <- Patterns]),
+    sets:union(ExprCalls, PatternCalls);
+find_called_functions({list_expr, Elements, _}) ->
+    sets:union([find_called_functions(E) || E <- Elements]);
+find_called_functions({tuple_expr, Elements, _}) ->
+    sets:union([find_called_functions(E) || E <- Elements]);
+find_called_functions({binary_op_expr, _, Left, Right, _}) ->
+    sets:union(find_called_functions(Left), find_called_functions(Right));
+find_called_functions({lambda_expr, _, Body, _}) ->
+    find_called_functions(Body);
+find_called_functions(_) ->
+    sets:new().
+
+%% Traverse call graph to find all reachable functions
+traverse_call_graph(_CallGraph, [], Visited) ->
+    Visited;
+traverse_call_graph(CallGraph, [FuncName | Rest], Visited) ->
+    case sets:is_element(FuncName, Visited) of
+        true ->
+            traverse_call_graph(CallGraph, Rest, Visited);
+        false ->
+            NewVisited = sets:add_element(FuncName, Visited),
+            CalledFunctions = maps:get(FuncName, CallGraph, sets:new()),
+            NewWorkList = sets:to_list(CalledFunctions) ++ Rest,
+            traverse_call_graph(CallGraph, NewWorkList, NewVisited)
+    end.
+
+%% Eliminate unused functions from an item
+eliminate_unused_in_item(#module_def{items = Items} = Module, Reachable, Specializations) ->
+    % Get names of all polymorphic functions that were specialized
+    PolyFuncNames = maps:keys(Specializations),
+
+    FilteredItems = lists:filter(
+        fun
+            (#function_def{name = Name, type_params = TypeParams}) ->
+                % Keep if:
+                % 1. Function is reachable AND
+                % 2. Either not polymorphic OR not specialized
+                IsReachable = sets:is_element(Name, Reachable),
+                IsPoly = TypeParams =/= undefined andalso TypeParams =/= [],
+                WasSpecialized = lists:member(Name, PolyFuncNames),
+
+                % Keep monomorphic reachable functions
+                % Remove polymorphic functions that were specialized
+                IsReachable andalso (not IsPoly orelse not WasSpecialized);
+            (_) ->
+                % Keep non-function items
+                true
+        end,
+        Items
+    ),
+    Module#module_def{items = FilteredItems};
+eliminate_unused_in_item(Item, _Reachable, _Specializations) ->
+    Item.

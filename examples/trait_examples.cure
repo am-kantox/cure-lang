@@ -1,0 +1,290 @@
+%% Trait System Examples for Cure
+%% Demonstrates ad-hoc polymorphism through traits (type classes)
+
+%% ============================================================================
+%% Example 1: Basic Trait - Equality
+%% ============================================================================
+
+trait Eq {
+    % Method to test equality
+    def eq(self: Self, other: Self) -> Bool
+    
+    % Method with default implementation
+    def ne(self: Self, other: Self) -> Bool = not(self.eq(other))
+}
+
+%% Implement Eq for Int (built-in)
+impl Eq for Int {
+    def eq(self: Int, other: Int) -> Bool = 
+        % Use built-in integer equality
+        self == other
+}
+
+%% Implement Eq for String
+impl Eq for String {
+    def eq(self: String, other: String) -> Bool =
+        string_eq(self, other)  % Hypothetical built-in
+}
+
+%% ============================================================================
+%% Example 2: Trait with Supertraits - Ordering
+%% ============================================================================
+
+trait Ord: Eq {
+    % Compare two values
+    % Returns: -1 if less, 0 if equal, 1 if greater
+    def compare(self: Self, other: Self) -> Int
+    
+    % Default implementations based on compare
+    def lt(self: Self, other: Self) -> Bool = 
+        self.compare(other) < 0
+    
+    def le(self: Self, other: Self) -> Bool = 
+        self.compare(other) <= 0
+    
+    def gt(self: Self, other: Self) -> Bool = 
+        self.compare(other) > 0
+    
+    def ge(self: Self, other: Self) -> Bool = 
+        self.compare(other) >= 0
+}
+
+impl Ord for Int {
+    def compare(self: Int, other: Int) -> Int =
+        if self < other then -1
+        else if self > other then 1
+        else 0
+}
+
+%% ============================================================================
+%% Example 3: Generic Trait - Show (ToString)
+%% ============================================================================
+
+trait Show {
+    def show(self: Self) -> String
+}
+
+impl Show for Int {
+    def show(self: Int) -> String = int_to_string(self)
+}
+
+impl Show for Bool {
+    def show(self: Bool) -> String =
+        if self then "true" else "false"
+}
+
+impl Show for String {
+    def show(self: String) -> String = self
+}
+
+%% Show for lists where element implements Show
+impl<T: Show> Show for List(T) {
+    def show(self: List(T)) -> String =
+        "[" ++ show_list_elements(self) ++ "]"
+}
+
+def show_list_elements<T: Show>(xs: List(T)) -> String =
+    match xs do
+        [] -> ""
+        [x] -> x.show()
+        [x | rest] -> x.show() ++ ", " ++ show_list_elements(rest)
+    end
+
+%% ============================================================================
+%% Example 4: Trait with Associated Types - Container
+%% ============================================================================
+
+trait Container {
+    type Item
+    
+    def empty() -> Self
+    def insert(self: Self, item: Item) -> Self
+    def contains(self: Self, item: Item) -> Bool where Item: Eq
+    def size(self: Self) -> Int
+}
+
+%% Implement Container for List
+impl<T> Container for List(T) {
+    type Item = T
+    
+    def empty() -> List(T) = []
+    
+    def insert(self: List(T), item: T) -> List(T) = 
+        [item | self]
+    
+    def contains(self: List(T), item: T) -> Bool where T: Eq =
+        match self do
+            [] -> false
+            [h | t] -> if h.eq(item) then true else t.contains(item)
+        end
+    
+    def size(self: List(T)) -> Int =
+        match self do
+            [] -> 0
+            [_ | t] -> 1 + t.size()
+        end
+}
+
+%% ============================================================================
+%% Example 5: Polymorphic Functions with Trait Bounds
+%% ============================================================================
+
+%% Generic equality check with trait bound
+def equal<T: Eq>(a: T, b: T) -> Bool = a.eq(b)
+
+%% Sort function requiring Ord
+def sort<T: Ord>(xs: List(T)) -> List(T) =
+    match xs do
+        [] -> []
+        [pivot | rest] ->
+            let smaller = filter(fn(x) -> x.lt(pivot), rest) in
+            let larger = filter(fn(x) -> x.ge(pivot), rest) in
+            sort(smaller) ++ [pivot] ++ sort(larger)
+    end
+
+%% Print function requiring Show
+def print<T: Show>(value: T) -> String = value.show()
+
+%% Multiple trait bounds
+def print_and_compare<T: Show + Ord>(a: T, b: T) -> String =
+    let a_str = a.show() in
+    let b_str = b.show() in
+    let comparison = a.compare(b) in
+    a_str ++ " compared to " ++ b_str ++ " = " ++ int_to_string(comparison)
+
+%% ============================================================================
+%% Example 6: Trait with Where Clauses
+%% ============================================================================
+
+%% Generic maximum function
+def max<T>(a: T, b: T) -> T where T: Ord =
+    if a.ge(b) then a else b
+
+%% Generic find function
+def find<T, P>(xs: List(T), predicate: P) -> Option(T) 
+    where P: Fn(T) -> Bool =
+    match xs do
+        [] -> None
+        [h | t] -> 
+            if predicate(h) then Some(h)
+            else find(t, predicate)
+    end
+
+%% ============================================================================
+%% Example 7: Operator Overloading via Traits
+%% ============================================================================
+
+trait Add {
+    type Output
+    
+    def add(self: Self, other: Self) -> Output
+}
+
+%% The + operator desugars to .add() method call
+impl Add for Int {
+    type Output = Int
+    
+    def add(self: Int, other: Int) -> Int = 
+        % Use built-in addition
+        builtin_add(self, other)
+}
+
+%% Vector addition
+type Vec2 = {x: Float, y: Float}
+
+impl Add for Vec2 {
+    type Output = Vec2
+    
+    def add(self: Vec2, other: Vec2) -> Vec2 =
+        {x = self.x + other.x, y = self.y + other.y}
+}
+
+%% ============================================================================
+%% Example 8: Default Trait - Providing Default Values
+%% ============================================================================
+
+trait Default {
+    def default() -> Self
+}
+
+impl Default for Int {
+    def default() -> Int = 0
+}
+
+impl Default for String {
+    def default() -> String = ""
+}
+
+impl Default for Bool {
+    def default() -> Bool = false
+}
+
+impl<T> Default for List(T) {
+    def default() -> List(T) = []
+}
+
+impl<T: Default> Default for Option(T) {
+    def default() -> Option(T) = None
+}
+
+%% ============================================================================
+%% Example 9: Functor and Monad Traits
+%% ============================================================================
+
+trait Functor {
+    type Content
+    
+    def map<B>(self: Self, f: Fn(Content) -> B) -> Functor<B>
+}
+
+impl<T> Functor for List(T) {
+    type Content = T
+    
+    def map<B>(self: List(T), f: Fn(T) -> B) -> List(B) =
+        match self do
+            [] -> []
+            [h | t] -> [f(h) | t.map(f)]
+        end
+}
+
+impl<T> Functor for Option(T) {
+    type Content = T
+    
+    def map<B>(self: Option(T), f: Fn(T) -> B) -> Option(B) =
+        match self do
+            Some(x) -> Some(f(x))
+            None -> None
+        end
+}
+
+%% ============================================================================
+%% Example 10: Usage in Main
+%% ============================================================================
+
+export main/0
+
+def main() -> Int =
+    % Basic trait usage
+    let x = 42 in
+    let y = 43 in
+    let are_equal = x.eq(y) in  % Uses Eq trait
+    
+    % Show trait
+    let x_str = x.show() in
+    
+    % Ord trait
+    let comparison = x.compare(y) in
+    
+    % Generic function with trait bound
+    let result = equal(x, y) in
+    
+    % Sort with Ord
+    let numbers = [3, 1, 4, 1, 5, 9, 2, 6] in
+    let sorted = sort(numbers) in
+    
+    % Container trait
+    let list = List::empty() in
+    let list2 = list.insert(1).insert(2).insert(3) in
+    let has_two = list2.contains(2) in
+    
+    0  % Success

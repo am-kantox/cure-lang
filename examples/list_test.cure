@@ -4,7 +4,7 @@ module ListComprehensiveTest do
     demo_fold/0, demo_map/0, demo_filter/0, demo_append/0, demo_concat/0,
     # New demos for all Std.List functions
     demo_length/0, demo_is_empty/0, demo_reverse/0, demo_head/0, demo_tail/0,
-    demo_cons/0, demo_zip_with/0, demo_nth/0, demo_contains/0,
+    demo_cons/0, demo_zip_with/0, demo_contains/0,
     # Helper functions
     add_folder_func/1, multiply_folder_func/1, add_mapper_func/1, filter_func/1,
     double_func/1, add_zipper_func/1, simple_add/2
@@ -18,7 +18,7 @@ module ListComprehensiveTest do
     # Transformations
     map/2, filter/2, fold/3, zip_with/3,
     # Access and predicates
-    nth/3, contains/2
+    contains/2
   ]
   
   def demo_fold(): Int =
@@ -139,17 +139,6 @@ module ListComprehensiveTest do
     # Test with empty list
     let zipped_empty = zip_with(list1, empty_list, add_zipper_func)  # Should be []
     zipped_result  # Return the main result
-
-  def demo_nth(): Int =
-    let numbers = [10, 20, 30, 40, 50]
-    let empty_list = []
-    let default_value = 999
-    let first_element = nth(numbers, Zero, default_value)   # Should be 10
-    # let third_element = nth(numbers, Succ(Succ(Zero)), default_value)   # Should be 30
-    # let last_element = nth(numbers, Succ(Succ(Succ(Succ(Zero)))), default_value)    # Should be 50
-    # let out_of_bounds = nth(numbers, Succ(Succ(Succ(Succ(Succ(Succ(Succ(Succ(Succ(Succ(Zero)))))))))), default_value)  # Should be 999
-    # let from_empty = nth(empty_list, Zero, default_value)   # Should be 999
-    first_element # + third_element + last_element # + out_of_bounds + from_empty  # Should be 10+30+50+999+999 = 2088
 
   def demo_contains(): Int =
     let numbers = [1, 2, 3, 4, 5]

@@ -516,6 +516,10 @@ parse_module_item(State) ->
             parse_fsm(State);
         type ->
             parse_type_def(State);
+        trait ->
+            parse_trait_def(State);
+        impl ->
+            parse_trait_impl(State);
         import ->
             parse_import(State);
         export ->
@@ -562,7 +566,19 @@ parse_function(State) ->
             'or' -> 'or'
         end,
 
-    {_, State3} = expect(State2, '('),
+    % Parse optional type parameters: fn<T, U>(...)
+    {TypeParams, State2a} =
+        case match_token(State2, '<') of
+            true ->
+                {_, State2_1} = expect(State2, '<'),
+                {TParams, State2_2} = parse_type_parameter_list(State2_1, []),
+                {_, State2_3} = expect(State2_2, '>'),
+                {TParams, State2_3};
+            false ->
+                {[], State2}
+        end,
+
+    {_, State3} = expect(State2a, '('),
     {Params, State4} = parse_parameters(State3, []),
     {_, State5} = expect(State4, ')'),
 
@@ -652,6 +668,8 @@ parse_function(State) ->
     % Create function_def with both new (clauses) and old (params/body) fields for backward compatibility
     Function = #function_def{
         name = Name,
+        % List of type parameter atoms for polymorphic functions
+        type_params = TypeParams,
         % New: list of clauses
         clauses = [Clause],
         % DEPRECATED: kept for backward compatibility
@@ -1600,12 +1618,370 @@ parse_type_def(State) ->
     Location = get_token_location(NameToken),
     TypeDef = #type_def{
         name = Name,
+        % Will be populated separately for polymorphic type params
+        type_params = [],
+        % Constructor parameters
         params = TypeParams,
         definition = TypeExpr,
         constraint = Constraint,
         location = Location
     },
     {TypeDef, State6}.
+
+%% Parse type parameter list for polymorphic functions: <T, U, V>
+%% Returns a list of type parameter atoms
+parse_type_parameter_list(State, Acc) ->
+    case match_token(State, '>') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {Token, State1} = expect(State, identifier),
+            ParamName = binary_to_atom(get_token_value(Token), utf8),
+
+            % Check for optional bounds: T: Eq + Ord
+            {Bounds, State2} =
+                case match_token(State1, ':') of
+                    true ->
+                        {_, State1a} = expect(State1, ':'),
+                        parse_type_bounds(State1a, []);
+                    false ->
+                        {[], State1}
+                end,
+
+            % Create type_param_decl if bounds are present, otherwise just atom
+            FinalParam =
+                case Bounds of
+                    [] ->
+                        ParamName;
+                    _ ->
+                        Location = get_token_location(Token),
+                        #type_param_decl{
+                            name = ParamName,
+                            bounds = Bounds,
+                            kind = undefined,
+                            location = Location
+                        }
+                end,
+
+            case match_token(State2, ',') of
+                true ->
+                    {_, State3} = expect(State2, ','),
+                    parse_type_parameter_list(State3, [FinalParam | Acc]);
+                false ->
+                    {lists:reverse([FinalParam | Acc]), State2}
+            end
+    end.
+
+%% Parse type bounds for bounded polymorphism: Eq + Ord + Show
+parse_type_bounds(State, Acc) ->
+    {Token, State1} = expect(State, identifier),
+    Bound = binary_to_atom(get_token_value(Token), utf8),
+
+    case match_token(State1, '+') of
+        true ->
+            {_, State2} = expect(State1, '+'),
+            parse_type_bounds(State2, [Bound | Acc]);
+        false ->
+            {lists:reverse([Bound | Acc]), State1}
+    end.
+
+%% ============================================================================
+%% Trait System Parsing - Phase 4.2
+%% ============================================================================
+
+%% Parse trait definition
+%% Syntax: trait TraitName { methods... }
+%%         trait TraitName: Supertrait { methods... }
+parse_trait_def(State) ->
+    {TraitToken, State1} = expect(State, trait),
+    {NameToken, State2} = expect(State1, identifier),
+    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Location = get_token_location(TraitToken),
+
+    % Parse optional type parameters: trait Container<T>
+    {TypeParams, State3} =
+        case match_token(State2, '<') of
+            true ->
+                {_, State2a} = expect(State2, '<'),
+                {TParams, State2b} = parse_type_parameter_list(State2a, []),
+                {_, State2c} = expect(State2b, '>'),
+                {TParams, State2c};
+            false ->
+                % Default to ['Self'] for traits without explicit type params
+                {['Self'], State2}
+        end,
+
+    % Parse optional supertraits: trait Ord: Eq
+    {Supertraits, State4} =
+        case match_token(State3, ':') of
+            true ->
+                {_, State3a} = expect(State3, ':'),
+                parse_trait_supertraits(State3a, []);
+            false ->
+                {[], State3}
+        end,
+
+    % Parse trait body: { methods... }
+    {_, State5} = expect(State4, '{'),
+    {Methods, AssociatedTypes, State6} = parse_trait_body(State5, [], []),
+    {_, State7} = expect(State6, '}'),
+
+    TraitDef = #trait_def{
+        name = Name,
+        type_params = TypeParams,
+        methods = Methods,
+        supertraits = Supertraits,
+        associated_types = AssociatedTypes,
+        location = Location
+    },
+    {TraitDef, State7}.
+
+%% Parse supertrait list: Eq + Ord + Show
+parse_trait_supertraits(State, Acc) ->
+    {Token, State1} = expect(State, identifier),
+    Supertrait = binary_to_atom(get_token_value(Token), utf8),
+
+    case match_token(State1, '+') of
+        true ->
+            {_, State2} = expect(State1, '+'),
+            parse_trait_supertraits(State2, [Supertrait | Acc]);
+        false ->
+            {lists:reverse([Supertrait | Acc]), State1}
+    end.
+
+%% Parse trait body (methods and associated types)
+parse_trait_body(State, MethodsAcc, TypesAcc) ->
+    case get_token_type(current_token(State)) of
+        '}' ->
+            {lists:reverse(MethodsAcc), lists:reverse(TypesAcc), State};
+        type ->
+            % Associated type declaration
+            {AssocType, State1} = parse_associated_type(State),
+            parse_trait_body(State1, MethodsAcc, [AssocType | TypesAcc]);
+        def ->
+            % Method signature
+            {Method, State1} = parse_method_signature(State),
+            parse_trait_body(State1, [Method | MethodsAcc], TypesAcc);
+        _ ->
+            Token = current_token(State),
+            {Line, Col} = get_token_line_col(Token),
+            throw({parse_error, {unexpected_token_in_trait, get_token_type(Token)}, Line, Col})
+    end.
+
+%% Parse associated type declaration: type Item
+parse_associated_type(State) ->
+    {TypeToken, State1} = expect(State, type),
+    {NameToken, State2} = expect(State1, identifier),
+    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Location = get_token_location(TypeToken),
+
+    % Parse optional bounds: type Item: Eq
+    {Bounds, State3} =
+        case match_token(State2, ':') of
+            true ->
+                {_, State2a} = expect(State2, ':'),
+                parse_type_bounds(State2a, []);
+            false ->
+                {[], State2}
+        end,
+
+    % Parse optional default: type Item = T
+    {Default, State4} =
+        case match_token(State3, '=') of
+            true ->
+                {_, State3a} = expect(State3, '='),
+                {DefType, State3b} = parse_type(State3a),
+                {DefType, State3b};
+            false ->
+                {undefined, State3}
+        end,
+
+    AssocType = #associated_type{
+        name = Name,
+        bounds = Bounds,
+        default = Default,
+        location = Location
+    },
+    {AssocType, State4}.
+
+%% Parse method signature in trait
+parse_method_signature(State) ->
+    {DefToken, State1} = expect(State, def),
+    {NameToken, State2} = expect(State1, identifier),
+    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Location = get_token_location(DefToken),
+
+    % Parse optional type parameters: def method<T>(...)
+    {TypeParams, State3} =
+        case match_token(State2, '<') of
+            true ->
+                {_, State2a} = expect(State2, '<'),
+                {TParams, State2b} = parse_type_parameter_list(State2a, []),
+                {_, State2c} = expect(State2b, '>'),
+                {TParams, State2c};
+            false ->
+                {[], State2}
+        end,
+
+    % Parse parameters
+    {_, State4} = expect(State3, '('),
+    {Params, State5} = parse_parameters(State4, []),
+    {_, State6} = expect(State5, ')'),
+
+    % Parse return type
+    {ReturnType, State7} =
+        case match_token(State6, '->') of
+            true ->
+                {_, State6a} = expect(State6, '->'),
+                parse_type(State6a);
+            false ->
+                {undefined, State6}
+        end,
+
+    % Parse optional default implementation
+    {DefaultImpl, State8} =
+        case match_token(State7, '=') of
+            true ->
+                {_, State7a} = expect(State7, '='),
+                {Expr, State7b} = parse_expression(State7a),
+                {Expr, State7b};
+            false ->
+                {undefined, State7}
+        end,
+
+    MethodSig = #method_signature{
+        name = Name,
+        type_params = TypeParams,
+        params = Params,
+        return_type = ReturnType,
+        default_impl = DefaultImpl,
+        location = Location
+    },
+    {MethodSig, State8}.
+
+%% Parse trait implementation
+%% Syntax: impl TraitName for Type { methods... }
+%%         impl<T> TraitName for Type<T> { methods... }
+parse_trait_impl(State) ->
+    {ImplToken, State1} = expect(State, impl),
+    Location = get_token_location(ImplToken),
+
+    % Parse optional type parameters: impl<T, U>
+    {TypeParams, State2} =
+        case match_token(State1, '<') of
+            true ->
+                {_, State1a} = expect(State1, '<'),
+                {TParams, State1b} = parse_type_parameter_list(State1a, []),
+                {_, State1c} = expect(State1b, '>'),
+                {TParams, State1c};
+            false ->
+                {[], State1}
+        end,
+
+    % Parse trait name
+    {TraitNameToken, State3} = expect(State2, identifier),
+    TraitName = binary_to_atom(get_token_value(TraitNameToken), utf8),
+
+    % Expect 'for' keyword
+
+    % Should be 'for', but we need to add it as keyword
+    {_, State4} = expect(State3, identifier),
+
+    % Parse type being implemented for
+    {ForType, State5} = parse_type(State4),
+
+    % Parse optional where clause
+    {WhereClause, State6} =
+        % Using 'when' for now, can change to 'where'
+        case match_token(State5, 'when') of
+            true ->
+                {_, State5a} = expect(State5, 'when'),
+                parse_where_clause(State5a);
+            false ->
+                {undefined, State5}
+        end,
+
+    % Parse impl body: { methods... }
+    {_, State7} = expect(State6, '{'),
+    {Methods, AssocTypes, State8} = parse_impl_body(State7, [], #{}),
+    {_, State9} = expect(State8, '}'),
+
+    TraitImpl = #trait_impl{
+        trait_name = TraitName,
+        type_params = TypeParams,
+        for_type = ForType,
+        where_clause = WhereClause,
+        methods = Methods,
+        associated_types = AssocTypes,
+        location = Location
+    },
+    {TraitImpl, State9}.
+
+%% Parse impl body (method implementations and associated types)
+parse_impl_body(State, MethodsAcc, TypesAcc) ->
+    case get_token_type(current_token(State)) of
+        '}' ->
+            {lists:reverse(MethodsAcc), TypesAcc, State};
+        type ->
+            % Associated type binding: type Item = Int
+            {_, State1} = expect(State, type),
+            {NameToken, State2} = expect(State1, identifier),
+            Name = binary_to_atom(get_token_value(NameToken), utf8),
+            {_, State3} = expect(State2, '='),
+            {TypeExpr, State4} = parse_type(State3),
+            NewTypesAcc = maps:put(Name, TypeExpr, TypesAcc),
+            parse_impl_body(State4, MethodsAcc, NewTypesAcc);
+        def ->
+            % Method implementation
+            {Method, State1} = parse_method_impl(State),
+            parse_impl_body(State1, [Method | MethodsAcc], TypesAcc);
+        _ ->
+            Token = current_token(State),
+            {Line, Col} = get_token_line_col(Token),
+            throw({parse_error, {unexpected_token_in_impl, get_token_type(Token)}, Line, Col})
+    end.
+
+%% Parse method implementation
+parse_method_impl(State) ->
+    {DefToken, State1} = expect(State, def),
+    {NameToken, State2} = expect(State1, identifier),
+    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Location = get_token_location(DefToken),
+
+    % Parse parameters
+    {_, State3} = expect(State2, '('),
+    {Params, State4} = parse_parameters(State3, []),
+    {_, State5} = expect(State4, ')'),
+
+    % Parse optional return type
+    {ReturnType, State6} =
+        case match_token(State5, '->') of
+            true ->
+                {_, State5a} = expect(State5, '->'),
+                parse_type(State5a);
+            false ->
+                {undefined, State5}
+        end,
+
+    % Parse body (required for implementations)
+    {_, State7} = expect(State6, '='),
+    {Body, State8} = parse_expression(State7),
+
+    MethodImpl = #method_impl{
+        name = Name,
+        params = Params,
+        return_type = ReturnType,
+        body = Body,
+        location = Location
+    },
+    {MethodImpl, State8}.
+
+%% Parse where clause (placeholder for now)
+parse_where_clause(State) ->
+    % For now, just parse as expression
+    % TODO: Implement proper where clause parsing with trait bounds
+    {Expr, State1} = parse_expression(State),
+    {Expr, State1}.
 
 %% Parse type parameter names (for type definitions)
 parse_type_parameter_names(State, Acc) ->

@@ -152,6 +152,19 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     infer_dependent_type/2,
     instantiate_type_if_function/1,
 
+    % Polymorphic type instantiation
+    instantiate_polymorphic_type/2,
+    instantiate_polymorphic_type_if_needed/1,
+    instantiate_poly_type/1,
+    instantiate_poly_type/2,
+    fresh_type_vars_for_params/1,
+    extract_type_param_names/1,
+
+    % Let-polymorphism
+    generalize_type/2,
+    free_type_vars/1,
+    free_type_vars_in_env/1,
+
     % Enhanced type inference
     enhanced_infer_type/2, enhanced_infer_type/3,
     infer_with_alternatives/3,
@@ -1111,6 +1124,15 @@ unify_impl(
         Error ->
             Error
     end;
+%% Support for poly_type unification - instantiate before unifying
+unify_impl(#poly_type{} = PolyType1, Type2, Subst) ->
+    % Instantiate the polymorphic type with fresh type variables
+    InstType1 = instantiate_poly_type(PolyType1),
+    unify_impl(InstType1, Type2, Subst);
+unify_impl(Type1, #poly_type{} = PolyType2, Subst) ->
+    % Instantiate the polymorphic type with fresh type variables
+    InstType2 = instantiate_poly_type(PolyType2),
+    unify_impl(Type1, InstType2, Subst);
 %% Support for imported function types - unify with regular function types
 unify_impl(
     {imported_function_type, _Module, _Name, Params1, Return1},
@@ -1785,8 +1807,8 @@ infer_expr({identifier_expr, Name, Location}, Env) ->
         undefined ->
             {error, {unbound_variable, Name, Location}};
         Type ->
-            % Freshly instantiate function types to ensure polymorphism
-            InstantiatedType = instantiate_type_if_function(Type),
+            % Check if this is a polymorphic type and instantiate it
+            InstantiatedType = instantiate_polymorphic_type_if_needed(Type),
             {ok, InstantiatedType, []}
     end;
 infer_expr({binary_op_expr, '.', Left, {identifier_expr, FieldName, _}, Location}, Env) ->
@@ -2320,6 +2342,28 @@ instantiate_type_if_function(Type) ->
         {error, {not_function_type, _}} -> Type
     end.
 
+-doc """
+Instantiate a polymorphic type if needed, handling both poly_type and regular types.
+
+This is the main entry point for type instantiation during inference.
+It handles:
+- poly_type records: Instantiates with fresh type variables
+- Regular function types: Uses existing instantiate_type_if_function
+- Other types: Returns as-is
+
+## Arguments
+- `Type` - Any type expression
+
+## Returns
+Instantiated type with fresh type variables for polymorphic types
+""".
+instantiate_polymorphic_type_if_needed(#poly_type{} = PolyType) ->
+    % Polymorphic type - instantiate with fresh type variables
+    instantiate_poly_type(PolyType);
+instantiate_polymorphic_type_if_needed(Type) ->
+    % Not a poly_type - use existing function instantiation logic
+    instantiate_type_if_function(Type).
+
 %% Instantiate function type with fresh type variables while preserving sharing
 instantiate_function_type({function_type, ParamTypes, ReturnType}) ->
     cure_utils:debug("Instantiating function type with params: ~p~n", [ParamTypes]),
@@ -2577,6 +2621,294 @@ is_generic_type_variable_name(Name) ->
         "k" ++ _ -> true;
         _ -> false
     end.
+
+-doc """
+Instantiate a polymorphic type with fresh type variables.
+
+Given a type with type parameters (e.g., forall T. T -> T), creates a new
+type with fresh type variables replacing all type parameters.
+
+## Arguments
+- `Type` - The polymorphic type to instantiate
+- `TypeParams` - List of type parameter names to instantiate (e.g., ['T', 'U'])
+
+## Returns
+The instantiated type with fresh type variables
+
+## Example
+```erlang
+PolyType = {function_type, [{primitive_type, 'T'}], {primitive_type, 'T'}},
+InstType = instantiate_polymorphic_type(PolyType, ['T']).
+% Result: {function_type, [TypeVar1], TypeVar1} where TypeVar1 is fresh
+```
+""".
+instantiate_polymorphic_type(Type, []) ->
+    % No type parameters - return as-is
+    Type;
+instantiate_polymorphic_type(Type, TypeParams) ->
+    % Create fresh type variables for each type parameter
+    FreshVars = fresh_type_vars_for_params(TypeParams),
+    % Apply substitution to the type
+    apply_poly_substitution(Type, FreshVars).
+
+-doc """
+Instantiate a poly_type record with fresh type variables.
+
+Handles the poly_type AST record which explicitly represents
+polymorphic types with forall quantification.
+
+## Arguments
+- `PolyType` - A #poly_type{} record
+
+## Returns
+The instantiated body type with fresh type variables
+""".
+instantiate_poly_type(#poly_type{type_params = TypeParams, body_type = BodyType}) ->
+    instantiate_polymorphic_type(BodyType, extract_type_param_names(TypeParams));
+instantiate_poly_type(Type) ->
+    % Not a poly_type, return as-is
+    Type.
+
+-doc """
+Instantiate a poly_type record with provided type arguments.
+
+Handles explicit type application where concrete types are provided
+for type parameters (e.g., id<Int> applies Int to identity function).
+
+## Arguments
+- `PolyType` - A #poly_type{} record
+- `TypeArgs` - List of concrete types to substitute for type parameters
+
+## Returns
+The instantiated body type with type arguments substituted
+""".
+instantiate_poly_type(#poly_type{type_params = TypeParams, body_type = BodyType}, TypeArgs) ->
+    ParamNames = extract_type_param_names(TypeParams),
+    % Create substitution map from type params to type args
+    Subst = maps:from_list(lists:zip(ParamNames, TypeArgs)),
+    apply_poly_substitution(BodyType, Subst);
+instantiate_poly_type(Type, _TypeArgs) ->
+    % Not a poly_type, return as-is
+    Type.
+
+-doc """
+Create fresh type variables for a list of type parameters.
+
+## Arguments
+- `TypeParams` - List of type parameter atoms or #type_param_decl{} records
+
+## Returns
+A map from type parameter names to fresh type variables
+
+## Example
+```erlang
+FreshVars = fresh_type_vars_for_params(['T', 'U']).
+% Result: #{'T' => TypeVar1, 'U' => TypeVar2}
+```
+""".
+fresh_type_vars_for_params(TypeParams) ->
+    maps:from_list([
+        {extract_param_name(TP), new_type_var(extract_param_name(TP))}
+     || TP <- TypeParams
+    ]).
+
+-doc """
+Extract type parameter names from a list that may contain atoms or records.
+
+## Arguments  
+- `TypeParams` - List of atoms or #type_param_decl{} records
+
+## Returns
+List of type parameter name atoms
+""".
+extract_type_param_names(TypeParams) ->
+    [extract_param_name(TP) || TP <- TypeParams].
+
+%% Extract parameter name from atom or record
+extract_param_name(#type_param_decl{name = Name}) -> Name;
+extract_param_name(Name) when is_atom(Name) -> Name;
+extract_param_name(_) -> undefined.
+
+%% Apply polymorphic substitution to a type
+apply_poly_substitution({primitive_type, Name}, Subst) ->
+    case maps:get(Name, Subst, undefined) of
+        undefined -> {primitive_type, Name};
+        TypeVar -> TypeVar
+    end;
+apply_poly_substitution({function_type, Params, Return}, Subst) ->
+    {function_type, [apply_poly_substitution(P, Subst) || P <- Params],
+        apply_poly_substitution(Return, Subst)};
+apply_poly_substitution({dependent_type, Name, Params}, Subst) ->
+    {dependent_type, Name, [apply_poly_subst_to_param(P, Subst) || P <- Params]};
+apply_poly_substitution({list_type, ElemType, Length}, Subst) ->
+    {list_type, apply_poly_substitution(ElemType, Subst), Length};
+apply_poly_substitution(#tuple_type{element_types = Elems, location = Loc}, Subst) ->
+    #tuple_type{
+        element_types = [apply_poly_substitution(E, Subst) || E <- Elems],
+        location = Loc
+    };
+apply_poly_substitution({union_type, Variants, Loc}, Subst) ->
+    {union_type, [apply_poly_substitution(V, Subst) || V <- Variants], Loc};
+apply_poly_substitution(#type_var{name = Name} = TVar, Subst) ->
+    case maps:get(Name, Subst, undefined) of
+        undefined -> TVar;
+        NewVar -> NewVar
+    end;
+% Note: {tuple_type, Elems, Loc} pattern omitted as it conflicts with primitive_type and other tuples
+% Tuple types should use the #tuple_type record format
+apply_poly_substitution(Type, _Subst) ->
+    % Other types unchanged
+    Type.
+
+%% Apply substitution to type parameter
+apply_poly_subst_to_param(#type_param{name = Name, value = Value, location = Loc}, Subst) ->
+    #type_param{
+        name = Name,
+        value = apply_poly_substitution(Value, Subst),
+        location = Loc
+    };
+apply_poly_subst_to_param(Param, _Subst) ->
+    Param.
+
+-doc """
+Generalize a type by quantifying over free type variables.
+
+Implements Hindley-Milner let-polymorphism by creating a poly_type
+that quantifies over type variables that are free in the type but
+not free in the environment.
+
+## Arguments
+- `Type` - Type to generalize
+- `Env` - Current type environment
+
+## Returns
+Either a poly_type (if there are free type variables) or the original type
+
+## Example
+```erlang
+% Type: T -> T where T is free
+% Env: {x: Int}
+% Result: forall T. T -> T
+Type = {function_type, [TypeVar], TypeVar},
+Generalized = generalize_type(Type, Env).
+```
+""".
+generalize_type(Type, Env) ->
+    % Find type variables that are free in Type but not in Env
+    FreeInType = free_type_vars(Type),
+    FreeInEnv = free_type_vars_in_env(Env),
+    TypeVarsToQuantify = sets:subtract(FreeInType, FreeInEnv),
+
+    case sets:size(TypeVarsToQuantify) of
+        0 ->
+            % No free type variables - return as monomorphic type
+            Type;
+        _ ->
+            % Create polymorphic type with quantified variables
+            TypeParamNames = sets:to_list(TypeVarsToQuantify),
+            #poly_type{
+                type_params = TypeParamNames,
+                constraints = [],
+                body_type = Type,
+                location = undefined
+            }
+    end.
+
+-doc """
+Find all free type variables in a type.
+
+## Arguments
+- `Type` - Type expression to analyze
+
+## Returns
+Set of type variable names/ids that appear free in the type
+""".
+free_type_vars(#type_var{id = Id}) ->
+    sets:from_list([Id]);
+free_type_vars({primitive_type, Name}) ->
+    % Check if this is actually a type variable
+    case is_generic_type_variable_name(Name) of
+        true -> sets:from_list([Name]);
+        false -> sets:new()
+    end;
+free_type_vars({function_type, Params, Return}) ->
+    ParamVars = lists:foldl(
+        fun(P, Acc) -> sets:union(free_type_vars(P), Acc) end,
+        sets:new(),
+        Params
+    ),
+    sets:union(ParamVars, free_type_vars(Return));
+free_type_vars({list_type, ElemType, _Length}) ->
+    free_type_vars(ElemType);
+free_type_vars({dependent_type, _Name, Params}) ->
+    lists:foldl(
+        fun(Param, Acc) ->
+            ParamValue = extract_type_param_value(Param),
+            sets:union(free_type_vars(ParamValue), Acc)
+        end,
+        sets:new(),
+        Params
+    );
+free_type_vars(#tuple_type{element_types = Elems}) ->
+    lists:foldl(
+        fun(E, Acc) -> sets:union(free_type_vars(E), Acc) end,
+        sets:new(),
+        Elems
+    );
+free_type_vars({union_type, Variants, _Loc}) ->
+    lists:foldl(
+        fun(V, Acc) -> sets:union(free_type_vars(V), Acc) end,
+        sets:new(),
+        Variants
+    );
+free_type_vars(#poly_type{type_params = Params, body_type = Body}) ->
+    % Free vars in body minus the quantified params
+    BodyVars = free_type_vars(Body),
+    ParamNames = extract_type_param_names(Params),
+    ParamSet = sets:from_list(ParamNames),
+    sets:subtract(BodyVars, ParamSet);
+free_type_vars(_) ->
+    sets:new().
+
+-doc """
+Find all free type variables in a type environment.
+
+## Arguments
+- `Env` - Type environment
+
+## Returns
+Set of type variable names/ids that appear free in any type in the environment
+""".
+free_type_vars_in_env(#type_env{bindings = Bindings, parent = Parent}) ->
+    % Collect free vars from all bindings
+    BindingVars = maps:fold(
+        fun(_Name, Type, Acc) ->
+            sets:union(free_type_vars(Type), Acc)
+        end,
+        sets:new(),
+        Bindings
+    ),
+    % Include parent environment if present
+    case Parent of
+        undefined -> BindingVars;
+        _ -> sets:union(BindingVars, free_type_vars_in_env(Parent))
+    end;
+free_type_vars_in_env(#{} = Env) when is_map(Env) ->
+    % Simple map environment
+    maps:fold(
+        fun(_Name, Type, Acc) ->
+            sets:union(free_type_vars(Type), Acc)
+        end,
+        sets:new(),
+        Env
+    );
+free_type_vars_in_env([]) ->
+    sets:new();
+free_type_vars_in_env([{_Name, Type} | Rest]) ->
+    % Association list environment
+    sets:union(free_type_vars(Type), free_type_vars_in_env(Rest));
+free_type_vars_in_env(_) ->
+    sets:new().
 
 %% Infer curried function application: f(a1, a2, ..., an) becomes f(a1)(a2)...(an)
 infer_curried_application(FuncType, [], _Location, Constraints) ->
@@ -2845,7 +3177,9 @@ infer_let_expr([{binding, Pattern, Value, _Location} | RestBindings], Body, Env,
                         {ok, Subst} ->
                             % Apply substitution to get concrete type for this binding
                             ConcreteValueType = apply_substitution(ValueType, Subst),
-                            NewEnv = extend_env(Env, VarName, ConcreteValueType),
+                            % Generalize the type if it contains free type variables (let-polymorphism)
+                            GeneralizedType = generalize_type(ConcreteValueType, Env),
+                            NewEnv = extend_env(Env, VarName, GeneralizedType),
                             % Continue with remaining bindings, keeping original constraints
                             infer_let_expr(RestBindings, Body, NewEnv, Constraints);
                         {error, Reason} ->
