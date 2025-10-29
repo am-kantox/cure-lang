@@ -22,6 +22,7 @@ TYPES_SRC = $(wildcard $(SRC_DIR)/types/*.erl)
 CODEGEN_SRC = $(wildcard $(SRC_DIR)/codegen/*.erl)
 FSM_SRC = $(wildcard $(SRC_DIR)/fsm/*.erl)
 RUNTIME_SRC = $(wildcard $(SRC_DIR)/runtime/*.erl)
+SMT_SRC = $(wildcard $(SRC_DIR)/smt/*.erl)
 CLI_SRC = $(SRC_DIR)/cure_cli.erl
 LSP_SRC = $(wildcard $(LSP_DIR)/*.erl)
 
@@ -31,21 +32,25 @@ CURE_STD_SRC = $(wildcard $(LIB_DIR)/*.cure $(LIB_DIR)/std/*.cure)
 # Test files (exclude problematic advanced tests and EUnit-dependent tests for now)
 TEST_SRC = $(filter-out $(TEST_DIR)/dependent_types_advanced_test.erl $(TEST_DIR)/codegen_advanced_test.erl $(TEST_DIR)/fsm_advanced_test.erl $(TEST_DIR)/monomorphization_test.erl $(TEST_DIR)/inlining_test.erl $(TEST_DIR)/nat_type_test.erl, $(wildcard $(TEST_DIR)/*.erl))
 
+# SMT test files
+SMT_TEST_SRC = $(TEST_DIR)/smt_process_test.erl $(TEST_DIR)/smt_parser_test.erl
+
 # Working test modules by category
 BASIC_TESTS = $(TEST_DIR)/test_runner.erl $(TEST_DIR)/fsm_simple_test.erl $(TEST_DIR)/types_simple_test.erl $(TEST_DIR)/codegen_simple_test.erl
 INTEGRATION_TESTS = $(TEST_DIR)/integration_test.erl
 PERFORMANCE_TESTS = $(TEST_DIR)/performance_test.erl
 
-ALL_SRC = $(UTILS_SRC) $(LEXER_SRC) $(PARSER_SRC) $(TYPES_SRC) $(CODEGEN_SRC) $(FSM_SRC) $(RUNTIME_SRC) $(CLI_SRC)
+ALL_SRC = $(UTILS_SRC) $(LEXER_SRC) $(PARSER_SRC) $(TYPES_SRC) $(CODEGEN_SRC) $(FSM_SRC) $(RUNTIME_SRC) $(SMT_SRC) $(CLI_SRC)
 BEAM_FILES = $(patsubst $(SRC_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(ALL_SRC))
 TEST_BEAM_FILES = $(patsubst $(TEST_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(TEST_SRC))
+SMT_TEST_BEAM_FILES = $(patsubst $(TEST_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(SMT_TEST_SRC))
 CURE_STD_BEAM_FILES = $(patsubst $(LIB_DIR)/%.cure,$(LIB_EBIN_DIR)/%.beam,$(CURE_STD_SRC))
 LSP_BEAM_FILES = $(patsubst $(LSP_DIR)/%.erl,$(LSP_EBIN_DIR)/%.beam,$(LSP_SRC))
 
 # Compiler options
 ERLC_OPTS = +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(EBIN_DIR)
 
-.PHONY: all clean clean-all test test-basic test-integration test-performance docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-deps lsp-scripts lsp-shell
+.PHONY: all clean clean-all test test-basic test-integration test-performance test-smt docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-deps lsp-scripts lsp-shell
 
 all: setup compiler stdlib
 
@@ -58,6 +63,7 @@ setup:
 	@mkdir -p $(EBIN_DIR)/codegen
 	@mkdir -p $(EBIN_DIR)/fsm
 	@mkdir -p $(EBIN_DIR)/runtime
+	@mkdir -p $(EBIN_DIR)/smt
 	@mkdir -p $(LIB_EBIN_DIR)
 	@mkdir -p $(LIB_EBIN_DIR)/std
 	@mkdir -p $(LSP_EBIN_DIR)
@@ -181,6 +187,11 @@ test-integration: tests
 test-performance: tests
 	@echo "Running performance tests..."
 	$(ERL) -pa $(EBIN_DIR) -pa $(LIB_EBIN_DIR) -pa $(LIB_EBIN_DIR)/std -noshell -s test_runner run_performance -s init stop
+
+# Run SMT tests
+test-smt: compiler $(SMT_TEST_BEAM_FILES)
+	@echo "Running SMT solver tests..."
+	$(ERL) -pa $(EBIN_DIR) -noshell -s smt_process_test run -s smt_parser_test run -s init stop
 
 # Generate documentation
 docs: compiler
