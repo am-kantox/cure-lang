@@ -33,7 +33,7 @@ CURE_STD_SRC = $(wildcard $(LIB_DIR)/*.cure $(LIB_DIR)/std/*.cure)
 TEST_SRC = $(filter-out $(TEST_DIR)/dependent_types_advanced_test.erl $(TEST_DIR)/codegen_advanced_test.erl $(TEST_DIR)/fsm_advanced_test.erl $(TEST_DIR)/monomorphization_test.erl $(TEST_DIR)/inlining_test.erl $(TEST_DIR)/nat_type_test.erl, $(wildcard $(TEST_DIR)/*.erl))
 
 # SMT test files
-SMT_TEST_SRC = $(TEST_DIR)/smt_process_test.erl $(TEST_DIR)/smt_parser_test.erl
+SMT_TEST_SRC = $(TEST_DIR)/smt_process_test.erl $(TEST_DIR)/smt_parser_test.erl $(TEST_DIR)/smt_typechecker_test.erl
 
 # Working test modules by category
 BASIC_TESTS = $(TEST_DIR)/test_runner.erl $(TEST_DIR)/fsm_simple_test.erl $(TEST_DIR)/types_simple_test.erl $(TEST_DIR)/codegen_simple_test.erl
@@ -191,7 +191,7 @@ test-performance: tests
 # Run SMT tests
 test-smt: compiler $(SMT_TEST_BEAM_FILES)
 	@echo "Running SMT solver tests..."
-	$(ERL) -pa $(EBIN_DIR) -noshell -s smt_process_test run -s smt_parser_test run -s init stop
+	$(ERL) -pa $(EBIN_DIR) -noshell -s smt_process_test run -s smt_parser_test run -s smt_typechecker_test run -s init stop
 
 # Generate documentation
 docs: compiler
