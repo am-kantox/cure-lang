@@ -245,12 +245,79 @@ handle_hover(#{<<"params">> := Params}, State) ->
 
 %% Code completion
 handle_completion(#{<<"params">> := Params}, State) ->
-    #{<<"textDocument">> := TextDoc, <<"position">> := _Position} = Params,
-    _Uri = maps:get(<<"uri">>, TextDoc),
+    #{<<"textDocument">> := TextDoc, <<"position">> := Position} = Params,
+    Uri = maps:get(<<"uri">>, TextDoc),
+    Line = maps:get(<<"line">>, Position),
+    Character = maps:get(<<"character">>, Position),
 
-    % TODO: Implement completion
-    Response = #{<<"items">> => []},
+    % Get completion items based on context
+    Items = get_completion_items(Uri, Line, Character, State),
+
+    Response = #{<<"items">> => Items},
     {reply, Response, State}.
+
+%% Get completion items at position
+get_completion_items(Uri, _Line, _Character, State) ->
+    case maps:get(Uri, State#state.documents, undefined) of
+        undefined ->
+            [];
+        #document{ast = undefined} ->
+            [];
+        #document{ast = AST} ->
+            % Collect completions from AST
+            collect_completions(AST)
+    end.
+
+%% Collect completion items from AST
+collect_completions(AST) when is_list(AST) ->
+    lists:flatten(lists:map(fun collect_completions/1, AST));
+collect_completions(#module_def{items = Items}) ->
+    collect_completions(Items);
+collect_completions(#function_def{name = Name, params = Params, return_type = RetType}) ->
+    [create_completion_item(Name, function, format_function_signature(Name, Params, RetType))];
+collect_completions(#type_def{name = Name, params = Params}) ->
+    Detail =
+        case Params of
+            [] -> iolist_to_binary(["type ", atom_to_binary(Name, utf8)]);
+            _ -> iolist_to_binary(["type ", atom_to_binary(Name, utf8), "(...)"])
+        end,
+    [create_completion_item(Name, type, Detail)];
+collect_completions(#fsm_def{name = Name, states = States}) ->
+    Item = create_completion_item(
+        Name, fsm, iolist_to_binary(["fsm with ", integer_to_binary(length(States)), " states"])
+    ),
+    % Add state names as completions too
+    StateItems = [create_completion_item(StateName, state, <<"state">>) || StateName <- States],
+    [Item | StateItems];
+collect_completions(_) ->
+    [].
+
+%% Create a completion item
+create_completion_item(Name, Kind, Detail) ->
+    #{
+        <<"label">> => atom_to_binary(Name, utf8),
+        <<"kind">> => completion_kind_to_int(Kind),
+        <<"detail">> => Detail
+    }.
+
+%% Convert completion kind to LSP integer
+
+% Function
+completion_kind_to_int(function) -> 3;
+% Struct (closest to type)
+completion_kind_to_int(type) -> 22;
+% Class (closest to FSM)
+completion_kind_to_int(fsm) -> 5;
+% Constant (for FSM states)
+completion_kind_to_int(state) -> 13;
+% Text
+completion_kind_to_int(_) -> 1.
+
+%% Format function signature for completion
+format_function_signature(Name, Params, RetType) ->
+    ParamStr = format_params(Params),
+    RetStr = format_type(RetType),
+    iolist_to_binary(["def ", atom_to_binary(Name, utf8), "(", ParamStr, ") -> ", RetStr]).
 
 %% Open a document
 open_document(Uri, Version, Content, State) ->
@@ -362,17 +429,345 @@ get_hover_info(Uri, Line, Character, State) ->
             end
     end.
 
-%% Find AST node at position (simplified implementation)
-find_node_at_position(_AST, _Line, _Character) ->
-    % TODO: Implement proper AST traversal to find node at position
-    % For now, return undefined
+%% Find AST node at position
+%% Traverses the AST to find the most specific node at the given position
+find_node_at_position(AST, Line, Character) when is_list(AST) ->
+    % AST is a list of top-level items
+    find_node_in_list(AST, Line, Character);
+find_node_at_position(AST, Line, Character) ->
+    % Single AST node
+    find_node_in_item(AST, Line, Character).
+
+%% Find node in a list of items
+find_node_in_list([], _Line, _Character) ->
+    undefined;
+find_node_in_list([Item | Rest], Line, Character) ->
+    case find_node_in_item(Item, Line, Character) of
+        undefined -> find_node_in_list(Rest, Line, Character);
+        Node -> Node
+    end.
+
+%% Find node in a specific AST item
+find_node_in_item(#module_def{items = Items, location = Loc} = Node, Line, Character) ->
+    case location_contains(Loc, Line, Character) of
+        true ->
+            % Check if any child item contains the position more specifically
+            case find_node_in_list(Items, Line, Character) of
+                % Return module if no more specific node found
+                undefined -> Node;
+                ChildNode -> ChildNode
+            end;
+        false ->
+            undefined
+    end;
+find_node_in_item(#function_def{body = Body, location = Loc} = Node, Line, Character) ->
+    case location_contains(Loc, Line, Character) of
+        true ->
+            % Check if body contains the position more specifically
+            case find_node_in_expr(Body, Line, Character) of
+                undefined -> Node;
+                ChildNode -> ChildNode
+            end;
+        false ->
+            undefined
+    end;
+find_node_in_item(#type_def{definition = Def, location = Loc} = Node, Line, Character) ->
+    case location_contains(Loc, Line, Character) of
+        true ->
+            case find_node_in_type(Def, Line, Character) of
+                undefined -> Node;
+                ChildNode -> ChildNode
+            end;
+        false ->
+            undefined
+    end;
+find_node_in_item(#fsm_def{state_defs = StateDefs, location = Loc} = Node, Line, Character) ->
+    case location_contains(Loc, Line, Character) of
+        true ->
+            case find_node_in_list(StateDefs, Line, Character) of
+                undefined -> Node;
+                ChildNode -> ChildNode
+            end;
+        false ->
+            undefined
+    end;
+find_node_in_item(#state_def{transitions = Trans, location = Loc} = Node, Line, Character) ->
+    case location_contains(Loc, Line, Character) of
+        true ->
+            case find_node_in_list(Trans, Line, Character) of
+                undefined -> Node;
+                ChildNode -> ChildNode
+            end;
+        false ->
+            undefined
+    end;
+find_node_in_item(_Node, _Line, _Character) ->
     undefined.
 
+%% Find node in an expression
+find_node_in_expr(undefined, _Line, _Character) ->
+    undefined;
+find_node_in_expr(#identifier_expr{location = Loc} = Node, Line, Character) ->
+    case location_contains(Loc, Line, Character) of
+        true -> Node;
+        false -> undefined
+    end;
+find_node_in_expr(#literal_expr{location = Loc} = Node, Line, Character) ->
+    case location_contains(Loc, Line, Character) of
+        true -> Node;
+        false -> undefined
+    end;
+find_node_in_expr(
+    #function_call_expr{function = Func, args = Args, location = Loc} = Node, Line, Character
+) ->
+    case location_contains(Loc, Line, Character) of
+        true ->
+            % Check function and arguments
+            case find_node_in_expr(Func, Line, Character) of
+                undefined ->
+                    case find_node_in_list(Args, Line, Character) of
+                        undefined -> Node;
+                        ArgNode -> ArgNode
+                    end;
+                FuncNode ->
+                    FuncNode
+            end;
+        false ->
+            undefined
+    end;
+find_node_in_expr(
+    #binary_op_expr{left = Left, right = Right, location = Loc} = Node, Line, Character
+) ->
+    case location_contains(Loc, Line, Character) of
+        true ->
+            case find_node_in_expr(Left, Line, Character) of
+                undefined ->
+                    case find_node_in_expr(Right, Line, Character) of
+                        undefined -> Node;
+                        RightNode -> RightNode
+                    end;
+                LeftNode ->
+                    LeftNode
+            end;
+        false ->
+            undefined
+    end;
+find_node_in_expr(
+    #let_expr{bindings = Bindings, body = Body, location = Loc} = Node, Line, Character
+) ->
+    case location_contains(Loc, Line, Character) of
+        true ->
+            case find_node_in_list(Bindings, Line, Character) of
+                undefined ->
+                    case find_node_in_expr(Body, Line, Character) of
+                        undefined -> Node;
+                        BodyNode -> BodyNode
+                    end;
+                BindingNode ->
+                    BindingNode
+            end;
+        false ->
+            undefined
+    end;
+find_node_in_expr(
+    #match_expr{expr = Expr, patterns = Patterns, location = Loc} = Node, Line, Character
+) ->
+    case location_contains(Loc, Line, Character) of
+        true ->
+            case find_node_in_expr(Expr, Line, Character) of
+                undefined ->
+                    case find_node_in_list(Patterns, Line, Character) of
+                        undefined -> Node;
+                        PatternNode -> PatternNode
+                    end;
+                ExprNode ->
+                    ExprNode
+            end;
+        false ->
+            undefined
+    end;
+find_node_in_expr(#list_expr{elements = Elements, location = Loc} = Node, Line, Character) ->
+    case location_contains(Loc, Line, Character) of
+        true ->
+            case find_node_in_list(Elements, Line, Character) of
+                undefined -> Node;
+                ElementNode -> ElementNode
+            end;
+        false ->
+            undefined
+    end;
+find_node_in_expr(#tuple_expr{elements = Elements, location = Loc} = Node, Line, Character) ->
+    case location_contains(Loc, Line, Character) of
+        true ->
+            case find_node_in_list(Elements, Line, Character) of
+                undefined -> Node;
+                ElementNode -> ElementNode
+            end;
+        false ->
+            undefined
+    end;
+find_node_in_expr(_Node, _Line, _Character) ->
+    undefined.
+
+%% Find node in a type expression
+find_node_in_type(#primitive_type{location = Loc} = Node, Line, Character) ->
+    case location_contains(Loc, Line, Character) of
+        true -> Node;
+        false -> undefined
+    end;
+find_node_in_type(#dependent_type{params = Params, location = Loc} = Node, Line, Character) ->
+    case location_contains(Loc, Line, Character) of
+        true ->
+            case find_node_in_list(Params, Line, Character) of
+                undefined -> Node;
+                ParamNode -> ParamNode
+            end;
+        false ->
+            undefined
+    end;
+find_node_in_type(_Type, _Line, _Character) ->
+    undefined.
+
+%% Check if a location contains the given position
+location_contains(undefined, _Line, _Character) ->
+    false;
+location_contains(#location{line = L, column = C}, Line, Character) when L =:= Line ->
+    % Same line - check if character is at or after the column
+    Character >= C;
+location_contains(#location{line = L}, Line, _Character) when L =:= Line ->
+    % Same line, assume it contains the position
+    true;
+location_contains(#location{line = L}, Line, _Character) when L < Line ->
+    % Location line is before the target line - could contain if multi-line
+    % For simplicity, assume single-line nodes for now
+    false;
+location_contains(_Location, _Line, _Character) ->
+    false.
+
 %% Infer type for a node
-infer_node_type(Node, State) ->
-    % TODO: Integrate with type checker
-    % For now, return a placeholder
+%% Provides basic type information based on AST node structure
+infer_node_type(#literal_expr{value = Value}, _State) ->
+    Type = infer_literal_type(Value),
+    {ok, Type};
+infer_node_type(#identifier_expr{name = Name}, State) ->
+    % Try to find the identifier's type in scope
+    % For now, return the identifier name with a type hint
+    {ok, iolist_to_binary([atom_to_binary(Name, utf8), <<" :: unknown">>])};
+infer_node_type(#function_def{name = Name, params = Params, return_type = RetType}, _State) ->
+    % Format function signature
+    ParamTypes = format_params(Params),
+    ReturnType = format_type(RetType),
+    Signature = iolist_to_binary([
+        "def ", atom_to_binary(Name, utf8), "(", ParamTypes, ") -> ", ReturnType
+    ]),
+    {ok, Signature};
+infer_node_type(#function_call_expr{function = #identifier_expr{name = Name}, args = Args}, _State) ->
+    % Function call - show function name and arity
+    Arity = length(Args),
+    {ok, iolist_to_binary([atom_to_binary(Name, utf8), "/", integer_to_binary(Arity)])};
+infer_node_type(#type_def{name = Name, params = Params}, _State) ->
+    % Type definition
+    case Params of
+        [] ->
+            {ok, iolist_to_binary(["type ", atom_to_binary(Name, utf8)])};
+        _ ->
+            ParamStr = format_type_params(Params),
+            {ok, iolist_to_binary(["type ", atom_to_binary(Name, utf8), "(", ParamStr, ")"])}
+    end;
+infer_node_type(#primitive_type{name = TypeName}, _State) ->
+    {ok, atom_to_binary(TypeName, utf8)};
+infer_node_type(#dependent_type{name = TypeName, params = Params}, _State) ->
+    ParamStr = format_type_params(Params),
+    {ok, iolist_to_binary([atom_to_binary(TypeName, utf8), "(", ParamStr, ")"])};
+infer_node_type(#binary_op_expr{op = Op, left = Left, right = Right}, State) ->
+    % Binary operation - infer from operands
+    case {infer_node_type(Left, State), infer_node_type(Right, State)} of
+        {{ok, LeftType}, {ok, RightType}} ->
+            {ok, iolist_to_binary([LeftType, " ", atom_to_binary(Op, utf8), " ", RightType])};
+        _ ->
+            {ok, iolist_to_binary(["(", atom_to_binary(Op, utf8), " expression)"])}
+    end;
+infer_node_type(#list_expr{}, _State) ->
+    {ok, <<"List">>};
+infer_node_type(#tuple_expr{elements = Elements}, _State) ->
+    Size = length(Elements),
+    {ok, iolist_to_binary(["Tuple(", integer_to_binary(Size), " elements)"])};
+infer_node_type(#module_def{name = Name}, _State) ->
+    {ok, iolist_to_binary(["module ", atom_to_binary(Name, utf8)])};
+infer_node_type(#fsm_def{name = Name, states = States}, _State) ->
+    StateCount = length(States),
+    {ok,
+        iolist_to_binary([
+            "fsm ", atom_to_binary(Name, utf8), " (", integer_to_binary(StateCount), " states)"
+        ])};
+infer_node_type(_Node, _State) ->
     {ok, <<"unknown">>}.
+
+%% Infer type from literal value
+infer_literal_type(Value) when is_integer(Value) -> <<"Int">>;
+infer_literal_type(Value) when is_float(Value) -> <<"Float">>;
+infer_literal_type(Value) when is_binary(Value) -> <<"String">>;
+infer_literal_type(Value) when is_atom(Value) ->
+    case Value of
+        true -> <<"Bool">>;
+        false -> <<"Bool">>;
+        unit -> <<"Unit">>;
+        _ -> <<"Atom">>
+    end;
+infer_literal_type(_) ->
+    <<"unknown">>.
+
+%% Format function parameters
+format_params(undefined) ->
+    <<"">>;
+format_params([]) ->
+    <<"">>;
+format_params(Params) when is_list(Params) ->
+    ParamStrs = lists:map(fun format_param/1, Params),
+    iolist_to_binary(lists:join(", ", ParamStrs));
+format_params(_) ->
+    <<"...">>.
+
+format_param(#param{name = Name, type = Type}) ->
+    TypeStr = format_type(Type),
+    iolist_to_binary([atom_to_binary(Name, utf8), ": ", TypeStr]);
+format_param(_) ->
+    <<"_">>.
+
+%% Format type expression
+format_type(undefined) ->
+    <<"_">>;
+format_type(#primitive_type{name = Name}) ->
+    atom_to_binary(Name, utf8);
+format_type(#dependent_type{name = Name, params = Params}) ->
+    ParamStr = format_type_params(Params),
+    iolist_to_binary([atom_to_binary(Name, utf8), "(", ParamStr, ")"]);
+format_type(#function_type{params = Params, return_type = RetType}) ->
+    ParamStrs = lists:map(fun format_type/1, Params),
+    ParamStr = iolist_to_binary(lists:join(", ", ParamStrs)),
+    RetStr = format_type(RetType),
+    iolist_to_binary(["fn(", ParamStr, ") -> ", RetStr]);
+format_type(_) ->
+    <<"unknown">>.
+
+%% Format type parameters
+format_type_params([]) ->
+    <<"">>;
+format_type_params(Params) when is_list(Params) ->
+    ParamStrs = lists:map(fun format_type_param/1, Params),
+    iolist_to_binary(lists:join(", ", ParamStrs));
+format_type_params(_) ->
+    <<"...">>.
+
+format_type_param(#type_param{name = Name, value = Value}) when Name =/= undefined ->
+    ValueStr = format_type(Value),
+    iolist_to_binary([atom_to_binary(Name, utf8), ": ", ValueStr]);
+format_type_param(#type_param{value = Value}) ->
+    format_type(Value);
+format_type_param(Atom) when is_atom(Atom) ->
+    atom_to_binary(Atom, utf8);
+format_type_param(_) ->
+    <<"_">>.
 
 %% Format hover information
 format_hover_info(Node, Type) ->

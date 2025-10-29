@@ -1540,7 +1540,7 @@ parse_import_item(State) ->
 
 %% Parse import statement
 parse_import(State) ->
-    {_, State1} = expect(State, import),
+    {ImportToken, State1} = expect(State, import),
     {ModuleName, State2} = parse_module_name(State1),
 
     {Items, State3} =
@@ -1554,8 +1554,8 @@ parse_import(State) ->
                 {all, State2}
         end,
 
-    % TODO: proper location
-    Location = #location{line = 0, column = 0, file = undefined},
+    % Extract location from import token
+    Location = get_token_location(ImportToken),
     Import = #import_def{
         module = ModuleName,
         items = Items,
@@ -1976,12 +1976,65 @@ parse_method_impl(State) ->
     },
     {MethodImpl, State8}.
 
-%% Parse where clause (placeholder for now)
+%% Parse where clause with trait bounds
 parse_where_clause(State) ->
-    % For now, just parse as expression
-    % TODO: Implement proper where clause parsing with trait bounds
-    {Expr, State1} = parse_expression(State),
-    {Expr, State1}.
+    % Where clause: where T: Trait1 + Trait2, U: Trait3
+    parse_where_constraints(State, []).
+
+%% Parse where constraints recursively
+parse_where_constraints(State, Acc) ->
+    % Try to parse a type variable constraint
+    case get_token_type(current_token(State)) of
+        identifier ->
+            {TypeVarToken, State1} = expect(State, identifier),
+            TypeVar = binary_to_atom(get_token_value(TypeVarToken), utf8),
+
+            % Expect colon for trait bound
+            case match_token(State1, ':') of
+                true ->
+                    {_, State2} = expect(State1, ':'),
+                    % Parse trait bounds (Trait1 + Trait2 + ...)
+                    {TraitBounds, State3} = parse_trait_bounds(State2, []),
+
+                    Constraint = {type_constraint, TypeVar, TraitBounds},
+
+                    % Check for more constraints separated by comma
+                    case match_token(State3, ',') of
+                        true ->
+                            {_, State4} = expect(State3, ','),
+                            parse_where_constraints(State4, [Constraint | Acc]);
+                        false ->
+                            {lists:reverse([Constraint | Acc]), State3}
+                    end;
+                false ->
+                    % No colon, treat as expression (fallback for backward compatibility)
+                    {Expr, State2} = parse_expression(State),
+                    {Expr, State2}
+            end;
+        _ ->
+            % Not an identifier, treat as expression (fallback)
+            case Acc of
+                [] ->
+                    {Expr, State1} = parse_expression(State),
+                    {Expr, State1};
+                _ ->
+                    {lists:reverse(Acc), State}
+            end
+    end.
+
+%% Parse trait bounds separated by '+' (Trait1 + Trait2 + Trait3)
+parse_trait_bounds(State, Acc) ->
+    {TraitToken, State1} = expect(State, identifier),
+    TraitName = binary_to_atom(get_token_value(TraitToken), utf8),
+
+    % Check for more trait bounds with '+'
+    case match_token(State1, '+') of
+        true ->
+            {_, State2} = expect(State1, '+'),
+            parse_trait_bounds(State2, [TraitName | Acc]);
+        false ->
+            {lists:reverse([TraitName | Acc]), State1}
+    end.
 
 %% Parse type parameter names (for type definitions)
 parse_type_parameter_names(State, Acc) ->

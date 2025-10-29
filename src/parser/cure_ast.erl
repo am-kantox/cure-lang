@@ -132,9 +132,9 @@ This module integrates with:
 
 -export([
     new_module/4,
-    new_function/5,
-    new_type_def/3,
-    new_fsm/4,
+    new_function/6,
+    new_type_def/4,
+    new_fsm/5,
     new_expr/3
 ]).
 
@@ -578,6 +578,7 @@ Creates a new function definition AST node.
 - `ReturnType` - Return type expression (undefined if not specified)
 - `Constraint` - Optional constraint expression for the function
 - `Body` - Function body expression
+- `Location` - Source location information
 
 ## Returns
 - `function_def()` - Function definition AST node
@@ -586,29 +587,25 @@ Creates a new function definition AST node.
 ```erlang
 Params = [#param{name = x, type = IntType, location = Loc}],
 Body = #literal_expr{value = 42, location = Loc},
-Function = cure_ast:new_function(identity, Params, IntType, undefined, Body).
+Function = cure_ast:new_function(identity, Params, IntType, undefined, Body, Location).
 ```
-
-## Note
-This helper function uses a default location. For proper location tracking,
-construct the record directly with accurate location information.
 """.
 -spec new_function(
     atom(),
     [param()],
     type_expr() | undefined,
     expr() | undefined,
-    expr()
+    expr(),
+    location()
 ) -> function_def().
-new_function(Name, Params, ReturnType, Constraint, Body) ->
+new_function(Name, Params, ReturnType, Constraint, Body, Location) ->
     #function_def{
         name = Name,
         params = Params,
         return_type = ReturnType,
         constraint = Constraint,
         body = Body,
-        % TODO: proper location
-        location = #location{line = 0, column = 0}
+        location = Location
     }.
 
 -doc """
@@ -618,6 +615,7 @@ Creates a new type definition AST node.
 - `Name` - Type name (atom)
 - `Params` - List of type parameter names
 - `Definition` - Type expression defining the type
+- `Location` - Source location information
 
 ## Returns
 - `type_def()` - Type definition AST node
@@ -626,21 +624,16 @@ Creates a new type definition AST node.
 ```erlang
 Params = [t],
 Definition = #union_type{types = [IntType, StringType], location = Loc},
-TypeDef = cure_ast:new_type_def('Maybe', Params, Definition).
+TypeDef = cure_ast:new_type_def('Maybe', Params, Definition, Location).
 ```
-
-## Note
-This helper function uses a default location. For proper location tracking,
-construct the record directly with accurate location information.
 """.
--spec new_type_def(atom(), [atom()], type_expr()) -> type_def().
-new_type_def(Name, Params, Definition) ->
+-spec new_type_def(atom(), [atom()], type_expr(), location()) -> type_def().
+new_type_def(Name, Params, Definition, Location) ->
     #type_def{
         name = Name,
         params = Params,
         definition = Definition,
-        % TODO: proper location
-        location = #location{line = 0, column = 0}
+        location = Location
     }.
 
 -doc """
@@ -651,6 +644,7 @@ Creates a new FSM definition AST node.
 - `States` - List of state names
 - `Initial` - Initial state name
 - `StateDefs` - List of state definitions with transitions
+- `Location` - Source location information
 
 ## Returns
 - `fsm_def()` - FSM definition AST node
@@ -659,22 +653,17 @@ Creates a new FSM definition AST node.
 ```erlang
 States = [idle, running, stopped],
 StateDefs = [IdleState, RunningState, StoppedState],
-FSM = cure_ast:new_fsm(counter, States, idle, StateDefs).
+FSM = cure_ast:new_fsm(counter, States, idle, StateDefs, Location).
 ```
-
-## Note
-This helper function uses a default location. For proper location tracking,
-construct the record directly with accurate location information.
 """.
--spec new_fsm(atom(), [atom()], atom(), [state_def()]) -> fsm_def().
-new_fsm(Name, States, Initial, StateDefs) ->
+-spec new_fsm(atom(), [atom()], atom(), [state_def()], location()) -> fsm_def().
+new_fsm(Name, States, Initial, StateDefs, Location) ->
     #fsm_def{
         name = Name,
         states = States,
         initial = Initial,
         state_defs = StateDefs,
-        % TODO: proper location
-        location = #location{line = 0, column = 0}
+        location = Location
     }.
 
 -doc """

@@ -837,40 +837,171 @@ format_compilation_error(Reason) ->
 -doc """
 Extract module information from an Abstract Syntax Tree.
 
-This is a utility function for extracting metadata from compiled
-modules. Currently provides basic structure with placeholder values.
+Extracts comprehensive metadata from compiled modules including:
+- Module name
+- Exported functions with arities
+- Imported modules
+- Type definitions
+- FSM definitions
+- Function count
 
 ## Arguments
 
-- `AST` - Abstract Syntax Tree from the parser
+- `AST` - Abstract Syntax Tree from the parser (list of items or single module_def)
 
 ## Returns
 
 - Map with module information:
-  - `name` - Module name (currently `unknown`)
-  - `exports` - List of exported functions (currently empty)
-  - `type` - Module type (currently `module` or `unknown`)
+  - `name` - Module name (atom or 'unknown')
+  - `exports` - List of exported function specs with name/arity
+  - `imports` - List of imported module names
+  - `functions` - List of function names defined in module
+  - `types` - List of type definition names
+  - `fsms` - List of FSM definition names
+  - `function_count` - Total number of functions
+  - `type_count` - Total number of types
+  - `fsm_count` - Total number of FSMs
+  - `type` - Module type ('module' or 'unknown')
 
-## Note
+## Example
 
-This is a simplified implementation. Future versions will extract
-actual module information including exports, imports, and metadata.
+```erlang
+AST = cure_parser:parse_file("MyModule.cure"),
+Info = get_module_info(AST),
+% => #{name => 'MyModule', exports => [{hello, 1}], ...}
+```
 
 """.
+get_module_info(AST) when is_list(AST) ->
+    % AST is a list of top-level items
+    extract_info_from_items(AST);
+get_module_info(#module_def{name = Name, exports = Exports, items = Items}) ->
+    % Single module definition
+    Info = extract_info_from_items(Items),
+    Info#{
+        name => Name,
+        exports => extract_export_specs(Exports),
+        type => module
+    };
 get_module_info(AST) when is_tuple(AST) ->
-    % For now, just return a generic structure
-    % TODO: Extract actual module info when AST types are available
+    % Generic tuple - try to extract what we can
     #{
         name => unknown,
         exports => [],
+        imports => [],
+        functions => [],
+        types => [],
+        fsms => [],
+        function_count => 0,
+        type_count => 0,
+        fsm_count => 0,
         type => module
     };
 get_module_info(_) ->
     #{
         name => undefined,
         exports => [],
+        imports => [],
+        functions => [],
+        types => [],
+        fsms => [],
+        function_count => 0,
+        type_count => 0,
+        fsm_count => 0,
         type => unknown
     }.
+
+%% Extract information from list of module items
+extract_info_from_items(Items) when is_list(Items) ->
+    lists:foldl(fun extract_item_info/2, initial_info(), Items).
+
+%% Initial info map
+initial_info() ->
+    #{
+        name => unknown,
+        exports => [],
+        imports => [],
+        functions => [],
+        types => [],
+        fsms => [],
+        function_count => 0,
+        type_count => 0,
+        fsm_count => 0,
+        type => module
+    }.
+
+%% Extract information from a single item
+extract_item_info(#module_def{name = Name, exports = Exports, items = SubItems}, Info) ->
+    SubInfo = extract_info_from_items(SubItems),
+    Info#{
+        name => Name,
+        exports => extract_export_specs(Exports),
+        imports => SubInfo#{imports => []},
+        functions => SubInfo#{functions => []},
+        types => SubInfo#{types => []},
+        fsms => SubInfo#{fsms => []},
+        function_count => SubInfo#{function_count => 0},
+        type_count => SubInfo#{type_count => 0},
+        fsm_count => SubInfo#{fsm_count => 0}
+    };
+extract_item_info(#function_def{name = Name}, Info) ->
+    Functions = maps:get(functions, Info, []),
+    FunctionCount = maps:get(function_count, Info, 0),
+    Info#{
+        functions => [Name | Functions],
+        function_count => FunctionCount + 1
+    };
+extract_item_info(#curify_function_def{name = Name}, Info) ->
+    Functions = maps:get(functions, Info, []),
+    FunctionCount = maps:get(function_count, Info, 0),
+    Info#{
+        functions => [Name | Functions],
+        function_count => FunctionCount + 1
+    };
+extract_item_info(#type_def{name = Name}, Info) ->
+    Types = maps:get(types, Info, []),
+    TypeCount = maps:get(type_count, Info, 0),
+    Info#{
+        types => [Name | Types],
+        type_count => TypeCount + 1
+    };
+extract_item_info(#record_def{name = Name}, Info) ->
+    Types = maps:get(types, Info, []),
+    TypeCount = maps:get(type_count, Info, 0),
+    Info#{
+        types => [Name | Types],
+        type_count => TypeCount + 1
+    };
+extract_item_info(#fsm_def{name = Name}, Info) ->
+    FSMs = maps:get(fsms, Info, []),
+    FSMCount = maps:get(fsm_count, Info, 0),
+    Info#{
+        fsms => [Name | FSMs],
+        fsm_count => FSMCount + 1
+    };
+extract_item_info(#import_def{module = Module}, Info) ->
+    Imports = maps:get(imports, Info, []),
+    Info#{imports => [Module | Imports]};
+extract_item_info(_, Info) ->
+    % Unknown item type, ignore
+    Info.
+
+%% Extract export specifications as {Name, Arity} tuples
+extract_export_specs(Exports) when is_list(Exports) ->
+    lists:filtermap(
+        fun
+            (#export_spec{name = Name, arity = Arity}) when is_integer(Arity) ->
+                {true, {Name, Arity}};
+            (#export_spec{name = Name, arity = undefined}) ->
+                % Type export without arity
+                {true, {Name, type}};
+            (_) ->
+                false
+        end,
+        Exports
+    );
+extract_export_specs(_) ->
+    [].
 
 -doc """
 Verify that all required Cure compiler modules are available.
