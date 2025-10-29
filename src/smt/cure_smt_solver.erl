@@ -195,9 +195,40 @@ check_with_z3(Constraint, Env, Context) ->
             % Fallback to symbolic
             check_with_symbolic(Constraint, Env, Context);
         true ->
-            % TODO: Implement actual Z3 integration
-            % For now, use symbolic fallback
-            check_with_symbolic(Constraint, Env, Context)
+            try
+                % 1. Generate SMT-LIB query
+                Query = cure_smt_translator:generate_query(Constraint, Env),
+
+                % 2. Start solver
+                {ok, Pid} = cure_smt_process:start_solver(z3, Context#smt_context.timeout),
+
+                % 3. Execute query
+                Result = cure_smt_process:execute_query(Pid, Query),
+
+                % 4. Parse result
+                ParsedResult =
+                    case Result of
+                        {sat, ModelLines} ->
+                            case cure_smt_parser:parse_model(ModelLines) of
+                                {ok, Model} -> {sat, Model};
+                                {error, _} -> {sat, #{}}
+                            end;
+                        {unsat, _} ->
+                            unsat;
+                        {unknown, _} ->
+                            unknown;
+                        {error, _Reason} ->
+                            unknown
+                    end,
+
+                % 5. Clean up
+                cure_smt_process:stop_solver(Pid),
+                ParsedResult
+            catch
+                _:_ ->
+                    % Fall back to symbolic on any error
+                    check_with_symbolic(Constraint, Env, Context)
+            end
     end.
 
 %% Check with CVC5
