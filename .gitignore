@@ -3,3 +3,12 @@
 /.erl.history/
 compilation.log
 erl_crash.dump
+rebar3.crashdump
+
+# Rebar3
+/.rebar3/
+rebar.lock
+
+# Documentation
+/docs/_build/
+/doc/

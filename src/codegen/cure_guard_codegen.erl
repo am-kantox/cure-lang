@@ -298,7 +298,7 @@ eliminate_dead_checks(AST, _Env) ->
                             end;
                         'orelse' ->
                             Left = erl_syntax:infix_expr_left(Node),
-                            Right = erl_syntax:infix_expr_right(Node),
+                            _Right = erl_syntax:infix_expr_right(Node),
 
                             % If left is 'true', return 'true'
                             case is_true_literal(Left) of

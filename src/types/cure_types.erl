@@ -574,6 +574,22 @@ false = cure_types:is_type_var(my_atom).
 is_type_var(#type_var{}) -> true;
 is_type_var(_) -> false.
 
+%% Check if a name represents a wildcard pattern
+%% Wildcard patterns include: _, _dummy, or any identifier starting with _
+is_wildcard_name('_') ->
+    true;
+is_wildcard_name('_dummy') ->
+    true;
+is_wildcard_name(Name) when is_atom(Name) ->
+    % Check if name starts with underscore
+    NameStr = atom_to_list(Name),
+    case NameStr of
+        [$_ | _] -> true;
+        _ -> false
+    end;
+is_wildcard_name(_) ->
+    false.
+
 -doc """
 Performs an occurs check to prevent infinite types during unification.
 
@@ -836,6 +852,15 @@ unify_impl(Type, Var = #type_var{}, Subst) ->
 unify_impl({primitive_type, Name1}, {primitive_type, Name2}, Subst) when
     Name1 =:= Name2
 ->
+    {ok, Subst};
+%% Any type unification - Any unifies with everything (top type)
+unify_impl({primitive_type, 'Any'}, _Type, Subst) ->
+    {ok, Subst};
+unify_impl(_Type, {primitive_type, 'Any'}, Subst) ->
+    {ok, Subst};
+unify_impl(#primitive_type{name = 'Any'}, _Type, Subst) ->
+    {ok, Subst};
+unify_impl(_Type, #primitive_type{name = 'Any'}, Subst) ->
     {ok, Subst};
 %% Allow generic type variables to unify with concrete types
 unify_impl({primitive_type, Name1}, {primitive_type, Name2}, Subst) ->
@@ -3161,29 +3186,38 @@ infer_let_expr([{binding, Pattern, Value, _Location} | RestBindings], Body, Env,
         {ok, ValueType, ValueConstraints} ->
             case infer_pattern(Pattern) of
                 {ok, PatternType, VarName} ->
-                    % Solve constraints for this binding immediately to create proper scoping
-                    % This prevents type variables from different bindings from interfering
-                    BindingConstraints =
-                        ValueConstraints ++
-                            [
-                                #type_constraint{
-                                    left = PatternType,
-                                    op = '=',
-                                    right = ValueType,
-                                    location = undefined
-                                }
-                            ],
-                    case solve_constraints(BindingConstraints) of
-                        {ok, Subst} ->
-                            % Apply substitution to get concrete type for this binding
-                            ConcreteValueType = apply_substitution(ValueType, Subst),
-                            % Generalize the type if it contains free type variables (let-polymorphism)
-                            GeneralizedType = generalize_type(ConcreteValueType, Env),
-                            NewEnv = extend_env(Env, VarName, GeneralizedType),
-                            % Continue with remaining bindings, keeping original constraints
-                            infer_let_expr(RestBindings, Body, NewEnv, Constraints);
-                        {error, Reason} ->
-                            {error, {binding_constraint_failed, VarName, Reason}}
+                    % Check if this is a wildcard pattern - wildcards don't create constraints
+                    case is_wildcard_name(VarName) of
+                        true ->
+                            % Wildcard binding - don't add to environment, don't constrain
+                            % Just continue with the rest, keeping only the value constraints
+                            infer_let_expr(
+                                RestBindings, Body, Env, Constraints ++ ValueConstraints
+                            );
+                        false ->
+                            % Regular binding - solve constraints for this binding
+                            BindingConstraints =
+                                ValueConstraints ++
+                                    [
+                                        #type_constraint{
+                                            left = PatternType,
+                                            op = '=',
+                                            right = ValueType,
+                                            location = undefined
+                                        }
+                                    ],
+                            case solve_constraints(BindingConstraints) of
+                                {ok, Subst} ->
+                                    % Apply substitution to get concrete type for this binding
+                                    ConcreteValueType = apply_substitution(ValueType, Subst),
+                                    % Generalize the type if it contains free type variables (let-polymorphism)
+                                    GeneralizedType = generalize_type(ConcreteValueType, Env),
+                                    NewEnv = extend_env(Env, VarName, GeneralizedType),
+                                    % Continue with remaining bindings, keeping original constraints
+                                    infer_let_expr(RestBindings, Body, NewEnv, Constraints);
+                                {error, Reason} ->
+                                    {error, {binding_constraint_failed, VarName, Reason}}
+                            end
                     end;
                 Error ->
                     Error
@@ -3193,8 +3227,22 @@ infer_let_expr([{binding, Pattern, Value, _Location} | RestBindings], Body, Env,
     end.
 
 infer_pattern({identifier_pattern, Name, _Location}) ->
+    % Check if this is a wildcard pattern (_, _dummy, or any name starting with _)
+    case is_wildcard_name(Name) of
+        true ->
+            % Wildcard patterns are polymorphic - they accept any type
+            % Create a fresh type variable that won't be constrained
+            PatternType = new_type_var(),
+            {ok, PatternType, Name};
+        false ->
+            % Regular identifier - create type variable
+            PatternType = new_type_var(),
+            {ok, PatternType, Name}
+    end;
+infer_pattern({wildcard_pattern, _Location}) ->
+    % Explicit wildcard pattern - always polymorphic
     PatternType = new_type_var(),
-    {ok, PatternType, Name}.
+    {ok, PatternType, '_'}.
 
 infer_list_elements([], _ElemType, _Env, Constraints) ->
     {ok, Constraints};

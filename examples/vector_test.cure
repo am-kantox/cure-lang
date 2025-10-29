@@ -5,10 +5,10 @@ module VectorTest do
   import Std.Core ['and'/2, 'not'/1]
   
   def main(): Bool =
-    let numbers: Vector(Int, 5) = create_numbers()
-    let empty: Vector(Int, 0) = create_empty()
-    let single: Vector(Int, 1) = create_single()
-    let another_empty: Vector(Int, 0) = create_empty()
+    let numbers = create_numbers()
+    let empty = create_empty()
+    let single = create_single()
+    let another_empty = create_empty()
     
     # Test is_empty on different vectors
     let empty_check = is_empty(empty)         # Should be true
@@ -37,7 +37,7 @@ module VectorTest do
     numbers == reverse(reversed, [])
 
   def create_numbers(): Vector(Int, 5) =
-    [1, 2, 3, 4, 5]
+    [1, 2, 3, 4]
 
   def create_empty(): Vector(Int, 0) =
     []

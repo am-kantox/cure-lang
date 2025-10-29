@@ -1,0 +1,15 @@
+# Cure Standard Library - Pair Module
+# Provides operations for working with pairs (2-tuples)
+
+module Std.Pair do
+  export [
+    pair/2
+  ]
+
+  # Create a pair from two values
+  # This constructs a 2-tuple that bridges to Erlang tuples
+  def pair(first: Any, second: Any): Any =
+    {first, second}
+
+
+end

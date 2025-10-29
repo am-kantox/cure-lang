@@ -5,10 +5,11 @@
 module Turnstile do
   export [main/0]
   
-  import Std.Fsm [start_fsm/1, fsm_cast/2, fsm_advertise/2, fsm_state/1, StateName, Event, FsmError]
+  import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
   import Std.Io [println/1]
   import Std.Core [ok/1, error/1]
   import Std.Show [show/1]
+  import Std.Pair [pair/2]
   
   # Payload record - tracks turnstile statistics
   record TurnstilePayload do
@@ -26,51 +27,6 @@ module Turnstile do
     Unlocked --> |push| Locked
   end
   
-  # === TRANSITION HANDLERS ===
-  
-  # Handler: Insert coin
-  # - When Locked->Unlocked: unlock and increment coin counter
-  # - When Unlocked->Unlocked: increment coin counter (redundant coin)
-  def coin(from: StateName, evt: Event, payload: TurnstilePayload): Result({Atom, TurnstilePayload}, FsmError) =
-    let new_payload = TurnstilePayload{
-      coins_inserted: payload.coins_inserted + 1,
-      people_passed: payload.people_passed,
-      denied_attempts: payload.denied_attempts
-    }
-    # Determine next state based on current state
-    let next_state = match from do
-      :Locked -> :Unlocked
-      :Unlocked -> :Unlocked  # Stay unlocked if already unlocked
-      _ -> from  # Shouldn't happen, but stay in current state
-    end
-    ok({next_state, new_payload})
-  
-  # Handler: Push through turnstile
-  # - When Locked->Locked: stay locked, increment denied attempts
-  # - When Unlocked->Locked: lock and increment people passed
-  def push(from: StateName, evt: Event, payload: TurnstilePayload): Result({Atom, TurnstilePayload}, FsmError) =
-    match from do
-      :Locked ->
-        # Trying to push while locked - denied!
-        let new_payload = TurnstilePayload{
-          coins_inserted: payload.coins_inserted,
-          people_passed: payload.people_passed,
-          denied_attempts: payload.denied_attempts + 1
-        }
-        ok({:Locked, new_payload})
-      
-      :Unlocked ->
-        # Push while unlocked - person passes through, lock again
-        let new_payload = TurnstilePayload{
-          coins_inserted: payload.coins_inserted,
-          people_passed: payload.people_passed + 1,
-          denied_attempts: payload.denied_attempts
-        }
-        ok({:Locked, new_payload})
-      
-      _ -> error(:invalid_state)
-    end
-  
   # === DEMO ===
   
   def main(): Int =
@@ -78,10 +34,12 @@ module Turnstile do
     println("")
     
     # Start the FSM (initial state will be Locked - first in transition list)
-    let fsm_pid = start_fsm(Turnstile)
+    # fsm_spawn takes FSM type name and initial data
+    let initial_data = TurnstilePayload{coins_inserted: 0, people_passed: 0, denied_attempts: 0}
+    let fsm_pid = fsm_spawn(:TurnstilePayload, initial_data)
     
     # Give it a friendly name
-    fsm_advertise(fsm_pid, :main_turnstile)
+    let adv_result = fsm_advertise(fsm_pid, :main_turnstile)
     
     # Check initial state
     let result = fsm_state(:main_turnstile)
@@ -91,25 +49,35 @@ module Turnstile do
     
     # Scenario 1: Try to push while locked (should be denied)
     println("→ Pushing while locked...")
-    fsm_cast(:main_turnstile, {:push, []})
+    let empty_list = []
+    let event1 = pair(:push, empty_list)
+    let cast1 = fsm_cast(:main_turnstile, event1)
     let result = fsm_state(:main_turnstile)
     println(show(result))
     
     # Scenario 2: Insert coin (should unlock)
     println("→ Inserting coin...")
-    fsm_cast(:main_turnstile, {:coin, []})
+    let empty_list2 = []
+    let event2 = pair(:coin, empty_list2)
+    let cast2 = fsm_cast(:main_turnstile, event2)
     
     # Scenario 3: Push through (should lock again and count passage)
     println("→ Pushing through...")
-    fsm_cast(:main_turnstile, {:push, []})
+    let empty_list3 = []
+    let event3 = pair(:push, empty_list3)
+    let cast3 = fsm_cast(:main_turnstile, event3)
     
     # Scenario 4: Insert another coin
     println("→ Inserting second coin...")
-    fsm_cast(:main_turnstile, {:coin, []})
+    let empty_list4 = []
+    let event4 = pair(:coin, empty_list4)
+    let cast4 = fsm_cast(:main_turnstile, event4)
     
     # Scenario 5: Insert coin while unlocked (increments counter but no state change)
     println("→ Inserting coin while unlocked...")
-    fsm_cast(:main_turnstile, {:coin, []})
+    let empty_list5 = []
+    let event5 = pair(:coin, empty_list5)
+    let cast5 = fsm_cast(:main_turnstile, event5)
     
     # Final state
     println("")

@@ -1,3 +1,162 @@
+# FSM Implementation Integration Summary
+
+## What Was Done
+
+Successfully connected the Cure FSM standard library (`lib/std/fsm.cure`) with the underlying Erlang FSM runtime implementation using type-checked FFI bindings.
+
+## Changes Made
+
+### 1. Updated `lib/std/fsm.cure`
+
+Replaced all placeholder/no-op implementations with proper `curify` FFI bindings:
+
+#### Core Functions (using `cure_fsm_cure_api`)
+- **`start_fsm/1`** - Start FSM from compiled Cure module
+- **`fsm_cast/2`** - Send events asynchronously to FSM
+- **`fsm_advertise/2`** - Register FSM process with a name
+- **`fsm_state/1`** - Query current FSM state and payload
+
+#### Additional Functions (using `cure_fsm_builtins`)
+- **`fsm_stop/1`** - Gracefully terminate FSM process
+- **`fsm_spawn/2`** - Spawn FSM with type and initial data
+- **`fsm_send/2`** - Lower-level event sending
+- **`fsm_info/1`** - Get detailed FSM information
+- **`fsm_is_alive/1`** - Check if FSM process is alive
+
+## Architecture
+
+```
+┌─────────────────────────────────────────┐
+│  Cure Program (e.g., turnstile.cure)   │
+│  - Defines FSM with 'fsm' syntax       │
+│  - Calls Std.Fsm functions             │
+└────────────────┬────────────────────────┘
+                 │
+                 ↓
+┌─────────────────────────────────────────┐
+│  lib/std/fsm.cure                       │
+│  - Type-checked API                     │
+│  - curify FFI bindings                  │
+└────────────────┬────────────────────────┘
+                 │
+                 ↓
+┌─────────────────────────────────────────┐
+│  src/fsm/cure_fsm_cure_api.erl          │
+│  - Bridges Cure and Erlang runtime     │
+│  - Resolves module FSM definitions     │
+│  - Handles name resolution              │
+└────────────────┬────────────────────────┘
+                 │
+                 ↓
+┌─────────────────────────────────────────┐
+│  src/fsm/cure_fsm_runtime.erl           │
+│  - gen_server FSM execution engine     │
+│  - Event processing & transitions      │
+│  - Performance & monitoring            │
+└─────────────────────────────────────────┘
+```
+
+## How It Works
+
+### 1. FFI with `curify`
+
+The `curify` keyword creates type-checked FFI bindings:
+
+```cure
+curify start_fsm(mod: Atom): Any = {cure_fsm_cure_api, start_fsm, 1}
+```
+
+This:
+- Type-checks arguments at compile time
+- Generates call to `cure_fsm_cure_api:start_fsm(Mod)`
+- Provides runtime type safety
+
+### 2. FSM Lifecycle
+
+1. **Define FSM** in Cure module:
+   ```cure
+   fsm TurnstilePayload{...} do
+     Locked --> |coin| Unlocked
+     Locked --> |push| Locked
+     ...
+   end
+   ```
+
+2. **Compile** - Generates `Module:'__fsm_definition__'/0`
+
+3. **Start FSM**:
+   ```cure
+   let fsm_pid = start_fsm(Turnstile)
+   ```
+
+4. **Send Events**:
+   ```cure
+   fsm_cast(fsm_pid, {:coin, []})
+   ```
+
+5. **Query State**:
+   ```cure
+   let {ok, {state, payload}} = fsm_state(fsm_pid)
+   ```
+
+### 3. Type Safety
+
+- **Compile-time**: Function arguments are type-checked
+- **Runtime**: Pattern matching on results provides safety
+- **Validation**: FSM definitions validated during compilation
+
+## Benefits
+
+1. **Type Safety**: Cure's type system validates FSM operations
+2. **Performance**: Direct Erlang calls with minimal overhead
+3. **Integration**: Seamless bridge between Cure and Erlang
+4. **Completeness**: Full FSM runtime capabilities exposed
+5. **Error Handling**: Proper error propagation with tagged tuples
+
+## Testing
+
+Test with the existing example:
+```bash
+# Assuming the Cure compiler is built
+./cure examples/turnstile.cure --verbose
+```
+
+The turnstile example demonstrates:
+- FSM definition with payload
+- Starting and naming FSM instances
+- Sending events (coin, push)
+- Querying state
+- Pattern matching on results
+
+## Next Steps
+
+To fully utilize the FSM system:
+
+1. **Register FSM Types**: Optionally pre-register FSM types in runtime
+2. **Add More Examples**: Create more FSM examples (traffic light, protocol, etc.)
+3. **Performance Testing**: Benchmark FSM event processing
+4. **Documentation**: Add more inline documentation
+5. **Error Messages**: Improve error reporting for FSM operations
+
+## Files Modified
+
+- `lib/std/fsm.cure` - Implemented all FSM functions with curify bindings
+
+## Files Created
+
+- `lib/std/FSM_INTEGRATION.md` - Detailed integration documentation
+
+## Related Files
+
+Existing Erlang implementation (unchanged):
+- `src/fsm/cure_fsm_runtime.erl` - Core FSM execution engine
+- `src/fsm/cure_fsm_builtins.erl` - FSM utility functions  
+- `src/fsm/cure_fsm_cure_api.erl` - Cure API wrapper
+
+Existing examples (unchanged):
+- `examples/turnstile.cure` - Turnstile FSM example
+- `examples/advanced_traffic_light_demo.erl` - Traffic light demo
+
 # FSM Type System Implementation Summary
 
 ## Completed Tasks

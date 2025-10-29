@@ -2018,6 +2018,7 @@ generate_fsm_definition_function(FSMName, CompiledFSM, Location) ->
         name = Name,
         states = States,
         initial_state = InitialState,
+        initial_payload = InitialPayload,
         transitions = Transitions,
         timeouts = Timeouts
     } = CompiledFSM,
@@ -2033,6 +2034,7 @@ generate_fsm_definition_function(FSMName, CompiledFSM, Location) ->
             {record_field, Line, {atom, Line, states},
                 {cons, Line, {atom, Line, hd(States)}, build_list(tl(States), Line)}},
             {record_field, Line, {atom, Line, initial_state}, {atom, Line, InitialState}},
+            {record_field, Line, {atom, Line, initial_payload}, build_term(InitialPayload, Line)},
             {record_field, Line, {atom, Line, transitions}, build_map_literal(Transitions, Line)},
             {record_field, Line, {atom, Line, timeouts}, build_map_literal(Timeouts, Line)}
         ]
@@ -2802,6 +2804,7 @@ convert_to_erlang_forms(Module) ->
                                 {record_field, 3, {atom, 3, name}},
                                 {record_field, 3, {atom, 3, states}},
                                 {record_field, 3, {atom, 3, initial_state}},
+                                {record_field, 3, {atom, 3, initial_payload}},
                                 {record_field, 3, {atom, 3, transitions}},
                                 {record_field, 3, {atom, 3, timeouts}}
                             ]}}

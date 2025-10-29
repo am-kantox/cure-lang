@@ -184,19 +184,9 @@ test-performance: tests
 
 # Generate documentation
 docs: compiler
-	@echo "Generating documentation..."
+	@echo "Generating documentation with rebar3 ex_doc..."
 	@mkdir -p docs/_build
-	@echo "Generating EDoc documentation for Erlang modules..."
-	@$(ERL) -noshell -pa $(EBIN_DIR) -eval '
-		Modules = [cure_lexer, cure_parser, cure_ast, cure_typechecker, cure_types, 
-		           cure_codegen, cure_fsm_runtime, cure_error_reporter, 
-		           cure_lsp_server, cure_guard_codegen, cure_smt_solver], 
-		edoc:application(cure, [{dir, "docs/_build"}, 
-		                        {modules, Modules}, 
-		                        {overview, "README.md"}, 
-		                        {title, "Cure Programming Language"}, 
-		                        {preprocess, true}]), 
-		init:stop().'
+	rebar3 ex_doc
 	@echo "Documentation generated in docs/_build/"
 	@echo "Open docs/_build/index.html in your browser"
 

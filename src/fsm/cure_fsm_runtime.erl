@@ -703,6 +703,7 @@ lookup_fsm_definition(FSMType) ->
 init({FSMType, Definition, InitialData, _Options}) ->
     #fsm_definition{
         initial_state = InitialState,
+        initial_payload = _InitialPayload,
         transitions = Transitions,
         timeouts = Timeouts
     } = Definition,

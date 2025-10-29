@@ -6,7 +6,12 @@ module Std.Fsm do
     start_fsm/1,
     fsm_cast/2,
     fsm_advertise/2,
-    fsm_state/1
+    fsm_state/1,
+    fsm_stop/1,
+    fsm_spawn/2,
+    fsm_send/2,
+    fsm_info/1,
+    fsm_is_alive/1
   ]
 
   # Core FSM types - these are type aliases
@@ -41,26 +46,47 @@ module Std.Fsm do
 
   # Start an FSM instance with the module's FSM definition
   # Returns a Pid for the FSM process
-  # TODO: Implementation will spawn a process that maintains FSM state
-  # and handles events via message passing
-  # Placeholder implementation - returns pid 0
-  def start_fsm(mod: Atom): Pid =
-    :pid_0
+  # Calls cure_fsm_cure_api:start_fsm/1 which:
+  # - Looks up the compiled FSM definition from the module
+  # - Extracts initial state and payload
+  # - Starts the FSM using cure_fsm_runtime
+  curify start_fsm(mod: Atom): Any = {cure_fsm_cure_api, start_fsm, 1}
 
   # Send an event to an FSM (by Pid or registered name)
   # Asynchronous - fire and forget
-  # TODO: Send message to FSM process
-  def fsm_cast(target: Pid | FsmName, evt: Event): Int =
-    0
+  # Event should be a tuple {EventName, EventPayload} where:
+  # - EventName is an atom
+  # - EventPayload is a list of {key, value} pairs
+  curify fsm_cast(target: Any, evt: Any): Any = {cure_fsm_cure_api, fsm_cast, 2}
 
   # Register a name for an FSM process
-  # TODO: Register the process with the given name
-  def fsm_advertise(pid: Pid, name: FsmName): Int =
-    0
+  # Registers the FSM process with the given name so it can be referenced
+  # by name instead of PID
+  curify fsm_advertise(pid: Any, name: Atom): Any = {cure_fsm_cure_api, fsm_advertise, 2}
 
   # Query the current state of an FSM
-  # TODO: Query FSM process for current state and payload
-  def fsm_state(target: Pid | FsmName): Int =
-    0
+  # Returns {ok, {StateName, Payload}} or {error, Reason}
+  curify fsm_state(target: Any): Any = {cure_fsm_cure_api, fsm_state, 1}
+
+  # Stop an FSM instance
+  # Gracefully terminates the FSM process
+  curify fsm_stop(pid: Any): Any = {cure_fsm_builtins, fsm_stop, 1}
+
+  # Spawn an FSM instance with initial data
+  # Alternative to start_fsm that takes FSM type and initial data directly
+  # Returns the Pid of the spawned FSM process
+  curify fsm_spawn(fsm_type: Atom, initial_data: Any): Any = {cure_fsm_builtins, fsm_spawn, 2}
+
+  # Send an event to an FSM (lower-level than fsm_cast)
+  # Directly sends an event without tuple wrapping
+  curify fsm_send(pid: Any, evt: Any): Any = {cure_fsm_builtins, fsm_send, 2}
+
+  # Get detailed FSM information
+  # Returns a map with current_state, data, event_history, and performance stats
+  curify fsm_info(pid: Any): Any = {cure_fsm_builtins, fsm_info, 1}
+
+  # Check if an FSM process is alive
+  # Returns true if the FSM is still running, false otherwise
+  curify fsm_is_alive(pid: Any): Any = {cure_fsm_builtins, fsm_is_alive, 1}
 
 end
