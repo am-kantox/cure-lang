@@ -205,6 +205,7 @@ operations can run concurrently without interference.
 
     % Utility functions
     constraint_to_string/1,
+    negate_constraint/1,
     variable_term/1,
     constant_term/1,
     addition_expression/1,
@@ -840,39 +841,310 @@ constraint_op_to_expression_op(Op) -> Op.
 
 negate_constraint(Constraint) ->
     case Constraint of
-        #smt_constraint{op = '='} -> Constraint#smt_constraint{op = '/='};
-        #smt_constraint{op = '/='} -> Constraint#smt_constraint{op = '='};
-        #smt_constraint{op = '<'} -> Constraint#smt_constraint{op = '>='};
-        #smt_constraint{op = '>'} -> Constraint#smt_constraint{op = '=<'};
-        #smt_constraint{op = '<='} -> Constraint#smt_constraint{op = '>'};
-        #smt_constraint{op = '>='} -> Constraint#smt_constraint{op = '<'};
-        % TODO: Handle other constraint types
-        _ -> Constraint
+        % Comparison operators
+        #smt_constraint{op = '='} ->
+            Constraint#smt_constraint{op = '/='};
+        #smt_constraint{op = '/='} ->
+            Constraint#smt_constraint{op = '='};
+        #smt_constraint{op = '<'} ->
+            Constraint#smt_constraint{op = '>='};
+        #smt_constraint{op = '>'} ->
+            Constraint#smt_constraint{op = '=<'};
+        #smt_constraint{op = '<='} ->
+            Constraint#smt_constraint{op = '>'};
+        #smt_constraint{op = '>='} ->
+            Constraint#smt_constraint{op = '<'};
+        % Logical connectives - negate by wrapping in NOT expression
+        #smt_constraint{type = logical, op = 'and', left = Left, right = Right} ->
+            % not (A and B) = (not A) or (not B)  (De Morgan's law)
+            #smt_constraint{
+                type = logical,
+                op = 'or',
+                left = negate_term(Left),
+                right = negate_term(Right),
+                location = Constraint#smt_constraint.location
+            };
+        #smt_constraint{type = logical, op = 'or', left = Left, right = Right} ->
+            % not (A or B) = (not A) and (not B)  (De Morgan's law)
+            #smt_constraint{
+                type = logical,
+                op = 'and',
+                left = negate_term(Left),
+                right = negate_term(Right),
+                location = Constraint#smt_constraint.location
+            };
+        #smt_constraint{type = logical, op = 'not', left = Term} ->
+            % not (not A) = A  (double negation elimination)
+            constraint_from_term(Term);
+        #smt_constraint{type = logical, op = 'implies', left = Antecedent, right = Consequent} ->
+            % not (A => B) = A and (not B)
+            #smt_constraint{
+                type = logical,
+                op = 'and',
+                left = Antecedent,
+                right = negate_term(Consequent),
+                location = Constraint#smt_constraint.location
+            };
+        #smt_constraint{type = logical, op = 'iff', left = Left, right = Right} ->
+            % not (A <=> B) = (A and not B) or (not A and B)  (XOR)
+            #smt_constraint{
+                type = logical,
+                op = 'or',
+                left = #smt_term{
+                    type = expression,
+                    value = #smt_expression{
+                        op = 'and',
+                        args = [Left, negate_term(Right)],
+                        location = Constraint#smt_constraint.location
+                    },
+                    location = Constraint#smt_constraint.location
+                },
+                right = #smt_term{
+                    type = expression,
+                    value = #smt_expression{
+                        op = 'and',
+                        args = [negate_term(Left), Right],
+                        location = Constraint#smt_constraint.location
+                    },
+                    location = Constraint#smt_constraint.location
+                },
+                location = Constraint#smt_constraint.location
+            };
+        % Quantifiers
+        #smt_constraint{type = quantified, op = 'forall', left = Vars, right = Body} ->
+            % not (forall x. P(x)) = exists x. not P(x)
+            #smt_constraint{
+                type = quantified,
+                op = 'exists',
+                left = Vars,
+                right = negate_term(Body),
+                location = Constraint#smt_constraint.location
+            };
+        #smt_constraint{type = quantified, op = 'exists', left = Vars, right = Body} ->
+            % not (exists x. P(x)) = forall x. not P(x)
+            #smt_constraint{
+                type = quantified,
+                op = 'forall',
+                left = Vars,
+                right = negate_term(Body),
+                location = Constraint#smt_constraint.location
+            };
+        % Bitvector operations
+        #smt_constraint{type = bitvector, op = 'bveq'} ->
+            Constraint#smt_constraint{op = 'bvneq'};
+        #smt_constraint{type = bitvector, op = 'bvneq'} ->
+            Constraint#smt_constraint{op = 'bveq'};
+        #smt_constraint{type = bitvector, op = 'bvult'} ->
+            Constraint#smt_constraint{op = 'bvuge'};
+        #smt_constraint{type = bitvector, op = 'bvule'} ->
+            Constraint#smt_constraint{op = 'bvugt'};
+        #smt_constraint{type = bitvector, op = 'bvugt'} ->
+            Constraint#smt_constraint{op = 'bvule'};
+        #smt_constraint{type = bitvector, op = 'bvuge'} ->
+            Constraint#smt_constraint{op = 'bvult'};
+        #smt_constraint{type = bitvector, op = 'bvslt'} ->
+            Constraint#smt_constraint{op = 'bvsge'};
+        #smt_constraint{type = bitvector, op = 'bvsle'} ->
+            Constraint#smt_constraint{op = 'bvsgt'};
+        #smt_constraint{type = bitvector, op = 'bvsgt'} ->
+            Constraint#smt_constraint{op = 'bvsle'};
+        #smt_constraint{type = bitvector, op = 'bvsge'} ->
+            Constraint#smt_constraint{op = 'bvslt'};
+        % Array operations (negate select/store equality)
+        #smt_constraint{type = array, op = 'select_eq'} ->
+            Constraint#smt_constraint{op = 'select_neq'};
+        #smt_constraint{type = array, op = 'select_neq'} ->
+            Constraint#smt_constraint{op = 'select_eq'};
+        % Divisibility and modular arithmetic
+        #smt_constraint{type = arithmetic, op = 'divides'} ->
+            % not (a divides b) - wrap in logical negation
+            wrap_in_not(Constraint);
+        #smt_constraint{type = arithmetic, op = 'mod_eq'} ->
+            Constraint#smt_constraint{op = 'mod_neq'};
+        #smt_constraint{type = arithmetic, op = 'mod_neq'} ->
+            Constraint#smt_constraint{op = 'mod_eq'};
+        % Generic fallback: wrap in logical NOT
+        _ ->
+            wrap_in_not(Constraint)
     end.
 
+%% Helper: Negate a term (for use in De Morgan's laws)
+negate_term(#smt_term{type = expression, value = #smt_expression{op = 'not', args = [Arg]}}) ->
+    % not (not A) = A
+    Arg;
+negate_term(Term) ->
+    % Wrap term in NOT
+    #smt_term{
+        type = expression,
+        value = #smt_expression{
+            op = 'not',
+            args = [Term],
+            location = get_term_location(Term)
+        },
+        location = get_term_location(Term)
+    }.
+
+%% Helper: Wrap constraint in NOT expression
+wrap_in_not(Constraint) ->
+    #smt_constraint{
+        type = logical,
+        op = 'not',
+        left = constraint_to_term(Constraint),
+        right = undefined,
+        location = Constraint#smt_constraint.location
+    }.
+
+%% Helper: Get location from term
+get_term_location(#smt_term{location = Loc}) -> Loc;
+get_term_location(_) -> undefined.
+
+%% Helper: Convert term back to constraint
+constraint_from_term(#smt_term{
+    type = expression, value = #smt_expression{op = Op, args = [Left, Right]}
+}) ->
+    #smt_constraint{
+        type = logical,
+        op = Op,
+        left = Left,
+        right = Right,
+        location = undefined
+    };
+constraint_from_term(Term) ->
+    % Fallback: create a constraint that's always true if term is true
+    #smt_constraint{
+        type = equality,
+        op = '=',
+        left = Term,
+        right = constant_term(true),
+        location = undefined
+    }.
+
 %% Convert constraint to human-readable string
+constraint_to_string(#smt_constraint{type = quantified, op = Op, left = Vars, right = Body}) ->
+    % Quantified constraint: forall x, y. P(x, y) or exists x. P(x)
+    OpStr =
+        case Op of
+            'forall' -> "∀";
+            'exists' -> "∃";
+            _ -> atom_to_list(Op)
+        end,
+    VarsStr = format_variable_list(Vars),
+    BodyStr = term_to_string(Body),
+    OpStr ++ " " ++ VarsStr ++ ". " ++ BodyStr;
+constraint_to_string(#smt_constraint{type = logical, op = 'not', left = Term, right = undefined}) ->
+    % Unary NOT
+    "¬(" ++ term_to_string(Term) ++ ")";
+constraint_to_string(#smt_constraint{type = logical, op = Op, left = Left, right = Right}) ->
+    % Logical connectives with special symbols
+    LeftStr = term_to_string(Left),
+    RightStr = term_to_string(Right),
+    OpStr =
+        case Op of
+            'and' -> "∧";
+            'or' -> "∨";
+            'implies' -> "⇒";
+            'iff' -> "⇔";
+            _ -> atom_to_list(Op)
+        end,
+    "(" ++ LeftStr ++ " " ++ OpStr ++ " " ++ RightStr ++ ")";
+constraint_to_string(#smt_constraint{type = bitvector, op = Op, left = Left, right = Right}) ->
+    % Bitvector operations
+    LeftStr = term_to_string(Left),
+    RightStr = term_to_string(Right),
+    OpStr = format_bitvector_op(Op),
+    LeftStr ++ " " ++ OpStr ++ " " ++ RightStr;
+constraint_to_string(#smt_constraint{type = array, op = Op, left = Left, right = Right}) ->
+    % Array operations
+    LeftStr = term_to_string(Left),
+    RightStr = term_to_string(Right),
+    OpStr = format_array_op(Op),
+    "(" ++ OpStr ++ " " ++ LeftStr ++ " " ++ RightStr ++ ")";
 constraint_to_string(#smt_constraint{left = Left, op = Op, right = Right}) ->
+    % Standard constraint with infix operator
     LeftStr = term_to_string(Left),
     RightStr = term_to_string(Right),
     OpStr = atom_to_list(Op),
-    LeftStr ++ " " ++ OpStr ++ " " ++ RightStr.
+    LeftStr ++ " " ++ OpStr ++ " " ++ RightStr;
+constraint_to_string(_) ->
+    "<unknown constraint>".
 
+term_to_string(undefined) ->
+    "_";
 term_to_string(#smt_term{type = variable, value = Name}) ->
     atom_to_list(Name);
 term_to_string(#smt_term{type = constant, value = Value}) ->
     case Value of
         V when is_integer(V) -> integer_to_list(V);
         V when is_float(V) -> float_to_list(V);
+        V when is_boolean(V) -> atom_to_list(V);
         V when is_atom(V) -> atom_to_list(V);
-        _ -> "unknown"
+        V when is_binary(V) -> "\"" ++ binary_to_list(V) ++ "\"";
+        V when is_list(V) -> "[" ++ format_list_elements(V) ++ "]";
+        _ -> "<unknown>"
     end;
 term_to_string(#smt_term{type = expression, value = Expr}) ->
-    expression_to_string(Expr).
+    expression_to_string(Expr);
+term_to_string(_) ->
+    "<unknown term>".
 
+expression_to_string(#smt_expression{op = 'not', args = [Arg]}) ->
+    % Unary NOT
+    "¬" ++ term_to_string(Arg);
+expression_to_string(#smt_expression{op = Op, args = Args}) when Op =:= 'and'; Op =:= 'or' ->
+    % Logical operators with special formatting
+    OpStr =
+        case Op of
+            'and' -> " ∧ ";
+            'or' -> " ∨ "
+        end,
+    ArgsStrs = [term_to_string(Arg) || Arg <- Args],
+    "(" ++ string:join(ArgsStrs, OpStr) ++ ")";
 expression_to_string(#smt_expression{op = Op, args = Args}) ->
+    % General infix expression
     OpStr = atom_to_list(Op),
     ArgsStrs = [term_to_string(Arg) || Arg <- Args],
-    "(" ++ string:join(ArgsStrs, " " ++ OpStr ++ " ") ++ ")".
+    case Args of
+        % Unary
+        [Arg] -> OpStr ++ "(" ++ term_to_string(Arg) ++ ")";
+        % N-ary
+        _ -> "(" ++ string:join(ArgsStrs, " " ++ OpStr ++ " ") ++ ")"
+    end;
+expression_to_string(_) ->
+    "<unknown expression>".
+
+%% Format variable list for quantifiers
+format_variable_list(Vars) when is_list(Vars) ->
+    VarStrs = [atom_to_list(V) || V <- Vars],
+    string:join(VarStrs, ", ");
+format_variable_list(Var) when is_atom(Var) ->
+    atom_to_list(Var);
+format_variable_list(_) ->
+    "vars".
+
+%% Format bitvector operations
+format_bitvector_op('bveq') -> "=";
+format_bitvector_op('bvneq') -> "≠";
+format_bitvector_op('bvult') -> "<ᵤ";
+format_bitvector_op('bvule') -> "≤ᵤ";
+format_bitvector_op('bvugt') -> ">ᵤ";
+format_bitvector_op('bvuge') -> "≥ᵤ";
+format_bitvector_op('bvslt') -> "<ₛ";
+format_bitvector_op('bvsle') -> "≤ₛ";
+format_bitvector_op('bvsgt') -> ">ₛ";
+format_bitvector_op('bvsge') -> "≥ₛ";
+format_bitvector_op(Op) -> atom_to_list(Op).
+
+%% Format array operations
+format_array_op('select_eq') -> "select=";
+format_array_op('select_neq') -> "select≠";
+format_array_op('select') -> "select";
+format_array_op('store') -> "store";
+format_array_op(Op) -> atom_to_list(Op).
+
+%% Format list elements
+format_list_elements([]) -> "";
+format_list_elements([H]) -> term_to_string(H);
+format_list_elements([H | T]) -> term_to_string(H) ++ ", " ++ format_list_elements(T).
 
 %% Generate proof term
 generate_proof(Assumptions, Goal) ->
