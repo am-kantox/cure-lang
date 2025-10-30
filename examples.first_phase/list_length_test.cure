@@ -3,7 +3,7 @@ module ListLengthTest do
   
   import Std.List [length/1]
   
-  def main(): Int =
+  def main(): Nat =
     let numbers = [1, 2, 3, 4, 5]
     let empty = []
     let single = [42]

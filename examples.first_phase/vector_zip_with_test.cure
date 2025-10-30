@@ -12,7 +12,10 @@ module VectorZipWithTest do
 
   # def max(a: Int, b: Int): Int = 
   def max(a: Int): Int -> Int = 
-    fn(b) -> if a > b then a else b end end
+    fn(b) -> match a > b do
+      true -> a
+      false -> b
+    end end
   
   def main(): Vector(Int, 5) =
     let v1 = [1, 2, 3, 4, 5]

@@ -1,0 +1,185 @@
+# Cure Language - Math Operations Example
+# Demonstrates using Std.Math standard library
+
+module MathOperations do
+  import Std.Math
+  export [main/0]
+  
+  # Mathematical constants
+  def constants_examples(): Int do
+    let pi_val = Math.pi() in        # 3.14159...
+    let e_val = Math.e() in          # 2.71828...
+    
+    0
+  end
+  
+  # Absolute value
+  def abs_examples(): Int do
+    let abs_pos = Math.abs(42) in      # 42
+    let abs_neg = Math.abs(-17) in     # 17
+    let abs_zero = Math.abs(0) in      # 0
+    
+    abs_neg
+  end
+  
+  # Sign function
+  def sign_examples(): Int do
+    let sign_pos = Math.sign(10) in    # 1
+    let sign_neg = Math.sign(-5) in    # -1
+    let sign_zero = Math.sign(0) in    # 0
+    
+    sign_pos
+  end
+  
+  # Negation
+  def negate_examples(): Int do
+    let neg1 = Math.negate(42) in      # -42
+    let neg2 = Math.negate(-10) in     # 10
+    let neg3 = Math.negate(0) in       # 0
+    
+    neg1
+  end
+  
+  # Basic arithmetic
+  def arithmetic_examples(): Int do
+    let sum = Math.add(10, 5) in          # 15
+    let diff = Math.subtract(10, 5) in    # 5
+    let product = Math.multiply(10, 5) in # 50
+    
+    sum
+  end
+  
+  # Min and max
+  def min_max_examples(): Int do
+    let minimum = Math.min(10, 20) in  # 10
+    let maximum = Math.max(10, 20) in  # 20
+    
+    let min_neg = Math.min(-5, -10) in # -10
+    let max_neg = Math.max(-5, -10) in # -5
+    
+    maximum
+  end
+  
+  # Clamping values
+  def clamp_examples(): Int do
+    let clamped1 = Math.clamp(5, 0, 10) in    # 5 (within range)
+    let clamped2 = Math.clamp(-5, 0, 10) in   # 0 (below min)
+    let clamped3 = Math.clamp(15, 0, 10) in   # 10 (above max)
+    
+    clamped2
+  end
+  
+  # Power function
+  def power_examples(): Int do
+    let square = Math.power(5, 2) in      # 25
+    let cube = Math.power(3, 3) in        # 27
+    let fourth = Math.power(2, 4) in      # 16
+    let identity = Math.power(10, 1) in   # 10
+    let pow_zero = Math.power(5, 0) in    # 1
+    
+    square
+  end
+  
+  # Combining operations
+  def combined_operations(): Int do
+    let x = 10 in
+    let y = 20 in
+    
+    let sum = Math.add(x, y) in
+    let abs_sum = Math.abs(sum) in
+    let clamped = Math.clamp(abs_sum, 0, 25) in
+    
+    clamped
+  end
+  
+  # Distance calculation
+  def distance_1d(x1: Int, x2: Int): Int do
+    Math.abs(Math.subtract(x2, x1))
+  end
+  
+  def distance_examples(): Int do
+    let d1 = distance_1d(5, 10) in     # 5
+    let d2 = distance_1d(10, 5) in     # 5
+    let d3 = distance_1d(-5, 5) in     # 10
+    
+    d3
+  end
+  
+  # Range checking
+  def is_in_range(value: Int, min: Int, max: Int): Bool do
+    let above_min = value >= min in
+    let below_max = value <= max in
+    above_min && below_max
+  end
+  
+  def range_examples(): Bool do
+    let in_range1 = is_in_range(5, 0, 10) in    # true
+    let in_range2 = is_in_range(-1, 0, 10) in   # false
+    let in_range3 = is_in_range(11, 0, 10) in   # false
+    
+    in_range1
+  end
+  
+  # Computing factorials using power and multiplication
+  def factorial_iterative(n: Int): Int do
+    match n do
+      0 -> 1
+      1 -> 1
+      _ -> Math.multiply(n, factorial_iterative(Math.subtract(n, 1)))
+    end
+  end
+  
+  def factorial_examples(): Int do
+    let f0 = factorial_iterative(0) in   # 1
+    let f1 = factorial_iterative(1) in   # 1
+    let f5 = factorial_iterative(5) in   # 120
+    
+    f5
+  end
+  
+  # Average of two numbers
+  def average(x: Int, y: Int): Int do
+    Math.add(x, y) / 2
+  end
+  
+  def average_examples(): Int do
+    let avg1 = average(10, 20) in      # 15
+    let avg2 = average(5, 15) in       # 10
+    let avg3 = average(0, 100) in      # 50
+    
+    avg1
+  end
+  
+  # Sum of squares
+  def sum_of_squares(x: Int, y: Int): Int do
+    let x_squared = Math.power(x, 2) in
+    let y_squared = Math.power(y, 2) in
+    Math.add(x_squared, y_squared)
+  end
+  
+  def sum_of_squares_examples(): Int do
+    let sos1 = sum_of_squares(3, 4) in   # 9 + 16 = 25
+    let sos2 = sum_of_squares(5, 12) in  # 25 + 144 = 169
+    
+    sos1
+  end
+  
+  def main(): Int do
+    let constants = constants_examples() in
+    let abs_res = abs_examples() in
+    let sign_res = sign_examples() in
+    let negate_res = negate_examples() in
+    let arith_res = arithmetic_examples() in
+    let minmax_res = min_max_examples() in
+    let clamp_res = clamp_examples() in
+    let power_res = power_examples() in
+    let combined = combined_operations() in
+    let distance = distance_examples() in
+    let range = range_examples() in
+    let factorial = factorial_examples() in
+    let avg = average_examples() in
+    let sos = sum_of_squares_examples() in
+    
+    0
+  end
+end

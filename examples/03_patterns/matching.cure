@@ -1,0 +1,173 @@
+# Cure Language - Pattern Matching Example
+# Demonstrates match expressions, guards, and destructuring
+
+module PatternMatching do
+  export [main/0]
+  
+  # Basic pattern matching on integers
+  def classify_number(n: Int): Atom do
+    match n do
+      0 -> :zero
+      1 -> :one
+      -1 -> :minus_one
+      _ -> :other
+    end
+  end
+  
+  # Pattern matching with guards
+  def classify_with_guard(n: Int): Atom do
+    match n do
+      x when x > 0 -> :positive
+      x when x < 0 -> :negative
+      0 -> :zero
+    end
+  end
+  
+  # Pattern matching on booleans
+  def bool_to_string(b: Bool): String do
+    match b do
+      true -> "yes"
+      false -> "no"
+    end
+  end
+  
+  # Pattern matching on lists
+  def list_status<T>(list: List(T)): Atom do
+    match list do
+      [] -> :empty
+      [_] -> :single
+      [_, _] -> :pair
+      [_, _, _] -> :triple
+      _ -> :many
+    end
+  end
+  
+  # List destructuring
+  def list_head<T>(list: List(T), default: T): T do
+    match list do
+      [] -> default
+      [h | _] -> h
+    end
+  end
+  
+  def list_second<T>(list: List(T), default: T): T do
+    match list do
+      [] -> default
+      [_] -> default
+      [_, second | _] -> second
+    end
+  end
+  
+  # Tuple pattern matching
+  def tuple_first<A, B>(pair: (A, B)): A do
+    match pair do
+      (a, b) -> a
+    end
+  end
+  
+  def tuple_swap<A, B>(pair: (A, B)): (B, A) do
+    match pair do
+      (a, b) -> (b, a)
+    end
+  end
+  
+  # Triple destructuring
+  def triple_middle<A, B, C>(triple: (A, B, C)): B do
+    match triple do
+      (a, b, c) -> b
+    end
+  end
+  
+  # Nested pattern matching
+  def nested_match(pair: (Int, List(Int))): Int do
+    match pair do
+      (n, []) -> n
+      (n, [h | _]) -> n + h
+    end
+  end
+  
+  # Pattern matching on Option type
+  def option_value<T>(opt: Option(T), default: T): T do
+    match opt do
+      Some(x) -> x
+      None -> default
+    end
+  end
+  
+  # Pattern matching on Result type
+  def result_value<T>(res: Result(T, String), default: T): T do
+    match res do
+      Ok(x) -> x
+      Error(_) -> default
+    end
+  end
+  
+  # Complex guards
+  def fizzbuzz(n: Int): String do
+    match n do
+      x when x % 15 == 0 -> "FizzBuzz"
+      x when x % 3 == 0 -> "Fizz"
+      x when x % 5 == 0 -> "Buzz"
+      _ -> "Number"
+    end
+  end
+  
+  # Match on cons pattern
+  def sum_first_two(list: List(Int)): Int do
+    match list do
+      [a, b | _] -> a + b
+      [a] -> a
+      [] -> 0
+    end
+  end
+  
+  # Multiple match clauses
+  def describe_list<T>(list: List(T)): String do
+    match list do
+      [] -> "empty list"
+      [_] -> "singleton"
+      [_, _] -> "pair"
+      [h1, h2, h3 | t] -> "at least three elements"
+    end
+  end
+  
+  # Guard with multiple conditions
+  def is_valid_age(age: Int): Bool do
+    match age do
+      x when x >= 0 && x <= 120 -> true
+      _ -> false
+    end
+  end
+  
+  # Nested tuples
+  def nested_tuple_example(data: ((Int, Int), String)): Int do
+    match data do
+      ((a, b), _) -> a + b
+    end
+  end
+  
+  def main(): Int do
+    let c1 = classify_number(0) in
+    let c2 = classify_with_guard(5) in
+    let bs = bool_to_string(true) in
+    let ls = list_status([1, 2, 3]) in
+    
+    let numbers = [10, 20, 30] in
+    let h = list_head(numbers, 0) in
+    let s = list_second(numbers, 0) in
+    
+    let pair = (42, "answer") in
+    let f = tuple_first(pair) in
+    let swapped = tuple_swap(pair) in
+    
+    let opt = Some(100) in
+    let val = option_value(opt, 0) in
+    
+    let res = Ok(200) in
+    let rval = result_value(res, 0) in
+    
+    let fb = fizzbuzz(15) in
+    
+    0
+  end
+end

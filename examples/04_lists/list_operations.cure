@@ -1,0 +1,159 @@
+# Cure Language - List Operations Example
+# Demonstrates using Std.List standard library functions
+
+module ListOperations do
+  import Std.List
+  export [main/0]
+  
+  # Basic list operations
+  def basic_operations(): Int do
+    let numbers = [1, 2, 3, 4, 5] in
+    let empty = [] in
+    
+    let len = List.length(numbers) in
+    let is_empty_result = List.is_empty(empty) in
+    let reversed = List.reverse(numbers, []) in
+    
+    let head_val = List.head(numbers, 0) in
+    let tail_val = List.tail(numbers) in
+    
+    0
+  end
+  
+  # List construction
+  def construction_examples(): List(Int) do
+    let list1 = List.cons(1, [2, 3, 4]) in
+    let list2 = [5, 6, 7] in
+    let appended = List.append(list1, list2) in
+    
+    let nested = [[1, 2], [3, 4], [5, 6]] in
+    let flattened = List.concat(nested) in
+    
+    flattened
+  end
+  
+  # Map operation
+  def map_examples(): List(Int) do
+    let numbers = [1, 2, 3, 4, 5] in
+    
+    let doubled = List.map(numbers, fn(x) -> x * 2 end) in
+    let squared = List.map(numbers, fn(x) -> x * x end) in
+    let incremented = List.map(numbers, fn(x) -> x + 1 end) in
+    
+    doubled
+  end
+  
+  # Filter operation
+  def filter_examples(): List(Int) do
+    let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] in
+    
+    let evens = List.filter(numbers, fn(x) -> x % 2 == 0 end) in
+    let odds = List.filter(numbers, fn(x) -> x % 2 != 0 end) in
+    let gt_five = List.filter(numbers, fn(x) -> x > 5 end) in
+    
+    evens
+  end
+  
+  # Fold operation (reduce)
+  def fold_examples(): Int do
+    let numbers = [1, 2, 3, 4, 5] in
+    
+    # Sum all numbers using fold
+    let sum = List.fold(numbers, 0, fn(x) -> fn(acc) -> acc + x end end) in
+    
+    # Product of all numbers
+    let product = List.fold(numbers, 1, fn(x) -> fn(acc) -> acc * x end end) in
+    
+    sum
+  end
+  
+  # Zip with operation
+  def zip_with_examples(): List(Int) do
+    let list1 = [1, 2, 3, 4, 5] in
+    let list2 = [10, 20, 30, 40, 50] in
+    
+    # Add corresponding elements
+    let sums = List.zip_with(list1, list2, fn(x) -> fn(y) -> x + y end end) in
+    
+    # Multiply corresponding elements
+    let products = List.zip_with(list1, list2, fn(x) -> fn(y) -> x * y end end) in
+    
+    sums
+  end
+  
+  # Contains operation
+  def contains_examples(): Bool do
+    let numbers = [1, 2, 3, 4, 5] in
+    
+    let has_three = List.contains(numbers, 3) in
+    let has_ten = List.contains(numbers, 10) in
+    
+    has_three
+  end
+  
+  # Complex example - processing a list in multiple ways
+  def complex_processing(): Int do
+    let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] in
+    
+    # Filter evens, double them, then sum
+    let evens = List.filter(numbers, fn(x) -> x % 2 == 0 end) in
+    let doubled = List.map(evens, fn(x) -> x * 2 end) in
+    let sum = List.fold(doubled, 0, fn(x) -> fn(acc) -> acc + x end end) in
+    
+    sum
+  end
+  
+  # List of lists operations
+  def nested_list_examples(): List(Int) do
+    let matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]] in
+    
+    # Flatten the matrix
+    let flat = List.concat(matrix) in
+    
+    # Double all elements in nested structure
+    let doubled_matrix = List.map(matrix, fn(row) ->
+      List.map(row, fn(x) -> x * 2 end)
+    end) in
+    
+    flat
+  end
+  
+  # Working with empty lists
+  def empty_list_handling(): Int do
+    let empty = [] in
+    
+    let len = List.length(empty) in
+    let is_empty = List.is_empty(empty) in
+    let head_default = List.head(empty, 42) in
+    
+    head_default
+  end
+  
+  # Chain multiple operations
+  def chained_operations(): List(Int) do
+    let numbers = [1, 2, 3, 4, 5] in
+    
+    # numbers -> double -> filter > 5 -> add 1
+    let step1 = List.map(numbers, fn(x) -> x * 2 end) in
+    let step2 = List.filter(step1, fn(x) -> x > 5 end) in
+    let step3 = List.map(step2, fn(x) -> x + 1 end) in
+    
+    step3
+  end
+  
+  def main(): Int do
+    let basic = basic_operations() in
+    let constructed = construction_examples() in
+    let mapped = map_examples() in
+    let filtered = filter_examples() in
+    let folded = fold_examples() in
+    let zipped = zip_with_examples() in
+    let has_elem = contains_examples() in
+    let complex = complex_processing() in
+    let nested = nested_list_examples() in
+    let empty_result = empty_list_handling() in
+    let chained = chained_operations() in
+    
+    0
+  end
+end

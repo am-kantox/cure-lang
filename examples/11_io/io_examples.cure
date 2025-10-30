@@ -1,0 +1,146 @@
+# Cure Language - I/O Examples
+# Demonstrates console I/O using Std.Io
+
+module IoExamples do
+  import Std.Io
+  export [main/0]
+  
+  # Basic printing
+  def basic_print_examples(): Int do
+    Io.print("Hello, Cure!")
+    Io.println("Hello with newline!")
+    Io.println("Multiple")
+    Io.println("Lines")
+    
+    0
+  end
+  
+  # Printing values
+  def print_values(): Int do
+    let number = 42 in
+    let text = "The answer is: " in
+    
+    Io.println(text)
+    # Note: Would need string conversion for number
+    
+    0
+  end
+  
+  # Formatted output simulation
+  def formatted_output(): Int do
+    Io.println("=== User Information ===")
+    Io.println("Name: Alice")
+    Io.println("Age: 30")
+    Io.println("Email: alice@example.com")
+    Io.println("========================")
+    
+    0
+  end
+  
+  # Printing lists
+  def print_list_examples(): Int do
+    Io.println("List of numbers:")
+    Io.println("[1, 2, 3, 4, 5]")
+    
+    Io.println("List of strings:")
+    Io.println("[hello, world, cure]")
+    
+    0
+  end
+  
+  # Printing computation results
+  def print_computation_results(): Int do
+    let x = 10 in
+    let y = 20 in
+    let sum = x + y in
+    
+    Io.println("Computing...")
+    Io.println("Result computed!")
+    # Would print actual result with string conversion
+    
+    sum
+  end
+  
+  # Debug output
+  def debug_examples(): Int do
+    Io.println("[DEBUG] Starting computation")
+    let value = 100 in
+    Io.println("[DEBUG] Value initialized")
+    
+    let doubled = value * 2 in
+    Io.println("[DEBUG] Value doubled")
+    
+    Io.println("[DEBUG] Computation complete")
+    
+    doubled
+  end
+  
+  # Error messages
+  def error_examples(): Int do
+    Io.println("[ERROR] Invalid input detected")
+    Io.println("[ERROR] Operation failed")
+    Io.println("[WARNING] Using default value")
+    
+    0
+  end
+  
+  # Multi-line output
+  def multi_line_output(): Int do
+    Io.println("Line 1")
+    Io.println("Line 2")
+    Io.println("Line 3")
+    Io.println("")
+    Io.println("After blank line")
+    
+    0
+  end
+  
+  # Status reporting
+  def status_reporting(): Int do
+    Io.println("[ ] Task 1: Starting...")
+    Io.println("[✓] Task 1: Complete")
+    
+    Io.println("[ ] Task 2: Starting...")
+    Io.println("[✓] Task 2: Complete")
+    
+    Io.println("[ ] Task 3: Starting...")
+    Io.println("[✓] Task 3: Complete")
+    
+    Io.println("All tasks completed successfully!")
+    
+    0
+  end
+  
+  # Progress indication
+  def progress_indication(): Int do
+    Io.println("Processing...")
+    Io.println("Progress: 25%")
+    Io.println("Progress: 50%")
+    Io.println("Progress: 75%")
+    Io.println("Progress: 100%")
+    Io.println("Done!")
+    
+    0
+  end
+  
+  def main(): Int do
+    Io.println("=== Cure I/O Examples ===")
+    Io.println("")
+    
+    let basic = basic_print_examples() in
+    let values = print_values() in
+    let formatted = formatted_output() in
+    let lists = print_list_examples() in
+    let computation = print_computation_results() in
+    let debug = debug_examples() in
+    let errors = error_examples() in
+    let multi = multi_line_output() in
+    let status = status_reporting() in
+    let progress = progress_indication() in
+    
+    Io.println("")
+    Io.println("=== Examples Complete ===")
+    
+    0
+  end
+end

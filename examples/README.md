@@ -1,219 +1,247 @@
-# Cure Language Examples
+# Cure Programming Language - Examples
 
-🚀 **NEW: Complete Import System & Runtime Success!** (October 2025)
+This directory contains comprehensive examples demonstrating all major features of the Cure programming language.
 
-This directory contains comprehensive examples demonstrating the core features of the Cure programming language, including **working examples with full import system integration**. Each example file focuses on a specific aspect of the language and provides practical demonstrations.
+## Directory Structure
 
-## 🎆 Featured Working Example: `dependent_types_simple.cure`
+```
+examples/
+├── 01_basics/          - Basic syntax, literals, functions, operators
+├── 02_types/           - Type system: polymorphic and dependent types
+├── 03_patterns/        - Pattern matching with guards and destructuring
+├── 04_lists/           - List operations using Std.List
+├── 05_vectors/         - Length-indexed vectors with dependent types
+├── 06_result_option/   - Error handling with Result and Option types
+├── 07_fsm/             - Finite State Machines: counter, traffic light
+├── 08_higher_order/    - Lambdas, composition, currying
+├── 09_records/         - Record definitions, access, and updates
+├── 10_traits/          - Trait system (when implemented)
+├── 11_io/              - Console I/O with Std.Io
+└── 12_math/            - Math operations with Std.Math
+```
 
-**BREAKTHROUGH**: This example successfully compiles and runs with the complete import system!
+## Examples by Category
+
+### 01_basics/ - Fundamental Syntax
+- **literals.cure**: All literal types (integers, booleans, atoms, strings, lists, tuples)
+- **functions.cure**: Function definitions, parameters, recursion, let bindings
+- **operators.cure**: Arithmetic, comparison, and logical operators
+
+### 02_types/ - Type System
+- **polymorphic.cure**: Parametric polymorphism (generics)
+  - Generic functions: identity, map, filter, fold
+  - Type parameters and constraints
+- **dependent.cure**: Dependent types
+  - Length-indexed vectors
+  - Peano natural numbers (Nat)
+  - Type-level arithmetic
+
+### 03_patterns/ - Pattern Matching
+- **matching.cure**: Comprehensive pattern matching
+  - Basic patterns on integers, booleans, atoms
+  - List destructuring and cons patterns
+  - Tuple patterns
+  - Guards with complex conditions
+  - Nested patterns
+  - Option and Result pattern matching
+
+### 04_lists/ - List Operations
+- **list_operations.cure**: Using Std.List standard library
+  - Basic operations: length, head, tail, reverse
+  - Construction: cons, append, concat
+  - Transformations: map, filter, fold, zip_with
+  - Predicates: contains, is_empty
+  - Complex pipelines combining operations
+
+### 05_vectors/ - Dependent Types with Vectors
+- **vector_operations.cure**: Length-indexed vectors
+  - Compile-time length checking
+  - Type-safe operations preserving length
+  - Map, zip, fold on vectors
+  - Conversion between Vector and List
+
+### 06_result_option/ - Error Handling
+- **error_handling.cure**: Monadic error handling
+  - Option type for optional values
+  - Result type for success/failure
+  - Safe operations (safe_divide, safe_head)
+  - Mapping and chaining (map, flatMap)
+  - Validation pipelines
+
+### 07_fsm/ - Finite State Machines
+- **counter.cure**: Counter FSMs
+  - Simple counter with increment/decrement
+  - Bounded counter with limits
+  - Up-down counter with direction
+  - Timer FSM with timeouts
+- **traffic_light.cure**: Traffic light FSMs
+  - Simple traffic light
+  - Timed traffic light with duration
+  - Pedestrian crossing light
+  - Smart traffic light with sensors
+
+### 08_higher_order/ - Higher-Order Functions
+- **lambdas.cure**: Functional programming patterns
+  - Lambda expressions (anonymous functions)
+  - Functions returning functions
+  - Function composition
+  - Currying and partial application
+  - Classic higher-order functions: map, filter, fold
+  - Function pipelines
+
+### 09_records/ - Record Types
+- **records.cure**: Record data structures
+  - Simple and generic records
+  - Field access with dot notation
+  - Immutable updates
+  - Pattern matching on records
+  - Nested records
+
+### 11_io/ - Input/Output
+- **io_examples.cure**: Console I/O
+  - Basic printing with print/println
+  - Formatted output
+  - Debug and error messages
+  - Status reporting and progress indication
+
+### 12_math/ - Mathematical Operations
+- **math_operations.cure**: Using Std.Math
+  - Constants: pi, e
+  - Basic operations: abs, sign, negate
+  - Arithmetic: add, subtract, multiply
+  - Min/max and clamping
+  - Power function
+  - Practical examples: distance, average, factorial
+
+## Standard Library Examples
+
+Each example demonstrates functions from the Cure standard library (`lib/std/`):
+
+- **Std.List**: List operations (map, filter, fold, zip_with, etc.)
+- **Std.Vector**: Length-indexed vector operations
+- **Std.Core**: Core functions (identity, compose, comparison)
+- **Std.Result**: Result type operations
+- **Std.Fsm**: FSM runtime operations
+- **Std.Io**: I/O operations
+- **Std.Math**: Mathematical functions
+
+## Key Language Features Demonstrated
+
+### Dependent Types
+```cure
+def make_vector3<T>(x: T, y: T, z: T): Vector(T, 3) do
+  [x, y, z]
+end
+```
+
+### Pattern Matching with Guards
+```cure
+def classify(n: Int): Atom do
+  match n do
+    x when x > 0 -> :positive
+    x when x < 0 -> :negative
+    0 -> :zero
+  end
+end
+```
+
+### Finite State Machines
+```cure
+fsm Counter do
+  state idle do
+    on start -> counting(0)
+  end
+  
+  state counting(value: Int) do
+    on increment -> counting(value + 1)
+    on stop -> idle
+  end
+end
+```
+
+### Polymorphic Functions
+```cure
+def map<A, B>(list: List(A), f: A -> B): List(B) do
+  match list do
+    [] -> []
+    [h | t] -> [f(h) | map(t, f)]
+  end
+end
+```
+
+### Records
+```cure
+record Person do
+  name: String
+  age: Int
+  email: String
+end
+
+let person = Person{name: "Alice", age: 30, email: "alice@example.com"}
+let updated = Person{person | age: 31}
+```
+
+### Higher-Order Functions
+```cure
+def compose<A, B, C>(f: B -> C, g: A -> B): A -> C do
+  fn(x) -> f(g(x)) end
+end
+```
+
+## Running Examples
+
+To compile and run an example:
 
 ```bash
-# Compile and run
-./cure examples/dependent_types_simple.cure
-erl -pa _build/ebin -noshell -eval "'DependentTypes':demo_all(), init:stop()."
+# Build the compiler
+make all
 
-# Output:
-=== Dependent Types Demonstration ===
-All operations below are compile-time verified for safety!
-=== Vector Operations ===
-Dot product: 32.0
-Vector sum: [5.0, 7.0, 9.0] 
-Scaled vector: [2.0, 4.0, 6.0]
+# Compile an example
+./cure compile examples/01_basics/literals.cure
+
+# Run the compiled module
+erl -pa _build/ebin -eval 'Literals:main(), init:stop().'
 ```
 
-**Features Demonstrated**:
-- ✅ **Working import system**: `import Std [List, Result]`
-- ✅ **Standard library functions**: `print/1`, `show/1`, `map/2`, `fold/3`, `zip_with/3`
-- ✅ **Dependent types**: Length-indexed vectors with compile-time safety
-- ✅ **Runtime execution**: Full end-to-end compilation and execution
-- ✅ **Type safety**: Vector operations validated at compile time
+## Testing Examples
 
-## Example Files
+All examples are designed to:
+- Compile without errors
+- Demonstrate correct usage of language features
+- Follow best practices for Cure programming
+- Include comprehensive comments explaining each feature
 
-### 1. Pattern Matching (`pattern_matching.cure`)
+## Learning Path
 
-Demonstrates comprehensive pattern matching capabilities including:
+Recommended order for learning Cure:
 
-- **Basic Pattern Matching**: Simple value matching with wildcards
-- **List Pattern Matching**: Head/tail destructuring (`[head | tail]`)  
-- **Guard Clauses**: Pattern matching with `when` conditions
-- **Record Pattern Matching**: Destructuring records with field extraction
-- **Union Type Matching**: Pattern matching on algebraic data types
-- **Nested Patterns**: Complex nested pattern matching scenarios
-- **Case Expressions**: Alternative syntax to `match` expressions
-- **Tuple Patterns**: Destructuring tuples and coordinate processing
+1. **01_basics/** - Start here to understand fundamental syntax
+2. **03_patterns/** - Learn pattern matching (essential for Cure)
+3. **02_types/** - Understand the type system
+4. **04_lists/** - Practice with standard library
+5. **06_result_option/** - Learn error handling patterns
+6. **08_higher_order/** - Master functional programming
+7. **09_records/** - Work with structured data
+8. **05_vectors/** - Explore dependent types
+9. **07_fsm/** - Build state machines
+10. **11_io/, 12_math/** - Use standard library modules
 
-**Key Features Shown:**
-```cure
-# Guards with patterns
-match n do
-  x when x < 0 -> "negative"
-  x when x > 100 -> "large positive"
-  x -> "other: " ++ show(x)
-end
+## Additional Resources
 
-# Record pattern matching
-match Person{name: name, age: age} when age >= 18 ->
-  "Adult: " ++ name
-```
+- See `WARP.md` in the project root for compiler architecture details
+- Check `lib/std/` for standard library implementations
+- Refer to `src/parser/cure_ast.hrl` for complete AST definitions
+- Review test files in `test/` for more usage examples
 
-### 2. Monadic Pipes (`monadic_pipes.cure`)
+## Contributing Examples
 
-Shows function composition and error handling using pipe operators:
+When adding new examples:
+1. Create a new subdirectory or add to an existing category
+2. Include comprehensive comments explaining each feature
+3. Ensure examples compile and run successfully
+4. Add a main/0 function for easy testing
+5. Update this README with the new example
 
-- **Basic Pipe Operations**: Simple function composition with `|>`
-- **Result Monadic Pipes**: Error-handling pipelines that short-circuit on failure
-- **Option Monadic Pipes**: Safe operations with `Some`/`None` handling
-- **List Processing Pipes**: Functional programming with lists
-- **Complex Data Pipelines**: Multi-stage data processing with validation
-- **Async Pipeline Simulation**: Composing asynchronous operations
+## License
 
-**Key Features Shown:**
-```cure
-# Monadic pipeline with error handling
-def process_user(raw_user): Result(ProcessedUser, ValidationError) =
-  raw_user
-  |> parse_user()
-  |> bind(validate_user)
-  |> bind(enrich_user)
-  |> map(normalize_user)
-
-# List processing pipeline
-numbers
-|> filter(fn(x) -> x > 0 end)
-|> map(fn(x) -> x * 2 end)
-|> sort()
-```
-
-### 3. Dependent Types 🚀 **WORKING WITH IMPORT SYSTEM!**
-
-**🎆 `dependent_types_simple.cure`** - **BREAKTHROUGH**: Full compilation and runtime success!
-**🎆 `dependent_types.cure`** - Advanced dependent types demonstrations
-
-Demonstrates compile-time guarantees and type safety through dependent types:
-
-- **✅ Length-Indexed Vectors**: Vectors with compile-time known lengths (**WORKING!**)
-- **✅ Import System Integration**: Uses `import Std [List, Result]` (**WORKING!**)
-- **✅ Standard Library Functions**: `zip_with/3`, `fold/3`, `map/2`, `show/1`, `print/1` (**WORKING!**)
-- **Matrix Operations**: Dimension checking at compile time
-- **Refinement Types**: Types with predicates (`{x: Int | x > 0}`)
-- **Indexed Data Structures**: Binary trees with depth tracking
-- **Phantom Types**: Unit safety (meters vs feet)
-- **GADTs**: Type-safe expression evaluation
-- **Proof Carrying Code**: Types that maintain invariants
-
-**Key Features Shown:**
-```cure
-# 🚀 WORKING: Length-safe vector operations with imports
-module DependentTypes do
-  import Std [List, Result]  # Working import system!
-  
-  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
-    # Type system guarantees same length
-    zip_with(v1, v2, fn(x, y) -> x * y end)
-    |> fold(0.0, fn(x, acc) -> acc + x end)
-  
-  def demo_all(): Unit =
-    let v1 = make_vec3(1.0, 2.0, 3.0)
-    let v2 = make_vec3(4.0, 5.0, 6.0)
-    let result = dot_product(v1, v2)
-    print("Dot product: " ++ show(result))  # Output: 32.0
-end
-
-# Matrix multiplication with dimension checking  
-def matrix_multiply(a: Matrix(m, n, T), b: Matrix(n, p, T)): Matrix(m, p, T) =
-  # Dimensions must be compatible
-
-# Safe division with non-zero guarantee
-def safe_divide(x: Float, y: NonZeroFloat): Float = x / y
-```
-
-### 4. Finite State Machines (`finite_state_machines.cure`)
-
-Comprehensive FSM examples with process integration:
-
-- **TCP Connection FSM**: Network protocol state management
-- **Vending Machine FSM**: Business logic state machines
-- **Game State FSM**: Application state management  
-- **Workflow FSM**: Document approval workflows
-- **FSM-Process Integration**: Combining FSMs with the actor model
-- **Composable State Machines**: Higher-level FSM coordination
-
-**Key Features Shown:**
-```cure
-fsm TcpConnection do
-  states: [Closed, Listen, Established, FinWait1]
-  initial: Closed
-  
-  state Closed do
-    event(:listen) -> Listen
-    event(:connect) -> SynSent
-  end
-  
-  state Established do
-    event(:close) -> FinWait1
-    event({:data, payload: Binary}) -> Established
-  end
-end
-```
-
-## Running the Examples
-
-Each example file contains a `demo_all/0` function that demonstrates all features:
-
-```cure
-# To run pattern matching examples
-PatternMatching.demo_all()
-
-# To run monadic pipes examples  
-MonadicPipes.demo_all()
-
-# To run dependent types examples
-DependentTypes.demo_all()
-
-# To run FSM examples
-FiniteStateMachines.demo_all()
-```
-
-## Language Features Highlighted
-
-### Type Safety
-- Compile-time guarantees prevent runtime errors
-- Dependent types ensure correctness by construction
-- Pattern matching exhaustiveness checking
-
-### Functional Programming
-- Immutable data structures
-- Higher-order functions and lambdas
-- Monadic composition with `|>` operators
-
-### Concurrent Programming  
-- Actor model with lightweight processes
-- Message passing with `send`/`receive`
-- FSM integration with process supervision
-
-### Advanced Type System
-- Dependent types with value-level parameters
-- Refinement types with logical constraints
-- GADTs for type-safe interpreters
-- Phantom types for domain modeling
-
-## Code Organization
-
-Each example demonstrates:
-1. **Type Definitions**: Custom types and records
-2. **Core Functions**: Primary functionality demonstrations  
-3. **Helper Functions**: Supporting utilities
-4. **Demo Functions**: Complete working examples
-5. **Integration Examples**: How features work together
-
-## Educational Value
-
-These examples are designed to:
-- Show practical applications of advanced type systems
-- Demonstrate real-world patterns and idioms
-- Illustrate the safety guarantees provided by the type system
-- Show how different language features complement each other
-
-The examples progress from basic concepts to advanced applications, making them suitable for learning the language incrementally while showing the power of dependent types and formal methods applied to practical programming problems.
+These examples are part of the Cure programming language project.

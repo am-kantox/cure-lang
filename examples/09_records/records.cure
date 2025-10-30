@@ -1,0 +1,199 @@
+# Cure Language - Records Example
+# Demonstrates record definitions, field access, and updates
+
+module Records do
+  export [main/0]
+  
+  # Simple record definition
+  record Person do
+    name: String
+    age: Int
+    email: String
+  end
+  
+  # Record with default values
+  record Point do
+    x: Int
+    y: Int
+  end
+  
+  # Generic record
+  record Box<T> do
+    value: T
+    label: String
+  end
+  
+  # Nested records
+  record Address do
+    street: String
+    city: String
+    zipcode: Int
+  end
+  
+  record Employee do
+    name: String
+    id: Int
+    address: Address
+  end
+  
+  # Creating records
+  def create_records(): Int do
+    let person = Person{
+      name: "Alice",
+      age: 30,
+      email: "alice@example.com"
+    } in
+    
+    let point = Point{x: 10, y: 20} in
+    
+    let int_box = Box{value: 42, label: "answer"} in
+    let string_box = Box{value: "hello", label: "greeting"} in
+    
+    0
+  end
+  
+  # Field access
+  def field_access_examples(): Int do
+    let person = Person{
+      name: "Bob",
+      age: 25,
+      email: "bob@example.com"
+    } in
+    
+    let name = person.name in
+    let age = person.age in
+    let email = person.email in
+    
+    age
+  end
+  
+  # Record updates (creating new record with modified fields)
+  def record_update_examples(): Person do
+    let original = Person{
+      name: "Charlie",
+      age: 35,
+      email: "charlie@example.com"
+    } in
+    
+    # Update age, keep other fields
+    let updated = Person{original | age: 36} in
+    
+    # Update multiple fields
+    let updated2 = Person{original | 
+      age: 40,
+      email: "charlie.new@example.com"
+    } in
+    
+    updated2
+  end
+  
+  # Pattern matching on records
+  def pattern_match_record(person: Person): String do
+    match person do
+      Person{name: "Alice", age: _, email: _} -> "Found Alice!"
+      Person{name: n, age: a, email: _} when a >= 18 -> "Adult: " ++ n
+      Person{name: n, age: _, email: _} -> "Minor: " ++ n
+    end
+  end
+  
+  # Working with nested records
+  def nested_record_examples(): String do
+    let addr = Address{
+      street: "123 Main St",
+      city: "Springfield",
+      zipcode: 12345
+    } in
+    
+    let employee = Employee{
+      name: "Diana",
+      id: 1001,
+      address: addr
+    } in
+    
+    # Access nested fields
+    let city = employee.address.city in
+    
+    # Update nested record
+    let new_addr = Address{addr | street: "456 Oak Ave"} in
+    let updated_employee = Employee{employee | address: new_addr} in
+    
+    city
+  end
+  
+  # Generic record operations
+  def generic_record_examples(): Int do
+    let int_box = Box{value: 100, label: "count"} in
+    let bool_box = Box{value: true, label: "flag"} in
+    
+    let int_value = int_box.value in
+    let int_label = int_box.label in
+    
+    int_value
+  end
+  
+  # Record with list fields
+  record ShoppingCart do
+    items: List(String)
+    total: Int
+    customer: String
+  end
+  
+  def list_field_examples(): Int do
+    let cart = ShoppingCart{
+      items: ["apple", "banana", "orange"],
+      total: 10,
+      customer: "Eve"
+    } in
+    
+    # Add item to cart (create new cart with updated list)
+    let new_items = ["grape" | cart.items] in
+    let updated_cart = ShoppingCart{cart | 
+      items: new_items,
+      total: cart.total + 2
+    } in
+    
+    updated_cart.total
+  end
+  
+  # Record equality (structural)
+  def record_equality_examples(): Bool do
+    let p1 = Point{x: 10, y: 20} in
+    let p2 = Point{x: 10, y: 20} in
+    let p3 = Point{x: 15, y: 25} in
+    
+    let eq1 = p1 == p2 in  # Should be true (same values)
+    let eq2 = p1 == p3 in  # Should be false (different values)
+    
+    eq1
+  end
+  
+  # Transforming records
+  def transform_person(person: Person, years: Int): Person do
+    Person{person | age: person.age + years}
+  end
+  
+  def transform_examples(): Int do
+    let person = Person{
+      name: "Frank",
+      age: 28,
+      email: "frank@example.com"
+    } in
+    
+    let older = transform_person(person, 5) in
+    
+    older.age
+  end
+  
+  def main(): Int do
+    let created = create_records() in
+    let accessed = field_access_examples() in
+    let updated = record_update_examples() in
+    let nested = nested_record_examples() in
+    let generic = generic_record_examples() in
+    let list_field = list_field_examples() in
+    let equality = record_equality_examples() in
+    let transformed = transform_examples() in
+    
+    0
+  end
+end

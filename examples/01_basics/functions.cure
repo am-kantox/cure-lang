@@ -1,0 +1,70 @@
+# Cure Language - Functions Example
+# Demonstrates function definitions, parameters, and let bindings
+
+module Functions do
+  export [main/0, add/2, factorial/1, fibonacci/1]
+  
+  # Simple function with two parameters
+  def add(x: Int, y: Int): Int do
+    x + y
+  end
+  
+  # Function with let binding
+  def add_three(x: Int, y: Int, z: Int): Int do
+    let sum_xy = add(x, y) in
+    add(sum_xy, z)
+  end
+  
+  # Recursive function - factorial
+  def factorial(n: Int): Int do
+    match n do
+      0 -> 1
+      1 -> 1
+      _ -> n * factorial(n - 1)
+    end
+  end
+  
+  # Recursive function - Fibonacci
+  def fibonacci(n: Int): Int do
+    match n do
+      0 -> 0
+      1 -> 1
+      _ -> fibonacci(n - 1) + fibonacci(n - 2)
+    end
+  end
+  
+  # Nested let bindings
+  def complex_calculation(x: Int): Int do
+    let a = x + 1 in
+    let b = a * 2 in
+    let c = b - 3 in
+    c / 2
+  end
+  
+  # Multiple let bindings in sequence
+  def sequential_operations(n: Int): Int do
+    let doubled = n * 2
+    let squared = doubled * doubled
+    let result = squared + 10
+    result
+  end
+  
+  # Helper function (not exported)
+  def helper(x: Int): Int do
+    x * x
+  end
+  
+  # Using helper function
+  def use_helper(x: Int): Int do
+    let squared = helper(x) in
+    squared + helper(x + 1)
+  end
+  
+  def main(): Int do
+    let sum = add(5, 3) in
+    let fact = factorial(5) in
+    let fib = fibonacci(7) in
+    let calc = complex_calculation(10) in
+    0
+  end
+end

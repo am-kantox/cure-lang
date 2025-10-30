@@ -1,0 +1,170 @@
+# Cure Language - Higher-Order Functions Example
+# Demonstrates lambdas, function composition, and currying
+
+module HigherOrderFunctions do
+  export [main/0]
+  
+  # Lambda expressions (anonymous functions)
+  def lambda_examples(): Int do
+    let add_five = fn(x) -> x + 5 end in
+    let multiply_by_two = fn(x) -> x * 2 end in
+    let is_even = fn(x) -> x % 2 == 0 end in
+    
+    let result1 = add_five(10) in
+    let result2 = multiply_by_two(7) in
+    let result3 = is_even(4) in
+    
+    result1
+  end
+  
+  # Functions that return functions
+  def make_adder(n: Int): Int -> Int do
+    fn(x) -> x + n end
+  end
+  
+  def make_multiplier(n: Int): Int -> Int do
+    fn(x) -> x * n end
+  end
+  
+  # Using function returners
+  def function_factory_examples(): Int do
+    let add_ten = make_adder(10) in
+    let times_three = make_multiplier(3) in
+    
+    let result1 = add_ten(5) in         # 15
+    let result2 = times_three(4) in     # 12
+    
+    result1
+  end
+  
+  # Function composition
+  def compose<A, B, C>(f: B -> C, g: A -> B): A -> C do
+    fn(x) -> f(g(x)) end
+  end
+  
+  def composition_examples(): Int do
+    let add_one = fn(x) -> x + 1 end in
+    let double = fn(x) -> x * 2 end in
+    
+    # (double ∘ add_one)(x) = double(add_one(x))
+    let double_then_add = compose(add_one, double) in
+    let add_then_double = compose(double, add_one) in
+    
+    let result1 = double_then_add(5) in  # (5 * 2) + 1 = 11
+    let result2 = add_then_double(5) in  # (5 + 1) * 2 = 12
+    
+    result1
+  end
+  
+  # Partial application (currying)
+  def add_curried(x: Int): Int -> Int do
+    fn(y) -> x + y end
+  end
+  
+  def multiply_curried(x: Int): Int -> Int do
+    fn(y) -> x * y end
+  end
+  
+  def currying_examples(): Int do
+    let add_5 = add_curried(5) in
+    let add_10 = add_curried(10) in
+    let times_3 = multiply_curried(3) in
+    
+    let result1 = add_5(7) in      # 12
+    let result2 = add_10(7) in     # 17
+    let result3 = times_3(4) in    # 12
+    
+    result1
+  end
+  
+  # Map - classic higher-order function
+  def map<A, B>(list: List(A), f: A -> B): List(B) do
+    match list do
+      [] -> []
+      [h | t] -> [f(h) | map(t, f)]
+    end
+  end
+  
+  # Filter - another classic
+  def filter<T>(list: List(T), pred: T -> Bool): List(T) do
+    match list do
+      [] -> []
+      [h | t] ->
+        let rest = filter(t, pred) in
+        match pred(h) do
+          true -> [h | rest]
+          false -> rest
+        end
+    end
+  end
+  
+  # Fold/reduce
+  def fold<A, B>(list: List(A), init: B, f: A -> B -> B): B do
+    match list do
+      [] -> init
+      [h | t] ->
+        let partial = f(h) in
+        partial(fold(t, init, f))
+    end
+  end
+  
+  # Using map, filter, fold together
+  def combined_example(): Int do
+    let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] in
+    
+    # Get even numbers, double them, sum the result
+    let evens = filter(numbers, fn(x) -> x % 2 == 0 end) in
+    let doubled = map(evens, fn(x) -> x * 2 end) in
+    let sum = fold(doubled, 0, fn(x) -> fn(acc) -> acc + x end end) in
+    
+    sum
+  end
+  
+  # Function pipelines
+  def apply<A, B>(f: A -> B, x: A): B do
+    f(x)
+  end
+  
+  def pipeline_example(): Int do
+    let add_one = fn(x) -> x + 1 end in
+    let double = fn(x) -> x * 2 end in
+    let square = fn(x) -> x * x end in
+    
+    # Manually pipeline: 5 -> +1 -> *2 -> square
+    let step1 = add_one(5) in          # 6
+    let step2 = double(step1) in       # 12
+    let step3 = square(step2) in       # 144
+    
+    step3
+  end
+  
+  # Recursive higher-order function
+  def repeat<T>(n: Int, f: T -> T, x: T): T do
+    match n do
+      0 -> x
+      _ -> repeat(n - 1, f, f(x))
+    end
+  end
+  
+  def repeat_examples(): Int do
+    let add_one = fn(x) -> x + 1 end in
+    let double = fn(x) -> x * 2 end in
+    
+    let result1 = repeat(5, add_one, 0) in    # Apply add_one 5 times to 0 = 5
+    let result2 = repeat(3, double, 2) in     # Apply double 3 times to 2 = 16
+    
+    result1
+  end
+  
+  def main(): Int do
+    let lambda_res = lambda_examples() in
+    let factory_res = function_factory_examples() in
+    let comp_res = composition_examples() in
+    let curry_res = currying_examples() in
+    let combined_res = combined_example() in
+    let pipeline_res = pipeline_example() in
+    let repeat_res = repeat_examples() in
+    
+    0
+  end
+end

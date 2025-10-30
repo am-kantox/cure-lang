@@ -1,0 +1,101 @@
+# Cure Language - FSM Traffic Light Example
+# Demonstrates FSM with timed transitions
+
+module TrafficLight do
+  export [main/0]
+  
+  # Simple Traffic Light FSM
+  fsm TrafficLight do
+    state red do
+      on timer_expired -> green
+      on emergency -> flashing
+    end
+    
+    state yellow do
+      on timer_expired -> red
+      on emergency -> flashing
+    end
+    
+    state green do
+      on timer_expired -> yellow
+      on emergency -> flashing
+    end
+    
+    state flashing do
+      on reset -> red
+    end
+  end
+  
+  # Advanced Traffic Light with timing
+  fsm TimedTrafficLight do
+    state red(duration: Int) do
+      on tick(elapsed: Int) when elapsed >= duration -> green(30)
+      on tick(elapsed: Int) -> red(duration)
+      on emergency -> off
+    end
+    
+    state yellow(duration: Int) do
+      on tick(elapsed: Int) when elapsed >= duration -> red(60)
+      on tick(elapsed: Int) -> yellow(duration)
+      on emergency -> off
+    end
+    
+    state green(duration: Int) do
+      on tick(elapsed: Int) when elapsed >= duration -> yellow(5)
+      on tick(elapsed: Int) -> green(duration)
+      on emergency -> off
+    end
+    
+    state off do
+      on power_on -> red(60)
+    end
+  end
+  
+  # Pedestrian crossing light
+  fsm PedestrianLight do
+    state dont_walk do
+      on button_pressed -> countdown(10)
+      on coordinated_change -> walk
+    end
+    
+    state walk do
+      on timer_start -> countdown(15)
+    end
+    
+    state countdown(seconds: Int) do
+      on tick when seconds > 0 -> countdown(seconds - 1)
+      on tick when seconds <= 0 -> dont_walk
+    end
+  end
+  
+  # Smart traffic light with sensors
+  fsm SmartTrafficLight do
+    state red(waiting: Int) do
+      on vehicle_detected -> red(waiting + 1)
+      on timer when waiting > 5 -> green(30)
+      on timer when waiting <= 5 -> green(15)
+      on emergency -> flashing
+    end
+    
+    state green(remaining: Int) do
+      on tick when remaining > 0 -> green(remaining - 1)
+      on tick when remaining <= 0 -> yellow
+      on emergency -> flashing
+    end
+    
+    state yellow do
+      on timer -> red(0)
+      on emergency -> flashing
+    end
+    
+    state flashing do
+      on reset -> red(0)
+    end
+  end
+  
+  def main(): Int do
+    # Traffic light FSMs can be spawned and controlled
+    # via timer events and sensor inputs
+    0
+  end
+end
