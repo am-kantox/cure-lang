@@ -7,7 +7,7 @@
     enable_specialization = true :: boolean(),
     enable_monomorphization = true :: boolean(), 
     enable_inlining = true :: boolean(),
-    enable_dce = true :: boolean(),       % Dead code elimination
+    enable_dce = false :: boolean(),      % Dead code elimination - DISABLED: too aggressive
     enable_memory_opts = true :: boolean(),
     max_specializations = 10 :: pos_integer(),
     inline_threshold = 50 :: pos_integer(),

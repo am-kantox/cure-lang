@@ -472,8 +472,8 @@ Generates detailed reports including:
     enable_specialization = true :: boolean(),
     enable_monomorphization = true :: boolean(),
     enable_inlining = true :: boolean(),
-    % Dead code elimination
-    enable_dce = true :: boolean(),
+    % Dead code elimination - DISABLED: too aggressive, removes exported functions
+    enable_dce = false :: boolean(),
     enable_memory_opts = true :: boolean(),
     max_specializations = 10 :: pos_integer(),
     inline_threshold = 50 :: pos_integer(),
@@ -742,12 +742,8 @@ find_unreachable_functions_by_type(AST, TypeInfo) ->
 
     % Find exported and entry point functions (never considered dead)
     ExportedFunctions = find_exported_functions(AST),
-    % TODO: find_entry_points returns a set but we need a list for concatenation.
-    % This causes a badarg error, but the error is currently caught upstream
-    % and allows compilation to proceed with unoptimized AST. Fixing this
-    % requires ensuring the entire optimization pipeline doesn't break code generation.
-    % Fix: EntryPoints = sets:to_list(find_entry_points(AST)),
-    EntryPoints = find_entry_points(AST),
+    % Convert set to list for concatenation
+    EntryPoints = sets:to_list(find_entry_points(AST)),
     ProtectedFunctions = ExportedFunctions ++ EntryPoints,
 
     % Unreachable = All - Called - Protected
@@ -1300,7 +1296,8 @@ default_optimization_config() ->
         enable_specialization = true,
         enable_monomorphization = true,
         enable_inlining = true,
-        enable_dce = true,
+        % DISABLED: too aggressive for library code
+        enable_dce = false,
         enable_memory_opts = true,
         max_specializations = 10,
         inline_threshold = 50,
