@@ -1,0 +1,167 @@
+% Unicode String Handling in Cure
+% Demonstrates Unicode-aware string operations
+
+module UnicodeStrings
+
+import String
+
+% ============================================================================
+% Unicode Grapheme Operations
+% ============================================================================
+
+export analyze_unicode : String -> {Int, Int, List String}
+analyze_unicode(text) =
+    let
+        grapheme_count = String.length(text)
+        byte_count = String.byte_size(text)
+        graphemes = String.graphemes(text)
+    in
+        {grapheme_count, byte_count, graphemes}
+
+% ============================================================================
+% Multilingual Greetings
+% ============================================================================
+
+export greet_multilingual : String -> String -> String
+greet_multilingual(lang, name) = case lang of
+    "en" -> "Hello, " <> name <> "!"
+    "es" -> "¡Hola, " <> name <> "!"
+    "fr" -> "Bonjour, " <> name <> " !"
+    "de" -> "Hallo, " <> name <> "!"
+    "ja" -> "こんにちは、" <> name <> "！"
+    "zh" -> "你好，" <> name <> "！"
+    "ar" -> "مرحبا، " <> name <> "!"
+    "ru" -> "Привет, " <> name <> "!"
+    _ -> "Hello, " <> name <> "!"
+end
+
+% ============================================================================
+% Emoji Handling
+% ============================================================================
+
+export add_emoji : String -> String -> String
+add_emoji(text, emoji) =
+    emoji <> " " <> text <> " " <> emoji
+
+export count_emoji : String -> Int
+count_emoji(text) =
+    let
+        graphemes = String.graphemes(text)
+    in
+        % Count graphemes that contain emoji codepoints (simplified)
+        List.length(List.filter(is_emoji, graphemes))
+
+is_emoji : String -> Bool
+is_emoji(grapheme) =
+    let
+        codepoints = String.codepoints(grapheme)
+        first = List.head(codepoints)
+    in
+        case first of
+            {ok, cp} -> cp >= 0x1F300 and cp <= 0x1F9FF  % Emoji range
+            {error, _} -> false
+        end
+
+% ============================================================================
+% Case Folding (Unicode-aware)
+% ============================================================================
+
+export normalize_for_comparison : String -> String
+normalize_for_comparison(text) =
+    String.downcase(String.trim(text))
+
+export case_insensitive_equal : String -> String -> Bool
+case_insensitive_equal(a, b) =
+    normalize_for_comparison(a) == normalize_for_comparison(b)
+
+% ============================================================================
+% Codepoint Analysis
+% ============================================================================
+
+export codepoint_ranges : String -> {Int, Int}
+codepoint_ranges(text) =
+    let
+        codepoints = String.codepoints(text)
+    in
+        case codepoints of
+            [] -> {0, 0}
+            [h | t] ->
+                let
+                    min_cp = List.fold_left(min, h, codepoints)
+                    max_cp = List.fold_left(max, h, codepoints)
+                in
+                    {min_cp, max_cp}
+        end
+
+% ============================================================================
+% Grapheme Reversal
+% ============================================================================
+
+export reverse_words : String -> String
+reverse_words(text) =
+    let
+        words = String.words(text)
+        reversed_words = List.map(String.reverse, words)
+    in
+        String.unwords(reversed_words)
+
+% ============================================================================
+% Unicode Normalization Check
+% ============================================================================
+
+export is_ascii : String -> Bool
+is_ascii(text) =
+    let
+        codepoints = String.codepoints(text)
+    in
+        List.all(fn(cp) -> cp < 128, codepoints)
+
+export has_extended_unicode : String -> Bool
+has_extended_unicode(text) =
+    let
+        codepoints = String.codepoints(text)
+    in
+        List.any(fn(cp) -> cp > 0xFFFF, codepoints)
+
+% ============================================================================
+% Main Demo
+% ============================================================================
+
+export demo : IO ()
+demo() =
+    % Analyze various Unicode strings
+    print("=== Unicode Analysis ===")
+    print(analyze_unicode("hello"))
+    print(analyze_unicode("café"))
+    print(analyze_unicode("世界"))
+    print(analyze_unicode("👨‍👩‍👧‍👦"))
+    
+    % Multilingual greetings
+    print("\n=== Multilingual Greetings ===")
+    print(greet_multilingual("en", "World"))
+    print(greet_multilingual("es", "Mundo"))
+    print(greet_multilingual("ja", "世界"))
+    print(greet_multilingual("zh", "世界"))
+    
+    % Emoji handling
+    print("\n=== Emoji ===")
+    print(add_emoji("Hello", "👋"))
+    print(add_emoji("Party", "🎉"))
+    
+    % Case folding
+    print("\n=== Case-Insensitive Comparison ===")
+    print(case_insensitive_equal("Hello", "hello"))
+    print(case_insensitive_equal("Café", "CAFÉ"))
+    print(case_insensitive_equal("Hello", "World"))
+    
+    % Codepoint analysis
+    print("\n=== Codepoint Ranges ===")
+    print(codepoint_ranges("abc"))
+    print(codepoint_ranges("世界"))
+    
+    % Character detection
+    print("\n=== Character Detection ===")
+    print(is_ascii("hello"))
+    print(is_ascii("café"))
+    print(has_extended_unicode("hello"))
+    print(has_extended_unicode("😀"))

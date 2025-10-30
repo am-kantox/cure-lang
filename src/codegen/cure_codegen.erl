@@ -3512,11 +3512,18 @@ compile_value_to_erlang_form_impl(Value, Line) when is_float(Value) ->
 compile_value_to_erlang_form_impl(Value, Line) when is_atom(Value) ->
     {atom, Line, Value};
 compile_value_to_erlang_form_impl(Value, Line) when is_binary(Value) ->
-    {string, Line, binary_to_list(Value)};
+    % Binary = String (UTF-8 binary)
+    % Generate a binary form instead of string
+    {bin, Line, [{bin_element, Line, {string, Line, binary_to_list(Value)}, default, [utf8]}]};
 compile_value_to_erlang_form_impl(Value, Line) when is_list(Value) ->
-    case io_lib:printable_list(Value) of
-        true -> {string, Line, Value};
-        false -> compile_list_to_erlang_form(Value, Line)
+    % Check if it's a charlist (printable Unicode list) or a regular list
+    case io_lib:printable_unicode_list(Value) of
+        true ->
+            % Charlist - compile as Erlang list of integers
+            compile_list_to_erlang_form(Value, Line);
+        false ->
+            % Regular list
+            compile_list_to_erlang_form(Value, Line)
     end;
 compile_value_to_erlang_form_impl(Value, Line) ->
     {tuple, Line, [{atom, Line, complex_value}, {term, Line, Value}]}.

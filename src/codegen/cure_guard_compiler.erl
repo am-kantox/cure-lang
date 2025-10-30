@@ -163,6 +163,36 @@ compile_guard_expr(#list_expr{elements = Elements, location = Location}, State) 
 
     Instructions = ElementInstructions ++ [ListInstruction],
     {ok, Instructions, State1};
+% String pattern matching: "prefix" <> rest
+% This compiles to a binary prefix match in guards
+compile_guard_expr(
+    #binary_op_expr{
+        op = '<>',
+        left = #literal_expr{value = Prefix, location = LocLeft},
+        right = #identifier_expr{name = VarName, location = LocRight},
+        location = Location
+    },
+    State
+) when is_binary(Prefix) ->
+    % Match string prefix pattern
+    % Generates: case String of <<Prefix/binary, Rest/binary>> -> ... end
+    PrefixSize = erlang:byte_size(Prefix),
+
+    Instructions = [
+        % Load the string to match against (assumes it's on stack or in variable)
+        #beam_instr{
+            op = load_param,
+            args = [VarName],
+            location = LocRight
+        },
+        % Match prefix
+        #beam_instr{
+            op = match_binary_prefix,
+            args = [Prefix, PrefixSize],
+            location = Location
+        }
+    ],
+    {ok, Instructions, State};
 compile_guard_expr(Expr, _State) ->
     {error, {unsupported_guard_expr, Expr}}.
 
@@ -238,6 +268,12 @@ is_guard_bif('round') -> true;
 is_guard_bif('size') -> true;
 is_guard_bif('length') -> true;
 is_guard_bif('string_length') -> true;
+% String concatenation in patterns
+is_guard_bif('<>') -> true;
+% String byte size
+is_guard_bif('byte_size') -> true;
+% Binary pattern matching
+is_guard_bif('binary_part') -> true;
 is_guard_bif('hd') -> true;
 is_guard_bif('tl') -> true;
 is_guard_bif('element') -> true;

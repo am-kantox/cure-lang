@@ -1,0 +1,264 @@
+% String Standard Library Module
+% Provides string manipulation and conversion functions for the Cure language.
+%
+% This module operates on three related types:
+%   - String: UTF-8 encoded binary (default string type)
+%   - Charlist: List of Unicode codepoints
+%   - Binary: Raw bytes (may or may not be valid UTF-8)
+
+module String
+
+% ============================================================================
+% Type Conversions
+% ============================================================================
+
+% Convert a String to a Charlist
+export to_charlist : String -> Charlist
+to_charlist(s) = native "cure_string_native" "to_charlist" [s]
+
+% Convert a Charlist to a String
+export from_charlist : Charlist -> String
+from_charlist(chars) = native "cure_string_native" "from_charlist" [chars]
+
+% Convert a String to a Binary (identity, but explicit)
+export to_binary : String -> Binary
+to_binary(s) = native "cure_string_native" "to_binary" [s]
+
+% Convert a Binary to a String (validates UTF-8)
+% Returns: {ok, String} | {error, :invalid_utf8}
+export from_binary : Binary -> Result String Atom
+from_binary(bin) = native "cure_string_native" "from_binary" [bin]
+
+% Convert a String to an Atom
+export to_atom : String -> Atom
+to_atom(s) = native "cure_string_native" "to_atom" [s]
+
+% ============================================================================
+% Core String Operations
+% ============================================================================
+
+% Concatenate two strings (alternative to <> operator)
+export concat : String -> String -> String
+concat(s1, s2) = s1 <> s2
+
+% Get the length of a string in graphemes (Unicode-aware)
+export length : String -> Int
+length(s) = native "cure_string_native" "length" [s]
+
+% Get the byte size of a string
+export byte_size : String -> Int
+byte_size(s) = native "cure_string_native" "byte_size" [s]
+
+% Check if a string is empty
+export is_empty : String -> Bool
+is_empty("") = true
+is_empty(_) = false
+
+% ============================================================================
+% String Manipulation
+% ============================================================================
+
+% Extract a substring by grapheme position and length
+% slice("hello", 1, 3) => "ell"
+export slice : String -> Int -> Int -> String
+slice(s, start, len) = native "cure_string_native" "slice" [s, start, len]
+
+% Get the grapheme at a specific index (0-based)
+% Returns: {ok, String} | {error, :out_of_bounds}
+export at : String -> Int -> Result String Atom
+at(s, index) = native "cure_string_native" "at" [s, index]
+
+% Get the first grapheme of a string
+% Returns: {ok, String} | {error, :empty_string}
+export first : String -> Result String Atom
+first(s) = native "cure_string_native" "first" [s]
+
+% Get the last grapheme of a string
+% Returns: {ok, String} | {error, :empty_string}
+export last : String -> Result String Atom
+last(s) = native "cure_string_native" "last" [s]
+
+% ============================================================================
+% Splitting and Joining
+% ============================================================================
+
+% Split a string by a pattern
+% split("a,b,c", ",") => ["a", "b", "c"]
+export split : String -> String -> List String
+split(s, pattern) = native "cure_string_native" "split" [s, pattern]
+
+% Split a string at a specific grapheme index
+% split_at("hello", 2) => {"he", "llo"}
+export split_at : String -> Int -> Tuple String String
+split_at(s, index) = native "cure_string_native" "split_at" [s, index]
+
+% Join a list of strings with a separator
+% join(["a", "b", "c"], ",") => "a,b,c"
+export join : List String -> String -> String
+join(strings, sep) = native "cure_string_native" "join" [strings, sep]
+
+% ============================================================================
+% Trimming
+% ============================================================================
+
+% Trim whitespace from both ends of a string
+export trim : String -> String
+trim(s) = native "cure_string_native" "trim" [s]
+
+% Trim whitespace from the left side of a string
+export trim_left : String -> String
+trim_left(s) = native "cure_string_native" "trim_left" [s]
+
+% Trim whitespace from the right side of a string
+export trim_right : String -> String
+trim_right(s) = native "cure_string_native" "trim_right" [s]
+
+% ============================================================================
+% Case Transformations
+% ============================================================================
+
+% Convert string to uppercase (Unicode-aware)
+export upcase : String -> String
+upcase(s) = native "cure_string_native" "upcase" [s]
+
+% Convert string to lowercase (Unicode-aware)
+export downcase : String -> String
+downcase(s) = native "cure_string_native" "downcase" [s]
+
+% Capitalize the first grapheme of a string
+export capitalize : String -> String
+capitalize(s) = native "cure_string_native" "capitalize" [s]
+
+% ============================================================================
+% Predicates
+% ============================================================================
+
+% Check if a string starts with a given prefix
+export starts_with : String -> String -> Bool
+starts_with(s, prefix) = native "cure_string_native" "starts_with" [s, prefix]
+
+% Check if a string ends with a given suffix
+export ends_with : String -> String -> Bool
+ends_with(s, suffix) = native "cure_string_native" "ends_with" [s, suffix]
+
+% Check if a string contains a substring
+export contains : String -> String -> Bool
+contains(s, substring) = native "cure_string_native" "contains" [s, substring]
+
+% ============================================================================
+% Pattern Matching and Replacement
+% ============================================================================
+
+% Replace the first occurrence of a pattern
+% replace("hello world", "world", "cure") => "hello cure"
+export replace : String -> String -> String -> String
+replace(s, pattern, replacement) = 
+    native "cure_string_native" "replace" [s, pattern, replacement]
+
+% Replace all occurrences of a pattern
+% replace_all("aaa", "a", "b") => "bbb"
+export replace_all : String -> String -> String -> String
+replace_all(s, pattern, replacement) = 
+    native "cure_string_native" "replace_all" [s, pattern, replacement]
+
+% ============================================================================
+% Unicode Operations
+% ============================================================================
+
+% Split a string into a list of grapheme clusters
+% graphemes("hello") => ["h", "e", "l", "l", "o"]
+% graphemes("👨‍👩‍👧‍👦") => ["👨‍👩‍👧‍👦"] (single grapheme cluster)
+export graphemes : String -> List String
+graphemes(s) = native "cure_string_native" "graphemes" [s]
+
+% Get a list of Unicode codepoints from a string
+% codepoints("hello") => [104, 101, 108, 108, 111]
+export codepoints : String -> List Int
+codepoints(s) = native "cure_string_native" "codepoints" [s]
+
+% Check if a binary is valid UTF-8
+export valid_utf8 : Binary -> Bool
+valid_utf8(bin) = native "cure_string_native" "valid_utf8" [bin]
+
+% ============================================================================
+% Utilities
+% ============================================================================
+
+% Reverse a string (Unicode-aware, reverses graphemes)
+export reverse : String -> String
+reverse(s) = native "cure_string_native" "reverse" [s]
+
+% Duplicate a string n times
+% duplicate("ab", 3) => "ababab"
+export duplicate : String -> Int -> String
+duplicate(s, n) = native "cure_string_native" "duplicate" [s, n]
+
+% Pad a string on the left to a given width
+% pad_left("hi", 5, " ") => "   hi"
+export pad_left : String -> Int -> String -> String
+pad_left(s, width, padding) = 
+    native "cure_string_native" "pad_left" [s, width, padding]
+
+% Pad a string on the right to a given width
+% pad_right("hi", 5, " ") => "hi   "
+export pad_right : String -> Int -> String -> String
+pad_right(s, width, padding) = 
+    native "cure_string_native" "pad_right" [s, width, padding]
+
+% ============================================================================
+% Convenience Functions
+% ============================================================================
+
+% Check if a string matches all conditions
+% all_of(["test", "best"], starts_with("t")) => false
+export all_of : List String -> (String -> Bool) -> Bool
+all_of([], _pred) = true
+all_of([h | t], pred) = 
+    case pred(h) of
+        true -> all_of(t, pred)
+        false -> false
+    end
+
+% Check if any string matches the condition
+% any_of(["test", "best"], starts_with("t")) => true
+export any_of : List String -> (String -> Bool) -> Bool
+any_of([], _pred) = false
+any_of([h | t], pred) = 
+    case pred(h) of
+        true -> true
+        false -> any_of(t, pred)
+    end
+
+% Filter strings by a predicate
+export filter : List String -> (String -> Bool) -> List String
+filter([], _pred) = []
+filter([h | t], pred) = 
+    case pred(h) of
+        true -> [h | filter(t, pred)]
+        false -> filter(t, pred)
+    end
+
+% Map a function over a list of strings
+export map : List String -> (String -> String) -> List String
+map([], _f) = []
+map([h | t], f) = [f(h) | map(t, f)]
+
+% ============================================================================
+% Helper Functions
+% ============================================================================
+
+% Lines - split by newline
+export lines : String -> List String
+lines(s) = split(s, "\n")
+
+% Unlines - join with newline
+export unlines : List String -> String
+unlines(strings) = join(strings, "\n")
+
+% Words - split by whitespace (simplified version)
+export words : String -> List String
+words(s) = split(trim(s), " ")
+
+% Unwords - join with space
+export unwords : List String -> String
+unwords(strings) = join(strings, " ")

@@ -224,6 +224,8 @@ convert_token_to_tuple(#token{type = number, value = Value, line = Line}) ->
     {integer, Line, Value};
 convert_token_to_tuple(#token{type = string, value = Value, line = Line}) ->
     {string, Line, Value};
+convert_token_to_tuple(#token{type = charlist, value = Value, line = Line}) ->
+    {charlist, Line, Value};
 convert_token_to_tuple(#token{type = identifier, value = Value, line = Line}) ->
     {identifier, Line, binary_to_list(Value)};
 convert_token_to_tuple(#token{type = atom, value = Value, line = Line}) ->
@@ -261,6 +263,7 @@ operators() ->
         <<">">> => '>',
         <<"<=">> => '<=',
         <<">=">> => '>=',
+        <<"<>">> => '<>',
         <<"==">> => '==',
         <<"!=">> => '!=',
         <<"++">> => '++',
@@ -339,7 +342,7 @@ scan_tokens(<<$\n, Rest/binary>>, Line, _Column, Acc) ->
 scan_tokens(<<$#, Rest/binary>>, Line, _Column, Acc) ->
     {_, NewRest} = skip_line_comment(Rest),
     scan_tokens(NewRest, Line + 1, 1, Acc);
-%% String literals - check for interpolation
+%% String literals (straight double quotes U+0022) - check for interpolation
 scan_tokens(<<$", Rest/binary>>, Line, Column, Acc) ->
     case scan_string_with_interpolation(Rest, Line, Column + 1, []) of
         {simple_string, String, NewRest, NewLine, NewColumn} ->
@@ -350,7 +353,16 @@ scan_tokens(<<$", Rest/binary>>, Line, Column, Acc) ->
             AllTokens = lists:reverse(Tokens) ++ Acc,
             scan_tokens(NewRest, NewLine, NewColumn, AllTokens)
     end;
-%% Single-quoted atoms
+%% Charlist literals (Unicode left single quote U+2018 '') - UTF-8: E2 80 98
+scan_tokens(<<226, 128, 152, Rest/binary>>, Line, Column, Acc) ->
+    case scan_charlist_literal(Rest, Line, Column + 1, []) of
+        {ok, Charlist, NewRest, NewLine, NewColumn} ->
+            Token = #token{type = charlist, value = Charlist, line = Line, column = Column},
+            scan_tokens(NewRest, NewLine, NewColumn, [Token | Acc]);
+        {error, Reason} ->
+            throw({lexer_error, Reason, Line, Column})
+    end;
+%% Single-quoted atoms (ASCII single quote) - kept for backward compatibility if needed
 scan_tokens(<<$', Rest/binary>>, Line, Column, Acc) ->
     {Atom, NewRest, NewColumn} = scan_quoted_atom(Rest, Column + 1, <<>>),
     Token = #token{type = atom, value = Atom, line = Line, column = Column},
@@ -672,3 +684,24 @@ scan_identifier(<<C, Rest/binary>>, Column, Acc) when
     scan_identifier(Rest, Column + 1, <<Acc/binary, C>>);
 scan_identifier(Rest, Column, Acc) ->
     {Acc, Rest, Column}.
+
+%% Scan charlist literal (between Unicode single quotes '' U+2018/U+2019)
+%% This scans until the right single quote (U+2019) which is: E2 80 99 in UTF-8
+scan_charlist_literal(Binary, Line, Column, _Acc) ->
+    scan_charlist_literal_impl(Binary, Line, Column, []).
+
+scan_charlist_literal_impl(<<226, 128, 153, Rest/binary>>, Line, Column, Charlist) ->
+    % Found closing right single quote (U+2019)
+    {ok, lists:reverse(Charlist), Rest, Line, Column + 1};
+scan_charlist_literal_impl(<<$\\, C, Rest/binary>>, Line, Column, Charlist) ->
+    % Handle escape sequences
+    Escaped = escape_char(C),
+    scan_charlist_literal_impl(Rest, Line, Column + 2, [Escaped | Charlist]);
+scan_charlist_literal_impl(<<$\n, Rest/binary>>, Line, _Column, Charlist) ->
+    % Handle newline
+    scan_charlist_literal_impl(Rest, Line + 1, 1, [$\n | Charlist]);
+scan_charlist_literal_impl(<<C/utf8, Rest/binary>>, Line, Column, Charlist) ->
+    % Regular Unicode character
+    scan_charlist_literal_impl(Rest, Line, Column + 1, [C | Charlist]);
+scan_charlist_literal_impl(<<>>, Line, Column, _Charlist) ->
+    {error, {unterminated_charlist, Line, Column}}.

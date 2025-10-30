@@ -462,6 +462,8 @@ concurrent environments. The module is otherwise stateless and thread-safe.
 -define(TYPE_INT, {primitive_type, 'Int'}).
 -define(TYPE_FLOAT, {primitive_type, 'Float'}).
 -define(TYPE_STRING, {primitive_type, 'String'}).
+-define(TYPE_CHARLIST, {primitive_type, 'Charlist'}).
+-define(TYPE_BINARY, {primitive_type, 'Binary'}).
 -define(TYPE_BOOL, {primitive_type, 'Bool'}).
 -define(TYPE_ATOM, {primitive_type, 'Atom'}).
 
@@ -2266,9 +2268,25 @@ build_curried_function_type([ParamType | RestParams], BodyType) ->
 %% Helper functions for type inference
 infer_literal_type(N) when is_integer(N) -> ?TYPE_INT;
 infer_literal_type(F) when is_float(F) -> ?TYPE_FLOAT;
-infer_literal_type(S) when is_list(S) -> ?TYPE_STRING;
 infer_literal_type(B) when is_boolean(B) -> ?TYPE_BOOL;
-infer_literal_type(unit) -> {primitive_type, 'Unit'};
+infer_literal_type(unit) ->
+    {primitive_type, 'Unit'};
+infer_literal_type(S) when is_list(S) ->
+    % Check if it's a charlist (list of integers) or a string
+    case io_lib:printable_unicode_list(S) of
+        % List of valid Unicode codepoints
+        true -> ?TYPE_CHARLIST;
+        % Fallback to string for backwards compatibility
+        false -> ?TYPE_STRING
+    end;
+infer_literal_type(Bin) when is_binary(Bin) ->
+    % Binary could be String (UTF-8) or Binary (raw bytes)
+    case unicode:characters_to_binary(Bin) of
+        % Valid UTF-8 = String
+        Bin -> ?TYPE_STRING;
+        % Invalid UTF-8 = Binary
+        _ -> ?TYPE_BINARY
+    end;
 infer_literal_type(A) when is_atom(A) -> ?TYPE_ATOM.
 
 %% Type inference and validation for record field expressions with refined type checking
@@ -3116,6 +3134,19 @@ infer_binary_op('!=', LeftType, RightType, Location, Constraints) ->
     },
     {ok, ?TYPE_BOOL, Constraints ++ [EqualityConstraint]};
 infer_binary_op('++', LeftType, RightType, Location, Constraints) ->
+    % List concatenation or legacy string concat (kept for compatibility)
+    ResultType = new_type_var(),
+    {ok, ResultType,
+        Constraints ++
+            [
+                #type_constraint{
+                    left = LeftType, op = '=', right = ResultType, location = Location
+                },
+                #type_constraint{
+                    left = RightType, op = '=', right = ResultType, location = Location
+                }
+            ]};
+infer_binary_op('<>', LeftType, RightType, Location, Constraints) ->
     % String concatenation: both operands must be strings, result is string
     StringConstraints = [
         #type_constraint{left = LeftType, op = '=', right = ?TYPE_STRING, location = Location},

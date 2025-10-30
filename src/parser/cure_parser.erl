@@ -2846,6 +2846,8 @@ get_operator_info('*') -> {20, left};
 get_operator_info('/') -> {20, left};
 get_operator_info('%') -> {20, left};
 get_operator_info('++') -> {15, right};
+% String concatenation, same as ++
+get_operator_info('<>') -> {15, right};
 get_operator_info('|>') -> {1, left};
 get_operator_info('as') -> {2, left};
 get_operator_info('<') -> {5, left};
@@ -2917,6 +2919,15 @@ parse_primary_expression(State) ->
                     {Expr, State1};
                 string ->
                     {Token, State1} = expect(State, string),
+                    Value = get_token_value(Token),
+                    Location = get_token_location(Token),
+                    Expr = #literal_expr{
+                        value = Value,
+                        location = Location
+                    },
+                    {Expr, State1};
+                charlist ->
+                    {Token, State1} = expect(State, charlist),
                     Value = get_token_value(Token),
                     Location = get_token_location(Token),
                     Expr = #literal_expr{

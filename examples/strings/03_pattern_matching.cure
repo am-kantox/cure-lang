@@ -1,0 +1,234 @@
+% String Pattern Matching in Cure
+% Demonstrates pattern matching on strings with the <> operator
+
+module StringPatterns
+
+import String
+
+% ============================================================================
+% HTTP Request Parsing
+% ============================================================================
+
+type HttpMethod = GET | POST | PUT | DELETE | PATCH
+
+export parse_http_request : String -> Result {HttpMethod, String} String
+parse_http_request(request) = case request of
+    "GET " <> path -> {ok, {GET, path}}
+    "POST " <> path -> {ok, {POST, path}}
+    "PUT " <> path -> {ok, {PUT, path}}
+    "DELETE " <> path -> {ok, {DELETE, path}}
+    "PATCH " <> path -> {ok, {PATCH, path}}
+    _ -> {error, "Unknown HTTP method"}
+end
+
+% ============================================================================
+% URL Protocol Detection
+% ============================================================================
+
+export get_protocol : String -> String
+get_protocol(url) = case url of
+    "http://" <> _ -> "http"
+    "https://" <> _ -> "https"
+    "ftp://" <> _ -> "ftp"
+    "ws://" <> _ -> "websocket"
+    "wss://" <> _ -> "websocket-secure"
+    _ -> "unknown"
+end
+
+export is_secure : String -> Bool
+is_secure(url) = case url of
+    "https://" <> _ -> true
+    "wss://" <> _ -> true
+    _ -> false
+end
+
+% ============================================================================
+% File Extension Processing
+% ============================================================================
+
+export get_extension : String -> Result String String
+get_extension(filename) =
+    let
+        parts = String.split(filename, ".")
+    in
+        case parts of
+            [] -> {error, "No extension"}
+            [_] -> {error, "No extension"}
+            _ ->
+                let
+                    ext = List.last(parts)
+                in
+                    case ext of
+                        {ok, e} -> {ok, e}
+                        {error, _} -> {error, "No extension"}
+                    end
+        end
+
+export mime_type : String -> String
+mime_type(filename) =
+    case get_extension(filename) of
+        {ok, ext} -> case ext of
+            "html" -> "text/html"
+            "css" -> "text/css"
+            "js" -> "application/javascript"
+            "json" -> "application/json"
+            "xml" -> "application/xml"
+            "pdf" -> "application/pdf"
+            "png" -> "image/png"
+            "jpg" -> "image/jpeg"
+            "jpeg" -> "image/jpeg"
+            "gif" -> "image/gif"
+            "svg" -> "image/svg+xml"
+            "txt" -> "text/plain"
+            _ -> "application/octet-stream"
+        end
+        {error, _} -> "application/octet-stream"
+    end
+
+% ============================================================================
+% Command Line Parsing
+% ============================================================================
+
+type Flag = Help | Version | Verbose | Output String
+
+export parse_flag : String -> Result Flag String
+parse_flag(arg) = case arg of
+    "--help" -> {ok, Help}
+    "-h" -> {ok, Help}
+    "--version" -> {ok, Version}
+    "-v" -> {ok, Version}
+    "--verbose" -> {ok, Verbose}
+    "--output=" <> path -> {ok, Output path}
+    "-o=" <> path -> {ok, Output path}
+    _ -> {error, "Unknown flag: " <> arg}
+end
+
+% ============================================================================
+% Email Validation (Simplified)
+% ============================================================================
+
+export is_email : String -> Bool
+is_email(text) =
+    let
+        parts = String.split(text, "@")
+    in
+        case parts of
+            [local, domain] ->
+                not (String.is_empty(local)) and
+                String.contains(domain, ".")
+            _ -> false
+        end
+
+% ============================================================================
+% Path Operations
+% ============================================================================
+
+export is_absolute_path : String -> Bool
+is_absolute_path(path) = case path of
+    "/" <> _ -> true
+    _ -> false
+end
+
+export join_paths : String -> String -> String
+join_paths(base, path) =
+    case base of
+        "" -> path
+        _ -> case String.ends_with(base, "/") of
+            true -> base <> path
+            false -> base <> "/" <> path
+        end
+    end
+
+% ============================================================================
+% Text Processing
+% ============================================================================
+
+export strip_prefix : String -> String -> String
+strip_prefix(text, prefix) = case text of
+    prefix <> rest -> rest
+    _ -> text
+end
+
+export strip_suffix : String -> String -> String
+strip_suffix(text, suffix) =
+    if String.ends_with(text, suffix) then
+        let
+            suffix_len = String.length(suffix)
+            text_len = String.length(text)
+        in
+            String.slice(text, 0, text_len - suffix_len)
+    else
+        text
+
+% ============================================================================
+% Line-based Processing
+% ============================================================================
+
+export parse_key_value : String -> Result {String, String} String
+parse_key_value(line) =
+    case String.split(line, "=") of
+        [key, value] -> {ok, {String.trim(key), String.trim(value)}}
+        _ -> {error, "Invalid key-value format"}
+    end
+
+export filter_comments : String -> List String
+filter_comments(text) =
+    let
+        lines = String.lines(text)
+    in
+        List.filter(is_not_comment, lines)
+
+is_not_comment : String -> Bool
+is_not_comment(line) =
+    let
+        trimmed = String.trim(line)
+    in
+        not (String.is_empty(trimmed)) and
+        not (String.starts_with(trimmed, "#"))
+
+% ============================================================================
+% Main Demo
+% ============================================================================
+
+export demo : IO ()
+demo() =
+    % HTTP request parsing
+    print("=== HTTP Request Parsing ===")
+    print(parse_http_request("GET /index.html"))
+    print(parse_http_request("POST /api/users"))
+    print(parse_http_request("INVALID /path"))
+    
+    % URL protocol detection
+    print("\n=== URL Protocol ===")
+    print(get_protocol("https://example.com"))
+    print(get_protocol("ftp://files.com"))
+    print(is_secure("https://secure.com"))
+    print(is_secure("http://insecure.com"))
+    
+    % MIME types
+    print("\n=== MIME Types ===")
+    print(mime_type("index.html"))
+    print(mime_type("data.json"))
+    print(mime_type("image.png"))
+    
+    % Command line flags
+    print("\n=== Command Line Flags ===")
+    print(parse_flag("--help"))
+    print(parse_flag("--output=file.txt"))
+    print(parse_flag("--unknown"))
+    
+    % Email validation
+    print("\n=== Email Validation ===")
+    print(is_email("user@example.com"))
+    print(is_email("invalid-email"))
+    
+    % Path operations
+    print("\n=== Path Operations ===")
+    print(is_absolute_path("/usr/bin"))
+    print(is_absolute_path("relative/path"))
+    print(join_paths("/home/user", "documents"))
+    
+    % Prefix/suffix stripping
+    print("\n=== Strip Prefix/Suffix ===")
+    print(strip_prefix("Hello, World!", "Hello, "))
+    print(strip_suffix("file.txt", ".txt"))
