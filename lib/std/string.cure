@@ -1,264 +1,328 @@
-% String Standard Library Module
-% Provides string manipulation and conversion functions for the Cure language.
-%
-% This module operates on three related types:
-%   - String: UTF-8 encoded binary (default string type)
-%   - Charlist: List of Unicode codepoints
-%   - Binary: Raw bytes (may or may not be valid UTF-8)
+%% String Standard Library Module
+%% Provides string manipulation and conversion functions for the Cure language.
+%%
+%% This module operates on three related types:
+%%   - String: UTF-8 encoded binary (default string type)
+%%   - Charlist: List of Unicode codepoints
+%%   - Binary: Raw bytes (may or may not be valid UTF-8)
 
-module String
+module String do
+  export [
+    to_charlist/1, from_charlist/1, to_binary/1, from_binary/1, to_atom/1,
+    concat/2, length/1, byte_size/1, is_empty/1,
+    slice/3, at/2, first/1, last/1,
+    split/2, split_at/2, join/2,
+    trim/1, trim_left/1, trim_right/1,
+    upcase/1, downcase/1, capitalize/1,
+    starts_with/2, ends_with/2, contains/2,
+    replace/3, replace_all/3,
+    graphemes/1, codepoints/1, valid_utf8/1,
+    reverse/1, duplicate/2, pad_left/3, pad_right/3,
+    all_of/2, any_of/2, filter/2, map/2,
+    lines/1, unlines/1, words/1, unwords/1
+  ]
 
-% ============================================================================
-% Type Conversions
-% ============================================================================
+  %% ============================================================================
+  %% Type Conversions
+  %% ============================================================================
 
-% Convert a String to a Charlist
-export to_charlist : String -> Charlist
-to_charlist(s) = native "cure_string_native" "to_charlist" [s]
+  # Convert a String to a Charlist
+  def to_charlist(s: String): Charlist do
+    native "cure_string_native" "to_charlist" [s]
+  end
 
-% Convert a Charlist to a String
-export from_charlist : Charlist -> String
-from_charlist(chars) = native "cure_string_native" "from_charlist" [chars]
+  # Convert a Charlist to a String
+  def from_charlist(chars: Charlist): String do
+    native "cure_string_native" "from_charlist" [chars]
+  end
 
-% Convert a String to a Binary (identity, but explicit)
-export to_binary : String -> Binary
-to_binary(s) = native "cure_string_native" "to_binary" [s]
+  # Convert a String to a Binary (identity, but explicit)
+  def to_binary(s: String): Binary do
+    native "cure_string_native" "to_binary" [s]
+  end
 
-% Convert a Binary to a String (validates UTF-8)
-% Returns: {ok, String} | {error, :invalid_utf8}
-export from_binary : Binary -> Result String Atom
-from_binary(bin) = native "cure_string_native" "from_binary" [bin]
+  # Convert a Binary to a String (validates UTF-8)
+  # Returns: {ok, String} | {error, :invalid_utf8}
+  def from_binary(bin: Binary): Result(String, Atom) do
+    native "cure_string_native" "from_binary" [bin]
+  end
 
-% Convert a String to an Atom
-export to_atom : String -> Atom
-to_atom(s) = native "cure_string_native" "to_atom" [s]
+  # Convert a String to an Atom
+  def to_atom(s: String): Atom do
+    native "cure_string_native" "to_atom" [s]
+  end
 
-% ============================================================================
-% Core String Operations
-% ============================================================================
+  %% ============================================================================
+  %% Core String Operations
+  %% ============================================================================
 
-% Concatenate two strings (alternative to <> operator)
-export concat : String -> String -> String
-concat(s1, s2) = s1 <> s2
+  # Concatenate two strings (alternative to <> operator)
+  def concat(s1: String, s2: String): String do
+    s1 <> s2
+  end
 
-% Get the length of a string in graphemes (Unicode-aware)
-export length : String -> Int
-length(s) = native "cure_string_native" "length" [s]
+  # Get the length of a string in graphemes (Unicode-aware)
+  def length(s: String): Int do
+    native "cure_string_native" "length" [s]
+  end
 
-% Get the byte size of a string
-export byte_size : String -> Int
-byte_size(s) = native "cure_string_native" "byte_size" [s]
+  # Get the byte size of a string
+  def byte_size(s: String): Int do
+    native "cure_string_native" "byte_size" [s]
+  end
 
-% Check if a string is empty
-export is_empty : String -> Bool
-is_empty("") = true
-is_empty(_) = false
+  # Check if a string is empty
+  def is_empty(s: String): Bool do
+    match s do
+      "" -> true
+      _ -> false
+    end
+  end
 
-% ============================================================================
-% String Manipulation
-% ============================================================================
+  %% ============================================================================
+  %% String Manipulation
+  %% ============================================================================
 
-% Extract a substring by grapheme position and length
-% slice("hello", 1, 3) => "ell"
-export slice : String -> Int -> Int -> String
-slice(s, start, len) = native "cure_string_native" "slice" [s, start, len]
+  # Extract a substring by grapheme position and length
+  # slice("hello", 1, 3) => "ell"
+  def slice(s: String, start: Int, len: Int): String do
+    native "cure_string_native" "slice" [s, start, len]
+  end
 
-% Get the grapheme at a specific index (0-based)
-% Returns: {ok, String} | {error, :out_of_bounds}
-export at : String -> Int -> Result String Atom
-at(s, index) = native "cure_string_native" "at" [s, index]
+  # Get the grapheme at a specific index (0-based)
+  # Returns: {ok, String} | {error, :out_of_bounds}
+  def at(s: String, index: Int): Result(String, Atom) do
+    native "cure_string_native" "at" [s, index]
+  end
 
-% Get the first grapheme of a string
-% Returns: {ok, String} | {error, :empty_string}
-export first : String -> Result String Atom
-first(s) = native "cure_string_native" "first" [s]
+  # Get the first grapheme of a string
+  # Returns: {ok, String} | {error, :empty_string}
+  def first(s: String): Result(String, Atom) do
+    native "cure_string_native" "first" [s]
+  end
 
-% Get the last grapheme of a string
-% Returns: {ok, String} | {error, :empty_string}
-export last : String -> Result String Atom
-last(s) = native "cure_string_native" "last" [s]
+  # Get the last grapheme of a string
+  # Returns: {ok, String} | {error, :empty_string}
+  def last(s: String): Result(String, Atom) do
+    native "cure_string_native" "last" [s]
+  end
 
-% ============================================================================
-% Splitting and Joining
-% ============================================================================
+  %% ============================================================================
+  %% Splitting and Joining
+  %% ============================================================================
 
-% Split a string by a pattern
-% split("a,b,c", ",") => ["a", "b", "c"]
-export split : String -> String -> List String
-split(s, pattern) = native "cure_string_native" "split" [s, pattern]
+  # Split a string by a pattern
+  # split("a,b,c", ",") => ["a", "b", "c"]
+  def split(s: String, pattern: String): List(String) do
+    native "cure_string_native" "split" [s, pattern]
+  end
 
-% Split a string at a specific grapheme index
-% split_at("hello", 2) => {"he", "llo"}
-export split_at : String -> Int -> Tuple String String
-split_at(s, index) = native "cure_string_native" "split_at" [s, index]
+  # Split a string at a specific grapheme index
+  # split_at("hello", 2) => {"he", "llo"}
+  def split_at(s: String, index: Int): (String, String) do
+    native "cure_string_native" "split_at" [s, index]
+  end
 
-% Join a list of strings with a separator
-% join(["a", "b", "c"], ",") => "a,b,c"
-export join : List String -> String -> String
-join(strings, sep) = native "cure_string_native" "join" [strings, sep]
+  # Join a list of strings with a separator
+  # join(["a", "b", "c"], ",") => "a,b,c"
+  def join(strings: List(String), sep: String): String do
+    native "cure_string_native" "join" [strings, sep]
+  end
 
-% ============================================================================
-% Trimming
-% ============================================================================
+  %% ============================================================================
+  %% Trimming
+  %% ============================================================================
 
-% Trim whitespace from both ends of a string
-export trim : String -> String
-trim(s) = native "cure_string_native" "trim" [s]
+  # Trim whitespace from both ends of a string
+  def trim(s: String): String do
+    native "cure_string_native" "trim" [s]
+  end
 
-% Trim whitespace from the left side of a string
-export trim_left : String -> String
-trim_left(s) = native "cure_string_native" "trim_left" [s]
+  # Trim whitespace from the left side of a string
+  def trim_left(s: String): String do
+    native "cure_string_native" "trim_left" [s]
+  end
 
-% Trim whitespace from the right side of a string
-export trim_right : String -> String
-trim_right(s) = native "cure_string_native" "trim_right" [s]
+  # Trim whitespace from the right side of a string
+  def trim_right(s: String): String do
+    native "cure_string_native" "trim_right" [s]
+  end
 
-% ============================================================================
-% Case Transformations
-% ============================================================================
+  %% ============================================================================
+  %% Case Transformations
+  %% ============================================================================
 
-% Convert string to uppercase (Unicode-aware)
-export upcase : String -> String
-upcase(s) = native "cure_string_native" "upcase" [s]
+  # Convert string to uppercase (Unicode-aware)
+  def upcase(s: String): String do
+    native "cure_string_native" "upcase" [s]
+  end
 
-% Convert string to lowercase (Unicode-aware)
-export downcase : String -> String
-downcase(s) = native "cure_string_native" "downcase" [s]
+  # Convert string to lowercase (Unicode-aware)
+  def downcase(s: String): String do
+    native "cure_string_native" "downcase" [s]
+  end
 
-% Capitalize the first grapheme of a string
-export capitalize : String -> String
-capitalize(s) = native "cure_string_native" "capitalize" [s]
+  # Capitalize the first grapheme of a string
+  def capitalize(s: String): String do
+    native "cure_string_native" "capitalize" [s]
+  end
 
-% ============================================================================
-% Predicates
-% ============================================================================
+  %% ============================================================================
+  %% Predicates
+  %% ============================================================================
 
-% Check if a string starts with a given prefix
-export starts_with : String -> String -> Bool
-starts_with(s, prefix) = native "cure_string_native" "starts_with" [s, prefix]
+  # Check if a string starts with a given prefix
+  def starts_with(s: String, prefix: String): Bool do
+    native "cure_string_native" "starts_with" [s, prefix]
+  end
 
-% Check if a string ends with a given suffix
-export ends_with : String -> String -> Bool
-ends_with(s, suffix) = native "cure_string_native" "ends_with" [s, suffix]
+  # Check if a string ends with a given suffix
+  def ends_with(s: String, suffix: String): Bool do
+    native "cure_string_native" "ends_with" [s, suffix]
+  end
 
-% Check if a string contains a substring
-export contains : String -> String -> Bool
-contains(s, substring) = native "cure_string_native" "contains" [s, substring]
+  # Check if a string contains a substring
+  def contains(s: String, substring: String): Bool do
+    native "cure_string_native" "contains" [s, substring]
+  end
 
-% ============================================================================
-% Pattern Matching and Replacement
-% ============================================================================
+  %% ============================================================================
+  %% Pattern Matching and Replacement
+  %% ============================================================================
 
-% Replace the first occurrence of a pattern
-% replace("hello world", "world", "cure") => "hello cure"
-export replace : String -> String -> String -> String
-replace(s, pattern, replacement) = 
+  # Replace the first occurrence of a pattern
+  # replace("hello world", "world", "cure") => "hello cure"
+  def replace(s: String, pattern: String, replacement: String): String do
     native "cure_string_native" "replace" [s, pattern, replacement]
+  end
 
-% Replace all occurrences of a pattern
-% replace_all("aaa", "a", "b") => "bbb"
-export replace_all : String -> String -> String -> String
-replace_all(s, pattern, replacement) = 
+  # Replace all occurrences of a pattern
+  # replace_all("aaa", "a", "b") => "bbb"
+  def replace_all(s: String, pattern: String, replacement: String): String do
     native "cure_string_native" "replace_all" [s, pattern, replacement]
+  end
 
-% ============================================================================
-% Unicode Operations
-% ============================================================================
+  %% ============================================================================
+  %% Unicode Operations
+  %% ============================================================================
 
-% Split a string into a list of grapheme clusters
-% graphemes("hello") => ["h", "e", "l", "l", "o"]
-% graphemes("👨‍👩‍👧‍👦") => ["👨‍👩‍👧‍👦"] (single grapheme cluster)
-export graphemes : String -> List String
-graphemes(s) = native "cure_string_native" "graphemes" [s]
+  # Split a string into a list of grapheme clusters
+  # graphemes("hello") => ["h", "e", "l", "l", "o"]
+  # graphemes("👨‍👩‍👧‍👦") => ["👨‍👩‍👧‍👦"] (single grapheme cluster)
+  def graphemes(s: String): List(String) do
+    native "cure_string_native" "graphemes" [s]
+  end
 
-% Get a list of Unicode codepoints from a string
-% codepoints("hello") => [104, 101, 108, 108, 111]
-export codepoints : String -> List Int
-codepoints(s) = native "cure_string_native" "codepoints" [s]
+  # Get a list of Unicode codepoints from a string
+  # codepoints("hello") => [104, 101, 108, 108, 111]
+  def codepoints(s: String): List(Int) do
+    native "cure_string_native" "codepoints" [s]
+  end
 
-% Check if a binary is valid UTF-8
-export valid_utf8 : Binary -> Bool
-valid_utf8(bin) = native "cure_string_native" "valid_utf8" [bin]
+  # Check if a binary is valid UTF-8
+  def valid_utf8(bin: Binary): Bool do
+    native "cure_string_native" "valid_utf8" [bin]
+  end
 
-% ============================================================================
-% Utilities
-% ============================================================================
+  %% ============================================================================
+  %% Utilities
+  %% ============================================================================
 
-% Reverse a string (Unicode-aware, reverses graphemes)
-export reverse : String -> String
-reverse(s) = native "cure_string_native" "reverse" [s]
+  # Reverse a string (Unicode-aware, reverses graphemes)
+  def reverse(s: String): String do
+    native "cure_string_native" "reverse" [s]
+  end
 
-% Duplicate a string n times
-% duplicate("ab", 3) => "ababab"
-export duplicate : String -> Int -> String
-duplicate(s, n) = native "cure_string_native" "duplicate" [s, n]
+  # Duplicate a string n times
+  # duplicate("ab", 3) => "ababab"
+  def duplicate(s: String, n: Int): String do
+    native "cure_string_native" "duplicate" [s, n]
+  end
 
-% Pad a string on the left to a given width
-% pad_left("hi", 5, " ") => "   hi"
-export pad_left : String -> Int -> String -> String
-pad_left(s, width, padding) = 
+  # Pad a string on the left to a given width
+  # pad_left("hi", 5, " ") => "   hi"
+  def pad_left(s: String, width: Int, padding: String): String do
     native "cure_string_native" "pad_left" [s, width, padding]
+  end
 
-% Pad a string on the right to a given width
-% pad_right("hi", 5, " ") => "hi   "
-export pad_right : String -> Int -> String -> String
-pad_right(s, width, padding) = 
+  # Pad a string on the right to a given width
+  # pad_right("hi", 5, " ") => "hi   "
+  def pad_right(s: String, width: Int, padding: String): String do
     native "cure_string_native" "pad_right" [s, width, padding]
+  end
 
-% ============================================================================
-% Convenience Functions
-% ============================================================================
+  %% ============================================================================
+  %% Convenience Functions
+  %% ============================================================================
 
-% Check if a string matches all conditions
-% all_of(["test", "best"], starts_with("t")) => false
-export all_of : List String -> (String -> Bool) -> Bool
-all_of([], _pred) = true
-all_of([h | t], pred) = 
-    case pred(h) of
-        true -> all_of(t, pred)
-        false -> false
+  # Check if all strings match the condition
+  # all_of(["test", "best"], fn(s) -> starts_with(s, "t") end) => false
+  def all_of(strings: List(String), pred: String -> Bool): Bool do
+    match strings do
+      [] -> true
+      [h | t] ->
+        match pred(h) do
+          true -> all_of(t, pred)
+          false -> false
+        end
     end
+  end
 
-% Check if any string matches the condition
-% any_of(["test", "best"], starts_with("t")) => true
-export any_of : List String -> (String -> Bool) -> Bool
-any_of([], _pred) = false
-any_of([h | t], pred) = 
-    case pred(h) of
-        true -> true
-        false -> any_of(t, pred)
+  # Check if any string matches the condition
+  # any_of(["test", "best"], fn(s) -> starts_with(s, "t") end) => true
+  def any_of(strings: List(String), pred: String -> Bool): Bool do
+    match strings do
+      [] -> false
+      [h | t] ->
+        match pred(h) do
+          true -> true
+          false -> any_of(t, pred)
+        end
     end
+  end
 
-% Filter strings by a predicate
-export filter : List String -> (String -> Bool) -> List String
-filter([], _pred) = []
-filter([h | t], pred) = 
-    case pred(h) of
-        true -> [h | filter(t, pred)]
-        false -> filter(t, pred)
+  # Filter strings by a predicate
+  def filter(strings: List(String), pred: String -> Bool): List(String) do
+    match strings do
+      [] -> []
+      [h | t] ->
+        let rest = filter(t, pred) in
+        match pred(h) do
+          true -> [h | rest]
+          false -> rest
+        end
     end
+  end
 
-% Map a function over a list of strings
-export map : List String -> (String -> String) -> List String
-map([], _f) = []
-map([h | t], f) = [f(h) | map(t, f)]
+  # Map a function over a list of strings
+  def map(strings: List(String), f: String -> String): List(String) do
+    match strings do
+      [] -> []
+      [h | t] -> [f(h) | map(t, f)]
+    end
+  end
 
-% ============================================================================
-% Helper Functions
-% ============================================================================
+  %% ============================================================================
+  %% Helper Functions
+  %% ============================================================================
 
-% Lines - split by newline
-export lines : String -> List String
-lines(s) = split(s, "\n")
+  # Lines - split by newline
+  def lines(s: String): List(String) do
+    split(s, "\n")
+  end
 
-% Unlines - join with newline
-export unlines : List String -> String
-unlines(strings) = join(strings, "\n")
+  # Unlines - join with newline
+  def unlines(strings: List(String)): String do
+    join(strings, "\n")
+  end
 
-% Words - split by whitespace (simplified version)
-export words : String -> List String
-words(s) = split(trim(s), " ")
+  # Words - split by whitespace (simplified version)
+  def words(s: String): List(String) do
+    split(trim(s), " ")
+  end
 
-% Unwords - join with space
-export unwords : List String -> String
-unwords(strings) = join(strings, " ")
+  # Unwords - join with space
+  def unwords(strings: List(String)): String do
+    join(strings, " ")
+  end
+end
