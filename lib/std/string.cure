@@ -27,35 +27,33 @@ module String do
 # ============================================================================
 
   # Convert a String to a Charlist
-  curify to_charlist(s: String): Charlist = {cure_string_native, :to_charlist, 1}
+  curify to_charlist(s: String): Charlist = {cure_string_native, to_charlist, 1}
 
   # Convert a Charlist to a String
-  curify from_charlist(chars: Charlist): String = {cure_string_native, :from_charlist, 1}
+  curify from_charlist(chars: Charlist): String = {cure_string_native, from_charlist, 1}
 
   # Convert a String to a Binary (identity, but explicit)
-  curify to_binary(s: String): Binary = {cure_string_native, :to_binary, 1}
+  curify to_binary(s: String): Binary = {cure_string_native, to_binary, 1}
 
   # Convert a Binary to a String (validates UTF-8)
   # Returns: {ok, String} | {error, :invalid_utf8}
-  curify from_binary(bin: Binary): Result(String, Atom) = {cure_string_native, :from_binary, 1}
+  curify from_binary(bin: Binary): Result(String, Atom) = {cure_string_native, from_binary, 1}
 
   # Convert a String to an Atom
-  curify to_atom(s: String): Atom = {cure_string_native, :to_atom, 1}
+  curify to_atom(s: String): Atom = {cure_string_native, to_atom, 1}
 
 # ============================================================================
 # Core String Operations
 # ============================================================================
 
   # Concatenate two strings (alternative to <> operator)
-  def concat(s1: String, s2: String): String do
-    s1 <> s2
-  end
+  curify concat(s1: String, s2: String): String = {cure_string_native, concat, 2}
 
   # Get the length of a string in graphemes (Unicode-aware)
-  curify length(s: String): Int = {cure_string_native, :length, 1}
+  curify length(s: String): Int = {cure_string_native, length, 1}
 
   # Get the byte size of a string
-  curify byte_size(s: String): Int = {cure_string_native, :byte_size, 1}
+  curify byte_size(s: String): Int = {cure_string_native, byte_size, 1}
 
   # Check if a string is empty
   def is_empty(s: String): Bool do
@@ -71,19 +69,19 @@ module String do
 
   # Extract a substring by grapheme position and length
   # slice("hello", 1, 3) => "ell"
-  curify slice(s: String, start: Int, len: Int): String = {cure_string_native, :slice, 3}
+  curify slice(s: String, start: Int, len: Int): String = {cure_string_native, slice, 3}
 
   # Get the grapheme at a specific index (0-based)
   # Returns: {ok, String} | {error, :out_of_bounds}
-  curify at(s: String, index: Int): Result(String, Atom) = {cure_string_native, :at, 2}
+  curify at(s: String, index: Int): Result(String, Atom) = {cure_string_native, at, 2}
 
   # Get the first grapheme of a string
   # Returns: {ok, String} | {error, :empty_string}
-  curify first(s: String): Result(String, Atom) = {cure_string_native, :first, 1}
+  curify first(s: String): Result(String, Atom) = {cure_string_native, first, 1}
 
   # Get the last grapheme of a string
   # Returns: {ok, String} | {error, :empty_string}
-  curify last(s: String): Result(String, Atom) = {cure_string_native, :last, 1}
+  curify last(s: String): Result(String, Atom) = {cure_string_native, last, 1}
 
 # ============================================================================
 # Splitting and Joining
@@ -91,54 +89,54 @@ module String do
 
   # Split a string by a pattern
   # split("a,b,c", ",") => ["a", "b", "c"]
-  curify split(s: String, pattern: String): List(String) = {cure_string_native, :split, 2}
+  curify split(s: String, pattern: String): List(String) = {cure_string_native, split, 2}
 
   # Split a string at a specific grapheme index
   # split_at("hello", 2) => {"he", "llo"}
-  curify split_at(s: String, index: Int): (String, String) = {cure_string_native, :split_at, 2}
+  curify split_at(s: String, index: Int): Pair(String, String) = {cure_string_native, split_at, 2}
 
   # Join a list of strings with a separator
   # join(["a", "b", "c"], ",") => "a,b,c"
-  curify join(strings: List(String), sep: String): String = {cure_string_native, :join, 2}
+  curify join(strings: List(String), sep: String): String = {cure_string_native, join, 2}
 
 # ============================================================================
 # Trimming
 # ============================================================================
 
   # Trim whitespace from both ends of a string
-  curify trim(s: String): String = {cure_string_native, :trim, 1}
+  curify trim(s: String): String = {cure_string_native, trim, 1}
 
   # Trim whitespace from the left side of a string
-  curify trim_left(s: String): String = {cure_string_native, :trim_left, 1}
+  curify trim_left(s: String): String = {cure_string_native, trim_left, 1}
 
   # Trim whitespace from the right side of a string
-  curify trim_right(s: String): String = {cure_string_native, :trim_right, 1}
+  curify trim_right(s: String): String = {cure_string_native, trim_right, 1}
 
 # ============================================================================
 # Case Transformations
 # ============================================================================
 
   # Convert string to uppercase (Unicode-aware)
-  curify upcase(s: String): String = {cure_string_native, :upcase, 1}
+  curify upcase(s: String): String = {cure_string_native, upcase, 1}
 
   # Convert string to lowercase (Unicode-aware)
-  curify downcase(s: String): String = {cure_string_native, :downcase, 1}
+  curify downcase(s: String): String = {cure_string_native, downcase, 1}
 
   # Capitalize the first grapheme of a string
-  curify capitalize(s: String): String = {cure_string_native, :capitalize, 1}
+  curify capitalize(s: String): String = {cure_string_native, capitalize, 1}
 
 # ============================================================================
 # Predicates
 # ============================================================================
 
   # Check if a string starts with a given prefix
-  curify starts_with(s: String, prefix: String): Bool = {cure_string_native, :starts_with, 2}
+  curify starts_with(s: String, prefix: String): Bool = {cure_string_native, starts_with, 2}
 
   # Check if a string ends with a given suffix
-  curify ends_with(s: String, suffix: String): Bool = {cure_string_native, :ends_with, 2}
+  curify ends_with(s: String, suffix: String): Bool = {cure_string_native, ends_with, 2}
 
   # Check if a string contains a substring
-  curify contains(s: String, substring: String): Bool = {cure_string_native, :contains, 2}
+  curify contains(s: String, substring: String): Bool = {cure_string_native, contains, 2}
 
 # ============================================================================
 # Pattern Matching and Replacement
@@ -146,11 +144,11 @@ module String do
 
   # Replace the first occurrence of a pattern
   # replace("hello world", "world", "cure") => "hello cure"
-  curify replace(s: String, pattern: String, replacement: String): String = {cure_string_native, :replace, 3}
+  curify replace(s: String, pattern: String, replacement: String): String = {cure_string_native, replace, 3}
 
   # Replace all occurrences of a pattern
   # replace_all("aaa", "a", "b") => "bbb"
-  curify replace_all(s: String, pattern: String, replacement: String): String = {cure_string_native, :replace_all, 3}
+  curify replace_all(s: String, pattern: String, replacement: String): String = {cure_string_native, replace_all, 3}
 
 # ============================================================================
 # Unicode Operations
@@ -159,33 +157,33 @@ module String do
   # Split a string into a list of grapheme clusters
   # graphemes("hello") => ["h", "e", "l", "l", "o"]
   # graphemes("👨‍👩‍👧‍👦") => ["👨‍👩‍👧‍👦"] (single grapheme cluster)
-  curify graphemes(s: String): List(String) = {cure_string_native, :graphemes, 1}
+  curify graphemes(s: String): List(String) = {cure_string_native, graphemes, 1}
 
   # Get a list of Unicode codepoints from a string
   # codepoints("hello") => [104, 101, 108, 108, 111]
-  curify codepoints(s: String): List(Int) = {cure_string_native, :codepoints, 1}
+  curify codepoints(s: String): List(Int) = {cure_string_native, codepoints, 1}
 
   # Check if a binary is valid UTF-8
-  curify valid_utf8(bin: Binary): Bool = {cure_string_native, :valid_utf8, 1}
+  curify valid_utf8(bin: Binary): Bool = {cure_string_native, valid_utf8, 1}
 
 # ============================================================================
 # Utilities
 # ============================================================================
 
   # Reverse a string (Unicode-aware, reverses graphemes)
-  curify reverse(s: String): String = {cure_string_native, :reverse, 1}
+  curify reverse(s: String): String = {cure_string_native, reverse, 1}
 
   # Duplicate a string n times
   # duplicate("ab", 3) => "ababab"
-  curify duplicate(s: String, n: Int): String = {cure_string_native, :duplicate, 2}
+  curify duplicate(s: String, n: Int): String = {cure_string_native, duplicate, 2}
 
   # Pad a string on the left to a given width
   # pad_left("hi", 5, " ") => "   hi"
-  curify pad_left(s: String, width: Int, padding: String): String = {cure_string_native, :pad_left, 3}
+  curify pad_left(s: String, width: Int, padding: String): String = {cure_string_native, pad_left, 3}
 
   # Pad a string on the right to a given width
   # pad_right("hi", 5, " ") => "hi   "
-  curify pad_right(s: String, width: Int, padding: String): String = {cure_string_native, :pad_right, 3}
+  curify pad_right(s: String, width: Int, padding: String): String = {cure_string_native, pad_right, 3}
 
 # ============================================================================
 # Convenience Functions
