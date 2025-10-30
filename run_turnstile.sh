@@ -3,7 +3,7 @@
 set -e
 
 echo "=== Compiling turnstile.cure ==="
-./cure examples/turnstile.cure
+./cure examples.second_phase/turnstile.cure
 
 echo ""
 echo "=== Running turnstile example ==="

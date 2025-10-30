@@ -1,0 +1,54 @@
+# Example 4: String Literals
+# Demonstrates string literals and basic string handling
+
+module Strings do
+  export [main/0]
+  
+  # Import standard library
+  import Std.Io [println/1]
+  
+  # Helper: return a greeting string
+  def get_greeting(): String =
+    "Hello, Cure World!"
+  
+  # Helper: return a formatted message
+  def get_message(): String =
+    "This is a demonstration of string literals"
+  
+  # Helper: return multiline description
+  def get_description(): String =
+    "Cure supports UTF-8 strings with various features"
+  
+  # Main demonstration
+  def main(): Int =
+    println("=== String Literals Demo ===")
+    println("")
+    
+    # Test 1: Simple string
+    println("Test 1: Greeting")
+    let greeting = get_greeting()
+    println(greeting)
+    println("")
+    
+    # Test 2: Another string
+    println("Test 2: Message")
+    let message = get_message()
+    println(message)
+    println("")
+    
+    # Test 3: Description
+    println("Test 3: Description")
+    let description = get_description()
+    println(description)
+    println("")
+    
+    # Test 4: Direct string literals
+    println("Test 4: Direct literals")
+    println("This is a direct string literal")
+    println("Numbers work in strings: 1, 2, 3")
+    println("Special chars: ! @ # $ % ^")
+    println("")
+    
+    println("=== Demo Complete ===")
+    0
+end
