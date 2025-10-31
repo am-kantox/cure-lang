@@ -190,6 +190,108 @@ module PatternGuards do
         "Valid small number"
     end
 
+  # === TYPE CHECKING GUARDS ===
+
+  # Type guards allow runtime type checking in pattern guards
+  # Common type checking functions:
+  #   - is_integer(x)  : Check if x is an integer
+  #   - is_float(x)    : Check if x is a float
+  #   - is_number(x)   : Check if x is any number (int or float)
+  #   - is_atom(x)     : Check if x is an atom
+  #   - is_boolean(x)  : Check if x is a boolean (true/false)
+  #   - is_list(x)     : Check if x is a list
+  #   - is_tuple(x)    : Check if x is a tuple
+  #   - is_binary(x)   : Check if x is a binary/string
+  #   - is_function(x) : Check if x is a function
+  #   - is_pid(x)      : Check if x is a process identifier
+
+  # Polymorphic function with type guards
+  def describe_type(value: Any): String =
+    match value do
+      x when is_integer(x) and x >= 0 ->
+        "Positive integer: " <> show(x)
+      x when is_integer(x) and x < 0 ->
+        "Negative integer: " <> show(x)
+      x when is_float(x) ->
+        "Float: " <> show(x)
+      x when is_atom(x) ->
+        "Atom: " <> show(x)
+      x when is_boolean(x) ->
+        "Boolean: " <> show(x)
+      x when is_list(x) ->
+        "List with length " <> show(length(x))
+      x when is_tuple(x) ->
+        "Tuple"
+      x when is_binary(x) ->
+        "String/Binary: " <> x
+      _ ->
+        "Unknown type"
+    end
+
+  # Combining type guards with value conditions
+  def safe_divide(a: Any, b: Any): String =
+    match {a, b} do
+      {x, y} when is_number(x) and is_number(y) and y != 0 ->
+        let result = x / y
+        "Result: " <> show(result)
+      {x, y} when is_number(x) and is_number(y) and y == 0 ->
+        "Error: Division by zero"
+      {x, y} when not is_number(x) ->
+        "Error: First argument is not a number"
+      {x, y} when not is_number(y) ->
+        "Error: Second argument is not a number"
+      _ ->
+        "Error: Invalid arguments"
+    end
+
+  # Type-based list processing
+  def process_mixed_list(items: List(Any)): String =
+    match items do
+      [] -> "Empty list"
+      [x | rest] when is_integer(x) and x > 0 ->
+        "Starts with positive integer"
+      [x | rest] when is_float(x) ->
+        "Starts with float"
+      [x | rest] when is_atom(x) ->
+        "Starts with atom"
+      [x | rest] when is_list(x) ->
+        "Starts with nested list"
+      _ ->
+        "Other pattern"
+    end
+
+  # Validating function arguments with type guards
+  def validate_config(key: Any, value: Any): String =
+    match {key, value} do
+      {k, v} when is_atom(k) and is_integer(v) and v >= 0 ->
+        "Valid config: atom key with positive integer value"
+      {k, v} when is_atom(k) and is_binary(v) ->
+        "Valid config: atom key with string value"
+      {k, v} when is_atom(k) and is_boolean(v) ->
+        "Valid config: atom key with boolean value"
+      {k, _} when not is_atom(k) ->
+        "Error: Key must be an atom"
+      _ ->
+        "Error: Invalid configuration"
+    end
+
+  # Complex type guard combinations
+  def smart_comparison(a: Any, b: Any): String =
+    match {a, b} do
+      {x, y} when is_number(x) and is_number(y) and x > y ->
+        "First number is greater"
+      {x, y} when is_number(x) and is_number(y) and x < y ->
+        "Second number is greater"
+      {x, y} when is_number(x) and is_number(y) and x == y ->
+        "Numbers are equal"
+      {x, y} when is_binary(x) and is_binary(y) ->
+        "Both are strings"
+      {x, y} when is_list(x) and is_list(y) ->
+        "Both are lists of length " <> show(length(x)) <> " and " <> show(length(y))
+      _ ->
+        "Cannot compare: incompatible or mixed types"
+    end
+
   # === DEMONSTRATION FUNCTION ===
 
   def demo_all(): Int =
@@ -251,6 +353,37 @@ module PatternGuards do
     println(validate_input(15))        # "Valid large number"
     println(validate_input(5))         # "Valid small number"
     println(validate_input(0))         # "Zero not allowed"
+
+    println("\n=== Type Checking Guards ===")
+    println(describe_type(42))         # "Positive integer: 42"
+    println(describe_type(-7))         # "Negative integer: -7"
+    println(describe_type(3.14))       # "Float: 3.14"
+    println(describe_type(:hello))     # "Atom: hello"
+    println(describe_type(true))       # "Boolean: true"
+    println(describe_type([1, 2, 3]))  # "List with length 3"
+    println(describe_type("text"))     # "String/Binary: text"
+
+    println("\n=== Safe Division with Type Guards ===")
+    println(safe_divide(10, 2))        # "Result: 5"
+    println(safe_divide(10, 0))        # "Error: Division by zero"
+    println(safe_divide("x", 2))       # "Error: First argument is not a number"
+
+    println("\n=== Processing Mixed Lists ===")
+    println(process_mixed_list([42, "a", :b]))    # "Starts with positive integer"
+    println(process_mixed_list([3.14, 2]))        # "Starts with float"
+    println(process_mixed_list([:atom, 1, 2]))    # "Starts with atom"
+
+    println("\n=== Config Validation ===")
+    println(validate_config(:port, 8080))         # "Valid config: atom key with positive integer value"
+    println(validate_config(:name, "server"))     # "Valid config: atom key with string value"
+    println(validate_config(:enabled, true))      # "Valid config: atom key with boolean value"
+    println(validate_config("key", 123))          # "Error: Key must be an atom"
+
+    println("\n=== Smart Comparison ===")
+    println(smart_comparison(10, 5))              # "First number is greater"
+    println(smart_comparison(3, 8))               # "Second number is greater"
+    println(smart_comparison("hello", "world"))   # "Both are strings"
+    println(smart_comparison([1, 2], [3]))        # "Both are lists..."
 
     0
 

@@ -1,12 +1,38 @@
 module Std.Show do
   export [
-    # Basic show functions (multiple overloads)
-    show/1
+    show/1,
+    show_int/1,
+    show_string/1
   ]
 
-  # Simplified show implementation for various types
-  # In reality, this would be polymorphic and inspect the type
-  def show(value: Int): String =
-    "[value]"  # Simplified - returns a placeholder
+  # ============================================================================
+  # FFI Declarations for Native Functions
+  # ============================================================================
+  #
+  # Note: Full polymorphic show with runtime type dispatch is not yet supported  
+  # by the type system. For now, we provide typed variants.
+
+  # Convert an integer to its string representation
+  curify int_to_string(i: Int): String = {cure_show_native, int_to_string, 1}
+
+  # Convert a string (escapes and adds quotes)
+  curify escape_string(s: String): String = {cure_show_native, escape_string, 1}
+
+  # ============================================================================
+  # Show Functions
+  # ============================================================================
+
+  # Show an integer
+  def show_int(value: Int): String =
+    int_to_string(value)
+
+  # Show a string
+  def show_string(value: String): String =
+    escape_string(value)
+
+  # Generic show function (placeholder)
+  # TODO: Implement full polymorphic dispatch when type system supports it
+  def show(value: T): String =
+    "<value>"
 
 end

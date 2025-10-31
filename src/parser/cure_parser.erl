@@ -2217,6 +2217,14 @@ parse_primary_type(State) ->
                 location = Location
             },
             {Type, State1};
+        'Self' ->
+            {SelfToken, State1} = expect(State, 'Self'),
+            Location = get_token_location(SelfToken),
+            Type = #primitive_type{
+                name = 'Self',
+                location = Location
+            },
+            {Type, State1};
         % Type constructors for union types
         'Zero' ->
             {ZeroToken, State1} = expect(State, 'Zero'),
