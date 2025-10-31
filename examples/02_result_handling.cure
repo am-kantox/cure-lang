@@ -1,0 +1,60 @@
+# Example 2: Result Type and Error Handling
+# Demonstrates using Result type for safe error handling
+
+module ResultHandling do
+  export [main/0]
+  
+  # Import standard library
+  import Std.Core [Result, ok/1, error/1, map_ok/2, and_then/2]
+  import Std.Io [println/1]
+  
+  # Helper function that returns a Result
+  def safe_divide(x: Int, y: Int): Result(Int, String) =
+    match y == 0 do
+      true -> error("Cannot divide by zero")
+      false -> ok(x)  # Simplified division
+    end
+  
+  # Helper function for positive check
+  def ensure_positive(n: Int): Result(Int, String) =
+    match n > 0 do
+      true -> ok(n)
+      false -> error("Number must be positive")
+    end
+  
+  # Main demonstration
+  def main(): Int =
+    println("=== Result Type Demo ===")
+    println("")
+    
+    # Test 1: Successful operation
+    println("Test 1: Divide 10 by 2")
+    let result1 = safe_divide(10, 2)
+    match result1 do
+      Ok(v1) -> println("Success!")
+      Error(m1) -> println(m1)
+    end
+    println("")
+    
+    # Test 2: Division by zero
+    println("Test 2: Divide 10 by 0")
+    let result2 = safe_divide(10, 0)
+    match result2 do
+      Ok(v2) -> println("Success!")
+      Error(m2) -> println(m2)
+    end
+    println("")
+    
+    # Test 3: Chaining with and_then
+    println("Test 3: Ensure result is positive")
+    let result3 = safe_divide(10, 2)
+    let chained = and_then(result3, fn(n) -> ensure_positive(n) end)
+    match chained do
+      Ok(v3) -> println("Chained success!")
+      Error(m3) -> println(m3)
+    end
+    println("")
+    
+    println("=== Demo Complete ===")
+    0
+end
