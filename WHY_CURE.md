@@ -20,8 +20,8 @@ For the first time on BEAM, you can express and **verify** invariants at compile
 
 ```cure
 # The type system proves this is safe—no runtime checks needed
-def safe_head(list: List(T, n: Nat)): T when n > 0 =
-  list.head  # SMT solver verifies n > 0 before compilation
+def safe_head(v: Vector(T, n)): T when n > 0 =
+  head(v)
 ```
 
 Vector operations that can't fail. Array access that's proven safe. Constraints that the **solver** validates, not you.
@@ -32,13 +32,11 @@ State machines aren't a pattern in Cure—they're **native syntax** with compile
 
 ```cure
 fsm TrafficLight do
-  initial: :red
+  Red --> |timer| Green
+  Green --> |timer| Yellow  
+  Yellow --> |timer| Red
   
-  :red --> |:timer| :green
-  :green --> |:timer| :yellow  
-  :yellow --> |:timer| :red
-  
-  :green --> |:emergency| :red  # Interrupt transitions
+  Green --> |emergency| Red
 end
 ```
 
@@ -52,8 +50,8 @@ Cure forces you to think in **pattern matching** and **exhaustive cases**:
 # This is an error—non-exhaustive match
 def classify(x: Int): Atom =
   match x do
-    n when n < 0 -> :negative
-    # Compiler error: missing cases!
+    n when n >= 0 -> :positive
+    # Compiler error: missing cases! (Use `x: Nat` to compile)
   end
 
 # This compiles—all cases handled
@@ -139,6 +137,12 @@ That's why Cure exists.
 
 ---
 
+## Additional Goodness
+
+`Cure` comes with LSP for any editor.
+
+---
+
 **Cure: Verification-first programming for the BEAM.**
 
-*For everything else, there's Erlang, Elixir, LFE, and Gleam. Use them. They're excellent. But when you need dependent types, SMT-verified FSMs, and exhaustive pattern matching—use Cure.*
+*For everything else, there's Erlang, Elixir, LFE, and Gleam. Use them. They're excellent. But when you need dependent types, SMT-verified FSMs, and exhaustive pattern matching—Cure is here for you.*
