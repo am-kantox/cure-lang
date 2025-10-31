@@ -881,7 +881,7 @@ transform_item_for_mono(#module_def{items = Items} = Module, Instances) ->
     NewItems = lists:flatmap(
         fun(Item) ->
             case Item of
-                #function_def{name = Name} = FuncDef ->
+                #function_def{name = _Name} = FuncDef ->
                     % Transform function body to use specialized calls
                     TransformedFunc = transform_function_calls(FuncDef, Instances),
                     % Note: Specialized versions should be generated in Phase 3.2
@@ -1061,7 +1061,7 @@ remove_patterns_from_expr(
 ) ->
     % Filter out unreachable match clauses
     FilteredPatterns = lists:filter(
-        fun(#match_clause{pattern = Pattern} = Clause) ->
+        fun(#match_clause{pattern = Pattern} = _Clause) ->
             % Check if this pattern is in the unreachable list
             not lists:any(
                 fun({unreachable_pattern, UnreachablePattern}) ->
@@ -1142,7 +1142,7 @@ remove_redundant_checks(AST, _Checks) ->
     AST.
 
 %% Remove redundant checks from expressions
-remove_checks_from_expr(#binary_op_expr{op = Op} = BinOp, RedundantChecks) ->
+remove_checks_from_expr(#binary_op_expr{op = _Op} = BinOp, RedundantChecks) ->
     % Check if this is a redundant type check
     IsRedundant = lists:any(
         fun({redundant_check, CheckExpr}) ->
@@ -3637,7 +3637,7 @@ calculate_compilation_cost(Complexity, CallFreq) ->
     BaseCost + ComplexityPenalty.
 
 %% Calculate instruction cache cost
-calculate_icache_cost(CodeSizeIncrease, FuncSize) ->
+calculate_icache_cost(CodeSizeIncrease, _FuncSize) ->
     % I-cache lines are typically 64 bytes
     ICacheLineSize = 64,
 

@@ -158,11 +158,12 @@ Converts SMT-LIB value representation to Erlang term.
 parse_value('Int', ValueBin) ->
     ValueStr = string:trim(ValueBin),
     case string:to_integer(binary_to_list(ValueStr)) of
+        % Default on parse error
+        {error, _} -> 0;
+        % Normal parse
         {Int, ""} -> Int;
         % Ignore trailing content
-        {Int, _Rest} -> Int;
-        % Default on parse error
-        {error, _} -> 0
+        {Int, _Rest} -> Int
     end;
 parse_value('Bool', ValueBin) ->
     case string:trim(ValueBin) of
@@ -174,24 +175,24 @@ parse_value('Bool', ValueBin) ->
 parse_value('Real', ValueBin) ->
     ValueStr = string:trim(ValueBin),
     case string:to_float(binary_to_list(ValueStr)) of
-        {Float, ""} ->
-            Float;
-        {Float, _Rest} ->
-            Float;
         {error, _} ->
             % Try parsing as integer then convert to float
             case string:to_integer(binary_to_list(ValueStr)) of
-                {Int, _} -> float(Int);
-                {error, _} -> 0.0
-            end
+                {error, _} -> 0.0;
+                {Int, _} -> float(Int)
+            end;
+        {Float, ""} ->
+            Float;
+        {Float, _Rest} ->
+            Float
     end;
 parse_value(_Type, ValueBin) ->
     % Unknown type, try to parse as integer
     ValueStr = string:trim(ValueBin),
     case string:to_integer(binary_to_list(ValueStr)) of
-        {Int, _} -> Int;
         % Return as-is if can't parse
-        {error, _} -> ValueBin
+        {error, _} -> ValueBin;
+        {Int, _} -> Int
     end.
 
 -doc """
@@ -218,17 +219,17 @@ parse_value(ValueBin) ->
         _ ->
             % Try integer
             case string:to_integer(binary_to_list(Trimmed)) of
-                {Int, ""} ->
-                    Int;
-                {Int, _} ->
-                    Int;
                 {error, _} ->
                     % Try float
                     case string:to_float(binary_to_list(Trimmed)) of
-                        {Float, _} -> Float;
                         % Return as binary
-                        {error, _} -> Trimmed
-                    end
+                        {error, _} -> Trimmed;
+                        {Float, _} -> Float
+                    end;
+                {Int, ""} ->
+                    Int;
+                {Int, _} ->
+                    Int
             end
     end.
 

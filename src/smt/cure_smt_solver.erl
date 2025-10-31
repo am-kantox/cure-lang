@@ -134,7 +134,7 @@ find_counterexample(Constraint, Env) ->
 
 %% @doc Simplify a constraint using SMT solver
 -spec simplify_constraint(expr(), map()) -> expr().
-simplify_constraint(Constraint, Env) ->
+simplify_constraint(Constraint, _Env) ->
     % TODO: Use SMT solver to simplify constraint
     % For now, return as-is
     Constraint.
@@ -303,17 +303,17 @@ eval_binary_op(_, _, _) -> unknown.
 %% Negate a constraint
 negate_constraint(#unary_op_expr{op = 'not', operand = Operand}) ->
     Operand;
-negate_constraint(#binary_op_expr{op = '==', left = L, right = R} = Expr) ->
+negate_constraint(#binary_op_expr{op = '==', left = _L, right = _R} = Expr) ->
     Expr#binary_op_expr{op = '/='};
-negate_constraint(#binary_op_expr{op = '/=', left = L, right = R} = Expr) ->
+negate_constraint(#binary_op_expr{op = '/=', left = _L, right = _R} = Expr) ->
     Expr#binary_op_expr{op = '=='};
-negate_constraint(#binary_op_expr{op = '<', left = L, right = R} = Expr) ->
+negate_constraint(#binary_op_expr{op = '<', left = _L, right = _R} = Expr) ->
     Expr#binary_op_expr{op = '>='};
-negate_constraint(#binary_op_expr{op = '>', left = L, right = R} = Expr) ->
+negate_constraint(#binary_op_expr{op = '>', left = _L, right = _R} = Expr) ->
     Expr#binary_op_expr{op = '=<'};
-negate_constraint(#binary_op_expr{op = '=<', left = L, right = R} = Expr) ->
+negate_constraint(#binary_op_expr{op = '=<', left = _L, right = _R} = Expr) ->
     Expr#binary_op_expr{op = '>'};
-negate_constraint(#binary_op_expr{op = '>=', left = L, right = R} = Expr) ->
+negate_constraint(#binary_op_expr{op = '>=', left = _L, right = _R} = Expr) ->
     Expr#binary_op_expr{op = '<'};
 negate_constraint(Constraint) ->
     #unary_op_expr{

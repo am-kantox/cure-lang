@@ -325,7 +325,7 @@ handle_cast({return_solver, Pid}, PoolState) ->
             end
     end.
 
-handle_info({Port, {data, {eol, Line}}}, State = #state{port = Port}) ->
+handle_info({Port, {data, {eol, _Line}}}, State = #state{port = Port}) ->
     % Accumulate line in buffer (handled by receive_solver_response)
     {noreply, State};
 handle_info({Port, {exit_status, Status}}, State = #state{port = Port}) ->
