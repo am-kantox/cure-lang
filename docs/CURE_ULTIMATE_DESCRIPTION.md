@@ -9,7 +9,7 @@
 
 Cure is a strongly-typed, dependently-typed programming language for the BEAM VM with native finite state machine (FSM) support. The implementation consists of **23 Erlang modules** (~15,000 LOC) implementing the complete compiler toolchain, and **11 standard library modules** written in Cure itself.
 
-**Current State:** The core compiler pipeline is **fully functional** with demonstrated end-to-end compilation and execution. Several advanced features are **implemented but require refinement** for production use. The FSM system is **production-grade** with comprehensive runtime support.
+**Current State:** The core compiler pipeline is **fully functional** with demonstrated end-to-end compilation and execution. **Recent additions include multi-clause functions with union type derivation, record types with pattern matching, and pattern guards** - bringing the language closer to production readiness. Several advanced features are **implemented but require refinement** for production use. The FSM system is **production-grade** with comprehensive runtime support.
 
 ---
 
@@ -49,9 +49,11 @@ Cure is a strongly-typed, dependently-typed programming language for the BEAM VM
 - **Complete Grammar Support:**
   - Module definitions with imports/exports
   - Function definitions with parameters, guards, return types
+  - **Multi-clause functions** ✅ **NEW**: Automatic grouping by name/arity
   - FSM definitions with states and transitions
   - Type definitions and type aliases
-  - Record definitions
+  - **Record definitions** with named fields and type parameters
+  - **Pattern guards** with `when` keyword
   - Expression parsing (arithmetic, logical, comparison, pattern matching)
   - List, tuple, map, and record literals
   - Function calls (local and remote)
@@ -68,8 +70,10 @@ Cure is a strongly-typed, dependently-typed programming language for the BEAM VM
   - Source snippet display with error highlighting (via `cure_error_reporter`)
   - Multiple error accumulation
 
+#### ✅ **Recently Completed**
+- **Multi-Clause Functions**: ✅ **FULLY IMPLEMENTED** - Parser now groups multiple function definitions by name/arity, derives union types automatically (see `function_clause` record in AST)
+
 #### 🟡 **Implemented with Provisos**
-- **Multi-Clause Functions**: Limited support for pattern matching in function heads; currently requires `match` expressions in function body
 - **Operator Precedence**: Basic precedence works but some edge cases with mixed operators may parse unexpectedly
 - **Error Recovery**: Parser stops on first major error; doesn't attempt to continue parsing for multiple errors in single file
 - **Generic Type Syntax**: Angle bracket syntax `<T, U>` works, but bracket syntax `['T, 'U]` causes issues
@@ -79,7 +83,7 @@ Cure is a strongly-typed, dependently-typed programming language for the BEAM VM
 - **Attributes**: Limited support for custom attributes beyond module-level exports
 - **Documentation Comments**: Doc comments not parsed into AST (handled separately)
 
-**Production Readiness:** **85%** - Core parsing is solid, needs better error recovery and full multi-clause function support
+**Production Readiness:** **90%** - Core parsing is solid with multi-clause functions, records, and guards now fully supported; needs better error recovery
 
 ---
 
@@ -102,6 +106,7 @@ Cure is a strongly-typed, dependently-typed programming language for the BEAM VM
 - Program-level type checking
 - Module system with imports/exports
 - Function type checking with dependent constraints
+- **Multi-clause function union type derivation** ✅ **NEW**: Parameters and return types unified across clauses
 - Expression type inference
 - Pattern exhaustiveness checking (basic)
 - FSM type checking
@@ -153,6 +158,7 @@ Cure is a strongly-typed, dependently-typed programming language for the BEAM VM
 - **BEAM Bytecode Generation:**
   - Module compilation to BEAM format
   - Function compilation with proper arity
+  - **Multi-clause function compilation** ✅ **NEW**: Emits multiple BEAM clauses per function
   - Expression compilation to abstract Erlang forms
   - Pattern matching compilation with jump tables
   - Guard expression compilation
@@ -683,7 +689,7 @@ All functions properly delegate to Erlang FSM runtime via type-safe `curify` bin
 | Component | Readiness | Status | Blockers |
 |-----------|-----------|--------|----------|
 | **Lexer** | 90% | ✅ Production | Incremental lexing for IDE |
-| **Parser** | 85% | ✅ Production | Error recovery, multi-clause functions |
+|| **Parser** | 90% | ✅ Production | Error recovery |
 | **Type System** | 75% | 🟡 Functional | SMT integration, advanced features |
 | **Code Generation** | 85% | ✅ Production | Complete guard validation, debug info |
 | **FSM Runtime** | 90% | ✅ Production | Auto-registration, persistence |
@@ -699,6 +705,8 @@ All functions properly delegate to Erlang FSM runtime via type-safe `curify` bin
 
 **Strengths:**
 - ✅ **Solid Core Compiler Pipeline**: Lexer → Parser → Type Checker → Codegen fully functional
+- ✅ **Multi-Clause Functions**: Erlang-style pattern matching with automatic union type derivation
+- ✅ **Record Types & Guards**: Full support for records with pattern matching and `when` guards
 - ✅ **Production-Grade FSM System**: Best-in-class finite state machine support
 - ✅ **Working Dependent Types**: Basic dependent types compile and run correctly
 - ✅ **BEAM Integration**: Generates correct, efficient BEAM bytecode
