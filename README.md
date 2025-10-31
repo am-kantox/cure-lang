@@ -2,42 +2,54 @@
 
 A strongly-typed, dependently-typed programming language for the BEAM virtual machine with built-in finite state machines, **complete import system**, and **comprehensive standard library**.
 
-🚀 **BREAKTHROUGH: Complete Implementation Success!** (October 2025)
+🚀 **Last Updated: October 31, 2025**
 
 ✅ **Working import system** with full module resolution  
-✅ **Standard library** with verified runtime execution  
+✅ **Standard library** with verified runtime execution (12 modules)  
 ✅ **Dependent types** with compile-time verification  
 ✅ **Complete compiler pipeline** from source to BEAM bytecode  
 ✅ **FSM runtime system** with native BEAM integration  
 ✅ **Type-directed optimizations** (25-60% performance improvement)  
-✅ **Comprehensive testing** infrastructure with 100% test success rate  
+✅ **Comprehensive testing** infrastructure with high success rate  
 ✅ **LSP Server** with real-time diagnostics and IDE integration  
-✅ **SMT Solver Integration** for advanced constraint verification  
-✅ **Guard Compilation** with runtime validation and optimization
+✅ **SMT Solver Integration** (API level - CLI integration planned)  
+✅ **Guard Compilation** with runtime validation and optimization  
+✅ **Record operations** with field access and update syntax
 
 ## Core Features
 
 ### ✅ **Production-Ready Components**
 - **🚀 Complete Import System**: Full module resolution with `import Module [functions]` syntax
-- **📚 Working Standard Library**: Essential functions (`print/1`, `show/1`, `map/2`, `fold/3`, `zip_with/3`) with runtime verification
-- **🎯 Dependent Types**: Length-indexed vectors, bounded arrays, refinement types with SMT-based constraint solving
-- **🎆 Finite State Machines**: Native FSM compilation to BEAM `gen_statem` behaviors with compile-time verification
+- **📚 Working Standard Library**: 12 modules (core, io, show, list, fsm, result, pair, vector, string, math, system, rec) with essential functions
+- **🎯 Dependent Types**: Length-indexed vectors, refinement types with internal constraint representation
+- **🎆 Finite State Machines**: Arrow-based transition syntax (`State1 --> |event| State2`) compiling to BEAM behaviors
 - **⚡ Type-Directed Optimizations**: Monomorphization, function specialization, inlining (25-60% improvement)
-- **🏗️ BEAM Integration**: Native compilation to BEAM bytecode with OTP supervision tree support
-- **🔧 Advanced Pattern Matching**: Exhaustive pattern matching with dependent type constraints
-- **📊 Complete Testing Infrastructure**: 11 test suites with 95.7% success rate
-- **🔌 LSP Server**: Language Server Protocol implementation with real-time diagnostics, hover info, and code completion
+- **🏗️ BEAM Integration**: Native compilation to BEAM bytecode with OTP compatibility
+- **🔧 Pattern Matching**: Match expressions with guards and dependent type constraints
+- **📊 Complete Testing Infrastructure**: Comprehensive test suites covering all compiler stages
+- **🔌 LSP Server**: Language Server Protocol implementation with real-time diagnostics and hover info
 - **⚙️ Guard Compilation**: Dependent type guard validation with runtime optimization
-- **🧮 SMT Integration**: Z3/CVC5 solver integration for constraint verification and counterexample generation
+- **🧮 SMT Integration**: Z3/CVC5 solver integration at API level (CLI integration planned)
+- **📝 Record Operations**: Field access (`record.field`) and update syntax (`Record{base | field: value}`)
 
 ### 🎯 **Language Capabilities**
-- **Higher-Kinded Types**: Complete functors, monads, type constructors with kind signatures
-- **SMT-Based Constraint Solving**: Z3/CVC5 integration for complex type constraints with counterexample generation
-- **Hot Code Loading**: Support for live system updates without downtime
-- **Error Handling**: Comprehensive Result/Option types with monadic composition
+- **Control Flow**: Match expressions with pattern guards (note: `if-then-else` not implemented)
+- **String Operations**: Concatenation with `<>` operator, charlist literals with Unicode curly quotes
+- **List Operations**: Cons operator `|` for pattern matching `[h | t]`
+- **SMT-Based Constraint Solving**: Z3/CVC5 integration at API level for type constraints
+- **Error Handling**: Result/Option types from standard library
 - **CLI & Build System**: Complete development toolchain with wrapper scripts
-- **IDE Integration**: LSP server with real-time diagnostics, hover information, and code completion
-- **Enhanced Error Messages**: Precise location tracking with source code snippets and color formatting
+- **IDE Integration**: LSP server with real-time diagnostics and hover information
+- **Enhanced Error Messages**: Precise location tracking with source code snippets
+
+### 📋 **Planned Features** (See TODO.md for details)
+- **Pipe Operator**: `|>` for function chaining (parser support exists, needs verification)
+- **Type Classes/Traits**: Polymorphic interfaces with `typeclass` and `instance` keywords
+- **If-Then-Else**: Traditional conditional expressions
+- **String Interpolation**: Template-based string construction
+- **Advanced FSM Syntax**: Guards and actions in state transitions
+- **Effect System**: Computational effects tracking
+- **Macro System**: Compile-time code generation
 
 ## Project Structure
 
@@ -65,22 +77,22 @@ cure/
 # Build the compiler
 make all
 
-# Try the working dependent types example!
-./cure examples/dependent_types_simple.cure
+# Try the FSM traffic light example
+./cure examples/06_fsm_traffic_light.cure
 
 # Run the compiled program
-erl -pa _build/ebin -noshell -eval "'DependentTypes':demo_all(), init:stop()."
+erl -pa _build/ebin -noshell -eval "'TrafficLightDemo':main(), init:stop()."
 
 # Expected output:
-# === Dependent Types Demonstration ===
-# All operations below are compile-time verified for safety!
-# === Vector Operations ===
-# Dot product: 32.0
-# Vector sum: [5.0, 7.0, 9.0]
-# Scaled vector: [2.0, 4.0, 6.0]
+# Starting traffic light FSM...
+# Current state: red
+# [Traffic light transitions through states]
 
 # Show help
 ./cure --help
+
+# Run test suite
+make test
 ```
 
 ### Installation
@@ -117,111 +129,164 @@ See [docs/CLI_USAGE.md](docs/CLI_USAGE.md) for complete documentation.
 
 ## Language Examples
 
-### 🚀 **WORKING**: Import System with Dependent Types
-
-**Full compilation and runtime success demonstrated!**
+### List Processing with Standard Library
 
 ```cure
-module DependentTypes do
-  export [demo_all/0, vector_operations/0]
-
-  # ✅ WORKING: Import system with intelligent module resolution
-  import Std [List, Result]
+module ListDemo do
+  export [demo/0]
   
-  # ✅ WORKING: Length-indexed vectors with compile-time safety
-  def make_vec3(x: Float, y: Float, z: Float): Vector(Float, 3) =
-    [x, y, z]  # Type system guarantees exactly 3 elements
+  import Std.List [map, filter, fold]
+  import Std.IO [print]
   
-  # ✅ WORKING: Safe vector operations - length verified at compile time
-  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
-    # Type system guarantees v1 and v2 have identical length
-    zip_with(v1, v2, fn(x, y) -> x * y end)
-    |> fold(0.0, fn(x, acc) -> acc + x end)
-  
-  def vector_operations(): Unit =
-    let v1 = make_vec3(1.0, 2.0, 3.0)
-    let v2 = make_vec3(4.0, 5.0, 6.0)
+  def demo(): Unit =
+    let numbers = [1, 2, 3, 4, 5]
     
-    let dot_result = dot_product(v1, v2)  # Result: 32.0
-    print("Dot product: " ++ show(dot_result))
+    # Map operation
+    let doubled = map(numbers, fn(x) -> x * 2 end)
+    print("Doubled: " <> show(doubled))
     
-    let sum = vector_add(v1, v2)  # Result: [5.0, 7.0, 9.0]
-    print("Vector sum: " ++ show(sum))
-end
-
-# ✅ VERIFIED: Successfully compiles and executes!
-# Console Output:
-# === Dependent Types Demonstration ===
-# All operations below are compile-time verified for safety!
-# === Vector Operations ===
-# Dot product: 32.0
-# Vector sum: [5.0, 7.0, 9.0] 
-# Scaled vector: [2.0, 4.0, 6.0]
-```
-
-### Simple Function with Dependent Types
-```cure
-def vector_length(v: Vector(n: Nat)): Nat = n
-
-def safe_head(list: List(T, n: Nat)) -> Option(T) when n > 0 = 
-  Some(list.head)
-
-def safe_head(list: List(T, 0)) -> Option(T) = 
-  None
-```
-
-### Finite State Machine
-```cure
-fsm TrafficLight do
-  states: [Red, Yellow, Green]
-  
-  state Red do
-    timeout(30_000) -> Yellow
-  end
-  
-  state Yellow do
-    timeout(5_000) -> Green
-  end
-  
-  state Green do
-    timeout(25_000) -> Red
-    event(:emergency) -> Red
-  end
+    # Filter operation  
+    let evens = filter(numbers, fn(x) -> x % 2 == 0 end)
+    print("Evens: " <> show(evens))
+    
+    # Fold operation
+    let sum = fold(numbers, 0, fn(x, acc) -> acc + x end)
+    print("Sum: " <> show(sum))
 end
 ```
 
-### Process Communication
+### Result Type Error Handling
+
 ```cure
-def counter_process(count: Int) do
-  receive do
-    {:increment} -> counter_process(count + 1)
-    {:get, pid} -> 
-      send(pid, {:count, count})
-      counter_process(count)
-    {:stop} -> :ok
-  end
+module ResultDemo do
+  export [safe_divide/2]
+  
+  import Std.Result [ok, error, map, and_then]
+  
+  def safe_divide(a: Int, b: Int): Result(Int, String) =
+    match b do
+      0 -> error("Division by zero")
+      _ -> ok(a / b)
+    end
+  
+  def compute(): Result(Int, String) =
+    and_then(safe_divide(10, 2), fn(x) ->
+      map(safe_divide(x, 0), fn(y) -> y * 2 end)
+    end)
 end
 ```
+
+### Pattern Matching with Guards
+
+```cure
+module Guards do
+  export [classify/1]
+  
+  def classify(x: Int): Atom =
+    match x do
+      n when n < 0 -> :negative
+      0 -> :zero
+      n when n > 0 -> :positive
+    end
+end
+```
+
+### Finite State Machine (Arrow-Based Syntax)
+
+```cure
+module TrafficLight do
+  export [create/0, next/1]
+  
+  import Std.FSM [fsm_new, fsm_send, fsm_stop]
+  import Std.Pair [pair]
+  
+  # Define FSM with arrow-based transitions
+  fsm TrafficLight do
+    initial: :red
+    
+    :red --> |:timer| :green
+    :green --> |:timer| :yellow  
+    :yellow --> |:timer| :red
+    
+    :green --> |:emergency| :red
+  end
+  
+  def create(): FSM(TrafficLight) =
+    fsm_new(TrafficLight, :red)
+  
+  def next(fsm: FSM(TrafficLight)): FSM(TrafficLight) =
+    fsm_send(fsm, pair(:timer, unit()))
+end
+```
+
+### Record Operations
+
+```cure
+module Records do
+  export [demo/0]
+  
+  record Person do
+    name: String
+    age: Int
+    email: String
+  end
+  
+  def demo(): Unit =
+    let person = Person{name: "Alice", age: 30, email: "alice@example.com"}
+    
+    # Field access
+    let name = person.name
+    
+    # Record update (immutable)
+    let older = Person{person | age: 31}
+    
+    print("Name: " <> name)
+    print("New age: " <> show(older.age))
+end
+```
+
+### Available Examples
+
+See the `examples/` directory for working code:
+- `01_list_basics.cure` - List operations and standard library functions
+- `02_result_handling.cure` - Error handling with Result type
+- `03_option_type.cure` - Optional values with Option type
+- `04_pattern_guards.cure` - Pattern matching with guard clauses
+- `05_recursion.cure` - Recursive functions and tail call optimization
+- `06_fsm_traffic_light.cure` - Complete FSM implementation
 
 ## Implementation Status
 
-### ✅ **Complete & Functional** (Production Ready)
+### ✅ **Complete & Functional** (~85% Core Features)
 - **Lexical Analysis**: Complete tokenizer with position tracking and error recovery
 - **Parsing**: Full AST generation with recursive descent parsing and comprehensive error handling
-- **Type System**: Dependent type checking with SMT-based constraint solving and refinement types
+- **Type System**: Dependent type checking with refinement types (internal constraint representation)
 - **Type Optimization**: Monomorphization, specialization, inlining, dead code elimination (25-60% performance gain)
-- **FSM System**: Complete finite state machine runtime with BEAM `gen_statem` integration
+- **FSM System**: Arrow-based FSM syntax compiling to BEAM behaviors with runtime operations
 - **Code Generation**: BEAM bytecode generation with debug information and OTP compatibility
-- **Standard Library**: Working standard library with import system and runtime verification
-- **CLI & Build System**: Complete development toolchain with wrapper scripts and automation
-- **Testing Infrastructure**: Comprehensive test suite with 100% pass rate and performance benchmarking
+- **Standard Library**: 12 working modules (core, io, show, list, fsm, result, pair, vector, string, math, system, rec)
+- **Record Operations**: Field access and update syntax fully implemented
+- **Pattern Matching**: Match expressions with guards and dependent type constraints
+- **CLI & Build System**: Complete development toolchain with wrapper scripts
+- **Testing Infrastructure**: Comprehensive test suites covering lexer, parser, types, FSM, codegen
+- **LSP Server**: Language server with real-time diagnostics and hover information
+- **SMT Integration**: Z3/CVC5 solver integration at API level
 
-### 🏗️ **Advanced Features** (Research/Experimental)
-- **Linear Types**: For resource management and memory safety
+### 📋 **Missing Critical Features** (~15% - See TODO.md)
+- **Pipe Operator**: `|>` for function chaining (parser recognizes, needs implementation verification)
+- **Type Classes/Traits**: Polymorphic interfaces with `typeclass`/`instance` keywords not recognized
+- **If-Then-Else**: Traditional conditional expressions (currently only `match` expressions)
+- **String Interpolation**: Template-based string construction (AST exists, implementation unclear)
+- **Advanced FSM Syntax**: Guards and actions in state transitions
+- **CLI SMT Integration**: Command-line options for SMT solver (API works, CLI planned)
+
+### 🏗️ **Future Features** (Research/Experimental)
 - **Effect System**: Computational effects tracking and management  
 - **Macro System**: Compile-time code generation and metaprogramming
+- **Linear Types**: Resource management and memory safety
 - **Gradual Typing**: Mixed static/dynamic typing for Erlang interoperability
 - **Distributed FSMs**: Cross-node state machine coordination
+- **Package Manager**: Dependency management and distribution
 
 ## Performance Characteristics
 
@@ -237,17 +302,31 @@ end
 - **Memory usage**: Comparable to equivalent Erlang code
 - **Optimization impact**: 25-60% performance improvement over unoptimized code
 
+## Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+- **[LANGUAGE_SPEC.md](docs/LANGUAGE_SPEC.md)** - Complete language specification
+- **[TYPE_SYSTEM.md](docs/TYPE_SYSTEM.md)** - Dependent types and type system details
+- **[FSM_USAGE.md](docs/FSM_USAGE.md)** - Finite state machine guide
+- **[FEATURE_REFERENCE.md](docs/FEATURE_REFERENCE.md)** - Quick reference for all language features
+- **[STD_SUMMARY.md](docs/STD_SUMMARY.md)** - Standard library module documentation
+- **[TODO.md](docs/TODO.md)** - Missing features and future work
+- **[EDITOR_SETUP.md](docs/EDITOR_SETUP.md)** - IDE configuration for Cure development
+
 ## Community & Development
 
 Cure is a research and educational project demonstrating advanced programming language concepts in a practical, BEAM-compatible implementation.
 
 ### Contributing
-Contributions welcome! Areas of interest:
-- Advanced type system features (linear types, effects)
-- Standard library expansion
-- Performance optimizations
-- Developer tooling and IDE support
-- Documentation and examples
+Contributions welcome! Priority areas (see TODO.md):
+- **Pipe operator implementation** - Complete `|>` integration
+- **Type classes/traits** - Polymorphic interface system
+- **If-then-else expressions** - Traditional control flow
+- **Standard library expansion** - More utility functions
+- **String interpolation** - Template-based strings
+- **Developer tooling** - Enhanced IDE support
+- **Documentation and examples** - More learning resources
 
 ### License
 To be determined based on project direction and community needs.
