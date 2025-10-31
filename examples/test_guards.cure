@@ -1,0 +1,41 @@
+# Test guard operators
+module TestGuards do
+  export [test_range/0, test_and/0, test_comparisons/0]
+
+  import Std.Io [println/1]
+  import Std.Show [show/1]
+
+  def check_range(n: Int): String =
+    match n do
+      x when x >= 10 and x <= 20 -> "In range [10, 20]"
+      x when x < 10 -> "Below range"
+      x when x > 20 -> "Above range"
+    end
+
+  def test_range(): Int =
+    println("Testing 5: " <> check_range(5))    # Should be "Below range"
+    println("Testing 15: " <> check_range(15))  # Should be "In range [10, 20]"
+    println("Testing 25: " <> check_range(25))  # Should be "Above range"
+    0
+
+  def test_and_simple(x: Int, y: Int): String =
+    match {x, y} do
+      {a, b} when a > 0 and b > 0 -> "Both positive"
+      _ -> "Not both positive"
+    end
+
+  def test_and(): Int =
+    println("Testing (5, 10): " <> test_and_simple(5, 10))    # "Both positive"
+    println("Testing (-5, 10): " <> test_and_simple(-5, 10))  # "Not both positive"
+    println("Testing (5, -10): " <> test_and_simple(5, -10))  # "Not both positive"
+    0
+
+  def test_comparisons(): Int =
+    let x = 15
+    # Test outside match
+    println("x >= 10: " <> show(x >= 10))
+    println("x <= 20: " <> show(x <= 20))
+    println("x >= 10 and x <= 20: " <> show(x >= 10 and x <= 20))
+    0
+
+end

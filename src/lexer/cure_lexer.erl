@@ -475,8 +475,8 @@ scan_string_with_interpolation(
 ) ->
     case HasInterpolation of
         false ->
-            % Simple string without interpolation
-            {simple_string, binary_to_list(StringPart), Rest, Line, Column + 1};
+            % Simple string without interpolation - keep as binary (not charlist)
+            {simple_string, StringPart, Rest, Line, Column + 1};
         true ->
             % Add final string part if any
             FinalTokens =

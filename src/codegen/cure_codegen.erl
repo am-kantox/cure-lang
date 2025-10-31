@@ -3487,7 +3487,31 @@ convert_guard_to_erlang_form(Guard, Location) ->
         #binary_op_expr{op = Op, left = Left, right = Right} ->
             LeftForm = convert_guard_expr_to_form(Left, Line),
             RightForm = convert_guard_expr_to_form(Right, Line),
-            {op, Line, Op, LeftForm, RightForm};
+            % Note: <> is NOT allowed in guards for concatenation
+            % It's only supported for pattern matching (handled elsewhere)
+            % Also need to convert Cure operators to Erlang equivalents
+            ErlangOp =
+                case Op of
+                    '<>' ->
+                        % Cannot use <> in guards - it's not a valid Erlang guard BIF
+                        % This should have been caught during type checking
+                        throw({invalid_guard_expression, '<>', Line});
+                    'and' ->
+                        % Convert 'and' to 'andalso' for proper short-circuit evaluation in guards
+                        'andalso';
+                    'or' ->
+                        % Convert 'or' to 'orelse' for proper short-circuit evaluation in guards
+                        'orelse';
+                    '<=' ->
+                        % Convert '<=' to Erlang's '=<'
+                        '=<';
+                    '%' ->
+                        % Convert '%' to 'rem' for Erlang modulo in guards
+                        'rem';
+                    _ ->
+                        Op
+                end,
+            {op, Line, ErlangOp, LeftForm, RightForm};
         _ ->
             % Default to always true guard
             {atom, Line, true}
@@ -3497,6 +3521,25 @@ convert_guard_expr_to_form(#identifier_expr{name = Name}, Line) ->
     {var, Line, Name};
 convert_guard_expr_to_form(#literal_expr{value = Value}, Line) ->
     compile_value_to_erlang_form(Value, {location, Line, 1, undefined});
+convert_guard_expr_to_form(#binary_op_expr{op = Op, left = Left, right = Right}, Line) ->
+    % Recursively handle nested binary operations in guards
+    LeftForm = convert_guard_expr_to_form(Left, Line),
+    RightForm = convert_guard_expr_to_form(Right, Line),
+    % Convert operators to Erlang equivalents
+    ErlangOp =
+        case Op of
+            'and' -> 'andalso';
+            'or' -> 'orelse';
+            '<=' -> '=<';
+            '%' -> 'rem';
+            '<>' -> throw({invalid_guard_expression, '<>', Line});
+            _ -> Op
+        end,
+    {op, Line, ErlangOp, LeftForm, RightForm};
+convert_guard_expr_to_form(#unary_op_expr{op = Op, operand = Operand}, Line) ->
+    % Handle unary operations in guards (e.g., -273.15)
+    OperandForm = convert_guard_expr_to_form(Operand, Line),
+    {op, Line, Op, OperandForm};
 convert_guard_expr_to_form(_, Line) ->
     {atom, Line, true}.
 
@@ -3546,7 +3589,18 @@ convert_body_expression_to_erlang(#binary_op_expr{op = Op, left = Left, right = 
         {ok, LeftForm} ->
             case convert_body_expression_to_erlang(Right, Location) of
                 {ok, RightForm} ->
-                    {ok, {op, Line, Op, LeftForm, RightForm}};
+                    % Desugar <> operator to cure_string_native:concat/2
+                    OpForm =
+                        case Op of
+                            '<>' ->
+                                {call, Line,
+                                    {remote, Line, {atom, Line, cure_string_native},
+                                        {atom, Line, concat}},
+                                    [LeftForm, RightForm]};
+                            _ ->
+                                {op, Line, Op, LeftForm, RightForm}
+                        end,
+                    {ok, OpForm};
                 error ->
                     error
             end;
@@ -3602,7 +3656,16 @@ convert_complex_body_to_erlang(#binary_op_expr{op = Op, left = Left, right = Rig
         }
     of
         {{ok, LeftForm}, {ok, RightForm}} ->
-            BinOpForm = {op, Line, Op, LeftForm, RightForm},
+            % Desugar <> operator to cure_string_native:concat/2
+            BinOpForm =
+                case Op of
+                    '<>' ->
+                        {call, Line,
+                            {remote, Line, {atom, Line, cure_string_native}, {atom, Line, concat}},
+                            [LeftForm, RightForm]};
+                    _ ->
+                        {op, Line, Op, LeftForm, RightForm}
+                end,
             cure_utils:debug("Generated binary op form: ~p~n", [BinOpForm]),
             {ok, BinOpForm};
         _ ->

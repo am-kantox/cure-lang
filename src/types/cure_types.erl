@@ -1185,6 +1185,11 @@ unify_impl({record_type, Name1, _Fields1}, {record_type, Name2, _Fields2}, Subst
 ->
     % Records with same name unify (fields are checked during construction/pattern matching)
     {ok, Subst};
+%% Unify simplified record type with full record type (and vice versa)
+unify_impl({record_type, Name}, {record_type, Name, _Fields}, Subst) ->
+    {ok, Subst};
+unify_impl({record_type, Name, _Fields}, {record_type, Name}, Subst) ->
+    {ok, Subst};
 %% Allow record_type to unify with primitive_type of same name (for declaration compatibility)
 unify_impl({record_type, Name}, {primitive_type, Name}, Subst) ->
     {ok, Subst};
@@ -1973,29 +1978,19 @@ infer_expr({cons_expr, Elements, Tail, Location}, Env) ->
     end;
 infer_expr({record_expr, RecordName, Fields, Location}, Env) ->
     % Type a record construction expression: RecordName{field1: value1, field2: value2}
-    io:format("[INFER] Looking up record type for ~p~n", [RecordName]),
-    LookupResult = lookup_env(Env, RecordName),
-    io:format("[INFER] Lookup result for ~p: ~200p~n", [RecordName, LookupResult]),
-    case LookupResult of
+    case lookup_env(Env, RecordName) of
         undefined ->
-            io:format("[INFER] Record ~p not found in environment~n", [RecordName]),
             {error, {unbound_record_type, RecordName}};
         {record_type, RecordName, RecordFields} ->
-            io:format("[INFER] Found record type ~p with ~p fields~n", [
-                RecordName, length(RecordFields)
-            ]),
             % Check field values against expected field types with refined type validation
             case infer_and_validate_record_fields(Fields, RecordFields, Env, Location) of
                 {ok, FieldConstraints} ->
-                    % Return the record type
-                    {ok, {record_type, RecordName}, FieldConstraints};
+                    % Return the full record type with fields for proper unification
+                    {ok, {record_type, RecordName, RecordFields}, FieldConstraints};
                 Error ->
                     Error
             end;
         _Other ->
-            io:format("[INFER] Record ~p lookup returned non-matching type: ~200p~n", [
-                RecordName, _Other
-            ]),
             {error, {not_record_type, RecordName}}
     end;
 infer_expr({field_access_expr, RecordExpr, FieldName, Location}, Env) ->
@@ -2051,8 +2046,8 @@ infer_expr({record_update_expr, RecordName, BaseExpr, Fields, Location}, Env) ->
                     % Check update field values against expected field types
                     case infer_and_validate_record_fields(Fields, RecordFields, Env, Location) of
                         {ok, FieldConstraints} ->
-                            % Return the record type
-                            {ok, {record_type, RecordName},
+                            % Return the full record type with fields for proper unification
+                            {ok, {record_type, RecordName, RecordFields},
                                 BaseConstraints ++ [BaseConstraint] ++ FieldConstraints};
                         Error ->
                             Error
@@ -2270,6 +2265,9 @@ infer_literal_type(N) when is_integer(N) -> ?TYPE_INT;
 infer_literal_type(F) when is_float(F) -> ?TYPE_FLOAT;
 infer_literal_type(B) when is_boolean(B) -> ?TYPE_BOOL;
 infer_literal_type(unit) ->
+    {primitive_type, 'Unit'};
+infer_literal_type(ok) ->
+    % The atom 'ok' is treated as Unit type in Cure
     {primitive_type, 'Unit'};
 infer_literal_type(S) when is_list(S) ->
     % Check if it's a charlist (list of integers) or a string
@@ -3072,6 +3070,21 @@ infer_binary_op('*', LeftType, RightType, Location, Constraints) ->
         #type_constraint{left = LeftType, op = '=', right = ResultType, location = Location}
     ],
     {ok, ResultType, Constraints ++ NumConstraints};
+infer_binary_op('/', LeftType, RightType, Location, Constraints) ->
+    ResultType = new_type_var(),
+    NumConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = RightType, location = Location},
+        #type_constraint{left = LeftType, op = '=', right = ResultType, location = Location}
+    ],
+    {ok, ResultType, Constraints ++ NumConstraints};
+infer_binary_op('%', LeftType, RightType, Location, Constraints) ->
+    % Modulo operator: both operands must be integers, result is integer
+    ResultType = new_type_var(),
+    NumConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = RightType, location = Location},
+        #type_constraint{left = LeftType, op = '=', right = ResultType, location = Location}
+    ],
+    {ok, ResultType, Constraints ++ NumConstraints};
 infer_binary_op('==', LeftType, RightType, Location, Constraints) ->
     EqualityConstraint = #type_constraint{
         left = LeftType,
@@ -3153,6 +3166,20 @@ infer_binary_op('<>', LeftType, RightType, Location, Constraints) ->
         #type_constraint{left = RightType, op = '=', right = ?TYPE_STRING, location = Location}
     ],
     {ok, ?TYPE_STRING, Constraints ++ StringConstraints};
+infer_binary_op('and', LeftType, RightType, Location, Constraints) ->
+    % Logical and: both operands must be Bool, result is Bool
+    BoolConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = ?TYPE_BOOL, location = Location},
+        #type_constraint{left = RightType, op = '=', right = ?TYPE_BOOL, location = Location}
+    ],
+    {ok, ?TYPE_BOOL, Constraints ++ BoolConstraints};
+infer_binary_op('or', LeftType, RightType, Location, Constraints) ->
+    % Logical or: both operands must be Bool, result is Bool
+    BoolConstraints = [
+        #type_constraint{left = LeftType, op = '=', right = ?TYPE_BOOL, location = Location},
+        #type_constraint{left = RightType, op = '=', right = ?TYPE_BOOL, location = Location}
+    ],
+    {ok, ?TYPE_BOOL, Constraints ++ BoolConstraints};
 infer_binary_op(Op, _LeftType, _RightType, Location, _Constraints) ->
     {error, {unsupported_binary_operator, Op, Location}}.
 

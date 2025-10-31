@@ -1,0 +1,22 @@
+# Test float comparisons in guards
+module TestFloatGuards do
+  export [test_temperature/0]
+
+  import Std.Io [println/1]
+
+  def classify_temp(t: Float): String =
+    match t do
+      x when x < -273.15 -> "Invalid (below absolute zero)"
+      x when x < 0.0 -> "Below freezing"
+      x when x >= 0.0 and x < 20.0 -> "Cool"
+      x when x >= 20.0 -> "Warm"
+    end
+
+  def test_temperature(): Int =
+    println("Testing -300.0: " <> classify_temp(-300.0))  # Should be "Invalid"
+    println("Testing -10.0: " <> classify_temp(-10.0))    # Should be "Below freezing"
+    println("Testing 10.0: " <> classify_temp(10.0))      # Should be "Cool"
+    println("Testing 25.0: " <> classify_temp(25.0))      # Should be "Warm"
+    0
+
+end

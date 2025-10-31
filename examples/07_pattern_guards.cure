@@ -1,0 +1,257 @@
+# Pattern Guards Example
+# Demonstrates pattern matching with guard expressions in Cure
+
+module PatternGuards do
+  export [demo_all/0]
+
+  import Std.Io [println/1]
+  import Std.List [length/1]
+  import Std.Show [show/1]
+
+  # === BASIC GUARDS ===
+  
+  # Numeric comparison guards
+  def classify_age(age: Int): String =
+    match age do
+      x when x < 0 -> "Invalid age"
+      x when x >= 0 and x < 13 -> "Child"
+      x when x >= 13 and x < 20 -> "Teenager"
+      x when x >= 20 and x < 65 -> "Adult"
+      x when x >= 65 -> "Senior"
+    end
+
+  # Multiple conditions with logical operators
+  def check_range(n: Int): String =
+    match n do
+      x when x >= 10 and x <= 20 -> "In range [10, 20]"
+      x when x < 10 or x > 20 -> "Out of range"
+    end
+
+  # Equality and inequality guards
+  def describe_value(n: Int): String =
+    match n do
+      x when x == 0 -> "Zero"
+      x when x == 1 -> "One"
+      _ -> "Unknown"
+    end
+
+  # === GUARDS WITH ARITHMETIC ===
+
+  # Using arithmetic in guards
+  # def check_even_odd(n: Int): String =
+  #   match n do
+  #     x when x % 2 == 0 -> "Even: " <> show(x)
+  #     x when x % 2 == 1 -> "Odd: " <> show(x)
+  #   end
+
+  # Complex arithmetic conditions
+  def triangle_type(a: Float, b: Float, c: Float): String =
+    match {a, b, c} do
+      {x, y, z} when x + y <= z or x + z <= y or y + z <= x ->
+        "Not a valid triangle"
+      {x, y, z} when x == y and y == z ->
+        "Equilateral triangle"
+      {x, y, z} when x == y or y == z or x == z ->
+        "Isosceles triangle"
+      _ ->
+        "Scalene triangle"
+    end
+
+  # === GUARDS WITH LIST PATTERNS ===
+
+  # Guards on list elements
+  def analyze_list(list: List(Int)): String =
+    match list do
+      [] -> "Empty list"
+      [x] when x > 0 -> "Single positive element"
+      [x] when x < 0 -> "Single negative element"
+      [x] when x == 0 -> "Single zero element"
+      [x, y] when x > y -> "Two elements, descending"
+      [x, y] when x < y -> "Two elements, ascending"
+      [x, y] when x == y -> "Two equal elements"
+      [head | _] when head > 100 -> "List starts with large number"
+      [head | _] when head < 0 -> "List starts with negative"
+      _ -> "Other list pattern"
+    end
+
+  # === GUARDS WITH RECORDS ===
+
+  record Point do
+    x: Float
+    y: Float
+  end
+
+  # Guards accessing record fields
+  def classify_point(p: Point): String =
+    match p do
+      Point{x: x, y: y} when x == 0.0 and y == 0.0 ->
+        "Origin"
+      Point{x: x, y: y} when x > 0.0 and y > 0.0 ->
+        "First quadrant"
+      Point{x: x, y: y} when x < 0.0 and y > 0.0 ->
+        "Second quadrant"
+      Point{x: x, y: y} when x < 0.0 and y < 0.0 ->
+        "Third quadrant"
+      Point{x: x, y: y} when x > 0.0 and y < 0.0 ->
+        "Fourth quadrant"
+      Point{x: x, y: _} when x == 0.0 ->
+        "On Y-axis"
+      Point{x: _, y: y} when y == 0.0 ->
+        "On X-axis"
+    end
+
+  def distance_from_origin(p: Point): String =
+    match p do
+      Point{x: x, y: y} when x * x + y * y < 1.0 ->
+        "Inside unit circle"
+      Point{x: x, y: y} when x * x + y * y == 1.0 ->
+        "On unit circle"
+      Point{x: x, y: y} when x * x + y * y > 1.0 ->
+        "Outside unit circle"
+    end
+
+  # === GUARDS WITH UNION TYPES ===
+
+  type Result(T, E) = Ok(T) | Error(E)
+
+  def process_result(result: Result(Int, String)): String =
+    match result do
+      Ok(value) when value > 100 ->
+        "Large success: " <> show(value)
+      Ok(value) when value > 0 and value <= 100 ->
+        "Moderate success: " <> show(value)
+      Ok(value) when value < 0 ->
+        "Non-positive success: " <> show(value)
+      Error(msg) when msg == "timeout" ->
+        "Connection timeout"
+      Error(msg) when msg == "not_found" ->
+        "Resource not found"
+      Error(msg) ->
+        "Error: " <> msg
+    end
+
+  # === NESTED GUARDS ===
+
+  record Person do
+    name: String
+    age: Int
+    score: Int
+  end
+
+  def evaluate_person(person: Person): String =
+    match person do
+      Person{age: age, score: score} when age < 18 and score >= 90 ->
+        "Outstanding young achiever"
+      Person{age: age, score: score} when age < 18 and score >= 70 ->
+        "Good young student"
+      Person{age: age, score: score} when age >= 18 and age < 65 and score >= 90 ->
+        "Excellent adult performer"
+      Person{age: age, score: score} when age >= 18 and age < 65 and score >= 70 ->
+        "Good adult performer"
+      Person{age: age, score: score} when age >= 65 and score >= 80 ->
+        "Impressive senior"
+      Person{age: age, score: _} when age >= 65 ->
+        "Senior participant"
+      _ ->
+        "Needs improvement"
+    end
+
+  # === GUARDS WITH COMPLEX EXPRESSIONS ===
+
+  def fizzbuzz(n: Int): String =
+    match n do
+      x when x % 15 == 0 -> "FizzBuzz"
+      x when x % 3 == 0 -> "Fizz"
+      x when x % 5 == 0 -> "Buzz"
+      x -> show(x)
+    end
+
+  # Temperature classification with multiple thresholds
+  def classify_temperature(celsius: Float): String =
+    match celsius do
+      t when t < -273.15 -> "Invalid (below absolute zero)"
+      t when t < -50.0 -> "Extremely cold"
+      t when t >= -50.0 and t < 0.0 -> "Freezing"
+      t when t >= 0.0 and t < 15.0 -> "Cold"
+      t when t >= 15.0 and t < 25.0 -> "Comfortable"
+      t when t >= 25.0 and t < 35.0 -> "Warm"
+      t when t >= 35.0 -> "Hot"
+    end
+
+  # === GUARDS WITH NEGATIVE CONDITIONS ===
+
+  def validate_input(n: Int): String =
+    match n do
+      x when x > 10 ->
+        "Valid large number"
+      0 -> "Zero not allowed"
+      1 -> "One not allowed"
+      x when x < 10 ->
+        "Valid small number"
+    end
+
+  # === DEMONSTRATION FUNCTION ===
+
+  def demo_all(): Int =
+    println("=== Basic Age Classification ===")
+    println(classify_age(5))       # "Child"
+    println(classify_age(15))      # "Teenager"
+    println(classify_age(30))      # "Adult"
+    println(classify_age(70))      # "Senior"
+
+    println("\n=== Range Checking ===")
+    println(check_range(15))       # "In range [10, 20]"
+    println(check_range(25))       # "Out of range"
+
+    # println("\n=== Even/Odd ===")
+    # println(check_even_odd(10))    # "Even: 10"
+    # println(check_even_odd(7))     # "Odd: 7"
+
+    println("\n=== Triangle Types ===")
+    println(triangle_type(3.0, 4.0, 5.0))     # "Scalene triangle"
+    println(triangle_type(5.0, 5.0, 5.0))     # "Equilateral triangle"
+    println(triangle_type(5.0, 5.0, 8.0))     # "Isosceles triangle"
+
+    println("\n=== List Analysis ===")
+    println(analyze_list([]))          # "Empty list"
+    println(analyze_list([42]))        # "Single positive element"
+    println(analyze_list([150, 10]))   # "List starts with large number"
+
+    println("\n=== Point Classification ===")
+    let p1 = Point{x: 0.0, y: 0.0}
+    println(classify_point(p1))        # "Origin"
+
+    println("\n=== Distance from Origin ===")
+    println(distance_from_origin(Point{x: 0.5, y: 0.5}))   # "Inside unit circle"
+    println(distance_from_origin(Point{x: 2.0, y: 2.0}))   # "Outside unit circle"
+
+    println("\n=== Result Processing ===")
+    println(process_result(Ok(150)))                 # "Large success: 150"
+    println(process_result(Ok(50)))                  # "Moderate success: 50"
+    println(process_result(Error("timeout")))        # "Connection timeout"
+
+    println("\n=== Person Evaluation ===")
+    let alice = Person{name: "Alice", age: 16, score: 95}
+    println(evaluate_person(alice))    # "Outstanding young achiever"
+    let bob = Person{name: "Bob", age: 35, score: 85}
+    println(evaluate_person(bob))      # "Good adult performer"
+
+    println("\n=== FizzBuzz ===")
+    println(fizzbuzz(15))              # "FizzBuzz"
+    println(fizzbuzz(9))               # "Fizz"
+    println(fizzbuzz(10))              # "Buzz"
+    println(fizzbuzz(7))               # "7"
+
+    println("\n=== Temperature Classification ===")
+    println(classify_temperature(-60.0))    # "Extremely cold"
+    println(classify_temperature(20.0))     # "Comfortable"
+    println(classify_temperature(40.0))     # "Hot"
+
+    println("\n=== Input Validation ===")
+    println(validate_input(15))        # "Valid large number"
+    println(validate_input(5))         # "Valid small number"
+    println(validate_input(0))         # "Zero not allowed"
+
+    0
+
+end

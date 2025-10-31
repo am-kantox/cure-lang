@@ -6,7 +6,7 @@
 #   - Charlist: List of Unicode codepoints
 #   - Binary: Raw bytes (may or may not be valid UTF-8)
 
-module String do
+module Std.String do
   export [
     to_charlist/1, from_charlist/1, to_binary/1, from_binary/1, to_atom/1,
     concat/2, length/1, byte_size/1, is_empty/1,
@@ -46,7 +46,8 @@ module String do
 # Core String Operations
 # ============================================================================
 
-  # Concatenate two strings (alternative to <> operator)
+  # Concatenate two strings
+  # Note: You can also use the <> infix operator: "hello" <> " world"
   curify concat(s1: String, s2: String): String = {cure_string_native, concat, 2}
 
   # Get the length of a string in graphemes (Unicode-aware)

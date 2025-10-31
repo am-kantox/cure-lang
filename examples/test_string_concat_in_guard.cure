@@ -1,0 +1,23 @@
+# Test that <> in guards is properly rejected for concatenation
+# (it's only allowed for pattern matching)
+module TestStringConcatInGuard do
+  export [test/0]
+  
+  import Std.Io [println/1]
+  
+  # This should work - <> in body (not guard)
+  def concat_in_body(s: String): String =
+    s <> " World"
+  
+  # This should NOT compile - <> for concatenation in guards
+  # Guards can't call functions, only BIFs
+  # def concat_in_guard(s: String): String =
+  #   match s do
+  #     x when x <> "!" == "test!" -> "matched"
+  #     _ -> "not matched"
+  #   end
+  
+  def test(): Int =
+    println(concat_in_body("Hello"))
+    0
+end

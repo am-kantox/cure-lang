@@ -268,8 +268,8 @@ is_guard_bif('round') -> true;
 is_guard_bif('size') -> true;
 is_guard_bif('length') -> true;
 is_guard_bif('string_length') -> true;
-% String concatenation in patterns
-is_guard_bif('<>') -> true;
+% Note: <> is handled specially for pattern matching in compile_guard_expr/2
+% but is NOT a valid guard BIF for concatenation
 % String byte size
 is_guard_bif('byte_size') -> true;
 % Binary pattern matching

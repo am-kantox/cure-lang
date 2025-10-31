@@ -1238,7 +1238,8 @@ compile_value_to_form(Value, Line) when is_float(Value) ->
 compile_value_to_form(Value, Line) when is_atom(Value) ->
     {atom, Line, Value};
 compile_value_to_form(Value, Line) when is_binary(Value) ->
-    {string, Line, binary_to_list(Value)};
+    % Keep binaries as binaries in Erlang (for strings in Cure)
+    {bin, Line, [{bin_element, Line, {string, Line, binary_to_list(Value)}, default, default}]};
 compile_value_to_form(Value, Line) when is_list(Value) ->
     case io_lib:printable_list(Value) of
         true -> {string, Line, Value};
@@ -1366,6 +1367,11 @@ is_type_parameter(_) ->
 % get_function_arity(_) -> 0.
 
 %% Compile binary operators
+compile_binary_operator(Op, Left, Right, Line) when Op == '<>' ->
+    % Desugar <> to cure_string_native:concat/2 (same as Std.String.concat/2)
+    {call, Line, {remote, Line, {atom, Line, cure_string_native}, {atom, Line, concat}}, [
+        Left, Right
+    ]};
 compile_binary_operator('+', Left, Right, Line) ->
     {op, Line, '+', Left, Right};
 compile_binary_operator('-', Left, Right, Line) ->
