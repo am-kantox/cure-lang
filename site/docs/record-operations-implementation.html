@@ -56,19 +56,19 @@
 <p>Added two new expression record types:</p>
 
 <pre><code>%% Field access expressions (record.field)
-<p>-record(field<em>access</em>expr, {</p>
-<p>    record,    % Expression evaluating to a record</p>
-<p>    field,     % Atom: field name</p>
-<p>    location</p>
-<p>}).</p>
+-record(field_access_expr, {
+    record,    % Expression evaluating to a record
+    field,     % Atom: field name
+    location
+}).
 
-<p>%% Record update expressions (Record{old | field: value})</p>
-<p>-record(record<em>update</em>expr, {</p>
-<p>    name,      % Record type name</p>
-<p>    base,      % Expression for the base record</p>
-<p>    fields,    % List of #field_expr{} records</p>
-<p>    location</p>
-<p>}).</p>
+%% Record update expressions (Record{old | field: value})
+-record(record_update_expr, {
+    name,      % Record type name
+    base,      % Expression for the base record
+    fields,    % List of #field_expr{} records
+    location
+}).
 </code></pre>
 
 <p>Updated the <code>expr()</code> type definition to include these new types.</p>
@@ -98,16 +98,16 @@
 <h3>3. Type System Integration (<code>src/types/cure_typechecker.erl</code>)</h3>
 
 <h4>Type Inference for Field Access</h4>
-<pre><code>infer<em>expr({field</em>access_expr, RecordExpr, FieldName, Location}, Env) ->
-<p>    % Infer record type, look up field type from record definition</p>
-<p>    % Return field type or error if field doesn't exist</p>
+<pre><code>infer_expr({field_access_expr, RecordExpr, FieldName, Location}, Env) ->
+    % Infer record type, look up field type from record definition
+    % Return field type or error if field doesn't exist
 </code></pre>
 
 <h4>Type Inference for Record Update</h4>
-<pre><code>infer<em>expr({record</em>update_expr, RecordName, BaseExpr, Fields, Location}, Env) ->
-<p>    % Check base expression matches record type</p>
-<p>    % Validate updated fields exist and have correct types</p>
-<p>    % Return updated record type</p>
+<pre><code>infer_expr({record_update_expr, RecordName, BaseExpr, Fields, Location}, Env) ->
+    % Check base expression matches record type
+    % Validate updated fields exist and have correct types
+    % Return updated record type
 </code></pre>
 
 <h4>AST Conversion</h4>
@@ -119,13 +119,13 @@
 <h3>4. Code Generation (<code>src/codegen/cure_codegen.erl</code>)</h3>
 
 <h4>Field Access Codegen</h4>
-<pre><code>compile<em>record</em>expr(#field<em>access</em>expr{...}, State) ->
-<p>    % Generate: maps:get(FieldName, Record)</p>
+<pre><code>compile_record_expr(#field_access_expr{...}, State) ->
+    % Generate: maps:get(FieldName, Record)
 </code></pre>
 
 <h4>Record Update Codegen</h4>
-<pre><code>compile<em>record</em>expr(#record<em>update</em>expr{...}, State) ->
-<p>    % Generate: BaseRecord#{field1 := Value1, field2 := Value2, ...}</p>
+<pre><code>compile_record_expr(#record_update_expr{...}, State) ->
+    % Generate: BaseRecord#{field1 := Value1, field2 := Value2, ...}
 </code></pre>
 
 <p>Added dispatch cases in <code>compile_expression/2</code> for the new expression types.</p>
@@ -146,9 +146,9 @@
 <li>Updates use map update syntax <code>#{...}</code></li>
 </ul>
 
-<pre><code>compile<em>make</em>record([RecordName, FieldNames, FieldCount], Context) ->
-<p>    % Generate: #{field1 => Val1, field2 => Val2, ...}</p>
-<p>    MapForm = {map, Line, MapAssocs}</p>
+<pre><code>compile_make_record([RecordName, FieldNames, FieldCount], Context) ->
+    % Generate: #{field1 => Val1, field2 => Val2, ...}
+    MapForm = {map, Line, MapAssocs}
 </code></pre>
 
 <h3>6. Documentation and Examples</h3>
@@ -174,19 +174,19 @@
 
 <h3>Direct Field Access</h3>
 <pre><code>def get_name(p: Person): String =
-<p>  p.name  # Direct field access</p>
+  p.name  # Direct field access
 
-<h1>Chained access</h1>
-<p>def get<em>nested</em>field(contact: Contact): String =</p>
-<p>  contact.person.name  # Access nested record fields</p>
+# Chained access
+def get_nested_field(contact: Contact): String =
+  contact.person.name  # Access nested record fields
 </code></pre>
 
 <h3>Record Update</h3>
 <pre><code>def birthday(p: Person): Person =
-<p>  Person{p | age: p.age + 1}  # Update single field</p>
+  Person{p | age: p.age + 1}  # Update single field
 
-<p>def move_point(pt: Point, dx: Float, dy: Float): Point =</p>
-<p>  Point{pt | x: pt.x + dx, y: pt.y + dy}  # Update multiple fields</p>
+def move_point(pt: Point, dx: Float, dy: Float): Point =
+  Point{pt | x: pt.x + dx, y: pt.y + dy}  # Update multiple fields
 </code></pre>
 
 <h2>Testing</h2>

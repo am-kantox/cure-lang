@@ -55,38 +55,38 @@
 
 <h3>Building the Compiler</h3>
 <pre><code># Build the complete compiler and standard library
-<p>make all</p>
+make all
 
-<h1>Build only the compiler components</h1>
-<p>make compiler</p>
+# Build only the compiler components
+make compiler
 
-<h1>Build and run the test suite</h1>
-<p>make all && make test</p>
+# Build and run the test suite
+make all && make test
 
-<h1>Build with formatting</h1>
-<p>make all && make format</p>
+# Build with formatting
+make all && make format
 </code></pre>
 
 <h3>Verifying Installation</h3>
 <pre><code># Check CLI is working
-<p>./cure --version</p>
+./cure --version
 
-<h1>Should output:</h1>
-<h1>Cure Programming Language Compiler v0.1.0</h1>
-<h1>Built with Erlang/OTP XX</h1>
-<h1>Cure is a dependently-typed functional programming language</h1>
-<h1>for the BEAM virtual machine with built-in finite state machines.</h1>
+# Should output:
+# Cure Programming Language Compiler v0.1.0
+# Built with Erlang/OTP XX
+# Cure is a dependently-typed functional programming language
+# for the BEAM virtual machine with built-in finite state machines.
 
-<h1>Check wrapper script functionality</h1>
-<p>./cure build                    # Should execute 'make all'</p>
-<p>./cure test                     # Should execute 'make test'</p>
-<p>./cure shell                    # Should start development shell</p>
+# Check wrapper script functionality
+./cure build                    # Should execute 'make all'
+./cure test                     # Should execute 'make test'
+./cure shell                    # Should start development shell
 
-<h1>Verify compiler modules are loaded</h1>
-<p>make shell</p>
-<h1>In Erlang shell:</h1>
-<h1>1> cure_lexer:tokenize(<<"def test() = 42">>).</h1>
-<h1>2> cure_parser:parse([...]).</h1>
+# Verify compiler modules are loaded
+make shell
+# In Erlang shell:
+# 1> cure_lexer:tokenize(<<"def test() = 42">>).
+# 2> cure_parser:parse([...]).
 </code></pre>
 
 <h2>Command Line Usage</h2>
@@ -94,42 +94,42 @@
 <h3>Basic Syntax</h3>
 <pre><code>cure [OPTIONS] <input-file.cure>
 
-<h1>Or special wrapper commands:</h1>
-<p>cure build      # Execute 'make all' to build compiler</p>
-<p>cure test       # Execute 'make test' to run test suite</p>
-<p>cure clean      # Execute 'make clean' to clean build artifacts</p>
-<p>cure shell      # Start Erlang development shell with modules loaded</p>
+# Or special wrapper commands:
+cure build      # Execute 'make all' to build compiler
+cure test       # Execute 'make test' to run test suite
+cure clean      # Execute 'make clean' to clean build artifacts
+cure shell      # Start Erlang development shell with modules loaded
 </code></pre>
 
 <h3>Examples</h3>
 
 <h4>Basic Compilation</h4>
 <pre><code># Compile a single file
-<p>./cure examples/01<em>list</em>basics.cure</p>
+./cure examples/01_list_basics.cure
 
-<h1>Compile with verbose output</h1>
-<p>./cure examples/04<em>pattern</em>guards.cure --verbose</p>
+# Compile with verbose output
+./cure examples/04_pattern_guards.cure --verbose
 
-<h1>Specify output file</h1>
-<p>./cure examples/05<em>recursion.cure -o my</em>module.beam</p>
+# Specify output file
+./cure examples/05_recursion.cure -o my_module.beam
 
-<h1>Specify output directory  </h1>
-<p>./cure examples/06<em>fsm</em>traffic<em>light.cure -d </em>build/ebin/</p>
+# Specify output directory  
+./cure examples/06_fsm_traffic_light.cure -d _build/ebin/
 
-<h1>Compile standard library module</h1>
-<p>./cure lib/std/core.cure --verbose</p>
-<p>./cure lib/std/list.cure --verbose</p>
+# Compile standard library module
+./cure lib/std/core.cure --verbose
+./cure lib/std/list.cure --verbose
 </code></pre>
 
 <h4>Advanced Options</h4>
 <pre><code># Disable optimizations for debugging
-<p>./cure examples/complex.cure --no-optimize --verbose</p>
+./cure examples/complex.cure --no-optimize --verbose
 
-<h1>Skip type checking (for testing parser)</h1>
-<p>./cure examples/test.cure --no-type-check</p>
+# Skip type checking (for testing parser)
+./cure examples/test.cure --no-type-check
 
-<h1>Disable debug information for smaller files</h1>
-<p>./cure examples/production.cure --no-debug</p>
+# Disable debug information for smaller files
+./cure examples/production.cure --no-debug
 </code></pre>
 
 <h3>Command Line Options</h3>
@@ -217,26 +217,26 @@
 <p>The build system provides comprehensive targets for development:</p>
 
 <pre><code># Build targets
-<p>make all                    # Build complete compiler and stdlib</p>
-<p>make compiler               # Build compiler only</p>
-<p>make stdlib                 # Build standard library</p>
-<p>make tests                  # Build test files</p>
+make all                    # Build complete compiler and stdlib
+make compiler               # Build compiler only
+make stdlib                 # Build standard library
+make tests                  # Build test files
 
-<h1>Testing targets</h1>
-<p>make test                   # Run complete test suite</p>
-<p>make test-basic             # Run basic unit tests</p>
-<p>make test-integration       # Run integration tests</p>
-<p>make test-performance       # Run performance benchmarks</p>
+# Testing targets
+make test                   # Run complete test suite
+make test-basic             # Run basic unit tests
+make test-integration       # Run integration tests
+make test-performance       # Run performance benchmarks
 
-<h1>File compilation</h1>
-<p>make compile-file CURE_FILE=examples/simple.cure</p>
-<p>make compile-file CURE_FILE=lib/std.cure OUTPUT=custom.beam</p>
+# File compilation
+make compile-file CURE_FILE=examples/simple.cure
+make compile-file CURE_FILE=lib/std.cure OUTPUT=custom.beam
 
-<h1>Development utilities</h1>
-<p>make shell                  # Start Erlang shell with modules loaded</p>
-<p>make clean                  # Clean build artifacts</p>
-<p>make format                 # Format code with rebar3 fmt</p>
-<p>make help                   # Show available targets</p>
+# Development utilities
+make shell                  # Start Erlang shell with modules loaded
+make clean                  # Clean build artifacts
+make format                 # Format code with rebar3 fmt
+make help                   # Show available targets
 </code></pre>
 
 <h2>Development Commands</h2>
@@ -244,19 +244,19 @@
 <p>The build system integrates with standard development workflows:</p>
 
 <pre><code># Development cycle
-<p>make clean && make all      # Full rebuild</p>
-<p>make format                 # Format Erlang source code</p>
-<p>make test                   # Verify functionality</p>
+make clean && make all      # Full rebuild
+make format                 # Format Erlang source code
+make test                   # Verify functionality
 
-<h1>Interactive development</h1>
-<p>make shell                  # Start Erlang shell</p>
-<h1>1> cure_lexer:tokenize(<<"def test() = 42">>).</h1>
-<h1>2> cure_parser:parse(Tokens).</h1>
-<h1>3> cure<em>typechecker:check</em>program(AST).</h1>
+# Interactive development
+make shell                  # Start Erlang shell
+# 1> cure_lexer:tokenize(<<"def test() = 42">>).
+# 2> cure_parser:parse(Tokens).
+# 3> cure_typechecker:check_program(AST).
 
-<h1>Performance testing</h1>
-<p>make test-performance       # Run benchmarks</p>
-<p>CURE_DEBUG=1 make test      # Debug test failures</p>
+# Performance testing
+make test-performance       # Run benchmarks
+CURE_DEBUG=1 make test      # Debug test failures
 </code></pre>
 
 <h2>File Structure and Output</h2>
@@ -329,9 +329,9 @@
 
 <h3>Wrapper Script Errors</h3>
 <pre><code>Error: Missing required compiler modules:
-<p>  cure_cli.beam</p>
-<p>  cure_lexer.beam</p>
-<p>Run 'make all' to build all required components.</p>
+  cure_cli.beam
+  cure_lexer.beam
+Run 'make all' to build all required components.
 </code></pre>
 
 <h3>Lexical Errors</h3>
@@ -348,12 +348,12 @@
 
 <h3>File Errors</h3>
 <pre><code>Error: File not found: examples/nonexistent.cure
-<p>Error: Could not write file _build/ebin/test.beam: permission denied</p>
+Error: Could not write file _build/ebin/test.beam: permission denied
 </code></pre>
 
 <h3>Standard Library Compilation Errors</h3>
 <pre><code>Error: Partial standard library compilation failed: 
-<p>Individual compilation of lib/std/broken.cure failed: Parse error at line 5</p>
+Individual compilation of lib/std/broken.cure failed: Parse error at line 5
 </code></pre>
 
 <h2>Performance Considerations</h2>
@@ -451,12 +451,12 @@
 
 <h3>Running Examples</h3>
 <pre><code># Compile and examine an example
-<p>./cure examples/04<em>pattern</em>guards.cure --verbose</p>
+./cure examples/04_pattern_guards.cure --verbose
 
-<h1>Run FSM example (requires runtime support)</h1>
-<p>./cure examples/06<em>fsm</em>traffic_light.cure</p>
+# Run FSM example (requires runtime support)
+./cure examples/06_fsm_traffic_light.cure
 
-<h1>See examples/README.md for detailed documentation</h1>
+# See examples/README.md for detailed documentation
 </code></pre>
 
 <h2>Future Enhancements</h2>

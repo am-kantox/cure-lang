@@ -62,61 +62,61 @@ Last Updated: October 31, 2025">
 
 <h3>Module System</h3>
 <pre><code>module ModuleName do
-<p>  import Std [abs/1, sqrt/1, Option, Result]</p>
-<p>  import Std.Math [sin/1, cos/1]</p>
+  import Std [abs/1, sqrt/1, Option, Result]
+  import Std.Math [sin/1, cos/1]
   
-<p>  export [main/0, demo_function/1]</p>
+  export [main/0, demo_function/1]
   
-<p>  # Module contents...</p>
-<p>end</p>
+  # Module contents...
+end
 </code></pre>
 
 <h3>Function Definitions</h3>
 <pre><code># Simple function
-<p>def add(x: Int, y: Int): Int = x + y</p>
+def add(x: Int, y: Int): Int = x + y
 
-<h1>Function with complex body</h1>
-<p>def demo(): Unit =</p>
-<p>  let result = calculate_something()</p>
-<p>  println("Result: " <> show(result))</p>
-<p>  0</p>
+# Function with complex body
+def demo(): Unit =
+  let result = calculate_something()
+  println("Result: " <> show(result))
+  0
 
-<h1>Helper function</h1>
-<p>def helper(x: Int): String = int<em>to</em>string(x)</p>
+# Helper function
+def helper(x: Int): String = int_to_string(x)
 </code></pre>
 
 <h3>Lambda Expressions</h3>
 <pre><code># Simple lambda
-<p>let double = fn(x) -> x * 2 end</p>
+let double = fn(x) -> x * 2 end
 
-<h1>Lambda with pattern matching instead of if-then-else</h1>
-<p>let safe_div = fn(x, y) -></p>
-<p>  match y == 0 do</p>
-<p>    true -> error("Division by zero")</p>
-<p>    false -> ok(x / y)</p>
-<p>  end</p>
-<p>end</p>
+# Lambda with pattern matching instead of if-then-else
+let safe_div = fn(x, y) ->
+  match y == 0 do
+    true -> error("Division by zero")
+    false -> ok(x / y)
+  end
+end
 
-<h1>Lambda with multiple parameters</h1>
-<p>let fold_sum = fold(numbers, 0, fn(x, acc) -> x + acc end)</p>
+# Lambda with multiple parameters
+let fold_sum = fold(numbers, 0, fn(x, acc) -> x + acc end)
 </code></pre>
 
 <h3>Pattern Matching</h3>
 <pre><code>match expression do
-<p>  Ok(value) -> handle_success(value)</p>
-<p>  Error(msg) -> handle_error(msg)</p>
-<p>end</p>
+  Ok(value) -> handle_success(value)
+  Error(msg) -> handle_error(msg)
+end
 
-<p>match list do</p>
-<p>  [] -> "empty"</p>
-<p>  [x] -> "single: " <> show(x)</p>
-<p>  [x | rest] -> "head: " <> show(x) <> ", rest: " <> show(rest)</p>
-<p>end</p>
+match list do
+  [] -> "empty"
+  [x] -> "single: " <> show(x)
+  [x | rest] -> "head: " <> show(x) <> ", rest: " <> show(rest)
+end
 
-<p>match option do</p>
-<p>  Some(found) -> "Found: " <> show(found)</p>
-<p>  None -> "Not found"</p>
-<p>end</p>
+match option do
+  Some(found) -> "Found: " <> show(found)
+  None -> "Not found"
+end
 </code></pre>
 
 <h3>Case Expressions</h3>
@@ -124,35 +124,35 @@ Last Updated: October 31, 2025">
 <p>Cure supports <code>case</code> expressions as an alternative to <code>match</code> (they are semantically identical):</p>
 
 <pre><code># Case with 'of' keyword
-<p>case expression of</p>
-<p>  Ok(value) -> handle_success(value)</p>
-<p>  Error(msg) -> handle_error(msg)</p>
-<p>end</p>
+case expression of
+  Ok(value) -> handle_success(value)
+  Error(msg) -> handle_error(msg)
+end
 
-<h1>Functionally equivalent to match</h1>
-<p>match expression do</p>
-<p>  Ok(value) -> handle_success(value)</p>
-<p>  Error(msg) -> handle_error(msg)</p>
-<p>end</p>
+# Functionally equivalent to match
+match expression do
+  Ok(value) -> handle_success(value)
+  Error(msg) -> handle_error(msg)
+end
 </code></pre>
 
 <strong>Note</strong>: Cure does not have <code>if-then-else</code> expressions. Use <code>match</code> or <code>case</code> for conditional logic.
 
 <h3>Let Bindings</h3>
 <pre><code># Simple let
-<p>let x = 42</p>
+let x = 42
 
-<h1>Let with complex expression</h1>
-<p>let result = calculate()</p>
-<p>  |> map(fn(x) -> x * 2 end)</p>
-<p>  |> filter(fn(x) -> x > 10 end)</p>
+# Let with complex expression
+let result = calculate()
+  |> map(fn(x) -> x * 2 end)
+  |> filter(fn(x) -> x > 10 end)
 </code></pre>
 
 <h3>Pipe Operations</h3>
 <pre><code>result = input
-<p>  |> transform1()</p>
-<p>  |> transform2(argument)</p>
-<p>  |> final_transform()</p>
+  |> transform1()
+  |> transform2(argument)
+  |> final_transform()
 </code></pre>
 
 <h2>Data Types and Type System</h2>
@@ -173,33 +173,33 @@ Last Updated: October 31, 2025">
 
 <h3>Composite Types</h3>
 <pre><code>List(T)                    # Homogeneous lists
-<p>List(T, n)                 # Length-indexed lists (dependent type)</p>
-<p>Tuple(T1, T2, ...)         # Fixed-size tuples</p>
-<p>Result(T, E)               # Error handling without exceptions</p>
-<p>Option(T)                  # Nullable values</p>
+List(T, n)                 # Length-indexed lists (dependent type)
+Tuple(T1, T2, ...)         # Fixed-size tuples
+Result(T, E)               # Error handling without exceptions
+Option(T)                  # Nullable values
 </code></pre>
 
 <h3>Constructor Types</h3>
 <pre><code>Ok(value)                  # Success result
-<p>Error(message)             # Error result</p>
-<p>Some(value)                # Present optional value</p>
-<p>None                       # Absent optional value</p>
+Error(message)             # Error result
+Some(value)                # Present optional value
+None                       # Absent optional value
 </code></pre>
 
 <h3>Dependent Types</h3>
 <pre><code># Length-indexed types
-<p>Vector(T, n: Nat)          # Fixed-length vector</p>
-<p>List(T, n: Nat)            # List with compile-time known length</p>
-<p>Matrix(rows: Nat, cols: Nat, T)  # 2D matrix with dimensions</p>
+Vector(T, n: Nat)          # Fixed-length vector
+List(T, n: Nat)            # List with compile-time known length
+Matrix(rows: Nat, cols: Nat, T)  # 2D matrix with dimensions
 
-<h1>Constraint-based types</h1>
-<p>{x: Int | x > 0}           # Positive integers</p>
-<p>{x: Float | x >= 0.0}      # Non-negative floats</p>
-<p>{xs: List(T) | length(xs) > 0}  # Non-empty lists</p>
+# Constraint-based types
+{x: Int | x > 0}           # Positive integers
+{x: Float | x >= 0.0}      # Non-negative floats
+{xs: List(T) | length(xs) > 0}  # Non-empty lists
 
-<h1>Function-dependent types</h1>
-<p>def replicate(n: Nat, x: T): List(T, n)  # Return type depends on argument</p>
-<p>def safe_head(xs: List(T, n)): T when n > 0  # Precondition constraint</p>
+# Function-dependent types
+def replicate(n: Nat, x: T): List(T, n)  # Return type depends on argument
+def safe_head(xs: List(T, n)): T when n > 0  # Precondition constraint
 </code></pre>
 
 <h2>Operators</h2>
@@ -223,20 +223,20 @@ Last Updated: October 31, 2025">
 
 <h3>Numbers</h3>
 <pre><code>42          # Integer
-<p>3.14        # Float</p>
-<p>-5          # Negative integer</p>
+3.14        # Float
+-5          # Negative integer
 </code></pre>
 
 <h3>Strings</h3>
 <pre><code>"Hello, World!"       # Simple string
-<p>"Line 1\nLine 2"      # String with escape sequences</p>
-<p>"Quote: \"text\""     # String with escaped quotes</p>
+"Line 1\nLine 2"      # String with escape sequences
+"Quote: \"text\""     # String with escaped quotes
 </code></pre>
 
 <h3>Lists</h3>
 <pre><code>[]                    # Empty list
-<p>[1, 2, 3]            # List of integers</p>
-<p>["a", "b", "c"]      # List of strings</p>
+[1, 2, 3]            # List of integers
+["a", "b", "c"]      # List of strings
 </code></pre>
 
 <h3>Tuples</h3>
@@ -244,24 +244,24 @@ Last Updated: October 31, 2025">
 <p>Tuples use curly brace <code>{}</code> syntax:</p>
 
 <pre><code>{}                    # Empty tuple (Unit)
-<p>{42}                  # Single element tuple</p>
-<p>{1, "hello", true}    # Multi-element tuple</p>
-<p>{:ok, "success"}      # Tagged tuple (atom + value)</p>
-<p>{:error, "failed"}    # Error tuple (atom + value)</p>
+{42}                  # Single element tuple
+{1, "hello", true}    # Multi-element tuple
+{:ok, "success"}      # Tagged tuple (atom + value)
+{:error, "failed"}    # Error tuple (atom + value)
 </code></pre>
 
 <strong>Note</strong>: Tuple pattern matching is fully supported:
 <pre><code>match point do
-<p>  {x, y} when x > 0.0 and y > 0.0 -> "First quadrant"</p>
-<p>  {x, y} when x == 0.0 and y == 0.0 -> "Origin"</p>
-<p>  _ -> "Other quadrant"</p>
-<p>end</p>
+  {x, y} when x > 0.0 and y > 0.0 -> "First quadrant"
+  {x, y} when x == 0.0 and y == 0.0 -> "Origin"
+  _ -> "Other quadrant"
+end
 </code></pre>
 
 <h3>Atoms</h3>
 <pre><code>:atom_name
-<p>:increment</p>
-<p>:ok</p>
+:increment
+:ok
 </code></pre>
 
 <h2>Finite State Machines</h2>
@@ -273,21 +273,21 @@ Last Updated: October 31, 2025">
 <p>Cure FSMs use a record-based payload system with arrow transition syntax:</p>
 
 <pre><code># Define a payload record to track FSM data
-<p>record TrafficPayload do</p>
-<p>  cycles_completed: Int</p>
-<p>  timer_events: Int</p>
-<p>  emergency_stops: Int</p>
-<p>end</p>
+record TrafficPayload do
+  cycles_completed: Int
+  timer_events: Int
+  emergency_stops: Int
+end
 
-<h1>FSM with initial payload values</h1>
-<p>fsm TrafficPayload{cycles<em>completed: 0, timer</em>events: 0, emergency_stops: 0} do</p>
-<p>  Red --> |timer| Green</p>
-<p>  Red --> |emergency| Red      # Self-transition</p>
-<p>  Green --> |timer| Yellow</p>
-<p>  Green --> |emergency| Red</p>
-<p>  Yellow --> |timer| Red</p>
-<p>  Yellow --> |emergency| Red</p>
-<p>end</p>
+# FSM with initial payload values
+fsm TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0} do
+  Red --> |timer| Green
+  Red --> |emergency| Red      # Self-transition
+  Green --> |timer| Yellow
+  Green --> |emergency| Red
+  Yellow --> |timer| Red
+  Yellow --> |emergency| Red
+end
 </code></pre>
 
 <strong>Key Points</strong>:
@@ -301,23 +301,23 @@ Last Updated: October 31, 2025">
 
 <p>FSMs compile to BEAM <code>gen_statem</code> processes:</p>
 
-<pre><code>import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]
-<p>import Std.Pair [pair/2]</p>
+<pre><code>import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
+import Std.Pair [pair/2]
 
-<h1>Spawn an FSM instance with initial data</h1>
-<p>let initial<em>data = TrafficPayload{cycles</em>completed: 0, timer<em>events: 0, emergency</em>stops: 0}</p>
-<p>let fsm<em>pid = fsm</em>spawn(:TrafficPayload, initial_data)</p>
+# Spawn an FSM instance with initial data
+let initial_data = TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0}
+let fsm_pid = fsm_spawn(:TrafficPayload, initial_data)
 
-<h1>Give the FSM a name for easy reference</h1>
-<p>let adv<em>result = fsm</em>advertise(fsm<em>pid, :traffic</em>light)</p>
+# Give the FSM a name for easy reference
+let adv_result = fsm_advertise(fsm_pid, :traffic_light)
 
-<h1>Send events to the FSM</h1>
-<p>let empty_list = []</p>
-<p>let event = pair(:timer, empty_list)</p>
-<p>let cast<em>result = fsm</em>cast(:traffic_light, event)</p>
+# Send events to the FSM
+let empty_list = []
+let event = pair(:timer, empty_list)
+let cast_result = fsm_cast(:traffic_light, event)
 
-<h1>Query current state</h1>
-<p>let current<em>state = fsm</em>state(:traffic_light)  # Returns current state atom</p>
+# Query current state
+let current_state = fsm_state(:traffic_light)  # Returns current state atom
 </code></pre>
 
 <h3>FSM Implementation Notes</h3>
@@ -352,65 +352,65 @@ Last Updated: October 31, 2025">
 
 <h3>Record Definitions</h3>
 <pre><code>record Person do
-<p>  name: String</p>
-<p>  age: Nat</p>
-<p>  email: String</p>
-<p>end</p>
+  name: String
+  age: Nat
+  email: String
+end
 
-<h1>Creating records</h1>
-<p>let person = Person{name: "Alice", age: 30, email: "alice@example.com"}</p>
+# Creating records
+let person = Person{name: "Alice", age: 30, email: "alice@example.com"}
 
-<h1>Pattern matching on records</h1>
-<p>match person do</p>
-<p>  Person{name: name, age: age} when age >= 18 -></p>
-<p>    "Hello, adult " <> name <> "!"</p>
-<p>  Person{name: name} -></p>
-<p>    "Hello, young " <> name <> "!"</p>
-<p>end</p>
+# Pattern matching on records
+match person do
+  Person{name: name, age: age} when age >= 18 ->
+    "Hello, adult " <> name <> "!"
+  Person{name: name} ->
+    "Hello, young " <> name <> "!"
+end
 </code></pre>
 
 <h3>Dependent Types</h3>
 <pre><code># Length-indexed types
-<p>Vector(T, n: Nat)      # Fixed-length vector</p>
-<p>List(T, n: Nat)        # List with known length</p>
-<p>Range(min: Int, max: Int)  # Integer range type</p>
+Vector(T, n: Nat)      # Fixed-length vector
+List(T, n: Nat)        # List with known length
+Range(min: Int, max: Int)  # Integer range type
 
-<h1>Matrix with dimension checking</h1>
-<p>record Matrix(rows: Nat, cols: Nat, T) do</p>
-<p>  data: Vector(Vector(T, cols), rows)</p>
-<p>end</p>
+# Matrix with dimension checking
+record Matrix(rows: Nat, cols: Nat, T) do
+  data: Vector(Vector(T, cols), rows)
+end
 
-<h1>Refinement types</h1>
-<p>type NonEmptyList(T) = List(T, n) when n > 0</p>
+# Refinement types
+type NonEmptyList(T) = List(T, n) when n > 0
 
-<p>def head(list: NonEmptyList(T)): T =</p>
-<p>  match list do</p>
-<p>    [x|_] -> x</p>
-<p>    # No need for empty case - type system guarantees non-empty</p>
-<p>  end</p>
+def head(list: NonEmptyList(T)): T =
+  match list do
+    [x|_] -> x
+    # No need for empty case - type system guarantees non-empty
+  end
 </code></pre>
 
 <h2>Advanced Features</h2>
 
 <h3>Function Imports with Arity</h3>
 <pre><code>import ModuleName [
-<p>  function1/1,    # Function with 1 parameter</p>
-<p>  function2/2,    # Function with 2 parameters</p>
-<p>  TypeName,       # Type import</p>
-<p>  constructor     # Constructor import</p>
-<p>]</p>
+  function1/1,    # Function with 1 parameter
+  function2/2,    # Function with 2 parameters
+  TypeName,       # Type import
+  constructor     # Constructor import
+]
 </code></pre>
 
 <h3>Complex Nested Expressions</h3>
 <pre><code># Nested lambdas in higher-order functions
-<p>processed = data</p>
-<p>  |> filter(fn(item) -> not(is_empty(item)) end)</p>
-<p>  |> map(fn(item) -> </p>
-<p>      process_item(item)</p>
-<p>        |> validate()</p>
-<p>        |> transform()</p>
-<p>     end)</p>
-<p>  |> collect_results()</p>
+processed = data
+  |> filter(fn(item) -> not(is_empty(item)) end)
+  |> map(fn(item) -> 
+      process_item(item)
+        |> validate()
+        |> transform()
+     end)
+  |> collect_results()
 </code></pre>
 
 <h3>Match vs Case</h3>
@@ -418,49 +418,49 @@ Last Updated: October 31, 2025">
 <p>Both <code>match</code> and <code>case</code> are supported and functionally equivalent:</p>
 
 <pre><code># Case expression with 'of' keyword (alternative to match)
-<p>case expression of</p>
-<p>  Ok(value) -> handle_success(value)</p>
-<p>  Error(msg) -> handle_error(msg)</p>
-<p>end</p>
+case expression of
+  Ok(value) -> handle_success(value)
+  Error(msg) -> handle_error(msg)
+end
 
-<p>case list of</p>
-<p>  [] -> "empty"</p>
-<p>  [x] -> "single: " <> show(x)</p>
-<p>  [x | rest] -> "head: " <> show(x)</p>
-<p>end</p>
+case list of
+  [] -> "empty"
+  [x] -> "single: " <> show(x)
+  [x | rest] -> "head: " <> show(x)
+end
 </code></pre>
 
 <h3>Pattern Matching with Guards</h3>
 <pre><code>match value do
-<p>  x when x > 0 -> "positive"</p>
-<p>  x when x < 0 -> "negative"</p>
-<p>  _ -> "zero"</p>
-<p>end</p>
+  x when x > 0 -> "positive"
+  x when x < 0 -> "negative"
+  _ -> "zero"
+end
 
-<h1>Guards in case expressions</h1>
-<p>case number do</p>
-<p>  n when n > 100 -> "large"</p>
-<p>  n when n > 10 -> "medium" </p>
-<p>  _ -> "small"</p>
-<p>end</p>
+# Guards in case expressions
+case number do
+  n when n > 100 -> "large"
+  n when n > 10 -> "medium" 
+  _ -> "small"
+end
 </code></pre>
 
 <h2>Error Handling Patterns</h2>
 
 <h3>Result Types</h3>
 <pre><code>def safe_operation(input: Int): Result(Int, String) =
-<p>  match input < 0 do</p>
-<p>    true -> error("Negative input not allowed")</p>
-<p>    false -> ok(input * 2)</p>
-<p>  end</p>
+  match input < 0 do
+    true -> error("Negative input not allowed")
+    false -> ok(input * 2)
+  end
 </code></pre>
 
 <h3>Option Types</h3>
 <pre><code>def find_item(list: List(String), target: String): Option(String) =
-<p>  match search(list, target) do</p>
-<p>    found when found != "" -> Some(found)</p>
-<p>    _ -> None</p>
-<p>  end</p>
+  match search(list, target) do
+    found when found != "" -> Some(found)
+    _ -> None
+  end
 </code></pre>
 
 <h2>Best Practices</h2>
@@ -468,33 +468,33 @@ Last Updated: October 31, 2025">
 <h3>Function Composition</h3>
 <p>Use pipe operators for readable data transformations:</p>
 <pre><code>result = input
-<p>  |> validate_input()</p>
-<p>  |> process_data()</p>
-<p>  |> format_output()</p>
+  |> validate_input()
+  |> process_data()
+  |> format_output()
 </code></pre>
 
 <h3>Error Handling</h3>
 <p>Use Result types for operations that can fail:</p>
 <pre><code>def divide(x: Float, y: Float): Result(Float, String) =
-<p>  match y == 0.0 do</p>
-<p>    true -> error("Division by zero")</p>
-<p>    false -> ok(x / y)</p>
-<p>  end</p>
+  match y == 0.0 do
+    true -> error("Division by zero")
+    false -> ok(x / y)
+  end
 </code></pre>
 
 <h3>Pattern Matching</h3>
 <p>Prefer pattern matching for control flow:</p>
 <pre><code># Good - using pattern matching
-<p>match result do</p>
-<p>  Ok(value) -> use_value(value)</p>
-<p>  Error(msg) -> handle_error(msg)</p>
-<p>end</p>
+match result do
+  Ok(value) -> use_value(value)
+  Error(msg) -> handle_error(msg)
+end
 
-<h1>Also good - using case</h1>
-<p>case result of</p>
-<p>  Ok(value) -> use_value(value)</p>
-<p>  Error(msg) -> handle_error(msg)</p>
-<p>end</p>
+# Also good - using case
+case result of
+  Ok(value) -> use_value(value)
+  Error(msg) -> handle_error(msg)
+end
 </code></pre>
 
 <h2>Type Classes and Constraints</h2>
@@ -503,74 +503,74 @@ Last Updated: October 31, 2025">
 
 <h3>Type Class Definition</h3>
 <pre><code>typeclass Ord(T) where
-<p>  def compare(x: T, y: T): Ordering</p>
-<p>  def (<)(x: T, y: T): Bool = compare(x, y) == LT</p>
-<p>  def (<=)(x: T, y: T): Bool = compare(x, y) != GT</p>
-<p>end</p>
+  def compare(x: T, y: T): Ordering
+  def (<)(x: T, y: T): Bool = compare(x, y) == LT
+  def (<=)(x: T, y: T): Bool = compare(x, y) != GT
+end
 
-<p>typeclass Show(T) where</p>
-<p>  def show(x: T): String</p>
-<p>end</p>
+typeclass Show(T) where
+  def show(x: T): String
+end
 
-<p>typeclass Functor(F) where</p>
-<p>  def map(f: A -> B, fa: F(A)): F(B)</p>
-<p>end</p>
+typeclass Functor(F) where
+  def map(f: A -> B, fa: F(A)): F(B)
+end
 </code></pre>
 
 <h3>Type Class Instances</h3>
 <pre><code># Manual instances
-<p>instance Ord(Int) where</p>
-<p>  def compare(x, y) =</p>
-<p>    if x < y then LT</p>
-<p>    else if x > y then GT</p>
-<p>    else EQ</p>
-<p>    end</p>
-<p>end</p>
+instance Ord(Int) where
+  def compare(x, y) =
+    if x < y then LT
+    else if x > y then GT
+    else EQ
+    end
+end
 
-<h1>Automatic derivation</h1>
-<p>derive Ord for List(T) when Ord(T)</p>
-<p>derive Show for Option(T) when Show(T)</p>
-<p>derive Functor for List</p>
-<p>derive Functor for Option</p>
+# Automatic derivation
+derive Ord for List(T) when Ord(T)
+derive Show for Option(T) when Show(T)
+derive Functor for List
+derive Functor for Option
 </code></pre>
 
 <h3>Constraint-Based Programming</h3>
 <pre><code># Generic sorting with constraints
-<p>def sort(xs: List(T)): List(T) where Ord(T) =</p>
-<p>  quicksort_impl(xs)</p>
+def sort(xs: List(T)): List(T) where Ord(T) =
+  quicksort_impl(xs)
 
-<h1>Pretty printing with constraints  </h1>
-<p>def debug_print(x: T): Unit where Show(T) =</p>
-<p>  print(show(x))</p>
+# Pretty printing with constraints  
+def debug_print(x: T): Unit where Show(T) =
+  print(show(x))
 
-<h1>Functor mapping</h1>
-<p>def transform(f: A -> B, container: F(A)): F(B) where Functor(F) =</p>
-<p>  map(f, container)</p>
+# Functor mapping
+def transform(f: A -> B, container: F(A)): F(B) where Functor(F) =
+  map(f, container)
 </code></pre>
 
 <h2>Advanced Features</h2>
 
 <h3>Pi Types (Dependent Functions)</h3>
 <pre><code># Function types that depend on their arguments
-<p>def replicate(n: Nat, x: T): List(T, n) = </p>
-<p>  if n == 0 then [] else x :: replicate(n-1, x)</p>
+def replicate(n: Nat, x: T): List(T, n) = 
+  if n == 0 then [] else x :: replicate(n-1, x)
 </code></pre>
 
 <h3>Sigma Types (Dependent Pairs)</h3>
 <pre><code># Pairs where the second type depends on the first value
-<p>{x: Nat, Vector(Int, x)}  # Pair of number and vector of that length</p>
+{x: Nat, Vector(Int, x)}  # Pair of number and vector of that length
 </code></pre>
 
 <h3>Refinement Types</h3>
 <pre><code># Types with predicates
-<p>{x: Int | x > 0}          # Positive integers</p>
-<p>{x: List(T) | length(x) > 0}  # Non-empty lists</p>
+{x: Int | x > 0}          # Positive integers
+{x: List(T) | length(x) > 0}  # Non-empty lists
 </code></pre>
 
 <h3>Indexed Types</h3>
 <pre><code># Types parameterized by values
-<p>Vector(T, n: Nat)         # Vector of type T with length n</p>
-<p>Matrix(rows: Nat, cols: Nat, T)  # Matrix with compile-time dimensions</p>
+Vector(T, n: Nat)         # Vector of type T with length n
+Matrix(rows: Nat, cols: Nat, T)  # Matrix with compile-time dimensions
 </code></pre>
 
 <h2>CLI and Build System</h2>
@@ -579,18 +579,18 @@ Last Updated: October 31, 2025">
 
 <h3>Wrapper Script Commands</h3>
 <pre><code># Special wrapper script commands
-<p>cure build      # Execute 'make all' to build compiler</p>
-<p>cure test       # Execute 'make test' to run test suite</p>
-<p>cure clean      # Execute 'make clean' to clean build artifacts</p>
-<p>cure shell      # Start Erlang development shell with modules loaded</p>
+cure build      # Execute 'make all' to build compiler
+cure test       # Execute 'make test' to run test suite
+cure clean      # Execute 'make clean' to clean build artifacts
+cure shell      # Start Erlang development shell with modules loaded
 </code></pre>
 
 <h3>File Compilation</h3>
 <pre><code># Basic compilation
-<p>cure input.cure                    # Compile with defaults</p>
-<p>cure input.cure -o output.beam     # Specify output file</p>
-<p>cure input.cure --verbose          # Verbose compilation</p>
-<p>cure input.cure --no-optimize      # Disable optimizations</p>
+cure input.cure                    # Compile with defaults
+cure input.cure -o output.beam     # Specify output file
+cure input.cure --verbose          # Verbose compilation
+cure input.cure --no-optimize      # Disable optimizations
 </code></pre>
 
 <h3>Automatic Standard Library Management</h3>
@@ -623,34 +623,34 @@ Last Updated: October 31, 2025">
 
 <h3>Core Standard Library Modules</h3>
 <pre><code># Import common types and functions
-<p>import Std [Result, Option, ok, error, some, none]</p>
-<p>import Std [map/2, filter/2, fold<em>left/3, fold</em>right/3]</p>
+import Std [Result, Option, ok, error, some, none]
+import Std [map/2, filter/2, fold_left/3, fold_right/3]
 
-<h1>Mathematical operations</h1>
-<p>import Std.Math [abs/1, sqrt/1, sin/1, cos/1, pi, e]</p>
+# Mathematical operations
+import Std.Math [abs/1, sqrt/1, sin/1, cos/1, pi, e]
 
-<h1>String operations</h1>
-<p>import Std.String [length/1, concat/2, split/2, trim/1]</p>
+# String operations
+import Std.String [length/1, concat/2, split/2, trim/1]
 
-<h1>FSM utilities</h1>
-<p>import Std.FSM [create/2, send<em>event/2, get</em>state/1]</p>
+# FSM utilities
+import Std.FSM [create/2, send_event/2, get_state/1]
 </code></pre>
 
 <h3>Result and Option Types</h3>
 <pre><code># Chainable error handling
-<p>result = safe_divide(x, y)</p>
-<p>  |> map_ok(fn(val) -> val * 2 end)</p>
-<p>  |> and<em>then(fn(doubled) -> safe</em>sqrt(doubled) end)</p>
+result = safe_divide(x, y)
+  |> map_ok(fn(val) -> val * 2 end)
+  |> and_then(fn(doubled) -> safe_sqrt(doubled) end)
 
-<p>match result do</p>
-<p>  Ok(final<em>value) -> println("Success: " <> show(final</em>value))</p>
-<p>  Error(msg) -> println("Error: " <> msg)</p>
-<p>end</p>
+match result do
+  Ok(final_value) -> println("Success: " <> show(final_value))
+  Error(msg) -> println("Error: " <> msg)
+end
 
-<h1>Optional value handling</h1>
-<p>opt<em>value = find</em>in_list(items, predicate)</p>
-<p>  |> map(fn(item) -> process(item) end)</p>
-<p>  |> filter(fn(processed) -> is_valid(processed) end)</p>
+# Optional value handling
+opt_value = find_in_list(items, predicate)
+  |> map(fn(item) -> process(item) end)
+  |> filter(fn(processed) -> is_valid(processed) end)
 </code></pre>
 
 <h2>Testing Infrastructure</h2>
@@ -659,11 +659,11 @@ Last Updated: October 31, 2025">
 
 <h3>Comprehensive Test Suites</h3>
 <pre><code># Master test runner for all new CLI and stdlib tests
-<p>erl -pa <em>build/ebin -pa test -s run</em>all<em>new</em>tests run -s init stop</p>
+erl -pa _build/ebin -pa test -s run_all_new_tests run -s init stop
 
-<h1>Individual comprehensive test suites</h1>
-<p>erl -pa <em>build/ebin -pa test -s cli</em>wrapper<em>comprehensive</em>test run -s init stop</p>
-<p>erl -pa <em>build/ebin -pa test -s cure</em>wrapper<em>script</em>test run -s init stop</p>
+# Individual comprehensive test suites
+erl -pa _build/ebin -pa test -s cli_wrapper_comprehensive_test run -s init stop
+erl -pa _build/ebin -pa test -s cure_wrapper_script_test run -s init stop
 </code></pre>
 
 <h3>CLI and Wrapper Testing</h3>
@@ -738,12 +738,12 @@ Last Updated: October 31, 2025">
 <p>Cure's type system enables aggressive optimizations:</p>
 
 <pre><code># Before optimization (polymorphic)
-<p>def map(f: T -> U, xs: List(T)): List(U) = ...</p>
+def map(f: T -> U, xs: List(T)): List(U) = ...
 
-<h1>After monomorphization (specialized for Int -> String)</h1>
-<p>def map<em>Int</em>String(f: Int -> String, xs: List(Int)): List(String) = </p>
-<p>  # Optimized implementation for specific types</p>
-<p>  specialized<em>map</em>impl(f, xs)</p>
+# After monomorphization (specialized for Int -> String)
+def map_Int_String(f: Int -> String, xs: List(Int)): List(String) = 
+  # Optimized implementation for specific types
+  specialized_map_impl(f, xs)
 </code></pre>
 
 <h3>Performance Characteristics</h3>

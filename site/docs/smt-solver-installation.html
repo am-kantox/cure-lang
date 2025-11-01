@@ -45,49 +45,49 @@
 
 <h3>Ubuntu/Debian</h3>
 <pre><code># Install from official repositories (Ubuntu 20.04+)
-<p>sudo apt-get update</p>
-<p>sudo apt-get install z3</p>
+sudo apt-get update
+sudo apt-get install z3
 
-<h1>Verify installation</h1>
-<p>z3 --version</p>
-<h1>Expected output: Z3 version 4.8.x or later</h1>
+# Verify installation
+z3 --version
+# Expected output: Z3 version 4.8.x or later
 </code></pre>
 
 <h3>From Source (Latest Version)</h3>
 <pre><code># Install dependencies
-<p>sudo apt-get install python3 git cmake build-essential</p>
+sudo apt-get install python3 git cmake build-essential
 
-<h1>Clone and build</h1>
-<p>git clone https://github.com/Z3Prover/z3.git</p>
-<p>cd z3</p>
-<p>python3 scripts/mk_make.py</p>
-<p>cd build</p>
-<p>make</p>
-<p>sudo make install</p>
+# Clone and build
+git clone https://github.com/Z3Prover/z3.git
+cd z3
+python3 scripts/mk_make.py
+cd build
+make
+sudo make install
 
-<h1>Verify</h1>
-<p>z3 --version</p>
+# Verify
+z3 --version
 </code></pre>
 
 <h3>Testing Z3</h3>
 <p>Create a test file <code>test.smt2</code>:</p>
 <pre><code>(set-logic QF_LIA)
-<p>(declare-const x Int)</p>
-<p>(declare-const y Int)</p>
-<p>(assert (> x y))</p>
-<p>(assert (> y 0))</p>
-<p>(check-sat)</p>
-<p>(get-model)</p>
+(declare-const x Int)
+(declare-const y Int)
+(assert (> x y))
+(assert (> y 0))
+(check-sat)
+(get-model)
 </code></pre>
 
 <p>Run:</p>
 <pre><code>z3 -smt2 test.smt2
-<h1>Expected output:</h1>
-<h1>sat</h1>
-<h1>(model</h1>
-<h1>(define-fun y () Int 1)</h1>
-<h1>(define-fun x () Int 2)</h1>
-<h1>)</h1>
+# Expected output:
+# sat
+# (model
+# (define-fun y () Int 1)
+# (define-fun x () Int 2)
+# )
 </code></pre>
 
 <p>---</p>
@@ -96,34 +96,34 @@
 
 <h3>Ubuntu/Debian (Binary Release)</h3>
 <pre><code># Download latest release
-<p>wget https://github.com/cvc5/cvc5/releases/download/cvc5-1.0.8/cvc5-Linux</p>
-<p>chmod +x cvc5-Linux</p>
-<p>sudo mv cvc5-Linux /usr/local/bin/cvc5</p>
+wget https://github.com/cvc5/cvc5/releases/download/cvc5-1.0.8/cvc5-Linux
+chmod +x cvc5-Linux
+sudo mv cvc5-Linux /usr/local/bin/cvc5
 
-<h1>Verify installation</h1>
-<p>cvc5 --version</p>
+# Verify installation
+cvc5 --version
 </code></pre>
 
 <h3>From Source</h3>
 <pre><code># Install dependencies
-<p>sudo apt-get install cmake libgmp-dev</p>
+sudo apt-get install cmake libgmp-dev
 
-<h1>Clone and build</h1>
-<p>git clone https://github.com/cvc5/cvc5.git</p>
-<p>cd cvc5</p>
-<p>./configure.sh</p>
-<p>cd build</p>
-<p>make</p>
-<p>sudo make install</p>
+# Clone and build
+git clone https://github.com/cvc5/cvc5.git
+cd cvc5
+./configure.sh
+cd build
+make
+sudo make install
 
-<h1>Verify</h1>
-<p>cvc5 --version</p>
+# Verify
+cvc5 --version
 </code></pre>
 
 <h3>Testing CVC5</h3>
 <p>Using the same <code>test.smt2</code>:</p>
 <pre><code>cvc5 --lang smt2 test.smt2
-<h1>Expected similar output to Z3</h1>
+# Expected similar output to Z3
 </code></pre>
 
 <p>---</p>
@@ -135,13 +135,13 @@
 <p>The SMT solver is available at the Erlang API level and can be used programmatically:</p>
 
 <pre><code>% Start solver
-<p>{ok, Pid} = cure<em>smt</em>process:start_solver(z3, 5000).</p>
+{ok, Pid} = cure_smt_process:start_solver(z3, 5000).
 
-<p>% Check constraint</p>
-<p>Result = cure<em>smt</em>solver:check_constraint(Constraint, Env).</p>
+% Check constraint
+Result = cure_smt_solver:check_constraint(Constraint, Env).
 
-<p>% Stop solver</p>
-<p>cure<em>smt</em>process:stop_solver(Pid).</p>
+% Stop solver
+cure_smt_process:stop_solver(Pid).
 </code></pre>
 
 <h3>CLI Integration (Not Yet Implemented)</h3>
@@ -151,9 +151,9 @@
 <p>The following options are documented for future implementation:</p>
 
 <pre><code># Planned (not yet available):
-<p>./cure --smt-solver z3 examples/dependent_types.cure</p>
-<p>./cure --no-smt examples/dependent_types.cure</p>
-<p>./cure --smt-timeout 10000 examples/dependent_types.cure</p>
+./cure --smt-solver z3 examples/dependent_types.cure
+./cure --no-smt examples/dependent_types.cure
+./cure --smt-timeout 10000 examples/dependent_types.cure
 </code></pre>
 
 <strong>Current CLI Options</strong>: See <code>cure --help</code> for currently available options.

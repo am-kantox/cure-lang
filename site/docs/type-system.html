@@ -67,11 +67,11 @@
 <h3>Primitive Types</h3>
 
 <pre><code>Int      # 64-bit signed integers: ..., -1, 0, 1, ...
-<p>Float    # 64-bit IEEE floating point: 3.14, -2.5, 1.0e10</p>
-<p>String   # UTF-8 strings: "hello", "world"</p>
-<p>Bool     # Boolean values: true, false</p>
-<p>Atom     # Symbolic constants: :ok, :error, :undefined</p>
-<p>Nat      # Natural numbers (Peano encoding): Zero, Succ(n)</p>
+Float    # 64-bit IEEE floating point: 3.14, -2.5, 1.0e10
+String   # UTF-8 strings: "hello", "world"
+Bool     # Boolean values: true, false
+Atom     # Symbolic constants: :ok, :error, :undefined
+Nat      # Natural numbers (Peano encoding): Zero, Succ(n)
 </code></pre>
 
 <h3>Nat Type (Peano Encoding)</h3>
@@ -79,26 +79,26 @@
 <p>Cure provides an algebraic <code>Nat</code> type using Peano encoding, similar to Idris:</p>
 
 <pre><code># Algebraic definition (like Idris)
-<p>data Nat = Zero | Succ Nat</p>
+data Nat = Zero | Succ Nat
 
-<h1>Examples</h1>
-<p>Zero                    # 0</p>
-<p>Succ(Zero)             # 1</p>
-<p>Succ(Succ(Zero))       # 2</p>
-<p>Succ(Succ(Succ(Zero))) # 3</p>
+# Examples
+Zero                    # 0
+Succ(Zero)             # 1
+Succ(Succ(Zero))       # 2
+Succ(Succ(Succ(Zero))) # 3
 
-<h1>Recursive functions on Nat</h1>
-<p>def plus(x: Nat, y: Nat): Nat =</p>
-<p>  match x do</p>
-<p>    Zero -> y</p>
-<p>    Succ(pred) -> Succ(plus(pred, y))</p>
-<p>  end</p>
+# Recursive functions on Nat
+def plus(x: Nat, y: Nat): Nat =
+  match x do
+    Zero -> y
+    Succ(pred) -> Succ(plus(pred, y))
+  end
 
-<p>def times(x: Nat, y: Nat): Nat =</p>
-<p>  match x do</p>
-<p>    Zero -> Zero</p>
-<p>    Succ(pred) -> plus(y, times(pred, y))</p>
-<p>  end</p>
+def times(x: Nat, y: Nat): Nat =
+  match x do
+    Zero -> Zero
+    Succ(pred) -> plus(y, times(pred, y))
+  end
 </code></pre>
 
 <p>The Nat type enables:</p>
@@ -112,8 +112,8 @@
 <h3>Composite Types</h3>
 
 <pre><code>List(T)           # Homogeneous lists: [1, 2, 3], ["a", "b"]
-<p>List(T, n)        # Length-indexed lists: List(Int, 3) = [1, 2, 3]</p>
-<p>Tuple(T1, T2, ..) # Fixed-size tuples: (1, "hello", true)</p>
+List(T, n)        # Length-indexed lists: List(Int, 3) = [1, 2, 3]
+Tuple(T1, T2, ..) # Fixed-size tuples: (1, "hello", true)
 </code></pre>
 
 <h3>Function Types</h3>
@@ -128,13 +128,13 @@
 <h3>Basic Dependent Types</h3>
 
 <pre><code># Arrays with statically known size
-<p>Array(T, n)   where n: Nat</p>
+Array(T, n)   where n: Nat
 
-<h1>Lists with length constraints  </h1>
-<p>List(T, n)    where n: Nat</p>
+# Lists with length constraints  
+List(T, n)    where n: Nat
 
-<h1>Integers with range constraints</h1>
-<p>Int{min..max} where min <= max</p>
+# Integers with range constraints
+Int{min..max} where min <= max
 </code></pre>
 
 <h3>Predicate Types</h3>
@@ -142,32 +142,32 @@
 <p>Types can be refined with boolean predicates:</p>
 
 <pre><code># Natural numbers as refined type (compile-time refinement)
-<h1>Note: Cure also provides algebraic Nat (Zero | Succ) for Peano encoding</h1>
-<p>NatRefined = Int where x >= 0</p>
+# Note: Cure also provides algebraic Nat (Zero | Succ) for Peano encoding
+NatRefined = Int where x >= 0
 
-<h1>Positive integers  </h1>
-<p>Pos = Int where x > 0</p>
+# Positive integers  
+Pos = Int where x > 0
 
-<h1>Even numbers</h1>
-<p>Even = Int where x % 2 == 0</p>
+# Even numbers
+Even = Int where x % 2 == 0
 
-<h1>Non-empty lists</h1>
-<p>NonEmpty(T) = List(T, n) where n > 0</p>
+# Non-empty lists
+NonEmpty(T) = List(T, n) where n > 0
 </code></pre>
 
 <h3>Examples</h3>
 
 <pre><code># Safe array indexing
-<p>def get_element(arr: Array(T, n), i: Int) -> T when 0 <= i < n =</p>
-<p>  unsafe_get(arr, i)</p>
+def get_element(arr: Array(T, n), i: Int) -> T when 0 <= i < n =
+  unsafe_get(arr, i)
 
-<h1>Safe division</h1>
-<p>def safe_divide(x: Float, y: Float) -> Float when y != 0.0 =</p>
-<p>  x / y</p>
+# Safe division
+def safe_divide(x: Float, y: Float) -> Float when y != 0.0 =
+  x / y
 
-<h1>List concatenation preserves length</h1>
-<p>def concat(xs: List(T, n), ys: List(T, m)) -> List(T, n+m) =</p>
-<p>  append_lists(xs, ys)</p>
+# List concatenation preserves length
+def concat(xs: List(T, n), ys: List(T, m)) -> List(T, n+m) =
+  append_lists(xs, ys)
 </code></pre>
 
 <h2>FSM Types</h2>
@@ -179,30 +179,30 @@
 <strong>Current Implementation</strong> (Mermaid-style arrow syntax):
 
 <pre><code># Record-based payload with arrow transitions
-<p>record PayloadName do</p>
-<p>  field1: Type1</p>
-<p>  field2: Type2</p>
-<p>end</p>
+record PayloadName do
+  field1: Type1
+  field2: Type2
+end
 
-<p>fsm PayloadName{field1: value1, field2: value2} do</p>
-<p>  State1 --> |event| State2</p>
-<p>  State1 --> |other_event| State3</p>
-<p>  State2 --> |event| State1</p>
-<p>end</p>
+fsm PayloadName{field1: value1, field2: value2} do
+  State1 --> |event| State2
+  State1 --> |other_event| State3
+  State2 --> |event| State1
+end
 </code></pre>
 
 <strong>Planned Syntax</strong> (documented for future implementation):
 
 <pre><code>fsm FSMName(params) do
-<p>  states: [State1, State2(data), ...]</p>
-<p>  initial: InitialState</p>
-<p>  data: DataType</p>
+  states: [State1, State2(data), ...]
+  initial: InitialState
+  data: DataType
 
-<p>  state StateName(optional_params) do</p>
-<p>    event(EventPattern) when Guard -> NextState</p>
-<p>    event(EventPattern) -> Action; NextState</p>
-<p>  end</p>
-<p>end</p>
+  state StateName(optional_params) do
+    event(EventPattern) when Guard -> NextState
+    event(EventPattern) -> Action; NextState
+  end
+end
 </code></pre>
 
 <h3>FSM Type Examples</h3>
@@ -210,49 +210,49 @@
 <strong>Current Implementation</strong> (from <code>examples/06<em>fsm</em>traffic_light.cure</code>):
 
 <pre><code># Traffic light FSM with arrow-based transitions
-<p>record TrafficPayload do</p>
-<p>  cycles_completed: Int</p>
-<p>  timer_events: Int</p>
-<p>  emergency_stops: Int</p>
-<p>end</p>
+record TrafficPayload do
+  cycles_completed: Int
+  timer_events: Int
+  emergency_stops: Int
+end
 
-<p>fsm TrafficPayload{cycles<em>completed: 0, timer</em>events: 0, emergency_stops: 0} do</p>
-<p>  Red --> |timer| Green</p>
-<p>  Red --> |emergency| Red</p>
-<p>  Green --> |timer| Yellow</p>
-<p>  Green --> |emergency| Red</p>
-<p>  Yellow --> |timer| Red</p>
-<p>  Yellow --> |emergency| Red</p>
-<p>end</p>
+fsm TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0} do
+  Red --> |timer| Green
+  Red --> |emergency| Red
+  Green --> |timer| Yellow
+  Green --> |emergency| Red
+  Yellow --> |timer| Red
+  Yellow --> |emergency| Red
+end
 
-<h1>FSM operations (from Std.Fsm)</h1>
-<p>import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]</p>
-<p>import Std.Pair [pair/2]</p>
+# FSM operations (from Std.Fsm)
+import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
+import Std.Pair [pair/2]
 
-<p>let fsm<em>pid = fsm</em>spawn(:TrafficPayload, initial_data)</p>
-<p>let adv<em>result = fsm</em>advertise(fsm<em>pid, :traffic</em>light)</p>
-<p>let event = pair(:timer, [])</p>
-<p>let cast<em>result = fsm</em>cast(:traffic_light, event)</p>
-<p>let current<em>state = fsm</em>state(:traffic_light)</p>
+let fsm_pid = fsm_spawn(:TrafficPayload, initial_data)
+let adv_result = fsm_advertise(fsm_pid, :traffic_light)
+let event = pair(:timer, [])
+let cast_result = fsm_cast(:traffic_light, event)
+let current_state = fsm_state(:traffic_light)
 </code></pre>
 
 <strong>Planned Syntax</strong> (for future implementation with guards and actions):
 
 <pre><code>fsm Counter(max: Int) do
-<p>  states: [Zero, Counting(n: Int) where 0 < n <= max]</p>
-<p>  initial: Zero</p>
+  states: [Zero, Counting(n: Int) where 0 < n <= max]
+  initial: Zero
 
-<p>  state Zero do</p>
-<p>    event(:increment) -> Counting(1)</p>
-<p>  end</p>
+  state Zero do
+    event(:increment) -> Counting(1)
+  end
 
-<p>  state Counting(n) do</p>
-<p>    event(:increment) when n < max -> Counting(n + 1)</p>
-<p>    event(:decrement) when n > 1 -> Counting(n - 1)</p>
-<p>    event(:decrement) when n == 1 -> Zero</p>
-<p>    event(:reset) -> Zero</p>
-<p>  end</p>
-<p>end</p>
+  state Counting(n) do
+    event(:increment) when n < max -> Counting(n + 1)
+    event(:decrement) when n > 1 -> Counting(n - 1)
+    event(:decrement) when n == 1 -> Zero
+    event(:reset) -> Zero
+  end
+end
 </code></pre>
 
 <h3>FSM Type Safety</h3>
@@ -284,54 +284,54 @@
 <h3>Planned Type Class Definition</h3>
 
 <pre><code># Not yet implemented - planned syntax
-<p>typeclass Ord(T) where</p>
-<p>  def compare(x: T, y: T): Ordering</p>
-<p>  def (<)(x: T, y: T): Bool = compare(x, y) == LT</p>
-<p>  def (<=)(x: T, y: T): Bool = compare(x, y) != GT</p>
-<p>end</p>
+typeclass Ord(T) where
+  def compare(x: T, y: T): Ordering
+  def (<)(x: T, y: T): Bool = compare(x, y) == LT
+  def (<=)(x: T, y: T): Bool = compare(x, y) != GT
+end
 
-<p>typeclass Show(T) where</p>
-<p>  def show(x: T): String</p>
-<p>end</p>
+typeclass Show(T) where
+  def show(x: T): String
+end
 
-<p>typeclass Functor(F) where</p>
-<p>  def map(f: A -> B, fa: F(A)): F(B)</p>
-<p>end</p>
+typeclass Functor(F) where
+  def map(f: A -> B, fa: F(A)): F(B)
+end
 </code></pre>
 
 <h3>Planned Type Class Instances</h3>
 
 <pre><code># Not yet implemented - planned syntax
-<p>instance Ord(Int) where</p>
-<p>  def compare(x, y) =</p>
-<p>    match {x, y} do</p>
-<p>      {a, b} when a < b -> LT</p>
-<p>      {a, b} when a > b -> GT</p>
-<p>      _ -> EQ</p>
-<p>    end</p>
-<p>end</p>
+instance Ord(Int) where
+  def compare(x, y) =
+    match {x, y} do
+      {a, b} when a < b -> LT
+      {a, b} when a > b -> GT
+      _ -> EQ
+    end
+end
 
-<h1>Automatic derivation (planned)</h1>
-<p>derive Ord for List(T) when Ord(T)</p>
-<p>derive Show for Option(T) when Show(T)</p>
-<p>derive Functor for List</p>
-<p>derive Functor for Option</p>
+# Automatic derivation (planned)
+derive Ord for List(T) when Ord(T)
+derive Show for Option(T) when Show(T)
+derive Functor for List
+derive Functor for Option
 </code></pre>
 
 <h3>Planned Constraint-Based Programming</h3>
 
 <pre><code># Not yet implemented - planned syntax
-<p>def sort(xs: List(T)): List(T) where Ord(T) =</p>
-<p>  quicksort_impl(xs)</p>
+def sort(xs: List(T)): List(T) where Ord(T) =
+  quicksort_impl(xs)
 
-<h1>Pretty printing with constraints</h1>
-<p>def debug_print(x: T): Int where Show(T) =</p>
-<p>  println(show(x))</p>
-<p>  0</p>
+# Pretty printing with constraints
+def debug_print(x: T): Int where Show(T) =
+  println(show(x))
+  0
 
-<h1>Functor mapping</h1>
-<p>def transform(f: A -> B, container: F(A)): F(B) where Functor(F) =</p>
-<p>  map(f, container)</p>
+# Functor mapping
+def transform(f: A -> B, container: F(A)): F(B) where Functor(F) =
+  map(f, container)
 </code></pre>
 
 <h2>Type Inference</h2>
@@ -349,21 +349,21 @@
 <h3>Type Variables</h3>
 
 <pre><code># Before inference
-<p>def identity(x) = x</p>
+def identity(x) = x
 
-<h1>After inference  </h1>
-<p>def identity(x: 'a) -> 'a = x</p>
+# After inference  
+def identity(x: 'a) -> 'a = x
 </code></pre>
 
 <h3>Constraint Propagation</h3>
 
 <pre><code>def safe_head(list) =
-<p>  match list do</p>
-<p>    [x | _] -> x</p>
-<p>  end</p>
+  match list do
+    [x | _] -> x
+  end
 
-<h1>Inferred type:</h1>
-<h1>safe_head : List(T, n) -> T when n > 0</h1>
+# Inferred type:
+# safe_head : List(T, n) -> T when n > 0
 </code></pre>
 
 <h2>Constraint Solving</h2>
@@ -383,18 +383,18 @@
 <p>Complex constraints are solved using an SMT solver:</p>
 
 <pre><code>def matrix_multiply(a: Matrix(m, k), b: Matrix(k, n)) -> Matrix(m, n) = ...
-<h1>^              ^</h1>
-<h1>|              |</h1>
-<h1>These must be equal</h1>
+# ^              ^
+# |              |
+# These must be equal
 </code></pre>
 
 <h3>Constraint Examples</h3>
 
 <pre><code># Generates constraint: length(xs) > 0
-<p>def head(xs: List(T, n)) -> T when n > 0 = ...</p>
+def head(xs: List(T, n)) -> T when n > 0 = ...
 
-<h1>Generates constraint: i >= 0 ∧ i < length(arr)  </h1>
-<p>def get(arr: Array(T, n), i: Int) -> T when 0 <= i < n = ...</p>
+# Generates constraint: i >= 0 ∧ i < length(arr)  
+def get(arr: Array(T, n), i: Int) -> T when 0 <= i < n = ...
 </code></pre>
 
 <h2>Refinement Types</h2>
@@ -409,19 +409,19 @@
 <h3>Built-in Refinement Types</h3>
 
 <pre><code># Natural numbers
-<p>Nat = {x: Int | x >= 0}</p>
+Nat = {x: Int | x >= 0}
 
-<h1>Positive integers</h1>
-<p>Pos = {x: Int | x > 0}</p>
+# Positive integers
+Pos = {x: Int | x > 0}
 
-<h1>Non-zero numbers</h1>
-<p>NonZero = {x: Float | x != 0.0}</p>
+# Non-zero numbers
+NonZero = {x: Float | x != 0.0}
 
-<h1>Bounded integers</h1>
-<p>Bounded(min, max) = {x: Int | min <= x <= max}</p>
+# Bounded integers
+Bounded(min, max) = {x: Int | min <= x <= max}
 
-<h1>Non-empty strings</h1>
-<p>NonEmptyString = {s: String | length(s) > 0}</p>
+# Non-empty strings
+NonEmptyString = {s: String | length(s) > 0}
 </code></pre>
 
 <h3>Custom Refinement Types</h3>
@@ -429,13 +429,13 @@
 <strong>Note</strong>: The examples below show the design syntax. Internal representation uses <code>{refined_type, BaseType, Predicate}</code> tuples.
 
 <pre><code># Prime numbers (planned syntax)
-<p>Prime = {x: Int | is_prime(x)}</p>
+Prime = {x: Int | is_prime(x)}
 
-<h1>Sorted lists (planned syntax)</h1>
-<p>Sorted(T) = {xs: List(T) | is_sorted(xs)}</p>
+# Sorted lists (planned syntax)
+Sorted(T) = {xs: List(T) | is_sorted(xs)}
 
-<h1>Balanced trees (planned syntax)</h1>
-<p>Balanced(T) = {tree: Tree(T) | is_balanced(tree)}</p>
+# Balanced trees (planned syntax)
+Balanced(T) = {tree: Tree(T) | is_balanced(tree)}
 </code></pre>
 
 <h2>Type Checking Algorithm</h2>
@@ -445,7 +445,7 @@
 <p>The type checker uses a bidirectional typing algorithm with constraint generation:</p>
 
 <pre><code>Γ ⊢ e ⇒ τ | C    # Expression e has type τ under context Γ with constraints C
-<p>Γ ⊢ e ⇐ τ | C    # Expression e checks against type τ under context Γ with constraints C</p>
+Γ ⊢ e ⇐ τ | C    # Expression e checks against type τ under context Γ with constraints C
 </code></pre>
 
 <h3>Rules</h3>
@@ -453,27 +453,27 @@
 <h4>Variables</h4>
 
 <pre><code>x : τ ∈ Γ
-<p>─────────────</p>
-<p>Γ ⊢ x ⇒ τ | ∅</p>
+─────────────
+Γ ⊢ x ⇒ τ | ∅
 </code></pre>
 
 <h4>Function Application</h4>
 
 <pre><code>Γ ⊢ f ⇒ (τ1, ..., τn) -> τ | C1
-<p>Γ ⊢ e1 ⇐ τ1 | C2</p>
-<p>...</p>
-<p>Γ ⊢ en ⇐ τn | Cn</p>
-<p>─────────────────────────────────</p>
-<p>Γ ⊢ f(e1, ..., en) ⇒ τ | C1 ∪ ... ∪ Cn</p>
+Γ ⊢ e1 ⇐ τ1 | C2
+...
+Γ ⊢ en ⇐ τn | Cn
+─────────────────────────────────
+Γ ⊢ f(e1, ..., en) ⇒ τ | C1 ∪ ... ∪ Cn
 </code></pre>
 
 <h4>Dependent Function Types</h4>
 
 <pre><code>Γ, x1 : τ1, ..., xn : τn ⊢ body ⇐ τ | C1
-<p>Γ, x1 : τ1, ..., xn : τn ⊢ constraint | C2</p>
-<p>─────────────────────────────────────────────────────────────</p>
-<p>Γ ⊢ def f(x1: τ1, ..., xn: τn) -> τ when constraint = body ⇒ </p>
-<p>    (τ1, ..., τn) -> τ when constraint | C1 ∪ C2</p>
+Γ, x1 : τ1, ..., xn : τn ⊢ constraint | C2
+─────────────────────────────────────────────────────────────
+Γ ⊢ def f(x1: τ1, ..., xn: τn) -> τ when constraint = body ⇒ 
+    (τ1, ..., τn) -> τ when constraint | C1 ∪ C2
 </code></pre>
 
 <h2>Examples</h2>
@@ -481,76 +481,76 @@
 <h3>Safe List Operations</h3>
 
 <pre><code># Safe head function
-<p>def head(xs: List(T, n)): T when n > 0 =</p>
-<p>  match xs do [y | _] -> y end</p>
+def head(xs: List(T, n)): T when n > 0 =
+  match xs do [y | _] -> y end
 
-<h1>Safe tail function  </h1>
-<p>def tail(xs: List(T, n)): List(T, n-1) when n > 0 =</p>
-<p>  match xs do [_ | ys] -> ys end</p>
+# Safe tail function  
+def tail(xs: List(T, n)): List(T, n-1) when n > 0 =
+  match xs do [_ | ys] -> ys end
 
-<h1>List indexing (note: uses match, not if-then-else)</h1>
-<p>def get(xs: List(T, n), i: Int): T when 0 <= i < n =</p>
-<p>  match i do</p>
-<p>    0 -> head(xs)</p>
-<p>    _ -> get(tail(xs), i - 1)</p>
-<p>  end</p>
+# List indexing (note: uses match, not if-then-else)
+def get(xs: List(T, n), i: Int): T when 0 <= i < n =
+  match i do
+    0 -> head(xs)
+    _ -> get(tail(xs), i - 1)
+  end
 </code></pre>
 
 <h3>Arithmetic Operations</h3>
 
 <pre><code># Safe division
-<p>def divide(x: Float, y: Float): Float when y != 0.0 =</p>
-<p>  x / y</p>
+def divide(x: Float, y: Float): Float when y != 0.0 =
+  x / y
 
-<h1>Integer square root  </h1>
-<p>def isqrt(x: Int): Int when x >= 0 =</p>
-<p>  floor(sqrt(float(x)))</p>
+# Integer square root  
+def isqrt(x: Int): Int when x >= 0 =
+  floor(sqrt(float(x)))
 
-<h1>Factorial with precise type (using match instead of if-then-else)</h1>
-<p>def factorial(n: Nat): Pos when n > 0 =</p>
-<p>  match n do</p>
-<p>    1 -> 1</p>
-<p>    _ -> n * factorial(n - 1)</p>
-<p>  end</p>
+# Factorial with precise type (using match instead of if-then-else)
+def factorial(n: Nat): Pos when n > 0 =
+  match n do
+    1 -> 1
+    _ -> n * factorial(n - 1)
+  end
 </code></pre>
 
 <h3>Matrix Operations</h3>
 
 <pre><code># Matrix addition requires same dimensions
-<p>def add_matrices(a: Matrix(m, n), b: Matrix(m, n)): Matrix(m, n) =</p>
-<p>  element<em>wise</em>add(a, b)</p>
+def add_matrices(a: Matrix(m, n), b: Matrix(m, n)): Matrix(m, n) =
+  element_wise_add(a, b)
 
-<h1>Matrix multiplication has dimension constraint</h1>
-<p>def multiply_matrices(a: Matrix(m, k), b: Matrix(k, n)): Matrix(m, n) =</p>
-<p>  matrix<em>mult</em>impl(a, b)</p>
+# Matrix multiplication has dimension constraint
+def multiply_matrices(a: Matrix(m, k), b: Matrix(k, n)): Matrix(m, n) =
+  matrix_mult_impl(a, b)
 </code></pre>
 
 <h3>FSM Type Safety</h3>
 
 <strong>Current Implementation</strong>:
 
-<pre><code># From examples/06<em>fsm</em>traffic_light.cure
-<p>record TrafficPayload do</p>
-<p>  cycles_completed: Int</p>
-<p>  timer_events: Int</p>
-<p>  emergency_stops: Int</p>
-<p>end</p>
+<pre><code># From examples/06_fsm_traffic_light.cure
+record TrafficPayload do
+  cycles_completed: Int
+  timer_events: Int
+  emergency_stops: Int
+end
 
-<p>fsm TrafficPayload{cycles<em>completed: 0, timer</em>events: 0, emergency_stops: 0} do</p>
-<p>  Red --> |timer| Green</p>
-<p>  Green --> |timer| Yellow</p>
-<p>  Yellow --> |timer| Red</p>
-<p>end</p>
+fsm TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0} do
+  Red --> |timer| Green
+  Green --> |timer| Yellow
+  Yellow --> |timer| Red
+end
 
-<h1>Type-safe FSM usage</h1>
-<p>import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2]</p>
-<p>import Std.Pair [pair/2]</p>
+# Type-safe FSM usage
+import Std.Fsm [fsm_spawn/2, fsm_cast/2]
+import Std.Pair [pair/2]
 
-<p>def increment<em>counter(initial</em>data: TrafficPayload): Int =</p>
-<p>  let fsm<em>pid = fsm</em>spawn(:TrafficPayload, initial_data)</p>
-<p>  let event = pair(:timer, [])</p>
-<p>  let result = fsm<em>cast(fsm</em>pid, event)</p>
-<p>  0</p>
+def increment_counter(initial_data: TrafficPayload): Int =
+  let fsm_pid = fsm_spawn(:TrafficPayload, initial_data)
+  let event = pair(:timer, [])
+  let result = fsm_cast(fsm_pid, event)
+  0
 </code></pre>
 
 <h2>Type Optimization</h2>
@@ -565,48 +565,48 @@
 <p>Convert polymorphic functions to monomorphic versions:</p>
 
 <pre><code># Before monomorphization
-<p>def identity(x: T): T = x</p>
+def identity(x: T): T = x
 
-<h1>After monomorphization (for Int calls)</h1>
-<p>def identity_Int(x: Int): Int = x</p>
-<p>def identity_String(x: String): String = x</p>
+# After monomorphization (for Int calls)
+def identity_Int(x: Int): Int = x
+def identity_String(x: String): String = x
 </code></pre>
 
 <h4>2. Function Specialization</h4>
 <p>Create specialized versions for frequent call patterns:</p>
 
 <pre><code># Original function
-<p>def map(f: T -> U, xs: List(T)): List(U) = ...</p>
+def map(f: T -> U, xs: List(T)): List(U) = ...
 
-<h1>Specialized for increment function</h1>
-<p>def map_increment(xs: List(Int)): List(Int) = </p>
-<p>  # Inlined increment operation</p>
-<p>  fast<em>map</em>increment_impl(xs)</p>
+# Specialized for increment function
+def map_increment(xs: List(Int)): List(Int) = 
+  # Inlined increment operation
+  fast_map_increment_impl(xs)
 </code></pre>
 
 <h4>3. Inlining</h4>
 <p>Inline small functions based on cost/benefit analysis:</p>
 
 <pre><code># Before inlining
-<p>def add(x: Int, y: Int): Int = x + y</p>
-<p>def compute(a: Int, b: Int): Int = add(a, b) * 2</p>
+def add(x: Int, y: Int): Int = x + y
+def compute(a: Int, b: Int): Int = add(a, b) * 2
 
-<h1>After inlining</h1>
-<p>def compute(a: Int, b: Int): Int = (a + b) * 2</p>
+# After inlining
+def compute(a: Int, b: Int): Int = (a + b) * 2
 </code></pre>
 
 <h4>4. Dead Code Elimination</h4>
 <p>Remove unused code paths based on type constraints:</p>
 
 <pre><code>def safe_operation(x: Pos): Int =
-<p>  if x > 0 then  # Always true, can be eliminated</p>
-<p>    expensive_computation(x)</p>
-<p>  else</p>
-<p>    0  # Dead code, eliminated</p>
-<p>  end</p>
+  if x > 0 then  # Always true, can be eliminated
+    expensive_computation(x)
+  else
+    0  # Dead code, eliminated
+  end
 
-<h1>Optimized to:</h1>
-<p>def safe<em>operation(x: Pos): Int = expensive</em>computation(x)</p>
+# Optimized to:
+def safe_operation(x: Pos): Int = expensive_computation(x)
 </code></pre>
 
 <h3>Optimization Configuration</h3>
@@ -614,13 +614,13 @@
 <p>Optimizations are controlled via configuration:</p>
 
 <pre><code>-record(optimization_config, {
-<p>    monomorphization = true :: boolean(),</p>
-<p>    function_specialization = true :: boolean(),</p>
-<p>    inlining = true :: boolean(),</p>
-<p>    dead<em>code</em>elimination = true :: boolean(),</p>
-<p>    max<em>inline</em>size = 20 :: pos_integer(),</p>
-<p>    max<em>specializations = 5 :: pos</em>integer()</p>
-<p>}).</p>
+    monomorphization = true :: boolean(),
+    function_specialization = true :: boolean(),
+    inlining = true :: boolean(),
+    dead_code_elimination = true :: boolean(),
+    max_inline_size = 20 :: pos_integer(),
+    max_specializations = 5 :: pos_integer()
+}).
 </code></pre>
 
 <h3>Performance Impact</h3>
@@ -648,68 +648,68 @@
 <p>Types are represented as Erlang records and terms:</p>
 
 <pre><code>% Basic types
-<p>{basic<em>type, int} | {basic</em>type, float} | {basic_type, string} </p>
-<p>| {basic<em>type, bool} | {basic</em>type, atom}</p>
+{basic_type, int} | {basic_type, float} | {basic_type, string} 
+| {basic_type, bool} | {basic_type, atom}
 
-<p>% Function types with constraints</p>
-<p>{function_type, Parameters, ReturnType, Constraints}</p>
+% Function types with constraints
+{function_type, Parameters, ReturnType, Constraints}
 
-<p>% Dependent types</p>
-<p>{dependent_type, BaseType, Dependencies, Constraints}</p>
+% Dependent types
+{dependent_type, BaseType, Dependencies, Constraints}
 
-<p>% List types with length information</p>
-<p>{list_type, ElementType, LengthConstraint}</p>
+% List types with length information
+{list_type, ElementType, LengthConstraint}
 
-<p>% FSM types</p>
-<p>{fsm_type, FSMName, States, InitialState, DataType}</p>
+% FSM types
+{fsm_type, FSMName, States, InitialState, DataType}
 
-<p>% Refinement types</p>
-<p>{refinement_type, BaseType, Predicate}</p>
+% Refinement types
+{refinement_type, BaseType, Predicate}
 
-<p>% Type variables</p>
-<p>{type_var, VarName, Bounds}</p>
+% Type variables
+{type_var, VarName, Bounds}
 
-<p>% Type class constraints</p>
-<p>{typeclass_constraint, ClassName, TypeArgs}</p>
+% Type class constraints
+{typeclass_constraint, ClassName, TypeArgs}
 </code></pre>
 
 <h3>Constraint Representation</h3>
 
 <pre><code>% Equality constraint
-<p>{eq_constraint, Type1, Type2}</p>
+{eq_constraint, Type1, Type2}
 
-<p>% Subtyping constraint  </p>
-<p>{subtype_constraint, Type1, Type2}</p>
+% Subtyping constraint  
+{subtype_constraint, Type1, Type2}
 
-<p>% Predicate constraint</p>
-<p>{predicate_constraint, Predicate, Args}</p>
+% Predicate constraint
+{predicate_constraint, Predicate, Args}
 </code></pre>
 
 <h3>FSM Type Representation</h3>
 
 <pre><code>% FSM state with data constraints
-<p>{fsm_state, StateName, DataConstraints, Transitions}</p>
+{fsm_state, StateName, DataConstraints, Transitions}
 
-<p>% FSM transition</p>
-<p>{fsm_transition, FromState, Event, Guard, Actions, ToState}</p>
+% FSM transition
+{fsm_transition, FromState, Event, Guard, Actions, ToState}
 
-<p>% FSM event pattern</p>
-<p>{fsm_event, EventName, Parameters, Constraints}</p>
+% FSM event pattern
+{fsm_event, EventName, Parameters, Constraints}
 </code></pre>
 
 <h3>Constraint System Integration</h3>
 
 <p>The type system integrates with an SMT solver for complex constraint solving:</p>
 
-<pre><code>% cure<em>smt</em>solver.erl interface
-<p>solve_constraints(Constraints, Context) -> </p>
-<p>    {satisfiable, Solution} | unsatisfiable | unknown.</p>
+<pre><code>% cure_smt_solver.erl interface
+solve_constraints(Constraints, Context) -> 
+    {satisfiable, Solution} | unsatisfiable | unknown.
 
-<p>% Convert type constraints to SMT format</p>
-<p>constraints<em>to</em>smt(TypeConstraints) -> SMTFormula.</p>
+% Convert type constraints to SMT format
+constraints_to_smt(TypeConstraints) -> SMTFormula.
 
-<p>% Proof obligations for dependent types</p>
-<p>generate<em>proof</em>obligations(Function, Types) -> [ProofObligation].</p>
+% Proof obligations for dependent types
+generate_proof_obligations(Function, Types) -> [ProofObligation].
 </code></pre>
 
 <h2>Error Messages</h2>
@@ -717,49 +717,49 @@
 <p>The type checker provides detailed, actionable error messages with suggestions:</p>
 
 <pre><code># Example 1: Constraint violation
-<p>def bad_divide(x: Int, y: Int) -> Int =</p>
-<p>  x / y</p>
+def bad_divide(x: Int, y: Int) -> Int =
+  x / y
 
-<h1>Error message:</h1>
-<p>Type error in function bad_divide at line 2:</p>
-<p>  Expression: x / y</p>
-<p>  Problem: Cannot prove constraint 'y != 0'</p>
+# Error message:
+Type error in function bad_divide at line 2:
+  Expression: x / y
+  Problem: Cannot prove constraint 'y != 0'
   
-<p>  The division operator requires its second argument to be non-zero,</p>
-<p>  but no such constraint exists on parameter 'y'.</p>
+  The division operator requires its second argument to be non-zero,
+  but no such constraint exists on parameter 'y'.
   
-<p>  Suggestion: Add constraint 'when y != 0' to function signature</p>
+  Suggestion: Add constraint 'when y != 0' to function signature
 
-<h1>Example 2: FSM type error</h1>
-<p>def bad<em>fsm</em>send(fsm: CounterFSM, event) =</p>
-<p>  fsm<em>send(fsm, :invalid</em>event)</p>
+# Example 2: FSM type error
+def bad_fsm_send(fsm: CounterFSM, event) =
+  fsm_send(fsm, :invalid_event)
 
-<h1>Error message:</h1>
-<p>FSM type error in function bad<em>fsm</em>send at line 2:</p>
-<p>  FSM: CounterFSM</p>
-<p>  Event: :invalid_event</p>
-<p>  Problem: Event not handled in current FSM states</p>
+# Error message:
+FSM type error in function bad_fsm_send at line 2:
+  FSM: CounterFSM
+  Event: :invalid_event
+  Problem: Event not handled in current FSM states
   
-<p>  Valid events for CounterFSM: [:increment, :decrement, :reset]</p>
-<p>  Current state constraints: Zero | Counting(n) where 0 < n <= max</p>
+  Valid events for CounterFSM: [:increment, :decrement, :reset]
+  Current state constraints: Zero | Counting(n) where 0 < n <= max
   
-<p>  Suggestion: Use one of the valid events or add transition for :invalid_event</p>
+  Suggestion: Use one of the valid events or add transition for :invalid_event
 
-<h1>Example 3: Dependent type mismatch</h1>
-<p>def bad_head(xs: List(T)) -> T =</p>
-<p>  head(xs)  # head requires non-empty list</p>
+# Example 3: Dependent type mismatch
+def bad_head(xs: List(T)) -> T =
+  head(xs)  # head requires non-empty list
 
-<h1>Error message:</h1>
-<p>Dependent type error in function bad_head at line 2:</p>
-<p>  Function call: head(xs)</p>
-<p>  Required: List(T, n) where n > 0</p>
-<p>  Provided: List(T)</p>
-<p>  Problem: Cannot prove list is non-empty</p>
+# Error message:
+Dependent type error in function bad_head at line 2:
+  Function call: head(xs)
+  Required: List(T, n) where n > 0
+  Provided: List(T)
+  Problem: Cannot prove list is non-empty
   
-<p>  The function head requires a non-empty list, but the type List(T)</p>
-<p>  does not guarantee non-emptiness.</p>
+  The function head requires a non-empty list, but the type List(T)
+  does not guarantee non-emptiness.
   
-<p>  Suggestions:</p>
+  Suggestions:
 <ol>
 <li>Use safe_head which returns Option(T)</li>
 <li>Add constraint 'when length(xs) > 0' to function signature</li>

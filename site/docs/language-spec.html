@@ -67,48 +67,48 @@ Test Success Rate: 100% (8/">
 <h3>Basic Types</h3>
 
 <pre><code># Primitive types
-<p>Int                    # Arbitrary precision integers</p>
-<p>Float                  # Double precision floats</p>
-<p>Atom                   # Interned symbols (like Elixir atoms)</p>
-<p>Bool                   # true | false</p>
-<p>String                 # UTF-8 strings</p>
-<p>Binary                 # Byte sequences</p>
-<p>Unit                   # Unit type for functions with no meaningful return</p>
+Int                    # Arbitrary precision integers
+Float                  # Double precision floats
+Atom                   # Interned symbols (like Elixir atoms)
+Bool                   # true | false
+String                 # UTF-8 strings
+Binary                 # Byte sequences
+Unit                   # Unit type for functions with no meaningful return
 
-<h1>Dependent types</h1>
-<p>Nat                    # Natural numbers (Int >= 0)</p>
-<p>Pos                    # Positive integers (Int > 0)</p>
-<p>Vector(T, n: Nat)      # Fixed-length vector</p>
-<p>List(T, n: Nat)        # List with known length</p>
-<p>Range(min: Int, max: Int)  # Integer range type</p>
+# Dependent types
+Nat                    # Natural numbers (Int >= 0)
+Pos                    # Positive integers (Int > 0)
+Vector(T, n: Nat)      # Fixed-length vector
+List(T, n: Nat)        # List with known length
+Range(min: Int, max: Int)  # Integer range type
 </code></pre>
 
 <h3>Function Definitions</h3>
 
 <pre><code># Simple function
-<p>def add(x: Int, y: Int): Int = x + y</p>
+def add(x: Int, y: Int): Int = x + y
 
-<h1>Function with dependent types</h1>
-<p>def replicate(n: Nat, x: T): List(T, n) = </p>
-<p>  match n == 0 do</p>
-<p>    true -> []</p>
-<p>    false -> [x | replicate(n-1, x)]</p>
-<p>  end</p>
+# Function with dependent types
+def replicate(n: Nat, x: T): List(T, n) = 
+  match n == 0 do
+    true -> []
+    false -> [x | replicate(n-1, x)]
+  end
 
-<h1>Pattern matching function</h1>
-<p>def length(list: List(T)): Nat =</p>
-<p>  match list do</p>
-<p>    [] -> 0</p>
-<p>    [_|tail] -> 1 + length(tail)</p>
-<p>  end</p>
+# Pattern matching function
+def length(list: List(T)): Nat =
+  match list do
+    [] -> 0
+    [_|tail] -> 1 + length(tail)
+  end
 
-<h1>Function with constraints</h1>
-<p>def safe_divide(x: Int, y: Int): Int when y != 0 = x / y</p>
+# Function with constraints
+def safe_divide(x: Int, y: Int): Int when y != 0 = x / y
 
-<h1>Function with Unit return type</h1>
-<p>def print_message(msg: String): Int =</p>
-<p>  println("Message: " <> msg)</p>
-<p>  0</p>
+# Function with Unit return type
+def print_message(msg: String): Int =
+  println("Message: " <> msg)
+  0
 </code></pre>
 
 <h3>Process Definitions</h3>
@@ -116,11 +116,11 @@ Test Success Rate: 100% (8/">
 <strong>Note</strong>: Process definitions with the <code>process</code> keyword are a planned feature. Currently, use Erlang's <code>spawn</code> via FFI or standard library functions for process management.
 
 <pre><code># Process spawning (current approach)
-<h1>Use Erlang spawn via curify FFI bindings</h1>
-<p>curify spawn_process(func: Atom, args: List(Any)): Pid = {erlang, spawn, 2}</p>
+# Use Erlang spawn via curify FFI bindings
+curify spawn_process(func: Atom, args: List(Any)): Pid = {erlang, spawn, 2}
 
-<h1>Or use standard library FSM for state management</h1>
-<h1>See FSM section for state machine-based processes</h1>
+# Or use standard library FSM for state management
+# See FSM section for state machine-based processes
 </code></pre>
 
 <h3>Finite State Machines</h3>
@@ -128,76 +128,76 @@ Test Success Rate: 100% (8/">
 <p>FSMs use arrow-based transition syntax with record-based payloads:</p>
 
 <pre><code># FSM definition with payload record
-<p>record TcpPayload do</p>
-<p>  buffer: Binary</p>
-<p>  seq_num: Int</p>
-<p>  ack_num: Int</p>
-<p>end</p>
+record TcpPayload do
+  buffer: Binary
+  seq_num: Int
+  ack_num: Int
+end
 
-<h1>FSM with transitions</h1>
-<p>fsm TcpPayload{buffer: <<>>, seq<em>num: 0, ack</em>num: 0} do</p>
-<p>  # Arrow-based transitions: State --> |event| NextState</p>
-<p>  Closed --> |listen| Listen</p>
-<p>  Closed --> |connect| SynSent</p>
+# FSM with transitions
+fsm TcpPayload{buffer: <<>>, seq_num: 0, ack_num: 0} do
+  # Arrow-based transitions: State --> |event| NextState
+  Closed --> |listen| Listen
+  Closed --> |connect| SynSent
   
-<p>  Listen --> |syn_received| SynReceived</p>
-<p>  Listen --> |close| Closed</p>
+  Listen --> |syn_received| SynReceived
+  Listen --> |close| Closed
   
-<p>  SynSent --> |syn<em>ack</em>received| Established</p>
-<p>  SynSent --> |syn_received| SynReceived</p>
-<p>  SynSent --> |close| Closed</p>
+  SynSent --> |syn_ack_received| Established
+  SynSent --> |syn_received| SynReceived
+  SynSent --> |close| Closed
   
-<p>  Established --> |fin_received| CloseWait</p>
-<p>  Established --> |close| FinWait1</p>
-<p>  Established --> |data| Established  # Self-transition for data</p>
-<p>end</p>
+  Established --> |fin_received| CloseWait
+  Established --> |close| FinWait1
+  Established --> |data| Established  # Self-transition for data
+end
 
-<h1>Using FSM</h1>
-<p>import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]</p>
-<p>import Std.Pair [pair/2]</p>
+# Using FSM
+import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
+import Std.Pair [pair/2]
 
-<p>let initial<em>data = TcpPayload{buffer: <<>>, seq</em>num: 0, ack_num: 0}</p>
-<p>let conn = fsm<em>spawn(:TcpPayload, initial</em>data)</p>
-<p>let <em> = fsm</em>advertise(conn, :tcp_conn)</p>
+let initial_data = TcpPayload{buffer: <<>>, seq_num: 0, ack_num: 0}
+let conn = fsm_spawn(:TcpPayload, initial_data)
+let _ = fsm_advertise(conn, :tcp_conn)
 
-<h1>Send events</h1>
-<p>let event = pair(:listen, [])</p>
-<p>let <em> = fsm</em>cast(:tcp_conn, event)</p>
+# Send events
+let event = pair(:listen, [])
+let _ = fsm_cast(:tcp_conn, event)
 
-<h1>Query state</h1>
-<p>let current<em>state = fsm</em>state(:tcp_conn)  # Returns :Listen</p>
+# Query state
+let current_state = fsm_state(:tcp_conn)  # Returns :Listen
 </code></pre>
 
 <h3>Module System ✅ <strong>WORKING!</strong></h3>
 
 <pre><code># Module definition
-<p>module Math do</p>
-<p>  # Export declarations</p>
-<p>  export [add/2, multiply/2, factorial/1]</p>
+module Math do
+  # Export declarations
+  export [add/2, multiply/2, factorial/1]
   
-<p>  def add(x: Int, y: Int): Int = x + y</p>
+  def add(x: Int, y: Int): Int = x + y
   
-<p>  def multiply(x: Int, y: Int): Int = x * y</p>
+  def multiply(x: Int, y: Int): Int = x * y
   
-<p>def factorial(n: Nat): Pos =</p>
-<p>    match n == 0 do</p>
-<p>      true -> 1</p>
-<p>      false -> n * factorial(n - 1)</p>
-<p>    end</p>
+def factorial(n: Nat): Pos =
+    match n == 0 do
+      true -> 1
+      false -> n * factorial(n - 1)
+    end
     
-<p>  # Helper function</p>
-<p>  def helper_func(x) = x * 2</p>
-<p>end</p>
+  # Helper function
+  def helper_func(x) = x * 2
+end
 
-<h1>🚀 WORKING Import System!</h1>
-<p>import Math</p>
-<p>import Std [List, Result]         # Standard library import</p>
-<p>import List [map/2, filter/2]     # Selective imports with arity</p>
+# 🚀 WORKING Import System!
+import Math
+import Std [List, Result]         # Standard library import
+import List [map/2, filter/2]     # Selective imports with arity
 
-<h1>Usage - all work correctly!</h1>
-<p>let result = add(5, 3)            # Imported function</p>
-<p>let doubled = map([1,2,3], fn(x) -> x * 2 end)  # From Std</p>
-<p>println("Result: " <> show(result)) # println/1 and show/1 from Std</p>
+# Usage - all work correctly!
+let result = add(5, 3)            # Imported function
+let doubled = map([1,2,3], fn(x) -> x * 2 end)  # From Std
+println("Result: " <> show(result)) # println/1 and show/1 from Std
 </code></pre>
 
 <h3>🚀 <strong>WORKING</strong> Standard Library with Import System</h3>
@@ -206,325 +206,325 @@ Test Success Rate: 100% (8/">
 
 <pre><code># ✅ VERIFIED: The Std module provides working functions
 
-<h1>✅ Output functions (runtime verified)</h1>
-<p>print/1      # Print values to console with proper formatting</p>
-<p>show/1       # Convert values to string representation (atoms, numbers, lists, tuples)</p>
+# ✅ Output functions (runtime verified)
+print/1      # Print values to console with proper formatting
+show/1       # Convert values to string representation (atoms, numbers, lists, tuples)
 
-<h1>✅ List operations (runtime verified in dependent<em>types</em>simple.cure)</h1>
-<p>map/2        # Transform list elements: map([1,2,3], fn(x) -> x*2 end)</p>
-<p>fold/3       # Reduce list with accumulator: fold([1,2,3], 0, fn(x,acc) -> acc+x end)  </p>
-<p>zip<em>with/3   # Combine two lists: zip</em>with([1,2], [3,4], fn(x,y) -> x+y end)</p>
-<p>head/1       # Get first element of list</p>
-<p>tail/1       # Get list without first element</p>
-<p>cons/2       # Prepend element: cons(1, [2,3]) == [1,2,3]</p>
-<p>append/2     # Join two lists</p>
-<p>length/1     # Get list length</p>
+# ✅ List operations (runtime verified in dependent_types_simple.cure)
+map/2        # Transform list elements: map([1,2,3], fn(x) -> x*2 end)
+fold/3       # Reduce list with accumulator: fold([1,2,3], 0, fn(x,acc) -> acc+x end)  
+zip_with/3   # Combine two lists: zip_with([1,2], [3,4], fn(x,y) -> x+y end)
+head/1       # Get first element of list
+tail/1       # Get list without first element
+cons/2       # Prepend element: cons(1, [2,3]) == [1,2,3]
+append/2     # Join two lists
+length/1     # Get list length
 
-<h1>🎆 WORKING Example (successfully compiles and runs):</h1>
-<p>module DependentTypes do</p>
-<p>  export [demo_all/0]</p>
-<p>  import Std [List, Result]  # ✅ Working import system!</p>
+# 🎆 WORKING Example (successfully compiles and runs):
+module DependentTypes do
+  export [demo_all/0]
+  import Std [List, Result]  # ✅ Working import system!
   
-<p>  def demo_all(): Int =</p>
-<p>    let numbers = [1, 2, 3, 4, 5]</p>
-<p>    let doubled = map(numbers, fn(x) -> x * 2 end)  # [2,4,6,8,10]</p>
-<p>    let sum = fold(doubled, 0, fn(x, acc) -> acc + x end)  # 30</p>
-<p>    println("Sum of doubled numbers: " <> show(sum))  # Output: "Sum: 30"</p>
-<p>    0</p>
-<p>end</p>
+  def demo_all(): Int =
+    let numbers = [1, 2, 3, 4, 5]
+    let doubled = map(numbers, fn(x) -> x * 2 end)  # [2,4,6,8,10]
+    let sum = fold(doubled, 0, fn(x, acc) -> acc + x end)  # 30
+    println("Sum of doubled numbers: " <> show(sum))  # Output: "Sum: 30"
+    0
+end
 
-<h1>✅ VERIFIED: Successfully compiles and executes!</h1>
-<h1>Console Output:</h1>
-<h1>Sum of doubled numbers: 30</h1>
+# ✅ VERIFIED: Successfully compiles and executes!
+# Console Output:
+# Sum of doubled numbers: 30
 </code></pre>
 
 <h3>Lambda Expressions and Pipe Operators</h3>
 
 <pre><code># Lambda expressions
-<p>let double = fn(x) -> x * 2 end</p>
-<p>let add = fn(x, y) -> x + y end</p>
+let double = fn(x) -> x * 2 end
+let add = fn(x, y) -> x + y end
 
-<h1>Multi-line lambda</h1>
-<p>let safe_divide = fn(x, y) -></p>
-<p>  match y == 0 do</p>
-<p>    true -> error("Division by zero")</p>
-<p>    false -> ok(x / y)</p>
-<p>  end</p>
-<p>end</p>
+# Multi-line lambda
+let safe_divide = fn(x, y) ->
+  match y == 0 do
+    true -> error("Division by zero")
+    false -> ok(x / y)
+  end
+end
 
-<h1>Pipe operator for function composition</h1>
-<p>let result = input</p>
-<p>  |> validate_input()</p>
-<p>  |> process_data()</p>
-<p>  |> format_output()</p>
+# Pipe operator for function composition
+let result = input
+  |> validate_input()
+  |> process_data()
+  |> format_output()
 
-<h1>Lambda with pipe</h1>
-<p>let processed = numbers</p>
-<p>  |> filter(fn(x) -> x > 0 end)</p>
-<p>  |> map(fn(x) -> x * 2 end)</p>
+# Lambda with pipe
+let processed = numbers
+  |> filter(fn(x) -> x > 0 end)
+  |> map(fn(x) -> x * 2 end)
 </code></pre>
 
 <h3>Data Types and Records</h3>
 
 <pre><code># Record definition
-<p>record Person do</p>
-<p>  name: String</p>
-<p>  age: Nat</p>
-<p>  email: String</p>
-<p>end</p>
+record Person do
+  name: String
+  age: Nat
+  email: String
+end
 
-<h1>Creating records</h1>
-<p>let person = Person{name: "Alice", age: 30, email: "alice@example.com"}</p>
+# Creating records
+let person = Person{name: "Alice", age: 30, email: "alice@example.com"}
 
-<h1>Pattern matching on records</h1>
-<p>def greet(person: Person): String =</p>
-<p>  match person do</p>
-<p>    Person{name: name, age: age} when age >= 18 -></p>
-<p>      "Hello, adult " <> name <> "!"</p>
-<p>    Person{name: name} -></p>
-<p>      "Hello, young " <> name <> "!"</p>
-<p>  end</p>
+# Pattern matching on records
+def greet(person: Person): String =
+  match person do
+    Person{name: name, age: age} when age >= 18 ->
+      "Hello, adult " <> name <> "!"
+    Person{name: name} ->
+      "Hello, young " <> name <> "!"
+  end
 
-<h1>Union types</h1>
-<p>type Result(T, E) = Ok(T) | Error(E)</p>
+# Union types
+type Result(T, E) = Ok(T) | Error(E)
 
-<p>type Maybe(T) = Some(T) | None</p>
+type Maybe(T) = Some(T) | None
 </code></pre>
 
 <h3>🎆 Dependent Types Examples ✅ <strong>PRODUCTION READY</strong></h3>
 
 <pre><code># 🎆 PRODUCTION READY: Length-indexed vectors with compile-time safety
-<p>module DependentTypes do</p>
-<p>  export [demo<em>all/0, vector</em>operations/0]</p>
-<p>  import Std [List, Result]  # ✅ Complete import system integration</p>
+module DependentTypes do
+  export [demo_all/0, vector_operations/0]
+  import Std [List, Result]  # ✅ Complete import system integration
   
-<p>  # ✅ Vector type parameterized by length and element type</p>
-<p>  def make_vec3(x: Float, y: Float, z: Float): Vector(Float, 3) =</p>
-<p>    [x, y, z]  # Type system guarantees exactly 3 elements</p>
+  # ✅ Vector type parameterized by length and element type
+  def make_vec3(x: Float, y: Float, z: Float): Vector(Float, 3) =
+    [x, y, z]  # Type system guarantees exactly 3 elements
   
-<p>  # ✅ Safe vector operations - length checked at compile time</p>
-<p>  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =</p>
-<p>    # Type system guarantees v1 and v2 have identical length</p>
-<p>    zip_with(v1, v2, fn(x, y) -> x * y end)</p>
-<p>    |> fold(0.0, fn(x, acc) -> acc + x end)</p>
+  # ✅ Safe vector operations - length checked at compile time
+  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
+    # Type system guarantees v1 and v2 have identical length
+    zip_with(v1, v2, fn(x, y) -> x * y end)
+    |> fold(0.0, fn(x, acc) -> acc + x end)
   
-<p>  def vector_add(v1: Vector(Float, n), v2: Vector(Float, n)): Vector(Float, n) =</p>
-<p>    # Type system ensures result has the same length as inputs</p>
-<p>    zip_with(v1, v2, fn(x, y) -> x + y end)</p>
+  def vector_add(v1: Vector(Float, n), v2: Vector(Float, n)): Vector(Float, n) =
+    # Type system ensures result has the same length as inputs
+    zip_with(v1, v2, fn(x, y) -> x + y end)
     
-<p>  def demo_all(): Int =</p>
-<p>    let v1 = make_vec3(1.0, 2.0, 3.0)</p>
-<p>    let v2 = make_vec3(4.0, 5.0, 6.0)</p>
-<p>    let dot<em>result = dot</em>product(v1, v2)  # 32.0</p>
-<p>    println("Dot product: " <> show(dot_result))</p>
-<p>    0</p>
-<p>end</p>
+  def demo_all(): Int =
+    let v1 = make_vec3(1.0, 2.0, 3.0)
+    let v2 = make_vec3(4.0, 5.0, 6.0)
+    let dot_result = dot_product(v1, v2)  # 32.0
+    println("Dot product: " <> show(dot_result))
+    0
+end
 
-<h1>🚀 WORKING: Safe operations with dependent constraints</h1>
-<p>def safe_head(list: List(T, n)) -> T when n > 0 =</p>
-<p>  # Type system guarantees list is non-empty</p>
-<p>  match list do</p>
-<p>    [x | _] -> x</p>
-<p>    # No need for empty case - type system prevents it</p>
-<p>  end</p>
+# 🚀 WORKING: Safe operations with dependent constraints
+def safe_head(list: List(T, n)) -> T when n > 0 =
+  # Type system guarantees list is non-empty
+  match list do
+    [x | _] -> x
+    # No need for empty case - type system prevents it
+  end
 
-<p>def safe_tail(list: List(T, n)) -> List(T, n-1) when n > 0 =</p>
-<p>  match list do</p>
-<p>    [_ | tail] -> tail</p>
-<p>    # No need for empty case - type system prevents it</p>
-<p>  end</p>
+def safe_tail(list: List(T, n)) -> List(T, n-1) when n > 0 =
+  match list do
+    [_ | tail] -> tail
+    # No need for empty case - type system prevents it
+  end
 
-<h1>✅ VERIFIED: Successfully compiles and runs!</h1>
-<h1>Runtime Output from dependent<em>types</em>simple.cure:</h1>
-<h1>=== Dependent Types Demonstration ===</h1>
-<h1>All operations below are compile-time verified for safety!</h1>
-<h1>=== Vector Operations ===</h1>
-<h1>Dot product: 32.0</h1>
-<h1>Vector sum: [5.0, 7.0, 9.0]</h1>
-<h1>Scaled vector: [2.0, 4.0, 6.0]</h1>
+# ✅ VERIFIED: Successfully compiles and runs!
+# Runtime Output from dependent_types_simple.cure:
+# === Dependent Types Demonstration ===
+# All operations below are compile-time verified for safety!
+# === Vector Operations ===
+# Dot product: 32.0
+# Vector sum: [5.0, 7.0, 9.0]
+# Scaled vector: [2.0, 4.0, 6.0]
 
-<h1>Length-indexed lists</h1>
-<p>def append(xs: List(T, n), ys: List(T, m)): List(T, n + m) =</p>
-<p>  match xs do</p>
-<p>    [] -> ys</p>
-<p>    [x|rest] -> x :: append(rest, ys)</p>
-<p>  end</p>
+# Length-indexed lists
+def append(xs: List(T, n), ys: List(T, m)): List(T, n + m) =
+  match xs do
+    [] -> ys
+    [x|rest] -> x :: append(rest, ys)
+  end
 
-<h1>Matrix operations with dimension checking</h1>
-<p>record Matrix(rows: Nat, cols: Nat, T) do</p>
-<p>  data: Vector(Vector(T, cols), rows)</p>
-<p>end</p>
+# Matrix operations with dimension checking
+record Matrix(rows: Nat, cols: Nat, T) do
+  data: Vector(Vector(T, cols), rows)
+end
 
-<p>def matrix_multiply(</p>
-<p>  a: Matrix(m, n, T), </p>
-<p>  b: Matrix(n, p, T)</p>
-<p>): Matrix(m, p, T) = </p>
-<p>  # Implementation ensures dimensions match at compile time</p>
-<p>  ...</p>
+def matrix_multiply(
+  a: Matrix(m, n, T), 
+  b: Matrix(n, p, T)
+): Matrix(m, p, T) = 
+  # Implementation ensures dimensions match at compile time
+  ...
 
-<h1>Refinement types</h1>
-<p>type NonEmptyList(T) = List(T, n) when n > 0</p>
+# Refinement types
+type NonEmptyList(T) = List(T, n) when n > 0
 
-<p>def head(list: NonEmptyList(T)): T =</p>
-<p>  match list do</p>
-<p>    [x|_] -> x</p>
-<p>    # No need for empty case - type system guarantees non-empty</p>
-<p>  end</p>
+def head(list: NonEmptyList(T)): T =
+  match list do
+    [x|_] -> x
+    # No need for empty case - type system guarantees non-empty
+  end
 </code></pre>
 
 <h2>Grammar (EBNF-like)</h2>
 
 <pre><code># Top-level program structure
-<p>program ::= module_def | item*</p>
+program ::= module_def | item*
 
-<p>module<em>def ::= 'module' IDENTIFIER 'do' export</em>list? item* 'end'</p>
+module_def ::= 'module' IDENTIFIER 'do' export_list? item* 'end'
 
-<p>export<em>list ::= 'export' '[' export</em>item (',' export_item)* ']'</p>
-<p>export_item ::= IDENTIFIER ('/' INTEGER)?</p>
+export_list ::= 'export' '[' export_item (',' export_item)* ']'
+export_item ::= IDENTIFIER ('/' INTEGER)?
 
-<h1>Top-level items</h1>
-<p>item ::= function<em>def | def</em>erl<em>def | type</em>def | record<em>def | fsm</em>def </p>
-<p>       | process<em>def | import</em>def | let_binding</p>
+# Top-level items
+item ::= function_def | def_erl_def | type_def | record_def | fsm_def 
+       | process_def | import_def | let_binding
 
-<h1>Function definitions</h1>
-<p>function<em>def ::= ('def') IDENTIFIER '(' param</em>list? ')' type_annotation? constraint? '=' expr</p>
-<p>def<em>erl</em>def ::= 'def<em>erl' IDENTIFIER '(' param</em>list? ')' type_annotation? constraint? '=' expr</p>
+# Function definitions
+function_def ::= ('def') IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
+def_erl_def ::= 'def_erl' IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
 
-<p>param_list ::= param (',' param)*</p>
-<p>param ::= IDENTIFIER ':' type</p>
+param_list ::= param (',' param)*
+param ::= IDENTIFIER ':' type
 
-<p>type_annotation ::= '->' type | ':' type</p>
+type_annotation ::= '->' type | ':' type
 
-<p>constraint ::= 'when' expr</p>
+constraint ::= 'when' expr
 
-<h1>Type definitions</h1>
-<p>type<em>def ::= 'type' IDENTIFIER type</em>params? '=' type_expr</p>
-<p>record<em>def ::= 'record' IDENTIFIER type</em>params? 'do' field_list 'end'</p>
+# Type definitions
+type_def ::= 'type' IDENTIFIER type_params? '=' type_expr
+record_def ::= 'record' IDENTIFIER type_params? 'do' field_list 'end'
 
-<p>type<em>params ::= '(' type</em>param (',' type_param)* ')'</p>
-<p>type_param ::= IDENTIFIER | IDENTIFIER ':' type</p>
+type_params ::= '(' type_param (',' type_param)* ')'
+type_param ::= IDENTIFIER | IDENTIFIER ':' type
 
-<p>field_list ::= field*</p>
-<p>field ::= IDENTIFIER ':' type</p>
+field_list ::= field*
+field ::= IDENTIFIER ':' type
 
-<h1>FSM definitions (arrow-based transitions)</h1>
-<p>fsm<em>def ::= 'fsm' IDENTIFIER '{' field</em>init (',' field<em>init)<em> '}' 'do' fsm</em>transition</em> 'end'</p>
-<p>field_init ::= IDENTIFIER ':' expr</p>
-<p>fsm_transition ::= IDENTIFIER '-->' '|' IDENTIFIER '|' IDENTIFIER  # FromState --> |event| ToState</p>
+# FSM definitions (arrow-based transitions)
+fsm_def ::= 'fsm' IDENTIFIER '{' field_init (',' field_init)_ '}' 'do' fsm_transition_ 'end'
+field_init ::= IDENTIFIER ':' expr
+fsm_transition ::= IDENTIFIER '-->' '|' IDENTIFIER '|' IDENTIFIER  # FromState --> |event| ToState
 
-<h1>Process definitions</h1>
-<p>process<em>def ::= 'process' IDENTIFIER '(' param</em>list? ')' 'do' process_body 'end'</p>
-<p>process_body ::= item* expr</p>
+# Process definitions
+process_def ::= 'process' IDENTIFIER '(' param_list? ')' 'do' process_body 'end'
+process_body ::= item* expr
 
-<h1>Import definitions ✅ WORKING!</h1>
-<p>import<em>def ::= 'import' IDENTIFIER import</em>list?</p>
-<p>import<em>list ::= '[' import</em>item (',' import_item)* ']'</p>
-<p>import_item ::= IDENTIFIER ('/' INTEGER)? | IDENTIFIER 'as' IDENTIFIER  # Function name, arity, or alias</p>
+# Import definitions ✅ WORKING!
+import_def ::= 'import' IDENTIFIER import_list?
+import_list ::= '[' import_item (',' import_item)* ']'
+import_item ::= IDENTIFIER ('/' INTEGER)? | IDENTIFIER 'as' IDENTIFIER  # Function name, arity, or alias
 
-<h1>Let bindings</h1>
-<p>let_binding ::= 'let' IDENTIFIER '=' expr</p>
+# Let bindings
+let_binding ::= 'let' IDENTIFIER '=' expr
 
-<h1>Types</h1>
-<p>type ::= primitive<em>type | compound</em>type | dependent<em>type | function</em>type </p>
-<p>       | union<em>type | refinement</em>type</p>
+# Types
+type ::= primitive_type | compound_type | dependent_type | function_type 
+       | union_type | refinement_type
 
-<p>primitive_type ::= 'Int' | 'Float' | 'Atom' | 'Bool' | 'String' | 'Binary'</p>
-<p>                 | 'Nat' | 'Pos' | 'Pid' | 'Unit'</p>
+primitive_type ::= 'Int' | 'Float' | 'Atom' | 'Bool' | 'String' | 'Binary'
+                 | 'Nat' | 'Pos' | 'Pid' | 'Unit'
 
-<p>compound<em>type ::= IDENTIFIER type</em>args?</p>
-<p>                | '[' type ']'  # List type</p>
-<p>                | '{' type (',' type)* '}'  # Tuple type</p>
+compound_type ::= IDENTIFIER type_args?
+                | '[' type ']'  # List type
+                | '{' type (',' type)* '}'  # Tuple type
 
-<p>dependent<em>type ::= IDENTIFIER '(' type</em>arg (',' type_arg)* ')'</p>
-<p>type_arg ::= type | expr</p>
+dependent_type ::= IDENTIFIER '(' type_arg (',' type_arg)* ')'
+type_arg ::= type | expr
 
-<p>function<em>type ::= '(' param</em>list ')' '->' type</p>
+function_type ::= '(' param_list ')' '->' type
 
-<p>union_type ::= type ('|' type)+</p>
+union_type ::= type ('|' type)+
 
-<p>refinement_type ::= type 'when' expr</p>
-<p>                  | '{' IDENTIFIER ':' type '|' expr '}'</p>
+refinement_type ::= type 'when' expr
+                  | '{' IDENTIFIER ':' type '|' expr '}'
 
-<h1>Expressions</h1>
-<p>expr ::= literal | identifier | function<em>call | match</em>expr</p>
-<p>       | receive<em>expr | record</em>expr | list<em>expr | tuple</em>expr </p>
-<p>       | binary<em>op | unary</em>op | lambda<em>expr | spawn</em>expr | send<em>expr | fsm</em>expr</p>
+# Expressions
+expr ::= literal | identifier | function_call | match_expr
+       | receive_expr | record_expr | list_expr | tuple_expr 
+       | binary_op | unary_op | lambda_expr | spawn_expr | send_expr | fsm_expr
 
-<p>literal ::= INTEGER | FLOAT | STRING | ATOM | BOOLEAN | 'Ok' | 'Error' | 'Some' | 'None'</p>
+literal ::= INTEGER | FLOAT | STRING | ATOM | BOOLEAN | 'Ok' | 'Error' | 'Some' | 'None'
 
-<p>identifier ::= IDENTIFIER | qualified_identifier</p>
-<p>qualified_identifier ::= IDENTIFIER '.' IDENTIFIER</p>
+identifier ::= IDENTIFIER | qualified_identifier
+qualified_identifier ::= IDENTIFIER '.' IDENTIFIER
 
-<p>function<em>call ::= expr '(' arg</em>list? ')'</p>
-<p>arg_list ::= expr (',' expr)*</p>
+function_call ::= expr '(' arg_list? ')'
+arg_list ::= expr (',' expr)*
 
-<h1>Pattern matching</h1>
-<p>match<em>expr ::= 'match' expr 'do' match</em>clause* 'end'</p>
-<p>match_clause ::= pattern guard? '->' expr</p>
-<p>pattern ::= literal | identifier | constructor<em>pattern | list</em>pattern </p>
-<p>          | tuple<em>pattern | record</em>pattern | wildcard</p>
-<p>constructor<em>pattern ::= IDENTIFIER pattern</em>args?</p>
-<p>pattern_args ::= '(' pattern (',' pattern)* ')'</p>
-<p>list_pattern ::= '[' ']' | '[' pattern (',' pattern)* ']' </p>
-<p>               | '[' pattern '|' pattern ']'</p>
-<p>tuple_pattern ::= '{' pattern (',' pattern)* '}'</p>
-<p>record<em>pattern ::= IDENTIFIER '{' field</em>pattern (',' field_pattern)* '}'</p>
-<p>field_pattern ::= IDENTIFIER ':' pattern | IDENTIFIER</p>
-<p>wildcard ::= '_'</p>
-<p>guard ::= 'when' expr</p>
+# Pattern matching
+match_expr ::= 'match' expr 'do' match_clause* 'end'
+match_clause ::= pattern guard? '->' expr
+pattern ::= literal | identifier | constructor_pattern | list_pattern 
+          | tuple_pattern | record_pattern | wildcard
+constructor_pattern ::= IDENTIFIER pattern_args?
+pattern_args ::= '(' pattern (',' pattern)* ')'
+list_pattern ::= '[' ']' | '[' pattern (',' pattern)* ']' 
+               | '[' pattern '|' pattern ']'
+tuple_pattern ::= '{' pattern (',' pattern)* '}'
+record_pattern ::= IDENTIFIER '{' field_pattern (',' field_pattern)* '}'
+field_pattern ::= IDENTIFIER ':' pattern | IDENTIFIER
+wildcard ::= '_'
+guard ::= 'when' expr
 
-<h1>Process communication</h1>
-<p>receive<em>expr ::= 'receive' 'do' receive</em>clause* 'end'</p>
-<p>receive_clause ::= pattern guard? '->' expr</p>
+# Process communication
+receive_expr ::= 'receive' 'do' receive_clause* 'end'
+receive_clause ::= pattern guard? '->' expr
 
-<p>spawn<em>expr ::= 'spawn' '(' IDENTIFIER ',' '[' arg</em>list? ']' ')'</p>
-<p>send_expr ::= 'send' '(' expr ',' expr ')'</p>
+spawn_expr ::= 'spawn' '(' IDENTIFIER ',' '[' arg_list? ']' ')'
+send_expr ::= 'send' '(' expr ',' expr ')'
 
-<h1>FSM operations</h1>
-<p>fsm<em>expr ::= 'fsm</em>spawn' '(' IDENTIFIER ')'</p>
-<p>           | 'fsm_send' '(' expr ',' expr ')'</p>
+# FSM operations
+fsm_expr ::= 'fsm_spawn' '(' IDENTIFIER ')'
+           | 'fsm_send' '(' expr ',' expr ')'
 
-<h1>Data structures</h1>
-<p>record<em>expr ::= IDENTIFIER '{' field</em>assign (',' field_assign)* '}'</p>
-<p>field_assign ::= IDENTIFIER ':' expr</p>
+# Data structures
+record_expr ::= IDENTIFIER '{' field_assign (',' field_assign)* '}'
+field_assign ::= IDENTIFIER ':' expr
 
-<p>list_expr ::= '[' ']' | '[' expr (',' expr)* ']'</p>
+list_expr ::= '[' ']' | '[' expr (',' expr)* ']'
 
-<p>tuple_expr ::= '{' expr (',' expr)* '}'</p>
+tuple_expr ::= '{' expr (',' expr)* '}'
 
-<h1>Operators</h1>
-<p>binary<em>op ::= expr binary</em>operator expr</p>
-<p>unary<em>op ::= unary</em>operator expr</p>
+# Operators
+binary_op ::= expr binary_operator expr
+unary_op ::= unary_operator expr
 
-<p>binary_operator ::= '+' | '-' | '*' | '/' | '==' | '!=' | '<' | '>' </p>
-<p>                  | '<=' | '>=' | '&&' | '||' | '|' | '<>' | '|>'</p>
-<p>                  # Note: '|' is list cons operator, '<>' is string concatenation</p>
-<p>unary_operator ::= '-' | '!'</p>
+binary_operator ::= '+' | '-' | '*' | '/' | '==' | '!=' | '<' | '>' 
+                  | '<=' | '>=' | '&&' | '||' | '|' | '<>' | '|>'
+                  # Note: '|' is list cons operator, '<>' is string concatenation
+unary_operator ::= '-' | '!'
 
-<h1>Lambda expressions</h1>
-<p>lambda<em>expr ::= 'fn' '(' param</em>list? ')' '->' expr ('end')?</p>
-<p>              | 'fn' '(' param<em>list? ')' '->' expr</em>block 'end'</p>
+# Lambda expressions
+lambda_expr ::= 'fn' '(' param_list? ')' '->' expr ('end')?
+              | 'fn' '(' param_list? ')' '->' expr_block 'end'
 
-<p>expr_block ::= expr+</p>
+expr_block ::= expr+
 
-<h1>String interpolation</h1>
-<p>string<em>interpolation ::= '"' string</em>part* '"'</p>
-<p>string<em>part ::= STRING</em>CHARS | '#{' expr '}'</p>
+# String interpolation
+string_interpolation ::= '"' string_part* '"'
+string_part ::= STRING_CHARS | '#{' expr '}'
 
-<h1>Lexical tokens</h1>
-<p>IDENTIFIER ::= [a-zA-Z<em>][a-zA-Z0-9</em>]*</p>
-<p>INTEGER ::= [0-9]+</p>
-<p>FLOAT ::= [0-9]+ '.' [0-9]+</p>
-<p>STRING ::= '"' ([^"\\] | '\\' .)* '"'</p>
-<p>ATOM ::= ':' IDENTIFIER | ':"' ([^"\\] | '\\' .)* '"'</p>
-<p>BOOLEAN ::= 'true' | 'false' </p>
-<p>KEYWORD ::= 'def' | 'def_erl' | 'module' | 'import' | 'export' | 'fsm' </p>
-<p>           | 'state' | 'states' | 'initial' | 'event' | 'timeout' | 'match' | 'when'</p>
-<p>           | 'if' | 'then' | 'else' | 'let' | 'in' | 'as' | 'do' | 'end' | 'fn'</p>
-<p>           | 'process' | 'receive' | 'send' | 'spawn' | 'record' | 'type'</p>
-<p>           | 'and' | 'or' | 'not' | 'ok' | 'error'</p>
-<p>COMMENT ::= '#' [^\n]*</p>
-<p>WHITESPACE ::= [ \t\n\r]+</p>
+# Lexical tokens
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+INTEGER ::= [0-9]+
+FLOAT ::= [0-9]+ '.' [0-9]+
+STRING ::= '"' ([^"\\] | '\\' .)* '"'
+ATOM ::= ':' IDENTIFIER | ':"' ([^"\\] | '\\' .)* '"'
+BOOLEAN ::= 'true' | 'false' 
+KEYWORD ::= 'def' | 'def_erl' | 'module' | 'import' | 'export' | 'fsm' 
+           | 'state' | 'states' | 'initial' | 'event' | 'timeout' | 'match' | 'when'
+           | 'if' | 'then' | 'else' | 'let' | 'in' | 'as' | 'do' | 'end' | 'fn'
+           | 'process' | 'receive' | 'send' | 'spawn' | 'record' | 'type'
+           | 'and' | 'or' | 'not' | 'ok' | 'error'
+COMMENT ::= '#' [^\n]*
+WHITESPACE ::= [ \t\n\r]+
 </code></pre>
 
 <h2>Type System Implementation</h2>
@@ -537,15 +537,15 @@ Test Success Rate: 100% (8/">
 <li><strong>Dependent Types</strong>: Types parameterized by values with compile-time verification</li>
 </ol>
    <pre><code>   Vector(T, n: Nat)        # Length-indexed vectors
-<p>   List(T, n: Nat)          # Lists with compile-time known length</p>
-<p>   Matrix(rows, cols, T)    # Matrices with dimension checking</p>
+   List(T, n: Nat)          # Lists with compile-time known length
+   Matrix(rows, cols, T)    # Matrices with dimension checking
    </code></pre>
 
 <ol>
 <li><strong>Refinement Types</strong>: Types with logical constraints</li>
 </ol>
    <pre><code>   {x: Int | x > 0}         # Positive integers
-<p>   {xs: List(T) | length(xs) > 0}  # Non-empty lists</p>
+   {xs: List(T) | length(xs) > 0}  # Non-empty lists
    </code></pre>
 
 <ol>
@@ -558,19 +558,19 @@ Test Success Rate: 100% (8/">
 <li><strong>Type Classes</strong>: Ad-hoc polymorphism with automatic derivation</li>
 </ol>
    <pre><code>   typeclass Ord(T) where
-<p>     def compare(x: T, y: T): Ordering</p>
-<p>   end</p>
+     def compare(x: T, y: T): Ordering
+   end
    
-<p>   derive Ord for List(T) when Ord(T)</p>
+   derive Ord for List(T) when Ord(T)
    </code></pre>
 
 <ol>
 <li><strong>FSM Types</strong>: State machines with type-safe transitions</li>
 </ol>
    <pre><code>   fsm Counter(max: Int) do
-<p>     states: [Zero, Counting(n: Int) where 0 < n <= max]</p>
-<p>     # Compiler verifies all transitions maintain constraints</p>
-<p>   end</p>
+     states: [Zero, Counting(n: Int) where 0 < n <= max]
+     # Compiler verifies all transitions maintain constraints
+   end
    </code></pre>
 
 <h3>SMT Integration</h3>
@@ -645,10 +645,10 @@ Test Success Rate: 100% (8/">
 
 <h3>Standard Library Integration</h3>
 <pre><code># Cure standard library provides BEAM-compatible modules
-<p>import Std [Result, Option, ok, error]       # Error handling</p>
-<p>import Std.List [map/2, filter/2, fold_left/3]  # List operations</p>
-<p>import Std.Math [abs/1, sqrt/1, sin/1]      # Mathematical functions</p>
-<p>import Std.FSM [spawn/2, send_event/2]      # FSM utilities</p>
+import Std [Result, Option, ok, error]       # Error handling
+import Std.List [map/2, filter/2, fold_left/3]  # List operations
+import Std.Math [abs/1, sqrt/1, sin/1]      # Mathematical functions
+import Std.FSM [spawn/2, send_event/2]      # FSM utilities
 </code></pre>
 
 <h2>Performance Characteristics</h2>
