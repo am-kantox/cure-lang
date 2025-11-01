@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>cure_runtime — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-48D43E9B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_runtime.erl#L3" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+    <span translate="no">cure_runtime</span> 
+    <small class="app-vsn" translate="no">(cure v0.1.0)</small>
+
+  </h1>
+
+
+    <section id="moduledoc">
+<h1>Cure Programming Language - Runtime Execution Engine</h1><p>The runtime execution engine interprets and executes BEAM instructions generated
+by the Cure compiler. It provides a complete execution environment for Cure
+programs with stack-based instruction processing, function calls, module loading,
+and integration with the Erlang standard library.</p><h2 id="module-features" class="section-heading">
+  <a href="#module-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Features</span>
+</h2>
+<h3 id="module-instruction-execution" class="section-heading">
+  <a href="#module-instruction-execution" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Instruction Execution</span>
+</h3>
+<ul><li><strong>Stack-based VM</strong>: Uses an execution stack for operand management</li><li><strong>BEAM Instructions</strong>: Processes compiler-generated BEAM instructions</li><li><strong>Control Flow</strong>: Supports jumps, labels, conditionals, and function calls</li><li><strong>Pattern Matching</strong>: Handles pattern matching operations</li><li><strong>Lambda Functions</strong>: Creates and executes anonymous functions</li></ul><h3 id="module-function-system" class="section-heading">
+  <a href="#module-function-system" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function System</span>
+</h3>
+<ul><li><strong>Module Loading</strong>: Loads compiled Cure modules into runtime state</li><li><strong>Function Resolution</strong>: Resolves and calls both internal and external functions</li><li><strong>Parameter Binding</strong>: Maps function parameters to argument values</li><li><strong>Standard Library</strong>: Built-in integration with cure_std functions</li><li><strong>Global Functions</strong>: Pre-loaded standard functions accessible from any context</li></ul><h3 id="module-memory-management" class="section-heading">
+  <a href="#module-memory-management" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Memory Management</span>
+</h3>
+<ul><li><strong>Runtime State</strong>: Maintains execution state with stack, locals, and parameters</li><li><strong>Module Registry</strong>: Tracks loaded modules and their functions</li><li><strong>Variable Scoping</strong>: Separate scopes for parameters, local variables, and globals</li><li><strong>Stack Operations</strong>: Efficient stack manipulation for all operations</li></ul><h3 id="module-error-handling" class="section-heading">
+  <a href="#module-error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h3>
+<ul><li><strong>Instruction Errors</strong>: Detailed error reporting for instruction execution</li><li><strong>Function Errors</strong>: Comprehensive function call error handling</li><li><strong>Stack Errors</strong>: Stack underflow and overflow detection</li><li><strong>External Errors</strong>: Error propagation from external function calls</li></ul><h2 id="module-runtime-architecture" class="section-heading">
+  <a href="#module-runtime-architecture" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Runtime Architecture</span>
+</h2>
+<h3 id="module-execution-model" class="section-heading">
+  <a href="#module-execution-model" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Execution Model</span>
+</h3>
+<p>The runtime uses a stack-based execution model where:</p><ol><li><strong>Instructions</strong> operate on an execution stack</li><li><strong>Operands</strong> are pushed/popped from the stack</li><li><strong>Results</strong> are left on the stack for subsequent operations</li><li><strong>Functions</strong> execute with isolated parameter and local variable scopes</li></ol><h3 id="module-state-management" class="section-heading">
+  <a href="#module-state-management" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">State Management</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="o">#</span><span class="ss">runtime_state</span><span class="p" data-group-id="1816469561-1">{</span><span class="w">
+    </span><span class="ss">stack</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1816469561-2">[</span><span class="p" data-group-id="1816469561-2">]</span><span class="p">,</span><span class="w">      </span><span class="c1">% Execution stack for operands</span><span class="w">
+    </span><span class="ss">locals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1816469561-3">#{</span><span class="p" data-group-id="1816469561-3">}</span><span class="p">,</span><span class="w">    </span><span class="c1">% Local variables in current scope</span><span class="w">
+    </span><span class="ss">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1816469561-4">#{</span><span class="p" data-group-id="1816469561-4">}</span><span class="p">,</span><span class="w">    </span><span class="c1">% Function parameters</span><span class="w">
+    </span><span class="ss">modules</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1816469561-5">#{</span><span class="p" data-group-id="1816469561-5">}</span><span class="p">,</span><span class="w">   </span><span class="c1">% Loaded modules</span><span class="w">
+    </span><span class="ss">globals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1816469561-6">#{</span><span class="p" data-group-id="1816469561-6">}</span><span class="w">    </span><span class="c1">% Global function registry</span><span class="w">
+</span><span class="p" data-group-id="1816469561-1">}</span></code></pre><h3 id="module-instruction-set" class="section-heading">
+  <a href="#module-instruction-set" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Instruction Set</span>
+</h3>
+<p>Supported BEAM instruction types:</p><ul><li><strong>Load Operations</strong>: load_literal, load_param, load_local, load_global</li><li><strong>Store Operations</strong>: store_local</li><li><strong>Arithmetic</strong>: binary_op, unary_op with standard operators</li><li><strong>Control Flow</strong>: jump, jump_if_false, label, return</li><li><strong>Function Calls</strong>: call, monadic_pipe_call</li><li><strong>Data Structures</strong>: make_list, make_lambda</li><li><strong>Stack Management</strong>: pop, pattern_match</li></ul><h2 id="module-usage-examples" class="section-heading">
+  <a href="#module-usage-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Usage Examples</span>
+</h2>
+<h3 id="module-basic-program-execution" class="section-heading">
+  <a href="#module-basic-program-execution" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Basic Program Execution</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="c1">%% Execute a compiled module</span><span class="w">
+</span><span class="p" data-group-id="5065810493-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledModule</span><span class="p" data-group-id="5065810493-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="5065810493-2">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="5065810493-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="5065810493-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="5065810493-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">execute_module</span><span class="p" data-group-id="5065810493-4">(</span><span class="n">CompiledModule</span><span class="p" data-group-id="5065810493-4">)</span><span class="p">.</span><span class="w">
+
+</span><span class="c1">%% Run a complete program with multiple modules</span><span class="w">
+</span><span class="p" data-group-id="5065810493-5">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="5065810493-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_program</span><span class="p" data-group-id="5065810493-6">(</span><span class="n">ProgramAST</span><span class="p" data-group-id="5065810493-6">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="5065810493-7">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="5065810493-7">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">run_program</span><span class="p" data-group-id="5065810493-8">(</span><span class="n">Modules</span><span class="p" data-group-id="5065810493-8">)</span><span class="p">.</span></code></pre><h3 id="module-function-calls" class="section-heading">
+  <a href="#module-function-calls" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function Calls</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="9448940759-1">(</span><span class="p" data-group-id="9448940759-1">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="9448940759-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="n">NewState</span><span class="p" data-group-id="9448940759-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="9448940759-3">(</span><span class="ss">add</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9448940759-4">[</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="9448940759-4">]</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="9448940759-3">)</span><span class="p">.</span></code></pre><h3 id="module-module-loading" class="section-heading">
+  <a href="#module-module-loading" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Module Loading</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="4487707983-1">(</span><span class="p" data-group-id="4487707983-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">StateWithModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">load_module</span><span class="p" data-group-id="4487707983-2">(</span><span class="n">CompiledModule</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="4487707983-2">)</span><span class="p">.</span></code></pre><h2 id="module-integration" class="section-heading">
+  <a href="#module-integration" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Integration</span>
+</h2>
+<h3 id="module-cure-standard-library" class="section-heading">
+  <a href="#module-cure-standard-library" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Cure Standard Library</span>
+</h3>
+<p>The runtime automatically loads and provides access to:</p><ul><li>Result/Option monadic operations (ok, error, some, none)</li><li>List processing functions (map, filter, foldl, head, tail)</li><li>Mathematical functions (abs, sqrt, pi, safe_divide)</li><li>String operations (concat, split, trim, case conversion)</li><li>I/O functions (print, println)</li><li>FSM operations (fsm_create, fsm_send_safe)</li></ul><h3 id="module-external-function-calls" class="section-heading">
+  <a href="#module-external-function-calls" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">External Function Calls</span>
+</h3>
+<p>Supports calling external Erlang functions with automatic error handling
+and result propagation back to the Cure execution environment.</p><h3 id="module-monadic-pipe-operations" class="section-heading">
+  <a href="#module-monadic-pipe-operations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Monadic Pipe Operations</span>
+</h3>
+<p>Native support for Cure's monadic pipe operator (|&gt;) with automatic
+ok/error unwrapping and error propagation through cure_std:pipe/2.</p><h2 id="module-error-handling-1" class="section-heading">
+  <a href="#module-error-handling-1" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h2>
+<h3 id="module-error-types" class="section-heading">
+  <a href="#module-error-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Types</span>
+</h3>
+<ul><li><code class="inline">{function_not_found, FuncName}</code> - Function resolution failures</li><li><code class="inline">{external_function_error, Error, Reason}</code> - External function call errors</li><li><code class="inline">{function_execution_error, FuncName, Reason}</code> - Internal function errors</li><li><code class="inline">{parameter_not_found, ParamName}</code> - Parameter binding errors</li><li><code class="inline">{local_variable_not_found, VarName}</code> - Local variable access errors</li><li><code class="inline">stack_underflow</code> - Insufficient stack items for operation</li><li><code class="inline">{unsupported_instruction, Instruction}</code> - Unknown instruction types</li><li><code class="inline">{label_not_found, Label}</code> - Jump target resolution failures</li></ul><h3 id="module-error-propagation" class="section-heading">
+  <a href="#module-error-propagation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Propagation</span>
+</h3>
+<p>Errors are propagated through the call stack with detailed context
+information including function names, instruction details, and stack state.</p><h2 id="module-performance-characteristics" class="section-heading">
+  <a href="#module-performance-characteristics" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Performance Characteristics</span>
+</h2>
+<ul><li><strong>Instruction Execution</strong>: O(1) for most instructions</li><li><strong>Function Resolution</strong>: O(1) hash map lookup</li><li><strong>Stack Operations</strong>: O(1) for push/pop, O(n) for multi-item operations</li><li><strong>Module Loading</strong>: O(n) where n is the number of functions</li><li><strong>Memory Usage</strong>: Linear in program size and call stack depth</li></ul><h2 id="module-thread-safety" class="section-heading">
+  <a href="#module-thread-safety" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Thread Safety</span>
+</h2>
+<p>The runtime state is designed for single-threaded execution within a process.
+Concurrent execution requires separate runtime state instances per thread.
+External function calls may interact with concurrent Erlang processes safely.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#call_function/3" data-no-tooltip translate="no">call_function(FuncName, Args, State)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Calls a function by name with the provided arguments.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_runtime_state/0" data-no-tooltip translate="no">create_runtime_state()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a fresh runtime state with pre-loaded standard library functions.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#execute_function/3" data-no-tooltip translate="no">execute_function(FuncName, Args, State)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#execute_module/1" data-no-tooltip translate="no">execute_module(CompiledModule)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Executes a compiled Cure module by running its main/0 function.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#load_module/2" data-no-tooltip translate="no">load_module(CompiledModule, State)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Loads a compiled module into the runtime state, making its functions available.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#record_field/2" data-no-tooltip translate="no">record_field/2</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Accesses a field from a record/tuple at runtime.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#run_program/1" data-no-tooltip translate="no">run_program/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Runs a complete Cure program consisting of multiple modules.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="call_function/3">
+
+  <div class="detail-header">
+    <a href="#call_function/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">call_function(FuncName, Args, State)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_runtime.erl#L534" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Calls a function by name with the provided arguments.</p><p>This is the primary interface for invoking functions within the runtime.
+It handles both internal Cure functions and external Erlang functions,
+with automatic error handling and state management.</p><h2 id="call_function/3-arguments" class="section-heading">
+  <a href="#call_function/3-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">FuncName</code> - Function name (atom)</li><li><code class="inline">Args</code> - List of arguments to pass to the function</li><li><code class="inline">State</code> - Current runtime state</li></ul><h2 id="call_function/3-returns" class="section-heading">
+  <a href="#call_function/3-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, Result, NewState}</code> - Function executed successfully</li><li><code class="inline">{error, {function_not_found, FuncName}}</code> - Function not in registry</li><li><code class="inline">{error, {external_function_error, Error, Reason}}</code> - External function failed</li><li><code class="inline">{error, {function_execution_error, FuncName, Reason}}</code> - Internal function failed</li></ul><h2 id="call_function/3-example" class="section-heading">
+  <a href="#call_function/3-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="4149507329-1">(</span><span class="p" data-group-id="4149507329-1">)</span><span class="p">,</span><span class="w">
+
+</span><span class="c1">%% Call standard library function</span><span class="w">
+</span><span class="p" data-group-id="4149507329-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="n">State1</span><span class="p" data-group-id="4149507329-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="4149507329-3">(</span><span class="nb">abs</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4149507329-4">[</span><span class="o">-</span><span class="mi">5</span><span class="p" data-group-id="4149507329-4">]</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="4149507329-3">)</span><span class="p">,</span><span class="w">
+</span><span class="c1">%% Result = 5</span><span class="w">
+
+</span><span class="c1">%% Call user-defined function (after loading module)</span><span class="w">
+</span><span class="n">StateWithModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">load_module</span><span class="p" data-group-id="4149507329-5">(</span><span class="n">CompiledModule</span><span class="p">,</span><span class="w"> </span><span class="n">State1</span><span class="p" data-group-id="4149507329-5">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="4149507329-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">UserResult</span><span class="p">,</span><span class="w"> </span><span class="n">State2</span><span class="p" data-group-id="4149507329-6">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="4149507329-7">(</span><span class="ss">my_func</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4149507329-8">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="4149507329-8">]</span><span class="p">,</span><span class="w"> </span><span class="n">StateWithModule</span><span class="p" data-group-id="4149507329-7">)</span><span class="p">.</span></code></pre><h2 id="call_function/3-function-types" class="section-heading">
+  <a href="#call_function/3-function-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function Types</span>
+</h2>
+<h3 id="call_function/3-external-functions" class="section-heading">
+  <a href="#call_function/3-external-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">External Functions</span>
+</h3>
+<ul><li>Implemented in Erlang modules (typically cure_std)</li><li>Called using <a href="https://www.erlang.org/doc/apps/erts/erlang.html#apply/3"><code class="inline">apply/3</code></a> with automatic error catching</li><li>Standard library functions like print, map, abs, etc.</li><li>Maintain no internal state between calls</li></ul><h3 id="call_function/3-internal-functions" class="section-heading">
+  <a href="#call_function/3-internal-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Internal Functions</span>
+</h3>
+<ul><li>Implemented in Cure with compiled BEAM instructions</li><li>Execute within isolated parameter/local variable scope</li><li>Can call other internal or external functions</li><li>Maintain stack-based execution model</li></ul><h2 id="call_function/3-error-handling" class="section-heading">
+  <a href="#call_function/3-error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h2>
+<ul><li>Function resolution failures are reported with function name</li><li>External function errors include original Erlang error details</li><li>Internal function errors include execution context and stack trace</li><li>State is preserved across failed function calls</li></ul><h2 id="call_function/3-state-management" class="section-heading">
+  <a href="#call_function/3-state-management" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">State Management</span>
+</h2>
+<ul><li>Global state (modules, globals) is preserved across calls</li><li>Function parameters and locals are isolated per call</li><li>Stack is managed automatically during execution</li><li>External functions cannot modify runtime state</li></ul>
+  </section>
+</section>
+<section class="detail" id="create_runtime_state/0">
+
+  <div class="detail-header">
+    <a href="#create_runtime_state/0" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">create_runtime_state()</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_runtime.erl#L322" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Creates a fresh runtime state with pre-loaded standard library functions.</p><p>This function initializes the runtime environment with all necessary
+components for executing Cure programs, including the complete standard
+library function registry.</p><h2 id="create_runtime_state/0-returns" class="section-heading">
+  <a href="#create_runtime_state/0-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">#runtime_state{}</code> - Fresh runtime state ready for execution</li></ul><h2 id="create_runtime_state/0-example" class="section-heading">
+  <a href="#create_runtime_state/0-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="0070921332-1">(</span><span class="p" data-group-id="0070921332-1">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="0070921332-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="n">NewState</span><span class="p" data-group-id="0070921332-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="0070921332-3">(</span><span class="ss">print</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0070921332-4">[</span><span class="s">&quot;Hello&quot;</span><span class="p" data-group-id="0070921332-4">]</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="0070921332-3">)</span><span class="p">.</span></code></pre><h2 id="create_runtime_state/0-pre-loaded-functions" class="section-heading">
+  <a href="#create_runtime_state/0-pre-loaded-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Pre-loaded Functions</span>
+</h2>
+<p>The runtime state includes immediate access to:</p><h3 id="create_runtime_state/0-monadic-operations" class="section-heading">
+  <a href="#create_runtime_state/0-monadic-operations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Monadic Operations</span>
+</h3>
+<ul><li><code class="inline">ok/1</code>, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#error/1"><code class="inline">error/1</code></a> - Result type constructors</li><li><code class="inline">some/1</code>, <code class="inline">none/0</code> - Option type constructors</li><li><code class="inline">map_ok/2</code>, <code class="inline">pipe/2</code> - Monadic operations</li></ul><h3 id="create_runtime_state/0-list-processing" class="section-heading">
+  <a href="#create_runtime_state/0-list-processing" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">List Processing</span>
+</h3>
+<ul><li><code class="inline">map/2</code>, <code class="inline">filter/2</code>, <code class="inline">foldl/3</code> - Higher-order list functions</li><li><code class="inline">head/1</code>, <code class="inline">tail/1</code>, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#length/1"><code class="inline">length/1</code></a> - Basic list operations</li><li><code class="inline">find/2</code> - List searching</li></ul><h3 id="create_runtime_state/0-mathematical-functions" class="section-heading">
+  <a href="#create_runtime_state/0-mathematical-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Mathematical Functions</span>
+</h3>
+<ul><li><a href="https://www.erlang.org/doc/apps/erts/erlang.html#abs/1"><code class="inline">abs/1</code></a>, <code class="inline">sqrt/1</code>, <code class="inline">pi/0</code> - Basic math</li><li><code class="inline">safe_divide/2</code>, <code class="inline">safe_sqrt/2</code> - Safe math operations</li><li><code class="inline">gcd/2</code>, <code class="inline">factorial/1</code> - Extended math functions</li></ul><h3 id="create_runtime_state/0-string-operations" class="section-heading">
+  <a href="#create_runtime_state/0-string-operations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">String Operations</span>
+</h3>
+<ul><li><code class="inline">string_concat/2</code>, <code class="inline">split/2</code>, <code class="inline">trim/1</code> - String manipulation</li><li><code class="inline">to_upper/1</code>, <code class="inline">to_lower/1</code> - Case conversion</li><li><code class="inline">contains/2</code>, <code class="inline">starts_with/2</code>, <code class="inline">ends_with/2</code> - String testing</li><li><code class="inline">string_join/2</code>, <code class="inline">string_empty/1</code> - String utilities</li></ul><h3 id="create_runtime_state/0-i-o-functions" class="section-heading">
+  <a href="#create_runtime_state/0-i-o-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">I/O Functions</span>
+</h3>
+<ul><li><code class="inline">print/1</code>, <code class="inline">println/1</code> - Console output</li><li><code class="inline">int_to_string/1</code>, <code class="inline">float_to_string/1</code> - Type conversion</li></ul><h3 id="create_runtime_state/0-fsm-operations" class="section-heading">
+  <a href="#create_runtime_state/0-fsm-operations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">FSM Operations</span>
+</h3>
+<ul><li><code class="inline">fsm_create/2</code>, <code class="inline">fsm_send_safe/2</code> - FSM management</li><li><code class="inline">create_counter/1</code> - Counter FSM creation</li></ul><h2 id="create_runtime_state/0-function-resolution" class="section-heading">
+  <a href="#create_runtime_state/0-function-resolution" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function Resolution</span>
+</h2>
+<p>All pre-loaded functions use external references to cure_std module
+functions, ensuring consistent behavior and implementation.</p>
+  </section>
+</section>
+<section class="detail" id="execute_function/3">
+
+  <div class="detail-header">
+    <a href="#execute_function/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">execute_function(FuncName, Args, State)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_runtime.erl#L552" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="execute_module/1">
+
+  <div class="detail-header">
+    <a href="#execute_module/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">execute_module(CompiledModule)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_runtime.erl#L205" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Executes a compiled Cure module by running its main/0 function.</p><p>This is the primary entry point for executing standalone Cure modules.
+It creates a fresh runtime state, loads the module, and executes the
+main function if present.</p><h2 id="execute_module/1-arguments" class="section-heading">
+  <a href="#execute_module/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">CompiledModule</code> - Module compiled by cure_codegen:compile_module/1,2</li></ul><h2 id="execute_module/1-returns" class="section-heading">
+  <a href="#execute_module/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, Result}</code> - Successfully executed with main function result</li><li><code class="inline">{error, main_function_not_found}</code> - Module has no main/0 function</li><li><code class="inline">{error, Reason}</code> - Execution error during main function</li></ul><h2 id="execute_module/1-example" class="section-heading">
+  <a href="#execute_module/1-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="c1">%% Compile and execute a module with main/0</span><span class="w">
+</span><span class="n">ModuleAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">parse_module</span><span class="p" data-group-id="5308503353-1">(</span><span class="s">&quot;def main() = 42&quot;</span><span class="p" data-group-id="5308503353-1">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="5308503353-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledModule</span><span class="p" data-group-id="5308503353-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="5308503353-3">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="5308503353-3">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="5308503353-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p" data-group-id="5308503353-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">execute_module</span><span class="p" data-group-id="5308503353-5">(</span><span class="n">CompiledModule</span><span class="p" data-group-id="5308503353-5">)</span><span class="p">.</span></code></pre><h2 id="execute_module/1-main-function-requirements" class="section-heading">
+  <a href="#execute_module/1-main-function-requirements" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Main Function Requirements</span>
+</h2>
+<ul><li>Must be named <code class="inline">main</code></li><li>Must have arity 0 (no parameters)</li><li>Should return the program's exit value or result</li><li>Will be executed in a fresh runtime environment</li></ul><h2 id="execute_module/1-runtime-environment" class="section-heading">
+  <a href="#execute_module/1-runtime-environment" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Runtime Environment</span>
+</h2>
+<p>The execution environment includes:</p><ul><li>Clean runtime state with empty stack</li><li>Pre-loaded standard library functions</li><li>Module functions available for internal calls</li><li>Proper error handling and propagation</li></ul>
+  </section>
+</section>
+<section class="detail" id="load_module/2">
+
+  <div class="detail-header">
+    <a href="#load_module/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">load_module(CompiledModule, State)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_runtime.erl#L425" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Loads a compiled module into the runtime state, making its functions available.</p><p>This function integrates a compiled module into the runtime environment,
+registering all its functions in the global function registry and storing
+the module for future reference.</p><h2 id="load_module/2-arguments" class="section-heading">
+  <a href="#load_module/2-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">CompiledModule</code> - Module compiled by cure_codegen:compile_module/1,2</li><li><code class="inline">State</code> - Current runtime state</li></ul><h2 id="load_module/2-returns" class="section-heading">
+  <a href="#load_module/2-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">#runtime_state{}</code> - Updated runtime state with loaded module</li></ul><h2 id="load_module/2-example" class="section-heading">
+  <a href="#load_module/2-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="2371858705-1">(</span><span class="p" data-group-id="2371858705-1">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="2371858705-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Module</span><span class="p" data-group-id="2371858705-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="2371858705-3">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="2371858705-3">)</span><span class="p">,</span><span class="w">
+</span><span class="n">StateWithModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">load_module</span><span class="p" data-group-id="2371858705-4">(</span><span class="n">Module</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="2371858705-4">)</span><span class="p">,</span><span class="w">
+
+</span><span class="c1">%% Now module functions are available</span><span class="w">
+</span><span class="p" data-group-id="2371858705-5">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="2371858705-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="2371858705-6">(</span><span class="ss">my_function</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2371858705-7">[</span><span class="ss">args</span><span class="p" data-group-id="2371858705-7">]</span><span class="p">,</span><span class="w"> </span><span class="n">StateWithModule</span><span class="p" data-group-id="2371858705-6">)</span><span class="p">.</span></code></pre><h2 id="load_module/2-module-integration" class="section-heading">
+  <a href="#load_module/2-module-integration" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Module Integration</span>
+</h2>
+<p>Loading a module performs the following operations:</p><ol><li><strong>Function Registration</strong>: All module functions are added to globals</li><li><strong>Name Resolution</strong>: Functions become callable by name from any context</li><li><strong>Module Storage</strong>: Module definition is stored for introspection</li><li><strong>Namespace Merging</strong>: Functions are merged with existing global functions</li></ol><h2 id="load_module/2-function-availability" class="section-heading">
+  <a href="#load_module/2-function-availability" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function Availability</span>
+</h2>
+<ul><li>All functions in the module become globally callable</li><li>Functions shadow previously loaded functions with same name</li><li>Both exported and non-exported functions are available (no visibility restrictions)</li><li>Functions can call other functions from the same or different loaded modules</li></ul><h2 id="load_module/2-module-format" class="section-heading">
+  <a href="#load_module/2-module-format" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Module Format</span>
+</h2>
+<p>Expected compiled module format:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="2022528265-1">#{</span><span class="w">
+    </span><span class="ss">name</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">ModuleName</span><span class="p">,</span><span class="w">
+    </span><span class="ss">functions</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="2022528265-2">[</span><span class="n">CompiledFunction</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="2022528265-2">]</span><span class="p">,</span><span class="w">
+    </span><span class="ss">exports</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="2022528265-3">[</span><span class="p" data-group-id="2022528265-4">{</span><span class="n">FuncName</span><span class="p">,</span><span class="w"> </span><span class="n">Arity</span><span class="p" data-group-id="2022528265-4">}</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="2022528265-3">]</span><span class="p">,</span><span class="w">
+    </span><span class="ss">attributes</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="2022528265-5">[</span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="2022528265-5">]</span><span class="w">
+</span><span class="p" data-group-id="2022528265-1">}</span></code></pre><h2 id="load_module/2-error-handling" class="section-heading">
+  <a href="#load_module/2-error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h2>
+<p>Module loading is designed to always succeed. Malformed modules may
+result in functions that cannot be executed, but loading itself will
+not fail.</p>
+  </section>
+</section>
+<section class="detail" id="record_field/2">
+
+  <div class="detail-header">
+    <a href="#record_field/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">record_field/2</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_runtime.erl#L944" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Accesses a field from a record/tuple at runtime.</p><p>This function provides runtime support for field access when the record type
+isn't known statically during compilation. It handles both Erlang-style records
+(which are tuples with the record name as the first element) and plain tuples.</p><h2 id="record_field/2-arguments" class="section-heading">
+  <a href="#record_field/2-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Record</code> - The record or tuple to access</li><li><code class="inline">FieldName</code> - The atom name of the field to access</li></ul><h2 id="record_field/2-returns" class="section-heading">
+  <a href="#record_field/2-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li>The value of the specified field</li><li>Raises an error if the field doesn't exist or Record is invalid</li></ul><h2 id="record_field/2-example" class="section-heading">
+  <a href="#record_field/2-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="c1">%% For a record like {turnstile_payload, &#39;Lock&#39;, coin}</span><span class="w">
+</span><span class="n">Payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7594060630-1">{</span><span class="ss">&#39;TurnstilePayload&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Lock&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">coin</span><span class="p" data-group-id="7594060630-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">record_field</span><span class="p" data-group-id="7594060630-2">(</span><span class="n">Payload</span><span class="p">,</span><span class="w"> </span><span class="ss">event</span><span class="p" data-group-id="7594060630-2">)</span><span class="p">,</span><span class="w">  </span><span class="c1">% Returns coin</span></code></pre><h2 id="record_field/2-implementation-notes" class="section-heading">
+  <a href="#record_field/2-implementation-notes" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Implementation Notes</span>
+</h2>
+<ul><li>For Erlang records (tuples with atom tag as first element), we determine
+field positions from the record structure</li><li>This is a temporary solution until proper type information is available
+during code generation</li><li>Performance: O(1) tuple element access</li></ul>
+  </section>
+</section>
+<section class="detail" id="run_program/1">
+
+  <div class="detail-header">
+    <a href="#run_program/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">run_program/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_runtime.erl#L252" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Runs a complete Cure program consisting of multiple modules.</p><p>This function loads all provided modules into the runtime and executes
+the first main/0 function found across all modules. This is used for
+multi-module Cure programs.</p><h2 id="run_program/1-arguments" class="section-heading">
+  <a href="#run_program/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Modules</code> - List of compiled modules from cure_codegen:compile_program/1,2</li></ul><h2 id="run_program/1-returns" class="section-heading">
+  <a href="#run_program/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, Result}</code> - Successfully executed with main function result</li><li><code class="inline">{error, no_modules}</code> - Empty module list provided</li><li><code class="inline">{error, main_function_not_found}</code> - No main/0 function in any module</li><li><code class="inline">{error, Reason}</code> - Execution error during program execution</li></ul><h2 id="run_program/1-example" class="section-heading">
+  <a href="#run_program/1-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="c1">%% Compile and run a multi-module program</span><span class="w">
+</span><span class="n">ProgramAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="8926043388-1">[</span><span class="n">Module1AST</span><span class="p">,</span><span class="w"> </span><span class="n">Module2AST</span><span class="p">,</span><span class="w"> </span><span class="n">MainModuleAST</span><span class="p" data-group-id="8926043388-1">]</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="8926043388-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="8926043388-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_program</span><span class="p" data-group-id="8926043388-3">(</span><span class="n">ProgramAST</span><span class="p" data-group-id="8926043388-3">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="8926043388-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="8926043388-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">run_program</span><span class="p" data-group-id="8926043388-5">(</span><span class="n">Modules</span><span class="p" data-group-id="8926043388-5">)</span><span class="p">.</span></code></pre><h2 id="run_program/1-module-loading-order" class="section-heading">
+  <a href="#run_program/1-module-loading-order" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Module Loading Order</span>
+</h2>
+<ol><li>All modules are loaded into the runtime state first</li><li>Functions from all modules become available globally</li><li>The first main/0 function found is executed</li><li>Modules are searched in the order provided</li></ol><h2 id="run_program/1-inter-module-dependencies" class="section-heading">
+  <a href="#run_program/1-inter-module-dependencies" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Inter-module Dependencies</span>
+</h2>
+<ul><li>Functions from all loaded modules are available to each other</li><li>No explicit import/export checking at runtime</li><li>Name conflicts resolved by load order (later modules shadow earlier ones)</li></ul>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

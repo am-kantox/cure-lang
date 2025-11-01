@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cure Language Syntax Guide - Cure Documentation</title>
+    <meta name="description" content="Based on: Actual Cure implementation (Standard Library v1.0)  
+Purpose: Reference for creating correct Cure examples  
+Last Updated: Octob">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1>Cure Language Syntax Guide</h1>
+
+<strong>Based on</strong>: Actual Cure implementation (Standard Library v1.0)  
+<strong>Purpose</strong>: Reference for creating correct Cure examples  
+<strong>Last Updated</strong>: October 30, 2025
+
+<p>---</p>
+
+<h2>1. Module Structure</h2>
+
+<p>Every Cure file should define a module:</p>
+
+<pre><code>module ModuleName do
+<p>  export [function_name/1, TypeName]</p>
+  
+<p>  # Module contents</p>
+<p>end</p>
+</code></pre>
+
+<h3>Exports</h3>
+
+<p>Export declarations specify what's public:</p>
+
+<pre><code>export [
+<p>  function_name/1,    # Function with arity</p>
+<p>  TypeName,           # Type constructor</p>
+<p>  constructor_name    # Data constructor</p>
+<p>]</p>
+</code></pre>
+
+<h3>Imports</h3>
+
+<p>Import from other modules (including standard library):</p>
+
+<pre><code>import Std.Core [Result, Option, ok/1, error/1]
+<p>import Std.List [map/2, filter/2, fold/3]</p>
+<p>import Std.Io [print/1, println/1]</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>2. Comments</h2>
+
+<p>Single-line comments only:</p>
+
+<pre><code># This is a comment
+</code></pre>
+
+<p>---</p>
+
+<h2>3. Type Definitions</h2>
+
+<h3>Type Aliases with Sum Types</h3>
+
+<pre><code>type Result(T, E) = Ok(T) | Error(E)
+<p>type Option(T) = Some(T) | None</p>
+<p>type Ordering = Lt | Eq | Gt</p>
+</code></pre>
+
+<h3>Record Types</h3>
+
+<p>Records define structured data with named fields:</p>
+
+<pre><code>record RecordName do
+<p>  field1: Type1</p>
+<p>  field2: Type2</p>
+<p>  field3: Type3</p>
+<p>end</p>
+</code></pre>
+
+<h4>Record with Type Parameters</h4>
+
+<pre><code>record Point(T) do
+<p>  x: T</p>
+<p>  y: T</p>
+<p>end</p>
+</code></pre>
+
+<h4>Record Construction</h4>
+
+<pre><code># Create a record instance
+<p>let point = Point{x: 3.0, y: 4.0}</p>
+<p>let payload = TrafficPayload{cycles<em>completed: 0, timer</em>events: 0, emergency_stops: 0}</p>
+</code></pre>
+
+<h4>Record Pattern Matching</h4>
+
+<pre><code># Match and extract fields
+<p>match point do</p>
+<p>  Point{x: x, y: y} when x == 0.0 and y == 0.0 -></p>
+<p>    "Origin"</p>
+<p>  Point{x: x, y: y} when x > 0.0 and y > 0.0 -></p>
+<p>    "First quadrant"</p>
+<p>  Point{x: _, y: y} when y == 0.0 -></p>
+<p>    "On X-axis"</p>
+<p>end</p>
+
+<h1>Partial field matching (other fields ignored)</h1>
+<p>match person do</p>
+<p>  Person{age: age, score: score} when age < 18 and score >= 90 -></p>
+<p>    "Outstanding young achiever"</p>
+<p>end</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>4. Function Definitions</h2>
+
+<h3>Basic Function Syntax</h3>
+
+<pre><code>def function_name(param1: Type1, param2: Type2): ReturnType =
+<p>  expression</p>
+</code></pre>
+
+<h3>Function with Match Expression</h3>
+
+<pre><code>def length(list: List(T)): Nat =
+<p>  match list do</p>
+<p>    [] -> Zero</p>
+<p>    [_ | t] -> Succ(length(t))</p>
+<p>  end</p>
+</code></pre>
+
+<h3>Functions with Let Bindings</h3>
+
+<pre><code>def filter(list: List(T), predicate: T -> Bool): List(T) =
+<p>  match list do</p>
+<p>    [] -> []</p>
+<p>    [h | t] -> </p>
+<p>      let filtered_tail = filter(t, predicate)</p>
+<p>      match predicate(h) do</p>
+<p>        true -> [h | filtered_tail]</p>
+<p>        false -> filtered_tail</p>
+<p>      end</p>
+<p>  end</p>
+</code></pre>
+
+<h3>Lambda Functions</h3>
+
+<p>Lambda syntax: <code>fn(params) -> expression end</code></p>
+
+<pre><code># Simple lambda
+<p>let double = fn(x) -> x * 2 end</p>
+
+<h1>Lambda with multiple params</h1>
+<p>let add = fn(x, y) -> x + y end</p>
+
+<h1>Curried function application</h1>
+<p>let partial_func = func(h)</p>
+<p>partial_func(fold(t, init, func))</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>5. Pattern Matching</h2>
+
+<h3>Match Expression Structure</h3>
+
+<pre><code>match value do
+<p>  pattern1 -> result1</p>
+<p>  pattern2 -> result2</p>
+  <em> -> default</em>result
+<p>end</p>
+</code></pre>
+
+<h3>Pattern Guards</h3>
+
+<p>Guards allow additional conditions on patterns using <code>when</code>:</p>
+
+<pre><code>match value do
+<p>  x when x < 0 -> "Negative"</p>
+<p>  x when x == 0 -> "Zero"</p>
+<p>  x when x > 0 -> "Positive"</p>
+<p>end</p>
+
+<h1>Multiple conditions with logical operators</h1>
+<p>match n do</p>
+<p>  x when x >= 10 and x <= 20 -> "In range"</p>
+<p>  x when x < 10 or x > 20 -> "Out of range"</p>
+<p>end</p>
+
+<h1>Guards with record patterns</h1>
+<p>match point do</p>
+<p>  Point{x: x, y: y} when x > 0.0 and y > 0.0 -></p>
+<p>    "First quadrant"</p>
+<p>  Point{x: x, y: _} when x == 0.0 -></p>
+<p>    "On Y-axis"</p>
+<p>end</p>
+</code></pre>
+
+<h3>List Patterns</h3>
+
+<pre><code>match list do
+<p>  [] -> # empty list</p>
+<p>  [h | t] -> # head and tail</p>
+<p>  [a, b, c] -> # exact length (if supported)</p>
+<p>end</p>
+</code></pre>
+
+<h3>Constructor Patterns</h3>
+
+<pre><code>match result do
+<p>  Ok(value) -> # success case</p>
+<p>  Error(err) -> # error case</p>
+<p>end</p>
+
+<p>match option do</p>
+<p>  Some(value) -> # present</p>
+<p>  None -> # absent</p>
+<p>end</p>
+</code></pre>
+
+<h3>Nested Match</h3>
+
+<pre><code>match list do
+<p>  [] -> []</p>
+<p>  [h | t] -></p>
+<p>    match predicate(h) do</p>
+<p>      true -> [h | filtered_tail]</p>
+<p>      false -> filtered_tail</p>
+<p>    end</p>
+<p>end</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>6. Type Annotations</h2>
+
+<h3>Function Types</h3>
+
+<p>Arrow notation for function types:</p>
+
+<pre><code># Function taking T, returning U
+<p>T -> U</p>
+
+<h1>Function taking two params</h1>
+<p>T -> U -> V</p>
+
+<h1>Can be curried</h1>
+<p>def func(x: T): U -> V =</p>
+<p>  fn(y) -> result end</p>
+</code></pre>
+
+<h3>Polymorphic Types</h3>
+
+<p>Generic type parameters:</p>
+
+<pre><code>def identity(x: T): T = x
+<p>def map(list: List(T), f: T -> U): List(U) = ...</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>7. Literals and Basic Types</h2>
+
+<h3>Primitives</h3>
+
+<pre><code>42              # Int
+<p>3.14            # Float</p>
+<p>"hello"         # String</p>
+<p>true            # Bool</p>
+<p>false           # Bool</p>
+<p>:atom_name      # Atom</p>
+</code></pre>
+
+<h3>Lists</h3>
+
+<pre><code>[]              # Empty list
+<p>[1, 2, 3]       # List of integers</p>
+<p>[h | t]         # Cons pattern/constructor</p>
+</code></pre>
+
+<h3>Tuples (Limited Support)</h3>
+
+<p>Check actual implementation before using tuples extensively.</p>
+
+<p>---</p>
+
+<h2>8. Operators</h2>
+
+<h3>Arithmetic</h3>
+
+<pre><code>x + y           # Addition
+<p>x - y           # Subtraction</p>
+<p>x * y           # Multiplication</p>
+<p>x / y           # Division (may be integer division)</p>
+</code></pre>
+
+<h3>Comparison</h3>
+
+<pre><code>x == y          # Equality
+<p>x != y          # Inequality</p>
+<p>x < y           # Less than</p>
+<p>x > y           # Greater than</p>
+<p>x <= y          # Less than or equal</p>
+<p>x >= y          # Greater than or equal</p>
+</code></pre>
+
+<h3>List Construction</h3>
+
+<pre><code>[element | list]    # Cons (prepend)
+</code></pre>
+
+<h3>String Concatenation</h3>
+
+<pre><code>str1 <> str2    # Diamond operator for string concatenation
+</code></pre>
+
+<p>---</p>
+
+<h2>9. Let Bindings</h2>
+
+<p>Simple let syntax:</p>
+
+<pre><code>let variable = expression
+<p>let result = function_call()</p>
+</code></pre>
+
+<strong>Note</strong>: Use <code>in</code> for scoped let expressions (check if implemented):
+
+<pre><code>let x = 5 in x + 10
+</code></pre>
+
+<p>---</p>
+
+<h2>10. Special Constructs</h2>
+
+<h3>Curify (Erlang FFI)</h3>
+
+<p>Declare Erlang FFI functions:</p>
+
+<pre><code>curify function_name(param: Type): ReturnType = {module, function, arity}
+</code></pre>
+
+<p>Example:</p>
+
+<pre><code>curify print_raw(format: String, args: List(String)): Unit = {io, format, 2}
+</code></pre>
+
+<h3>Nat Type and Peano Numbers</h3>
+
+<p>Natural numbers use Peano encoding:</p>
+
+<pre><code>Zero            # Zero
+<p>Succ(n)         # Successor of n</p>
+</code></pre>
+
+<p>Example:</p>
+
+<pre><code>def length(list: List(T)): Nat =
+<p>  match list do</p>
+<p>    [] -> Zero</p>
+<p>    [_ | t] -> Succ(length(t))</p>
+<p>  end</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>11. FSM Syntax</h2>
+
+<p>FSMs are defined with an initial payload record and transition arrows:</p>
+
+<pre><code># Define a payload record for FSM state tracking
+<p>record PayloadName do</p>
+<p>  field1: Type1</p>
+<p>  field2: Type2</p>
+<p>end</p>
+
+<h1>FSM definition with initial payload values</h1>
+<p>fsm PayloadName{field1: value1, field2: value2} do</p>
+<p>  State1 --> |event1| State2</p>
+<p>  State1 --> |event2| State1</p>
+<p>  State2 --> |event3| State1</p>
+<p>end</p>
+</code></pre>
+
+<h3>FSM Example: Turnstile</h3>
+
+<pre><code>record TurnstilePayload do
+<p>  coins_inserted: Int</p>
+<p>  people_passed: Int</p>
+<p>  denied_attempts: Int</p>
+<p>end</p>
+
+<p>fsm TurnstilePayload{coins<em>inserted: 0, people</em>passed: 0, denied_attempts: 0} do</p>
+<p>  Locked --> |coin| Unlocked</p>
+<p>  Locked --> |push| Locked</p>
+<p>  Unlocked --> |coin| Unlocked</p>
+<p>  Unlocked --> |push| Locked</p>
+<p>end</p>
+</code></pre>
+
+<h3>FSM Runtime Operations</h3>
+
+<pre><code>import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]
+<p>import Std.Pair [pair/2]</p>
+
+<h1>Spawn an FSM instance</h1>
+<p>let fsm<em>pid = fsm</em>spawn(:PayloadName, initial_data)</p>
+
+<h1>Give it a name</h1>
+<p>let adv<em>result = fsm</em>advertise(fsm<em>pid, :fsm</em>name)</p>
+
+<h1>Send an event (with empty data list)</h1>
+<p>let empty_list = []</p>
+<p>let event = pair(:event<em>name, empty</em>list)</p>
+<p>let cast<em>result = fsm</em>cast(:fsm_name, event)</p>
+
+<h1>Get current state</h1>
+<p>let current<em>state = fsm</em>state(:fsm_name)</p>
+</code></pre>
+
+<strong>Key Points</strong>:
+<ul>
+<li>First state in transitions is the initial state</li>
+<li>Events are atoms (<code>:event_name</code>)</li>
+<li>Transitions use <code>--></code> and <code>|event|</code> syntax</li>
+<li>Must define a payload record even if empty</li>
+</ul>
+
+<p>---</p>
+
+<h2>12. Common Patterns from Std Library</h2>
+
+<h3>Result/Option Handling</h3>
+
+<pre><code>match result do
+<p>  Ok(value) -> # handle success</p>
+<p>  Error(err) -> # handle error</p>
+<p>end</p>
+
+<p>match option do</p>
+<p>  Some(value) -> # handle present value</p>
+<p>  None -> # handle absence</p>
+<p>end</p>
+</code></pre>
+
+<h3>Recursive List Processing</h3>
+
+<pre><code>def map(list: List(T), f: T -> U): List(U) =
+<p>  match list do</p>
+<p>    [] -> []</p>
+<p>    [h | t] -> [f(h) | map(t, f)]</p>
+<p>  end</p>
+</code></pre>
+
+<h3>Tail Recursion with Accumulator</h3>
+
+<pre><code>def reverse(list: List(T), acc: List(T)): List(T) =
+<p>  match list do</p>
+<p>    [] -> acc</p>
+<p>    [h | t] -> reverse(t, [h | acc])</p>
+<p>  end</p>
+</code></pre>
+
+<h3>Curried Functions</h3>
+
+<pre><code># Function returns another function
+<p>def flip(f: A -> B -> C): B -> A -> C =</p>
+<p>  fn(b, a) -> </p>
+<p>    let g = f(a) in</p>
+<p>    g(b)</p>
+<p>  end</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>13. Key Syntactic Rules</h2>
+
+<ol>
+<li><strong>Module Required</strong>: Every file needs a <code>module ModuleName do ... end</code></li>
+<li><strong>Type Annotations</strong>: All function parameters and return types must be annotated</li>
+<li><strong>Pattern Matching</strong>: Use <code>match ... do ... end</code> blocks</li>
+<li><strong>Lambdas</strong>: Use <code>fn(params) -> body end</code> syntax</li>
+<li><strong>Let Binding</strong>: Simple <code>let name = value</code> without semicolons</li>
+<li><strong>Function Application</strong>: Standard <code>func(arg1, arg2)</code> syntax</li>
+<li><strong>Comments</strong>: Only <code>#</code> single-line comments</li>
+<li><strong>Indentation</strong>: Not significant (use <code>do ... end</code> blocks)</li>
+</ol>
+
+<p>---</p>
+
+<h2>14. Things to AVOID (Not in Std Library)</h2>
+
+<p>Based on actual standard library, these features may not be implemented:</p>
+
+<ol>
+<li><strong>Process definitions</strong>: <code>process name(...) do ... end</code> - verify syntax</li>
+<li><strong>Dependent types</strong>: <code>Vector(T, n: Nat)</code> - may not fully work yet</li>
+<li><strong>String interpolation</strong>: <code>"text #{expr}"</code> - use <code><></code> for concatenation instead</li>
+<li><strong>If-then-else</strong>: May exist but std lib uses match expressions</li>
+</ol>
+
+<p>---</p>
+
+<h2>15. Recommended Workflow</h2>
+
+<p>When creating examples:</p>
+
+<ol>
+<li>Start with module definition</li>
+<li>Import needed functions from Std library</li>
+<li>Define types (sum types with constructors)</li>
+<li>Define functions with explicit type signatures</li>
+<li>Use pattern matching for control flow</li>
+<li>Use lambdas for higher-order functions</li>
+<li>Keep it simple - mirror std library style</li>
+</ol>
+
+<p>---</p>
+
+<h2>Example: Complete Module Template</h2>
+
+<pre><code>module ExampleModule do
+<p>  export [</p>
+<p>    main/0,</p>
+<p>    helper_function/1</p>
+<p>  ]</p>
+  
+<p>  # Import standard library functions</p>
+<p>  import Std.Core [Result, ok/1, error/1]</p>
+<p>  import Std.List [map/2, filter/2]</p>
+<p>  import Std.Io [print/1]</p>
+  
+<p>  # Type definition</p>
+<p>  type MyType(T) = Constructor1(T) | Constructor2(String)</p>
+  
+<p>  # Main function</p>
+<p>  def main(): Unit =</p>
+<p>    let result = helper_function(42)</p>
+<p>    print("Done")</p>
+  
+<p>  # Helper with pattern matching</p>
+<p>  def helper_function(value: Int): Result(String, String) =</p>
+<p>    match value > 0 do</p>
+<p>      true -> ok("positive")</p>
+<p>      false -> error("non-positive")</p>
+<p>    end</p>
+<p>end</p>
+</code></pre>
+
+<p>---</p>
+
+<strong>This guide is based on actual working code in the Cure standard library. When in doubt, refer to <code>lib/std/</code> directory for real examples.</strong>
+
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

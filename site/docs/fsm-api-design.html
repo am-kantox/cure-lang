@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cure FSM API Design - Cure Documentation</title>
+    <meta name="description" content="Last Updated: October 31, 2025">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1>Cure FSM API Design</h1>
+
+<strong>Last Updated</strong>: October 31, 2025
+
+<p>This document describes the design of the Finite State Machine (FSM) API in Cure.</p>
+
+<h2>Overview</h2>
+
+<p>FSMs in Cure are first-class language constructs that compile to BEAM <code>gen_statem</code> processes. They provide:</p>
+
+<ul>
+<li><strong>Declarative state machine definitions</strong> using arrow-based transition syntax</li>
+<li><strong>Record-based payload types</strong> for carrying data through transitions</li>
+<li><strong>Simple event-driven transitions</strong> between states</li>
+<li><strong>Process-based isolation</strong> with BEAM message-passing semantics</li>
+<li><strong>Named FSM instances</strong> for easy reference via atoms</li>
+</ul>
+
+<h2>FSM Definition Syntax</h2>
+
+<p>Cure FSMs use a simple, declarative syntax:</p>
+
+<pre><code>module MyModule do
+<p>  # Define a payload record to track FSM data</p>
+<p>  record MyPayload do</p>
+<p>    field1: Type1</p>
+<p>    field2: Type2</p>
+<p>  end</p>
+  
+<p>  # Define FSM with initial payload values</p>
+<p>  fsm MyPayload{field1: initial<em>value1, field2: initial</em>value2} do</p>
+<p>    State1 --> |event1| State2</p>
+<p>    State1 --> |event2| State3</p>
+<p>    State2 --> |event3| State1</p>
+<p>  end</p>
+<p>end</p>
+</code></pre>
+
+<strong>Key Points</strong>:
+<ul>
+<li>The first state in the transition list is the initial state</li>
+<li>States are capitalized atoms (<code>:State1</code>, <code>:State2</code>, etc.)</li>
+<li>Events are lowercase atoms enclosed in <code>|event|</code> syntax</li>
+<li>Each FSM must have an associated record type for the payload</li>
+<li>The record fields are initialized in the <code>fsm</code> declaration</li>
+</ul>
+
+<h2>Core Types</h2>
+
+<p>From the <code>Std.Fsm</code> module:</p>
+
+<pre><code>type FsmName = Atom       # Registered FSM name (e.g., :traffic_light)
+<p>type FsmError = Atom      # Error types (:invalid<em>state, :not</em>found, etc.)</p>
+<p>type EventName = Atom     # Event identifier (e.g., :timer, :coin)</p>
+<p>type StateName = Atom     # State identifier (e.g., :Red, :Green)</p>
+</code></pre>
+
+<h2>API Functions</h2>
+
+<h3><code>start_fsm(module: Atom): Pid</code></h3>
+
+<p>Spawns a new FSM process using the FSM definition from the given module.</p>
+
+<ul>
+<li><strong>Initial state</strong>: First state in the transition list</li>
+<li><strong>Initial payload</strong>: Values specified in the <code>fsm</code> declaration</li>
+<li><strong>Returns</strong>: Process ID (Pid) of the FSM instance</li>
+</ul>
+
+<strong>Example:</strong>
+<pre><code># This would start the FSM defined in the TrafficLightFSM module
+<p>let fsm<em>pid = start</em>fsm(:TrafficLightFSM)</p>
+</code></pre>
+
+<strong>Note</strong>: This is a legacy function. The recommended approach is <code>fsm_spawn/2</code>.
+
+<h3><code>fsm_cast(target: Any, event: Any): Any</code></h3>
+
+<p>Sends an event asynchronously to an FSM instance (fire-and-forget).</p>
+
+<ul>
+<li><strong>target</strong>: Either a Pid or a registered FsmName (atom)</li>
+<li><strong>event</strong>: A Pair containing <code>(event<em>name, event</em>data)</code> where event_data is a list</li>
+<li><strong>Returns</strong>: Cast result (typically <code>ok</code>)</li>
+</ul>
+
+<strong>Example:</strong>
+<pre><code>import Std.Pair [pair/2]
+
+<h1>Send event with empty data</h1>
+<p>let empty_list = []</p>
+<p>let event = pair(:coin, empty_list)</p>
+<p>fsm<em>cast(fsm</em>pid, event)</p>
+
+<h1>Or to a named FSM</h1>
+<p>let event2 = pair(:push, [])</p>
+<p>fsm<em>cast(:my</em>turnstile, event2)</p>
+</code></pre>
+
+<h3><code>fsm_advertise(pid: Any, name: Atom): Any</code></h3>
+
+<p>Registers a name for an FSM process, allowing it to be referenced by name instead of Pid.</p>
+
+<strong>Example:</strong>
+<pre><code>let adv<em>result = fsm</em>advertise(fsm<em>pid, :main</em>turnstile)
+<h1>Now you can use :main<em>turnstile instead of fsm</em>pid</h1>
+</code></pre>
+
+<h3><code>fsm_state(target: Any): Any</code></h3>
+
+<p>Queries the current state of an FSM instance.</p>
+
+<ul>
+<li><strong>Returns</strong>: Current state atom (e.g., <code>:Red</code>, <code>:Locked</code>)</li>
+</ul>
+
+<strong>Example:</strong>
+<pre><code>let current<em>state = fsm</em>state(:traffic_light)
+<h1>Returns atom like :Red, :Green, or :Yellow</h1>
+</code></pre>
+
+<h3><code>fsm<em>spawn(fsm</em>type: Atom, initial_data: Any): Any</code></h3>
+
+<p>Spawns an FSM instance with a specific type and initial data.</p>
+
+<ul>
+<li><strong>fsm_type</strong>: The FSM type atom (matches the payload record name)</li>
+<li><strong>initial_data</strong>: Initial payload data (usually a record instance)</li>
+<li><strong>Returns</strong>: Process ID (Pid) of the spawned FSM</li>
+</ul>
+
+<strong>Example:</strong>
+<pre><code>let initial<em>data = TrafficPayload{cycles</em>completed: 0, timer<em>events: 0, emergency</em>stops: 0}
+<p>let fsm<em>pid = fsm</em>spawn(:TrafficPayload, initial_data)</p>
+</code></pre>
+
+<h2>Additional API Functions</h2>
+
+<h3><code>fsm_stop(pid: Any): Any</code></h3>
+
+<p>Gracefully stops an FSM instance.</p>
+
+<strong>Example:</strong>
+<pre><code>fsm<em>stop(fsm</em>pid)
+</code></pre>
+
+<h3><code>fsm_info(pid: Any): Any</code></h3>
+
+<p>Get detailed information about an FSM instance including state, data, and event history.</p>
+
+<strong>Example:</strong>
+<pre><code>let info = fsm<em>info(fsm</em>pid)
+</code></pre>
+
+<h3><code>fsm<em>is</em>alive(pid: Any): Any</code></h3>
+
+<p>Check if an FSM process is still alive.</p>
+
+<strong>Returns</strong>: Boolean-like value indicating if the FSM is running
+
+<strong>Example:</strong>
+<pre><code>let alive = fsm<em>is</em>alive(fsm_pid)
+</code></pre>
+
+<h2>Implementation Notes</h2>
+
+<h3>Process-Based FSM Runtime</h3>
+
+<ul>
+<li>Each FSM instance runs as a separate BEAM process</li>
+<li>Events are sent as messages to the FSM process</li>
+<li>The process maintains the current state and payload</li>
+<li>Transition handlers are called within the FSM process context</li>
+</ul>
+
+<h3>FSM Process Message Protocol</h3>
+
+<p>The FSM process should handle:</p>
+<ul>
+<li><code>{:event, Event}</code>: Trigger a state transition</li>
+<li><code>{:get_state, Pid}</code>: Query current state (reply to sender)</li>
+<li><code>{:register, FsmName}</code>: Register a name for this FSM</li>
+</ul>
+
+<h3>Compiler Responsibilities</h3>
+
+<p>The Cure compiler should:</p>
+<ol>
+<li>Parse <code>fsm</code> blocks and extract transition table</li>
+<li>Generate FSM definition structure with initial state/payload</li>
+<li>Create transition map linking <code>{state, event}</code> to handler functions</li>
+<li>Generate process spawning code that initializes FSM state</li>
+<li>Implement message loop for handling events and state queries</li>
+</ol>
+
+<h2>Complete Example: Traffic Light</h2>
+
+<p>Here's a complete working example from <code>examples/06<em>fsm</em>traffic_light.cure</code>:</p>
+
+<pre><code>module TrafficLightFSM do
+<p>  export [main/0]</p>
+  
+<p>  import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]</p>
+<p>  import Std.Io [println/1]</p>
+<p>  import Std.Pair [pair/2]</p>
+  
+<p>  # Payload record - tracks traffic light statistics</p>
+<p>  record TrafficPayload do</p>
+<p>    cycles_completed: Int</p>
+<p>    timer_events: Int</p>
+<p>    emergency_stops: Int</p>
+<p>  end</p>
+  
+<p>  # Define the TrafficLight FSM</p>
+<p>  # Initial state is Red (first state in transitions)</p>
+<p>  fsm TrafficPayload{cycles<em>completed: 0, timer</em>events: 0, emergency_stops: 0} do</p>
+<p>    Red --> |timer| Green</p>
+<p>    Red --> |emergency| Red</p>
+<p>    Green --> |timer| Yellow</p>
+<p>    Green --> |emergency| Red</p>
+<p>    Yellow --> |timer| Red</p>
+<p>    Yellow --> |emergency| Red</p>
+<p>  end</p>
+  
+<p>  # Main demonstration</p>
+<p>  def main(): Int =</p>
+<p>    # Initialize FSM with starting data</p>
+<p>    let initial<em>data = TrafficPayload{cycles</em>completed: 0, timer<em>events: 0, emergency</em>stops: 0}</p>
+<p>    let fsm<em>pid = fsm</em>spawn(:TrafficPayload, initial_data)</p>
+    
+<p>    # Give the FSM a friendly name</p>
+<p>    let adv<em>result = fsm</em>advertise(fsm<em>pid, :traffic</em>light)</p>
+    
+<p>    # Check initial state (should be Red)</p>
+<p>    let state0 = fsm<em>state(:traffic</em>light)</p>
+    
+<p>    # Send timer event: Red -> Green</p>
+<p>    let event1 = pair(:timer, [])</p>
+<p>    let cast1 = fsm<em>cast(:traffic</em>light, event1)</p>
+<p>    let state1 = fsm<em>state(:traffic</em>light)  # Now Green</p>
+    
+<p>    # Send timer event: Green -> Yellow</p>
+<p>    let event2 = pair(:timer, [])</p>
+<p>    let cast2 = fsm<em>cast(:traffic</em>light, event2)</p>
+<p>    let state2 = fsm<em>state(:traffic</em>light)  # Now Yellow</p>
+    
+<p>    # Send emergency event: Yellow -> Red</p>
+<p>    let event3 = pair(:emergency, [])</p>
+<p>    let cast3 = fsm<em>cast(:traffic</em>light, event3)</p>
+<p>    let state3 = fsm<em>state(:traffic</em>light)  # Back to Red</p>
+    
+<p>    0</p>
+<p>end</p>
+</code></pre>
+
+<strong>This example demonstrates:</strong>
+<ul>
+<li>Defining a payload record with fields</li>
+<li>Creating an FSM with initial payload values</li>
+<li>Spawning the FSM with <code>fsm_spawn/2</code></li>
+<li>Naming the FSM with <code>fsm_advertise/2</code></li>
+<li>Sending events using <code>pair/2</code> and <code>fsm_cast/2</code></li>
+<li>Querying state with <code>fsm_state/1</code></li>
+<li>Self-transitions (emergency event from Red stays in Red)</li>
+</ul>
+
+<h2>Future Enhancements</h2>
+
+<p>Potential additions to the FSM API:</p>
+<ul>
+<li><code>fsm_call/2</code>: Synchronous event sending with reply</li>
+<li>Timeout support: <code>State --> |timeout(1000)| NextState</code></li>
+<li>State entry/exit actions with explicit handler functions</li>
+<li>Guards on transitions: <code>State --> |event| when condition State2</code></li>
+<li>FSM supervision trees integration</li>
+<li>FSM serialization/deserialization for persistence</li>
+<li>Pattern matching on event data in transitions</li>
+</ul>
+
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

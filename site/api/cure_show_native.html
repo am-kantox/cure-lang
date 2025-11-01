@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>cure_show_native — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-48D43E9B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+    <span translate="no">cure_show_native</span> 
+    <small class="app-vsn" translate="no">(cure v0.1.0)</small>
+
+  </h1>
+
+
+    <section id="moduledoc">
+<p>Native Erlang implementations of Show trait functions for Cure.</p><p>Provides efficient primitive-to-string conversions for the Show trait system.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#atom_to_string/1" data-no-tooltip translate="no">atom_to_string(Atom)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert an atom to its string representation.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#bool_to_string/1" data-no-tooltip translate="no">bool_to_string/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert a boolean to its string representation.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#escape_string/1" data-no-tooltip translate="no">escape_string(Str)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Escape special characters in a string and wrap in quotes.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#float_to_string/1" data-no-tooltip translate="no">float_to_string(Float)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert a float to its string representation.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#int_to_string/1" data-no-tooltip translate="no">int_to_string(Int)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert an integer to its string representation.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#is_atom_value/1" data-no-tooltip translate="no">is_atom_value(Val)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if value is an atom (for Cure pattern guards).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#is_bool_value/1" data-no-tooltip translate="no">is_bool_value/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if value is a boolean (for Cure pattern guards).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#is_float_value/1" data-no-tooltip translate="no">is_float_value(Val)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if value is a float (for Cure pattern guards).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#is_integer_value/1" data-no-tooltip translate="no">is_integer_value(Val)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if value is an integer (for Cure pattern guards).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#is_list_value/1" data-no-tooltip translate="no">is_list_value(Val)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if value is a list (for Cure pattern guards).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#is_string_value/1" data-no-tooltip translate="no">is_string_value(Val)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if value is a string/binary (for Cure pattern guards).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#is_tuple_value/1" data-no-tooltip translate="no">is_tuple_value(Val)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if value is a tuple (for Cure pattern guards).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#show_list/1" data-no-tooltip translate="no">show_list/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert a list to its string representation.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#show_list_elements/1" data-no-tooltip translate="no">show_list_elements/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert list elements to comma-separated string representations.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#show_tuple/1" data-no-tooltip translate="no">show_tuple/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert a tuple to its string representation.
+Only handles tuples up to size 5 for now.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="atom_to_string/1">
+
+  <div class="detail-header">
+    <a href="#atom_to_string/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">atom_to_string(Atom)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L62" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> atom_to_string(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Convert an atom to its string representation.</p>
+  </section>
+</section>
+<section class="detail" id="bool_to_string/1">
+
+  <div class="detail-header">
+    <a href="#bool_to_string/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">bool_to_string/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L55" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> bool_to_string(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Convert a boolean to its string representation.</p>
+  </section>
+</section>
+<section class="detail" id="escape_string/1">
+
+  <div class="detail-header">
+    <a href="#escape_string/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">escape_string(Str)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L69" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> escape_string(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Escape special characters in a string and wrap in quotes.</p>
+  </section>
+</section>
+<section class="detail" id="float_to_string/1">
+
+  <div class="detail-header">
+    <a href="#float_to_string/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">float_to_string(Float)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L47" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> float_to_string(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:float/0">float</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Convert a float to its string representation.</p>
+  </section>
+</section>
+<section class="detail" id="int_to_string/1">
+
+  <div class="detail-header">
+    <a href="#int_to_string/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">int_to_string(Int)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L40" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> int_to_string(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Convert an integer to its string representation.</p>
+  </section>
+</section>
+<section class="detail" id="is_atom_value/1">
+
+  <div class="detail-header">
+    <a href="#is_atom_value/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">is_atom_value(Val)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L218" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> is_atom_value(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+<p>Check if value is an atom (for Cure pattern guards).</p>
+  </section>
+</section>
+<section class="detail" id="is_bool_value/1">
+
+  <div class="detail-header">
+    <a href="#is_bool_value/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">is_bool_value/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L210" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> is_bool_value(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+<p>Check if value is a boolean (for Cure pattern guards).</p>
+  </section>
+</section>
+<section class="detail" id="is_float_value/1">
+
+  <div class="detail-header">
+    <a href="#is_float_value/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">is_float_value(Val)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L204" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> is_float_value(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+<p>Check if value is a float (for Cure pattern guards).</p>
+  </section>
+</section>
+<section class="detail" id="is_integer_value/1">
+
+  <div class="detail-header">
+    <a href="#is_integer_value/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">is_integer_value(Val)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L198" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> is_integer_value(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+<p>Check if value is an integer (for Cure pattern guards).</p>
+  </section>
+</section>
+<section class="detail" id="is_list_value/1">
+
+  <div class="detail-header">
+    <a href="#is_list_value/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">is_list_value(Val)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L236" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> is_list_value(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+<p>Check if value is a list (for Cure pattern guards).</p>
+  </section>
+</section>
+<section class="detail" id="is_string_value/1">
+
+  <div class="detail-header">
+    <a href="#is_string_value/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">is_string_value(Val)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L224" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> is_string_value(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+<p>Check if value is a string/binary (for Cure pattern guards).</p>
+  </section>
+</section>
+<section class="detail" id="is_tuple_value/1">
+
+  <div class="detail-header">
+    <a href="#is_tuple_value/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">is_tuple_value(Val)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L230" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> is_tuple_value(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+<p>Check if value is a tuple (for Cure pattern guards).</p>
+  </section>
+</section>
+<section class="detail" id="show_list/1">
+
+  <div class="detail-header">
+    <a href="#show_list/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">show_list/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L149" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> show_list(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:list/0">list</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Convert a list to its string representation.</p>
+  </section>
+</section>
+<section class="detail" id="show_list_elements/1">
+
+  <div class="detail-header">
+    <a href="#show_list_elements/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">show_list_elements/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L159" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> show_list_elements(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:list/0">list</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Convert list elements to comma-separated string representations.</p>
+  </section>
+</section>
+<section class="detail" id="show_tuple/1">
+
+  <div class="detail-header">
+    <a href="#show_tuple/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">show_tuple/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_show_native.erl#L98" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> show_tuple(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:tuple/0">tuple</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Convert a tuple to its string representation.
+Only handles tuples up to size 5 for now.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

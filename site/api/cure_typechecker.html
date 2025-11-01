@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>cure_typechecker — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-48D43E9B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L3" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+    <span translate="no">cure_typechecker</span> 
+    <small class="app-vsn" translate="no">(cure v0.1.0)</small>
+
+  </h1>
+
+
+    <section id="moduledoc">
+<h1>Cure Programming Language - Type Checker</h1><p>The type checker module provides high-level type checking functionality for
+Cure programs. It works with parsed AST nodes and implements comprehensive
+static type analysis including dependent type verification, constraint solving, and type inference.</p><h2 id="module-features" class="section-heading">
+  <a href="#module-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Features</span>
+</h2>
+<h3 id="module-comprehensive-type-checking" class="section-heading">
+  <a href="#module-comprehensive-type-checking" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Comprehensive Type Checking</span>
+</h3>
+<ul><li><strong>Program-Level Analysis</strong>: Full program type checking with module support</li><li><strong>Function Type Checking</strong>: Parameter and return type verification</li><li><strong>Expression Type Inference</strong>: Bottom-up type inference for all expressions</li><li><strong>Dependent Type Support</strong>: Verification of dependent type constraints</li></ul><h3 id="module-module-system-support" class="section-heading">
+  <a href="#module-module-system-support" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Module System Support</span>
+</h3>
+<ul><li><strong>Module Scoping</strong>: Proper scoping of types and functions within modules</li><li><strong>Export Verification</strong>: Ensures exported functions exist and have correct types</li><li><strong>Import Resolution</strong>: Type-safe import of functions and types from other modules</li><li><strong>Two-Pass Processing</strong>: Collects signatures before checking bodies</li></ul><h3 id="module-advanced-type-features" class="section-heading">
+  <a href="#module-advanced-type-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Advanced Type Features</span>
+</h3>
+<ul><li><strong>Generic Functions</strong>: Full support for parametric polymorphism</li><li><strong>Constraint Solving</strong>: Integration with SMT-based constraint solving</li><li><strong>FSM Type Checking</strong>: Verification of finite state machine definitions</li><li><strong>Erlang Interop</strong>: Type checking for Erlang function interfaces</li></ul><h3 id="module-error-reporting" class="section-heading">
+  <a href="#module-error-reporting" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Reporting</span>
+</h3>
+<ul><li><strong>Detailed Error Messages</strong>: Precise error locations with helpful descriptions</li><li><strong>Warning System</strong>: Non-fatal issues that may indicate problems</li><li><strong>Error Recovery</strong>: Continues checking after errors to find more issues</li><li><strong>Structured Results</strong>: Machine-readable error and warning information</li></ul><h2 id="module-type-checking-process" class="section-heading">
+  <a href="#module-type-checking-process" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type Checking Process</span>
+</h2>
+<h3 id="module-1-environment-setup" class="section-heading">
+  <a href="#module-1-environment-setup" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">1. Environment Setup</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">builtin_env</span><span class="p" data-group-id="2230212091-1">(</span><span class="p" data-group-id="2230212091-1">)</span><span class="p">,</span><span class="w">  </span><span class="c1">% Built-in types and functions</span><span class="w">
+</span><span class="n">R</span><span class="w"> </span><span class="ss">esult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_program</span><span class="p" data-group-id="2230212091-2">(</span><span class="n">AST</span><span class="p" data-group-id="2230212091-2">)</span><span class="p">.</span></code></pre><h3 id="module-2-module-processing" class="section-heading">
+  <a href="#module-2-module-processing" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">2. Module Processing</span>
+</h3>
+<ul><li><strong>Signature Collection</strong>: First pass collects all function signatures</li><li><strong>Body Checking</strong>: Second pass verifies function bodies against signatures  </li><li><strong>Export Validation</strong>: Ensures all exported items are properly typed</li></ul><h3 id="module-3-function-analysis" class="section-heading">
+  <a href="#module-3-function-analysis" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">3. Function Analysis</span>
+</h3>
+<ul><li><strong>Parameter Processing</strong>: Converts parameter types to environment bindings</li><li><strong>Constraint Checking</strong>: Verifies function constraints are boolean expressions</li><li><strong>Body Inference</strong>: Infers body type and checks against declared return type</li><li><strong>Generic Resolution</strong>: Resolves type parameters and constraints</li></ul><h2 id="module-usage-examples" class="section-heading">
+  <a href="#module-usage-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Usage Examples</span>
+</h2>
+<h3 id="module-program-type-checking" class="section-heading">
+  <a href="#module-program-type-checking" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Program Type Checking</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="2082196776-1">(</span><span class="s">&quot;example.cure&quot;</span><span class="p" data-group-id="2082196776-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_program</span><span class="p" data-group-id="2082196776-2">(</span><span class="n">AST</span><span class="p" data-group-id="2082196776-2">)</span><span class="p">,</span><span class="w">
+</span><span class="k">case</span><span class="w"> </span><span class="n">Result</span><span class="o">#</span><span class="ss">typecheck_result</span><span class="p">.</span><span class="ss">success</span><span class="w"> </span><span class="k">of</span><span class="w">
+  </span><span class="ss">true</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="2082196776-3">(</span><span class="s">&quot;Type checking successful</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="2082196776-3">)</span><span class="p">;</span><span class="w">
+ 
+  </span><span class="ss">false</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
+    </span><span class="n">Errors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Result</span><span class="o">#</span><span class="ss">typecheck_result</span><span class="p">.</span><span class="ss">errors</span><span class="p">,</span><span class="w">
+    </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="2082196776-4">(</span><span class="s">&quot;Type errors: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2082196776-5">[</span><span class="n">Errors</span><span class="p" data-group-id="2082196776-5">]</span><span class="p" data-group-id="2082196776-4">)</span><span class="w">
+</span><span class="k">end</span><span class="p">.</span></code></pre><h3 id="module-function-type-checking" class="section-heading">
+  <a href="#module-function-type-checking" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function Type Checking</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="n">FuncAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">function_def</span><span class="p" data-group-id="2798888001-1">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">add</span><span class="p">,</span><span class="w"> </span><span class="ss">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Params</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Body</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="2798888001-1">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="2798888001-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="2798888001-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_function</span><span class="p" data-group-id="2798888001-3">(</span><span class="n">FuncAST</span><span class="p" data-group-id="2798888001-3">)</span><span class="p">.</span></code></pre><h3 id="module-expression-type-inference" class="section-heading">
+  <a href="#module-expression-type-inference" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Expression Type Inference</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="9974057386-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Type</span><span class="p" data-group-id="9974057386-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_expression</span><span class="p" data-group-id="9974057386-2">(</span><span class="n">ExprAST</span><span class="p">,</span><span class="w"> </span><span class="n">Environment</span><span class="p" data-group-id="9974057386-2">)</span><span class="p">.</span></code></pre><h2 id="module-type-checking-results" class="section-heading">
+  <a href="#module-type-checking-results" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type Checking Results</span>
+</h2>
+<p>Returns structured results with:</p><ul><li><strong>Success Flag</strong>: Overall type checking success/failure</li><li><strong>Inferred Types</strong>: Types inferred for expressions and functions</li><li><strong>Error List</strong>: Detailed error information with locations</li><li><strong>Warnings</strong>: Non-fatal issues found during checking</li></ul><h2 id="module-built-in-environment" class="section-heading">
+  <a href="#module-built-in-environment" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Built-in Environment</span>
+</h2>
+<p>Provides built-in types and functions:</p><ul><li><strong>Primitive Types</strong>: Int, Float, String, Bool, Atom</li><li><strong>Type Constructors</strong>: List, Tuple, Map, Vector</li><li><strong>Standard Functions</strong>: Arithmetic, logical, and utility functions</li><li><strong>FSM Operations</strong>: Built-in FSM manipulati on functions</li></ul><h2 id="module-integration" class="section-heading">
+  <a href="#module-integration" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Integration</span>
+</h2>
+<p>This module integrates with:</p><ul><li><strong>cure_types</strong>: Core type system operations</li><li><strong>cure_parser</strong>: Processes parsed AST nodes  </li><li><strong>cure_smt_solver</strong>: Constraint solving for dependent types</li><li><strong>cure_type_optimizer</strong>: Provides type information for optimizations</li></ul><h2 id="module-error-categories" class="section-heading">
+  <a href="#module-error-categories" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Categories</span>
+</h2>
+<ul><li><strong>Type Mismatches</strong>: Incompatible type assignments or operations</li><li><strong>Undefined Variables</strong>: References to unbound variables</li><li><strong>Constraint Violations</strong>: Failed dependent type constraints</li><li><strong>Export Errors</strong>: Missing or incorrectly typed exported functions</li><li><strong>Import Errors</strong>: Invalid module imports or type mismatches</li></ul><h2 id="module-performance" class="section-heading">
+  <a href="#module-performance" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Performance</span>
+</h2>
+<ul><li><strong>Two-Pass Efficiency</strong>: Minimizes redundant type checking</li><li><strong>Incremental Checking</strong>: Supports incremental compilation scenarios</li><li><strong>Constraint Caching</strong>: Reuses constraint solving results where possible</li><li><strong>Environment Sharing</strong>: Efficient environment management</li></ul><h2 id="module-thread-safety" class="section-heading">
+  <a href="#module-thread-safety" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Thread Safety</span>
+</h2>
+<p>The type checker is stateless and thread-safe. Multiple type checking
+operations can run concurrently on different ASTs.</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#builtin_env/0" data-no-tooltip translate="no">builtin_env()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_dependent_constraint/3" data-no-tooltip translate="no">check_dependent_constraint(Constraint, Value, Type)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_expression/2" data-no-tooltip translate="no">check_expression(Expr, Env)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_expression/3" data-no-tooltip translate="no">check_expression(Expr, Env, ExpectedType)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_fsm/2" data-no-tooltip translate="no">check_fsm/2</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_function/2" data-no-tooltip translate="no">check_function/2</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_module/2" data-no-tooltip translate="no">check_module/2</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_program/1" data-no-tooltip translate="no">check_program(AST)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Type checks an entire Cure program.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#convert_and_resolve_record_field_tuple/2" data-no-tooltip translate="no">convert_and_resolve_record_field_tuple/2</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#convert_record_field_def/1" data-no-tooltip translate="no">convert_record_field_def/1</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#convert_type_to_tuple/1" data-no-tooltip translate="no">convert_type_to_tuple/1</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_function_type_from_signature/2" data-no-tooltip translate="no">create_function_type_from_signature(Params, ReturnType)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_function_type_from_signature_records/2" data-no-tooltip translate="no">create_function_type_from_signature_records(Params, ReturnType)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#extract_and_add_type_params/2" data-no-tooltip translate="no">extract_and_add_type_params(TypeExpr, Env)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#extract_module_functions/1" data-no-tooltip translate="no">extract_module_functions(AST)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#extract_type_param_value/2" data-no-tooltip translate="no">extract_type_param_value/2</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#extract_type_params_helper/2" data-no-tooltip translate="no">extract_type_params_helper/2</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_stdlib_function_type/3" data-no-tooltip translate="no">get_stdlib_function_type(Module, Name, Arity)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#infer_dependent_type/2" data-no-tooltip translate="no">infer_dependent_type(Expr, Env)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#infer_type/2" data-no-tooltip translate="no">infer_type(Expr, Env)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#load_stdlib_modules/0" data-no-tooltip translate="no">load_stdlib_modules()</a>
+
+      </div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="builtin_env/0">
+
+  <div class="detail-header">
+    <a href="#builtin_env/0" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">builtin_env()</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L1577" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="check_dependent_constraint/3">
+
+  <div class="detail-header">
+    <a href="#check_dependent_constraint/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_dependent_constraint(Constraint, Value, Type)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L2706" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="check_expression/2">
+
+  <div class="detail-header">
+    <a href="#check_expression/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_expression(Expr, Env)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L1515" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="check_expression/3">
+
+  <div class="detail-header">
+    <a href="#check_expression/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_expression(Expr, Env, ExpectedType)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L1518" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="check_fsm/2">
+
+  <div class="detail-header">
+    <a href="#check_fsm/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_fsm/2</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L336" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="check_function/2">
+
+  <div class="detail-header">
+    <a href="#check_function/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_function/2</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L505" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="check_module/2">
+
+  <div class="detail-header">
+    <a href="#check_module/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_module/2</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L454" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="check_program/1">
+
+  <div class="detail-header">
+    <a href="#check_program/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_program(AST)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L236" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Type checks an entire Cure program.</p><p>Performs comprehensive type checking of all top-level items in the program
+including modules, functions, FSMs, and type definitions.</p><h2 id="check_program/1-arguments" class="section-heading">
+  <a href="#check_program/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">AST</code> - List of top-level AST items from the parser</li></ul><h2 id="check_program/1-returns" class="section-heading">
+  <a href="#check_program/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">typecheck_result()</code> - Complete type checking results including:</li><li><code class="inline">success</code> - Boolean indicating overall success/failure</li><li><code class="inline">type</code> - Program type (usually undefined for programs)</li><li><code class="inline">errors</code> - List of type checking errors found</li><li><code class="inline">warnings</code> </li><li>List of warnings found</li></ul><h2 id="check_program/1-example" class="section-heading">
+  <a href="#check_program/1-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="8235407189-1">(</span><span class="s">&quot;example.cure&quot;</span><span class="p" data-group-id="8235407189-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_program</span><span class="p" data-group-id="8235407189-2">(</span><span class="n">AST</span><span class="p" data-group-id="8235407189-2">)</span><span class="p">,</span><span class="w">
+</span><span class="k">case</span><span class="w"> </span><span class="n">Result</span><span class="o">#</span><span class="ss">typecheck_result</span><span class="p">.</span><span class="ss">success</span><span class="w"> </span><span class="k">of</span><span class="w">
+  </span><span class="ss">true</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
+    </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="8235407189-3">(</span><span class="s">&quot;Program type checks successfully</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="8235407189-3">)</span><span class="p">;</span><span class="w">
+ 
+  </span><span class="ss">false</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
+    </span><span class="nc">lists</span><span class="p">:</span><span class="nf">foreach</span><span class="p" data-group-id="8235407189-4">(</span><span class="nf">fun</span><span class="p" data-group-id="8235407189-5">(</span><span class="n">Error</span><span class="p" data-group-id="8235407189-5">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+      </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="8235407189-6">(</span><span class="s">&quot;Error: </span><span class="si">~s</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8235407189-7">[</span><span class="n">Error</span><span class="o">#</span><span class="ss">typecheck_error</span><span class="p">.</span><span class="ss">message</span><span class="p" data-group-id="8235407189-7">]</span><span class="p" data-group-id="8235407189-6">)</span><span class="w">
+    </span><span class="k">end</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="o">#</span><span class="ss">typecheck_result</span><span class="p">.</span><span class="ss">errors</span><span class="p" data-group-id="8235407189-4">)</span><span class="w">
+</span><span class="k">end</span><span class="p">.</span></code></pre><h2 id="check_program/1-features" class="section-heading">
+  <a href="#check_program/1-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Features</span>
+</h2>
+<ul><li><strong>Built-in Environment</strong>: Uses standard built-in types and functions</li><li><strong>Error Recovery</strong>: Continues checking after errors to find more issues</li><li><strong>Two-Pass Processing</strong>: Collects signatures before checking implementations&quot;.</li></ul>
+  </section>
+</section>
+<section class="detail" id="convert_and_resolve_record_field_tuple/2">
+
+  <div class="detail-header">
+    <a href="#convert_and_resolve_record_field_tuple/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">convert_and_resolve_record_field_tuple/2</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L3105" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="convert_record_field_def/1">
+
+  <div class="detail-header">
+    <a href="#convert_record_field_def/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">convert_record_field_def/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L3070" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="convert_type_to_tuple/1">
+
+  <div class="detail-header">
+    <a href="#convert_type_to_tuple/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">convert_type_to_tuple/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L1985" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="create_function_type_from_signature/2">
+
+  <div class="detail-header">
+    <a href="#create_function_type_from_signature/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">create_function_type_from_signature(Params, ReturnType)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L1424" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="create_function_type_from_signature_records/2">
+
+  <div class="detail-header">
+    <a href="#create_function_type_from_signature_records/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">create_function_type_from_signature_records(Params, ReturnType)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L1441" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="extract_and_add_type_params/2">
+
+  <div class="detail-header">
+    <a href="#extract_and_add_type_params/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">extract_and_add_type_params(TypeExpr, Env)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L2468" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="extract_module_functions/1">
+
+  <div class="detail-header">
+    <a href="#extract_module_functions/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">extract_module_functions(AST)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L1354" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="extract_type_param_value/2">
+
+  <div class="detail-header">
+    <a href="#extract_type_param_value/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">extract_type_param_value/2</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L2647" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="extract_type_params_helper/2">
+
+  <div class="detail-header">
+    <a href="#extract_type_params_helper/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">extract_type_params_helper/2</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L2475" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="get_stdlib_function_type/3">
+
+  <div class="detail-header">
+    <a href="#get_stdlib_function_type/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">get_stdlib_function_type(Module, Name, Arity)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L1482" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> get_stdlib_function_type(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} | not_found.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="infer_dependent_type/2">
+
+  <div class="detail-header">
+    <a href="#infer_dependent_type/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">infer_dependent_type(Expr, Env)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L2805" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="infer_type/2">
+
+  <div class="detail-header">
+    <a href="#infer_type/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">infer_type(Expr, Env)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L1567" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="load_stdlib_modules/0">
+
+  <div class="detail-header">
+    <a href="#load_stdlib_modules/0" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">load_stdlib_modules()</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/types/cure_typechecker.erl#L1326" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

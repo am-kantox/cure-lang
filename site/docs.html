@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - Cure Programming Language</title>
+    <meta name="description" content="Complete documentation for the Cure programming language">
+    <link rel="icon" type="image/png" href="media/logo-128x128.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="#getting-started">Getting Started</a></li>
+                    <li><a href="#reference">Reference</a></li>
+                    <li><a href="api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1 class="section-title">Cure Documentation</h1>
+        <p class="section-subtitle">Everything you need to know about programming in Cure</p>
+
+        <!-- Getting Started -->
+        <section id="getting-started" class="section">
+            <h2 class="section-title">Getting Started</h2>
+            <div class="docs-grid">
+                <a href="docs/project-overview.html" class="doc-link">
+                    <h3>📋 Project Overview</h3>
+                    <p>Architecture, components, and high-level project structure</p>
+                </a>
+
+                <a href="docs/cli-usage.html" class="doc-link">
+                    <h3>⚡ CLI Usage</h3>
+                    <p>Command-line interface guide and build system usage</p>
+                </a>
+
+                <a href="docs/editor-setup.html" class="doc-link">
+                    <h3>🔧 Editor Setup</h3>
+                    <p>Configure your editor with LSP support and syntax highlighting</p>
+                </a>
+
+                <a href="docs/cure-syntax-guide.html" class="doc-link">
+                    <h3>📖 Syntax Guide</h3>
+                    <p>Quick reference for Cure syntax and basic constructs</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Language Reference -->
+        <section id="reference" class="section">
+            <h2 class="section-title">Language Reference</h2>
+            <div class="docs-grid">
+                <a href="docs/language-spec.html" class="doc-link">
+                    <h3>📜 Language Specification</h3>
+                    <p>Complete formal specification of the Cure language</p>
+                </a>
+
+                <a href="docs/type-system.html" class="doc-link">
+                    <h3>🎯 Type System</h3>
+                    <p>Dependent types, refinement types, and type checking</p>
+                </a>
+
+                <a href="docs/feature-reference.html" class="doc-link">
+                    <h3>✨ Feature Reference</h3>
+                    <p>Quick reference for all language features and capabilities</p>
+                </a>
+
+                <a href="docs/cure-ultimate-description.html" class="doc-link">
+                    <h3>📚 Ultimate Description</h3>
+                    <p>Comprehensive guide to all aspects of Cure</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- FSM Documentation -->
+        <section class="section">
+            <h2 class="section-title">Finite State Machines</h2>
+            <div class="docs-grid">
+                <a href="docs/fsm-usage.html" class="doc-link">
+                    <h3>🎆 FSM Usage Guide</h3>
+                    <p>How to define and use finite state machines in Cure</p>
+                </a>
+
+                <a href="docs/fsm-api-design.html" class="doc-link">
+                    <h3>🔌 FSM API Design</h3>
+                    <p>API design and integration patterns for FSMs</p>
+                </a>
+
+                <a href="docs/fsm-implementation-summary.html" class="doc-link">
+                    <h3>⚙️ FSM Implementation</h3>
+                    <p>Implementation details and internals of the FSM system</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Standard Library -->
+        <section class="section">
+            <h2 class="section-title">Standard Library</h2>
+            <div class="docs-grid">
+                <a href="docs/std-summary.html" class="doc-link">
+                    <h3>📚 Standard Library Summary</h3>
+                    <p>Overview of all standard library modules and functions</p>
+                </a>
+
+                <a href="docs/api-reference.html" class="doc-link">
+                    <h3>📖 API Reference</h3>
+                    <p>Detailed API documentation for standard library</p>
+                </a>
+
+                <a href="docs/record-operations-implementation.html" class="doc-link">
+                    <h3>📝 Record Operations</h3>
+                    <p>Working with records: field access and updates</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- SMT Integration -->
+        <section class="section">
+            <h2 class="section-title">SMT Solver Integration</h2>
+            <div class="docs-grid">
+                <a href="docs/smt-quick-reference.html" class="doc-link">
+                    <h3>🔬 SMT Quick Reference</h3>
+                    <p>Quick guide to SMT solver integration and usage</p>
+                </a>
+
+                <a href="docs/smt-solver-installation.html" class="doc-link">
+                    <h3>🛠️ SMT Solver Installation</h3>
+                    <p>Installing and configuring Z3 and CVC5 solvers</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- Developer Documentation -->
+        <section class="section">
+            <h2 class="section-title">Developer Resources</h2>
+            <div class="docs-grid">
+                <a href="../CONTRIBUTING.md" class="doc-link">
+                    <h3>🤝 Contributing Guide</h3>
+                    <p>How to contribute to the Cure project</p>
+                </a>
+
+                <a href="../WARP.md" class="doc-link">
+                    <h3>🚀 WARP Development Guide</h3>
+                    <p>Development workflow and architecture guide</p>
+                </a>
+
+                <a href="../WHY_CURE.md" class="doc-link">
+                    <h3>❓ Why Cure?</h3>
+                    <p>Philosophy and rationale behind Cure's design</p>
+                </a>
+
+                <a href="../TODO.md" class="doc-link">
+                    <h3>📋 TODO & Roadmap</h3>
+                    <p>Future features and development roadmap</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- External Links -->
+        <section class="section">
+            <h2 class="section-title">Additional Resources</h2>
+            <div class="docs-grid">
+                <a href="api/index.html" class="doc-link">
+                    <h3>🔧 Erlang Implementation Docs</h3>
+                    <p>Complete API documentation for the Erlang compiler implementation</p>
+                </a>
+
+                <a href="../examples/" class="doc-link">
+                    <h3>💡 Example Programs</h3>
+                    <p>Working example programs demonstrating Cure features</p>
+                </a>
+            </div>
+        </section>
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="docs.html">Getting Started</a></li>
+                    <li><a href="docs/language-spec.html">Language Specification</a></li>
+                    <li><a href="docs/type-system.html">Type System</a></li>
+                    <li><a href="docs/fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="api/index.html">API Reference</a></li>
+                    <li><a href="docs/std-summary.html">Standard Library</a></li>
+                    <li><a href="docs/feature-reference.html">Feature Reference</a></li>
+                    <li><a href="docs/cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="docs/editor-setup.html">Editor Setup</a></li>
+                    <li><a href="docs/project-overview.html">Project Overview</a></li>
+                    <li><a href="docs/cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

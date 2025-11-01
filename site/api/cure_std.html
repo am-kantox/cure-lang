@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>cure_std — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-48D43E9B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L3" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+    <span translate="no">cure_std</span> 
+    <small class="app-vsn" translate="no">(cure v0.1.0)</small>
+
+  </h1>
+
+
+    <section id="moduledoc">
+<h1>Cure Programming Language - Standard Library Runtime</h1><p>Provides core runtime functions that cannot be implemented in pure Cure due to
+their need for Erlang-specific features. This module contains the essential
+low-level operations for I/O, monadic operations, FSM integration, and
+value serialization.</p><h2 id="module-architecture" class="section-heading">
+  <a href="#module-architecture" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Architecture</span>
+</h2>
+<p>This module represents the boundary between pure Cure code and the underlying
+Erlang runtime. Most standard library functions are now implemented in Cure
+itself (in lib/std/), but this module contains the irreducible core that
+requires direct Erlang integration.</p><h3 id="module-core-responsibilities" class="section-heading">
+  <a href="#module-core-responsibilities" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Core Responsibilities</span>
+</h3>
+<ul><li><strong>Monadic Operations</strong>: Implementation of Result/Option pipe semantics</li><li><strong>I/O Operations</strong>: Console output and formatting functions</li><li><strong>FSM Integration</strong>: Bridge to FSM runtime system</li><li><strong>Value Serialization</strong>: Converting Cure values to string representations</li><li><strong>Runtime Utilities</strong>: Low-level operations for runtime system</li></ul><h2 id="module-function-categories" class="section-heading">
+  <a href="#module-function-categories" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function Categories</span>
+</h2>
+<h3 id="module-monadic-operations" class="section-heading">
+  <a href="#module-monadic-operations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Monadic Operations</span>
+</h3>
+<ul><li><a href="#pipe/2"><code class="inline">pipe/2</code></a> - Monadic pipe operator implementation</li><li><a href="#is_monad/1"><code class="inline">is_monad/1</code></a> - Type checking for Result/Option values</li></ul><h3 id="module-i-o-functions" class="section-heading">
+  <a href="#module-i-o-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">I/O Functions</span>
+</h3>
+<ul><li><a href="#print/1"><code class="inline">print/1</code></a> - Output without newline</li><li><a href="#println/1"><code class="inline">println/1</code></a> - Output with newline</li><li><a href="#show/1"><code class="inline">show/1</code></a> - Convert values to string representation</li></ul><h3 id="module-fsm-operations" class="section-heading">
+  <a href="#module-fsm-operations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">FSM Operations</span>
+</h3>
+<ul><li><a href="#fsm_create/2"><code class="inline">fsm_create/2</code></a> - Create FSM instances</li><li><a href="#fsm_send_safe/2"><code class="inline">fsm_send_safe/2</code></a> - Safe message sending to FSMs</li><li><a href="#create_counter/1"><code class="inline">create_counter/1</code></a> - Specialized counter FSM creation</li></ul><h3 id="module-utility-functions" class="section-heading">
+  <a href="#module-utility-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Utility Functions</span>
+</h3>
+<ul><li><a href="#list_to_string/1"><code class="inline">list_to_string/1</code></a> - List serialization</li><li><a href="#join_ints/2"><code class="inline">join_ints/2</code></a> - Integer list formatting</li></ul><h2 id="module-monadic-pipe-semantics" class="section-heading">
+  <a href="#module-monadic-pipe-semantics" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Monadic Pipe Semantics</span>
+</h2>
+<p>The <a href="#pipe/2"><code class="inline">pipe/2</code></a> function implements Cure's monadic pipe operator (|&gt;) with
+these rules:</p><ol><li><strong>Error Propagation</strong>: <code class="inline">Error(x) |&gt; f</code> = <code class="inline">Error(x)</code></li><li><strong>Ok Unwrapping</strong>: <code class="inline">Ok(x) |&gt; f</code> = <code class="inline">f(x)</code> (wrapped if not already monadic)</li><li><strong>Value Passing</strong>: <code class="inline">x |&gt; f</code> = <code class="inline">f(x)</code> (wrapped if not already monadic)</li></ol><h2 id="module-example-usage" class="section-heading">
+  <a href="#module-example-usage" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example Usage</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="c1">%% Direct function calls (typically from runtime)</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="1368646785-1">(</span><span class="s">&quot;Hello, World!&quot;</span><span class="p" data-group-id="1368646785-1">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="1368646785-2">(</span><span class="p" data-group-id="1368646785-3">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="1368646785-3">}</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="1368646785-4">(</span><span class="n">X</span><span class="p" data-group-id="1368646785-4">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="1368646785-2">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% Returns: {&#39;Ok&#39;, 10}</span><span class="w">
+
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="1368646785-5">(</span><span class="p" data-group-id="1368646785-6">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1368646785-7">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="1368646785-7">]</span><span class="p" data-group-id="1368646785-6">}</span><span class="p" data-group-id="1368646785-5">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% Returns: &quot;Ok([1, 2, 3])&quot;</span></code></pre><h2 id="module-integration-with-cure" class="section-heading">
+  <a href="#module-integration-with-cure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Integration with Cure</span>
+</h2>
+<p>Functions in this module are automatically registered in the runtime's
+global function registry and can be called from Cure code using standard
+function call syntax. The runtime handles the bridge between Cure's
+type system and Erlang's dynamic typing.</p><h2 id="module-error-handling" class="section-heading">
+  <a href="#module-error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h2>
+<ul><li>I/O functions always succeed (return 'ok')</li><li>Pipe operations catch Erlang exceptions and wrap them as Error values</li><li>FSM operations return Result types for safe error handling</li><li>Show function handles unknown types gracefully</li></ul><h2 id="module-performance-considerations" class="section-heading">
+  <a href="#module-performance-considerations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Performance Considerations</span>
+</h2>
+<ul><li>All functions are designed for single-call efficiency</li><li>String operations use efficient list concatenation</li><li>Monadic operations minimize pattern matching overhead</li><li>FSM operations are lightweight stubs (full implementation in cure_fsm_runtime)</li></ul>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_counter/1" data-no-tooltip translate="no">create_counter(InitialValue)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#fsm_create/2" data-no-tooltip translate="no">fsm_create(FSMType, InitialState)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#fsm_send_safe/2" data-no-tooltip translate="no">fsm_send_safe(FSMRef, Message)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#is_monad/1" data-no-tooltip translate="no">is_monad/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if a value is a monadic type (Result or Option).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#join_ints/2" data-no-tooltip translate="no">join_ints/2</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#list_to_string/1" data-no-tooltip translate="no">list_to_string(List)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#pipe/2" data-no-tooltip translate="no">pipe/2</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Implements Cure's monadic pipe operator (|&gt;) with Result type semantics.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#print/1" data-no-tooltip translate="no">print(Message)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Prints a message to standard output without adding a newline.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#println/1" data-no-tooltip translate="no">println(Message)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Prints a message to standard output followed by a newline.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#Succ/1" data-no-tooltip translate="no">'Succ'(N)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Nat type unary constructor representing successor.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#show/1" data-no-tooltip translate="no">show/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Converts any Cure value to its string representation for debugging and display.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#Zero/0" data-no-tooltip translate="no">'Zero'()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Nat type nullary constructor representing zero.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="create_counter/1">
+
+  <div class="detail-header">
+    <a href="#create_counter/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">create_counter(InitialValue)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L355" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="fsm_create/2">
+
+  <div class="detail-header">
+    <a href="#fsm_create/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">fsm_create(FSMType, InitialState)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L345" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="fsm_send_safe/2">
+
+  <div class="detail-header">
+    <a href="#fsm_send_safe/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">fsm_send_safe(FSMRef, Message)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L350" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="is_monad/1">
+
+  <div class="detail-header">
+    <a href="#is_monad/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">is_monad/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L149" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Checks if a value is a monadic type (Result or Option).</p><p>This function determines whether a value follows the monadic pattern
+used by Cure's Result and Option types, which is essential for proper
+pipe operator behavior.</p><h2 id="is_monad/1-arguments" class="section-heading">
+  <a href="#is_monad/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Value</code> - Any Erlang term to check</li></ul><h2 id="is_monad/1-returns" class="section-heading">
+  <a href="#is_monad/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">true</code> - Value is a Result (Ok/Error) type</li><li><code class="inline">false</code> - Value is not a monadic type</li></ul><h2 id="is_monad/1-example" class="section-heading">
+  <a href="#is_monad/1-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">is_monad</span><span class="p" data-group-id="0251314078-1">(</span><span class="p" data-group-id="0251314078-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p" data-group-id="0251314078-2">}</span><span class="p" data-group-id="0251314078-1">)</span><span class="p">.</span><span class="w">     </span><span class="c1">%% true</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">is_monad</span><span class="p" data-group-id="0251314078-3">(</span><span class="p" data-group-id="0251314078-4">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">msg</span><span class="p" data-group-id="0251314078-4">}</span><span class="p" data-group-id="0251314078-3">)</span><span class="p">.</span><span class="w"> </span><span class="c1">%% true</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">is_monad</span><span class="p" data-group-id="0251314078-5">(</span><span class="mi">42</span><span class="p" data-group-id="0251314078-5">)</span><span class="p">.</span><span class="w">             </span><span class="c1">%% false</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">is_monad</span><span class="p" data-group-id="0251314078-6">(</span><span class="p" data-group-id="0251314078-7">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="0251314078-7">]</span><span class="p" data-group-id="0251314078-6">)</span><span class="p">.</span><span class="w">      </span><span class="c1">%% false</span></code></pre><h2 id="is_monad/1-supported-monadic-types" class="section-heading">
+  <a href="#is_monad/1-supported-monadic-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Supported Monadic Types</span>
+</h2>
+<ul><li><code class="inline">{'Ok', Value}</code> - Successful result with value</li><li><code class="inline">{'Error', Reason}</code> - Failed result with error reason</li></ul><p>Note: Option types (Some/None) are not currently detected as monadic
+by this function, though they follow similar patterns.</p><h2 id="is_monad/1-usage" class="section-heading">
+  <a href="#is_monad/1-usage" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Usage</span>
+</h2>
+<p>Primarily used internally by pipe/2 to determine whether function
+results need to be wrapped in Ok constructors or can be returned as-is.</p>
+  </section>
+</section>
+<section class="detail" id="join_ints/2">
+
+  <div class="detail-header">
+    <a href="#join_ints/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">join_ints/2</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L367" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="list_to_string/1">
+
+  <div class="detail-header">
+    <a href="#list_to_string/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">list_to_string(List)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L363" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="pipe/2">
+
+  <div class="detail-header">
+    <a href="#pipe/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">pipe/2</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L221" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Implements Cure's monadic pipe operator (|&gt;) with Result type semantics.</p><p>This function is the core implementation of Cure's pipe operator, providing
+monadic composition with automatic error propagation and value wrapping.
+It handles three distinct cases based on the input value type.</p><h2 id="pipe/2-arguments" class="section-heading">
+  <a href="#pipe/2-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">LHO</code> - Left-hand operand (value to be piped)</li><li><code class="inline">RHO</code> - Right-hand operand (function to apply)</li></ul><h2 id="pipe/2-returns" class="section-heading">
+  <a href="#pipe/2-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li>Result of applying RHO to LHO (possibly unwrapped), with appropriate wrapping</li><li>Error values are propagated without calling RHO</li><li>Runtime errors are caught and wrapped as Error values</li></ul><h2 id="pipe/2-pipe-rules" class="section-heading">
+  <a href="#pipe/2-pipe-rules" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Pipe Rules</span>
+</h2>
+<h3 id="pipe/2-rule-1-error-propagation" class="section-heading">
+  <a href="#pipe/2-rule-1-error-propagation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Rule 1: Error Propagation</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="9288812705-1">(</span><span class="p" data-group-id="9288812705-2">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">reason</span><span class="p" data-group-id="9288812705-2">}</span><span class="p">,</span><span class="w"> </span><span class="n">Fun</span><span class="p" data-group-id="9288812705-1">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% Returns: {&#39;Error&#39;, reason} (Fun is not called)</span></code></pre><h3 id="pipe/2-rule-2-ok-unwrapping" class="section-heading">
+  <a href="#pipe/2-rule-2-ok-unwrapping" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Rule 2: Ok Unwrapping</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="5762123865-1">(</span><span class="p" data-group-id="5762123865-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="5762123865-2">}</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="5762123865-3">(</span><span class="n">X</span><span class="p" data-group-id="5762123865-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="5762123865-1">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% Returns: {&#39;Ok&#39;, 10} (value unwrapped, result wrapped)</span><span class="w">
+
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="5762123865-4">(</span><span class="p" data-group-id="5762123865-5">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="5762123865-5">}</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="5762123865-6">(</span><span class="n">X</span><span class="p" data-group-id="5762123865-6">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="p" data-group-id="5762123865-7">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="5762123865-7">}</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="5762123865-4">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% Returns: {&#39;Ok&#39;, 10} (already monadic, not double-wrapped)</span></code></pre><h3 id="pipe/2-rule-3-value-passing" class="section-heading">
+  <a href="#pipe/2-rule-3-value-passing" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Rule 3: Value Passing</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="9042503480-1">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="9042503480-2">(</span><span class="n">X</span><span class="p" data-group-id="9042503480-2">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="9042503480-1">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% Returns: {&#39;Ok&#39;, 10} (non-monadic input, result wrapped)</span><span class="w">
+
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="9042503480-3">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="9042503480-4">(</span><span class="n">X</span><span class="p" data-group-id="9042503480-4">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="p" data-group-id="9042503480-5">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;too_big&#39;</span><span class="p" data-group-id="9042503480-5">}</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="9042503480-3">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% Returns: {&#39;Error&#39;, &#39;too_big&#39;} (monadic result preserved)</span></code></pre><h2 id="pipe/2-error-handling" class="section-heading">
+  <a href="#pipe/2-error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h2>
+<p>If RHO throws an exception during execution:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="1302494821-1">(</span><span class="p" data-group-id="1302494821-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="1302494821-2">}</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="1302494821-3">(</span><span class="n">X</span><span class="p" data-group-id="1302494821-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="o">/</span><span class="n">X</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="1302494821-1">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% Returns: {&#39;Error&#39;, {pipe_runtime_error, error, badarith}}</span></code></pre><h2 id="pipe/2-usage-in-cure" class="section-heading">
+  <a href="#pipe/2-usage-in-cure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Usage in Cure</span>
+</h2>
+<pre><code class="cure">%% In Cure code, this becomes:
+value |&gt; function1 |&gt; function2
+
+%% Which compiles to:
+pipe(pipe(value, function1), function2)</code></pre><h2 id="pipe/2-type-safety" class="section-heading">
+  <a href="#pipe/2-type-safety" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type Safety</span>
+</h2>
+<p>The pipe operator maintains type safety by:</p><ul><li>Never double-wrapping already monadic values</li><li>Propagating errors without execution</li><li>Catching runtime exceptions as Error values</li><li>Preserving monadic invariants through composition chains</li></ul>
+  </section>
+</section>
+<section class="detail" id="print/1">
+
+  <div class="detail-header">
+    <a href="#print/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">print(Message)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L290" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Prints a message to standard output without adding a newline.</p><p>This function outputs text directly to the console using Erlang's I/O
+formatting system. It's designed for inline output where you want to
+continue writing on the same line.</p><h2 id="print/1-arguments" class="section-heading">
+  <a href="#print/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Message</code> - String or list to print (must be printable)</li></ul><h2 id="print/1-returns" class="section-heading">
+  <a href="#print/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">ok</code> - Always succeeds</li></ul><h2 id="print/1-example" class="section-heading">
+  <a href="#print/1-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="4620928997-1">(</span><span class="s">&quot;Hello &quot;</span><span class="p" data-group-id="4620928997-1">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="4620928997-2">(</span><span class="s">&quot;World!&quot;</span><span class="p" data-group-id="4620928997-2">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% Output: &quot;Hello World!&quot;</span><span class="w">
+
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="4620928997-3">(</span><span class="s">&quot;Count: &quot;</span><span class="p" data-group-id="4620928997-3">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="4620928997-4">(</span><span class="nf">integer_to_list</span><span class="p" data-group-id="4620928997-5">(</span><span class="mi">42</span><span class="p" data-group-id="4620928997-5">)</span><span class="p" data-group-id="4620928997-4">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% Output: &quot;Count: 42&quot;</span></code></pre><h2 id="print/1-usage-in-cure" class="section-heading">
+  <a href="#print/1-usage-in-cure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Usage in Cure</span>
+</h2>
+<pre><code class="cure">print(&quot;Processing...&quot;)
+// Continue with other operations
+print(&quot;Done!&quot;)</code></pre><h2 id="print/1-character-encoding" class="section-heading">
+  <a href="#print/1-character-encoding" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Character Encoding</span>
+</h2>
+<p>Supports Unicode text through Erlang's ~ts format specifier,
+ensuring proper handling of international characters.</p><h2 id="print/1-error-handling" class="section-heading">
+  <a href="#print/1-error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h2>
+<p>I/O errors are handled by the underlying Erlang system.
+This function always returns 'ok' from the Cure perspective.</p>
+  </section>
+</section>
+<section class="detail" id="println/1">
+
+  <div class="detail-header">
+    <a href="#println/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">println(Message)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L336" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Prints a message to standard output followed by a newline.</p><p>This is the most commonly used output function, automatically adding
+a newline character after the message for line-by-line output formatting.</p><h2 id="println/1-arguments" class="section-heading">
+  <a href="#println/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Message</code> - String or list to print (must be printable)</li></ul><h2 id="println/1-returns" class="section-heading">
+  <a href="#println/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">ok</code> - Always succeeds</li></ul><h2 id="println/1-example" class="section-heading">
+  <a href="#println/1-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">println</span><span class="p" data-group-id="9407531558-1">(</span><span class="s">&quot;First line&quot;</span><span class="p" data-group-id="9407531558-1">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">println</span><span class="p" data-group-id="9407531558-2">(</span><span class="s">&quot;Second line&quot;</span><span class="p" data-group-id="9407531558-2">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% Output:</span><span class="w">
+</span><span class="c1">%% First line</span><span class="w">
+</span><span class="c1">%% Second line</span><span class="w">
+
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">println</span><span class="p" data-group-id="9407531558-3">(</span><span class="s">&quot;Value: &quot;</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="nf">integer_to_list</span><span class="p" data-group-id="9407531558-4">(</span><span class="mi">42</span><span class="p" data-group-id="9407531558-4">)</span><span class="p" data-group-id="9407531558-3">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% Output: Value: 42</span></code></pre><h2 id="println/1-usage-in-cure" class="section-heading">
+  <a href="#println/1-usage-in-cure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Usage in Cure</span>
+</h2>
+<pre><code class="cure">println(&quot;Hello, World!&quot;)
+println(&quot;This is on a new line&quot;)</code></pre><h2 id="println/1-character-encoding" class="section-heading">
+  <a href="#println/1-character-encoding" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Character Encoding</span>
+</h2>
+<p>Supports Unicode text through Erlang's ~ts format specifier,
+ensuring proper handling of international characters.</p><h2 id="println/1-comparison-with-print-1" class="section-heading">
+  <a href="#println/1-comparison-with-print-1" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Comparison with print/1</span>
+</h2>
+<ul><li><a href="#print/1"><code class="inline">print/1</code></a> - No newline, for inline output</li><li><a href="#println/1"><code class="inline">println/1</code></a> - Adds newline, for line-based output</li></ul><h2 id="println/1-error-handling" class="section-heading">
+  <a href="#println/1-error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h2>
+<p>I/O errors are handled by the underlying Erlang system.
+This function always returns 'ok' from the Cure perspective.</p>
+  </section>
+</section>
+<section class="detail" id="Succ/1">
+
+  <div class="detail-header">
+    <a href="#Succ/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">'Succ'(N)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L540" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Nat type unary constructor representing successor.</p><p>Takes a natural number and returns its successor (n+1).
+This is the inductive case of Peano-encoded natural numbers.</p><h2 id="Succ/1-arguments" class="section-heading">
+  <a href="#Succ/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">N</code> - A natural number (Nat)</li></ul><h2 id="Succ/1-returns" class="section-heading">
+  <a href="#Succ/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li>N+1 (next natural number)</li></ul><h2 id="Succ/1-example" class="section-heading">
+  <a href="#Succ/1-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">&#39;Succ&#39;</span><span class="p" data-group-id="4919552435-1">(</span><span class="mi">0</span><span class="p" data-group-id="4919552435-1">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% Returns: 1 (successor of Zero)</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">&#39;Succ&#39;</span><span class="p" data-group-id="4919552435-2">(</span><span class="mi">5</span><span class="p" data-group-id="4919552435-2">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% Returns: 6 (successor of 5)</span></code></pre><h2 id="Succ/1-usage-in-cure" class="section-heading">
+  <a href="#Succ/1-usage-in-cure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Usage in Cure</span>
+</h2>
+<pre><code class="cure">let one = Succ(Zero)
+let two = Succ(Succ(Zero))
+let three = Succ(two)</code></pre><h2 id="Succ/1-type" class="section-heading">
+  <a href="#Succ/1-type" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type</span>
+</h2>
+<ul><li>Succ : Nat -&gt; Nat</li></ul>
+  </section>
+</section>
+<section class="detail" id="show/1">
+
+  <div class="detail-header">
+    <a href="#show/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">show/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L440" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Converts any Cure value to its string representation for debugging and display.</p><p>This function provides comprehensive string serialization for all Cure data
+types, with special handling for monadic types (Result/Option) and structured
+data like lists and tuples.</p><h2 id="show/1-arguments" class="section-heading">
+  <a href="#show/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Value</code> - Any Cure/Erlang term to convert to string</li></ul><h2 id="show/1-returns" class="section-heading">
+  <a href="#show/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li>String representation of the value</li><li>&quot;unknown&quot; for unrecognized value types</li></ul><h2 id="show/1-examples" class="section-heading">
+  <a href="#show/1-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Examples</span>
+</h2>
+<h3 id="show/1-monadic-types" class="section-heading">
+  <a href="#show/1-monadic-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Monadic Types</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="9152138809-1">(</span><span class="p" data-group-id="9152138809-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p" data-group-id="9152138809-2">}</span><span class="p" data-group-id="9152138809-1">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% &quot;Ok(42)&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="9152138809-3">(</span><span class="p" data-group-id="9152138809-4">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">failed</span><span class="p" data-group-id="9152138809-4">}</span><span class="p" data-group-id="9152138809-3">)</span><span class="p">.</span><span class="w"> </span><span class="c1">%% &quot;Error(failed)&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="9152138809-5">(</span><span class="p" data-group-id="9152138809-6">{</span><span class="ss">&#39;Some&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">data</span><span class="p" data-group-id="9152138809-6">}</span><span class="p" data-group-id="9152138809-5">)</span><span class="p">.</span><span class="w">    </span><span class="c1">%% &quot;Some(data)&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="9152138809-7">(</span><span class="ss">&#39;None&#39;</span><span class="p" data-group-id="9152138809-7">)</span><span class="p">.</span><span class="w">            </span><span class="c1">%% &quot;None&quot;</span></code></pre><h3 id="show/1-basic-types" class="section-heading">
+  <a href="#show/1-basic-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Basic Types</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="4324387182-1">(</span><span class="mi">42</span><span class="p" data-group-id="4324387182-1">)</span><span class="p">.</span><span class="w">           </span><span class="c1">%% &quot;42&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="4324387182-2">(</span><span class="mf">3.14</span><span class="p" data-group-id="4324387182-2">)</span><span class="p">.</span><span class="w">         </span><span class="c1">%% &quot;3.14&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="4324387182-3">(</span><span class="ss">hello</span><span class="p" data-group-id="4324387182-3">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% &quot;hello&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="4324387182-4">(</span><span class="s">&quot;string&quot;</span><span class="p" data-group-id="4324387182-4">)</span><span class="p">.</span><span class="w">     </span><span class="c1">%% &quot;string&quot;</span></code></pre><h3 id="show/1-structured-types" class="section-heading">
+  <a href="#show/1-structured-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Structured Types</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="0415641500-1">(</span><span class="p" data-group-id="0415641500-2">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="0415641500-2">]</span><span class="p" data-group-id="0415641500-1">)</span><span class="p">.</span><span class="w">           </span><span class="c1">%% &quot;[1, 2, 3]&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="0415641500-3">(</span><span class="p" data-group-id="0415641500-4">{</span><span class="ss">a</span><span class="p">,</span><span class="w"> </span><span class="ss">b</span><span class="p" data-group-id="0415641500-4">}</span><span class="p" data-group-id="0415641500-3">)</span><span class="p">.</span><span class="w">              </span><span class="c1">%% &quot;{a, b}&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="0415641500-5">(</span><span class="p" data-group-id="0415641500-6">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p" data-group-id="0415641500-6">}</span><span class="p" data-group-id="0415641500-5">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% &quot;{1, 2, 3, 4}&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="0415641500-7">(</span><span class="p" data-group-id="0415641500-8">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="0415641500-8">}</span><span class="p" data-group-id="0415641500-7">)</span><span class="p">.</span><span class="w">     </span><span class="c1">%% &quot;{1, 2, 3, 4, ...}&quot;</span></code></pre><h3 id="show/1-nested-structures" class="section-heading">
+  <a href="#show/1-nested-structures" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Nested Structures</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="0830914831-1">(</span><span class="p" data-group-id="0830914831-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0830914831-3">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0830914831-4">{</span><span class="ss">&#39;Some&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="0830914831-4">}</span><span class="p" data-group-id="0830914831-3">]</span><span class="p" data-group-id="0830914831-2">}</span><span class="p" data-group-id="0830914831-1">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">%% &quot;Ok([1, 2, Some(3)])&quot;</span></code></pre><h2 id="show/1-usage-in-cure" class="section-heading">
+  <a href="#show/1-usage-in-cure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Usage in Cure</span>
+</h2>
+<pre><code class="cure">let value = Ok([1, 2, 3])
+println(show(value))  // Outputs: Ok([1, 2, 3])</code></pre><h2 id="show/1-tuple-handling" class="section-heading">
+  <a href="#show/1-tuple-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Tuple Handling</span>
+</h2>
+<ul><li>Tuples with 0-4 elements: Full representation</li><li>Tuples with 5+ elements: Truncated with &quot;...&quot; suffix</li><li>Nested tuples are recursively formatted</li></ul><h2 id="show/1-error-handling" class="section-heading">
+  <a href="#show/1-error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h2>
+<p>Unknown or unsupported types return &quot;unknown&quot; rather than crashing,
+making this function safe for debugging any Cure value.</p><h2 id="show/1-performance-notes" class="section-heading">
+  <a href="#show/1-performance-notes" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Performance Notes</span>
+</h2>
+<ul><li>Recursive formatting for nested structures</li><li>String concatenation using Erlang's efficient list operations</li><li>Optimized for readability over performance</li></ul>
+  </section>
+</section>
+<section class="detail" id="Zero/0">
+
+  <div class="detail-header">
+    <a href="#Zero/0" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">'Zero'()</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_std.erl#L509" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Nat type nullary constructor representing zero.</p><p>In Cure's Peano encoding of natural numbers:</p><ul><li>Zero represents 0</li><li>Succ(Zero) represents 1</li><li>Succ(Succ(Zero)) represents 2, etc.</li></ul><h2 id="Zero/0-returns" class="section-heading">
+  <a href="#Zero/0-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li>0 (represented as integer for runtime efficiency)</li></ul><h2 id="Zero/0-example" class="section-heading">
+  <a href="#Zero/0-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">&#39;Zero&#39;</span><span class="p" data-group-id="0490910093-1">(</span><span class="p" data-group-id="0490910093-1">)</span><span class="p">.</span><span class="w">  </span><span class="c1">%% Returns: 0</span></code></pre><h2 id="Zero/0-usage-in-cure" class="section-heading">
+  <a href="#Zero/0-usage-in-cure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Usage in Cure</span>
+</h2>
+<pre><code class="cure">def length(list: List(T)): Nat =
+  match list do
+    [] -&gt; Zero
+    [_ | t] -&gt; Succ(length(t))
+  end</code></pre><h2 id="Zero/0-type" class="section-heading">
+  <a href="#Zero/0-type" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type</span>
+</h2>
+<ul><li>Zero : Nat</li></ul>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

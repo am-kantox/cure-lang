@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>cure_guard_codegen — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-48D43E9B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/codegen/cure_guard_codegen.erl#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+    <span translate="no">cure_guard_codegen</span> 
+    <small class="app-vsn" translate="no">(cure v0.1.0)</small>
+
+  </h1>
+
+
+    <section id="moduledoc">
+<h1>Guard Validation Code Generation</h1><p>This module generates runtime validation code for dependent type guards.
+It translates guard constraints into executable BEAM code that validates
+values against dependent type requirements.</p><h2 id="module-features" class="section-heading">
+  <a href="#module-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Features</span>
+</h2>
+<ul><li><strong>Dependent Type Validation</strong>: Generate checks for dependent type constraints</li><li><strong>Optimized Code</strong>: Efficient guard code with minimal runtime overhead</li><li><strong>SMT Integration</strong>: Use SMT solver results to optimize guard checks</li><li><strong>Error Reporting</strong>: Generate informative error messages for failed guards</li></ul><h2 id="module-guard-types" class="section-heading">
+  <a href="#module-guard-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Guard Types</span>
+</h2>
+<h3 id="module-numeric-constraints" class="section-heading">
+  <a href="#module-numeric-constraints" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Numeric Constraints</span>
+</h3>
+<pre><code class="cure">Vector(T, n: Nat) when n &gt; 0</code></pre><p>Generates: Runtime check that n &gt; 0</p><h3 id="module-refinement-types" class="section-heading">
+  <a href="#module-refinement-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Refinement Types</span>
+</h3>
+<pre><code class="cure">NonEmpty(T) = List(T, n) when n &gt; 0</code></pre><p>Generates: Length check for lists</p><h3 id="module-complex-constraints" class="section-heading">
+  <a href="#module-complex-constraints" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Complex Constraints</span>
+</h3>
+<pre><code class="cure">Matrix(T, rows: Nat, cols: Nat) when rows &gt; 0 and cols &gt; 0</code></pre><p>Generates: Multiple validation checks</p><h2 id="module-code-generation-strategy" class="section-heading">
+  <a href="#module-code-generation-strategy" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Code Generation Strategy</span>
+</h2>
+<ol><li><strong>Static Analysis</strong>: Use SMT solver to prove constraints at compile time</li><li><strong>Runtime Guards</strong>: Generate checks for constraints that can't be proven</li><li><strong>Optimization</strong>: Eliminate redundant checks through dataflow analysis</li><li><strong>Caching</strong>: Cache validation results for expensive computations</li></ol>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-types summary">
+  <h2>
+    <a href="#types">Types</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:expr/0" data-no-tooltip translate="no">expr()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#clear_proof_cache/0" data-no-tooltip translate="no">clear_proof_cache()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#compile_constraint/2" data-no-tooltip translate="no">compile_constraint(Constraint, Env)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#generate_guard/2" data-no-tooltip translate="no">generate_guard(Constraint, Env)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#generate_guard/3" data-no-tooltip translate="no">generate_guard(Constraint, Env, Opts)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#generate_validation_function/3" data-no-tooltip translate="no">generate_validation_function(TypeName, Params, Constraint)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#optimize_guard/2" data-no-tooltip translate="no">optimize_guard(GuardAST, Env)</a>
+
+      </div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h1>
+    <div class="types-list">
+<section class="detail" id="t:expr/0">
+
+  <div class="detail-header">
+    <a href="#t:expr/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">expr()</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/parser/cure_ast.hrl#L447" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> expr() ::
+          #literal_expr{value :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #identifier_expr{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #function_call_expr{function :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #match_expr{expr :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), patterns :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #let_expr{bindings :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #binary_op_expr{op :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), left :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), right :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #unary_op_expr{op :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), operand :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #list_expr{elements :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #tuple_expr{elements :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #record_expr{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), fields :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #field_access_expr{record :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), field :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #record_update_expr{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), base :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), fields :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #lambda_expr{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_spawn_expr{fsm_name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                          init_args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                          init_state :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                          location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_send_expr{target :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), message :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_receive_expr{patterns :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), timeout :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_state_expr{location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #qualified_call_expr{trait_name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               type_args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               method_name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               receiver :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="clear_proof_cache/0">
+
+  <div class="detail-header">
+    <a href="#clear_proof_cache/0" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">clear_proof_cache()</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/codegen/cure_guard_codegen.erl#L650" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="compile_constraint/2">
+
+  <div class="detail-header">
+    <a href="#compile_constraint/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">compile_constraint(Constraint, Env)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/codegen/cure_guard_codegen.erl#L117" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> compile_constraint(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/syntax_tools/erl_syntax.html#t:syntaxTree/0">erl_syntax:syntaxTree</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="generate_guard/2">
+
+  <div class="detail-header">
+    <a href="#generate_guard/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_guard(Constraint, Env)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/codegen/cure_guard_codegen.erl#L60" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_guard(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/syntax_tools/erl_syntax.html#t:syntaxTree/0">erl_syntax:syntaxTree</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="generate_guard/3">
+
+  <div class="detail-header">
+    <a href="#generate_guard/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_guard(Constraint, Env, Opts)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/codegen/cure_guard_codegen.erl#L65" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_guard(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/syntax_tools/erl_syntax.html#t:syntaxTree/0">erl_syntax:syntaxTree</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="generate_validation_function/3">
+
+  <div class="detail-header">
+    <a href="#generate_validation_function/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_validation_function(TypeName, Params, Constraint)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/codegen/cure_guard_codegen.erl#L81" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_validation_function(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
+                                   [#param{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}],
+                                   <a href="#t:expr/0">expr</a>()) ->
+                                      {ok, <a href="https://www.erlang.org/doc/apps/syntax_tools/erl_syntax.html#t:syntaxTree/0">erl_syntax:syntaxTree</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="optimize_guard/2">
+
+  <div class="detail-header">
+    <a href="#optimize_guard/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">optimize_guard(GuardAST, Env)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/codegen/cure_guard_codegen.erl#L108" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> optimize_guard(<a href="https://www.erlang.org/doc/apps/syntax_tools/erl_syntax.html#t:syntaxTree/0">erl_syntax:syntaxTree</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> <a href="https://www.erlang.org/doc/apps/syntax_tools/erl_syntax.html#t:syntaxTree/0">erl_syntax:syntaxTree</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

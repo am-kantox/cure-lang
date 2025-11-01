@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>cure_cli — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-48D43E9B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+    <span translate="no">cure_cli</span> 
+    <small class="app-vsn" translate="no">(cure v0.1.0)</small>
+
+  </h1>
+
+
+    <section id="moduledoc">
+<h1>Cure Programming Language - Command Line Interface</h1><p>This module provides a comprehensive command-line interface for the Cure programming
+language compiler. It handles argument parsing, file compilation, and the complete
+compilation pipeline from Cure source code to BEAM bytecode.</p><h2 id="module-features" class="section-heading">
+  <a href="#module-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Features</span>
+</h2>
+<ul><li><strong>Complete CLI Interface</strong>: Argument parsing with support for all compiler options</li><li><strong>Full Compilation Pipeline</strong>: Lexing → Parsing → Type Checking → Optimization → Code Generation</li><li><strong>Error Handling</strong>: Comprehensive error reporting with optional debug information</li><li><strong>Multiple Output Formats</strong>: Support for different output directories and file formats</li><li><strong>Integration Ready</strong>: Designed for use with build systems and IDEs</li></ul><h2 id="module-usage" class="section-heading">
+  <a href="#module-usage" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Usage</span>
+</h2>
+<pre><code class="makeup bash" translate="no"><span class="">cure input.cure                    # Compile with defaults
+</span><span class="">cure input.cure -o output.beam     # Specify output file
+</span><span class="">cure input.cure --verbose          # Enable verbose output
+</span><span class="">cure input.cure --no-optimize      # Disable optimizations
+</span></code></pre><h2 id="module-command-line-options" class="section-heading">
+  <a href="#module-command-line-options" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Command Line Options</span>
+</h2>
+<ul><li><code class="inline">-o, --output FILE</code> - Output .beam file path</li><li><code class="inline">-d, --output-dir DIR</code> - Output directory (default: <code class="inline">_build/ebin</code>)</li><li><code class="inline">--verbose</code> - Enable verbose compilation output</li><li><code class="inline">--no-debug</code> - Disable debug information in output</li><li><code class="inline">--no-warnings</code> - Suppress compiler warnings</li><li><code class="inline">--no-type-check</code> - Skip type checking phase</li><li><code class="inline">--no-optimize</code> - Disable type-directed optimizations</li><li><code class="inline">--help, -h</code> - Show help information</li><li><code class="inline">--version, -v</code> - Show version information</li></ul><h2 id="module-environment-variables" class="section-heading">
+  <a href="#module-environment-variables" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Environment Variables</span>
+</h2>
+<ul><li><code class="inline">CURE_DEBUG=1</code> - Enable detailed debug output including stack traces</li></ul><h2 id="module-error-codes" class="section-heading">
+  <a href="#module-error-codes" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Codes</span>
+</h2>
+<ul><li><code class="inline">0</code> - Success</li><li><code class="inline">1</code> - Compilation or runtime error</li><li><code class="inline">2</code> - Usage error (invalid arguments)</li></ul>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#add_automatic_stdlib_imports/2" data-no-tooltip translate="no">add_automatic_stdlib_imports(Source, Options)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_cure_installation/0" data-no-tooltip translate="no">check_cure_installation()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Verify that all required Cure compiler modules are available.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#compile_file/1" data-no-tooltip translate="no">compile_file(Filename)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Compile a .cure file with default compilation options.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#compile_file/2" data-no-tooltip translate="no">compile_file(Filename, Options)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Compile a .cure file with specified compilation options.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#compile_file_from_shell/1" data-no-tooltip translate="no">compile_file_from_shell/1</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#compile_opts_to_codegen_opts/1" data-no-tooltip translate="no">compile_opts_to_codegen_opts(Options)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert CLI compilation options to code generation options.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#convert_beam_to_source_path/1" data-no-tooltip translate="no">convert_beam_to_source_path(BeamFile)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#ensure_stdlib_available/1" data-no-tooltip translate="no">ensure_stdlib_available(Options)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Ensure that the Cure standard library is available and compiled.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#format_compilation_error/1" data-no-tooltip translate="no">format_compilation_error/1</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#format_error/1" data-no-tooltip translate="no">format_error/1</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_module_info/1" data-no-tooltip translate="no">get_module_info/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Extract module information from an Abstract Syntax Tree.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#has_explicit_module_or_imports/1" data-no-tooltip translate="no">has_explicit_module_or_imports(Source)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#help/0" data-no-tooltip translate="no">help()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Display comprehensive help information for the Cure compiler.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#main/1" data-no-tooltip translate="no">main(Args)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Main entry point for the Cure compiler when used as an escript.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#version/0" data-no-tooltip translate="no">version()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Display version and system information for the Cure compiler.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="add_automatic_stdlib_imports/2">
+
+  <div class="detail-header">
+    <a href="#add_automatic_stdlib_imports/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">add_automatic_stdlib_imports(Source, Options)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L1247" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="check_cure_installation/0">
+
+  <div class="detail-header">
+    <a href="#check_cure_installation/0" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_cure_installation()</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L1035" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Verify that all required Cure compiler modules are available.</p><p>This function checks for the presence of core compiler modules
+to ensure the Cure installation is complete and functional.</p><h2 id="check_cure_installation/0-required-modules" class="section-heading">
+  <a href="#check_cure_installation/0-required-modules" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Required Modules</span>
+</h2>
+<ul><li><code class="inline">cure_lexer</code> - Tokenization engine</li><li><code class="inline">cure_parser</code> - AST generation</li><li><code class="inline">cure_typechecker</code> - Type checking system</li><li><code class="inline">cure_codegen</code> - Code generation</li></ul><h2 id="check_cure_installation/0-returns" class="section-heading">
+  <a href="#check_cure_installation/0-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">ok</code> - All required modules are present</li><li><code class="inline">{error, {missing_modules, List}}</code> - Some modules are missing</li></ul><h2 id="check_cure_installation/0-side-effects" class="section-heading">
+  <a href="#check_cure_installation/0-side-effects" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Side Effects</span>
+</h2>
+<p>Prints warning messages if modules are missing, including
+instructions to run <code class="inline">make all</code> to build the complete compiler.</p><h2 id="check_cure_installation/0-usage" class="section-heading">
+  <a href="#check_cure_installation/0-usage" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Usage</span>
+</h2>
+<p>This function is called internally to validate the compiler
+state before attempting compilation operations.</p>
+  </section>
+</section>
+<section class="detail" id="compile_file/1">
+
+  <div class="detail-header">
+    <a href="#compile_file/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">compile_file(Filename)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L267" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Compile a .cure file with default compilation options.</p><h2 id="compile_file/1-arguments" class="section-heading">
+  <a href="#compile_file/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Filename</code> - Path to the .cure source file to compile</li></ul><h2 id="compile_file/1-returns" class="section-heading">
+  <a href="#compile_file/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, OutputFile}</code> - Successful compilation with output file path</li><li><code class="inline">{error, Reason}</code> - Compilation failed with error details</li></ul><h2 id="compile_file/1-examples" class="section-heading">
+  <a href="#compile_file/1-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Examples</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="nf">compile_file</span><span class="p" data-group-id="1544995867-1">(</span><span class="s">&quot;examples/hello.cure&quot;</span><span class="p" data-group-id="1544995867-1">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; {ok, &quot;_build/ebin/hello.beam&quot;}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="compile_file/2">
+
+  <div class="detail-header">
+    <a href="#compile_file/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">compile_file(Filename, Options)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L327" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Compile a .cure file with specified compilation options.</p><p>This is the main compilation entry point that supports all compiler
+features including type checking, optimizations, and custom output options.</p><h2 id="compile_file/2-arguments" class="section-heading">
+  <a href="#compile_file/2-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Filename</code> - Path to the .cure source file to compile</li><li><code class="inline">Options</code> - Compilation options record with fields:<ul><li><code class="inline">output_file</code> - Custom output file path (optional)</li><li><code class="inline">output_dir</code> - Output directory (default: &quot;_build/ebin&quot;)</li><li><code class="inline">debug_info</code> - Include debug information (default: true)</li><li><code class="inline">warnings</code> - Show warnings (default: true)  </li><li><code class="inline">verbose</code> - Verbose output (default: false)</li><li><code class="inline">type_check</code> - Enable type checking (default: true)</li><li><code class="inline">optimize</code> - Enable optimizations (default: true)</li><li><code class="inline">fsm_runtime</code> - Include FSM runtime (default: true)</li></ul></li></ul><h2 id="compile_file/2-returns" class="section-heading">
+  <a href="#compile_file/2-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, OutputFile}</code> - Successful compilation</li><li><code class="inline">{error, Reason}</code> - Compilation error with detailed reason</li></ul><h2 id="compile_file/2-compilation-pipeline" class="section-heading">
+  <a href="#compile_file/2-compilation-pipeline" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Compilation Pipeline</span>
+</h2>
+<p>The function executes a complete 5-stage pipeline:</p><ol><li><strong>Lexical Analysis</strong> - Tokenize source code</li><li><strong>Parsing</strong> - Build Abstract Syntax Tree</li><li><strong>Type Checking</strong> - Verify types and constraints (optional)</li><li><strong>Optimization</strong> - Type-directed optimizations (optional)</li><li><strong>Code Generation</strong> - Generate BEAM bytecode</li></ol><h2 id="compile_file/2-examples" class="section-heading">
+  <a href="#compile_file/2-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Examples</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="c1">% Compile with verbose output</span><span class="w">
+</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="0562032421-1">{</span><span class="ss">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="0562032421-1">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">compile_file</span><span class="p" data-group-id="0562032421-2">(</span><span class="s">&quot;src/math.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="0562032421-2">)</span><span class="p">.</span><span class="w">
+
+</span><span class="c1">% Compile without optimizations  </span><span class="w">
+</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="0562032421-3">{</span><span class="ss">optimize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">false</span><span class="p" data-group-id="0562032421-3">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">compile_file</span><span class="p" data-group-id="0562032421-4">(</span><span class="s">&quot;debug.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="0562032421-4">)</span><span class="p">.</span><span class="w">
+
+</span><span class="c1">% Custom output file</span><span class="w">
+</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="0562032421-5">{</span><span class="ss">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;custom.beam&quot;</span><span class="p" data-group-id="0562032421-5">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">compile_file</span><span class="p" data-group-id="0562032421-6">(</span><span class="s">&quot;input.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="0562032421-6">)</span><span class="p">.</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="compile_file_from_shell/1">
+
+  <div class="detail-header">
+    <a href="#compile_file_from_shell/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">compile_file_from_shell/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L342" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="compile_opts_to_codegen_opts/1">
+
+  <div class="detail-header">
+    <a href="#compile_opts_to_codegen_opts/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">compile_opts_to_codegen_opts(Options)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L640" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Convert CLI compilation options to code generation options.</p><p>This function transforms the user-facing compilation options into
+the internal format expected by the code generation modules.</p><h2 id="compile_opts_to_codegen_opts/1-arguments" class="section-heading">
+  <a href="#compile_opts_to_codegen_opts/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Options</code> - Compilation options record</li></ul><h2 id="compile_opts_to_codegen_opts/1-returns" class="section-heading">
+  <a href="#compile_opts_to_codegen_opts/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li>List of <code class="inline">{Key, Value}</code> tuples for the code generator</li></ul><h2 id="compile_opts_to_codegen_opts/1-option-mapping" class="section-heading">
+  <a href="#compile_opts_to_codegen_opts/1-option-mapping" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Option Mapping</span>
+</h2>
+<ul><li><code class="inline">debug_info</code> → <code class="inline">{debug_info, true}</code></li><li><code class="inline">optimize</code> → <code class="inline">{optimize, 1}</code> </li><li><code class="inline">warnings</code> → <code class="inline">{warnings, true}</code></li><li><code class="inline">fsm_runtime</code> → <code class="inline">{fsm_integration, true}</code></li></ul>
+  </section>
+</section>
+<section class="detail" id="convert_beam_to_source_path/1">
+
+  <div class="detail-header">
+    <a href="#convert_beam_to_source_path/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">convert_beam_to_source_path(BeamFile)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L1228" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="ensure_stdlib_available/1">
+
+  <div class="detail-header">
+    <a href="#ensure_stdlib_available/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">ensure_stdlib_available(Options)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L1077" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Ensure that the Cure standard library is available and compiled.</p><p>This function checks if the standard library BEAM files exist,
+and if not, attempts to compile them automatically.</p><h2 id="ensure_stdlib_available/1-arguments" class="section-heading">
+  <a href="#ensure_stdlib_available/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Options</code> - Compilation options including verbosity settings</li></ul><h2 id="ensure_stdlib_available/1-returns" class="section-heading">
+  <a href="#ensure_stdlib_available/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">ok</code> - Standard library is available</li><li><code class="inline">{error, Reason}</code> - Standard library compilation failed</li></ul><h2 id="ensure_stdlib_available/1-side-effects" class="section-heading">
+  <a href="#ensure_stdlib_available/1-side-effects" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Side Effects</span>
+</h2>
+<ul><li>May invoke <code class="inline">make stdlib</code> to compile missing standard library</li><li>Prints progress messages if verbose mode is enabled</li></ul>
+  </section>
+</section>
+<section class="detail" id="format_compilation_error/1">
+
+  <div class="detail-header">
+    <a href="#format_compilation_error/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">format_compilation_error/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L821" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="format_error/1">
+
+  <div class="detail-header">
+    <a href="#format_error/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">format_error/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L792" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="get_module_info/1">
+
+  <div class="detail-header">
+    <a href="#get_module_info/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">get_module_info/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L875" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Extract module information from an Abstract Syntax Tree.</p><p>Extracts comprehensive metadata from compiled modules including:</p><ul><li>Module name</li><li>Exported functions with arities</li><li>Imported modules</li><li>Type definitions</li><li>FSM definitions</li><li>Function count</li></ul><h2 id="get_module_info/1-arguments" class="section-heading">
+  <a href="#get_module_info/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">AST</code> - Abstract Syntax Tree from the parser (list of items or single module_def)</li></ul><h2 id="get_module_info/1-returns" class="section-heading">
+  <a href="#get_module_info/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li>Map with module information:<ul><li><code class="inline">name</code> - Module name (atom or 'unknown')</li><li><code class="inline">exports</code> - List of exported function specs with name/arity</li><li><code class="inline">imports</code> - List of imported module names</li><li><code class="inline">functions</code> - List of function names defined in module</li><li><code class="inline">types</code> - List of type definition names</li><li><code class="inline">fsms</code> - List of FSM definition names</li><li><code class="inline">function_count</code> - Total number of functions</li><li><code class="inline">type_count</code> - Total number of types</li><li><code class="inline">fsm_count</code> - Total number of FSMs</li><li><code class="inline">type</code> - Module type ('module' or 'unknown')</li></ul></li></ul><h2 id="get_module_info/1-example" class="section-heading">
+  <a href="#get_module_info/1-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="2133369736-1">(</span><span class="s">&quot;MyModule.cure&quot;</span><span class="p" data-group-id="2133369736-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Info</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">get_module_info</span><span class="p" data-group-id="2133369736-2">(</span><span class="n">AST</span><span class="p" data-group-id="2133369736-2">)</span><span class="p">,</span><span class="w">
+</span><span class="c1">% =&gt; #{name =&gt; &#39;MyModule&#39;, exports =&gt; [{hello, 1}], ...}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="has_explicit_module_or_imports/1">
+
+  <div class="detail-header">
+    <a href="#has_explicit_module_or_imports/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">has_explicit_module_or_imports(Source)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L1275" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="help/0">
+
+  <div class="detail-header">
+    <a href="#help/0" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">help()</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L727" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Display comprehensive help information for the Cure compiler.</p><p>Outputs usage instructions, command-line options, examples, and
+environment variables to assist users in using the compiler effectively.</p><h2 id="help/0-output-format" class="section-heading">
+  <a href="#help/0-output-format" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Output Format</span>
+</h2>
+<ul><li><strong>Usage</strong>: Basic command syntax</li><li><strong>Arguments</strong>: Required input file specification</li><li><strong>Options</strong>: All available command-line flags with descriptions</li><li><strong>Examples</strong>: Common usage patterns</li><li><strong>Environment</strong>: Relevant environment variables</li></ul>
+  </section>
+</section>
+<section class="detail" id="main/1">
+
+  <div class="detail-header">
+    <a href="#main/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">main(Args)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L149" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Main entry point for the Cure compiler when used as an escript.</p><p>This function processes command line arguments and orchestrates the entire
+compilation process. It handles all user-facing errors and exits with
+appropriate status codes.</p><h2 id="main/1-arguments" class="section-heading">
+  <a href="#main/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Args</code> - List of command line arguments as strings</li></ul><h2 id="main/1-exit-codes" class="section-heading">
+  <a href="#main/1-exit-codes" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Exit Codes</span>
+</h2>
+<ul><li><code class="inline">0</code> - Successful compilation</li><li><code class="inline">1</code> - Compilation error or internal error</li><li><code class="inline">2</code> - Usage error (invalid arguments)</li></ul><h2 id="main/1-examples" class="section-heading">
+  <a href="#main/1-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Examples</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="c1">% These calls happen automatically when using the CLI:</span><span class="w">
+</span><span class="nf">main</span><span class="p" data-group-id="0710276480-1">(</span><span class="p" data-group-id="0710276480-2">[</span><span class="s">&quot;input.cure&quot;</span><span class="p" data-group-id="0710276480-2">]</span><span class="p" data-group-id="0710276480-1">)</span><span class="p">.</span><span class="w">
+</span><span class="nf">main</span><span class="p" data-group-id="0710276480-3">(</span><span class="p" data-group-id="0710276480-4">[</span><span class="s">&quot;input.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;-o&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;output.beam&quot;</span><span class="p" data-group-id="0710276480-4">]</span><span class="p" data-group-id="0710276480-3">)</span><span class="p">.</span><span class="w">
+</span><span class="nf">main</span><span class="p" data-group-id="0710276480-5">(</span><span class="p" data-group-id="0710276480-6">[</span><span class="s">&quot;--help&quot;</span><span class="p" data-group-id="0710276480-6">]</span><span class="p" data-group-id="0710276480-5">)</span><span class="p">.</span></code></pre><h2 id="main/1-error-handling" class="section-heading">
+  <a href="#main/1-error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h2>
+<p>All exceptions are caught and converted to user-friendly error messages.
+When <code class="inline">CURE_DEBUG=1</code> is set, full stack traces are displayed for debugging.</p>
+  </section>
+</section>
+<section class="detail" id="version/0">
+
+  <div class="detail-header">
+    <a href="#version/0" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">version()</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/cure_cli.erl#L779" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Display version and system information for the Cure compiler.</p><p>Shows the current Cure compiler version, Erlang/OTP version,
+and a brief description of the Cure programming language.</p><h2 id="version/0-output-information" class="section-heading">
+  <a href="#version/0-output-information" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Output Information</span>
+</h2>
+<ul><li><strong>Cure Version</strong>: Current compiler version (from <code class="inline">?CURE_VERSION</code>)</li><li><strong>Erlang/OTP Version</strong>: Version of the runtime platform</li><li><strong>Description</strong>: Brief overview of Cure language features</li></ul><h2 id="version/0-example-output" class="section-heading">
+  <a href="#version/0-example-output" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example Output</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">Cure</span><span class="w"> </span><span class="n">Programming</span><span class="w"> </span><span class="n">Language</span><span class="w"> </span><span class="n">Compiler</span><span class="w"> </span><span class="ss">v0</span><span class="p">.</span><span class="mf">1.0</span><span class="w">
+
+</span><span class="n">Built</span><span class="w"> </span><span class="ss">with</span><span class="w"> </span><span class="n">Erlang</span><span class="o">/</span><span class="n">OTP</span><span class="w"> </span><span class="mi">25</span><span class="w">
+
+</span><span class="n">Cure</span><span class="w"> </span><span class="ss">is</span><span class="w"> </span><span class="ss">a</span><span class="w"> </span><span class="ss">dependently</span><span class="o">-</span><span class="ss">typed</span><span class="w"> </span><span class="ss">functional</span><span class="w"> </span><span class="ss">programming</span><span class="w"> </span><span class="ss">language</span><span class="w">
+</span><span class="ss">for</span><span class="w"> </span><span class="ss">the</span><span class="w"> </span><span class="n">BEAM</span><span class="w"> </span><span class="ss">virtual</span><span class="w"> </span><span class="ss">machine</span><span class="w"> </span><span class="ss">with</span><span class="w"> </span><span class="ss">built</span><span class="o">-</span><span class="ss">in</span><span class="w"> </span><span class="ss">finite</span><span class="w"> </span><span class="ss">state</span><span class="w"> </span><span class="ss">machines</span><span class="p">.</span></code></pre>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

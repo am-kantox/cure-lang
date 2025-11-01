@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>API Reference — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-48D43E9B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/yourusername/cure" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+
+    <span>API Reference <small class="app-vsn">cure v0.1.0</small></span>
+  </h1>
+
+
+  <section class="details-list">
+    <h2 id="modules" class="section-heading">
+  <a href="#modules" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Modules</span>
+</h2>
+
+    <div class="summary">
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_action_compiler.html" translate="no">cure_action_compiler</a>
+
+  </div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_ast.html" translate="no">cure_ast</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - AST Definitions</h1><p>This module defines the Abstract Syntax Tree (AST) node types and structure for
+the Cure programming language. It provides comprehensive type definitions and
+helper functions for creating and manipulating AST nodes throughout the compilation
+pipeline.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_beam_compiler.html" translate="no">cure_beam_compiler</a>
+
+  </div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_cli.html" translate="no">cure_cli</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - Command Line Interface</h1><p>This module provides a comprehensive command-line interface for the Cure programming
+language compiler. It handles argument parsing, file compilation, and the complete
+compilation pipeline from Cure source code to BEAM bytecode.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_codegen.html" translate="no">cure_codegen</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - BEAM Code Generator</h1><p>The code generator transforms typed Cure AST into BEAM bytecode, enabling Cure
+programs to run on the Erlang Virtual Machine. It handles all Cure language
+features including dependent types, finite state machines, pattern matching,
+and integration with Erlang/OTP.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_compile_wrapper.html" translate="no">cure_compile_wrapper</a>
+
+  </div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_error_reporter.html" translate="no">cure_error_reporter</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Error Reporter</h1><p>Enhanced error reporting module with precise location tracking and
+user-friendly diagnostic messages. This module provides rich error
+formatting for parser, lexer, and semantic analysis errors.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_fsm_builtins.html" translate="no">cure_fsm_builtins</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - FSM Built-in Functions</h1><p>This module provides built-in FSM functions that interface directly with the
+cure_fsm_runtime module. These functions are called from Cure programs via
+the FFI (Foreign Function Interface) to provide FSM functionality.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_fsm_cure_api.html" translate="no">cure_fsm_cure_api</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure FSM API Wrapper</h1><p>This module provides the Cure-level FSM API that matches the design in lib/std/fsm.cure.
+It wraps the underlying cure_fsm_runtime gen_server to provide</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_fsm_runtime.html" translate="no">cure_fsm_runtime</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - FSM Runtime System</h1><p>The FSM runtime system provides a comprehensive execution environment for 
+finite state machines in the Cure programming language. It implements a complete
+FSM execution model with state transitions, guard evaluation, action execution,
+and performance optimizations, all built on top of the BEAM virtual machine.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_guard_codegen.html" translate="no">cure_guard_codegen</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Guard Validation Code Generation</h1><p>This module generates runtime validation code for dependent type guards.
+It translates guard constraints into executable BEAM code that validates
+values against dependent type requirements.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_guard_compiler.html" translate="no">cure_guard_compiler</a>
+
+  </div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_lexer.html" translate="no">cure_lexer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - Lexer</h1><p>The lexer module provides tokenization services for Cure source code, converting
+raw text into a structured stream of tokens for the parser. It supports all Cure
+language constructs including keywords, operators, literals, and comments.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_lsp_server.html" translate="no">cure_lsp_server</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Language Server Protocol (LSP) Implementation</h1><p>This module implements the Language Server Protocol for the Cure programming language,
+providing IDE features like</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_parser.html" translate="no">cure_parser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - Parser</h1><p>The parser module implements a recursive descent parser that converts tokens from
+the lexer into an Abstract Syntax Tree (AST). It handles the complete Cure language
+grammar including modules, functions, finite state machines, types, records,
+and expressions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_profiler.html" translate="no">cure_profiler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Runtime Profiler</h1><p>Collects runtime execution statistics to guide compiler optimizations.
+Provides lightweight instrumentation and aggregation of</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_runtime.html" translate="no">cure_runtime</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - Runtime Execution Engine</h1><p>The runtime execution engine interprets and executes BEAM instructions generated
+by the Cure compiler. It provides a complete execution environment for Cure
+programs with stack-based instruction processing, function calls, module loading,
+and integration with the Erlang standard library.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_show_native.html" translate="no">cure_show_native</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Native Erlang implementations of Show trait functions for Cure.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_smt_parser.html" translate="no">cure_smt_parser</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure SMT Model Parser</h1><p>Parses S-expression output from SMT solvers (Z3, CVC5) to extract
+variable bindings and convert them to Erlang terms.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_smt_process.html" translate="no">cure_smt_process</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure SMT Solver Process Manager</h1><p>Manages external SMT solver processes (Z3, CVC5) using Erlang ports.
+Provides process pooling, timeout enforcement, and resource management.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_smt_solver.html" translate="no">cure_smt_solver</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - SMT Solver and Proof Assistant</h1><p>The SMT (Satisfiability Modulo Theories) solver provides constraint solving
+capabilities for Cure's dependent type system. It handles arithmetic constraints,
+logical reasoning, and proof generation for dependent type verification.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_smt_translator.html" translate="no">cure_smt_translator</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure SMT-LIB Translator</h1><p>Translates Cure type constraints and expressions into SMT-LIB format
+for consumption by external SMT solvers (Z3, CVC5).</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_std.html" translate="no">cure_std</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - Standard Library Runtime</h1><p>Provides core runtime functions that cannot be implemented in pure Cure due to
+their need for Erlang-specific features. This module contains the essential
+low-level operations for I/O, monadic operations, FSM integration, and
+value serialization.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_string_native.html" translate="no">cure_string_native</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Native Erlang implementations of string operations for Cure.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_type_optimizer.html" translate="no">cure_type_optimizer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - Type-directed Optimizer</h1><p>The type optimizer leverages rich type information from Cure's dependent type
+system to perform sophisticated program optimizations. It analyzes type usage
+patterns, specializes generic functions, eliminates dead code, and optimizes
+memory layouts based on static type analysis.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_typechecker.html" translate="no">cure_typechecker</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - Type Checker</h1><p>The type checker module provides high-level type checking functionality for
+Cure programs. It works with parsed AST nodes and implements comprehensive
+static type analysis including dependent type verification, constraint solving, and type inference.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_types.html" translate="no">cure_types</a>
+
+  </div>
+
+    <div class="summary-synopsis"><h1>Cure Programming Language - Type System Core</h1><p>The core type system module implementing Cure's advanced dependent type system
+with constraint solving, type inference, and support for higher-kinded types.
+This module provides the foundational type operations that power Cure's static
+type checking and dependent type verification.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="cure_utils.html" translate="no">cure_utils</a>
+
+  </div>
+
+</div>
+
+    </div>
+  </section>
+
+
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="readme.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Cure Programming Language
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Operations Implementation Summary - Cure Documentation</title>
+    <meta name="description" content=" Overview">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1>Record Operations Implementation Summary</h1>
+
+<h2>Overview</h2>
+
+<p>This document summarizes the implementation of two new record operations in the Cure programming language:</p>
+<ol>
+<li><strong>Direct field access</strong> using dot notation: <code>record.field</code></li>
+<li><strong>Record update syntax</strong> using pipe notation: <code>Record{base | field: value}</code></li>
+</ol>
+
+<h2>Implementation Date</h2>
+
+<p>2025-10-31</p>
+
+<h2>Changes Made</h2>
+
+<h3>1. AST Extensions (<code>src/parser/cure_ast.hrl</code>)</h3>
+
+<p>Added two new expression record types:</p>
+
+<pre><code>%% Field access expressions (record.field)
+<p>-record(field<em>access</em>expr, {</p>
+<p>    record,    % Expression evaluating to a record</p>
+<p>    field,     % Atom: field name</p>
+<p>    location</p>
+<p>}).</p>
+
+<p>%% Record update expressions (Record{old | field: value})</p>
+<p>-record(record<em>update</em>expr, {</p>
+<p>    name,      % Record type name</p>
+<p>    base,      % Expression for the base record</p>
+<p>    fields,    % List of #field_expr{} records</p>
+<p>    location</p>
+<p>}).</p>
+</code></pre>
+
+<p>Updated the <code>expr()</code> type definition to include these new types.</p>
+
+<h3>2. Parser Enhancements (<code>src/parser/cure_parser.erl</code>)</h3>
+
+<h4>Field Access Parsing</h4>
+<ul>
+<li>Added <code>parse<em>postfix</em>operators/2</code> function to handle postfix operators like <code>.field</code></li>
+<li>Modified <code>parse<em>binary</em>expression/2</code> to call postfix operator parsing</li>
+<li>Implemented smart disambiguation between module qualification (<code>Module.function()</code>) and field access (<code>record.field</code>)</li>
+</ul>
+
+<h4>Record Update Parsing</h4>
+<ul>
+<li>Enhanced <code>parse<em>identifier</em>or_call/1</code> to detect the <code>|</code> pipe operator in record construction</li>
+<li>Added logic to distinguish between <code>Record{field: value}</code> (construction) and <code>Record{base | field: value}</code> (update)</li>
+<li>Implemented backtracking for ambiguous cases</li>
+</ul>
+
+<h4>Helper Functions</h4>
+<ul>
+<li>Added <code>is<em>identifier</em>token/1</code> to check if a token is an identifier</li>
+<li>Updated <code>get<em>expr</em>location/1</code> to handle new expression types</li>
+</ul>
+
+<h3>3. Type System Integration (<code>src/types/cure_typechecker.erl</code>)</h3>
+
+<h4>Type Inference for Field Access</h4>
+<pre><code>infer<em>expr({field</em>access_expr, RecordExpr, FieldName, Location}, Env) ->
+<p>    % Infer record type, look up field type from record definition</p>
+<p>    % Return field type or error if field doesn't exist</p>
+</code></pre>
+
+<h4>Type Inference for Record Update</h4>
+<pre><code>infer<em>expr({record</em>update_expr, RecordName, BaseExpr, Fields, Location}, Env) ->
+<p>    % Check base expression matches record type</p>
+<p>    % Validate updated fields exist and have correct types</p>
+<p>    % Return updated record type</p>
+</code></pre>
+
+<h4>AST Conversion</h4>
+<ul>
+<li>Added conversion functions in <code>convert<em>expr</em>to_tuple/1</code> for the new expression types</li>
+<li>Integrated with existing type inference pipeline</li>
+</ul>
+
+<h3>4. Code Generation (<code>src/codegen/cure_codegen.erl</code>)</h3>
+
+<h4>Field Access Codegen</h4>
+<pre><code>compile<em>record</em>expr(#field<em>access</em>expr{...}, State) ->
+<p>    % Generate: maps:get(FieldName, Record)</p>
+</code></pre>
+
+<h4>Record Update Codegen</h4>
+<pre><code>compile<em>record</em>expr(#record<em>update</em>expr{...}, State) ->
+<p>    % Generate: BaseRecord#{field1 := Value1, field2 := Value2, ...}</p>
+</code></pre>
+
+<p>Added dispatch cases in <code>compile_expression/2</code> for the new expression types.</p>
+
+<h3>5. BEAM Compiler Integration (<code>src/codegen/cure<em>beam</em>compiler.erl</code>)</h3>
+
+<h4>New BEAM Instructions</h4>
+<ul>
+<li><code>record<em>field</em>access</code>: Compiles to <code>maps:get(Field, Record)</code></li>
+<li><code>record_update</code>: Compiles to map update syntax <code>Map#{field := value}</code></li>
+</ul>
+
+<h4>Record Representation</h4>
+<p>Changed record compilation from Erlang records to maps:</p>
+<ul>
+<li>Records are now represented as Erlang maps</li>
+<li>Field access uses <code>maps:get/2</code></li>
+<li>Updates use map update syntax <code>#{...}</code></li>
+</ul>
+
+<pre><code>compile<em>make</em>record([RecordName, FieldNames, FieldCount], Context) ->
+<p>    % Generate: #{field1 => Val1, field2 => Val2, ...}</p>
+<p>    MapForm = {map, Line, MapAssocs}</p>
+</code></pre>
+
+<h3>6. Documentation and Examples</h3>
+
+<h4>Current State</h4>
+<strong>Note</strong>: As of October 31, 2025, the record field access and update operations are <strong>fully implemented</strong> in the compiler (parser, AST, codegen), but the example files mentioned in earlier documentation do not currently exist.
+
+<strong>Existing Examples</strong>: The current Cure examples that demonstrate record syntax are:
+<ul>
+<li><code>examples/04<em>pattern</em>guards.cure</code> - Shows record pattern matching with guards (e.g., <code>Point{x: x, y: y} when x == 0.0 and y == 0.0</code>)</li>
+<li>Other example files show basic record construction (e.g., <code>Point{x: 1.0, y: 2.0}</code>)</li>
+</ul>
+
+<strong>Implementation Status</strong>:
+<ul>
+<li>✅ Parser fully supports both field access (<code>.field</code>) and record update (<code>Record{base | field: value}</code>) syntax</li>
+<li>✅ AST definitions complete (<code>#field<em>access</em>expr{}</code> and <code>#record<em>update</em>expr{}</code>)</li>
+<li>✅ Code generation implemented (<code>compile<em>field</em>access<em>expr/2</code> and <code>compile</em>record<em>update</em>expr/2</code>)</li>
+<li>⚠️  Example files demonstrating these features have not yet been added</li>
+</ul>
+
+<h2>Syntax Examples</h2>
+
+<h3>Direct Field Access</h3>
+<pre><code>def get_name(p: Person): String =
+<p>  p.name  # Direct field access</p>
+
+<h1>Chained access</h1>
+<p>def get<em>nested</em>field(contact: Contact): String =</p>
+<p>  contact.person.name  # Access nested record fields</p>
+</code></pre>
+
+<h3>Record Update</h3>
+<pre><code>def birthday(p: Person): Person =
+<p>  Person{p | age: p.age + 1}  # Update single field</p>
+
+<p>def move_point(pt: Point, dx: Float, dy: Float): Point =</p>
+<p>  Point{pt | x: pt.x + dx, y: pt.y + dy}  # Update multiple fields</p>
+</code></pre>
+
+<h2>Testing</h2>
+
+<h3>Implementation Verification</h3>
+<p>✅ <strong>Parser Implementation</strong>:</p>
+<ul>
+<li>Field access parsing: <code>parse<em>postfix</em>operators/2</code> (lines 2756-2801)</li>
+<li>Record update parsing: lines 3136-3152 in <code>cure_parser.erl</code></li>
+<li>Proper disambiguation between module qualification and field access</li>
+</ul>
+
+<p>✅ <strong>Codegen Implementation</strong>:</p>
+<ul>
+<li><code>compile<em>field</em>access<em>expr/2</code>: lines 1692-1706 in <code>cure</em>codegen.erl</code></li>
+<li><code>compile<em>record</em>update<em>expr/2</code>: lines 1668-1689 in <code>cure</em>codegen.erl</code></li>
+<li>Generates <code>record<em>field</em>access</code> and <code>update_record</code> BEAM instructions</li>
+</ul>
+
+<p>✅ <strong>AST Definitions</strong>:</p>
+<ul>
+<li><code>#field<em>access</em>expr{}</code>: lines 293-298 in <code>cure_ast.hrl</code></li>
+<li><code>#record<em>update</em>expr{}</code>: lines 300-306 in <code>cure_ast.hrl</code></li>
+</ul>
+
+<h3>Testing Status</h3>
+<ul>
+<li>✓ Core implementation complete in compiler pipeline</li>
+<li>⚠️ Dedicated example files for these features not yet created</li>
+<li>✓ Build system compiles without errors</li>
+</ul>
+
+<h2>Technical Notes</h2>
+
+<h3>Disambiguation Strategy</h3>
+<p>The parser disambiguates between module qualification and field access by checking:</p>
+<ol>
+<li>If the base expression is a simple identifier (<code>#identifier_expr{}</code>)</li>
+<li>If there's a <code>(</code> token after the field name</li>
+<li>If both are true → module qualification</li>
+<li>Otherwise → field access</li>
+</ol>
+
+<h3>Record Update Implementation</h3>
+<p>The record update syntax is parsed by:</p>
+<ol>
+<li>Detecting <code>{</code> after a record type name</li>
+<li>Parsing the first expression after <code>{</code></li>
+<li>Checking for <code>|</code> token</li>
+<li>If <code>|</code> found → record update, otherwise backtrack to regular construction</li>
+</ol>
+
+<h3>BEAM Compilation</h3>
+<p>Records compile to Erlang maps, which provides:</p>
+<ul>
+<li>Efficient field access via <code>maps:get/2</code></li>
+<li>Efficient updates via map update syntax</li>
+<li>No runtime record definitions needed</li>
+<li>Better interoperability with Erlang code</li>
+</ul>
+
+<h2>Future Enhancements</h2>
+
+<p>Potential improvements for future iterations:</p>
+<ol>
+<li><strong>Nested updates</strong>: <code>Person{p | address.city: "New York"}</code></li>
+<li><strong>Pattern-based updates</strong>: <code>Person{p | age: a} when a > 18 -> ..}</code></li>
+<li><strong>Partial construction</strong>: Allow omitting some fields with defaults</li>
+<li><strong>Record spreading</strong>: <code>Person{p1 | ...p2}</code> to merge records</li>
+<li><strong>Type-safe field access</strong>: Compile-time verification of field existence</li>
+</ol>
+
+<h2>Compatibility</h2>
+
+<ul>
+<li><strong>Backward Compatible</strong>: Existing record syntax and pattern matching work unchanged</li>
+<li><strong>New Syntax</strong>: Field access and update syntax are additive features</li>
+<li><strong>BEAM Integration</strong>: Maps-based implementation is standard Erlang</li>
+</ul>
+
+<h2>References</h2>
+
+<h3>Implementation Files</h3>
+<ul>
+<li><strong>AST definitions</strong>: <code>src/parser/cure_ast.hrl</code> (lines 293-306)</li>
+<li><strong>Parser implementation</strong>: <code>src/parser/cure_parser.erl</code></li>
+<li>Field access: lines 2756-2801 (<code>parse<em>postfix</em>operators/2</code>)</li>
+<li>Record update: lines 3136-3152 (in <code>parse<em>identifier</em>or_call/1</code>)</li>
+<li><strong>Code generation</strong>: <code>src/codegen/cure_codegen.erl</code></li>
+<li><code>compile<em>field</em>access_expr/2</code>: lines 1692-1706</li>
+<li><code>compile<em>record</em>update_expr/2</code>: lines 1668-1689</li>
+<li>Expression dispatch: lines 1219-1220</li>
+<li><strong>Type checker</strong>: <code>src/types/cure_typechecker.erl</code> (type inference for new expressions)</li>
+<li><strong>BEAM compiler</strong>: <code>src/codegen/cure<em>beam</em>compiler.erl</code> (BEAM bytecode generation)</li>
+</ul>
+
+<h3>Example Files</h3>
+<ul>
+<li><strong>Existing</strong>: <code>examples/04<em>pattern</em>guards.cure</code> (record pattern matching)</li>
+<li><strong>Future</strong>: Dedicated examples for field access and record update syntax to be added</li>
+</ul>
+
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

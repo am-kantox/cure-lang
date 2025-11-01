@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>cure_string_native — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-48D43E9B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+    <span translate="no">cure_string_native</span> 
+    <small class="app-vsn" translate="no">(cure v0.1.0)</small>
+
+  </h1>
+
+
+    <section id="moduledoc">
+<p>Native Erlang implementations of string operations for Cure.</p><p>Provides high-performance string manipulation functions that operate on
+UTF-8 binaries (String type) and charlists (Charlist type).</p>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#at/2" data-no-tooltip translate="no">at(String, Index)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get the grapheme at a specific index (0-based).
+Returns {ok, Grapheme} or {error, out_of_bounds}.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#byte_size/1" data-no-tooltip translate="no">byte_size(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get the byte size of a string.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#capitalize/1" data-no-tooltip translate="no">capitalize/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Capitalize the first grapheme of a string.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#codepoints/1" data-no-tooltip translate="no">codepoints(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get a list of Unicode codepoints from a string.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#concat/2" data-no-tooltip translate="no">concat(S1, S2)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Concatenate two strings efficiently.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#contains/2" data-no-tooltip translate="no">contains(String, Substring)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if a string contains a substring.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#downcase/1" data-no-tooltip translate="no">downcase(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert string to lowercase (Unicode-aware).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#duplicate/2" data-no-tooltip translate="no">duplicate(String, N)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Duplicate a string n times.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#ends_with/2" data-no-tooltip translate="no">ends_with(String, Suffix)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if a string ends with a given suffix.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#first/1" data-no-tooltip translate="no">first/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get the first grapheme of a string.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#from_binary/1" data-no-tooltip translate="no">from_binary(Bin)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert a binary to a string, validating UTF-8.
+Returns {ok, String} or {error, invalid_utf8}.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#from_charlist/1" data-no-tooltip translate="no">from_charlist(Charlist)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert a charlist to a UTF-8 string.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#graphemes/1" data-no-tooltip translate="no">graphemes(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Split a string into a list of grapheme clusters.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#is_empty/1" data-no-tooltip translate="no">is_empty/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if a string is empty.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#join/2" data-no-tooltip translate="no">join/2</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Join a list of strings with a separator.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#last/1" data-no-tooltip translate="no">last/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get the last grapheme of a string.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#length/1" data-no-tooltip translate="no">length(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Get the length of a string in graphemes (Unicode-aware).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#pad_left/3" data-no-tooltip translate="no">pad_left(String, Width, Padding)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Pad a string on the left to a given width.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#pad_right/3" data-no-tooltip translate="no">pad_right(String, Width, Padding)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Pad a string on the right to a given width.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#replace/3" data-no-tooltip translate="no">replace(String, Pattern, Replacement)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Replace the first occurrence of a pattern.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#replace_all/3" data-no-tooltip translate="no">replace_all(String, Pattern, Replacement)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Replace all occurrences of a pattern.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#reverse/1" data-no-tooltip translate="no">reverse(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Reverse a string (Unicode-aware, reverses graphemes).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#slice/3" data-no-tooltip translate="no">slice(String, Start, Length)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Extract a substring by grapheme position and length.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#split/2" data-no-tooltip translate="no">split(String, Pattern)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Split a string by a pattern.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#split_at/2" data-no-tooltip translate="no">split_at(String, Index)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Split a string at a specific grapheme index.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#starts_with/2" data-no-tooltip translate="no">starts_with(String, Prefix)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if a string starts with a given prefix.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#to_atom/1" data-no-tooltip translate="no">to_atom(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert string to atom.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#to_binary/1" data-no-tooltip translate="no">to_binary(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert string to raw binary (identity function for strings).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#to_charlist/1" data-no-tooltip translate="no">to_charlist(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert a UTF-8 string to a charlist.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#trim/1" data-no-tooltip translate="no">trim(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Trim whitespace from both ends of a string.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#trim_left/1" data-no-tooltip translate="no">trim_left(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Trim whitespace from the left side of a string.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#trim_right/1" data-no-tooltip translate="no">trim_right(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Trim whitespace from the right side of a string.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#upcase/1" data-no-tooltip translate="no">upcase(String)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Convert string to uppercase (Unicode-aware).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#valid_utf8/1" data-no-tooltip translate="no">valid_utf8(Bin)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if a binary is valid UTF-8.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="at/2">
+
+  <div class="detail-header">
+    <a href="#at/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">at(String, Index)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L179" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> at(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()}.</pre>
+
+      </div>
+
+<p>Get the grapheme at a specific index (0-based).
+Returns {ok, Grapheme} or {error, out_of_bounds}.</p>
+  </section>
+</section>
+<section class="detail" id="byte_size/1">
+
+  <div class="detail-header">
+    <a href="#byte_size/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">byte_size(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L131" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> byte_size(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:non_neg_integer/0">non_neg_integer</a>().</pre>
+
+      </div>
+
+<p>Get the byte size of a string.</p>
+  </section>
+</section>
+<section class="detail" id="capitalize/1">
+
+  <div class="detail-header">
+    <a href="#capitalize/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">capitalize/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L296" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> capitalize(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Capitalize the first grapheme of a string.</p>
+  </section>
+</section>
+<section class="detail" id="codepoints/1">
+
+  <div class="detail-header">
+    <a href="#codepoints/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">codepoints(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L397" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> codepoints(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>()].</pre>
+
+      </div>
+
+<p>Get a list of Unicode codepoints from a string.</p>
+  </section>
+</section>
+<section class="detail" id="concat/2">
+
+  <div class="detail-header">
+    <a href="#concat/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">concat(S1, S2)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L117" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> concat(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Concatenate two strings efficiently.</p>
+  </section>
+</section>
+<section class="detail" id="contains/2">
+
+  <div class="detail-header">
+    <a href="#contains/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">contains(String, Substring)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L349" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> contains(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+<p>Check if a string contains a substring.</p>
+  </section>
+</section>
+<section class="detail" id="downcase/1">
+
+  <div class="detail-header">
+    <a href="#downcase/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">downcase(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L289" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> downcase(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Convert string to lowercase (Unicode-aware).</p>
+  </section>
+</section>
+<section class="detail" id="duplicate/2">
+
+  <div class="detail-header">
+    <a href="#duplicate/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">duplicate(String, N)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L426" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> duplicate(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:non_neg_integer/0">non_neg_integer</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Duplicate a string n times.</p>
+  </section>
+</section>
+<section class="detail" id="ends_with/2">
+
+  <div class="detail-header">
+    <a href="#ends_with/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">ends_with(String, Suffix)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L331" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> ends_with(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+<p>Check if a string ends with a given suffix.</p>
+  </section>
+</section>
+<section class="detail" id="first/1">
+
+  <div class="detail-header">
+    <a href="#first/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">first/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L190" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> first(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()}.</pre>
+
+      </div>
+
+<p>Get the first grapheme of a string.</p>
+  </section>
+</section>
+<section class="detail" id="from_binary/1">
+
+  <div class="detail-header">
+    <a href="#from_binary/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">from_binary(Bin)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L96" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> from_binary(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()}.</pre>
+
+      </div>
+
+<p>Convert a binary to a string, validating UTF-8.
+Returns {ok, String} or {error, invalid_utf8}.</p>
+  </section>
+</section>
+<section class="detail" id="from_charlist/1">
+
+  <div class="detail-header">
+    <a href="#from_charlist/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">from_charlist(Charlist)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L81" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> from_charlist(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:list/0">list</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Convert a charlist to a UTF-8 string.</p>
+  </section>
+</section>
+<section class="detail" id="graphemes/1">
+
+  <div class="detail-header">
+    <a href="#graphemes/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">graphemes(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L390" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> graphemes(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()].</pre>
+
+      </div>
+
+<p>Split a string into a list of grapheme clusters.</p>
+  </section>
+</section>
+<section class="detail" id="is_empty/1">
+
+  <div class="detail-header">
+    <a href="#is_empty/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">is_empty/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L138" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> is_empty(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+<p>Check if a string is empty.</p>
+  </section>
+</section>
+<section class="detail" id="join/2">
+
+  <div class="detail-header">
+    <a href="#join/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">join/2</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L242" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> join([<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()], <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Join a list of strings with a separator.</p>
+  </section>
+</section>
+<section class="detail" id="last/1">
+
+  <div class="detail-header">
+    <a href="#last/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">last/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L209" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> last(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()}.</pre>
+
+      </div>
+
+<p>Get the last grapheme of a string.</p>
+  </section>
+</section>
+<section class="detail" id="length/1">
+
+  <div class="detail-header">
+    <a href="#length/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">length(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L124" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> length(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:non_neg_integer/0">non_neg_integer</a>().</pre>
+
+      </div>
+
+<p>Get the length of a string in graphemes (Unicode-aware).</p>
+  </section>
+</section>
+<section class="detail" id="pad_left/3">
+
+  <div class="detail-header">
+    <a href="#pad_left/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">pad_left(String, Width, Padding)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L433" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> pad_left(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:non_neg_integer/0">non_neg_integer</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Pad a string on the left to a given width.</p>
+  </section>
+</section>
+<section class="detail" id="pad_right/3">
+
+  <div class="detail-header">
+    <a href="#pad_right/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">pad_right(String, Width, Padding)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L450" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> pad_right(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:non_neg_integer/0">non_neg_integer</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Pad a string on the right to a given width.</p>
+  </section>
+</section>
+<section class="detail" id="replace/3">
+
+  <div class="detail-header">
+    <a href="#replace/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">replace(String, Pattern, Replacement)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L363" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> replace(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Replace the first occurrence of a pattern.</p>
+  </section>
+</section>
+<section class="detail" id="replace_all/3">
+
+  <div class="detail-header">
+    <a href="#replace_all/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">replace_all(String, Pattern, Replacement)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L376" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> replace_all(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Replace all occurrences of a pattern.</p>
+  </section>
+</section>
+<section class="detail" id="reverse/1">
+
+  <div class="detail-header">
+    <a href="#reverse/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">reverse(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L418" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> reverse(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Reverse a string (Unicode-aware, reverses graphemes).</p>
+  </section>
+</section>
+<section class="detail" id="slice/3">
+
+  <div class="detail-header">
+    <a href="#slice/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">slice(String, Start, Length)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L149" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> slice(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:non_neg_integer/0">non_neg_integer</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Extract a substring by grapheme position and length.</p>
+  </section>
+</section>
+<section class="detail" id="split/2">
+
+  <div class="detail-header">
+    <a href="#split/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">split(String, Pattern)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L226" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> split(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()].</pre>
+
+      </div>
+
+<p>Split a string by a pattern.</p>
+  </section>
+</section>
+<section class="detail" id="split_at/2">
+
+  <div class="detail-header">
+    <a href="#split_at/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">split_at(String, Index)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L233" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> split_at(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>()) -> {<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()}.</pre>
+
+      </div>
+
+<p>Split a string at a specific grapheme index.</p>
+  </section>
+</section>
+<section class="detail" id="starts_with/2">
+
+  <div class="detail-header">
+    <a href="#starts_with/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">starts_with(String, Prefix)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L320" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> starts_with(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+<p>Check if a string starts with a given prefix.</p>
+  </section>
+</section>
+<section class="detail" id="to_atom/1">
+
+  <div class="detail-header">
+    <a href="#to_atom/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">to_atom(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L106" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> to_atom(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>().</pre>
+
+      </div>
+
+<p>Convert string to atom.</p>
+  </section>
+</section>
+<section class="detail" id="to_binary/1">
+
+  <div class="detail-header">
+    <a href="#to_binary/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">to_binary(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L88" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> to_binary(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Convert string to raw binary (identity function for strings).</p>
+  </section>
+</section>
+<section class="detail" id="to_charlist/1">
+
+  <div class="detail-header">
+    <a href="#to_charlist/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">to_charlist(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L74" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> to_charlist(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:list/0">list</a>().</pre>
+
+      </div>
+
+<p>Convert a UTF-8 string to a charlist.</p>
+  </section>
+</section>
+<section class="detail" id="trim/1">
+
+  <div class="detail-header">
+    <a href="#trim/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">trim(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L257" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> trim(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Trim whitespace from both ends of a string.</p>
+  </section>
+</section>
+<section class="detail" id="trim_left/1">
+
+  <div class="detail-header">
+    <a href="#trim_left/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">trim_left(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L264" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> trim_left(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Trim whitespace from the left side of a string.</p>
+  </section>
+</section>
+<section class="detail" id="trim_right/1">
+
+  <div class="detail-header">
+    <a href="#trim_right/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">trim_right(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L271" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> trim_right(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Trim whitespace from the right side of a string.</p>
+  </section>
+</section>
+<section class="detail" id="upcase/1">
+
+  <div class="detail-header">
+    <a href="#upcase/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">upcase(String)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L282" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> upcase(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Convert string to uppercase (Unicode-aware).</p>
+  </section>
+</section>
+<section class="detail" id="valid_utf8/1">
+
+  <div class="detail-header">
+    <a href="#valid_utf8/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">valid_utf8(Bin)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/runtime/cure_string_native.erl#L404" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> valid_utf8(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+<p>Check if a binary is valid UTF-8.</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

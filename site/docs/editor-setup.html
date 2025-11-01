@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Setup for Cure String Literals - Cure Documentation</title>
+    <meta name="description" content="This guide helps you configure your editor to easily input Unicode curly quotes (' and ') for Cure charlist literals.">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1>Editor Setup for Cure String Literals</h1>
+
+<p>This guide helps you configure your editor to easily input Unicode curly quotes (<code>'</code> and <code>'</code>) for Cure charlist literals.</p>
+
+<p>> <strong>Implementation Status</strong>: Charlist literals with Unicode curly quotes are fully implemented in the Cure lexer and tested (see <code>test/string<em>lexer</em>test.erl</code>). However, in practice, most Cure code uses regular strings (<code>"hello"</code>) for text. Charlists are primarily for Erlang interoperability when needed.</p>
+
+<h2>Quick Reference</h2>
+
+<p>Cure uses different quote characters for different purposes:</p>
+
+<p>| Character | Unicode | Usage | Example |</p>
+<p>|-----------|---------|-------|---------|</p>
+<p>| <code>"</code> | U+0022 | String literals | <code>"hello"</code> |</p>
+<p>| <code>'</code> | U+2018 | Charlist start | <code>'hello'</code> |</p>
+<p>| <code>'</code> | U+2019 | Charlist end | <code>'hello'</code> |</p>
+<p>| <code>:</code> | U+003A | Atoms (recommended) | <code>:my_atom</code> |</p>
+<p>| <code>'</code> | U+0027 | Atoms (alternative) | <code>'my_atom'</code> |</p>
+
+<h2>Operating System Methods</h2>
+
+<h3>macOS</h3>
+
+<strong>System-wide Keyboard Shortcuts:</strong>
+<ul>
+<li>Left curly quote <code>'</code>: <kbd>Option</kbd> + <kbd>]</kbd></li>
+<li>Right curly quote <code>'</code>: <kbd>Option</kbd> + <kbd>Shift</kbd> + <kbd>]</kbd></li>
+</ul>
+
+<strong>Text Substitution (Automatic):</strong>
+<ol>
+<li>Open System Preferences → Keyboard → Text</li>
+<li>Add entries:</li>
+</ol>
+<ul>
+<li>Replace: <code>''</code> → With: <code>''</code> (two single curly quotes)</li>
+<li>Or configure your preferred trigger</li>
+</ul>
+
+<h3>Linux</h3>
+
+<strong>Compose Key Method:</strong>
+<ol>
+<li>Set a compose key in your keyboard settings</li>
+<li>Use sequences:</li>
+</ol>
+<ul>
+<li><code>'</code> (left): <kbd>Compose</kbd> <kbd><</kbd> <kbd>'</kbd></li>
+<li><code>'</code> (right): <kbd>Compose</kbd> <kbd>></kbd> <kbd>'</kbd></li>
+</ul>
+
+<strong>XKB Custom Layout:</strong>
+<p>Create a custom keyboard layout in <code>~/.config/xkb/symbols/custom</code>:</p>
+
+<pre><code>partial alphanumeric_keys
+<p>xkb<em>symbols "cure</em>quotes" {</p>
+<p>    include "us(basic)"</p>
+<p>    key <AC10> { [ apostrophe, quotedbl, U2018, U2019 ] };</p>
+<p>};</p>
+</code></pre>
+
+<p>Apply with: <code>setxkbmap -option "custom:cure_quotes"</code></p>
+
+<h3>Windows</h3>
+
+<strong>AutoHotkey Script:</strong>
+
+<p>Save as <code>cure_quotes.ahk</code>:</p>
+
+<pre><code>; Cure Charlist Quotes
+<p>; Press Alt+[ for left curly quote</p>
+<p>; Press Alt+] for right curly quote</p>
+
+<p>![ ::SendInput {U+2018}  ; Alt+[</p>
+<p>!] ::SendInput {U+2019}  ; Alt+]</p>
+</code></pre>
+
+<p>Run the script on startup.</p>
+
+<h2>Editor-Specific Configurations</h2>
+
+<h3>VS Code</h3>
+
+<strong>Method 1: Custom Keybindings</strong>
+
+<p>Add to <code>keybindings.json</code>:</p>
+
+<pre><code>[
+<p>  {</p>
+<p>    "key": "alt+[",</p>
+<p>    "command": "type",</p>
+<p>    "args": { "text": "'" },</p>
+<p>    "when": "editorTextFocus && editorLangId == 'cure'"</p>
+<p>  },</p>
+<p>  {</p>
+<p>    "key": "alt+]",</p>
+<p>    "command": "type",</p>
+<p>    "args": { "text": "'" },</p>
+<p>    "when": "editorTextFocus && editorLangId == 'cure'"</p>
+<p>  }</p>
+<p>]</p>
+</code></pre>
+
+<strong>Method 2: Snippets</strong>
+
+<p>Add to Cure language snippets:</p>
+
+<pre><code>{
+<p>  "Charlist Literal": {</p>
+<p>    "prefix": "cl",</p>
+<p>    "body": "'$1'",</p>
+<p>    "description": "Insert charlist literal with curly quotes"</p>
+<p>  }</p>
+<p>}</p>
+</code></pre>
+
+<strong>Method 3: Text Expander Extension</strong>
+
+<p>Install an extension like "Text Expander" and configure:</p>
+<ul>
+<li><code>'c</code> → <code>'</code> (left curly quote)</li>
+<li><code>c'</code> → <code>'</code> (right curly quote)</li>
+</ul>
+
+<h3>Vim/Neovim</h3>
+
+<strong>Method 1: Insert Mode Mappings</strong>
+
+<p>Add to <code>.vimrc</code> or <code>init.vim</code>:</p>
+
+<pre><code>" Cure charlist quotes
+<p>inoremap <A-[> '</p>
+<p>inoremap <A-]> '</p>
+
+<p>" Or use digraphs (Ctrl+K followed by code)</p>
+<p>" '<' for U+2018, '>' for U+2019</p>
+</code></pre>
+
+<strong>Method 2: Abbreviations</strong>
+
+<pre><code>" Auto-expand ''c to charlist quotes
+<p>autocmd FileType cure inoreabbrev ''c ''</p>
+</code></pre>
+
+<strong>Method 3: Custom Digraphs</strong>
+
+<pre><code>digraphs c< 8216  " '<
+<p>digraphs c> 8217  " '></p>
+</code></pre>
+
+<p>Then use: <kbd>Ctrl+K</kbd> <kbd>c</kbd> <kbd><</kbd> for <code>'</code></p>
+
+<h3>Emacs</h3>
+
+<strong>Method 1: Custom Keybindings</strong>
+
+<p>Add to <code>.emacs</code> or <code>init.el</code>:</p>
+
+<pre><code>;; Cure charlist quotes
+<p>(define-key cure-mode-map (kbd "M-[") </p>
+<p>  (lambda () (interactive) (insert "'")))</p>
+<p>(define-key cure-mode-map (kbd "M-]") </p>
+<p>  (lambda () (interactive) (insert "'")))</p>
+</code></pre>
+
+<strong>Method 2: Abbrev Mode</strong>
+
+<pre><code>(define-abbrev cure-mode-abbrev-table "'c" "''")
+</code></pre>
+
+<strong>Method 3: YASnippet</strong>
+
+<p>Create <code>cure-mode/charlist.yasnippet</code>:</p>
+
+<pre><code># -<em>- mode: snippet -</em>-
+<h1>name: charlist</h1>
+<h1>key: cl</h1>
+<h1>--</h1>
+<p>'$1'$0</p>
+</code></pre>
+
+<h3>Sublime Text</h3>
+
+<strong>Method 1: Key Bindings</strong>
+
+<p>Add to <code>Preferences → Key Bindings</code>:</p>
+
+<pre><code>[
+<p>  {</p>
+<p>    "keys": ["alt+["],</p>
+<p>    "command": "insert_snippet",</p>
+<p>    "args": {"contents": "'"}</p>
+<p>  },</p>
+<p>  {</p>
+<p>    "keys": ["alt+]"],</p>
+<p>    "command": "insert_snippet",</p>
+<p>    "args": {"contents": "'"}</p>
+<p>  }</p>
+<p>]</p>
+</code></pre>
+
+<strong>Method 2: Snippets</strong>
+
+<p>Create <code>cure-charlist.sublime-snippet</code>:</p>
+
+<pre><code><snippet>
+    <content><![CDATA['$1']]></content>
+    <tabTrigger>cl</tabTrigger>
+    <scope>source.cure</scope>
+    <description>Charlist Literal</description>
+</snippet>
+</code></pre>
+
+<h3>IntelliJ IDEA / WebStorm</h3>
+
+<strong>Live Templates:</strong>
+
+<ol>
+<li>Go to Settings → Editor → Live Templates</li>
+<li>Create new template group "Cure"</li>
+<li>Add template:</li>
+</ol>
+<ul>
+<li>Abbreviation: <code>cl</code></li>
+<li>Template text: <code>'$END$'</code></li>
+<li>Applicable in: Cure files</li>
+</ul>
+
+<strong>Keymap:</strong>
+
+<ol>
+<li>Settings → Keymap</li>
+<li>Search for "Insert Live Template"</li>
+<li>Add shortcut: <kbd>Alt</kbd>+<kbd>[</kbd> for <code>'</code>, <kbd>Alt</kbd>+<kbd>]</kbd> for <code>'</code></li>
+</ol>
+
+<h3>Atom</h3>
+
+<strong>Snippets:</strong>
+
+<p>Add to <code>snippets.cson</code>:</p>
+
+<pre><code>'.source.cure':
+<p>  'Charlist Literal':</p>
+<p>    'prefix': 'cl'</p>
+<p>    'body': "'$1'"</p>
+</code></pre>
+
+<strong>Keybindings:</strong>
+
+<p>Add to <code>keymap.cson</code>:</p>
+
+<pre><code>'atom-text-editor[data-grammar="source cure"]':
+<p>  'alt-[': 'snippets:insert-text-left-curly-quote'</p>
+<p>  'alt-]': 'snippets:insert-text-right-curly-quote'</p>
+</code></pre>
+
+<h2>Language Server / LSP Support</h2>
+
+<p>If you're using a Cure language server, it can provide:</p>
+
+<strong>Auto-Closing Pairs:</strong>
+<ul>
+<li>Typing <code>'</code> automatically inserts <code>'</code></li>
+<li>Cursor positioned between quotes</li>
+</ul>
+
+<strong>Snippet Completion:</strong>
+<ul>
+<li>Type <code>char</code> or <code>cl</code> → charlist literal template</li>
+</ul>
+
+<strong>Diagnostics:</strong>
+<ul>
+<li>Warns when using ASCII <code>'</code> for charlists</li>
+<li>Suggests correction to Unicode quotes</li>
+</ul>
+
+<h2>Copy-Paste Method</h2>
+
+<p>If configuring your editor is too complex, you can:</p>
+
+<ol>
+<li>Create a file <code>snippets.txt</code> with commonly-used patterns:</li>
+</ol>
+   <pre><code>   '' (empty charlist)
+<p>   'hello'</p>
+<p>   'world'</p>
+   </code></pre>
+
+<ol>
+<li>Copy-paste as needed</li>
+</ol>
+
+<ol>
+<li>Or use a clipboard manager with pre-configured snippets</li>
+</ol>
+
+<h2>Testing Your Setup</h2>
+
+<p>Create a test file <code>test.cure</code>:</p>
+
+<pre><code>module Test do
+<p>  export [main/0]</p>
+  
+<p>  import Std.Io [println/1]</p>
+  
+<p>  def main(): Int =</p>
+<p>    # String literal (straight quotes)</p>
+<p>    let str = "hello"</p>
+<p>    println(str)</p>
+    
+<p>    # Charlist literal (curly quotes) - stores as [104, 101, 108, 108, 111]</p>
+<p>    # let chars = 'hello'</p>
+    
+<p>    # Atom (ASCII single quote)</p>
+<p>    let atom = :my_atom</p>
+    
+<p>    0</p>
+<p>end</p>
+</code></pre>
+
+<p>Verify:</p>
+<ul>
+<li><code>"hello"</code> → String (UTF-8 binary)</li>
+<li><code>'hello'</code> → Charlist (list of Unicode codepoints: [104, 101, 108, 108, 111])</li>
+<li><code>:my_atom</code> → Atom (recommended syntax)</li>
+<li><code>'my_atom'</code> → Atom (alternative ASCII single quote syntax)</li>
+</ul>
+
+<h2>Troubleshooting</h2>
+
+<h3>Characters Not Displaying</h3>
+
+<strong>Issue:</strong> Curly quotes show as boxes or question marks
+
+<strong>Solution:</strong> Ensure your editor uses a Unicode-aware font:
+<ul>
+<li>Recommended fonts: Fira Code, JetBrains Mono, Source Code Pro</li>
+<li>Enable UTF-8 encoding in editor settings</li>
+</ul>
+
+<h3>Incorrect Character Inserted</h3>
+
+<strong>Issue:</strong> Wrong Unicode character inserted
+
+<strong>Solution:</strong> 
+<ul>
+<li>Verify the Unicode codepoints: U+2018 (left) and U+2019 (right)</li>
+<li>Check your keyboard layout or input method</li>
+<li>Use <code>xxd</code> or a Unicode inspector to verify characters</li>
+</ul>
+
+<h3>Auto-Pairing Conflicts</h3>
+
+<strong>Issue:</strong> Editor's auto-pairing interferes with charlist quotes
+
+<strong>Solution:</strong>
+<ul>
+<li>Disable auto-pairing for single quotes in Cure files</li>
+<li>Configure language-specific settings</li>
+<li>Use explicit keybindings instead of relying on editor defaults</li>
+</ul>
+
+<h2>Alternative: ASCII Syntax (Not Recommended)</h2>
+
+<p>If Unicode input is impossible in your environment, you can use ASCII single quotes for atoms instead:</p>
+
+<pre><code># ASCII single quote for atoms (fully supported)
+<p>atom = 'my_atom'</p>
+
+<h1>Or use colon prefix (recommended)</h1>
+<p>atom = :my_atom</p>
+</code></pre>
+
+<strong>Note</strong>: Charlists with Unicode curly quotes are implemented and tested in the compiler (see <code>test/string<em>lexer</em>test.erl</code>), but are rarely used in practice. Most Cure code uses strings (<code>"hello"</code>) for text and atoms (<code>:atom</code>) for symbolic values.
+
+<h2>Contributing</h2>
+
+<p>Found a better method for your editor? Please contribute:</p>
+
+<ol>
+<li>Fork the Cure repository</li>
+<li>Update this document with your configuration</li>
+<li>Submit a pull request</li>
+</ol>
+
+<p>See <a href="../CONTRIBUTING.md">CONTRIBUTING.md</a> for guidelines.</p>
+
+<h2>Resources</h2>
+
+<ul>
+<li><a href="https://unicode-table.com/">Unicode Character Table</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Quotation_mark">Curly Quotes vs Straight Quotes</a></li>
+<li><a href="CURE<em>SYNTAX</em>GUIDE.md">Cure Syntax Guide</a></li>
+<li><a href="../test/string<em>lexer</em>test.erl">String Lexer Tests</a> - Reference implementation tests</li>
+</ul>
+
+<h2>Support</h2>
+
+<p>Need help configuring your editor?</p>
+
+<ul>
+<li>Open an issue on GitHub</li>
+<li>Join the Cure community chat</li>
+<li>Check the FAQ in the main documentation</li>
+</ul>
+
+<p>Happy coding! 🎉</p>
+
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

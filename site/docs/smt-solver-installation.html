@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Solver Installation Guide - Cure Documentation</title>
+    <meta name="description" content="This guide explains how to install Z3 and CVC5 SMT solvers for use with the Cure compiler's dependent type verification system.">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1>SMT Solver Installation Guide</h1>
+
+<p>This guide explains how to install Z3 and CVC5 SMT solvers for use with the Cure compiler's dependent type verification system.</p>
+
+<p>---</p>
+
+<h2>Z3 SMT Solver (Recommended)</h2>
+
+<h3>Ubuntu/Debian</h3>
+<pre><code># Install from official repositories (Ubuntu 20.04+)
+<p>sudo apt-get update</p>
+<p>sudo apt-get install z3</p>
+
+<h1>Verify installation</h1>
+<p>z3 --version</p>
+<h1>Expected output: Z3 version 4.8.x or later</h1>
+</code></pre>
+
+<h3>From Source (Latest Version)</h3>
+<pre><code># Install dependencies
+<p>sudo apt-get install python3 git cmake build-essential</p>
+
+<h1>Clone and build</h1>
+<p>git clone https://github.com/Z3Prover/z3.git</p>
+<p>cd z3</p>
+<p>python3 scripts/mk_make.py</p>
+<p>cd build</p>
+<p>make</p>
+<p>sudo make install</p>
+
+<h1>Verify</h1>
+<p>z3 --version</p>
+</code></pre>
+
+<h3>Testing Z3</h3>
+<p>Create a test file <code>test.smt2</code>:</p>
+<pre><code>(set-logic QF_LIA)
+<p>(declare-const x Int)</p>
+<p>(declare-const y Int)</p>
+<p>(assert (> x y))</p>
+<p>(assert (> y 0))</p>
+<p>(check-sat)</p>
+<p>(get-model)</p>
+</code></pre>
+
+<p>Run:</p>
+<pre><code>z3 -smt2 test.smt2
+<h1>Expected output:</h1>
+<h1>sat</h1>
+<h1>(model</h1>
+<h1>(define-fun y () Int 1)</h1>
+<h1>(define-fun x () Int 2)</h1>
+<h1>)</h1>
+</code></pre>
+
+<p>---</p>
+
+<h2>CVC5 SMT Solver (Alternative)</h2>
+
+<h3>Ubuntu/Debian (Binary Release)</h3>
+<pre><code># Download latest release
+<p>wget https://github.com/cvc5/cvc5/releases/download/cvc5-1.0.8/cvc5-Linux</p>
+<p>chmod +x cvc5-Linux</p>
+<p>sudo mv cvc5-Linux /usr/local/bin/cvc5</p>
+
+<h1>Verify installation</h1>
+<p>cvc5 --version</p>
+</code></pre>
+
+<h3>From Source</h3>
+<pre><code># Install dependencies
+<p>sudo apt-get install cmake libgmp-dev</p>
+
+<h1>Clone and build</h1>
+<p>git clone https://github.com/cvc5/cvc5.git</p>
+<p>cd cvc5</p>
+<p>./configure.sh</p>
+<p>cd build</p>
+<p>make</p>
+<p>sudo make install</p>
+
+<h1>Verify</h1>
+<p>cvc5 --version</p>
+</code></pre>
+
+<h3>Testing CVC5</h3>
+<p>Using the same <code>test.smt2</code>:</p>
+<pre><code>cvc5 --lang smt2 test.smt2
+<h1>Expected similar output to Z3</h1>
+</code></pre>
+
+<p>---</p>
+
+<h2>Using with Cure</h2>
+
+<h3>Erlang API Level</h3>
+
+<p>The SMT solver is available at the Erlang API level and can be used programmatically:</p>
+
+<pre><code>% Start solver
+<p>{ok, Pid} = cure<em>smt</em>process:start_solver(z3, 5000).</p>
+
+<p>% Check constraint</p>
+<p>Result = cure<em>smt</em>solver:check_constraint(Constraint, Env).</p>
+
+<p>% Stop solver</p>
+<p>cure<em>smt</em>process:stop_solver(Pid).</p>
+</code></pre>
+
+<h3>CLI Integration (Not Yet Implemented)</h3>
+
+<strong>Status</strong>: ⚠️ CLI options for SMT solver integration are <strong>planned but not yet implemented</strong>.
+
+<p>The following options are documented for future implementation:</p>
+
+<pre><code># Planned (not yet available):
+<p>./cure --smt-solver z3 examples/dependent_types.cure</p>
+<p>./cure --no-smt examples/dependent_types.cure</p>
+<p>./cure --smt-timeout 10000 examples/dependent_types.cure</p>
+</code></pre>
+
+<strong>Current CLI Options</strong>: See <code>cure --help</code> for currently available options.
+
+<p>---</p>
+
+<h2>Troubleshooting</h2>
+
+<h3>"Solver not found" error</h3>
+<ul>
+<li>Check installation: <code>which z3</code> or <code>which cvc5</code></li>
+<li>Ensure solver is in PATH</li>
+<li>Try absolute path in Cure config</li>
+</ul>
+
+<h3>Timeout errors</h3>
+<ul>
+<li>Increase timeout: <code>--smt-timeout 30000</code></li>
+<li>Simplify constraints</li>
+<li>Check solver is responding: <code>z3 -smt2 -in</code> (interactive mode)</li>
+</ul>
+
+<h3>Permission errors</h3>
+<ul>
+<li>Ensure solver executable: <code>chmod +x /usr/local/bin/z3</code></li>
+<li>Check PATH: <code>echo $PATH</code></li>
+</ul>
+
+<p>---</p>
+
+<h2>Performance Tips</h2>
+
+<ol>
+<li><strong>Use Z3 as primary</strong>: Generally faster for arithmetic constraints</li>
+<li><strong>Set appropriate timeouts</strong>: Start with 5s, increase if needed</li>
+<li><strong>Cache results</strong>: Cure caches constraint checking results</li>
+<li><strong>Use symbolic fallback for simple constraints</strong>: No solver overhead</li>
+</ol>
+
+<p>---</p>
+
+<h2>Version Requirements</h2>
+
+<ul>
+<li><strong>Z3</strong>: Version 4.8.0 or later</li>
+<li><strong>CVC5</strong>: Version 1.0.0 or later</li>
+</ul>
+
+<p>Older versions may work but are untested.</p>
+
+<p>---</p>
+
+<h2>Integration Status</h2>
+
+<ul>
+<li>✅ <strong>SMT Solver Implementation</strong>: Complete at Erlang API level</li>
+<li>✅ <strong>Z3 Support</strong>: Fully implemented and tested</li>
+<li>⚠️ <strong>CLI Integration</strong>: Not yet implemented (requires adding CLI flags)</li>
+<li>📋 <strong>CVC5 Support</strong>: Stub exists, full implementation planned</li>
+</ul>
+
+<p>---</p>
+
+<strong>Last Updated:</strong> October 31, 2025
+
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cure Language Features Reference - Cure Documentation</title>
+    <meta name="description" content="Version: Current Implementation Status  
+Last Updated: October 31, 2025">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1>Cure Language Features Reference</h1>
+
+<strong>Version</strong>: Current Implementation Status  
+<strong>Last Updated</strong>: October 31, 2025
+
+<p>This document provides a comprehensive reference for all Cure language features, including current implementation status, syntax examples, and usage patterns.</p>
+
+<h2>Table of Contents</h2>
+
+<ol>
+<li><a href="#core-language-syntax">Core Language Syntax</a></li>
+<li><a href="#data-types-and-type-system">Data Types and Type System</a></li>
+<li><a href="#finite-state-machines">Finite State Machines</a></li>
+<li><a href="#type-classes-and-constraints">Type Classes and Constraints</a></li>
+<li><a href="#advanced-features">Advanced Features</a></li>
+<li><a href="#standard-library-integration">Standard Library Integration</a></li>
+<li><a href="#cli-and-build-system">CLI and Build System</a></li>
+<li><a href="#compilation-and-runtime">Compilation and Runtime</a></li>
+<li><a href="#testing-infrastructure">Testing Infrastructure</a></li>
+<li><a href="#performance-and-optimization">Performance and Optimization</a></li>
+</ol>
+
+<h2>Core Language Syntax</h2>
+
+<h3>Module System</h3>
+<pre><code>module ModuleName do
+<p>  import Std [abs/1, sqrt/1, Option, Result]</p>
+<p>  import Std.Math [sin/1, cos/1]</p>
+  
+<p>  export [main/0, demo_function/1]</p>
+  
+<p>  # Module contents...</p>
+<p>end</p>
+</code></pre>
+
+<h3>Function Definitions</h3>
+<pre><code># Simple function
+<p>def add(x: Int, y: Int): Int = x + y</p>
+
+<h1>Function with complex body</h1>
+<p>def demo(): Unit =</p>
+<p>  let result = calculate_something()</p>
+<p>  println("Result: " <> show(result))</p>
+<p>  0</p>
+
+<h1>Helper function</h1>
+<p>def helper(x: Int): String = int<em>to</em>string(x)</p>
+</code></pre>
+
+<h3>Lambda Expressions</h3>
+<pre><code># Simple lambda
+<p>let double = fn(x) -> x * 2 end</p>
+
+<h1>Lambda with pattern matching instead of if-then-else</h1>
+<p>let safe_div = fn(x, y) -></p>
+<p>  match y == 0 do</p>
+<p>    true -> error("Division by zero")</p>
+<p>    false -> ok(x / y)</p>
+<p>  end</p>
+<p>end</p>
+
+<h1>Lambda with multiple parameters</h1>
+<p>let fold_sum = fold(numbers, 0, fn(x, acc) -> x + acc end)</p>
+</code></pre>
+
+<h3>Pattern Matching</h3>
+<pre><code>match expression do
+<p>  Ok(value) -> handle_success(value)</p>
+<p>  Error(msg) -> handle_error(msg)</p>
+<p>end</p>
+
+<p>match list do</p>
+<p>  [] -> "empty"</p>
+<p>  [x] -> "single: " <> show(x)</p>
+<p>  [x | rest] -> "head: " <> show(x) <> ", rest: " <> show(rest)</p>
+<p>end</p>
+
+<p>match option do</p>
+<p>  Some(found) -> "Found: " <> show(found)</p>
+<p>  None -> "Not found"</p>
+<p>end</p>
+</code></pre>
+
+<h3>Case Expressions</h3>
+
+<p>Cure supports <code>case</code> expressions as an alternative to <code>match</code> (they are semantically identical):</p>
+
+<pre><code># Case with 'of' keyword
+<p>case expression of</p>
+<p>  Ok(value) -> handle_success(value)</p>
+<p>  Error(msg) -> handle_error(msg)</p>
+<p>end</p>
+
+<h1>Functionally equivalent to match</h1>
+<p>match expression do</p>
+<p>  Ok(value) -> handle_success(value)</p>
+<p>  Error(msg) -> handle_error(msg)</p>
+<p>end</p>
+</code></pre>
+
+<strong>Note</strong>: Cure does not have <code>if-then-else</code> expressions. Use <code>match</code> or <code>case</code> for conditional logic.
+
+<h3>Let Bindings</h3>
+<pre><code># Simple let
+<p>let x = 42</p>
+
+<h1>Let with complex expression</h1>
+<p>let result = calculate()</p>
+<p>  |> map(fn(x) -> x * 2 end)</p>
+<p>  |> filter(fn(x) -> x > 10 end)</p>
+</code></pre>
+
+<h3>Pipe Operations</h3>
+<pre><code>result = input
+<p>  |> transform1()</p>
+<p>  |> transform2(argument)</p>
+<p>  |> final_transform()</p>
+</code></pre>
+
+<h2>Data Types and Type System</h2>
+
+<h3>Primitive Types</h3>
+<ul>
+<li><code>Int</code>: 64-bit signed integers</li>
+<li><code>Float</code>: 64-bit IEEE floating-point numbers  </li>
+<li><code>String</code>: UTF-8 encoded text strings</li>
+<li><code>Bool</code>: Boolean values (<code>true</code>, <code>false</code>)</li>
+<li><code>Atom</code>: Symbolic constants (<code>:atom_name</code>)</li>
+<li><code>Binary</code>: Byte sequences</li>
+<li><code>Unit</code>: Unit type for functions with no return value</li>
+<li><code>Nat</code>: Natural numbers (Int >= 0) - refinement type</li>
+<li><code>Pos</code>: Positive integers (Int > 0) - refinement type</li>
+<li><code>Pid</code>: BEAM process identifier</li>
+</ul>
+
+<h3>Composite Types</h3>
+<pre><code>List(T)                    # Homogeneous lists
+<p>List(T, n)                 # Length-indexed lists (dependent type)</p>
+<p>Tuple(T1, T2, ...)         # Fixed-size tuples</p>
+<p>Result(T, E)               # Error handling without exceptions</p>
+<p>Option(T)                  # Nullable values</p>
+</code></pre>
+
+<h3>Constructor Types</h3>
+<pre><code>Ok(value)                  # Success result
+<p>Error(message)             # Error result</p>
+<p>Some(value)                # Present optional value</p>
+<p>None                       # Absent optional value</p>
+</code></pre>
+
+<h3>Dependent Types</h3>
+<pre><code># Length-indexed types
+<p>Vector(T, n: Nat)          # Fixed-length vector</p>
+<p>List(T, n: Nat)            # List with compile-time known length</p>
+<p>Matrix(rows: Nat, cols: Nat, T)  # 2D matrix with dimensions</p>
+
+<h1>Constraint-based types</h1>
+<p>{x: Int | x > 0}           # Positive integers</p>
+<p>{x: Float | x >= 0.0}      # Non-negative floats</p>
+<p>{xs: List(T) | length(xs) > 0}  # Non-empty lists</p>
+
+<h1>Function-dependent types</h1>
+<p>def replicate(n: Nat, x: T): List(T, n)  # Return type depends on argument</p>
+<p>def safe_head(xs: List(T, n)): T when n > 0  # Precondition constraint</p>
+</code></pre>
+
+<h2>Operators</h2>
+
+<h3>Binary Operators</h3>
+<ul>
+<li>Arithmetic: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code></li>
+<li>Comparison: <code>==</code>, <code>!=</code>, <code><</code>, <code>></code>, <code><=</code>, <code>>=</code></li>
+<li>String: <code><></code> (concatenation)</li>
+<li>List: <code>|</code> (cons operator, used in <code>[h | t]</code> syntax)</li>
+<li>Pipe: <code>|></code> (function composition)</li>
+</ul>
+
+<h3>Unary Operators</h3>
+<ul>
+<li>Arithmetic: <code>+x</code>, <code>-x</code></li>
+<li>Logical: <code>not(expr)</code></li>
+</ul>
+
+<h2>Literals</h2>
+
+<h3>Numbers</h3>
+<pre><code>42          # Integer
+<p>3.14        # Float</p>
+<p>-5          # Negative integer</p>
+</code></pre>
+
+<h3>Strings</h3>
+<pre><code>"Hello, World!"       # Simple string
+<p>"Line 1\nLine 2"      # String with escape sequences</p>
+<p>"Quote: \"text\""     # String with escaped quotes</p>
+</code></pre>
+
+<h3>Lists</h3>
+<pre><code>[]                    # Empty list
+<p>[1, 2, 3]            # List of integers</p>
+<p>["a", "b", "c"]      # List of strings</p>
+</code></pre>
+
+<h3>Tuples</h3>
+
+<p>Tuples use curly brace <code>{}</code> syntax:</p>
+
+<pre><code>{}                    # Empty tuple (Unit)
+<p>{42}                  # Single element tuple</p>
+<p>{1, "hello", true}    # Multi-element tuple</p>
+<p>{:ok, "success"}      # Tagged tuple (atom + value)</p>
+<p>{:error, "failed"}    # Error tuple (atom + value)</p>
+</code></pre>
+
+<strong>Note</strong>: Tuple pattern matching is fully supported:
+<pre><code>match point do
+<p>  {x, y} when x > 0.0 and y > 0.0 -> "First quadrant"</p>
+<p>  {x, y} when x == 0.0 and y == 0.0 -> "Origin"</p>
+<p>  _ -> "Other quadrant"</p>
+<p>end</p>
+</code></pre>
+
+<h3>Atoms</h3>
+<pre><code>:atom_name
+<p>:increment</p>
+<p>:ok</p>
+</code></pre>
+
+<h2>Finite State Machines</h2>
+
+<p>Cure provides first-class support for finite state machines with compile-time verification, state-dependent data, and integration with the BEAM actor model.</p>
+
+<h3>Basic FSM Definition</h3>
+
+<p>Cure FSMs use a record-based payload system with arrow transition syntax:</p>
+
+<pre><code># Define a payload record to track FSM data
+<p>record TrafficPayload do</p>
+<p>  cycles_completed: Int</p>
+<p>  timer_events: Int</p>
+<p>  emergency_stops: Int</p>
+<p>end</p>
+
+<h1>FSM with initial payload values</h1>
+<p>fsm TrafficPayload{cycles<em>completed: 0, timer</em>events: 0, emergency_stops: 0} do</p>
+<p>  Red --> |timer| Green</p>
+<p>  Red --> |emergency| Red      # Self-transition</p>
+<p>  Green --> |timer| Yellow</p>
+<p>  Green --> |emergency| Red</p>
+<p>  Yellow --> |timer| Red</p>
+<p>  Yellow --> |emergency| Red</p>
+<p>end</p>
+</code></pre>
+
+<strong>Key Points</strong>:
+<ul>
+<li>First state in transitions is the initial state (Red in this example)</li>
+<li>Transitions use <code>--></code> arrow with <code>|event|</code> syntax</li>
+<li>Must define a payload record even if fields are unused</li>
+</ul>
+
+<h3>FSM Runtime Operations</h3>
+
+<p>FSMs compile to BEAM <code>gen_statem</code> processes:</p>
+
+<pre><code>import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]
+<p>import Std.Pair [pair/2]</p>
+
+<h1>Spawn an FSM instance with initial data</h1>
+<p>let initial<em>data = TrafficPayload{cycles</em>completed: 0, timer<em>events: 0, emergency</em>stops: 0}</p>
+<p>let fsm<em>pid = fsm</em>spawn(:TrafficPayload, initial_data)</p>
+
+<h1>Give the FSM a name for easy reference</h1>
+<p>let adv<em>result = fsm</em>advertise(fsm<em>pid, :traffic</em>light)</p>
+
+<h1>Send events to the FSM</h1>
+<p>let empty_list = []</p>
+<p>let event = pair(:timer, empty_list)</p>
+<p>let cast<em>result = fsm</em>cast(:traffic_light, event)</p>
+
+<h1>Query current state</h1>
+<p>let current<em>state = fsm</em>state(:traffic_light)  # Returns current state atom</p>
+</code></pre>
+
+<h3>FSM Implementation Notes</h3>
+
+<p>Cure FSMs compile to Erlang <code>gen_statem</code> behaviors with the following features:</p>
+
+<strong>Compile-Time Verification</strong>:
+<ul>
+<li>State machine structure validated at compile time</li>
+<li>Transition completeness checked</li>
+<li>Event type checking</li>
+</ul>
+
+<strong>Runtime Integration</strong>:
+<ul>
+<li>Native BEAM process integration</li>
+<li>Mailbox-based event handling</li>
+<li>OTP supervision tree compatible</li>
+<li>Hot code reloading support</li>
+</ul>
+
+<strong>Current Implementation</strong>:
+<ul>
+<li>Simple arrow-based transition syntax (<code>State1 --> |event| State2</code>)</li>
+<li>Record-based payload data tracking</li>
+<li>Event casting with atom-based event names</li>
+<li>State querying via FSM references</li>
+</ul>
+
+
+<h2>Records and Dependent Types</h2>
+
+<h3>Record Definitions</h3>
+<pre><code>record Person do
+<p>  name: String</p>
+<p>  age: Nat</p>
+<p>  email: String</p>
+<p>end</p>
+
+<h1>Creating records</h1>
+<p>let person = Person{name: "Alice", age: 30, email: "alice@example.com"}</p>
+
+<h1>Pattern matching on records</h1>
+<p>match person do</p>
+<p>  Person{name: name, age: age} when age >= 18 -></p>
+<p>    "Hello, adult " <> name <> "!"</p>
+<p>  Person{name: name} -></p>
+<p>    "Hello, young " <> name <> "!"</p>
+<p>end</p>
+</code></pre>
+
+<h3>Dependent Types</h3>
+<pre><code># Length-indexed types
+<p>Vector(T, n: Nat)      # Fixed-length vector</p>
+<p>List(T, n: Nat)        # List with known length</p>
+<p>Range(min: Int, max: Int)  # Integer range type</p>
+
+<h1>Matrix with dimension checking</h1>
+<p>record Matrix(rows: Nat, cols: Nat, T) do</p>
+<p>  data: Vector(Vector(T, cols), rows)</p>
+<p>end</p>
+
+<h1>Refinement types</h1>
+<p>type NonEmptyList(T) = List(T, n) when n > 0</p>
+
+<p>def head(list: NonEmptyList(T)): T =</p>
+<p>  match list do</p>
+<p>    [x|_] -> x</p>
+<p>    # No need for empty case - type system guarantees non-empty</p>
+<p>  end</p>
+</code></pre>
+
+<h2>Advanced Features</h2>
+
+<h3>Function Imports with Arity</h3>
+<pre><code>import ModuleName [
+<p>  function1/1,    # Function with 1 parameter</p>
+<p>  function2/2,    # Function with 2 parameters</p>
+<p>  TypeName,       # Type import</p>
+<p>  constructor     # Constructor import</p>
+<p>]</p>
+</code></pre>
+
+<h3>Complex Nested Expressions</h3>
+<pre><code># Nested lambdas in higher-order functions
+<p>processed = data</p>
+<p>  |> filter(fn(item) -> not(is_empty(item)) end)</p>
+<p>  |> map(fn(item) -> </p>
+<p>      process_item(item)</p>
+<p>        |> validate()</p>
+<p>        |> transform()</p>
+<p>     end)</p>
+<p>  |> collect_results()</p>
+</code></pre>
+
+<h3>Match vs Case</h3>
+
+<p>Both <code>match</code> and <code>case</code> are supported and functionally equivalent:</p>
+
+<pre><code># Case expression with 'of' keyword (alternative to match)
+<p>case expression of</p>
+<p>  Ok(value) -> handle_success(value)</p>
+<p>  Error(msg) -> handle_error(msg)</p>
+<p>end</p>
+
+<p>case list of</p>
+<p>  [] -> "empty"</p>
+<p>  [x] -> "single: " <> show(x)</p>
+<p>  [x | rest] -> "head: " <> show(x)</p>
+<p>end</p>
+</code></pre>
+
+<h3>Pattern Matching with Guards</h3>
+<pre><code>match value do
+<p>  x when x > 0 -> "positive"</p>
+<p>  x when x < 0 -> "negative"</p>
+<p>  _ -> "zero"</p>
+<p>end</p>
+
+<h1>Guards in case expressions</h1>
+<p>case number do</p>
+<p>  n when n > 100 -> "large"</p>
+<p>  n when n > 10 -> "medium" </p>
+<p>  _ -> "small"</p>
+<p>end</p>
+</code></pre>
+
+<h2>Error Handling Patterns</h2>
+
+<h3>Result Types</h3>
+<pre><code>def safe_operation(input: Int): Result(Int, String) =
+<p>  match input < 0 do</p>
+<p>    true -> error("Negative input not allowed")</p>
+<p>    false -> ok(input * 2)</p>
+<p>  end</p>
+</code></pre>
+
+<h3>Option Types</h3>
+<pre><code>def find_item(list: List(String), target: String): Option(String) =
+<p>  match search(list, target) do</p>
+<p>    found when found != "" -> Some(found)</p>
+<p>    _ -> None</p>
+<p>  end</p>
+</code></pre>
+
+<h2>Best Practices</h2>
+
+<h3>Function Composition</h3>
+<p>Use pipe operators for readable data transformations:</p>
+<pre><code>result = input
+<p>  |> validate_input()</p>
+<p>  |> process_data()</p>
+<p>  |> format_output()</p>
+</code></pre>
+
+<h3>Error Handling</h3>
+<p>Use Result types for operations that can fail:</p>
+<pre><code>def divide(x: Float, y: Float): Result(Float, String) =
+<p>  match y == 0.0 do</p>
+<p>    true -> error("Division by zero")</p>
+<p>    false -> ok(x / y)</p>
+<p>  end</p>
+</code></pre>
+
+<h3>Pattern Matching</h3>
+<p>Prefer pattern matching for control flow:</p>
+<pre><code># Good - using pattern matching
+<p>match result do</p>
+<p>  Ok(value) -> use_value(value)</p>
+<p>  Error(msg) -> handle_error(msg)</p>
+<p>end</p>
+
+<h1>Also good - using case</h1>
+<p>case result of</p>
+<p>  Ok(value) -> use_value(value)</p>
+<p>  Error(msg) -> handle_error(msg)</p>
+<p>end</p>
+</code></pre>
+
+<h2>Type Classes and Constraints</h2>
+
+<p>Cure supports type classes for ad-hoc polymorphism and constraint-based programming.</p>
+
+<h3>Type Class Definition</h3>
+<pre><code>typeclass Ord(T) where
+<p>  def compare(x: T, y: T): Ordering</p>
+<p>  def (<)(x: T, y: T): Bool = compare(x, y) == LT</p>
+<p>  def (<=)(x: T, y: T): Bool = compare(x, y) != GT</p>
+<p>end</p>
+
+<p>typeclass Show(T) where</p>
+<p>  def show(x: T): String</p>
+<p>end</p>
+
+<p>typeclass Functor(F) where</p>
+<p>  def map(f: A -> B, fa: F(A)): F(B)</p>
+<p>end</p>
+</code></pre>
+
+<h3>Type Class Instances</h3>
+<pre><code># Manual instances
+<p>instance Ord(Int) where</p>
+<p>  def compare(x, y) =</p>
+<p>    if x < y then LT</p>
+<p>    else if x > y then GT</p>
+<p>    else EQ</p>
+<p>    end</p>
+<p>end</p>
+
+<h1>Automatic derivation</h1>
+<p>derive Ord for List(T) when Ord(T)</p>
+<p>derive Show for Option(T) when Show(T)</p>
+<p>derive Functor for List</p>
+<p>derive Functor for Option</p>
+</code></pre>
+
+<h3>Constraint-Based Programming</h3>
+<pre><code># Generic sorting with constraints
+<p>def sort(xs: List(T)): List(T) where Ord(T) =</p>
+<p>  quicksort_impl(xs)</p>
+
+<h1>Pretty printing with constraints  </h1>
+<p>def debug_print(x: T): Unit where Show(T) =</p>
+<p>  print(show(x))</p>
+
+<h1>Functor mapping</h1>
+<p>def transform(f: A -> B, container: F(A)): F(B) where Functor(F) =</p>
+<p>  map(f, container)</p>
+</code></pre>
+
+<h2>Advanced Features</h2>
+
+<h3>Pi Types (Dependent Functions)</h3>
+<pre><code># Function types that depend on their arguments
+<p>def replicate(n: Nat, x: T): List(T, n) = </p>
+<p>  if n == 0 then [] else x :: replicate(n-1, x)</p>
+</code></pre>
+
+<h3>Sigma Types (Dependent Pairs)</h3>
+<pre><code># Pairs where the second type depends on the first value
+<p>{x: Nat, Vector(Int, x)}  # Pair of number and vector of that length</p>
+</code></pre>
+
+<h3>Refinement Types</h3>
+<pre><code># Types with predicates
+<p>{x: Int | x > 0}          # Positive integers</p>
+<p>{x: List(T) | length(x) > 0}  # Non-empty lists</p>
+</code></pre>
+
+<h3>Indexed Types</h3>
+<pre><code># Types parameterized by values
+<p>Vector(T, n: Nat)         # Vector of type T with length n</p>
+<p>Matrix(rows: Nat, cols: Nat, T)  # Matrix with compile-time dimensions</p>
+</code></pre>
+
+<h2>CLI and Build System</h2>
+
+<p>Cure provides a sophisticated command-line interface with wrapper script automation and intelligent build management.</p>
+
+<h3>Wrapper Script Commands</h3>
+<pre><code># Special wrapper script commands
+<p>cure build      # Execute 'make all' to build compiler</p>
+<p>cure test       # Execute 'make test' to run test suite</p>
+<p>cure clean      # Execute 'make clean' to clean build artifacts</p>
+<p>cure shell      # Start Erlang development shell with modules loaded</p>
+</code></pre>
+
+<h3>File Compilation</h3>
+<pre><code># Basic compilation
+<p>cure input.cure                    # Compile with defaults</p>
+<p>cure input.cure -o output.beam     # Specify output file</p>
+<p>cure input.cure --verbose          # Verbose compilation</p>
+<p>cure input.cure --no-optimize      # Disable optimizations</p>
+</code></pre>
+
+<h3>Automatic Standard Library Management</h3>
+<ul>
+<li><strong>Import Detection</strong>: Automatically detects if source files need stdlib imports</li>
+<li><strong>Smart Imports</strong>: Adds common stdlib imports to files without explicit module/import declarations</li>
+<li><strong>Conflict Avoidance</strong>: Skips automatic imports for files with explicit module definitions or imports</li>
+<li><strong>Partial Failure Handling</strong>: Reports detailed errors when stdlib compilation partially fails</li>
+</ul>
+
+<h3>Module Detection and Validation</h3>
+<ul>
+<li><strong>Required Modules Check</strong>: Validates presence of all required BEAM compiler modules</li>
+<li><strong>Missing Module Reporting</strong>: Provides detailed error messages for missing components</li>
+<li><strong>Build Automation</strong>: Automatically triggers 'make all' when modules are missing</li>
+<li><strong>Error Recovery</strong>: Graceful error handling with instructions for resolution</li>
+</ul>
+
+<h3>Standard Library Compilation</h3>
+<ul>
+<li><strong>Automatic Compilation</strong>: Compiles stdlib modules as needed during user file compilation</li>
+<li><strong>Dependency Resolution</strong>: Handles stdlib dependencies and compilation order</li>
+<li><strong>Partial Failure Recovery</strong>: Attempts individual file compilation when batch compilation fails</li>
+<li><strong>Path Conversion</strong>: Converts BEAM paths to source paths for error reporting</li>
+</ul>
+
+<h2>Standard Library Integration</h2>
+
+<p>Cure includes a comprehensive standard library implemented in Cure itself with Erlang runtime support.</p>
+
+<h3>Core Standard Library Modules</h3>
+<pre><code># Import common types and functions
+<p>import Std [Result, Option, ok, error, some, none]</p>
+<p>import Std [map/2, filter/2, fold<em>left/3, fold</em>right/3]</p>
+
+<h1>Mathematical operations</h1>
+<p>import Std.Math [abs/1, sqrt/1, sin/1, cos/1, pi, e]</p>
+
+<h1>String operations</h1>
+<p>import Std.String [length/1, concat/2, split/2, trim/1]</p>
+
+<h1>FSM utilities</h1>
+<p>import Std.FSM [create/2, send<em>event/2, get</em>state/1]</p>
+</code></pre>
+
+<h3>Result and Option Types</h3>
+<pre><code># Chainable error handling
+<p>result = safe_divide(x, y)</p>
+<p>  |> map_ok(fn(val) -> val * 2 end)</p>
+<p>  |> and<em>then(fn(doubled) -> safe</em>sqrt(doubled) end)</p>
+
+<p>match result do</p>
+<p>  Ok(final<em>value) -> println("Success: " <> show(final</em>value))</p>
+<p>  Error(msg) -> println("Error: " <> msg)</p>
+<p>end</p>
+
+<h1>Optional value handling</h1>
+<p>opt<em>value = find</em>in_list(items, predicate)</p>
+<p>  |> map(fn(item) -> process(item) end)</p>
+<p>  |> filter(fn(processed) -> is_valid(processed) end)</p>
+</code></pre>
+
+<h2>Testing Infrastructure</h2>
+
+<p>Cure includes comprehensive testing infrastructure covering all aspects of the compiler and standard library.</p>
+
+<h3>Comprehensive Test Suites</h3>
+<pre><code># Master test runner for all new CLI and stdlib tests
+<p>erl -pa <em>build/ebin -pa test -s run</em>all<em>new</em>tests run -s init stop</p>
+
+<h1>Individual comprehensive test suites</h1>
+<p>erl -pa <em>build/ebin -pa test -s cli</em>wrapper<em>comprehensive</em>test run -s init stop</p>
+<p>erl -pa <em>build/ebin -pa test -s cure</em>wrapper<em>script</em>test run -s init stop</p>
+</code></pre>
+
+<h3>CLI and Wrapper Testing</h3>
+<ul>
+<li><strong>Build Command Testing</strong>: Verifies wrapper script correctly executes 'make all' for build command</li>
+<li><strong>Missing Module Detection</strong>: Tests wrapper script detection and reporting of missing BEAM modules</li>
+<li><strong>Error Message Validation</strong>: Ensures proper error reporting with helpful instructions</li>
+<li><strong>Script Logic Verification</strong>: Tests all wrapper script conditional logic and edge cases</li>
+</ul>
+
+<h3>Standard Library Testing</h3>
+<ul>
+<li><strong>Automatic Import Testing</strong>: Validates CLI automatic stdlib import addition and detection</li>
+<li><strong>Import Conflict Detection</strong>: Tests detection of explicit modules/imports to prevent conflicts</li>
+<li><strong>Compilation Failure Testing</strong>: Tests stdlib compilation partial failure reporting</li>
+<li><strong>Performance Testing</strong>: Benchmarks Std.List.length function with large datasets (up to 50k elements)</li>
+</ul>
+
+<h3>Test Coverage Areas</h3>
+<ul>
+<li><strong>Lexical Analysis</strong>: Token recognition and error handling</li>
+<li><strong>Parsing</strong>: AST construction and syntax validation</li>
+<li><strong>Type System</strong>: Inference, checking, and unification</li>
+<li><strong>Code Generation</strong>: BEAM instruction generation</li>
+<li><strong>FSM Runtime</strong>: State transitions and event handling</li>
+<li><strong>CLI Functionality</strong>: Complete wrapper script and CLI module coverage</li>
+<li><strong>Error Handling</strong>: Comprehensive error message formatting and reporting</li>
+</ul>
+
+<h3>Testing Features</h3>
+<ul>
+<li><strong>EUnit Integration</strong>: All tests use EUnit assertions for reliable verification</li>
+<li><strong>Performance Benchmarks</strong>: Tests include timing validation for large datasets</li>
+<li><strong>Edge Case Coverage</strong>: Comprehensive testing of boundary conditions and error scenarios</li>
+<li><strong>Master Test Runner</strong>: Orchestrated execution of all test suites with detailed reporting</li>
+<li><strong>Component Isolation</strong>: Both comprehensive and focused component-specific test suites</li>
+</ul>
+
+<h2>Compilation and Runtime</h2>
+
+<h3>Current Compilation Pipeline</h3>
+<ol>
+<li><strong>Source (.cure)</strong> → <strong>Tokens</strong> (<code>cure_lexer.erl</code>)</li>
+<li><strong>Tokens</strong> → <strong>AST</strong> (<code>cure_parser.erl</code>)</li>
+<li><strong>AST</strong> → <strong>Typed AST</strong> (<code>cure_typechecker.erl</code>)</li>
+<li><strong>Type Optimization</strong> (<code>cure<em>type</em>optimizer.erl</code>)</li>
+</ol>
+<ul>
+<li>Monomorphization</li>
+<li>Function specialization  </li>
+<li>Inlining analysis</li>
+<li>Dead code elimination</li>
+</ul>
+<ol>
+<li><strong>BEAM Bytecode</strong> (<code>cure<em>codegen.erl</code>, <code>cure</em>beam_compiler.erl</code>)</li>
+</ol>
+
+<h3>BEAM Integration Features</h3>
+<ul>
+<li><strong>Native Processes</strong>: FSMs compile to BEAM processes with supervision</li>
+<li><strong>gen<em>statem Integration</strong>: FSMs use OTP gen</em>statem behavior</li>
+<li><strong>Pattern Matching</strong>: Leverages BEAM's efficient pattern matching</li>
+<li><strong>Tail Call Optimization</strong>: Preserves BEAM's tail recursion optimization</li>
+<li><strong>Hot Code Loading</strong>: Supports BEAM's live code upgrade</li>
+<li><strong>Distributed Computing</strong>: Transparent distribution across BEAM nodes</li>
+<li><strong>OTP Compatibility</strong>: Seamless integration with Erlang/Elixir ecosystems</li>
+</ul>
+
+<h2>Performance and Optimization</h2>
+
+<h3>Type-Directed Optimizations</h3>
+<p>Cure's type system enables aggressive optimizations:</p>
+
+<pre><code># Before optimization (polymorphic)
+<p>def map(f: T -> U, xs: List(T)): List(U) = ...</p>
+
+<h1>After monomorphization (specialized for Int -> String)</h1>
+<p>def map<em>Int</em>String(f: Int -> String, xs: List(Int)): List(String) = </p>
+<p>  # Optimized implementation for specific types</p>
+<p>  specialized<em>map</em>impl(f, xs)</p>
+</code></pre>
+
+<h3>Performance Characteristics</h3>
+<ul>
+<li><strong>Function calls</strong>: ~10ns overhead (optimized)</li>
+<li><strong>FSM events</strong>: ~1μs including message passing</li>
+<li><strong>Type checking</strong>: Zero runtime overhead (compile-time only)</li>
+<li><strong>Pattern matching</strong>: BEAM-native performance</li>
+<li><strong>Memory usage</strong>: Comparable to equivalent Erlang code</li>
+<li><strong>Optimizations</strong>: 25-60% performance improvement over unoptimized code</li>
+</ul>
+
+<h3>Compiler Performance</h3>
+<ul>
+<li>Small files (<100 lines): <1 second compilation</li>
+<li>Medium projects (1K-10K lines): 5-30 seconds</li>
+<li>Large projects (100K+ lines): 30-300 seconds with incremental compilation</li>
+<li>Type checking scales O(n²) due to dependent types</li>
+<li>SMT constraint solving typically sub-second for realistic programs</li>
+</ul>
+
+<p>---</p>
+
+<h2>Implementation Status</h2>
+
+<h3>✅ <strong>Fully Implemented</strong></h3>
+<ul>
+<li>Core syntax and semantics</li>
+<li>Dependent type system with SMT solving</li>
+<li>FSM compilation and runtime</li>
+<li>Type-directed optimizations</li>
+<li>BEAM code generation</li>
+<li>Standard library with runtime support</li>
+<li>Advanced CLI with wrapper script automation</li>
+<li>Automatic standard library import management</li>
+<li>Comprehensive test suite with performance benchmarks</li>
+<li>CLI wrapper functionality with missing module detection</li>
+<li>Partial compilation failure handling and recovery</li>
+</ul>
+
+<h3>🚧 <strong>Advanced Features</strong> </h3>
+<ul>
+<li>Complex type class hierarchies</li>
+<li>Advanced dependent type features (proof obligations)</li>
+<li>Linear types for resource management</li>
+<li>Distributed FSM coordination</li>
+</ul>
+
+<p>This reference covers all currently implemented language features and provides insight into Cure's unique combination of dependent types, native FSM support, and BEAM integration.</p>
+
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>cure_lexer — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-48D43E9B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/lexer/cure_lexer.erl#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+    <span translate="no">cure_lexer</span> 
+    <small class="app-vsn" translate="no">(cure v0.1.0)</small>
+
+  </h1>
+
+
+    <section id="moduledoc">
+<h1>Cure Programming Language - Lexer</h1><p>The lexer module provides tokenization services for Cure source code, converting
+raw text into a structured stream of tokens for the parser. It supports all Cure
+language constructs including keywords, operators, literals, and comments.</p><h2 id="module-features" class="section-heading">
+  <a href="#module-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Features</span>
+</h2>
+<ul><li><strong>Position Tracking</strong>: Every token includes precise line and column information</li><li><strong>String Interpolation</strong>: Support for <code class="inline">#{expr}</code> string interpolation syntax</li><li><strong>Multi-character Operators</strong>: Recognition of operators like <code class="inline">-&gt;</code>, <code class="inline">|&gt;</code>, <code class="inline">::</code>, etc.</li><li><strong>Comprehensive Literals</strong>: Numbers, strings, atoms, and boolean values</li><li><strong>Keywords</strong>: All Cure language keywords including FSM constructs</li><li><strong>Error Recovery</strong>: Detailed error reporting with location information</li></ul><h2 id="module-token-types" class="section-heading">
+  <a href="#module-token-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Token Types</span>
+</h2>
+<p>The lexer recognizes the following token categories:</p><ul><li><strong>Keywords</strong>: <code class="inline">def</code>, <code class="inline">fsm</code>, <code class="inline">match</code>, <code class="inline">when</code>, etc.</li><li><strong>Identifiers</strong>: Variable and function names</li><li><strong>Literals</strong>: Numbers, strings, atoms, booleans</li><li><strong>Operators</strong>: <code class="inline">+</code>, <code class="inline">-&gt;</code>, <code class="inline">|&gt;</code>, <code class="inline">::</code>, <code class="inline">==</code>, etc.</li><li><strong>Delimiters</strong>: <code class="inline">()</code>, <code class="inline">[]</code>, <code class="inline">{}</code>, <code class="inline">,</code>, <code class="inline">;</code>, etc.</li><li><strong>Comments</strong>: Line comments starting with <code class="inline">#</code></li></ul><h2 id="module-string-interpolation" class="section-heading">
+  <a href="#module-string-interpolation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">String Interpolation</span>
+</h2>
+<p>Supports string interpolation with <code class="inline">#{expression}</code> syntax:</p><pre><code class="cure">&quot;Hello #{name}!&quot;  % Tokenized as interpolated string</code></pre><h2 id="module-error-handling" class="section-heading">
+  <a href="#module-error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h2>
+<p>All tokenization errors include precise location information:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="6179933355-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6179933355-2">{</span><span class="n">Reason</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="6179933355-2">}</span><span class="p" data-group-id="6179933355-1">}</span></code></pre>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#scan/1" data-no-tooltip translate="no">scan/1</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#token_type/1" data-no-tooltip translate="no">token_type/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Extract the type from a token record.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tokenize/1" data-no-tooltip translate="no">tokenize(Source)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Tokenize a string of Cure source code into a list of tokens.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#tokenize_file/1" data-no-tooltip translate="no">tokenize_file(Filename)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Tokenize a Cure source file.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="scan/1">
+
+  <div class="detail-header">
+    <a href="#scan/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">scan/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/lexer/cure_lexer.erl#L202" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> scan(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:string/0">string</a>() | <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) -> {ok, [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:tuple/0">tuple</a>()]} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="token_type/1">
+
+  <div class="detail-header">
+    <a href="#token_type/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">token_type/1</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/lexer/cure_lexer.erl#L184" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> token_type(#token{type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), value :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), line :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>(), column :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>()}) ->
+                    <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>().</pre>
+
+      </div>
+
+<p>Extract the type from a token record.</p><p>This utility function extracts the token type, which is useful for
+pattern matching and categorizing tokens in the parser.</p><h2 id="token_type/1-arguments" class="section-heading">
+  <a href="#token_type/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Token</code> - Token record to extract type from</li></ul><h2 id="token_type/1-returns" class="section-heading">
+  <a href="#token_type/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li>Atom representing the token type (e.g., <code class="inline">def</code>, <code class="inline">identifier</code>, <code class="inline">number</code>)</li></ul><h2 id="token_type/1-examples" class="section-heading">
+  <a href="#token_type/1-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Examples</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">Token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">token</span><span class="p" data-group-id="4821166114-1">{</span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">identifier</span><span class="p">,</span><span class="w"> </span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;add&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="ss">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="4821166114-1">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">token_type</span><span class="p" data-group-id="4821166114-2">(</span><span class="n">Token</span><span class="p" data-group-id="4821166114-2">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; identifier</span><span class="w">
+
+</span><span class="n">KeywordToken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">token</span><span class="p" data-group-id="4821166114-3">{</span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">def</span><span class="p">,</span><span class="w"> </span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">def</span><span class="p">,</span><span class="w"> </span><span class="ss">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="4821166114-3">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">token_type</span><span class="p" data-group-id="4821166114-4">(</span><span class="n">KeywordToken</span><span class="p" data-group-id="4821166114-4">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; def</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="tokenize/1">
+
+  <div class="detail-header">
+    <a href="#tokenize/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">tokenize(Source)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/lexer/cure_lexer.erl#L108" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> tokenize(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>()) ->
+                  {ok,
+                   [#token{type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), value :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), line :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>(), column :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>()}]} |
+                  {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+<p>Tokenize a string of Cure source code into a list of tokens.</p><p>This is the main entry point for lexical analysis. It processes the entire
+input and returns a list of tokens with position information.</p><h2 id="tokenize/1-arguments" class="section-heading">
+  <a href="#tokenize/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Source</code> - Binary containing Cure source code to tokenize</li></ul><h2 id="tokenize/1-returns" class="section-heading">
+  <a href="#tokenize/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, Tokens}</code> - Successful tokenization with list of token records</li><li><code class="inline">{error, {Reason, Line, Column}}</code> - Tokenization error with location</li><li><code class="inline">{error, {Error, Reason, Stack}}</code> - Internal error with stack trace</li></ul><h2 id="tokenize/1-token-record" class="section-heading">
+  <a href="#tokenize/1-token-record" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Token Record</span>
+</h2>
+<p>Each token is a record with fields:</p><ul><li><code class="inline">type</code> - Token type atom (e.g., <code class="inline">identifier</code>, <code class="inline">number</code>, <code class="inline">def</code>)</li><li><code class="inline">value</code> - Token value (e.g., variable name, number value)</li><li><code class="inline">line</code> - Line number (1-based)</li><li><code class="inline">column</code> - Column number (1-based)</li></ul><h2 id="tokenize/1-examples" class="section-heading">
+  <a href="#tokenize/1-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Examples</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="nf">tokenize</span><span class="p" data-group-id="0023537904-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;def add(x, y) = x + y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="0023537904-1">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; {ok, [</span><span class="w">
+</span><span class="c1">%      #token{type=def, value=def, line=1, column=1},</span><span class="w">
+</span><span class="c1">%      #token{type=identifier, value= &lt;&lt;&quot;add&quot;&gt;&gt;, line=1, column=5},</span><span class="w">
+</span><span class="c1">%      #token{type=&#39;(&#39;, value=&#39;(&#39;, line=1, column=8},</span><span class="w">
+</span><span class="c1">%      ...</span><span class="w">
+</span><span class="c1">%    ]}</span><span class="w">
+
+</span><span class="nf">tokenize</span><span class="p" data-group-id="0023537904-2">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;invalid \xff character&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="0023537904-2">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; {error, {invalid_character, 1, 9}}</span></code></pre><h2 id="tokenize/1-error-types" class="section-heading">
+  <a href="#tokenize/1-error-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Types</span>
+</h2>
+<ul><li><code class="inline">invalid_character</code> - Unrecognized character in input</li><li><code class="inline">unterminated_string</code> - String literal without closing quote</li><li><code class="inline">invalid_number_format</code> - Malformed numeric literal</li><li><code class="inline">unterminated_comment</code> - Block comment without proper termination</li></ul>
+  </section>
+</section>
+<section class="detail" id="tokenize_file/1">
+
+  <div class="detail-header">
+    <a href="#tokenize_file/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">tokenize_file(Filename)</h1>
+
+      <a href="https://github.com/yourusername/cure/blob/v0.1.0/src/lexer/cure_lexer.erl#L148" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> tokenize_file(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:string/0">string</a>()) ->
+                       {ok,
+                        [#token{type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), value :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), line :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>(), column :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>()}]} |
+                       {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+<p>Tokenize a Cure source file.</p><p>This is a convenience function that reads a file from disk and tokenizes
+its contents. It handles file I/O errors and passes the content to the
+main tokenization function.</p><h2 id="tokenize_file/1-arguments" class="section-heading">
+  <a href="#tokenize_file/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Filename</code> - Path to the .cure source file to tokenize</li></ul><h2 id="tokenize_file/1-returns" class="section-heading">
+  <a href="#tokenize_file/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, Tokens}</code> - Successful tokenization with list of token records</li><li><code class="inline">{error, {file_error, Reason}}</code> - File I/O error</li><li><code class="inline">{error, {Reason, Line, Column}}</code> - Tokenization error with location</li></ul><h2 id="tokenize_file/1-examples" class="section-heading">
+  <a href="#tokenize_file/1-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Examples</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="nf">tokenize_file</span><span class="p" data-group-id="8724394339-1">(</span><span class="s">&quot;examples/hello.cure&quot;</span><span class="p" data-group-id="8724394339-1">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; {ok, [#token{type=def, ...}, ...]}</span><span class="w">
+
+</span><span class="nf">tokenize_file</span><span class="p" data-group-id="8724394339-2">(</span><span class="s">&quot;nonexistent.cure&quot;</span><span class="p" data-group-id="8724394339-2">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; {error, {file_error, enoent}}</span></code></pre>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>
