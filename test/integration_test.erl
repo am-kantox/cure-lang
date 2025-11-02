@@ -230,7 +230,7 @@ test_let_expressions() ->
     cure_utils:debug("✓ Testing let expressions...~n"),
 
     % Create let expression
-    LetCode = "let x = 42, y = x + 1 in x + y",
+    LetCode = "let x = 42 let y = x + 1 x + y",
 
     % Tokenize
     {ok, Tokens} = cure_lexer:scan(LetCode),

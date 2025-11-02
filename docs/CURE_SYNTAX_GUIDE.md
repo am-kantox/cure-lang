@@ -339,14 +339,16 @@ str1 <> str2    # Diamond operator for string concatenation
 Simple let syntax:
 
 ```cure
-let variable = expression
-let result = function_call()
+let variable = expression body_expression
+let result = function_call() result + 10
 ```
 
-**Note**: Use `in` for scoped let expressions (check if implemented):
+The body expression follows the binding immediately without requiring an explicit `in` keyword.
+
+Example:
 
 ```cure
-let x = 5 in x + 10
+let x = 5 x + 10
 ```
 
 ---
@@ -495,8 +497,7 @@ def reverse(list: List(T), acc: List(T)): List(T) =
 # Function returns another function
 def flip(f: A -> B -> C): B -> A -> C =
   fn(b, a) -> 
-    let g = f(a) in
-    g(b)
+    let g = f(a) g(b)
   end
 ```
 

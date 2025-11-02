@@ -178,7 +178,7 @@ test_memory_usage() ->
     {_, MemBefore} = erlang:process_info(self(), memory),
 
     % Create some data structures
-    Code = "let x = 42, y = x + 1 in x * y",
+    Code = "let x = 42 let y = x + 1 x * y",
     {ok, Tokens} = cure_lexer:scan(Code),
     _ParsedResult = lists:map(fun(Token) -> Token end, Tokens),
 

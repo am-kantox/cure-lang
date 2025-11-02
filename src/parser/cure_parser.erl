@@ -3236,41 +3236,26 @@ parse_let_expression(State) ->
         location = Location
     },
 
-    % Check if there's an explicit 'in' keyword or if we should parse the next expression as body
-    case match_token(State4, 'in') of
+    % Check if there's another expression that could be the body
+    case is_let_body_continuation(State4) of
         true ->
-            % Explicit let...in syntax
-            {_, State5} = expect(State4, 'in'),
-            {Body, State6} = parse_expression(State5),
+            % Parse a single expression as the body, not a block
+            % This prevents the parser from continuing past match clause boundaries
+            {Body, State5} = parse_binary_expression(State4, 0),
             LetExpr = #let_expr{
                 bindings = [Binding],
                 body = Body,
                 location = Location
             },
-            {LetExpr, State6};
+            {LetExpr, State5};
         false ->
-            % Implicit let syntax - next expression is the body
-            % Check if there's another expression that could be the body
-            case is_let_body_continuation(State4) of
-                true ->
-                    % Parse a single expression as the body, not a block
-                    % This prevents the parser from continuing past match clause boundaries
-                    {Body, State5} = parse_binary_expression(State4, 0),
-                    LetExpr = #let_expr{
-                        bindings = [Binding],
-                        body = Body,
-                        location = Location
-                    },
-                    {LetExpr, State5};
-                false ->
-                    % No body, just return the binding variable
-                    LetExpr = #let_expr{
-                        bindings = [Binding],
-                        body = #identifier_expr{name = VarName, location = Location},
-                        location = Location
-                    },
-                    {LetExpr, State4}
-            end
+            % No body, just return the binding variable
+            LetExpr = #let_expr{
+                bindings = [Binding],
+                body = #identifier_expr{name = VarName, location = Location},
+                location = Location
+            },
+            {LetExpr, State4}
     end.
 
 %% Parse tuple expression {1, 2, 3}

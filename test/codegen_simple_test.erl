@@ -86,7 +86,7 @@ test_simple_function_compilation() ->
 
 %% Test basic let expressions
 test_basic_let_expressions() ->
-    % Test: let x = 5 in x + 1
+    % Test: let x = 5 x + 1
     LetExpr = #let_expr{
         bindings = [
             #binding{

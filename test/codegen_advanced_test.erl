@@ -33,7 +33,7 @@ run() ->
 
 %% Test nested let expressions compilation
 test_nested_let_expressions() ->
-    % Test: let x = 10 in let y = x + 5 in let z = y * 2 in z + 1
+    % Test: let x = 10 let y = x + 5 let z = y * 2 z + 1
     NestedLetExpr = #let_expr{
         bindings = [
             #binding{
@@ -159,7 +159,7 @@ test_complex_function_calls() ->
 
 %% Test let expressions containing function calls
 test_let_with_function_calls() ->
-    % Test: let x = foo(1) in let y = bar(x, 2) in baz(y)
+    % Test: let x = foo(1) let y = bar(x, 2) baz(y)
     LetWithCallsExpr = #let_expr{
         bindings = [
             #binding{
@@ -216,7 +216,7 @@ test_let_with_function_calls() ->
 
 %% Test deeply nested expressions with mixed let and function calls
 test_deeply_nested_expressions() ->
-    % Test: let a = f(let b = g(1) in b + 2) in let c = h(a, let d = i(3) in d * 4) in c - 1
+    % Test: let a = f(let b = g(1) b + 2) let c = h(a, let d = i(3) d * 4) c - 1
     DeeplyNestedExpr = #let_expr{
         bindings = [
             #binding{
@@ -335,7 +335,7 @@ test_deeply_nested_expressions() ->
 
 %% Test let expression variable scoping in code generation
 test_let_expression_scoping() ->
-    % Test: let x = 1 in (let x = 2 in x) + x  (inner x shadows outer x)
+    % Test: let x = 1 (let x = 2 x) + x  (inner x shadows outer x)
     ScopingExpr = #let_expr{
         bindings = [
             #binding{
@@ -508,7 +508,7 @@ test_higher_order_function_calls() ->
 %% Test closure generation and capture
 test_closure_generation() ->
     % Test closure that captures variables from outer scope
-    % let x = 10 in let f = lambda y: x + y in f(5)
+    % let x = 10 let f = lambda y: x + y f(5)
     ClosureExpr = #let_expr{
         bindings = [
             #binding{
@@ -655,7 +655,7 @@ test_tail_call_optimization() ->
 %% Test let expression optimizations
 test_let_expression_optimizations() ->
     % Test let expression that can be optimized away
-    % let x = 5 in x  (should be optimized to just 5)
+    % let x = 5 x  (should be optimized to just 5)
     SimpleLetExpr = #let_expr{
         bindings = [
             #binding{
@@ -675,7 +675,7 @@ test_let_expression_optimizations() ->
     ?assert(length(Instructions) > 0),
 
     % Test unused let binding optimization
-    % let x = expensive_call() in 42  (x is unused, call might be eliminated)
+    % let x = expensive_call() 42  (x is unused, call might be eliminated)
     UnusedLetExpr = #let_expr{
         bindings = [
             #binding{

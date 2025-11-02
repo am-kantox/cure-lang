@@ -209,7 +209,7 @@ Added unification clauses for `poly_type` records:
 **Classic Example**:
 ```cure
 def test() -> {Int, String} =
-  let id = fn(x) -> x in
+  let id = fn(x) -> x
   % id is automatically generalized to: forall T. T -> T
   {id(42), id("hello")}  % Both uses are valid!
 end

@@ -15,7 +15,7 @@ parse_let_expression_from_code(Code) ->
 %% Run all tests
 run() ->
     cure_utils:debug("Running Let Expression parser tests...~n"),
-    test_explicit_let_in_syntax(),
+    test_let_syntax(),
     test_implicit_let_with_continuation(),
     test_implicit_let_without_body(),
     test_is_let_body_continuation_valid_tokens(),
@@ -24,12 +24,12 @@ run() ->
     test_complex_let_expressions(),
     cure_utils:debug("All Let Expression tests passed!~n").
 
-%% Test Case 1: parse_let_expression correctly parses explicit let...in syntax
-test_explicit_let_in_syntax() ->
-    cure_utils:debug("Testing explicit let...in syntax...~n"),
+%% Test Case 1: parse_let_expression correctly parses let syntax
+test_let_syntax() ->
+    cure_utils:debug("Testing let syntax...~n"),
 
-    % Test simple let...in with identifier body
-    Code1 = <<"def test() = let x = 42 in x">>,
+    % Test simple let with identifier body
+    Code1 = <<"def test() = let x = 42 x">>,
     FunDef1 = parse_let_expression_from_code(Code1),
     ?assertMatch(#function_def{}, FunDef1),
 
@@ -43,14 +43,14 @@ test_explicit_let_in_syntax() ->
     ?assertMatch(#literal_expr{value = 42}, Binding1#binding.value),
     ?assertMatch(#identifier_expr{name = x}, LetExpr1#let_expr.body),
 
-    % Test let...in with arithmetic body
-    Code2 = <<"def test() = let y = 10 in y + 5">>,
+    % Test let with arithmetic body
+    Code2 = <<"def test() = let y = 10 y + 5">>,
     FunDef2 = parse_let_expression_from_code(Code2),
     LetExpr2 = FunDef2#function_def.body,
     ?assertMatch(#let_expr{}, LetExpr2),
     ?assertMatch(#binary_op_expr{op = '+'}, LetExpr2#let_expr.body),
 
-    cure_utils:debug("✓ Explicit let...in syntax test passed~n").
+    cure_utils:debug("✓ Let syntax test passed~n").
 
 %% Test Case 2: parse_let_expression correctly parses implicit syntax with body continuation
 test_implicit_let_with_continuation() ->
@@ -96,7 +96,7 @@ test_implicit_let_with_continuation() ->
     FunDef6 = parse_let_expression_from_code(Code6),
     LetExpr6 = FunDef6#function_def.body,
     ?assertMatch(#let_expr{}, LetExpr6),
-    ?assertMatch(#literal_expr{value = "hello"}, LetExpr6#let_expr.body),
+    ?assertMatch(#literal_expr{value = <<"hello">>}, LetExpr6#let_expr.body),
 
     cure_utils:debug("✓ Implicit let with body continuation test passed~n").
 
@@ -183,7 +183,7 @@ test_nested_let_expressions() ->
     cure_utils:debug("Testing nested let expressions...~n"),
 
     % Test nested let expressions
-    Code1 = <<"def test() = let x = 1 in let y = 2 in x + y">>,
+    Code1 = <<"def test() = let x = 1 let y = 2 x + y">>,
     FunDef1 = parse_let_expression_from_code(Code1),
     LetExpr1 = FunDef1#function_def.body,
     ?assertMatch(#let_expr{}, LetExpr1),
@@ -212,7 +212,7 @@ test_complex_let_expressions() ->
     cure_utils:debug("Testing complex let expressions...~n"),
 
     % Test let with function call value
-    Code1 = <<"def test() = let result = foo(1, 2) in result + 3">>,
+    Code1 = <<"def test() = let result = foo(1, 2) result + 3">>,
     FunDef1 = parse_let_expression_from_code(Code1),
     LetExpr1 = FunDef1#function_def.body,
     ?assertMatch(#let_expr{}, LetExpr1),
@@ -222,7 +222,7 @@ test_complex_let_expressions() ->
     ?assertMatch(#binary_op_expr{op = '+'}, LetExpr1#let_expr.body),
 
     % Test let with complex expressions
-    Code2 = <<"def test() = let x = (1 + 2) * 3 in x / 2">>,
+    Code2 = <<"def test() = let x = (1 + 2) * 3 x / 2">>,
     FunDef2 = parse_let_expression_from_code(Code2),
     LetExpr2 = FunDef2#function_def.body,
     ?assertMatch(#let_expr{}, LetExpr2),
