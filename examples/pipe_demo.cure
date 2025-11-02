@@ -1,0 +1,181 @@
+# Pipe Operator Demonstration
+# 
+# The pipe operator (|>) provides elegant error handling and function composition
+# with automatic Result type management.
+#
+# Semantics:
+# 1. Error(x) |> f = Error(x)          # Error propagation
+# 2. Ok(x) |> f = f(x) -> Ok(result)  # Ok unwrapping and wrapping
+# 3. x |> f = f(x) -> Ok(result)       # Value passing with wrapping
+
+module PipeDemo do
+  export [
+    basic_pipe/0,
+    pipe_chain/0,
+    error_handling/0,
+    real_world_example/1
+  ]
+
+  # Basic pipe operation
+  def basic_pipe() do
+    # Simple value piping
+    5 |> double |> increment
+  end
+
+  def double(x: Int) -> Int = x * 2
+
+  def increment(x: Int) -> Int = x + 1
+
+  # Pipe chain with multiple operations
+  def pipe_chain() do
+    # This reads as: "start with 10, double it, add 5, then square it"
+    10
+      |> double
+      |> add_five
+      |> square
+  end
+
+  def add_five(x: Int) -> Int = x + 5
+
+  def square(x: Int) -> Int = x * x
+
+  # Error handling with pipe operator
+  def error_handling() do
+    # If parse returns Error, the chain stops immediately
+    # validate and process are never called
+    "invalid data"
+      |> parse_data
+      |> validate_data
+      |> process_data
+      |> format_result
+  end
+
+  def parse_data(input: String) -> Result(Map, String) do
+    match input do
+      "valid" -> Ok({data: "parsed"})
+      _ -> Error("Parse error: invalid input")
+    end
+  end
+
+  def validate_data(data: Map) -> Result(Map, String) do
+    # This is only called if parse succeeded
+    Ok(data)
+  end
+
+  def process_data(data: Map) -> Result(String, String) do
+    # This is only called if validation succeeded
+    Ok("processed")
+  end
+
+  def format_result(result: String) -> Result(String, String) do
+    Ok("Result: " <> result)
+  end
+
+  # Real-world example: data transformation pipeline
+  def real_world_example(user_input: String) -> Result(String, String) do
+    user_input
+      |> trim_whitespace
+      |> to_lowercase
+      |> remove_special_chars
+      |> validate_length
+      |> capitalize_first_letter
+      |> format_output
+  end
+
+  def trim_whitespace(s: String) -> String do
+    # Trim implementation (simplified)
+    s
+  end
+
+  def to_lowercase(s: String) -> String do
+    # Lowercase implementation (simplified)
+    s
+  end
+
+  def remove_special_chars(s: String) -> String do
+    # Special char removal (simplified)
+    s
+  end
+
+  def validate_length(s: String) -> Result(String, String) do
+    let len = length(s) in
+    match len do
+      n when n > 3 and n < 50 -> Ok(s)
+      _ -> Error("Invalid length: must be between 3 and 50 characters")
+    end
+  end
+
+  def capitalize_first_letter(s: String) -> String do
+    # Capitalization implementation (simplified)
+    s
+  end
+
+  def format_output(s: String) -> String do
+    "Formatted: " <> s
+  end
+
+  # Pipe with function arguments
+  def pipe_with_args() do
+    # The piped value becomes the first argument
+    10
+      |> add(5)      # add(10, 5)
+      |> multiply(3) # multiply(15, 3)
+  end
+
+  def add(x: Int, y: Int) -> Int = x + y
+
+  def multiply(x: Int, y: Int) -> Int = x * y
+
+  # Combining pipe with other operators
+  def combined_operations() do
+    # Pipe has lowest precedence, so arithmetic happens first
+    (1 + 2 + 3)
+      |> double        # 6 |> double
+      |> increment     # 12 |> increment
+      # Result: Ok(13)
+  end
+
+  # Error recovery example
+  def error_recovery(input: String) -> String do
+    let result = input
+      |> risky_operation
+      |> another_risky_op
+    in
+    match result do
+      Ok(value) -> "Success: " <> value
+      Error(reason) -> "Failed: " <> reason
+    end
+  end
+
+  def risky_operation(s: String) -> Result(String, String) do
+    match s do
+      "fail" -> Error("Operation failed")
+      _ -> Ok(s)
+    end
+  end
+
+  def another_risky_op(s: String) -> Result(String, String) do
+    Ok("processed-" <> s)
+  end
+
+end
+
+# Example usage:
+#
+# > PipeDemo.basic_pipe()
+# Ok(11)  # 5 -> 10 -> 11
+#
+# > PipeDemo.pipe_chain()
+# Ok(625)  # 10 -> 20 -> 25 -> 625
+#
+# > PipeDemo.error_handling()
+# Error("Parse error: invalid input")
+#
+# > PipeDemo.real_world_example("  Hello World!  ")
+# Ok("Formatted: hello world")
+#
+# > PipeDemo.error_recovery("test")
+# "Success: processed-test"
+#
+# > PipeDemo.error_recovery("fail")
+# "Failed: Operation failed"

@@ -3180,6 +3180,75 @@ infer_binary_op('or', LeftType, RightType, Location, Constraints) ->
         #type_constraint{left = RightType, op = '=', right = ?TYPE_BOOL, location = Location}
     ],
     {ok, ?TYPE_BOOL, Constraints ++ BoolConstraints};
+infer_binary_op('|>', LeftType, RightType, Location, Constraints) ->
+    % Pipe operator: LeftType |> RightType
+    % The pipe operator has monadic semantics:
+    % - If LeftType is Result(T), unwrap T and pass to RightType function
+    % - If LeftType is plain T, pass T to RightType function
+    % - Result is always wrapped in Result type
+    %
+    % Unwrap Result type from LeftType if present
+    {UnwrappedLeftType, IsResultType} =
+        case LeftType of
+            {dependent_type, 'Result', [InnerType | _]} ->
+                {InnerType, true};
+            _ ->
+                {LeftType, false}
+        end,
+
+    case RightType of
+        {function_type, [ParamType | RestParams], FuncReturnType} when RestParams =:= [] ->
+            % Simple function with one parameter
+            % Create constraint: UnwrappedLeftType must match ParamType
+            ParamConstraint = #type_constraint{
+                left = UnwrappedLeftType,
+                op = '=',
+                right = ParamType,
+                location = Location
+            },
+            % If function already returns Result type, keep it; otherwise wrap
+            FinalResultType =
+                case FuncReturnType of
+                    {dependent_type, 'Result', _} ->
+                        % Function already returns Result, use it
+                        FuncReturnType;
+                    _ ->
+                        % Wrap in Result type
+                        {dependent_type, 'Result', [FuncReturnType, new_type_var()]}
+                end,
+            {ok, FinalResultType, Constraints ++ [ParamConstraint]};
+        {function_type, [ParamType | _RestParams], FuncReturnType} ->
+            % Multi-parameter function - pipe applies to first parameter
+            ParamConstraint = #type_constraint{
+                left = UnwrappedLeftType,
+                op = '=',
+                right = ParamType,
+                location = Location
+            },
+            % Result wrapped in Result type if not already
+            FinalResultType =
+                case FuncReturnType of
+                    {dependent_type, 'Result', _} ->
+                        FuncReturnType;
+                    _ ->
+                        {dependent_type, 'Result', [FuncReturnType, new_type_var()]}
+                end,
+            {ok, FinalResultType, Constraints ++ [ParamConstraint]};
+        _ ->
+            % RightType is not a function or unknown - create function constraint
+            % Assume Right should be a function UnwrappedLeftType -> T
+            ReturnTypeVar = new_type_var(),
+            ExpectedFuncType = {function_type, [UnwrappedLeftType], ReturnTypeVar},
+            FuncConstraint = #type_constraint{
+                left = RightType,
+                op = '=',
+                right = ExpectedFuncType,
+                location = Location
+            },
+            % Result wrapped in Result type
+            ResultType = {dependent_type, 'Result', [ReturnTypeVar, new_type_var()]},
+            {ok, ResultType, Constraints ++ [FuncConstraint]}
+    end;
 infer_binary_op(Op, _LeftType, _RightType, Location, _Constraints) ->
     {error, {unsupported_binary_operator, Op, Location}}.
 

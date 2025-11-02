@@ -1802,35 +1802,33 @@ validate_erlang_forms(Forms) ->
 %% 1. Wrap the piped value with ok() if it's not already a Result
 %% 2. Use cure_std:and_then to chain the operation monadically
 generate_monadic_pipe_form(Function, PipedValue, RestArgs, Line) ->
-    % First, wrap the piped value with ok()
-    WrappedValue =
-        {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, ok}}, [PipedValue]},
+    % Simpler approach: just use cure_std:pipe/2
+    % The pipe function already handles unwrapping and wrapping properly
+    % We need to create a function that takes the piped value and applies it to Function
 
-    % Create a lambda function that wraps the target function
-    % This lambda will receive the unwrapped value and call the target function
-    LambdaVar = {var, Line, 'X'},
-    LambdaCallArgs = [LambdaVar | RestArgs],
-
-    % Create the function call inside the lambda
-    LambdaCall = {call, Line, Function, LambdaCallArgs},
-
-    % For monadic pipe, we need to wrap the result in a Result type
-    % Since the functions expect raw values but pipe chain expects Results
-    WrappedCall =
-        {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, ok}}, [LambdaCall]},
-
-    % Create the lambda function
-    LambdaFunction =
-        {'fun', Line,
-            {clauses, [
-                {clause, Line, [LambdaVar], [], [WrappedCall]}
-            ]}},
-
-    % Use cure_std:and_then to chain the operations monadically
-    % Note: and_then expects (Function, Result) order according to cure_std.erl
-    {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, and_then}}, [
-        LambdaFunction, WrappedValue
-    ]}.
+    % If there are no RestArgs, the function can be called directly
+    % If there are RestArgs, we need to partially apply them
+    case RestArgs of
+        [] ->
+            % Simple case: just pipe the value through the function
+            % pipe(Value, Fun) where Fun takes one argument
+            {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, pipe}}, [
+                PipedValue, Function
+            ]};
+        _ ->
+            % Complex case: need to create a wrapper function that applies RestArgs
+            LambdaVar = {var, Line, 'PipedArg'},
+            % Call the function with piped value as first arg + RestArgs
+            LambdaCall = {call, Line, Function, [LambdaVar | RestArgs]},
+            LambdaFunction =
+                {'fun', Line,
+                    {clauses, [
+                        {clause, Line, [LambdaVar], [], [LambdaCall]}
+                    ]}},
+            {call, Line, {remote, Line, {atom, Line, cure_std}, {atom, Line, pipe}}, [
+                PipedValue, LambdaFunction
+            ]}
+    end.
 
 %% ============================================================================
 %% Record Field Access Helpers

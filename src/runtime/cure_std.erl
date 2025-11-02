@@ -92,6 +92,8 @@ type system and Erlang's dynamic typing.
 -export([
     % These remain in Erlang runtime as they need Erlang-specific features
     is_monad/1,
+    wrap_ok/1,
+    and_then/2,
     pipe/2,
     print/1,
     println/1,
@@ -152,6 +154,24 @@ is_monad({'Error', _}) ->
     true;
 is_monad(_) ->
     false.
+
+%% Wraps a value in the Ok Result constructor.
+%% Used by the pipe operator to ensure values are properly typed as Results.
+wrap_ok(Value) ->
+    {'Ok', Value}.
+
+%% Monadic bind operation (and_then)
+%% and_then(Function, Result) applies Function to the value inside Ok,
+%% or propagates Error unchanged.
+%% Function signature: Fun :: (A -> Result(B, E)) takes unwrapped value.
+and_then(Fun, {'Ok', Value}) when is_function(Fun, 1) ->
+    try
+        Fun(Value)
+    catch
+        Error:Reason -> {'Error', {and_then_runtime_error, Error, Reason}}
+    end;
+and_then(_Fun, {'Error', _} = Err) ->
+    Err.
 
 -doc """
 Implements Cure's monadic pipe operator (|>) with Result type semantics.
