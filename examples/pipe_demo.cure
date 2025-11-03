@@ -98,7 +98,7 @@ module PipeDemo do
   end
 
   def validate_length(s: String) -> Result(String, String) do
-    let len = length(s) in
+    let len = length(s)
     match len do
       n when n > 3 and n < 50 -> Ok(s)
       _ -> Error("Invalid length: must be between 3 and 50 characters")
@@ -140,7 +140,6 @@ module PipeDemo do
     let result = input
       |> risky_operation
       |> another_risky_op
-    in
     match result do
       Ok(value) -> "Success: " <> value
       Error(reason) -> "Failed: " <> reason

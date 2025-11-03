@@ -41,7 +41,7 @@ module Std.Core do
   # Flip the order of arguments for a binary function
   def flip(f: A -> B -> C): B -> A -> C =
     fn(b, a) -> 
-      let g = f(a) in
+      let g = f(a)
       g(b)
     end
 

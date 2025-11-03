@@ -221,7 +221,7 @@ module Std.String do
     match strings do
       [] -> []
       [h | t] ->
-        let rest = filter(t, pred) in
+        let rest = filter(t, pred)
         match pred(h) do
           true -> [h | rest]
           false -> rest
