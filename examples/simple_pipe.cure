@@ -2,14 +2,86 @@
 # Demonstrates the pipe operator with Result type wrapping
 
 module simple_pipe do
-  export [main/0]
+  export [
+    main/0,
+    example_bare_to_bare/0,
+    example_bare_to_result/0,
+    example_result_ok_chain/0,
+    example_result_error_propagation/0,
+    example_mixed_chain/0
+  ]
   
-  # Helper functions
-  def double(x: Int) -> Int = x * 2
+  import Std.Core [Result, ok/1, error/1]
+
+  # ============================================================================
+  # Helper Functions
+  # ============================================================================
+
+  # Function that takes bare Int and returns bare Int
+  def double(x: Int): Int = x * 2
   
-  def increment(x: Int) -> Int = x + 1
+  # Function that takes bare Int and returns bare Int
+  def increment(x: Int): Int = x + 1
   
-  # Main entry point - demonstrates pipe operator
-  # The pipe operator automatically wraps results in Result type
-  def main() -> Result(Int, String) = 5 |> double |> increment
+  # Function that takes bare Int and returns Result
+  def safe_divide(x: Int): Result(Int, String) =
+    match x do
+      0 -> error("Cannot divide by zero")
+      _ -> ok(10 / x)
+    end
+  
+  # Function that always returns an error
+  def always_fails(x: Int): Result(Int, String) =
+    error("This always fails")
+
+  # ============================================================================
+  # Example 1: Bare value -> Bare function
+  # ============================================================================
+  # Input: 5 (bare Int)
+  # Transformation: x * 2 (returns bare Int)
+  # Expected: Ok(10)
+  def example_bare_to_bare(): Result(Int, String) =
+    5 |> double
+
+  # ============================================================================
+  # Example 2: Bare value -> Result function
+  # ============================================================================
+  # Input: 5 (bare Int)
+  # Transformation: ok(x * 2) (returns Result(Int, String))
+  # Expected: Ok(10)
+  def example_bare_to_result(): Result(Int, String) =
+    5 |> safe_divide
+
+  # ============================================================================
+  # Example 3: Chaining with Ok results
+  # ============================================================================
+  # Input: 5 (bare Int)
+  # Chain: double (returns bare) -> safe_divide (returns Result)
+  # Expected: Ok(1) because 5 * 2 = 10, then 10 / 10 = 1
+  def example_result_ok_chain(): Result(Int, String) =
+    5 |> double |> safe_divide
+
+  # ============================================================================
+  # Example 4: Error propagation through chain
+  # ============================================================================
+  # Input: 0 (bare Int)
+  # Chain: safe_divide (returns Error) -> double (should NOT be called)
+  # Expected: Error("Cannot divide by zero")
+  def example_result_error_propagation(): Result(Int, String) =
+    0 |> safe_divide |> double
+
+  # ============================================================================
+  # Example 5: Mixed bare and Result functions
+  # ============================================================================
+  # Input: 5 (bare Int)
+  # Chain: double (bare) -> increment (bare) -> safe_divide (Result)
+  # Expected: Ok(0) because (5 * 2 + 1) = 11, then 10 / 11 = 0 (integer division)
+  def example_mixed_chain(): Result(Int, String) =
+    5 |> double |> increment |> safe_divide
+
+  # ============================================================================
+  # Main entry point
+  # ============================================================================
+  def main(): Result(Int, String) =
+    5 |> double |> increment |> safe_divide
 end

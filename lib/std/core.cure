@@ -4,7 +4,7 @@
 module Std.Core do
   export [
     # Identity and composition
-    identity/1, compose/2, flip/1,
+    identity/1, compose/2, # flip/1,
     
     # Boolean operations
     not/1, and/2, or/2, xor/2,
@@ -39,11 +39,9 @@ module Std.Core do
     fn(x) -> f(g(x)) end
 
   # Flip the order of arguments for a binary function
-  def flip(f: A -> B -> C): B -> A -> C =
-    fn(b, a) -> 
-      let g = f(a) in
-      g(b)
-    end
+  # TODO: Fix currying syntax for flip
+  # def flip(f: A -> B -> C): B -> A -> C =
+  #   fn(b, a) -> f(a)(b) end
 
   # Boolean operations
   def not(x: Bool): Bool =
