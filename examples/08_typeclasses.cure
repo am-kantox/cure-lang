@@ -1,14 +1,9 @@
 # Example: Typeclass System Demonstration
 # Shows how to use and define typeclasses in Cure
+# NOTE: This is a syntax demonstration - full compilation requires runtime support
 
 module TypeclassDemo
 export [main/0]
-
-import Std.Typeclass [Show, Eq, Functor]
-import Std.Instances.Show [show, print, println, debug]
-import Std.Instances.Eq [(==), (!=), elem]
-import Std.Instances.Functor [map]
-import Std.List [filter, fold]
 
 # ==============================================================================
 # Custom Record Types
