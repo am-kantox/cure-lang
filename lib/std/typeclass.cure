@@ -1,0 +1,187 @@
+# Standard Typeclasses for Cure
+# Defines the core typeclasses that form the foundation of polymorphic programming
+
+module Std.Typeclass
+export [Show, Eq, Ord, Functor, Applicative, Monad]
+
+# ==============================================================================
+# Show - String Conversion
+# ==============================================================================
+
+# The Show typeclass provides a standard way to convert values to strings
+# for display and debugging purposes.
+typeclass Show(T) do
+  def show(x: T): String
+end
+
+# ==============================================================================
+# Eq - Equality Comparison
+# ==============================================================================
+
+# The Eq typeclass provides equality comparison operations.
+# Types that implement Eq can be compared for equality and inequality.
+typeclass Eq(T) do
+  def (==)(x: T, y: T): Bool
+  
+  # Default implementation of inequality in terms of equality
+  def (!=)(x: T, y: T): Bool = not (x == y)
+end
+
+# ==============================================================================
+# Ord - Ordering Comparison
+# ==============================================================================
+
+# Ordering type for comparison results
+record Ordering do
+  LT: Unit
+  EQ: Unit
+  GT: Unit
+end
+
+# The Ord typeclass provides ordering comparison operations.
+# Requires Eq as a superclass since ordering implies equality.
+typeclass Ord(T) when Eq(T) do
+  def compare(x: T, y: T): Ordering
+  
+  # Default implementations based on compare
+  def (<)(x: T, y: T): Bool = 
+    match compare(x, y) do
+      LT -> true
+      _ -> false
+    end
+  
+  def (<=)(x: T, y: T): Bool =
+    match compare(x, y) do
+      GT -> false
+      _ -> true
+    end
+  
+  def (>)(x: T, y: T): Bool =
+    match compare(x, y) do
+      GT -> true
+      _ -> false
+    end
+  
+  def (>=)(x: T, y: T): Bool =
+    match compare(x, y) do
+      LT -> false
+      _ -> true
+    end
+end
+
+# ==============================================================================
+# Functor - Mappable Containers
+# ==============================================================================
+
+# The Functor typeclass represents types that can be mapped over.
+# This is the foundation for container types and computational contexts.
+typeclass Functor(F) do
+  def map(f: A -> B, fa: F(A)): F(B)
+  
+  # Derived operations
+  def (<$)(value: A, fb: F(B)): F(A) =
+    map(fn(_) -> value end, fb)
+  
+  def ($>)(fa: F(A), value: B): F(B) =
+    map(fn(_) -> value end, fa)
+end
+
+# ==============================================================================
+# Applicative - Functors with Application
+# ==============================================================================
+
+# The Applicative typeclass extends Functor with the ability to:
+# 1. Lift pure values into the context (pure)
+# 2. Apply functions within the context (<*>)
+typeclass Applicative(F) when Functor(F) do
+  def pure(x: A): F(A)
+  def (<*>)(ff: F(A -> B), fa: F(A)): F(B)
+  
+  # Derived operations
+  def (*>)(fa: F(A), fb: F(B)): F(B) =
+    map(fn(_) -> fn(b) -> b end end, fa) <*> fb
+  
+  def (<*)(fa: F(A), fb: F(B)): F(A) =
+    map(fn(a) -> fn(_) -> a end end, fa) <*> fb
+  
+  def lift2(f: A -> B -> C, fa: F(A), fb: F(B)): F(C) =
+    map(f, fa) <*> fb
+end
+
+# ==============================================================================
+# Monad - Functors with Sequencing
+# ==============================================================================
+
+# The Monad typeclass extends Applicative with the ability to:
+# 1. Sequence computations (bind/flatMap)
+# 2. Chain dependent operations
+typeclass Monad(M) when Applicative(M) do
+  def bind(ma: M(A), f: A -> M(B)): M(B)
+  
+  # Operator alias for bind
+  def (>>=)(ma: M(A), f: A -> M(B)): M(B) = bind(ma, f)
+  
+  # Derived operations
+  def (>>)(ma: M(A), mb: M(B)): M(B) =
+    ma >>= fn(_) -> mb end
+  
+  def join(mma: M(M(A))): M(A) =
+    mma >>= fn(ma) -> ma end
+  
+  def flatMap(ma: M(A), f: A -> M(B)): M(B) = bind(ma, f)
+end
+
+# ==============================================================================
+# Helper Functions
+# ==============================================================================
+
+# Sequence a list of actions, collecting results
+def sequence(ms: List(M(A))): M(List(A)) where Monad(M) =
+  match ms do
+    [] -> pure([])
+    [m | rest] ->
+      m >>= fn(x) ->
+        sequence(rest) >>= fn(xs) ->
+          pure([x | xs])
+        end
+      end
+  end
+
+# Map a monadic function over a list and sequence the results
+def mapM(f: A -> M(B), xs: List(A)): M(List(B)) where Monad(M) =
+  sequence(Std.List.map(f, xs))
+
+# For-each with monadic effects, discarding results
+def forM_(f: A -> M(B), xs: List(A)): M(Unit) where Monad(M) =
+  match xs do
+    [] -> pure(Unit)
+    [x | rest] ->
+      f(x) >> forM_(f, rest)
+  end
+
+# Replicate a monadic action n times
+def replicateM(n: Int, ma: M(A)): M(List(A)) where Monad(M) =
+  match n do
+    x when x <= 0 -> pure([])
+    _ ->
+      ma >>= fn(a) ->
+        replicateM(n - 1, ma) >>= fn(as) ->
+          pure([a | as])
+        end
+      end
+  end
+
+# Filter with a monadic predicate
+def filterM(p: A -> M(Bool), xs: List(A)): M(List(A)) where Monad(M) =
+  match xs do
+    [] -> pure([])
+    [x | rest] ->
+      p(x) >>= fn(keep) ->
+        filterM(p, rest) >>= fn(filtered) ->
+          match keep do
+            true -> pure([x | filtered])
+            false -> pure(filtered)
+          end
+        end
+      end
+  end

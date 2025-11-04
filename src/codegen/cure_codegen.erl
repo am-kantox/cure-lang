@@ -600,6 +600,13 @@ compile_module_items([Item | RestItems], State, Acc) ->
             cure_utils:debug("Updated exports list: ~p~n", [UpdatedExports]),
             NewStateWithExports = NewState#codegen_state{exports = UpdatedExports},
             compile_module_items(RestItems, NewStateWithExports, NewAcc);
+        {ok, {record_with_derived, RecordAttr, DerivedInstances}, NewState} ->
+            % Add record definition and derived instances
+            RecordItem = {record_def, RecordAttr},
+            InstanceItems = [{derived_instance, Inst} || Inst <- DerivedInstances],
+            NewAcc = lists:reverse(InstanceItems) ++ [RecordItem | Acc],
+            cure_utils:debug("Added record with ~p derived instances~n", [length(DerivedInstances)]),
+            compile_module_items(RestItems, NewState, NewAcc);
         {ok, CompiledItem, NewState} ->
             compile_module_items(RestItems, NewState, [CompiledItem | Acc]);
         {error, Reason} ->
@@ -646,7 +653,7 @@ compile_module_item(#fsm_def{} = FSM, State) ->
 compile_module_item(#record_def{} = RecordDef, State) ->
     % Record definitions generate Erlang record declarations
     % Records in Erlang are defined at compile time and used as tagged tuples
-    #record_def{name = RecordName, fields = Fields} = RecordDef,
+    #record_def{name = RecordName, fields = Fields, derive_clause = DeriveClause} = RecordDef,
 
     % Register the record definition in the state for later use
     NewRecords = maps:put(RecordName, RecordDef, State#codegen_state.type_constructors),
@@ -663,11 +670,49 @@ compile_module_item(#record_def{} = RecordDef, State) ->
     ets:insert(TableName, {{record_fields, RecordName}, FieldOrder}),
     cure_utils:debug("[RECORD_DEF] Stored in ETS: ~p~n", [{{record_fields, RecordName}, FieldOrder}]),
 
-    % Generate Erlang record attribute for the module
-    FieldDefs = generate_erlang_record_fields(Fields),
-    RecordAttr = {record, RecordName, FieldDefs},
-
-    {ok, {record_def, RecordAttr}, NewState};
+    % Process derive clause if present
+    case cure_typeclass_codegen:process_derive_clause(DeriveClause, RecordDef, NewState) of
+        {ok, DerivedInstances, StateWithDerived} ->
+            cure_utils:debug(
+                "[DERIVE] Generated ~p instances for ~p~n",
+                [length(DerivedInstances), RecordName]
+            ),
+            % Generate Erlang record attribute for the module
+            FieldDefs = generate_erlang_record_fields(Fields),
+            RecordAttr = {record, RecordName, FieldDefs},
+            % Return both record and derived instances
+            {ok, {record_with_derived, RecordAttr, DerivedInstances}, StateWithDerived};
+        {error, Reason} ->
+            cure_utils:debug(
+                "[DERIVE] Failed to process derive clause for ~p: ~p~n",
+                [RecordName, Reason]
+            ),
+            % Continue without derived instances
+            FieldDefs = generate_erlang_record_fields(Fields),
+            RecordAttr = {record, RecordName, FieldDefs},
+            {ok, {record_def, RecordAttr}, NewState}
+    end;
+compile_module_item(#typeclass_def{} = TypeclassDef, State) ->
+    % Typeclass definitions compile to behaviour modules
+    cure_utils:debug("[TYPECLASS] Compiling typeclass ~p~n", [TypeclassDef#typeclass_def.name]),
+    case cure_typeclass_codegen:compile_typeclass(TypeclassDef, State) of
+        {ok, CompiledTypeclass, NewState} ->
+            {ok, CompiledTypeclass, NewState};
+        {error, Reason} ->
+            {error, {typeclass_compilation_failed, Reason}}
+    end;
+compile_module_item(#instance_def{} = InstanceDef, State) ->
+    % Instance definitions compile to concrete method implementations
+    cure_utils:debug(
+        "[INSTANCE] Compiling instance ~p(~p)~n",
+        [InstanceDef#instance_def.typeclass, InstanceDef#instance_def.type_args]
+    ),
+    case cure_typeclass_codegen:compile_instance(InstanceDef, State) of
+        {ok, CompiledMethods, NewState} ->
+            {ok, {instance, CompiledMethods}, NewState};
+        {error, Reason} ->
+            {error, {instance_compilation_failed, Reason}}
+    end;
 compile_module_item(#type_def{} = TypeDef, State) ->
     % Generate constructor functions for union types
     % Note: Constructors are already registered in the pre-pass

@@ -267,17 +267,34 @@ match_token(State, TokenType) ->
         Token -> get_token_type(Token) =:= TokenType
     end.
 
-%% Get token type from token record
+%% Get token type from token record or tuple
 get_token_type(Token) when is_record(Token, token) ->
     Token#token.type;
+get_token_type(Token) when is_tuple(Token) andalso tuple_size(Token) >= 1 ->
+    % Handle tuple tokens from lexer: {Type, Line} or {Type, Line, Value}
+    element(1, Token);
 get_token_type(_) ->
     unknown.
 
-%% Get token value from token record
+%% Get token value from token record or tuple
 get_token_value(Token) when is_record(Token, token) ->
     Token#token.value;
+get_token_value(Token) when is_tuple(Token) andalso tuple_size(Token) >= 3 ->
+    % Handle tuple tokens with value: {Type, Line, Value}
+    element(3, Token);
+get_token_value(Token) when is_tuple(Token) andalso tuple_size(Token) >= 1 ->
+    % Handle tuple tokens without value: {Type, Line} - return the type as value
+    element(1, Token);
 get_token_value(Token) ->
     Token.
+
+%% Convert token value to atom (handles both binary and list)
+token_value_to_atom(Value) when is_binary(Value) ->
+    binary_to_atom(Value, utf8);
+token_value_to_atom(Value) when is_list(Value) ->
+    list_to_atom(Value);
+token_value_to_atom(Value) when is_atom(Value) ->
+    Value.
 
 %% Get token location
 get_token_location(Token) when is_record(Token, token) ->
@@ -350,6 +367,12 @@ parse_item(State) ->
             parse_fsm(State);
         type ->
             parse_type_def(State);
+        typeclass ->
+            parse_typeclass_def(State);
+        instance ->
+            parse_instance_def(State);
+        derive ->
+            parse_derive_clause(State);
         import ->
             parse_import(State);
         _ ->
@@ -516,6 +539,12 @@ parse_module_item(State) ->
             parse_fsm(State);
         type ->
             parse_type_def(State);
+        typeclass ->
+            parse_typeclass_def(State);
+        instance ->
+            parse_instance_def(State);
+        derive ->
+            parse_derive_clause(State);
         trait ->
             parse_trait_def(State);
         impl ->
@@ -810,7 +839,7 @@ parse_parameters(State, Acc) ->
 %% Parse single parameter
 parse_parameter(State) ->
     {NameToken, State1} = expect(State, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Name = token_value_to_atom(get_token_value(NameToken)),
     Location = get_token_location(NameToken),
 
     {Type, State2} =
@@ -857,14 +886,24 @@ parse_record_def(State) ->
     {Fields, State5} = parse_record_fields(State4, []),
     {_, State6} = expect(State5, 'end'),
 
+    % Parse optional derive clause
+    {DeriveClause, State7} =
+        case match_token(State6, derive) of
+            true ->
+                parse_derive_clause(State6);
+            false ->
+                {undefined, State6}
+        end,
+
     Location = get_token_location(NameToken),
     Record = #record_def{
         name = Name,
         type_params = TypeParams,
         fields = Fields,
+        derive_clause = DeriveClause,
         location = Location
     },
-    {Record, State6}.
+    {Record, State7}.
 
 %% Parse record fields
 parse_record_fields(State, Acc) ->
@@ -2036,6 +2075,322 @@ parse_trait_bounds(State, Acc) ->
             {lists:reverse([TraitName | Acc]), State1}
     end.
 
+%% ============================================================================
+%% Type Class System Parsing - Haskell-style Syntax
+%% ============================================================================
+
+%% Parse typeclass definition
+%% Syntax: typeclass Show(T) do
+%%           def show(x: T): String
+%%         end
+parse_typeclass_def(State) ->
+    {TypeclassToken, State1} = expect(State, typeclass),
+    {NameToken, State2} = expect(State1, identifier),
+    Name = token_value_to_atom(get_token_value(NameToken)),
+    Location = get_token_location(TypeclassToken),
+
+    % Parse type parameters: Show(T) or Eq(T, U)
+    {TypeParams, State3} =
+        case match_token(State2, '(') of
+            true ->
+                {_, State2a} = expect(State2, '('),
+                {Params, State2b} = parse_type_parameter_names(State2a, []),
+                {_, State2c} = expect(State2b, ')'),
+                {Params, State2c};
+            false ->
+                {[], State2}
+        end,
+
+    % Parse optional superclass constraints: when Eq(T)
+    {Constraints, State4} =
+        case match_token(State3, 'when') of
+            true ->
+                {_, State3a} = expect(State3, 'when'),
+                parse_typeclass_constraints(State3a, []);
+            false ->
+                {[], State3}
+        end,
+
+    {_, State5} = expect(State4, 'do'),
+
+    % Parse method signatures until 'end'
+    {Methods, DefaultMethods, State6} = parse_typeclass_body(State5, [], []),
+    {_, State7} = expect(State6, 'end'),
+
+    TypeclassDef = #typeclass_def{
+        name = Name,
+        type_params = TypeParams,
+        constraints = Constraints,
+        methods = Methods,
+        default_methods = DefaultMethods,
+        location = Location
+    },
+    {TypeclassDef, State7}.
+
+%% Parse typeclass body (method signatures and default implementations)
+parse_typeclass_body(State, MethodsAcc, DefaultsAcc) ->
+    case get_token_type(current_token(State)) of
+        'end' ->
+            {lists:reverse(MethodsAcc), lists:reverse(DefaultsAcc), State};
+        def ->
+            % Parse method signature, check if it has default implementation
+            {Method, State1} = parse_typeclass_method(State),
+            case Method of
+                {signature, MethodSig} ->
+                    parse_typeclass_body(State1, [MethodSig | MethodsAcc], DefaultsAcc);
+                {with_default, MethodSig, DefaultImpl} ->
+                    parse_typeclass_body(State1, [MethodSig | MethodsAcc], [
+                        DefaultImpl | DefaultsAcc
+                    ])
+            end;
+        _ ->
+            Token = current_token(State),
+            {Line, Col} = get_token_line_col(Token),
+            throw({parse_error, {unexpected_token_in_typeclass, get_token_type(Token)}, Line, Col})
+    end.
+
+%% Parse typeclass method signature (possibly with default)
+parse_typeclass_method(State) ->
+    {DefToken, State1} = expect(State, def),
+    {NameToken, State2} = expect(State1, identifier),
+    Name = token_value_to_atom(get_token_value(NameToken)),
+    Location = get_token_location(DefToken),
+
+    % Parse parameters
+    {_, State3} = expect(State2, '('),
+    {Params, State4} = parse_parameters(State3, []),
+    {_, State5} = expect(State4, ')'),
+
+    % Parse return type
+    {ReturnType, State6} =
+        case match_token(State5, ':') of
+            true ->
+                {_, State5a} = expect(State5, ':'),
+                parse_type(State5a);
+            false ->
+                {undefined, State5}
+        end,
+
+    % Parse optional where constraints for this method (not used yet)
+    {_MethodConstraints, State7} =
+        case match_token(State6, 'when') of
+            true ->
+                {_, State6a} = expect(State6, 'when'),
+                parse_typeclass_constraints(State6a, []);
+            false ->
+                {[], State6}
+        end,
+
+    MethodSig = #method_signature{
+        name = Name,
+        type_params = [],
+        params = Params,
+        return_type = ReturnType,
+        default_impl = undefined,
+        location = Location
+    },
+
+    % Check for default implementation
+    case match_token(State7, '=') of
+        true ->
+            {_, State8} = expect(State7, '='),
+            {Body, State9} = parse_expression(State8),
+
+            DefaultFn = #function_def{
+                name = Name,
+                type_params = [],
+                clauses = [],
+                params = Params,
+                return_type = ReturnType,
+                constraint = undefined,
+                body = Body,
+                is_private = false,
+                location = Location
+            },
+            {{with_default, MethodSig, DefaultFn}, State9};
+        false ->
+            {{signature, MethodSig}, State7}
+    end.
+
+%% Parse instance definition
+%% Syntax: instance Show(Int) do
+%%           def show(x: Int): String = ...
+%%         end
+parse_instance_def(State) ->
+    {InstanceToken, State1} = expect(State, instance),
+    Location = get_token_location(InstanceToken),
+
+    % Parse typeclass name and type arguments: Show(Int) or Functor(List)
+    {TypeclassName, TypeArgs, State2} = parse_typeclass_application(State1),
+
+    % Parse optional context constraints: when Show(T)
+    {Constraints, State3} =
+        case match_token(State2, 'when') of
+            true ->
+                {_, State2a} = expect(State2, 'when'),
+                parse_typeclass_constraints(State2a, []);
+            false ->
+                {[], State2}
+        end,
+
+    {_, State4} = expect(State3, 'do'),
+
+    % Parse method implementations
+    {Methods, State5} = parse_instance_body(State4, []),
+    {_, State6} = expect(State5, 'end'),
+
+    InstanceDef = #instance_def{
+        typeclass = TypeclassName,
+        type_args = TypeArgs,
+        constraints = Constraints,
+        methods = Methods,
+        location = Location
+    },
+    {InstanceDef, State6}.
+
+%% Parse instance body (method implementations)
+parse_instance_body(State, MethodsAcc) ->
+    case get_token_type(current_token(State)) of
+        'end' ->
+            {lists:reverse(MethodsAcc), State};
+        def ->
+            {Method, State1} = parse_instance_method(State),
+            parse_instance_body(State1, [Method | MethodsAcc]);
+        _ ->
+            Token = current_token(State),
+            {Line, Col} = get_token_line_col(Token),
+            throw({parse_error, {unexpected_token_in_instance, get_token_type(Token)}, Line, Col})
+    end.
+
+%% Parse instance method implementation
+parse_instance_method(State) ->
+    {DefToken, State1} = expect(State, def),
+    {NameToken, State2} = expect(State1, identifier),
+    Name = token_value_to_atom(get_token_value(NameToken)),
+    Location = get_token_location(DefToken),
+
+    % Parse parameters
+    {_, State3} = expect(State2, '('),
+    {Params, State4} = parse_parameters(State3, []),
+    {_, State5} = expect(State4, ')'),
+
+    % Parse optional return type
+    {ReturnType, State6} =
+        case match_token(State5, ':') of
+            true ->
+                {_, State5a} = expect(State5, ':'),
+                parse_type(State5a);
+            false ->
+                {undefined, State5}
+        end,
+
+    % Parse body (required for instances)
+    {_, State7} = expect(State6, '='),
+    {Body, State8} = parse_expression(State7),
+
+    MethodImpl = #function_def{
+        name = Name,
+        type_params = [],
+        clauses = [],
+        params = Params,
+        return_type = ReturnType,
+        constraint = undefined,
+        body = Body,
+        is_private = false,
+        location = Location
+    },
+    {MethodImpl, State8}.
+
+%% Parse derive clause
+%% Syntax: derive Show, Eq, Ord
+parse_derive_clause(State) ->
+    {DeriveToken, State1} = expect(State, derive),
+    Location = get_token_location(DeriveToken),
+
+    % Parse comma-separated list of typeclass names
+    {Typeclasses, State2} = parse_typeclass_name_list(State1, []),
+
+    DeriveClause = #derive_clause{
+        % Keep first for compatibility
+        typeclass = hd(Typeclasses),
+        % Store full list
+        typeclasses = Typeclasses,
+        % Will be inferred from record
+        for_type = undefined,
+        constraints = [],
+        location = Location
+    },
+    {DeriveClause, State2}.
+
+%% Parse comma-separated list of typeclass names
+parse_typeclass_name_list(State, Acc) ->
+    {NameToken, State1} = expect(State, identifier),
+    TypeclassName = token_value_to_atom(get_token_value(NameToken)),
+
+    case match_token(State1, ',') of
+        true ->
+            {_, State2} = expect(State1, ','),
+            parse_typeclass_name_list(State2, [TypeclassName | Acc]);
+        false ->
+            {lists:reverse([TypeclassName | Acc]), State1}
+    end.
+
+%% Parse typeclass application: Show(Int) or Functor(List)
+parse_typeclass_application(State) ->
+    {NameToken, State1} = expect(State, identifier),
+    Name = token_value_to_atom(get_token_value(NameToken)),
+
+    % Parse type arguments
+    case match_token(State1, '(') of
+        true ->
+            {_, State2} = expect(State1, '('),
+            {TypeArgs, State3} = parse_type_args_list(State2, []),
+            {_, State4} = expect(State3, ')'),
+            {Name, TypeArgs, State4};
+        false ->
+            {Name, [], State1}
+    end.
+
+%% Parse list of type arguments for typeclass application
+parse_type_args_list(State, Acc) ->
+    case match_token(State, ')') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {Type, State1} = parse_type(State),
+            case match_token(State1, ',') of
+                true ->
+                    {_, State2} = expect(State1, ','),
+                    parse_type_args_list(State2, [Type | Acc]);
+                false ->
+                    {lists:reverse([Type | Acc]), State1}
+            end
+    end.
+
+%% Parse typeclass constraints list: Show(T), Eq(T)
+parse_typeclass_constraints(State, Acc) ->
+    {Constraint, State1} = parse_typeclass_constraint(State),
+
+    case match_token(State1, ',') of
+        true ->
+            {_, State2} = expect(State1, ','),
+            parse_typeclass_constraints(State2, [Constraint | Acc]);
+        false ->
+            {lists:reverse([Constraint | Acc]), State1}
+    end.
+
+%% Parse single typeclass constraint: Show(T)
+parse_typeclass_constraint(State) ->
+    {Name, TypeArgs, State1} = parse_typeclass_application(State),
+    Location = get_token_location(current_token(State)),
+
+    Constraint = #typeclass_constraint{
+        typeclass = Name,
+        type_args = TypeArgs,
+        location = Location
+    },
+    {Constraint, State1}.
+
 %% Parse type parameter names (for type definitions)
 parse_type_parameter_names(State, Acc) ->
     case match_token(State, ')') of
@@ -2043,7 +2398,7 @@ parse_type_parameter_names(State, Acc) ->
             {lists:reverse(Acc), State};
         false ->
             {Token, State1} = expect(State, identifier),
-            ParamName = binary_to_atom(get_token_value(Token), utf8),
+            ParamName = token_value_to_atom(get_token_value(Token)),
 
             % Check if this is a named parameter with type annotation: "n: Nat"
             {FinalParam, State2} =
@@ -2136,7 +2491,7 @@ parse_primary_type(State) ->
     case get_token_type(Token) of
         identifier ->
             {IdToken, State1} = expect(State, identifier),
-            Name = binary_to_atom(get_token_value(IdToken), utf8),
+            Name = token_value_to_atom(get_token_value(IdToken)),
             Location = get_token_location(IdToken),
 
             % Check for parameterized type like Vector(Float, 3) or List(T)

@@ -1,0 +1,190 @@
+# Eq Instances for Built-in Types
+# Provides equality comparison for standard Cure types
+
+module Std.Instances.Eq
+export [Eq]
+
+import Std.Typeclass [Eq]
+import Std.List [all, zip]
+
+# ==============================================================================
+# Primitive Types
+# ==============================================================================
+
+# Eq instance for Int
+instance Eq(Int) do
+  def (==)(x: Int, y: Int): Bool =
+    # Uses built-in integer equality
+    Std.Int.equal(x, y)
+end
+
+# Eq instance for Float
+instance Eq(Float) do
+  def (==)(x: Float, y: Float): Bool =
+    # Uses built-in float equality
+    Std.Float.equal(x, y)
+end
+
+# Eq instance for String
+instance Eq(String) do
+  def (==)(x: String, y: String): Bool =
+    # Uses built-in string equality
+    Std.String.equal(x, y)
+end
+
+# Eq instance for Bool
+instance Eq(Bool) do
+  def (==)(x: Bool, y: Bool): Bool =
+    match {x, y} do
+      {true, true} -> true
+      {false, false} -> true
+      _ -> false
+    end
+end
+
+# Eq instance for Atom
+instance Eq(Atom) do
+  def (==)(x: Atom, y: Atom): Bool =
+    # Atoms are compared by identity
+    Std.Atom.equal(x, y)
+end
+
+# Eq instance for Unit
+instance Eq(Unit) do
+  def (==)(_: Unit, _: Unit): Bool = true
+end
+
+# ==============================================================================
+# Container Types
+# ==============================================================================
+
+# Eq instance for List (requires Eq for element type)
+instance Eq(List(T)) when Eq(T) do
+  def (==)(xs: List(T), ys: List(T)): Bool =
+    match {xs, ys} do
+      {[], []} -> true
+      {[x | xs_tail], [y | ys_tail]} ->
+        x == y and xs_tail == ys_tail
+      _ -> false
+    end
+end
+
+# Eq instance for tuples (2-tuple)
+instance Eq({A, B}) when Eq(A), Eq(B) do
+  def (==)(p1: {A, B}, p2: {A, B}): Bool =
+    match {p1, p2} do
+      {{a1, b1}, {a2, b2}} ->
+        a1 == a2 and b1 == b2
+    end
+end
+
+# Eq instance for tuples (3-tuple)
+instance Eq({A, B, C}) when Eq(A), Eq(B), Eq(C) do
+  def (==)(t1: {A, B, C}, t2: {A, B, C}): Bool =
+    match {t1, t2} do
+      {{a1, b1, c1}, {a2, b2, c2}} ->
+        a1 == a2 and b1 == b2 and c1 == c2
+    end
+end
+
+# ==============================================================================
+# Option/Maybe Type
+# ==============================================================================
+
+# Eq instance for Option
+instance Eq(Option(T)) when Eq(T) do
+  def (==)(opt1: Option(T), opt2: Option(T)): Bool =
+    match {opt1, opt2} do
+      {None, None} -> true
+      {Some(x), Some(y)} -> x == y
+      _ -> false
+    end
+end
+
+# ==============================================================================
+# Result Type
+# ==============================================================================
+
+# Eq instance for Result
+instance Eq(Result(T, E)) when Eq(T), Eq(E) do
+  def (==)(r1: Result(T, E), r2: Result(T, E)): Bool =
+    match {r1, r2} do
+      {Ok(x), Ok(y)} -> x == y
+      {Error(e1), Error(e2)} -> e1 == e2
+      _ -> false
+    end
+end
+
+# ==============================================================================
+# Helper Functions
+# ==============================================================================
+
+# Check if all elements in a list are equal to a given value
+def all_equal(value: T, xs: List(T)): Bool where Eq(T) =
+  all(fn(x) -> x == value end, xs)
+
+# Check if a list contains a specific element
+def elem(x: T, xs: List(T)): Bool where Eq(T) =
+  match xs do
+    [] -> false
+    [y | rest] ->
+      match x == y do
+        true -> true
+        false -> elem(x, rest)
+      end
+  end
+
+# Remove first occurrence of element from list
+def delete(x: T, xs: List(T)): List(T) where Eq(T) =
+  match xs do
+    [] -> []
+    [y | rest] ->
+      match x == y do
+        true -> rest
+        false -> [y | delete(x, rest)]
+      end
+  end
+
+# Remove all occurrences of element from list
+def delete_all(x: T, xs: List(T)): List(T) where Eq(T) =
+  match xs do
+    [] -> []
+    [y | rest] ->
+      match x == y do
+        true -> delete_all(x, rest)
+        false -> [y | delete_all(x, rest)]
+      end
+  end
+
+# Find index of first occurrence of element
+def index_of(x: T, xs: List(T)): Option(Int) where Eq(T) =
+  index_of_helper(x, xs, 0)
+
+def index_of_helper(x: T, xs: List(T), idx: Int): Option(Int) where Eq(T) =
+  match xs do
+    [] -> None
+    [y | rest] ->
+      match x == y do
+        true -> Some(idx)
+        false -> index_of_helper(x, rest, idx + 1)
+      end
+  end
+
+# Remove duplicates from list (preserves order)
+def nub(xs: List(T)): List(T) where Eq(T) =
+  match xs do
+    [] -> []
+    [x | rest] ->
+      let rest_nub = nub(rest)
+      match elem(x, rest_nub) do
+        true -> rest_nub
+        false -> [x | rest_nub]
+      end
+  end
+
+# Check if two lists have the same elements (order doesn't matter)
+def same_elements(xs: List(T), ys: List(T)): Bool where Eq(T) =
+  let xs_nub = nub(xs)
+  let ys_nub = nub(ys)
+  all(fn(x) -> elem(x, ys_nub) end, xs_nub) and 
+  all(fn(y) -> elem(y, xs_nub) end, ys_nub)

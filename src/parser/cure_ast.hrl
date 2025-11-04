@@ -73,8 +73,9 @@
 %% Record definition
 -record(record_def, {
     name,
-    type_params,  % optional type parameters [param1, param2, ...]
+    type_params,    % optional type parameters [param1, param2, ...]
     fields,
+    derive_clause,  % optional #derive_clause{} for automatic instance derivation
     location
 }).
 
@@ -561,5 +562,46 @@
     left,            % Type expression or associated type projection
     right,           % Type expression
     location         % Source location
+}).
+
+%% ============================================================================
+%% Type Classes (Haskell-style) - Alias for Traits with Different Syntax
+%% ============================================================================
+
+%% Typeclass definition - Haskell-style type classes
+%% This is an alias/alternative syntax for traits
+-record(typeclass_def, {
+    name,              % Atom: typeclass name (e.g., 'Show', 'Eq', 'Ord')
+    type_params,       % List of type parameter atoms or #type_param_decl{}
+    constraints,       % List of superclass constraints (e.g., ['Eq'] for Ord)
+    methods,           % List of #method_signature{} records
+    default_methods,   % List of #function_def{} with default implementations
+    location           % Source location
+}).
+
+%% Instance definition - implements a typeclass for a specific type
+-record(instance_def, {
+    typeclass,         % Atom: typeclass name being implemented
+    type_args,         % List of type expressions (e.g., [Int] or [List(T)])
+    constraints,       % Context constraints (e.g., [Show(T)] for Show(List(T)))
+    methods,           % List of #function_def{} with implementations
+    location           % Source location
+}).
+
+%% Derive clause - automatic instance derivation
+-record(derive_clause, {
+    typeclass,         % Atom: first typeclass (for compatibility)
+    typeclasses,       % List of atom(): all typeclasses to derive
+    for_type,          % Type expression (inferred from record)
+    constraints,       % When clause constraints (optional)
+    location           % Source location
+}).
+
+%% Typeclass constraint (used in function signatures)
+%% e.g., "where Show(T), Eq(T)"
+-record(typeclass_constraint, {
+    typeclass,         % Atom: typeclass name
+    type_args,         % List of type expressions
+    location           % Source location
 }).
 

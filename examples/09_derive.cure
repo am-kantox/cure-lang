@@ -1,0 +1,226 @@
+module derive_example
+
+export [
+    main/0,
+    test_show/0,
+    test_eq/0,
+    test_ord/0
+]
+
+% Import typeclass definitions
+import typeclass [Show, Eq, Ord, show, compare]
+
+% ============================================================================
+% Simple Record with Automatic Derivation
+% ============================================================================
+
+% Point record with automatic Show, Eq, and Ord derivation
+record Point do
+    x: Int
+    y: Int
+end
+derive Show, Eq, Ord
+
+% Color enumeration (represented as record with no fields)
+record Red do end
+derive Show, Eq
+
+record Green do end
+derive Show, Eq
+
+record Blue do end
+derive Show, Eq
+
+% ============================================================================
+% Parameterized Record with Derivation
+% ============================================================================
+
+% Generic container with type parameter
+record Container(T) do
+    value: T
+    name: String
+end
+derive Show, Eq  % Requires Show(T) and Eq(T) constraints
+
+% ============================================================================
+% Complex Record Hierarchy
+% ============================================================================
+
+% Person record with derived instances
+record Person do
+    name: String
+    age: Int
+    email: String
+end
+derive Show, Eq, Ord  % Ordered by fields (name, then age, then email)
+
+% Address record
+record Address do
+    street: String
+    city: String
+    zip: Int
+end
+derive Show, Eq
+
+% Employee record with nested records
+record Employee do
+    person: Person
+    employee_id: Int
+    address: Address
+end
+derive Show, Eq
+
+% ============================================================================
+% Usage Examples
+% ============================================================================
+
+def test_show(): String =
+    let p1 = Point { x: 10, y: 20 }
+    show(p1)  % "Point { x: 10, y: 20 }"
+
+def test_eq(): Bool =
+    let p1 = Point { x: 10, y: 20 }
+    let p2 = Point { x: 10, y: 20 }
+    let p3 = Point { x: 15, y: 25 }
+    
+    p1 == p2 and p1 != p3
+
+def test_ord(): Bool =
+    let p1 = Point { x: 5, y: 10 }
+    let p2 = Point { x: 10, y: 20 }
+    
+    match compare(p1, p2) do
+        LT -> true   % p1 < p2
+        EQ -> false
+        GT -> false
+    end
+
+def test_container(): String where Show(Int) =
+    let c = Container { value: 42, name: "answer" }
+    show(c)  % "Container { value: 42, name: \"answer\" }"
+
+def test_person_ordering(): Bool =
+    let alice = Person {
+        name: "Alice",
+        age: 30,
+        email: "alice@example.com"
+    }
+    
+    let bob = Person {
+        name: "Bob",
+        age: 25,
+        email: "bob@example.com"
+    }
+    
+    % Alice < Bob lexicographically (by name)
+    match compare(alice, bob) do
+        LT -> true
+        _ -> false
+    end
+
+def test_nested_eq(): Bool =
+    let addr1 = Address {
+        street: "123 Main St",
+        city: "Springfield",
+        zip: 12345
+    }
+    
+    let person1 = Person {
+        name: "John",
+        age: 35,
+        email: "john@example.com"
+    }
+    
+    let emp1 = Employee {
+        person: person1,
+        employee_id: 1001,
+        address: addr1
+    }
+    
+    let emp2 = Employee {
+        person: person1,
+        employee_id: 1001,
+        address: addr1
+    }
+    
+    emp1 == emp2  % true - all fields match
+
+% ============================================================================
+% Manual Instance for Comparison
+% ============================================================================
+
+% Sometimes you want custom behavior instead of derivation
+record Temperature do
+    celsius: Float
+end
+% Don't derive - define manually instead
+
+instance Show(Temperature) do
+    def show(t: Temperature): String =
+        float_to_string(t.celsius) ++ "°C"
+end
+
+instance Eq(Temperature) do
+    def ==(t1: Temperature, t2: Temperature): Bool =
+        % Custom equality with epsilon for floating point
+        abs(t1.celsius - t2.celsius) < 0.01
+end
+
+def test_custom_instances(): Bool =
+    let t1 = Temperature { celsius: 20.0 }
+    let t2 = Temperature { celsius: 20.009 }
+    
+    t1 == t2  % true due to epsilon comparison
+
+% ============================================================================
+% Derive with Constraints
+% ============================================================================
+
+% When deriving for parameterized types, constraints are inferred
+record Pair(A, B) do
+    first: A
+    second: B
+end
+derive Show, Eq
+% Compiler generates:
+%   instance Show(Pair(A, B)) where Show(A), Show(B) do ... end
+%   instance Eq(Pair(A, B)) where Eq(A), Eq(B) do ... end
+
+def test_pair(): String where Show(Int), Show(String) =
+    let p = Pair { first: 42, second: "hello" }
+    show(p)  % "Pair { first: 42, second: \"hello\" }"
+
+% ============================================================================
+% Main Entry Point
+% ============================================================================
+
+def main(): Int =
+    let show_result = test_show()
+    let eq_result = test_eq()
+    let ord_result = test_ord()
+    let custom_result = test_custom_instances()
+    
+    if eq_result and ord_result and custom_result then
+        0  % Success
+    else
+        1  % Failure
+    end
+
+% ============================================================================
+% Benefits of Automatic Derivation
+% ============================================================================
+
+% 1. LESS BOILERPLATE
+%    No need to manually implement show, ==, compare for every type
+%
+% 2. CONSISTENCY
+%    Derived instances follow standard patterns and conventions
+%
+% 3. CORRECTNESS
+%    Compiler-generated code is correct by construction
+%
+% 4. MAINTAINABILITY
+%    Adding fields automatically updates derived instances
+%
+% 5. FLEXIBILITY
+%    Can still manually implement instances when custom behavior is needed
