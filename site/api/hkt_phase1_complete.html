@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.1.0">
+    <meta name="project" content="cure v0.2.0">
 
 
-    <title>Higher-Kinded Types (Phase 1) — cure v0.1.0</title>
+    <title>Higher-Kinded Types (Phase 1) — cure v0.2.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.1.0
+          v0.2.0
         </div>
       </div>
     </div>
@@ -112,7 +112,7 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/docs/HKT_PHASE1_COMPLETE.md#L1" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/docs/HKT_PHASE1_COMPLETE.md#L1" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
@@ -170,13 +170,13 @@ Pages
   </a>
   <span class="text">5. Enhanced Type Environment</span>
 </h3>
-<p><strong>Extended <code class="inline">#type_env{}</code> record:</strong></p><pre><code class="makeup erlang" translate="no"><span class="p">-</span><span class="na">record</span><span class="p" data-group-id="3864255668-1">(</span><span class="ss">type_env</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3864255668-2">{</span><span class="w">
-    </span><span class="ss">bindings</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3864255668-3">#{</span><span class="nf">atom</span><span class="p" data-group-id="3864255668-4">(</span><span class="p" data-group-id="3864255668-4">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nf">type_expr</span><span class="p" data-group-id="3864255668-5">(</span><span class="p" data-group-id="3864255668-5">)</span><span class="p" data-group-id="3864255668-3">}</span><span class="p">,</span><span class="w">
-    </span><span class="ss">constraints</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3864255668-6">[</span><span class="nf">type_constraint</span><span class="p" data-group-id="3864255668-7">(</span><span class="p" data-group-id="3864255668-7">)</span><span class="p" data-group-id="3864255668-6">]</span><span class="p">,</span><span class="w">
-    </span><span class="ss">parent</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">type_env</span><span class="p" data-group-id="3864255668-8">(</span><span class="p" data-group-id="3864255668-8">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">undefined</span><span class="p">,</span><span class="w">
-    </span><span class="ss">type_constructors</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3864255668-9">#{</span><span class="nf">atom</span><span class="p" data-group-id="3864255668-10">(</span><span class="p" data-group-id="3864255668-10">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nf">type_constructor</span><span class="p" data-group-id="3864255668-11">(</span><span class="p" data-group-id="3864255668-11">)</span><span class="p" data-group-id="3864255668-9">}</span><span class="p">,</span><span class="w">  </span><span class="c1">% NEW</span><span class="w">
-    </span><span class="ss">typeclasses</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3864255668-12">#{</span><span class="nf">atom</span><span class="p" data-group-id="3864255668-13">(</span><span class="p" data-group-id="3864255668-13">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nf">typeclass_info</span><span class="p" data-group-id="3864255668-14">(</span><span class="p" data-group-id="3864255668-14">)</span><span class="p" data-group-id="3864255668-12">}</span><span class="w">           </span><span class="c1">% NEW</span><span class="w">
-</span><span class="p" data-group-id="3864255668-2">}</span><span class="p" data-group-id="3864255668-1">)</span><span class="p">.</span></code></pre><h3 id="6-shared-type-definitions" class="section-heading">
+<p><strong>Extended <code class="inline">#type_env{}</code> record:</strong></p><pre><code class="makeup erlang" translate="no"><span class="p">-</span><span class="na">record</span><span class="p" data-group-id="0991822733-1">(</span><span class="ss">type_env</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0991822733-2">{</span><span class="w">
+    </span><span class="ss">bindings</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0991822733-3">#{</span><span class="nf">atom</span><span class="p" data-group-id="0991822733-4">(</span><span class="p" data-group-id="0991822733-4">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nf">type_expr</span><span class="p" data-group-id="0991822733-5">(</span><span class="p" data-group-id="0991822733-5">)</span><span class="p" data-group-id="0991822733-3">}</span><span class="p">,</span><span class="w">
+    </span><span class="ss">constraints</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0991822733-6">[</span><span class="nf">type_constraint</span><span class="p" data-group-id="0991822733-7">(</span><span class="p" data-group-id="0991822733-7">)</span><span class="p" data-group-id="0991822733-6">]</span><span class="p">,</span><span class="w">
+    </span><span class="ss">parent</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">type_env</span><span class="p" data-group-id="0991822733-8">(</span><span class="p" data-group-id="0991822733-8">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">undefined</span><span class="p">,</span><span class="w">
+    </span><span class="ss">type_constructors</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0991822733-9">#{</span><span class="nf">atom</span><span class="p" data-group-id="0991822733-10">(</span><span class="p" data-group-id="0991822733-10">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nf">type_constructor</span><span class="p" data-group-id="0991822733-11">(</span><span class="p" data-group-id="0991822733-11">)</span><span class="p" data-group-id="0991822733-9">}</span><span class="p">,</span><span class="w">  </span><span class="c1">% NEW</span><span class="w">
+    </span><span class="ss">typeclasses</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0991822733-12">#{</span><span class="nf">atom</span><span class="p" data-group-id="0991822733-13">(</span><span class="p" data-group-id="0991822733-13">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nf">typeclass_info</span><span class="p" data-group-id="0991822733-14">(</span><span class="p" data-group-id="0991822733-14">)</span><span class="p" data-group-id="0991822733-12">}</span><span class="w">           </span><span class="c1">% NEW</span><span class="w">
+</span><span class="p" data-group-id="0991822733-2">}</span><span class="p" data-group-id="0991822733-1">)</span><span class="p">.</span></code></pre><h3 id="6-shared-type-definitions" class="section-heading">
   <a href="#6-shared-type-definitions" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -213,28 +213,28 @@ Pages
   <span class="text">Example 1: List is a Functor</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Register List type constructor with kind * -&gt; *</span><span class="w">
-</span><span class="n">ListTC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">type_constructor</span><span class="p" data-group-id="7534045644-1">{</span><span class="w">
+</span><span class="n">ListTC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">type_constructor</span><span class="p" data-group-id="9580431422-1">{</span><span class="w">
     </span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;List&#39;</span><span class="p">,</span><span class="w">
-    </span><span class="ss">kind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7534045644-2">{</span><span class="ss">kind</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;-&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7534045644-3">[</span><span class="nf">star_kind</span><span class="p" data-group-id="7534045644-4">(</span><span class="p" data-group-id="7534045644-4">)</span><span class="p" data-group-id="7534045644-3">]</span><span class="p">,</span><span class="w"> </span><span class="nf">star_kind</span><span class="p" data-group-id="7534045644-5">(</span><span class="p" data-group-id="7534045644-5">)</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">undefined</span><span class="p" data-group-id="7534045644-2">}</span><span class="p">,</span><span class="w">
+    </span><span class="ss">kind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9580431422-2">{</span><span class="ss">kind</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;-&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9580431422-3">[</span><span class="nf">star_kind</span><span class="p" data-group-id="9580431422-4">(</span><span class="p" data-group-id="9580431422-4">)</span><span class="p" data-group-id="9580431422-3">]</span><span class="p">,</span><span class="w"> </span><span class="nf">star_kind</span><span class="p" data-group-id="9580431422-5">(</span><span class="p" data-group-id="9580431422-5">)</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">undefined</span><span class="p" data-group-id="9580431422-2">}</span><span class="p">,</span><span class="w">
     </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="w">
-</span><span class="p" data-group-id="7534045644-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Env1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">add_type_constructor</span><span class="p" data-group-id="7534045644-6">(</span><span class="n">ListTC</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="7534045644-6">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="9580431422-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Env1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">add_type_constructor</span><span class="p" data-group-id="9580431422-6">(</span><span class="n">ListTC</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="9580431422-6">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">% Define Functor typeclass (infers kind * -&gt; *)</span><span class="w">
-</span><span class="n">FunctorDef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">typeclass_def</span><span class="p" data-group-id="7534045644-7">{</span><span class="w">
+</span><span class="n">FunctorDef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">typeclass_def</span><span class="p" data-group-id="9580431422-7">{</span><span class="w">
     </span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;Functor&#39;</span><span class="p">,</span><span class="w">
-    </span><span class="ss">type_params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7534045644-8">[</span><span class="ss">&#39;F&#39;</span><span class="p" data-group-id="7534045644-8">]</span><span class="p">,</span><span class="w">  </span><span class="c1">% F is used as F(A) -&gt; inferred as * -&gt; *</span><span class="w">
-    </span><span class="ss">methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7534045644-9">[</span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="7534045644-9">]</span><span class="w">
-</span><span class="p" data-group-id="7534045644-7">}</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="7534045644-10">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">FunctorInfo</span><span class="p">,</span><span class="w"> </span><span class="n">Env2</span><span class="p" data-group-id="7534045644-10">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">check_typeclass_def</span><span class="p" data-group-id="7534045644-11">(</span><span class="n">FunctorDef</span><span class="p">,</span><span class="w"> </span><span class="n">Env1</span><span class="p" data-group-id="7534045644-11">)</span><span class="p">,</span><span class="w">
+    </span><span class="ss">type_params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9580431422-8">[</span><span class="ss">&#39;F&#39;</span><span class="p" data-group-id="9580431422-8">]</span><span class="p">,</span><span class="w">  </span><span class="c1">% F is used as F(A) -&gt; inferred as * -&gt; *</span><span class="w">
+    </span><span class="ss">methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9580431422-9">[</span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="9580431422-9">]</span><span class="w">
+</span><span class="p" data-group-id="9580431422-7">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="9580431422-10">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">FunctorInfo</span><span class="p">,</span><span class="w"> </span><span class="n">Env2</span><span class="p" data-group-id="9580431422-10">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">check_typeclass_def</span><span class="p" data-group-id="9580431422-11">(</span><span class="n">FunctorDef</span><span class="p">,</span><span class="w"> </span><span class="n">Env1</span><span class="p" data-group-id="9580431422-11">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">% Create instance Functor(List) - kinds match!</span><span class="w">
-</span><span class="n">InstanceDef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">instance_def</span><span class="p" data-group-id="7534045644-12">{</span><span class="w">
+</span><span class="n">InstanceDef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">instance_def</span><span class="p" data-group-id="9580431422-12">{</span><span class="w">
     </span><span class="ss">typeclass</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;Functor&#39;</span><span class="p">,</span><span class="w">
-    </span><span class="ss">type_args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7534045644-13">[</span><span class="p" data-group-id="7534045644-14">{</span><span class="ss">type_constructor</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;List&#39;</span><span class="p" data-group-id="7534045644-14">}</span><span class="p" data-group-id="7534045644-13">]</span><span class="p">,</span><span class="w">
+    </span><span class="ss">type_args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9580431422-13">[</span><span class="p" data-group-id="9580431422-14">{</span><span class="ss">type_constructor</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;List&#39;</span><span class="p" data-group-id="9580431422-14">}</span><span class="p" data-group-id="9580431422-13">]</span><span class="p">,</span><span class="w">
     </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="w">
-</span><span class="p" data-group-id="7534045644-12">}</span><span class="p">,</span><span class="w">
-</span><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">check_instance_kinds</span><span class="p" data-group-id="7534045644-15">(</span><span class="n">InstanceDef</span><span class="p">,</span><span class="w"> </span><span class="n">FunctorInfo</span><span class="p">,</span><span class="w"> </span><span class="n">Env2</span><span class="p" data-group-id="7534045644-15">)</span><span class="p">.</span><span class="w">
+</span><span class="p" data-group-id="9580431422-12">}</span><span class="p">,</span><span class="w">
+</span><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">check_instance_kinds</span><span class="p" data-group-id="9580431422-15">(</span><span class="n">InstanceDef</span><span class="p">,</span><span class="w"> </span><span class="n">FunctorInfo</span><span class="p">,</span><span class="w"> </span><span class="n">Env2</span><span class="p" data-group-id="9580431422-15">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% ✅ Success!</span></code></pre><h3 id="example-2-int-is-not-a-functor" class="section-heading">
   <a href="#example-2-int-is-not-a-functor" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -242,13 +242,13 @@ Pages
   <span class="text">Example 2: Int is NOT a Functor</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Try to create instance Functor(Int)</span><span class="w">
-</span><span class="n">InstanceDef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">instance_def</span><span class="p" data-group-id="3488242425-1">{</span><span class="w">
+</span><span class="n">InstanceDef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">instance_def</span><span class="p" data-group-id="9454982437-1">{</span><span class="w">
     </span><span class="ss">typeclass</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;Functor&#39;</span><span class="p">,</span><span class="w">
-    </span><span class="ss">type_args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="3488242425-2">[</span><span class="p" data-group-id="3488242425-3">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Int&#39;</span><span class="p" data-group-id="3488242425-3">}</span><span class="p" data-group-id="3488242425-2">]</span><span class="p">,</span><span class="w">  </span><span class="c1">% Int has kind *</span><span class="w">
+    </span><span class="ss">type_args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9454982437-2">[</span><span class="p" data-group-id="9454982437-3">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Int&#39;</span><span class="p" data-group-id="9454982437-3">}</span><span class="p" data-group-id="9454982437-2">]</span><span class="p">,</span><span class="w">  </span><span class="c1">% Int has kind *</span><span class="w">
     </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="w">
-</span><span class="p" data-group-id="3488242425-1">}</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="3488242425-4">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3488242425-5">{</span><span class="ss">kind_mismatch</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Functor&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="3488242425-5">}</span><span class="p" data-group-id="3488242425-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> 
-    </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">check_instance_kinds</span><span class="p" data-group-id="3488242425-6">(</span><span class="n">InstanceDef</span><span class="p">,</span><span class="w"> </span><span class="n">FunctorInfo</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="3488242425-6">)</span><span class="p">.</span><span class="w">
+</span><span class="p" data-group-id="9454982437-1">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="9454982437-4">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9454982437-5">{</span><span class="ss">kind_mismatch</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Functor&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="9454982437-5">}</span><span class="p" data-group-id="9454982437-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> 
+    </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">check_instance_kinds</span><span class="p" data-group-id="9454982437-6">(</span><span class="n">InstanceDef</span><span class="p">,</span><span class="w"> </span><span class="n">FunctorInfo</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="9454982437-6">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% ✅ Correctly rejected!</span></code></pre><h2 id="performance" class="section-heading">
   <a href="#performance" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -368,11 +368,11 @@ Instance Dispatch (Phase 2)
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.2.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.2.0">Hex Preview</a>
 
-              (<a href="https://preview.hex.pm/preview/cure/0.1.0/show/docs/HKT_PHASE1_COMPLETE.md">current file</a>)
+              (<a href="https://preview.hex.pm/preview/cure/0.2.0/show/docs/HKT_PHASE1_COMPLETE.md">current file</a>)
 
           </span>
 

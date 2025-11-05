@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.1.0">
+    <meta name="project" content="cure v0.2.0">
 
 
-    <title>Editor Setup — cure v0.1.0</title>
+    <title>Editor Setup — cure v0.2.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.1.0
+          v0.2.0
         </div>
       </div>
     </div>
@@ -112,7 +112,7 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/docs/EDITOR_SETUP.md#L1" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/docs/EDITOR_SETUP.md#L1" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
@@ -147,10 +147,10 @@ Pages
 </h3>
 <p><strong>Compose Key Method:</strong></p><ol><li>Set a compose key in your keyboard settings</li><li>Use sequences:<ul><li><code class="inline">'</code> (left): &lt;kbd&gt;Compose&lt;/kbd&gt; &lt;kbd&gt;&lt;&lt;/kbd&gt; &lt;kbd&gt;'&lt;/kbd&gt;</li><li><code class="inline">'</code> (right): &lt;kbd&gt;Compose&lt;/kbd&gt; &lt;kbd&gt;&gt;&lt;/kbd&gt; &lt;kbd&gt;'&lt;/kbd&gt;</li></ul></li></ol><p><strong>XKB Custom Layout:</strong>
 Create a custom keyboard layout in <code class="inline">~/.config/xkb/symbols/custom</code>:</p><pre><code class="makeup erlang" translate="no"><span class="ss">partial</span><span class="w"> </span><span class="ss">alphanumeric_keys</span><span class="w">
-</span><span class="ss">xkb_symbols</span><span class="w"> </span><span class="s">&quot;cure_quotes&quot;</span><span class="w"> </span><span class="p" data-group-id="1228682150-1">{</span><span class="w">
+</span><span class="ss">xkb_symbols</span><span class="w"> </span><span class="s">&quot;cure_quotes&quot;</span><span class="w"> </span><span class="p" data-group-id="2449411906-1">{</span><span class="w">
     </span><span class="ss">include</span><span class="w"> </span><span class="s">&quot;us(basic)&quot;</span><span class="w">
-    </span><span class="ss">key</span><span class="w"> </span><span class="o">&lt;</span><span class="n">AC10</span><span class="o">&gt;</span><span class="w"> </span><span class="p" data-group-id="1228682150-2">{</span><span class="w"> </span><span class="p" data-group-id="1228682150-3">[</span><span class="w"> </span><span class="ss">apostrophe</span><span class="p">,</span><span class="w"> </span><span class="ss">quotedbl</span><span class="p">,</span><span class="w"> </span><span class="n">U2018</span><span class="p">,</span><span class="w"> </span><span class="n">U2019</span><span class="w"> </span><span class="p" data-group-id="1228682150-3">]</span><span class="w"> </span><span class="p" data-group-id="1228682150-2">}</span><span class="p">;</span><span class="w">
-</span><span class="p" data-group-id="1228682150-1">}</span><span class="p">;</span></code></pre><p>Apply with: <code class="inline">setxkbmap -option &quot;custom:cure_quotes&quot;</code></p><h3 id="windows" class="section-heading">
+    </span><span class="ss">key</span><span class="w"> </span><span class="o">&lt;</span><span class="n">AC10</span><span class="o">&gt;</span><span class="w"> </span><span class="p" data-group-id="2449411906-2">{</span><span class="w"> </span><span class="p" data-group-id="2449411906-3">[</span><span class="w"> </span><span class="ss">apostrophe</span><span class="p">,</span><span class="w"> </span><span class="ss">quotedbl</span><span class="p">,</span><span class="w"> </span><span class="n">U2018</span><span class="p">,</span><span class="w"> </span><span class="n">U2019</span><span class="w"> </span><span class="p" data-group-id="2449411906-3">]</span><span class="w"> </span><span class="p" data-group-id="2449411906-2">}</span><span class="p">;</span><span class="w">
+</span><span class="p" data-group-id="2449411906-1">}</span><span class="p">;</span></code></pre><p>Apply with: <code class="inline">setxkbmap -option &quot;custom:cure_quotes&quot;</code></p><h3 id="windows" class="section-heading">
   <a href="#windows" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -270,7 +270,7 @@ digraphs c&gt; 8217  &quot; '&gt;</code></pre><p>Then use: &lt;kbd&gt;Ctrl+K&lt;
   </a>
   <span class="text">Copy-Paste Method</span>
 </h2>
-<p>If configuring your editor is too complex, you can:</p><ol><li><p>Create a file <code class="inline">snippets.txt</code> with commonly-used patterns:</p><pre><code class="makeup erlang" translate="no"><span class="nf">&#39;&#39;</span><span class="w"> </span><span class="p" data-group-id="4026967110-1">(</span><span class="ss">empty</span><span class="w"> </span><span class="ss">charlist</span><span class="p" data-group-id="4026967110-1">)</span><span class="w">
+<p>If configuring your editor is too complex, you can:</p><ol><li><p>Create a file <code class="inline">snippets.txt</code> with commonly-used patterns:</p><pre><code class="makeup erlang" translate="no"><span class="nf">&#39;&#39;</span><span class="w"> </span><span class="p" data-group-id="5204077412-1">(</span><span class="ss">empty</span><span class="w"> </span><span class="ss">charlist</span><span class="p" data-group-id="5204077412-1">)</span><span class="w">
 </span><span class="ss">&#39;hello&#39;</span><span class="w">
 </span><span class="ss">&#39;world&#39;</span></code></pre></li><li><p>Copy-paste as needed</p></li><li><p>Or use a clipboard manager with pre-configured snippets</p></li></ol><h2 id="testing-your-setup" class="section-heading">
   <a href="#testing-your-setup" class="hover-link">
@@ -380,11 +380,11 @@ Feature Reference
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.2.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.2.0">Hex Preview</a>
 
-              (<a href="https://preview.hex.pm/preview/cure/0.1.0/show/docs/EDITOR_SETUP.md">current file</a>)
+              (<a href="https://preview.hex.pm/preview/cure/0.2.0/show/docs/EDITOR_SETUP.md">current file</a>)
 
           </span>
 

@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.1.0">
+    <meta name="project" content="cure v0.2.0">
 
 
-    <title>cure_std — cure v0.1.0</title>
+    <title>cure_std — cure v0.2.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.1.0
+          v0.2.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_std</span> 
-    <small class="app-vsn" translate="no">(cure v0.1.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.2.0)</small>
 
   </h1>
 
@@ -186,11 +186,11 @@ these rules:</p><ol><li><strong>Error Propagation</strong>: <code class="inline"
   <span class="text">Example Usage</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Direct function calls (typically from runtime)</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="3636111145-1">(</span><span class="s">&quot;Hello, World!&quot;</span><span class="p" data-group-id="3636111145-1">)</span><span class="p">.</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="3636111145-2">(</span><span class="p" data-group-id="3636111145-3">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="3636111145-3">}</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="3636111145-4">(</span><span class="n">X</span><span class="p" data-group-id="3636111145-4">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="3636111145-2">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="7730903233-1">(</span><span class="s">&quot;Hello, World!&quot;</span><span class="p" data-group-id="7730903233-1">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="7730903233-2">(</span><span class="p" data-group-id="7730903233-3">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="7730903233-3">}</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="7730903233-4">(</span><span class="n">X</span><span class="p" data-group-id="7730903233-4">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="7730903233-2">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Returns: {&#39;Ok&#39;, 10}</span><span class="w">
 
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="3636111145-5">(</span><span class="p" data-group-id="3636111145-6">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3636111145-7">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="3636111145-7">]</span><span class="p" data-group-id="3636111145-6">}</span><span class="p" data-group-id="3636111145-5">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="7730903233-5">(</span><span class="p" data-group-id="7730903233-6">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7730903233-7">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="7730903233-7">]</span><span class="p" data-group-id="7730903233-6">}</span><span class="p" data-group-id="7730903233-5">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Returns: &quot;Ok([1, 2, 3])&quot;</span></code></pre><h2 id="module-integration-with-cure" class="section-heading">
   <a href="#module-integration-with-cure" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -376,7 +376,7 @@ type system and Erlang's dynamic typing.</p><h2 id="module-error-handling" class
     </a>
     <h1 class="signature" translate="no">and_then/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L167" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L167" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -396,7 +396,7 @@ type system and Erlang's dynamic typing.</p><h2 id="module-error-handling" class
     </a>
     <h1 class="signature" translate="no">create_counter(InitialValue)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L375" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L375" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -416,7 +416,7 @@ type system and Erlang's dynamic typing.</p><h2 id="module-error-handling" class
     </a>
     <h1 class="signature" translate="no">fsm_create(FSMType, InitialState)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L365" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L365" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -436,7 +436,7 @@ type system and Erlang's dynamic typing.</p><h2 id="module-error-handling" class
     </a>
     <h1 class="signature" translate="no">fsm_send_safe(FSMRef, Message)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L370" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L370" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -456,7 +456,7 @@ type system and Erlang's dynamic typing.</p><h2 id="module-error-handling" class
     </a>
     <h1 class="signature" translate="no">is_monad/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L151" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L151" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -485,10 +485,10 @@ pipe operator behavior.</p><h2 id="is_monad/1-arguments" class="section-heading"
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">is_monad</span><span class="p" data-group-id="4841363466-1">(</span><span class="p" data-group-id="4841363466-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p" data-group-id="4841363466-2">}</span><span class="p" data-group-id="4841363466-1">)</span><span class="p">.</span><span class="w">     </span><span class="c1">%% true</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">is_monad</span><span class="p" data-group-id="4841363466-3">(</span><span class="p" data-group-id="4841363466-4">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">msg</span><span class="p" data-group-id="4841363466-4">}</span><span class="p" data-group-id="4841363466-3">)</span><span class="p">.</span><span class="w"> </span><span class="c1">%% true</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">is_monad</span><span class="p" data-group-id="4841363466-5">(</span><span class="mi">42</span><span class="p" data-group-id="4841363466-5">)</span><span class="p">.</span><span class="w">             </span><span class="c1">%% false</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">is_monad</span><span class="p" data-group-id="4841363466-6">(</span><span class="p" data-group-id="4841363466-7">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="4841363466-7">]</span><span class="p" data-group-id="4841363466-6">)</span><span class="p">.</span><span class="w">      </span><span class="c1">%% false</span></code></pre><h2 id="is_monad/1-supported-monadic-types" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">is_monad</span><span class="p" data-group-id="0614670404-1">(</span><span class="p" data-group-id="0614670404-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p" data-group-id="0614670404-2">}</span><span class="p" data-group-id="0614670404-1">)</span><span class="p">.</span><span class="w">     </span><span class="c1">%% true</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">is_monad</span><span class="p" data-group-id="0614670404-3">(</span><span class="p" data-group-id="0614670404-4">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">msg</span><span class="p" data-group-id="0614670404-4">}</span><span class="p" data-group-id="0614670404-3">)</span><span class="p">.</span><span class="w"> </span><span class="c1">%% true</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">is_monad</span><span class="p" data-group-id="0614670404-5">(</span><span class="mi">42</span><span class="p" data-group-id="0614670404-5">)</span><span class="p">.</span><span class="w">             </span><span class="c1">%% false</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">is_monad</span><span class="p" data-group-id="0614670404-6">(</span><span class="p" data-group-id="0614670404-7">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="0614670404-7">]</span><span class="p" data-group-id="0614670404-6">)</span><span class="p">.</span><span class="w">      </span><span class="c1">%% false</span></code></pre><h2 id="is_monad/1-supported-monadic-types" class="section-heading">
   <a href="#is_monad/1-supported-monadic-types" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -513,7 +513,7 @@ results need to be wrapped in Ok constructors or can be returned as-is.</p>
     </a>
     <h1 class="signature" translate="no">join_ints/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L387" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L387" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -533,7 +533,7 @@ results need to be wrapped in Ok constructors or can be returned as-is.</p>
     </a>
     <h1 class="signature" translate="no">list_to_string(List)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L383" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L383" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -553,7 +553,7 @@ results need to be wrapped in Ok constructors or can be returned as-is.</p>
     </a>
     <h1 class="signature" translate="no">pipe/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L241" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L241" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -588,34 +588,34 @@ It handles three distinct cases based on the input value type.</p><h2 id="pipe/2
   </a>
   <span class="text">Rule 1: Error Propagation</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="7409166763-1">(</span><span class="p" data-group-id="7409166763-2">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">reason</span><span class="p" data-group-id="7409166763-2">}</span><span class="p">,</span><span class="w"> </span><span class="n">Fun</span><span class="p" data-group-id="7409166763-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="2039838686-1">(</span><span class="p" data-group-id="2039838686-2">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">reason</span><span class="p" data-group-id="2039838686-2">}</span><span class="p">,</span><span class="w"> </span><span class="n">Fun</span><span class="p" data-group-id="2039838686-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Returns: {&#39;Error&#39;, reason} (Fun is not called)</span></code></pre><h3 id="pipe/2-rule-2-ok-unwrapping" class="section-heading">
   <a href="#pipe/2-rule-2-ok-unwrapping" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Rule 2: Ok Unwrapping</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="5327086244-1">(</span><span class="p" data-group-id="5327086244-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="5327086244-2">}</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="5327086244-3">(</span><span class="n">X</span><span class="p" data-group-id="5327086244-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="5327086244-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="2586898879-1">(</span><span class="p" data-group-id="2586898879-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="2586898879-2">}</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="2586898879-3">(</span><span class="n">X</span><span class="p" data-group-id="2586898879-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="2586898879-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Returns: {&#39;Ok&#39;, 10} (value unwrapped, result wrapped)</span><span class="w">
 
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="5327086244-4">(</span><span class="p" data-group-id="5327086244-5">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="5327086244-5">}</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="5327086244-6">(</span><span class="n">X</span><span class="p" data-group-id="5327086244-6">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="p" data-group-id="5327086244-7">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="5327086244-7">}</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="5327086244-4">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="2586898879-4">(</span><span class="p" data-group-id="2586898879-5">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="2586898879-5">}</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="2586898879-6">(</span><span class="n">X</span><span class="p" data-group-id="2586898879-6">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="p" data-group-id="2586898879-7">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="2586898879-7">}</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="2586898879-4">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Returns: {&#39;Ok&#39;, 10} (already monadic, not double-wrapped)</span></code></pre><h3 id="pipe/2-rule-3-value-passing" class="section-heading">
   <a href="#pipe/2-rule-3-value-passing" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Rule 3: Value Passing</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="7588122781-1">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="7588122781-2">(</span><span class="n">X</span><span class="p" data-group-id="7588122781-2">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="7588122781-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="8673648931-1">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="8673648931-2">(</span><span class="n">X</span><span class="p" data-group-id="8673648931-2">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="8673648931-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Returns: {&#39;Ok&#39;, 10} (non-monadic input, result wrapped)</span><span class="w">
 
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="7588122781-3">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="7588122781-4">(</span><span class="n">X</span><span class="p" data-group-id="7588122781-4">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="p" data-group-id="7588122781-5">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;too_big&#39;</span><span class="p" data-group-id="7588122781-5">}</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="7588122781-3">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="8673648931-3">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="8673648931-4">(</span><span class="n">X</span><span class="p" data-group-id="8673648931-4">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="p" data-group-id="8673648931-5">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;too_big&#39;</span><span class="p" data-group-id="8673648931-5">}</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="8673648931-3">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Returns: {&#39;Error&#39;, &#39;too_big&#39;} (monadic result preserved)</span></code></pre><h2 id="pipe/2-error-handling" class="section-heading">
   <a href="#pipe/2-error-handling" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Error Handling</span>
 </h2>
-<p>If RHO throws an exception during execution:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="1232644088-1">(</span><span class="p" data-group-id="1232644088-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="1232644088-2">}</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="1232644088-3">(</span><span class="n">X</span><span class="p" data-group-id="1232644088-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="o">/</span><span class="n">X</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="1232644088-1">)</span><span class="p">.</span><span class="w">
+<p>If RHO throws an exception during execution:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p" data-group-id="8793998050-1">(</span><span class="p" data-group-id="8793998050-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="8793998050-2">}</span><span class="p">,</span><span class="w"> </span><span class="nf">fun</span><span class="p" data-group-id="8793998050-3">(</span><span class="n">X</span><span class="p" data-group-id="8793998050-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="o">/</span><span class="n">X</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="8793998050-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Returns: {&#39;Error&#39;, {pipe_runtime_error, error, badarith}}</span></code></pre><h2 id="pipe/2-usage-in-cure" class="section-heading">
   <a href="#pipe/2-usage-in-cure" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -643,7 +643,7 @@ pipe(pipe(value, function1), function2)</code></pre><h2 id="pipe/2-type-safety" 
     </a>
     <h1 class="signature" translate="no">print(Message)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L310" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L310" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -672,12 +672,12 @@ continue writing on the same line.</p><h2 id="print/1-arguments" class="section-
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="7159444006-1">(</span><span class="s">&quot;Hello &quot;</span><span class="p" data-group-id="7159444006-1">)</span><span class="p">.</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="7159444006-2">(</span><span class="s">&quot;World!&quot;</span><span class="p" data-group-id="7159444006-2">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="9568338981-1">(</span><span class="s">&quot;Hello &quot;</span><span class="p" data-group-id="9568338981-1">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="9568338981-2">(</span><span class="s">&quot;World!&quot;</span><span class="p" data-group-id="9568338981-2">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Output: &quot;Hello World!&quot;</span><span class="w">
 
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="7159444006-3">(</span><span class="s">&quot;Count: &quot;</span><span class="p" data-group-id="7159444006-3">)</span><span class="p">.</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="7159444006-4">(</span><span class="nf">integer_to_list</span><span class="p" data-group-id="7159444006-5">(</span><span class="mi">42</span><span class="p" data-group-id="7159444006-5">)</span><span class="p" data-group-id="7159444006-4">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="9568338981-3">(</span><span class="s">&quot;Count: &quot;</span><span class="p" data-group-id="9568338981-3">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">print</span><span class="p" data-group-id="9568338981-4">(</span><span class="nf">integer_to_list</span><span class="p" data-group-id="9568338981-5">(</span><span class="mi">42</span><span class="p" data-group-id="9568338981-5">)</span><span class="p" data-group-id="9568338981-4">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Output: &quot;Count: 42&quot;</span></code></pre><h2 id="print/1-usage-in-cure" class="section-heading">
   <a href="#print/1-usage-in-cure" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -711,7 +711,7 @@ This function always returns 'ok' from the Cure perspective.</p>
     </a>
     <h1 class="signature" translate="no">println(Message)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L356" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L356" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -739,13 +739,13 @@ a newline character after the message for line-by-line output formatting.</p><h2
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">println</span><span class="p" data-group-id="2463140228-1">(</span><span class="s">&quot;First line&quot;</span><span class="p" data-group-id="2463140228-1">)</span><span class="p">.</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">println</span><span class="p" data-group-id="2463140228-2">(</span><span class="s">&quot;Second line&quot;</span><span class="p" data-group-id="2463140228-2">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">println</span><span class="p" data-group-id="6816221281-1">(</span><span class="s">&quot;First line&quot;</span><span class="p" data-group-id="6816221281-1">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">println</span><span class="p" data-group-id="6816221281-2">(</span><span class="s">&quot;Second line&quot;</span><span class="p" data-group-id="6816221281-2">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Output:</span><span class="w">
 </span><span class="c1">%% First line</span><span class="w">
 </span><span class="c1">%% Second line</span><span class="w">
 
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">println</span><span class="p" data-group-id="2463140228-3">(</span><span class="s">&quot;Value: &quot;</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="nf">integer_to_list</span><span class="p" data-group-id="2463140228-4">(</span><span class="mi">42</span><span class="p" data-group-id="2463140228-4">)</span><span class="p" data-group-id="2463140228-3">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">println</span><span class="p" data-group-id="6816221281-3">(</span><span class="s">&quot;Value: &quot;</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="nf">integer_to_list</span><span class="p" data-group-id="6816221281-4">(</span><span class="mi">42</span><span class="p" data-group-id="6816221281-4">)</span><span class="p" data-group-id="6816221281-3">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Output: Value: 42</span></code></pre><h2 id="println/1-usage-in-cure" class="section-heading">
   <a href="#println/1-usage-in-cure" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -784,7 +784,7 @@ This function always returns 'ok' from the Cure perspective.</p>
     </a>
     <h1 class="signature" translate="no">'Succ'(N)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L560" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L560" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -812,8 +812,8 @@ This is the inductive case of Peano-encoded natural numbers.</p><h2 id="Succ/1-a
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">&#39;Succ&#39;</span><span class="p" data-group-id="3138592625-1">(</span><span class="mi">0</span><span class="p" data-group-id="3138592625-1">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% Returns: 1 (successor of Zero)</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">&#39;Succ&#39;</span><span class="p" data-group-id="3138592625-2">(</span><span class="mi">5</span><span class="p" data-group-id="3138592625-2">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% Returns: 6 (successor of 5)</span></code></pre><h2 id="Succ/1-usage-in-cure" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">&#39;Succ&#39;</span><span class="p" data-group-id="2593557427-1">(</span><span class="mi">0</span><span class="p" data-group-id="2593557427-1">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% Returns: 1 (successor of Zero)</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">&#39;Succ&#39;</span><span class="p" data-group-id="2593557427-2">(</span><span class="mi">5</span><span class="p" data-group-id="2593557427-2">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% Returns: 6 (successor of 5)</span></code></pre><h2 id="Succ/1-usage-in-cure" class="section-heading">
   <a href="#Succ/1-usage-in-cure" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -838,7 +838,7 @@ let three = Succ(two)</code></pre><h2 id="Succ/1-type" class="section-heading">
     </a>
     <h1 class="signature" translate="no">show/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L460" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L460" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -873,34 +873,34 @@ data like lists and tuples.</p><h2 id="show/1-arguments" class="section-heading"
   </a>
   <span class="text">Monadic Types</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="9764776098-1">(</span><span class="p" data-group-id="9764776098-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p" data-group-id="9764776098-2">}</span><span class="p" data-group-id="9764776098-1">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% &quot;Ok(42)&quot;</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="9764776098-3">(</span><span class="p" data-group-id="9764776098-4">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">failed</span><span class="p" data-group-id="9764776098-4">}</span><span class="p" data-group-id="9764776098-3">)</span><span class="p">.</span><span class="w"> </span><span class="c1">%% &quot;Error(failed)&quot;</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="9764776098-5">(</span><span class="p" data-group-id="9764776098-6">{</span><span class="ss">&#39;Some&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">data</span><span class="p" data-group-id="9764776098-6">}</span><span class="p" data-group-id="9764776098-5">)</span><span class="p">.</span><span class="w">    </span><span class="c1">%% &quot;Some(data)&quot;</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="9764776098-7">(</span><span class="ss">&#39;None&#39;</span><span class="p" data-group-id="9764776098-7">)</span><span class="p">.</span><span class="w">            </span><span class="c1">%% &quot;None&quot;</span></code></pre><h3 id="show/1-basic-types" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="0705351846-1">(</span><span class="p" data-group-id="0705351846-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p" data-group-id="0705351846-2">}</span><span class="p" data-group-id="0705351846-1">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% &quot;Ok(42)&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="0705351846-3">(</span><span class="p" data-group-id="0705351846-4">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">failed</span><span class="p" data-group-id="0705351846-4">}</span><span class="p" data-group-id="0705351846-3">)</span><span class="p">.</span><span class="w"> </span><span class="c1">%% &quot;Error(failed)&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="0705351846-5">(</span><span class="p" data-group-id="0705351846-6">{</span><span class="ss">&#39;Some&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">data</span><span class="p" data-group-id="0705351846-6">}</span><span class="p" data-group-id="0705351846-5">)</span><span class="p">.</span><span class="w">    </span><span class="c1">%% &quot;Some(data)&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="0705351846-7">(</span><span class="ss">&#39;None&#39;</span><span class="p" data-group-id="0705351846-7">)</span><span class="p">.</span><span class="w">            </span><span class="c1">%% &quot;None&quot;</span></code></pre><h3 id="show/1-basic-types" class="section-heading">
   <a href="#show/1-basic-types" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Basic Types</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="8157177390-1">(</span><span class="mi">42</span><span class="p" data-group-id="8157177390-1">)</span><span class="p">.</span><span class="w">           </span><span class="c1">%% &quot;42&quot;</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="8157177390-2">(</span><span class="mf">3.14</span><span class="p" data-group-id="8157177390-2">)</span><span class="p">.</span><span class="w">         </span><span class="c1">%% &quot;3.14&quot;</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="8157177390-3">(</span><span class="ss">hello</span><span class="p" data-group-id="8157177390-3">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% &quot;hello&quot;</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="8157177390-4">(</span><span class="s">&quot;string&quot;</span><span class="p" data-group-id="8157177390-4">)</span><span class="p">.</span><span class="w">     </span><span class="c1">%% &quot;string&quot;</span></code></pre><h3 id="show/1-structured-types" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="9756684281-1">(</span><span class="mi">42</span><span class="p" data-group-id="9756684281-1">)</span><span class="p">.</span><span class="w">           </span><span class="c1">%% &quot;42&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="9756684281-2">(</span><span class="mf">3.14</span><span class="p" data-group-id="9756684281-2">)</span><span class="p">.</span><span class="w">         </span><span class="c1">%% &quot;3.14&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="9756684281-3">(</span><span class="ss">hello</span><span class="p" data-group-id="9756684281-3">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% &quot;hello&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="9756684281-4">(</span><span class="s">&quot;string&quot;</span><span class="p" data-group-id="9756684281-4">)</span><span class="p">.</span><span class="w">     </span><span class="c1">%% &quot;string&quot;</span></code></pre><h3 id="show/1-structured-types" class="section-heading">
   <a href="#show/1-structured-types" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Structured Types</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="6363089816-1">(</span><span class="p" data-group-id="6363089816-2">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="6363089816-2">]</span><span class="p" data-group-id="6363089816-1">)</span><span class="p">.</span><span class="w">           </span><span class="c1">%% &quot;[1, 2, 3]&quot;</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="6363089816-3">(</span><span class="p" data-group-id="6363089816-4">{</span><span class="ss">a</span><span class="p">,</span><span class="w"> </span><span class="ss">b</span><span class="p" data-group-id="6363089816-4">}</span><span class="p" data-group-id="6363089816-3">)</span><span class="p">.</span><span class="w">              </span><span class="c1">%% &quot;{a, b}&quot;</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="6363089816-5">(</span><span class="p" data-group-id="6363089816-6">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p" data-group-id="6363089816-6">}</span><span class="p" data-group-id="6363089816-5">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% &quot;{1, 2, 3, 4}&quot;</span><span class="w">
-</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="6363089816-7">(</span><span class="p" data-group-id="6363089816-8">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="6363089816-8">}</span><span class="p" data-group-id="6363089816-7">)</span><span class="p">.</span><span class="w">     </span><span class="c1">%% &quot;{1, 2, 3, 4, ...}&quot;</span></code></pre><h3 id="show/1-nested-structures" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="6479596798-1">(</span><span class="p" data-group-id="6479596798-2">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="6479596798-2">]</span><span class="p" data-group-id="6479596798-1">)</span><span class="p">.</span><span class="w">           </span><span class="c1">%% &quot;[1, 2, 3]&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="6479596798-3">(</span><span class="p" data-group-id="6479596798-4">{</span><span class="ss">a</span><span class="p">,</span><span class="w"> </span><span class="ss">b</span><span class="p" data-group-id="6479596798-4">}</span><span class="p" data-group-id="6479596798-3">)</span><span class="p">.</span><span class="w">              </span><span class="c1">%% &quot;{a, b}&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="6479596798-5">(</span><span class="p" data-group-id="6479596798-6">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p" data-group-id="6479596798-6">}</span><span class="p" data-group-id="6479596798-5">)</span><span class="p">.</span><span class="w">        </span><span class="c1">%% &quot;{1, 2, 3, 4}&quot;</span><span class="w">
+</span><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="6479596798-7">(</span><span class="p" data-group-id="6479596798-8">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="6479596798-8">}</span><span class="p" data-group-id="6479596798-7">)</span><span class="p">.</span><span class="w">     </span><span class="c1">%% &quot;{1, 2, 3, 4, ...}&quot;</span></code></pre><h3 id="show/1-nested-structures" class="section-heading">
   <a href="#show/1-nested-structures" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Nested Structures</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="6920860263-1">(</span><span class="p" data-group-id="6920860263-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6920860263-3">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6920860263-4">{</span><span class="ss">&#39;Some&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="6920860263-4">}</span><span class="p" data-group-id="6920860263-3">]</span><span class="p" data-group-id="6920860263-2">}</span><span class="p" data-group-id="6920860263-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">show</span><span class="p" data-group-id="8766635216-1">(</span><span class="p" data-group-id="8766635216-2">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8766635216-3">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8766635216-4">{</span><span class="ss">&#39;Some&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="8766635216-4">}</span><span class="p" data-group-id="8766635216-3">]</span><span class="p" data-group-id="8766635216-2">}</span><span class="p" data-group-id="8766635216-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% &quot;Ok([1, 2, Some(3)])&quot;</span></code></pre><h2 id="show/1-usage-in-cure" class="section-heading">
   <a href="#show/1-usage-in-cure" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -938,7 +938,7 @@ making this function safe for debugging any Cure value.</p><h2 id="show/1-perfor
     </a>
     <h1 class="signature" translate="no">wrap_ok(Value)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L160" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L160" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -958,7 +958,7 @@ making this function safe for debugging any Cure value.</p><h2 id="show/1-perfor
     </a>
     <h1 class="signature" translate="no">'Zero'()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/runtime/cure_std.erl#L529" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/runtime/cure_std.erl#L529" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -979,7 +979,7 @@ making this function safe for debugging any Cure value.</p><h2 id="show/1-perfor
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">&#39;Zero&#39;</span><span class="p" data-group-id="0046680002-1">(</span><span class="p" data-group-id="0046680002-1">)</span><span class="p">.</span><span class="w">  </span><span class="c1">%% Returns: 0</span></code></pre><h2 id="Zero/0-usage-in-cure" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_std</span><span class="p">:</span><span class="nf">&#39;Zero&#39;</span><span class="p" data-group-id="5927208029-1">(</span><span class="p" data-group-id="5927208029-1">)</span><span class="p">.</span><span class="w">  </span><span class="c1">%% Returns: 0</span></code></pre><h2 id="Zero/0-usage-in-cure" class="section-heading">
   <a href="#Zero/0-usage-in-cure" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -1006,9 +1006,9 @@ making this function safe for debugging any Cure value.</p><h2 id="show/1-perfor
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.2.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.2.0">Hex Preview</a>
 
           </span>
 

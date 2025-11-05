@@ -84,76 +84,76 @@
 
 <strong>Working Example</strong>: <code>examples/06<em>fsm</em>traffic_light.cure</code>
 <pre><code>module TrafficLightFSM do
-  export [main/0]
+<p>  export [main/0]</p>
   
-  # ✅ WORKING: Import system with selective imports
-  import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
-  import Std.Io [println/1]
-  import Std.Pair [pair/2]
+<p>  # ✅ WORKING: Import system with selective imports</p>
+<p>  import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]</p>
+<p>  import Std.Io [println/1]</p>
+<p>  import Std.Pair [pair/2]</p>
   
-  # ✅ WORKING: Record definition for FSM payload
-  record TrafficPayload do
-    cycles_completed: Int
-    timer_events: Int
-    emergency_stops: Int
-  end
+<p>  # ✅ WORKING: Record definition for FSM payload</p>
+<p>  record TrafficPayload do</p>
+<p>    cycles_completed: Int</p>
+<p>    timer_events: Int</p>
+<p>    emergency_stops: Int</p>
+<p>  end</p>
   
-  # ✅ WORKING: FSM with arrow-based transition syntax
-  fsm TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0} do
-    Red --> |timer| Green
-    Red --> |emergency| Red
-    Green --> |timer| Yellow
-    Green --> |emergency| Red
-    Yellow --> |timer| Red
-    Yellow --> |emergency| Red
-  end
+<p>  # ✅ WORKING: FSM with arrow-based transition syntax</p>
+<p>  fsm TrafficPayload{cycles<em>completed: 0, timer</em>events: 0, emergency_stops: 0} do</p>
+<p>    Red --> |timer| Green</p>
+<p>    Red --> |emergency| Red</p>
+<p>    Green --> |timer| Yellow</p>
+<p>    Green --> |emergency| Red</p>
+<p>    Yellow --> |timer| Red</p>
+<p>    Yellow --> |emergency| Red</p>
+<p>  end</p>
   
-  def main(): Int =
-    println("=== Traffic Light FSM Demo ===")
-    let initial_data = TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0}
-    let fsm_pid = fsm_spawn(:TrafficPayload, initial_data)
-    let adv_result = fsm_advertise(fsm_pid, :traffic_light)
-    let event = pair(:timer, [])
-    let cast_result = fsm_cast(:traffic_light, event)
-    println("FSM operations complete")
-    0
-end
+<p>  def main(): Int =</p>
+<p>    println("=== Traffic Light FSM Demo ===")</p>
+<p>    let initial<em>data = TrafficPayload{cycles</em>completed: 0, timer<em>events: 0, emergency</em>stops: 0}</p>
+<p>    let fsm<em>pid = fsm</em>spawn(:TrafficPayload, initial_data)</p>
+<p>    let adv<em>result = fsm</em>advertise(fsm<em>pid, :traffic</em>light)</p>
+<p>    let event = pair(:timer, [])</p>
+<p>    let cast<em>result = fsm</em>cast(:traffic_light, event)</p>
+<p>    println("FSM operations complete")</p>
+<p>    0</p>
+<p>end</p>
 </code></pre>
 
 <strong>Compilation & Execution</strong>:
 <pre><code># ✅ Successfully compiles
-./cure examples/06_fsm_traffic_light.cure --verbose
+<p>./cure examples/06<em>fsm</em>traffic_light.cure --verbose</p>
 
-# ✅ Successfully executes  
-erl -pa _build/ebin -noshell -eval "'TrafficLightFSM':main(), init:stop()."
+<h1>✅ Successfully executes  </h1>
+<p>erl -pa _build/ebin -noshell -eval "'TrafficLightFSM':main(), init:stop()."</p>
 
-# Console Output:
-# === Traffic Light FSM Demo ===
-# Initial state:
-# State: Red (expected)
-# ...
-# === Demo Complete ===
+<h1>Console Output:</h1>
+<h1>=== Traffic Light FSM Demo ===</h1>
+<h1>Initial state:</h1>
+<h1>State: Red (expected)</h1>
+<h1>...</h1>
+<h1>=== Demo Complete ===</h1>
 </code></pre>
 
 <h3>✅ Comprehensive Test Coverage</h3>
 
 <strong>Test Infrastructure</strong>:
 <pre><code>========================================
-Cure Compiler Test Suite
-========================================
+<p>Cure Compiler Test Suite</p>
+<p>========================================</p>
 
-✅ Lexer Tests - Token generation and position tracking
-✅ Parser Tests - AST generation and error recovery
-✅ Type System Tests - Dependent types and inference
-✅ FSM Tests - State machine compilation and runtime
-✅ Code Generation Tests - BEAM bytecode generation
-✅ String Tests - String operations and concatenation
-✅ Pattern Matching Tests - Guards and complex patterns
-✅ Standard Library Tests - Stdlib module functionality
-✅ Integration Tests - End-to-end compilation
-✅ Performance Tests - Large-scale validation
+<p>✅ Lexer Tests - Token generation and position tracking</p>
+<p>✅ Parser Tests - AST generation and error recovery</p>
+<p>✅ Type System Tests - Dependent types and inference</p>
+<p>✅ FSM Tests - State machine compilation and runtime</p>
+<p>✅ Code Generation Tests - BEAM bytecode generation</p>
+<p>✅ String Tests - String operations and concatenation</p>
+<p>✅ Pattern Matching Tests - Guards and complex patterns</p>
+<p>✅ Standard Library Tests - Stdlib module functionality</p>
+<p>✅ Integration Tests - End-to-end compilation</p>
+<p>✅ Performance Tests - Large-scale validation</p>
 
-🎉 COMPREHENSIVE TEST COVERAGE 🎉
+<p>🎉 COMPREHENSIVE TEST COVERAGE 🎉</p>
 </code></pre>
 
 <strong>Performance Testing</strong>:
@@ -217,19 +217,19 @@ Cure Compiler Test Suite
 
 <strong>Complete Toolchain</strong>:
 <pre><code># Build system
-make all                    # Build complete compiler and stdlib
-make test                   # Run test suite (100% success rate)
-make shell                  # Interactive development
+<p>make all                    # Build complete compiler and stdlib</p>
+<p>make test                   # Run test suite (100% success rate)</p>
+<p>make shell                  # Interactive development</p>
 
-# CLI usage  
-./cure examples/simple.cure --verbose    # Compile with details
-./cure build                             # Execute make all
-./cure test                              # Execute make test
+<h1>CLI usage  </h1>
+<p>./cure examples/simple.cure --verbose    # Compile with details</p>
+<p>./cure build                             # Execute make all</p>
+<p>./cure test                              # Execute make test</p>
 
-# Working examples
-./cure examples/06_fsm_traffic_light.cure
-./cure examples/04_pattern_guards.cure
-erl -pa _build/ebin -eval "'TrafficLightFSM':main()."
+<h1>Working examples</h1>
+<p>./cure examples/06<em>fsm</em>traffic_light.cure</p>
+<p>./cure examples/04<em>pattern</em>guards.cure</p>
+<p>erl -pa _build/ebin -eval "'TrafficLightFSM':main()."</p>
 </code></pre>
 
 <strong>IDE-Ready</strong>:
@@ -243,61 +243,61 @@ erl -pa _build/ebin -eval "'TrafficLightFSM':main()."
 <h2>Project Structure</h2>
 
 <pre><code>cure/                               # Complete programming language implementation
-├── src/                           # Compiler implementation (100% working)
-│   ├── cure_cli.erl              # ✅ Command-line interface with wrapper scripts
-│   ├── lexer/cure_lexer.erl      # ✅ Complete tokenization engine
-│   ├── parser/                   # ✅ Full AST generation and syntax analysis
-│   │   ├── cure_parser.erl       # ✅ Recursive descent parser with error recovery
-│   │   ├── cure_ast.erl          # ✅ AST utilities and manipulation
-│   │   └── cure_ast.hrl          # ✅ Comprehensive AST record definitions
-│   ├── types/                    # ✅ Advanced dependent type system
-│   │   ├── cure_types.erl        # ✅ Core type system implementation
-│   │   ├── cure_typechecker.erl  # ✅ Bidirectional type checking
-│   │   ├── cure_type_optimizer.erl # ✅ Type-directed optimizations (25-60% improvement)
-│   │   └── cure_smt_solver.erl   # ✅ SMT constraint solving with Z3
-│   ├── fsm/                      # ✅ Native FSM implementation
-│   │   ├── cure_fsm_runtime.erl  # ✅ FSM runtime with gen_statem integration
-│   │   └── cure_fsm_builtins.erl # ✅ Built-in FSM functions and operations
-│   ├── codegen/                  # ✅ BEAM bytecode generation
-│   │   ├── cure_codegen.erl      # ✅ Main code generation with debug info
-│   │   ├── cure_beam_compiler.erl # ✅ BEAM-specific compilation
-│   │   ├── cure_action_compiler.erl # ✅ Action compilation for FSMs
-│   │   └── cure_guard_compiler.erl  # ✅ Guard compilation
-│   └── runtime/                  # ✅ Runtime system integration
-│       ├── cure_runtime.erl      # ✅ Core runtime system
-│       └── cure_std.erl          # ✅ Standard library runtime support
-├── lib/                          # ✅ Working standard library
-│   ├── std.cure                  # ✅ Main stdlib module with re-exports
-│   ├── std/                      # ✅ Standard library modules  
-│   └── README.md                 # ✅ Complete library documentation
-├── test/                         # ✅ Comprehensive test suite (100% pass rate)
-│   ├── *_simple_test.erl         # ✅ Basic unit tests (all passing)
-│   ├── *_comprehensive_test.erl  # ✅ Comprehensive test suites
-│   ├── cli_wrapper_*_test.erl    # ✅ CLI and wrapper functionality tests
-│   ├── std_*_test.erl            # ✅ Standard library tests
-│   └── run_all_new_tests.erl     # ✅ Master test runner
-├── examples/                     # ✅ Working examples with runtime verification
-│   ├── 01_list_basics.cure       # ✅ Basic list operations
-│   ├── 02_result_handling.cure   # ✅ Result type usage
-│   ├── 03_option_type.cure       # ✅ Option type usage
-│   ├── 04_pattern_guards.cure    # ✅ Pattern matching with guards
-│   ├── 05_recursion.cure         # ✅ Recursive functions
-│   └── 06_fsm_traffic_light.cure # ✅ FSM demonstration
-├── docs/                         # ✅ Complete documentation
-│   ├── README.md                 # ✅ Architecture and implementation overview
-│   ├── API_REFERENCE.md          # ✅ Complete API documentation
-│   ├── LANGUAGE_SPEC.md          # ✅ Formal language specification
-│   ├── TYPE_SYSTEM.md            # ✅ Dependent type system documentation
-│   ├── FSM_SYSTEM.md             # ✅ FSM implementation and BEAM integration
-│   ├── CLI_USAGE.md              # ✅ Command-line interface documentation
-│   ├── STD_SUMMARY.md            # ✅ Standard library implementation
-│   ├── TESTING_SUMMARY.md        # ✅ Test suite documentation
-│   └── PROJECT_OVERVIEW.md       # ✅ This comprehensive overview
-├── _build/                       # Build artifacts
-│   ├── ebin/                     # ✅ Compiled Erlang modules (working)
-│   └── lib/                      # ✅ Compiled standard library
-├── Makefile                      # ✅ Complete build system
-└── cure                          # ✅ CLI wrapper script with automation
+<p>├── src/                           # Compiler implementation (100% working)</p>
+<p>│   ├── cure_cli.erl              # ✅ Command-line interface with wrapper scripts</p>
+<p>│   ├── lexer/cure_lexer.erl      # ✅ Complete tokenization engine</p>
+<p>│   ├── parser/                   # ✅ Full AST generation and syntax analysis</p>
+<p>│   │   ├── cure_parser.erl       # ✅ Recursive descent parser with error recovery</p>
+<p>│   │   ├── cure_ast.erl          # ✅ AST utilities and manipulation</p>
+<p>│   │   └── cure_ast.hrl          # ✅ Comprehensive AST record definitions</p>
+<p>│   ├── types/                    # ✅ Advanced dependent type system</p>
+<p>│   │   ├── cure_types.erl        # ✅ Core type system implementation</p>
+<p>│   │   ├── cure_typechecker.erl  # ✅ Bidirectional type checking</p>
+<p>│   │   ├── cure<em>type</em>optimizer.erl # ✅ Type-directed optimizations (25-60% improvement)</p>
+<p>│   │   └── cure<em>smt</em>solver.erl   # ✅ SMT constraint solving with Z3</p>
+<p>│   ├── fsm/                      # ✅ Native FSM implementation</p>
+<p>│   │   ├── cure<em>fsm</em>runtime.erl  # ✅ FSM runtime with gen_statem integration</p>
+<p>│   │   └── cure<em>fsm</em>builtins.erl # ✅ Built-in FSM functions and operations</p>
+<p>│   ├── codegen/                  # ✅ BEAM bytecode generation</p>
+<p>│   │   ├── cure_codegen.erl      # ✅ Main code generation with debug info</p>
+<p>│   │   ├── cure<em>beam</em>compiler.erl # ✅ BEAM-specific compilation</p>
+<p>│   │   ├── cure<em>action</em>compiler.erl # ✅ Action compilation for FSMs</p>
+<p>│   │   └── cure<em>guard</em>compiler.erl  # ✅ Guard compilation</p>
+<p>│   └── runtime/                  # ✅ Runtime system integration</p>
+<p>│       ├── cure_runtime.erl      # ✅ Core runtime system</p>
+<p>│       └── cure_std.erl          # ✅ Standard library runtime support</p>
+<p>├── lib/                          # ✅ Working standard library</p>
+<p>│   ├── std.cure                  # ✅ Main stdlib module with re-exports</p>
+<p>│   ├── std/                      # ✅ Standard library modules  </p>
+<p>│   └── README.md                 # ✅ Complete library documentation</p>
+<p>├── test/                         # ✅ Comprehensive test suite (100% pass rate)</p>
+<p>│   ├── *<em>simple</em>test.erl         # ✅ Basic unit tests (all passing)</p>
+<p>│   ├── *<em>comprehensive</em>test.erl  # ✅ Comprehensive test suites</p>
+<p>│   ├── cli<em>wrapper</em>*_test.erl    # ✅ CLI and wrapper functionality tests</p>
+<p>│   ├── std<em>*</em>test.erl            # ✅ Standard library tests</p>
+<p>│   └── run<em>all</em>new_tests.erl     # ✅ Master test runner</p>
+<p>├── examples/                     # ✅ Working examples with runtime verification</p>
+<p>│   ├── 01<em>list</em>basics.cure       # ✅ Basic list operations</p>
+<p>│   ├── 02<em>result</em>handling.cure   # ✅ Result type usage</p>
+<p>│   ├── 03<em>option</em>type.cure       # ✅ Option type usage</p>
+<p>│   ├── 04<em>pattern</em>guards.cure    # ✅ Pattern matching with guards</p>
+<p>│   ├── 05_recursion.cure         # ✅ Recursive functions</p>
+<p>│   └── 06<em>fsm</em>traffic_light.cure # ✅ FSM demonstration</p>
+<p>├── docs/                         # ✅ Complete documentation</p>
+<p>│   ├── README.md                 # ✅ Architecture and implementation overview</p>
+<p>│   ├── API_REFERENCE.md          # ✅ Complete API documentation</p>
+<p>│   ├── LANGUAGE_SPEC.md          # ✅ Formal language specification</p>
+<p>│   ├── TYPE_SYSTEM.md            # ✅ Dependent type system documentation</p>
+<p>│   ├── FSM_SYSTEM.md             # ✅ FSM implementation and BEAM integration</p>
+<p>│   ├── CLI_USAGE.md              # ✅ Command-line interface documentation</p>
+<p>│   ├── STD_SUMMARY.md            # ✅ Standard library implementation</p>
+<p>│   ├── TESTING_SUMMARY.md        # ✅ Test suite documentation</p>
+<p>│   └── PROJECT_OVERVIEW.md       # ✅ This comprehensive overview</p>
+<p>├── _build/                       # Build artifacts</p>
+<p>│   ├── ebin/                     # ✅ Compiled Erlang modules (working)</p>
+<p>│   └── lib/                      # ✅ Compiled standard library</p>
+<p>├── Makefile                      # ✅ Complete build system</p>
+<p>└── cure                          # ✅ CLI wrapper script with automation</p>
 </code></pre>
 
 <h2>Research & Educational Value</h2>

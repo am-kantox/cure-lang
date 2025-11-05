@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typeclass Operator Syntax - Parser Status - Cure Documentation</title>
+    <meta name="description" content=" Summary">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1>Typeclass Operator Syntax - Parser Status</h1>
+
+<h2>Summary</h2>
+
+<p>The parser now fully supports operator function definitions in typeclasses and instances. However, <strong>function types as type arguments must be parenthesized</strong>.</p>
+
+<h2>Status ✅</h2>
+
+<h3>Completed</h3>
+<ol>
+<li><strong>Lexer</strong>: Added all Functor/Applicative/Monad operators (<code><$</code>, <code>$></code>, <code><<em>></code>, <code></em>></code>, <code><*</code>, <code>>>=</code>, <code>>></code>)</li>
+<li><strong>Parser</strong>: Operator function definitions work with <code>def (op)(params)</code> syntax</li>
+<li><strong>Precedence</strong>: Operators have proper precedence (Functor > Applicative > Monad)</li>
+<li><strong>Codegen</strong>: Operators compile to BEAM code</li>
+</ol>
+
+<h3>Syntax Requirements</h3>
+
+<h4>✅ Works: Operator Definitions</h4>
+<pre><code>typeclass Functor(F) do
+<p>  def (<$)(value: A, fb: F(B)): F(A) = ...</p>
+<p>  def ($>)(fa: F(A), value: B): F(B) = ...</p>
+<p>end</p>
+</code></pre>
+
+<h4>❌ Doesn't Work: Bare Function Types in Type Arguments</h4>
+<pre><code>def (<*>)(ff: F(A -> B), fa: F(A)): F(B)
+<h1>^^ Parser sees this -> as return type marker</h1>
+</code></pre>
+
+<h4>✅ Works: Parenthesized Function Types</h4>
+<pre><code>def (<*>)(ff: F((A -> B)), fa: F(A)): F(B)
+<h1>^^^^^^^^ Extra parentheses make it unambiguous</h1>
+</code></pre>
+
+<h2>The Problem</h2>
+
+<p>When parsing <code>F(A -> B)</code>, the parser:</p>
+<ol>
+<li>Sees <code>F(</code></li>
+<li>Starts parsing type argument</li>
+<li>Parses <code>A</code> as a complete type</li>
+<li>Sees <code>-></code> and thinks it's the return type marker (end of parameters)</li>
+<li>Expects <code>)</code> to close the parameter list</li>
+<li><strong>Error</strong>: Got <code>-></code> when expecting <code>)</code></li>
+</ol>
+
+<h2>The Solution</h2>
+
+<strong>Parenthesize function types when they appear as type arguments:</strong>
+
+<h3>Before (Doesn't Parse)</h3>
+<pre><code>typeclass Applicative(F) when Functor(F) do
+<p>  def (<*>)(ff: F(A -> B), fa: F(A)): F(B)</p>
+  
+<p>  def (*>)(fa: F(A), fb: F(B)): F(B) =</p>
+<p>    map(fn(_) -> fn(b) -> b end end, fa) <*> fb</p>
+    
+<p>  def lift2(f: A -> B -> C, fa: F(A), fb: F(B)): F(C) =</p>
+<p>    map(f, fa) <*> fb</p>
+<p>end</p>
+</code></pre>
+
+<h3>After (Parses Correctly)  </h3>
+<pre><code>typeclass Applicative(F) when Functor(F) do
+<p>  def (<*>)(ff: F((A -> B)), fa: F(A)): F(B)</p>
+<p>  #               ^^^^^^^^^ Parenthesized</p>
+  
+<p>  def (*>)(fa: F(A), fb: F(B)): F(B) =</p>
+<p>    map(fn(_) -> fn(b) -> b end end, fa) <*> fb</p>
+    
+<p>  def lift2(f: (A -> B -> C), fa: F(A), fb: F(B)): F(C) =</p>
+<p>    #          ^^^^^^^^^^^^^^ Also parenthesized</p>
+<p>    map(f, fa) <*> fb</p>
+<p>end</p>
+</code></pre>
+
+<h2>Changes Needed in Typeclass Spec Files</h2>
+
+<h3>File: <code>lib/typeclass_spec/typeclass.cure</code></h3>
+
+<h4>Line 79</h4>
+<pre><code># Before:
+<p>def map(f: A -> B, fa: F(A)): F(B)</p>
+
+<h1>After:</h1>
+<p>def map(f: (A -> B), fa: F(A)): F(B)</p>
+</code></pre>
+
+<h4>Line 98</h4>
+<pre><code># Before:
+<p>def (<*>)(ff: F(A -> B), fa: F(A)): F(B)</p>
+
+<h1>After:</h1>
+<p>def (<*>)(ff: F((A -> B)), fa: F(A)): F(B)</p>
+</code></pre>
+
+<h4>Line 107</h4>
+<pre><code># Before:
+<p>def lift2(f: A -> B -> C, fa: F(A), fb: F(B)): F(C) =</p>
+
+<h1>After:</h1>
+<p>def lift2(f: (A -> B -> C), fa: F(A), fb: F(B)): F(C) =</p>
+</code></pre>
+
+<h4>Line 119</h4>
+<pre><code># Before:
+<p>def bind(ma: M(A), f: A -> M(B)): M(B)</p>
+
+<h1>After:</h1>
+<p>def bind(ma: M(A), f: (A -> M(B))): M(B)</p>
+</code></pre>
+
+<h4>Line 122</h4>
+<pre><code># Before:
+<p>def (>>=)(ma: M(A), f: A -> M(B)): M(B) = bind(ma, f)</p>
+
+<h1>After:</h1>
+<p>def (>>=)(ma: M(A), f: (A -> M(B))): M(B) = bind(ma, f)</p>
+</code></pre>
+
+<h4>Line 131</h4>
+<pre><code># Before:
+<p>def flatMap(ma: M(A), f: A -> M(B)): M(B) = bind(ma, f)</p>
+
+<h1>After:</h1>
+<p>def flatMap(ma: M(A), f: (A -> M(B))): M(B) = bind(ma, f)</p>
+</code></pre>
+
+<h4>Line 151</h4>
+<pre><code># Before:
+<p>def mapM(f: A -> M(B), xs: List(A)): M(List(B)) where Monad(M) =</p>
+
+<h1>After:</h1>
+<p>def mapM(f: (A -> M(B)), xs: List(A)): M(List(B)) where Monad(M) =</p>
+</code></pre>
+
+<h4>Line 155</h4>
+<pre><code># Before:
+<p>def forM_(f: A -> M(B), xs: List(A)): M(Unit) where Monad(M) =</p>
+
+<h1>After:</h1>
+<p>def forM_(f: (A -> M(B)), xs: List(A)): M(Unit) where Monad(M) =</p>
+</code></pre>
+
+<h4>Line 175</h4>
+<pre><code># Before:
+<p>def filterM(p: A -> M(Bool), xs: List(A)): M(List(A)) where Monad(M) =</p>
+
+<h1>After:</h1>
+<p>def filterM(p: (A -> M(Bool)), xs: List(A)): M(List(A)) where Monad(M) =</p>
+</code></pre>
+
+<h2>Why Not Fix the Parser?</h2>
+
+<strong>This is actually the correct behavior.</strong> The ambiguity is real:
+
+<pre><code># Which interpretation is correct?
+<p>def foo(x: A -> B)</p>
+
+<h1>Option 1: Parameter x of function type (A -> B)</h1>
+<p>def foo(x: (A -> B))</p>
+
+<h1>Option 2: Parameter x of type A, returns B</h1>
+<p>def foo(x: A): B</p>
+
+<h1>Without parentheses, Option 2 is more natural</h1>
+</code></pre>
+
+<p>In most type systems with function types:</p>
+<ul>
+<li>Haskell requires parentheses: <code>f :: (a -> b) -> c</code></li>
+<li>OCaml requires parentheses: <code>val f : (a -> b) -> c</code></li>
+<li>Scala requires parentheses: <code>def f(g: A => B): C</code></li>
+</ul>
+
+<h2>Alternative: Parser Enhancement (Future)</h2>
+
+<p>We <em>could</em> enhance the parser to understand context, but it adds complexity:</p>
+
+<pre><code>% In parse_type, when inside type arguments:
+<p>parse<em>type</em>in_context(State, Context) -></p>
+<p>    case Context of</p>
+<p>        inside<em>type</em>args -></p>
+<p>            % Allow -> as part of function type</p>
+<p>            parse<em>function</em>type(State);</p>
+<p>        _ -></p>
+<p>            % Treat -> as return type marker</p>
+<p>            parse<em>simple</em>type(State)</p>
+<p>    end.</p>
+</code></pre>
+
+<p>This would require:</p>
+<ol>
+<li>Threading context through all type parsing functions</li>
+<li>Tracking parenthesis depth</li>
+<li>More complex lookahead logic</li>
+</ol>
+
+<strong>Recommendation</strong>: Keep current behavior, require parentheses. It's clearer and matches industry standards.
+
+<h2>Testing</h2>
+
+<p>To verify your typeclass files parse correctly:</p>
+
+<pre><code>cd /home/am/Proyectos/Ammotion/cure
+
+<h1>Test parsing</h1>
+<p>erl -pa _build/ebin -noshell -eval \</p>
+<p>  "case cure<em>parser:parse</em>file(\"lib/typeclass_spec/typeclass.cure\") of \</p>
+<p>     {ok, AST} -> io:format(\"Success! ~p items~n\", [length(AST)]); \</p>
+<p>     {error, {parse_error, R, L, C}} -> io:format(\"Error ~p:~p - ~p~n\", [L, C, R]) \</p>
+<p>   end, halt(0)."</p>
+</code></pre>
+
+<h2>Next Steps</h2>
+
+<ol>
+<li>Update <code>lib/typeclass_spec/typeclass.cure</code> with parenthesized function types</li>
+<li>Update other typeclass spec files similarly</li>
+<li>Test parsing: All files should parse successfully</li>
+<li>Move files to <code>lib/std/</code> once they parse</li>
+<li>Full compilation will work once higher-kinded types are fully supported</li>
+</ol>
+
+<h2>Summary</h2>
+
+<ul>
+<li>✅ Operator names work: <code>def (<$)(...)</code></li>
+<li>✅ Operator precedence works</li>
+<li>✅ Typeclass/instance syntax works</li>
+<li>⚠️  <strong>Function types as type arguments need parentheses</strong>: <code>F((A -> B))</code> not <code>F(A -> B)</code></li>
+<li>This matches standard practice in Haskell, OCaml, Scala, etc.</li>
+</ul>
+
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

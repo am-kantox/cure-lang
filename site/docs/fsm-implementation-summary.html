@@ -67,33 +67,33 @@
 <h2>Architecture</h2>
 
 <pre><code>┌─────────────────────────────────────────┐
-│  Cure Program (e.g., turnstile.cure)   │
-│  - Defines FSM with 'fsm' syntax       │
-│  - Calls Std.Fsm functions             │
-└────────────────┬────────────────────────┘
-                 │
-                 ↓
-┌─────────────────────────────────────────┐
-│  lib/std/fsm.cure                       │
-│  - Type-checked API                     │
-│  - curify FFI bindings                  │
-└────────────────┬────────────────────────┘
-                 │
-                 ↓
-┌─────────────────────────────────────────┐
-│  src/fsm/cure_fsm_cure_api.erl          │
-│  - Bridges Cure and Erlang runtime     │
-│  - Resolves module FSM definitions     │
-│  - Handles name resolution              │
-└────────────────┬────────────────────────┘
-                 │
-                 ↓
-┌─────────────────────────────────────────┐
-│  src/fsm/cure_fsm_runtime.erl           │
-│  - gen_server FSM execution engine     │
-│  - Event processing & transitions      │
-│  - Performance & monitoring            │
-└─────────────────────────────────────────┘
+<p>│  Cure Program (e.g., turnstile.cure)   │</p>
+<p>│  - Defines FSM with 'fsm' syntax       │</p>
+<p>│  - Calls Std.Fsm functions             │</p>
+<p>└────────────────┬────────────────────────┘</p>
+<p>                 │</p>
+<p>                 ↓</p>
+<p>┌─────────────────────────────────────────┐</p>
+<p>│  lib/std/fsm.cure                       │</p>
+<p>│  - Type-checked API                     │</p>
+<p>│  - curify FFI bindings                  │</p>
+<p>└────────────────┬────────────────────────┘</p>
+<p>                 │</p>
+<p>                 ↓</p>
+<p>┌─────────────────────────────────────────┐</p>
+<p>│  src/fsm/cure<em>fsm</em>cure_api.erl          │</p>
+<p>│  - Bridges Cure and Erlang runtime     │</p>
+<p>│  - Resolves module FSM definitions     │</p>
+<p>│  - Handles name resolution              │</p>
+<p>└────────────────┬────────────────────────┘</p>
+<p>                 │</p>
+<p>                 ↓</p>
+<p>┌─────────────────────────────────────────┐</p>
+<p>│  src/fsm/cure<em>fsm</em>runtime.erl           │</p>
+<p>│  - gen_server FSM execution engine     │</p>
+<p>│  - Event processing & transitions      │</p>
+<p>│  - Performance & monitoring            │</p>
+<p>└─────────────────────────────────────────┘</p>
 </code></pre>
 
 <h2>How It Works</h2>
@@ -102,7 +102,7 @@
 
 <p>The <code>curify</code> keyword creates type-checked FFI bindings:</p>
 
-<pre><code>curify start_fsm(mod: Atom): Any = {cure_fsm_cure_api, start_fsm, 1}
+<pre><code>curify start<em>fsm(mod: Atom): Any = {cure</em>fsm<em>cure</em>api, start_fsm, 1}
 </code></pre>
 
 <p>This:</p>
@@ -118,10 +118,10 @@
 <li><strong>Define FSM</strong> in Cure module:</li>
 </ol>
    <pre><code>   fsm TurnstilePayload{...} do
-     Locked --> |coin| Unlocked
-     Locked --> |push| Locked
-     ...
-   end
+<p>     Locked --> |coin| Unlocked</p>
+<p>     Locked --> |push| Locked</p>
+<p>     ...</p>
+<p>   end</p>
    </code></pre>
 
 <ol>
@@ -131,19 +131,19 @@
 <ol>
 <li><strong>Start FSM</strong>:</li>
 </ol>
-   <pre><code>   let fsm_pid = start_fsm(Turnstile)
+   <pre><code>   let fsm<em>pid = start</em>fsm(Turnstile)
    </code></pre>
 
 <ol>
 <li><strong>Send Events</strong>:</li>
 </ol>
-   <pre><code>   fsm_cast(fsm_pid, {:coin, []})
+   <pre><code>   fsm<em>cast(fsm</em>pid, {:coin, []})
    </code></pre>
 
 <ol>
 <li><strong>Query State</strong>:</li>
 </ol>
-   <pre><code>   let {ok, {state, payload}} = fsm_state(fsm_pid)
+   <pre><code>   let {ok, {state, payload}} = fsm<em>state(fsm</em>pid)
    </code></pre>
 
 <h3>3. Type Safety</h3>
@@ -168,7 +168,7 @@
 
 <p>Test with the existing example:</p>
 <pre><code># Assuming the Cure compiler is built
-./cure examples/turnstile.cure --verbose
+<p>./cure examples/turnstile.cure --verbose</p>
 </code></pre>
 
 <p>The turnstile example demonstrates:</p>
@@ -350,10 +350,10 @@
 
 <h3>Type Environment Structure</h3>
 <pre><code>Env = #{
-  'TurnstileFSM' => {fsm_type, 'TurnstileFSM', States, InitialState},
-  'TurnstilePayload' => {record_type, 'TurnstilePayload', Fields},
-  % Other bindings...
-}
+<p>  'TurnstileFSM' => {fsm_type, 'TurnstileFSM', States, InitialState},</p>
+<p>  'TurnstilePayload' => {record_type, 'TurnstilePayload', Fields},</p>
+<p>  % Other bindings...</p>
+<p>}</p>
 </code></pre>
 
 <h3>Field Access Flow</h3>
@@ -392,13 +392,13 @@
 <h2>Verification Commands</h2>
 
 <pre><code># Compile standard library
-make clean && make all
+<p>make clean && make all</p>
 
-# Run core tests
-erl -pa _build/ebin -noshell -eval 'fsm_test:run(), parser_test:run(), halt().'
+<h1>Run core tests</h1>
+<p>erl -pa <em>build/ebin -noshell -eval 'fsm</em>test:run(), parser_test:run(), halt().'</p>
 
-# Verify stdlib modules
-ls _build/ebin/Std.*.beam
+<h1>Verify stdlib modules</h1>
+<p>ls _build/ebin/Std.*.beam</p>
 </code></pre>
 
 <h2>Summary</h2>

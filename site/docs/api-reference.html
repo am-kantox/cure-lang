@@ -70,20 +70,20 @@
 
 <strong>Usage:</strong>
 <pre><code># ✅ WORKING: Basic compilation
-cure input.cure                    # Compile with defaults
-cure input.cure -o output.beam     # Specify output file
-cure input.cure --verbose          # Verbose compilation with detailed output
-cure input.cure --no-optimize      # Disable type-directed optimizations
+<p>cure input.cure                    # Compile with defaults</p>
+<p>cure input.cure -o output.beam     # Specify output file</p>
+<p>cure input.cure --verbose          # Verbose compilation with detailed output</p>
+<p>cure input.cure --no-optimize      # Disable type-directed optimizations</p>
 
-# ✅ WORKING: Wrapper script commands with full automation
-cure build                         # Execute 'make all' with error handling
-cure test                          # Execute 'make test' (100% success rate)
-cure shell                         # Start development shell with modules loaded
-cure clean                         # Execute 'make clean' with cleanup verification
+<h1>✅ WORKING: Wrapper script commands with full automation</h1>
+<p>cure build                         # Execute 'make all' with error handling</p>
+<p>cure test                          # Execute 'make test' (100% success rate)</p>
+<p>cure shell                         # Start development shell with modules loaded</p>
+<p>cure clean                         # Execute 'make clean' with cleanup verification</p>
 
-# ✅ VERIFIED: Working examples
-./cure examples/dependent_types_simple.cure --verbose
-# Successfully compiles and runs with import system!
+<h1>✅ VERIFIED: Working examples</h1>
+<p>./cure examples/dependent<em>types</em>simple.cure --verbose</p>
+<h1>Successfully compiles and runs with import system!</h1>
 </code></pre>
 
 <strong>Options:</strong>
@@ -101,22 +101,22 @@ cure clean                         # Execute 'make clean' with cleanup verificat
 
 <h4><code>cure<em>cli:compile</em>file/1,2</code></h4>
 <pre><code>compile_file(Filename :: string()) -> {ok, OutputFile} | {error, Reason}.
-compile_file(Filename :: string(), Options :: compile_options()) -> {ok, OutputFile} | {error, Reason}.
+<p>compile<em>file(Filename :: string(), Options :: compile</em>options()) -> {ok, OutputFile} | {error, Reason}.</p>
 </code></pre>
 <p>Programmatically compile a .cure file.</p>
 
 <h4><code>cure<em>cli:add</em>automatic<em>stdlib</em>imports/2</code></h4>
-<pre><code>add_automatic_stdlib_imports(Source :: string(), Options :: compile_options()) -> string().
+<pre><code>add<em>automatic</em>stdlib<em>imports(Source :: string(), Options :: compile</em>options()) -> string().
 </code></pre>
 <p>Automatically add standard library imports to source code that lacks explicit imports.</p>
 
 <h4><code>cure<em>cli:has</em>explicit<em>module</em>or_imports/1</code></h4>
-<pre><code>has_explicit_module_or_imports(Source :: string()) -> boolean().
+<pre><code>has<em>explicit</em>module<em>or</em>imports(Source :: string()) -> boolean().
 </code></pre>
 <p>Check if source code contains explicit module definitions or imports.</p>
 
 <h4><code>cure<em>cli:ensure</em>stdlib_available/1</code> ✅ <strong>WORKING</strong></h4>
-<pre><code>ensure_stdlib_available(Options :: compile_options()) -> ok | {error, Reason}.
+<pre><code>ensure<em>stdlib</em>available(Options :: compile_options()) -> ok | {error, Reason}.
 </code></pre>
 <p>Ensure standard library is compiled and available, compiling if necessary.</p>
 
@@ -129,7 +129,7 @@ compile_file(Filename :: string(), Options :: compile_options()) -> {ok, OutputF
 </ul>
 
 <h4><code>cure<em>cli:convert</em>beam<em>to</em>source_path/1</code></h4>
-<pre><code>convert_beam_to_source_path(BeamPath :: string()) -> {ok, SourcePath} | error.
+<pre><code>convert<em>beam</em>to<em>source</em>path(BeamPath :: string()) -> {ok, SourcePath} | error.
 </code></pre>
 <p>Convert BEAM file path to corresponding source file path.</p>
 
@@ -151,7 +151,7 @@ compile_file(Filename :: string(), Options :: compile_options()) -> {ok, OutputF
 
 <strong>Example:</strong>
 <pre><code>cure_lexer:tokenize(<<"def add(x, y) = x + y">>).
-% Returns: {ok, [{keyword,1,def},{identifier,1,"add"},...]}
+<p>% Returns: {ok, [{keyword,1,def},{identifier,1,"add"},...]}</p>
 </code></pre>
 
 <h3>Multi-Clause Functions ✅ <strong>NEW FEATURE</strong></h3>
@@ -160,10 +160,10 @@ compile_file(Filename :: string(), Options :: compile_options()) -> {ok, OutputF
 
 <strong>Syntax:</strong>
 <pre><code># Multiple clauses with pattern matching
-def process(x: Int): String = "Integer: " <> show(x)
-def process(x: Float): String = "Float: " <> show(x)
+<p>def process(x: Int): String = "Integer: " <> show(x)</p>
+<p>def process(x: Float): String = "Float: " <> show(x)</p>
 
-# Automatically derives union type: Int | Float -> String
+<h1>Automatically derives union type: Int | Float -> String</h1>
 </code></pre>
 
 <strong>Type Inference:</strong>
@@ -176,10 +176,10 @@ def process(x: Float): String = "Float: " <> show(x)
 
 <strong>Example:</strong>
 <pre><code>def factorial(0: Int): Int = 1
-def factorial(n: Int): Int = n * factorial(n - 1)
+<p>def factorial(n: Int): Int = n * factorial(n - 1)</p>
 
-# Derived signature: Int -> Int
-# Pattern matching on specific values supported
+<h1>Derived signature: Int -> Int</h1>
+<h1>Pattern matching on specific values supported</h1>
 </code></pre>
 
 <h3>Parsing</h3>
@@ -200,7 +200,7 @@ def factorial(n: Int): Int = n * factorial(n - 1)
 
 <strong>Example:</strong>
 <pre><code>{ok, Tokens} = cure_lexer:tokenize(<<"def add(x, y) = x + y">>),
-{ok, AST} = cure_parser:parse(Tokens).
+<p>{ok, AST} = cure_parser:parse(Tokens).</p>
 </code></pre>
 
 <h4><code>cure<em>parser:parse</em>file/1</code></h4>
@@ -217,12 +217,12 @@ def factorial(n: Int): Int = n * factorial(n - 1)
 
 <strong>Type Error Format:</strong>
 <pre><code>{type_error, Line, {expected, ExpectedType, actual, ActualType}}.
-{constraint_error, Line, {constraint, Constraint, reason, Reason}}.
-{undefined_variable, Line, VarName}.
+<p>{constraint_error, Line, {constraint, Constraint, reason, Reason}}.</p>
+<p>{undefined_variable, Line, VarName}.</p>
 </code></pre>
 
 <h4><code>cure<em>types:infer</em>type/2</code></h4>
-<pre><code>infer_type(Expression :: term(), Context :: type_context()) -> {Type, [Constraint]}.
+<pre><code>infer<em>type(Expression :: term(), Context :: type</em>context()) -> {Type, [Constraint]}.
 </code></pre>
 <p>Infer the type of an expression with constraints.</p>
 
@@ -241,7 +241,7 @@ def factorial(n: Int): Int = n * factorial(n - 1)
 
 <h4><code>cure<em>codegen:compile</em>program/1,2</code></h4>
 <pre><code>compile_program(TypedAST :: term()) -> {ok, BeamBinary} | {error, Reason}.
-compile_program(TypedAST :: term(), Options :: codegen_options()) -> {ok, BeamBinary} | {error, Reason}.
+<p>compile<em>program(TypedAST :: term(), Options :: codegen</em>options()) -> {ok, BeamBinary} | {error, Reason}.</p>
 </code></pre>
 <p>Compile a typed AST to BEAM bytecode.</p>
 
@@ -253,7 +253,7 @@ compile_program(TypedAST :: term(), Options :: codegen_options()) -> {ok, BeamBi
 </ul>
 
 <h4><code>cure<em>beam</em>compiler:compile<em>to</em>beam/2</code></h4>
-<pre><code>compile_to_beam(ErlangForms :: [abstract_form()], Options :: [term()]) -> binary().
+<pre><code>compile<em>to</em>beam(ErlangForms :: [abstract_form()], Options :: [term()]) -> binary().
 </code></pre>
 <p>Compile Erlang abstract forms to BEAM bytecode.</p>
 
@@ -327,54 +327,54 @@ compile_program(TypedAST :: term(), Options :: codegen_options()) -> {ok, BeamBi
 
 <h4><code>Std.List</code> Module with Working Import System</h4>
 <pre><code># ✅ WORKING: Core list functions (runtime verified)
-def length(list: List(T, n)): Int = n       # Working in dependent_types_simple.cure
-def head(list: List(T, n)): T when n > 0     # Safe head with compile-time guarantee
-def tail(list: List(T, n)): List(T, n-1) when n > 0  # Length-preserving tail
-def append(xs: List(T, n), ys: List(T, m)): List(T, n+m)  # Dependent concatenation
+<p>def length(list: List(T, n)): Int = n       # Working in dependent<em>types</em>simple.cure</p>
+<p>def head(list: List(T, n)): T when n > 0     # Safe head with compile-time guarantee</p>
+<p>def tail(list: List(T, n)): List(T, n-1) when n > 0  # Length-preserving tail</p>
+<p>def append(xs: List(T, n), ys: List(T, m)): List(T, n+m)  # Dependent concatenation</p>
 
-# ✅ WORKING: Higher-order functions (verified in examples)
-def map(f: T -> U, list: List(T, n)): List(U, n)     # Used successfully in examples
-def filter(pred: T -> Bool, list: List(T, n)): List(T, m) when m <= n
-def fold(f: (T, Acc) -> Acc, acc: Acc, list: List(T)): Acc  # Working fold/3 function
-def zip_with(f: (T, U) -> V, xs: List(T, n), ys: List(U, n)): List(V, n)  # Working!
+<h1>✅ WORKING: Higher-order functions (verified in examples)</h1>
+<p>def map(f: T -> U, list: List(T, n)): List(U, n)     # Used successfully in examples</p>
+<p>def filter(pred: T -> Bool, list: List(T, n)): List(T, m) when m <= n</p>
+<p>def fold(f: (T, Acc) -> Acc, acc: Acc, list: List(T)): Acc  # Working fold/3 function</p>
+<p>def zip_with(f: (T, U) -> V, xs: List(T, n), ys: List(U, n)): List(V, n)  # Working!</p>
 
-# ✅ WORKING: Safe operations
-def safe_head(list: List(T)): Option(T)      # Safe variant for any list
-def safe_tail(list: List(T)): Option(List(T))  # Safe tail operation
-def safe_nth(list: List(T), index: Int): Option(T)  # Safe indexing
+<h1>✅ WORKING: Safe operations</h1>
+<p>def safe_head(list: List(T)): Option(T)      # Safe variant for any list</p>
+<p>def safe_tail(list: List(T)): Option(List(T))  # Safe tail operation</p>
+<p>def safe_nth(list: List(T), index: Int): Option(T)  # Safe indexing</p>
 </code></pre>
 
 <strong>🎆 Success Example from <code>dependent<em>types</em>simple.cure</code>:</strong>
 <pre><code># This actually works and runs successfully!
-let v1 = make_vec3(1.0, 2.0, 3.0)
-let v2 = make_vec3(4.0, 5.0, 6.0) 
-let dot_result = zip_with(v1, v2, fn(x, y) -> x * y end)
-                |> fold(0.0, fn(x, acc) -> acc + x end)  # Result: 32.0
+<p>let v1 = make_vec3(1.0, 2.0, 3.0)</p>
+<p>let v2 = make_vec3(4.0, 5.0, 6.0) </p>
+<p>let dot<em>result = zip</em>with(v1, v2, fn(x, y) -> x * y end)</p>
+<p>                |> fold(0.0, fn(x, acc) -> acc + x end)  # Result: 32.0</p>
 </code></pre>
 
 <h3>Mathematical Functions</h3>
 
 <h4><code>Std.Math</code> Module</h4>
 <pre><code># Constants
-val pi: Float = 3.141592653589793
-val e: Float = 2.718281828459045
+<p>val pi: Float = 3.141592653589793</p>
+<p>val e: Float = 2.718281828459045</p>
 
-# Basic operations
-def abs(x: Int): Nat
-def abs(x: Float): Float when result >= 0.0
-def min(x: T, y: T): T where T: Ord
-def max(x: T, y: T): T where T: Ord
+<h1>Basic operations</h1>
+<p>def abs(x: Int): Nat</p>
+<p>def abs(x: Float): Float when result >= 0.0</p>
+<p>def min(x: T, y: T): T where T: Ord</p>
+<p>def max(x: T, y: T): T where T: Ord</p>
 
-# Advanced functions
-def sqrt(x: Float): Float when x >= 0.0
-def power(base: Float, exp: Float): Float
-def sin(x: Float): Float
-def cos(x: Float): Float
-def log(x: Float): Float when x > 0.0
+<h1>Advanced functions</h1>
+<p>def sqrt(x: Float): Float when x >= 0.0</p>
+<p>def power(base: Float, exp: Float): Float</p>
+<p>def sin(x: Float): Float</p>
+<p>def cos(x: Float): Float</p>
+<p>def log(x: Float): Float when x > 0.0</p>
 
-# Safe operations
-def safe_divide(x: Float, y: Float): Result(Float, String)
-def safe_sqrt(x: Float): Result(Float, String)
+<h1>Safe operations</h1>
+<p>def safe_divide(x: Float, y: Float): Result(Float, String)</p>
+<p>def safe_sqrt(x: Float): Result(Float, String)</p>
 </code></pre>
 
 <h3>FSM Runtime API</h3>
@@ -399,7 +399,7 @@ def safe_sqrt(x: Float): Result(Float, String)
 
 <h4><code>cure<em>fsm</em>runtime:spawn_fsm/1,2</code></h4>
 <pre><code>spawn_fsm(Type :: atom()) -> pid().
-spawn_fsm(Type :: atom(), InitData :: term()) -> pid().
+<p>spawn_fsm(Type :: atom(), InitData :: term()) -> pid().</p>
 </code></pre>
 <p>Spawn a new FSM process.</p>
 
@@ -412,7 +412,7 @@ spawn_fsm(Type :: atom(), InitData :: term()) -> pid().
 
 <h4><code>cure<em>fsm</em>runtime:send_event/2,3</code></h4>
 <pre><code>send_event(FsmPid :: pid(), Event :: term()) -> ok.
-send_event(FsmPid :: pid(), Event :: term(), Timeout :: integer()) -> ok | timeout.
+<p>send_event(FsmPid :: pid(), Event :: term(), Timeout :: integer()) -> ok | timeout.</p>
 </code></pre>
 <p>Send events to FSM processes.</p>
 
@@ -424,38 +424,38 @@ send_event(FsmPid :: pid(), Event :: term(), Timeout :: integer()) -> ok | timeo
 <h3>FSM Inspection</h3>
 
 <h4><code>cure<em>fsm</em>runtime:get<em>fsm</em>info/1</code></h4>
-<pre><code>get_fsm_info(FsmPid :: pid()) -> fsm_info().
+<pre><code>get<em>fsm</em>info(FsmPid :: pid()) -> fsm_info().
 </code></pre>
 <p>Get detailed FSM information for debugging:</p>
 <pre><code>-record(fsm_info, {
-    type :: atom(),
-    current_state :: atom(),
-    state_data :: term(),
-    transitions :: [transition()],
-    message_queue :: [term()]
-}).
+<p>    type :: atom(),</p>
+<p>    current_state :: atom(),</p>
+<p>    state_data :: term(),</p>
+<p>    transitions :: [transition()],</p>
+<p>    message_queue :: [term()]</p>
+<p>}).</p>
 </code></pre>
 
 <h3>Built-in FSMs</h3>
 
 <h4>Counter FSM</h4>
 <pre><code>fsm Counter(initial: Int) do
-  states: [Counting]
-  initial: Counting
-  data: {value: Int}
+<p>  states: [Counting]</p>
+<p>  initial: Counting</p>
+<p>  data: {value: Int}</p>
 
-  state Counting do
-    event(:increment) -> 
-      data.value := data.value + 1
-      Counting
-    event(:decrement) when data.value > 0 -> 
-      data.value := data.value - 1
-      Counting
-    event(:reset) ->
-      data.value := initial
-      Counting
-  end
-end
+<p>  state Counting do</p>
+<p>    event(:increment) -> </p>
+<p>      data.value := data.value + 1</p>
+<p>      Counting</p>
+<p>    event(:decrement) when data.value > 0 -> </p>
+<p>      data.value := data.value - 1</p>
+<p>      Counting</p>
+<p>    event(:reset) -></p>
+<p>      data.value := initial</p>
+<p>      Counting</p>
+<p>  end</p>
+<p>end</p>
 </code></pre>
 
 <h2>Type System API</h2>
@@ -465,25 +465,25 @@ end
 <p>Cure supports dependent types where types can depend on values:</p>
 
 <pre><code># Vector with compile-time known length
-type Vector(T, n: Nat) = List(T, n)
+<p>type Vector(T, n: Nat) = List(T, n)</p>
 
-# Safe array access
-def get_element(vec: Vector(T, n), index: Nat): T when index < n =
-  # Type system guarantees index is valid
-  unsafe_get(vec, index)
+<h1>Safe array access</h1>
+<p>def get_element(vec: Vector(T, n), index: Nat): T when index < n =</p>
+<p>  # Type system guarantees index is valid</p>
+<p>  unsafe_get(vec, index)</p>
 </code></pre>
 
 <h3>Type Constraints</h3>
 
 <pre><code># Constrained function parameters
-def positive_sqrt(x: Float): Float when x > 0.0 =
-  sqrt(x)
+<p>def positive_sqrt(x: Float): Float when x > 0.0 =</p>
+<p>  sqrt(x)</p>
 
-# Dependent return types
-def replicate(n: Nat, value: T): List(T, n) =
-  if n == 0 then []
-  else [value | replicate(n-1, value)]
-  end
+<h1>Dependent return types</h1>
+<p>def replicate(n: Nat, value: T): List(T, n) =</p>
+<p>  if n == 0 then []</p>
+<p>  else [value | replicate(n-1, value)]</p>
+<p>  end</p>
 </code></pre>
 
 <h3>Record Types ✅ <strong>IMPLEMENTED</strong></h3>
@@ -491,28 +491,28 @@ def replicate(n: Nat, value: T): List(T, n) =
 <p>Records provide structured data with named fields:</p>
 
 <pre><code># Record definition
-record Point do
-  x: Float
-  y: Float
-end
+<p>record Point do</p>
+<p>  x: Float</p>
+<p>  y: Float</p>
+<p>end</p>
 
-# Record with type parameters
-record Pair(T, U) do
-  first: T
-  second: U
-end
+<h1>Record with type parameters</h1>
+<p>record Pair(T, U) do</p>
+<p>  first: T</p>
+<p>  second: U</p>
+<p>end</p>
 
-# Record construction
-let point = Point{x: 3.0, y: 4.0}
-let pair = Pair{first: 42, second: "hello"}
+<h1>Record construction</h1>
+<p>let point = Point{x: 3.0, y: 4.0}</p>
+<p>let pair = Pair{first: 42, second: "hello"}</p>
 
-# Record pattern matching
-match point do
-  Point{x: x, y: y} when x == 0.0 and y == 0.0 ->
-    "Origin"
-  Point{x: x, y: _} when x > 0.0 ->
-    "Right side"
-end
+<h1>Record pattern matching</h1>
+<p>match point do</p>
+<p>  Point{x: x, y: y} when x == 0.0 and y == 0.0 -></p>
+<p>    "Origin"</p>
+<p>  Point{x: x, y: _} when x > 0.0 -></p>
+<p>    "Right side"</p>
+<p>end</p>
 </code></pre>
 
 <h3>Pattern Guards ✅ <strong>IMPLEMENTED</strong></h3>
@@ -520,38 +520,38 @@ end
 <p>Pattern matching supports guard expressions with the <code>when</code> keyword:</p>
 
 <pre><code># Numeric guards
-match value do
-  x when x < 0 -> "Negative"
-  x when x == 0 -> "Zero"
-  x when x > 0 -> "Positive"
-end
+<p>match value do</p>
+<p>  x when x < 0 -> "Negative"</p>
+<p>  x when x == 0 -> "Zero"</p>
+<p>  x when x > 0 -> "Positive"</p>
+<p>end</p>
 
-# Logical operators in guards
-match n do
-  x when x >= 10 and x <= 20 -> "In range"
-  x when x < 10 or x > 20 -> "Out of range"
-end
+<h1>Logical operators in guards</h1>
+<p>match n do</p>
+<p>  x when x >= 10 and x <= 20 -> "In range"</p>
+<p>  x when x < 10 or x > 20 -> "Out of range"</p>
+<p>end</p>
 
-# Guards with record patterns
-match point do
-  Point{x: x, y: y} when x > 0.0 and y > 0.0 -> "First quadrant"
-  Point{x: x, y: y} when x _ x + y _ y < 1.0 -> "Inside unit circle"
-end
+<h1>Guards with record patterns</h1>
+<p>match point do</p>
+<p>  Point{x: x, y: y} when x > 0.0 and y > 0.0 -> "First quadrant"</p>
+<p>  Point{x: x, y: y} when x <em> x + y </em> y < 1.0 -> "Inside unit circle"</p>
+<p>end</p>
 </code></pre>
 
 <h3>Type Classes</h3>
 
 <pre><code>typeclass Ord(T) where
-  def compare(x: T, y: T): Ordering
-end
+<p>  def compare(x: T, y: T): Ordering</p>
+<p>end</p>
 
-typeclass Show(T) where
-  def show(x: T): String
-end
+<p>typeclass Show(T) where</p>
+<p>  def show(x: T): String</p>
+<p>end</p>
 
-# Automatic derivation
-derive Show for List(T) when Show(T)
-derive Ord for List(T) when Ord(T)
+<h1>Automatic derivation</h1>
+<p>derive Show for List(T) when Show(T)</p>
+<p>derive Ord for List(T) when Ord(T)</p>
 </code></pre>
 
 <h2>CLI Interface</h2>
@@ -559,31 +559,31 @@ derive Ord for List(T) when Ord(T)
 <h3>Build Commands</h3>
 
 <pre><code># Basic compilation
-make all                    # Build complete compiler and stdlib
-make compiler               # Build compiler only
-make stdlib                 # Build standard library
-make test                   # Run test suite
+<p>make all                    # Build complete compiler and stdlib</p>
+<p>make compiler               # Build compiler only</p>
+<p>make stdlib                 # Build standard library</p>
+<p>make test                   # Run test suite</p>
 
-# Development commands  
-make shell                  # Start Erlang shell with modules
-make clean                  # Clean build artifacts
-make format                 # Format code with rebar3 fmt
+<h1>Development commands  </h1>
+<p>make shell                  # Start Erlang shell with modules</p>
+<p>make clean                  # Clean build artifacts</p>
+<p>make format                 # Format code with rebar3 fmt</p>
 
-# Testing
-make test-basic             # Run basic tests
-make test-integration       # Run integration tests
-make test-performance       # Run performance tests
+<h1>Testing</h1>
+<p>make test-basic             # Run basic tests</p>
+<p>make test-integration       # Run integration tests</p>
+<p>make test-performance       # Run performance tests</p>
 </code></pre>
 
 <h3>File Compilation</h3>
 
 <pre><code># Compile single files
-make compile-file CURE_FILE=examples/simple.cure
-make compile-file CURE_FILE=lib/std.cure OUTPUT=custom.beam
+<p>make compile-file CURE_FILE=examples/simple.cure</p>
+<p>make compile-file CURE_FILE=lib/std.cure OUTPUT=custom.beam</p>
 
-# Direct compiler usage
-./cure examples/simple.cure --verbose
-./cure lib/std/math.cure -o math.beam --no-debug
+<h1>Direct compiler usage</h1>
+<p>./cure examples/simple.cure --verbose</p>
+<p>./cure lib/std/math.cure -o math.beam --no-debug</p>
 </code></pre>
 
 <h2>Build System Integration</h2>
@@ -593,26 +593,26 @@ make compile-file CURE_FILE=lib/std.cure OUTPUT=custom.beam
 <p>The build system provides comprehensive support for mixed Erlang/Cure projects:</p>
 
 <pre><code># Add to your Makefile
-CURE_FILES = $(wildcard src/*.cure)
-CURE_BEAM = $(patsubst src/%.cure,ebin/%.beam,$(CURE_FILES))
+<p>CURE_FILES = $(wildcard src/*.cure)</p>
+<p>CURE<em>BEAM = $(patsubst src/%.cure,ebin/%.beam,$(CURE</em>FILES))</p>
 
-# Compilation rule
-ebin/%.beam: src/%.cure
-	cure "$<" -o "$@" --verbose
+<h1>Compilation rule</h1>
+<p>ebin/%.beam: src/%.cure</p>
+<p>	cure "$<" -o "$@" --verbose</p>
 
-all: $(CURE_BEAM)
+<p>all: $(CURE_BEAM)</p>
 </code></pre>
 
 <h3>Rebar3 Integration</h3>
 
 <pre><code>%% rebar.config
-{pre_hooks, [
-    {compile, "make -C deps/cure compiler"}
-]}.
+<p>{pre_hooks, [</p>
+<p>    {compile, "make -C deps/cure compiler"}</p>
+<p>]}.</p>
 
-{plugins, [
-    {cure_rebar_plugin, {git, "https://github.com/cure-lang/rebar3_cure", {branch, "main"}}}
-]}.
+<p>{plugins, [</p>
+<p>    {cure<em>rebar</em>plugin, {git, "https://github.com/cure-lang/rebar3_cure", {branch, "main"}}}</p>
+<p>]}.</p>
 </code></pre>
 
 <h2>Runtime System</h2>
@@ -622,12 +622,12 @@ all: $(CURE_BEAM)
 <p>Cure compiles to native BEAM bytecode and integrates seamlessly with Erlang/OTP:</p>
 
 <pre><code>%% Calling Cure functions from Erlang
-math_utils:factorial(5).     % Calls Cure function
-list_utils:map(Fun, List).   % Calls Cure higher-order function
+<p>math_utils:factorial(5).     % Calls Cure function</p>
+<p>list_utils:map(Fun, List).   % Calls Cure higher-order function</p>
 
-%% FSMs as OTP processes
-{ok, Pid} = cure_fsm_runtime:spawn_fsm(traffic_light),
-ok = cure_fsm_runtime:send_event(Pid, go).
+<p>%% FSMs as OTP processes</p>
+<p>{ok, Pid} = cure<em>fsm</em>runtime:spawn<em>fsm(traffic</em>light),</p>
+<p>ok = cure<em>fsm</em>runtime:send_event(Pid, go).</p>
 </code></pre>
 
 <h3>Performance Characteristics</h3>
@@ -645,12 +645,12 @@ ok = cure_fsm_runtime:send_event(Pid, go).
 <p>Cure integrates with BEAM's supervision trees and error handling:</p>
 
 <pre><code>def safe_operation(): Result(T, String) =
-  try
-    risky_operation()
-  catch
-    {error, Reason} -> Error(atom_to_string(Reason))
-    {exit, Reason} -> Error("Process exited: " ++ atom_to_string(Reason))
-  end
+<p>  try</p>
+<p>    risky_operation()</p>
+<p>  catch</p>
+<p>    {error, Reason} -> Error(atom<em>to</em>string(Reason))</p>
+<p>    {exit, Reason} -> Error("Process exited: " ++ atom<em>to</em>string(Reason))</p>
+<p>  end</p>
 </code></pre>
 
 <h2>Integration Examples</h2>
@@ -658,48 +658,48 @@ ok = cure_fsm_runtime:send_event(Pid, go).
 <h3>Calling from Erlang</h3>
 
 <pre><code>%% Assuming compiled Cure modules
--module(example).
--export([test/0]).
+<p>-module(example).</p>
+<p>-export([test/0]).</p>
 
-test() ->
-    % Call Cure standard library
-    42 = 'Std.Math':abs(-42),
-    [2,4,6] = 'Std.List':map(fun(X) -> X * 2 end, [1,2,3]),
+<p>test() -></p>
+<p>    % Call Cure standard library</p>
+<p>    42 = 'Std.Math':abs(-42),</p>
+<p>    [2,4,6] = 'Std.List':map(fun(X) -> X * 2 end, [1,2,3]),</p>
     
-    % Use Cure FSMs
-    Counter = cure_fsm_runtime:spawn_fsm('Counter', 0),
-    ok = cure_fsm_runtime:send_event(Counter, increment),
-    {counting, 1} = cure_fsm_runtime:get_state(Counter).
+<p>    % Use Cure FSMs</p>
+<p>    Counter = cure<em>fsm</em>runtime:spawn_fsm('Counter', 0),</p>
+<p>    ok = cure<em>fsm</em>runtime:send_event(Counter, increment),</p>
+<p>    {counting, 1} = cure<em>fsm</em>runtime:get_state(Counter).</p>
 </code></pre>
 
 <h3>Calling from Elixir</h3>
 
 <pre><code>defmodule Example do
-  def test do
-    # Call Cure standard library
-    42 = :"Std.Math".abs(-42)
-    [2,4,6] = :"Std.List".map(&(&1 * 2), [1,2,3])
+<p>  def test do</p>
+<p>    # Call Cure standard library</p>
+<p>    42 = :"Std.Math".abs(-42)</p>
+<p>    [2,4,6] = :"Std.List".map(&(&1 * 2), [1,2,3])</p>
     
-    # Use Cure FSMs
-    {:ok, counter} = :cure_fsm_runtime.spawn_fsm(:"Counter", 0)
-    :ok = :cure_fsm_runtime.send_event(counter, :increment)
-    {:counting, 1} = :cure_fsm_runtime.get_state(counter)
-  end
-end
+<p>    # Use Cure FSMs</p>
+<p>    {:ok, counter} = :cure<em>fsm</em>runtime.spawn_fsm(:"Counter", 0)</p>
+<p>    :ok = :cure<em>fsm</em>runtime.send_event(counter, :increment)</p>
+<p>    {:counting, 1} = :cure<em>fsm</em>runtime.get_state(counter)</p>
+<p>  end</p>
+<p>end</p>
 </code></pre>
 
 <h3>OTP Supervision</h3>
 
 <pre><code>%% supervisor.erl
-init([]) ->
-    Children = [
-        #{
-            id => cure_fsm_supervisor,
-            start => {cure_fsm_runtime, start_supervisor, []},
-            type => supervisor
-        }
-    ],
-    {ok, {#{strategy => one_for_all, intensity => 10, period => 10}, Children}}.
+<p>init([]) -></p>
+<p>    Children = [</p>
+<p>        #{</p>
+<p>            id => cure<em>fsm</em>supervisor,</p>
+<p>            start => {cure<em>fsm</em>runtime, start_supervisor, []},</p>
+<p>            type => supervisor</p>
+<p>        }</p>
+<p>    ],</p>
+<p>    {ok, {#{strategy => one<em>for</em>all, intensity => 10, period => 10}, Children}}.</p>
 </code></pre>
 
 <h2>Testing API ✅ <strong>100% SUCCESS RATE</strong></h2>
@@ -757,26 +757,26 @@ init([]) ->
 
 <strong>✅ Usage Examples (All Working):</strong>
 <pre><code># Run all comprehensive tests (100% success rate)
-erl -pa _build/ebin -pa test -s run_all_new_tests run -s init stop
+<p>erl -pa <em>build/ebin -pa test -s run</em>all<em>new</em>tests run -s init stop</p>
 
-# Run individual test suites (all passing)
-erl -pa _build/ebin -pa test -s cli_wrapper_comprehensive_test run -s init stop
-erl -pa _build/ebin -pa test -s cure_wrapper_script_test run -s init stop
-erl -pa _build/ebin -pa test -s cure_cli_stdlib_imports_test run -s init stop
-erl -pa _build/ebin -pa test -s std_list_length_function_test run -s init stop
+<h1>Run individual test suites (all passing)</h1>
+<p>erl -pa <em>build/ebin -pa test -s cli</em>wrapper<em>comprehensive</em>test run -s init stop</p>
+<p>erl -pa <em>build/ebin -pa test -s cure</em>wrapper<em>script</em>test run -s init stop</p>
+<p>erl -pa <em>build/ebin -pa test -s cure</em>cli<em>stdlib</em>imports_test run -s init stop</p>
+<p>erl -pa <em>build/ebin -pa test -s std</em>list<em>length</em>function_test run -s init stop</p>
 
-# Expected output:
-# ========================================
-# Cure Compiler Test Suite
-# ========================================
-# [FSM Runtime System] ✅
-# [Type System & Inference] ✅ 
-# [Code Generation & BEAM] ✅
-# [CLI Wrapper Comprehensive Tests] ✅
-# Total test suites: 8
-# Passed: 8
-# Failed: 0
-# 🎉 ALL TESTS PASSED! 🎉
+<h1>Expected output:</h1>
+<h1>========================================</h1>
+<h1>Cure Compiler Test Suite</h1>
+<h1>========================================</h1>
+<h1>[FSM Runtime System] ✅</h1>
+<h1>[Type System & Inference] ✅ </h1>
+<h1>[Code Generation & BEAM] ✅</h1>
+<h1>[CLI Wrapper Comprehensive Tests] ✅</h1>
+<h1>Total test suites: 8</h1>
+<h1>Passed: 8</h1>
+<h1>Failed: 0</h1>
+<h1>🎉 ALL TESTS PASSED! 🎉</h1>
 </code></pre>
 
 <p>This API reference covers the complete Cure compiler and runtime system. For more detailed examples and language features, see the <a href="LANGUAGE<em>SPEC.md">Language Specification</a> and <a href="FEATURE</em>REFERENCE.md">Feature Reference</a>.</p>

@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.1.0">
+    <meta name="project" content="cure v0.2.0">
 
 
-    <title>Typeclass Guide — cure v0.1.0</title>
+    <title>Typeclass Guide — cure v0.2.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.1.0
+          v0.2.0
         </div>
       </div>
     </div>
@@ -112,7 +112,7 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/docs/TYPECLASS_GUIDE.md#L1" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/docs/TYPECLASS_GUIDE.md#L1" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
@@ -572,8 +572,8 @@ def test_sort() =
   </a>
   <span class="text">Common Errors</span>
 </h3>
-<p><strong>1. No Instance Found</strong></p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">No</span><span class="w"> </span><span class="ss">instance</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">Show</span><span class="p" data-group-id="1994018927-1">(</span><span class="n">MyType</span><span class="p" data-group-id="1994018927-1">)</span></code></pre><p><strong>Solution</strong>: Add derive or manual instance</p><pre><code class="cure">derive Show  % or
-instance Show(MyType) do ... end</code></pre><p><strong>2. Overlapping Instances</strong></p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Overlapping</span><span class="w"> </span><span class="ss">instance</span><span class="w"> </span><span class="ss">for</span><span class="w"> </span><span class="n">Show</span><span class="p" data-group-id="0229279374-1">(</span><span class="n">List</span><span class="p" data-group-id="0229279374-2">(</span><span class="n">Int</span><span class="p" data-group-id="0229279374-2">)</span><span class="p" data-group-id="0229279374-1">)</span></code></pre><p><strong>Solution</strong>: Remove one instance, keep the more general one</p><p><strong>3. Missing Constraint</strong></p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="ss">use</span><span class="w"> </span><span class="ss">&#39;==&#39;</span><span class="w"> </span><span class="ss">on</span><span class="w"> </span><span class="ss">type</span><span class="w"> </span><span class="n">T</span></code></pre><p><strong>Solution</strong>: Add Eq constraint</p><pre><code class="cure">def contains(x: T, list: List(T)) where Eq(T) = ...</code></pre><p><strong>4. Orphan Instance</strong></p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Orphan</span><span class="w"> </span><span class="ss">instance</span><span class="w"> </span><span class="n">Show</span><span class="p" data-group-id="2725470897-1">(</span><span class="n">ExternalType</span><span class="p" data-group-id="2725470897-1">)</span></code></pre><p><strong>Solution</strong>: Define instance in same module as type or typeclass</p><h3 id="debugging-tips" class="section-heading">
+<p><strong>1. No Instance Found</strong></p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">No</span><span class="w"> </span><span class="ss">instance</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">Show</span><span class="p" data-group-id="5709275199-1">(</span><span class="n">MyType</span><span class="p" data-group-id="5709275199-1">)</span></code></pre><p><strong>Solution</strong>: Add derive or manual instance</p><pre><code class="cure">derive Show  % or
+instance Show(MyType) do ... end</code></pre><p><strong>2. Overlapping Instances</strong></p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Overlapping</span><span class="w"> </span><span class="ss">instance</span><span class="w"> </span><span class="ss">for</span><span class="w"> </span><span class="n">Show</span><span class="p" data-group-id="1129287872-1">(</span><span class="n">List</span><span class="p" data-group-id="1129287872-2">(</span><span class="n">Int</span><span class="p" data-group-id="1129287872-2">)</span><span class="p" data-group-id="1129287872-1">)</span></code></pre><p><strong>Solution</strong>: Remove one instance, keep the more general one</p><p><strong>3. Missing Constraint</strong></p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="ss">use</span><span class="w"> </span><span class="ss">&#39;==&#39;</span><span class="w"> </span><span class="ss">on</span><span class="w"> </span><span class="ss">type</span><span class="w"> </span><span class="n">T</span></code></pre><p><strong>Solution</strong>: Add Eq constraint</p><pre><code class="cure">def contains(x: T, list: List(T)) where Eq(T) = ...</code></pre><p><strong>4. Orphan Instance</strong></p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Orphan</span><span class="w"> </span><span class="ss">instance</span><span class="w"> </span><span class="n">Show</span><span class="p" data-group-id="2357029073-1">(</span><span class="n">ExternalType</span><span class="p" data-group-id="2357029073-1">)</span></code></pre><p><strong>Solution</strong>: Define instance in same module as type or typeclass</p><h3 id="debugging-tips" class="section-heading">
   <a href="#debugging-tips" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -603,7 +603,7 @@ show(Test{x: 42})  % Should work</code></pre><hr class="thin"/><h2 id="known-lim
   <span class="text">Ord Typeclass Temporarily Disabled</span>
 </h3>
 <p><strong>Status</strong>: Compiler bug prevents Ord typeclass from compiling</p><p><strong>Issue</strong>: Union type variants cannot be returned from typeclass instance methods due to a type unification bug:</p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Type</span><span class="w"> </span><span class="ss">mismatch</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="ss">unification</span><span class="w"> </span><span class="ss">failed</span><span class="w"> </span><span class="ss">between</span><span class="w">
-  </span><span class="p" data-group-id="2649115734-1">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="ss">&#39;Ordering&#39;</span><span class="p" data-group-id="2649115734-1">}</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="p" data-group-id="2649115734-2">{</span><span class="ss">union_type</span><span class="p">,</span><span class="ss">&#39;Ordering&#39;</span><span class="p">,</span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="2649115734-2">}</span></code></pre><p><strong>Impact</strong>:</p><ul><li>The <code class="inline">Ord</code> typeclass and <code class="inline">Ordering</code> type are commented out in <code class="inline">lib/std/typeclasses.cure</code></li><li>You cannot use <code class="inline">compare()</code> method or derive <code class="inline">Ord</code> instances</li><li><code class="inline">Show</code>, <code class="inline">Eq</code>, and <code class="inline">Serializable</code> typeclasses work correctly</li></ul><p><strong>Workaround</strong>:
+  </span><span class="p" data-group-id="6786764728-1">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="ss">&#39;Ordering&#39;</span><span class="p" data-group-id="6786764728-1">}</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="p" data-group-id="6786764728-2">{</span><span class="ss">union_type</span><span class="p">,</span><span class="ss">&#39;Ordering&#39;</span><span class="p">,</span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="6786764728-2">}</span></code></pre><p><strong>Impact</strong>:</p><ul><li>The <code class="inline">Ord</code> typeclass and <code class="inline">Ordering</code> type are commented out in <code class="inline">lib/std/typeclasses.cure</code></li><li>You cannot use <code class="inline">compare()</code> method or derive <code class="inline">Ord</code> instances</li><li><code class="inline">Show</code>, <code class="inline">Eq</code>, and <code class="inline">Serializable</code> typeclasses work correctly</li></ul><p><strong>Workaround</strong>:
 Use comparison operators (<code class="inline">&lt;</code>, <code class="inline">&gt;</code>, <code class="inline">&lt;=</code>, <code class="inline">&gt;=</code>) directly instead of the <code class="inline">compare()</code> method:</p><pre><code class="cure">% ❌ Won't work until bug is fixed
 def sort(list: List(T)) where Ord(T) = ...
 
@@ -655,11 +655,11 @@ Typeclass Implementation
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.2.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.2.0">Hex Preview</a>
 
-              (<a href="https://preview.hex.pm/preview/cure/0.1.0/show/docs/TYPECLASS_GUIDE.md">current file</a>)
+              (<a href="https://preview.hex.pm/preview/cure/0.2.0/show/docs/TYPECLASS_GUIDE.md">current file</a>)
 
           </span>
 

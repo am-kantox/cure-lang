@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipe Operator (`|>`) - Cure Documentation</title>
+    <meta name="description" content="The pipe operator (|>) is a fundamental feature of Cure that provides elegant error handling and function composition through monadic semantics with">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1>Pipe Operator (<code>|></code>)</h1>
+
+<p>The pipe operator (<code>|></code>) is a fundamental feature of Cure that provides elegant error handling and function composition through monadic semantics with automatic Result type management.</p>
+
+<h2>Table of Contents</h2>
+
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#syntax">Syntax</a></li>
+<li><a href="#semantics">Semantics</a></li>
+<li><a href="#type-system-integration">Type System Integration</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#implementation-details">Implementation Details</a></li>
+<li><a href="#best-practices">Best Practices</a></li>
+<li><a href="#comparison-with-other-languages">Comparison with Other Languages</a></li>
+</ul>
+
+<h2>Overview</h2>
+
+<p>The pipe operator enables you to write data transformation pipelines in a readable, left-to-right flow while automatically handling error propagation. It combines the ergonomics of Elixir's pipe operator with the safety of Rust's <code>?</code> operator.</p>
+
+<h3>Key Features</h3>
+
+<ul>
+<li><strong>Automatic Error Propagation</strong>: Errors short-circuit the pipeline without requiring explicit checks</li>
+<li><strong>Result Type Wrapping</strong>: Non-monadic values are automatically wrapped in <code>Ok()</code></li>
+<li><strong>Exception Safety</strong>: Runtime exceptions are caught and converted to <code>Error()</code> values</li>
+<li><strong>Clean Syntax</strong>: Write sequential transformations without nesting or intermediate variables</li>
+</ul>
+
+<h2>Syntax</h2>
+
+<pre><code>expression |> function
+<p>expression |> function(arg1, arg2)</p>
+</code></pre>
+
+<p>The pipe operator has the lowest precedence (1) and left associativity, meaning:</p>
+
+<pre><code>a |> b |> c  # Parsed as: (a |> b) |> c
+<p>1 + 2 |> f   # Parsed as: (1 + 2) |> f</p>
+</code></pre>
+
+<h2>Semantics</h2>
+
+<p>The pipe operator implements three fundamental rules:</p>
+
+<h3>Rule 1: Error Propagation</h3>
+
+<pre><code>Error(reason) |> function
+<h1>=> Error(reason)  # function is NOT called</h1>
+</code></pre>
+
+<p>If the left-hand side is an <code>Error</code>, the entire pipeline stops and the error is propagated without calling the function.</p>
+
+<h3>Rule 2: Ok Unwrapping</h3>
+
+<pre><code>Ok(value) |> function
+<h1>=> Ok(function(value))  # value is unwrapped before calling function</h1>
+</code></pre>
+
+<p>If the left-hand side is <code>Ok(value)</code>, the value is extracted, passed to the function, and the result is wrapped in <code>Ok()</code> (unless the function already returns a Result type).</p>
+
+<h3>Rule 3: Value Passing</h3>
+
+<pre><code>value |> function
+<h1>=> Ok(function(value))  # value is passed directly, result is wrapped</h1>
+</code></pre>
+
+<p>If the left-hand side is a plain value (not a Result type), it's passed to the function and the result is wrapped in <code>Ok()</code>.</p>
+
+<h3>Exception Handling</h3>
+
+<p>If a function in the pipeline throws an exception, it's automatically caught and converted to an Error:</p>
+
+<pre><code>Ok(0) |> (fun(x) -> 1 / x)
+<h1>=> Error({pipe<em>runtime</em>error, error, badarith})</h1>
+</code></pre>
+
+<h2>Type System Integration</h2>
+
+<p>The type checker understands the pipe operator and performs proper type inference:</p>
+
+<pre><code>def process_data(input: String) -> Result(Int, String) do
+<p>  input</p>
+<p>    |> parse_int       # String -> Result(Int, String)</p>
+<p>    |> validate_range  # Int -> Result(Int, String) </p>
+<p>    |> double          # Int -> Int (automatically wrapped)</p>
+<p>end</p>
+</code></pre>
+
+<p>Type inference ensures:</p>
+<ul>
+<li>The piped value's type matches the function's first parameter</li>
+<li>Result types are properly propagated through the chain</li>
+<li>Non-monadic return values are wrapped in Result<T></li>
+</ul>
+
+<h2>Examples</h2>
+
+<h3>Basic Piping</h3>
+
+<pre><code>def example1() do
+<p>  5</p>
+<p>    |> double      # 10</p>
+<p>    |> increment   # 11</p>
+<p>  # Result: Ok(11)</p>
+<p>end</p>
+
+<p>def double(x: Int) -> Int = x * 2</p>
+<p>def increment(x: Int) -> Int = x + 1</p>
+</code></pre>
+
+<h3>Error Handling</h3>
+
+<pre><code>def parse<em>and</em>process(input: String) -> Result(String, String) do
+<p>  input</p>
+<p>    |> parse_data        # Returns Error if invalid</p>
+<p>    |> validate          # Only runs if parse succeeded</p>
+<p>    |> transform         # Only runs if validate succeeded</p>
+<p>    |> format_output     # Only runs if transform succeeded</p>
+<p>end</p>
+</code></pre>
+
+<h3>Piping with Arguments</h3>
+
+<p>The piped value becomes the first argument:</p>
+
+<pre><code>def example2() do
+<p>  10</p>
+<p>    |> add(5)       # add(10, 5) => 15</p>
+<p>    |> multiply(3)  # multiply(15, 3) => 45</p>
+<p>  # Result: Ok(45)</p>
+<p>end</p>
+
+<p>def add(x: Int, y: Int) -> Int = x + y</p>
+<p>def multiply(x: Int, y: Int) -> Int = x * y</p>
+</code></pre>
+
+<h3>Real-World Example</h3>
+
+<pre><code>def process<em>user</em>input(input: String) -> Result(User, String) do
+<p>  input</p>
+<p>    |> trim_whitespace</p>
+<p>    |> validate_email</p>
+<p>    |> normalize_email</p>
+<p>    |> check<em>not</em>taken</p>
+<p>    |> create_user</p>
+<p>end</p>
+</code></pre>
+
+<h3>Error Recovery</h3>
+
+<pre><code>def safe_divide(x: Int, y: Int) -> String do
+<p>  let result = x |> divide_by(y) in</p>
+<p>  match result do</p>
+<p>    Ok(value) -> "Result: " <> show(value)</p>
+<p>    Error(reason) -> "Error: " <> reason</p>
+<p>  end</p>
+<p>end</p>
+</code></pre>
+
+<h3>Combining Operators</h3>
+
+<pre><code>def complex_computation() do
+<p>  (calculate_base() + 10)</p>
+<p>    |> apply_discount</p>
+<p>    |> format_price</p>
+<p>end</p>
+</code></pre>
+
+<h2>Implementation Details</h2>
+
+<h3>Lexer</h3>
+
+<p>The pipe operator is tokenized as a two-character operator:</p>
+
+<pre><code><<"|>">> => '|>'
+</code></pre>
+
+<h3>Parser</h3>
+
+<p>The operator is parsed with:</p>
+<ul>
+<li><strong>Precedence</strong>: 1 (lowest)</li>
+<li><strong>Associativity</strong>: left</li>
+</ul>
+
+<p>This ensures pipes are evaluated left-to-right and have lower precedence than all other operations.</p>
+
+<h3>Code Generation</h3>
+
+<p>The compiler generates a <code>monadic<em>pipe</em>call</code> instruction that is translated to BEAM bytecode as a call to <code>cure_std:pipe/2</code>:</p>
+
+<pre><code>generate<em>monadic</em>pipe_form(Function, PipedValue, RestArgs, Line)
+</code></pre>
+
+<p>This creates Erlang code that:</p>
+<ol>
+<li>Wraps the piped value with <code>ok()</code> if not already a Result</li>
+<li>Checks if it's <code>Ok(value)</code> or <code>Error(reason)</code></li>
+<li>If Ok, unwraps and calls the function</li>
+<li>If Error, propagates without calling the function</li>
+<li>Wraps non-monadic results in <code>Ok()</code></li>
+</ol>
+
+<h3>Runtime</h3>
+
+<p>The runtime function <code>cure_std:pipe/2</code> implements the three semantic rules:</p>
+
+<pre><code>pipe({'Error', <em>} = Err, </em>RHO) -> Err;  % Rule 1
+<p>pipe({'Ok', V}, RHO) -> wrap_result(RHO(V));  % Rule 2</p>
+<p>pipe(LHO, RHO) -> wrap_result(RHO(LHO)).  % Rule 3</p>
+</code></pre>
+
+<h2>Best Practices</h2>
+
+<h3>Do: Use for Sequential Transformations</h3>
+
+<pre><code># Good: Clear data flow
+<p>input</p>
+<p>  |> step1</p>
+<p>  |> step2</p>
+<p>  |> step3</p>
+</code></pre>
+
+<h3>Don't: Overuse in Simple Cases</h3>
+
+<pre><code># Bad: Overkill for single operation
+<p>value |> function</p>
+
+<h1>Better: Direct call</h1>
+<p>function(value)</p>
+</code></pre>
+
+<h3>Do: Handle Errors at Pipeline End</h3>
+
+<pre><code># Good: Single error handling point
+<p>let result = data |> pipeline |> of |> operations in</p>
+<p>match result do</p>
+<p>  Ok(value) -> handle_success(value)</p>
+<p>  Error(e) -> handle_error(e)</p>
+<p>end</p>
+</code></pre>
+
+<h3>Do: Use with Result-Returning Functions</h3>
+
+<pre><code># Good: Natural error propagation
+<p>def process(input: String) -> Result(Output, Error) do</p>
+<p>  input</p>
+<p>    |> parse         # Returns Result</p>
+<p>    |> validate      # Returns Result</p>
+<p>    |> transform     # Returns Result</p>
+<p>end</p>
+</code></pre>
+
+<h3>Don't: Mix with Non-Result Returns Unnecessarily</h3>
+
+<pre><code># Inconsistent: mix of Result and non-Result
+<p>input</p>
+<p>  |> operation1    # Returns Int</p>
+<p>  |> operation2    # Returns Result(Int, Error)</p>
+<p>  |> operation3    # Returns Int</p>
+
+<h1>Better: Consistent Result types</h1>
+<p>input</p>
+<p>  |> operation1_safe   # Returns Result(Int, Error)</p>
+<p>  |> operation2        # Returns Result(Int, Error)</p>
+<p>  |> operation3_safe   # Returns Result(Int, Error)</p>
+</code></pre>
+
+<h2>Performance Considerations</h2>
+
+<p>The pipe operator has minimal overhead:</p>
+
+<ol>
+<li><strong>Compile-time</strong>: Parser precedence handling and AST construction</li>
+<li><strong>Runtime</strong>: One function call to <code>cure_std:pipe/2</code> per pipe operation</li>
+<li><strong>Optimization</strong>: The type optimizer can inline simple pipes in monomorphic code</li>
+</ol>
+
+<p>For performance-critical paths where you know errors won't occur, consider direct function calls instead of piping.</p>
+
+<h2>Comparison with Other Languages</h2>
+
+<h3>vs. Elixir <code>|></code></h3>
+
+<strong>Similarities</strong>:
+<ul>
+<li>Left-to-right data flow</li>
+<li>Lowest precedence</li>
+<li>Natural transformation pipelines</li>
+</ul>
+
+<strong>Differences</strong>:
+<ul>
+<li>Cure's pipe has monadic semantics (automatic error handling)</li>
+<li>Elixir's pipe is purely syntactic (no error propagation)</li>
+</ul>
+
+<h3>vs. Rust <code>?</code> Operator</h3>
+
+<strong>Similarities</strong>:
+<ul>
+<li>Automatic error propagation</li>
+<li>Short-circuit on error</li>
+<li>Result/Option type integration</li>
+</ul>
+
+<strong>Differences</strong>:
+<ul>
+<li>Cure's pipe is an infix operator (readable left-to-right)</li>
+<li>Rust's <code>?</code> is a postfix operator (early return semantics)</li>
+</ul>
+
+<h3>vs. Haskell <code>>>=</code> (Bind)</h3>
+
+<strong>Similarities</strong>:
+<ul>
+<li>Monadic composition</li>
+<li>Error propagation through Maybe/Either</li>
+</ul>
+
+<strong>Differences</strong>:
+<ul>
+<li>Cure's pipe is operator-based (more accessible syntax)</li>
+<li>Haskell's bind is more general (works with any Monad)</li>
+</ul>
+
+<h2>Advanced Topics</h2>
+
+<h3>Custom Monadic Types</h3>
+
+<p>The pipe operator currently works with Result types (<code>Ok</code>/<code>Error</code>). Future versions may support:</p>
+<ul>
+<li>Option types (<code>Some</code>/<code>None</code>)</li>
+<li>Custom monadic types through traits</li>
+<li>Async/await integration</li>
+</ul>
+
+<h3>Type-Level Optimizations</h3>
+
+<p>The type checker and optimizer can:</p>
+<ul>
+<li>Eliminate redundant wrapping/unwrapping</li>
+<li>Inline monomorphic pipe chains</li>
+<li>Prove error-free pipelines and generate direct calls</li>
+</ul>
+
+<h3>Debugging Pipelines</h3>
+
+<p>Use <code>let</code> bindings to inspect intermediate values:</p>
+
+<pre><code>def debug_pipeline(input: String) do
+<p>  let step1 = input |> parse in</p>
+<p>  let step2 = step1 |> validate in</p>
+<p>  let step3 = step2 |> process in</p>
+<p>  step3</p>
+<p>end</p>
+</code></pre>
+
+<h2>See Also</h2>
+
+<ul>
+<li><a href="result_type.md">Result Type Documentation</a></li>
+<li><a href="error_handling.md">Error Handling Guide</a></li>
+<li><a href="composition.md">Function Composition</a></li>
+<li><a href="type_system.md">Type System Overview</a></li>
+</ul>
+
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

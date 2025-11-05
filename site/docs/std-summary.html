@@ -96,10 +96,10 @@
 </ul>
 
 <pre><code>def safe_divide(x: Float, y: Float): Result(Float, String) =
-  match y == 0.0 do
-    true -> error("Division by zero")
-    false -> ok(x / y)
-  end
+<p>  match y == 0.0 do</p>
+<p>    true -> error("Division by zero")</p>
+<p>    false -> ok(x / y)</p>
+<p>  end</p>
 </code></pre>
 
 <h3>List Operations ✅ <strong>RUNTIME VERIFIED</strong></h3>
@@ -115,11 +115,11 @@
 </ul>
 
 <pre><code># Length-preserving map with dependent types
-def map_preserving_length(list: List(T, n), f: T -> U): List(U, n) =
-  match list do
-    [] -> []
-    [x | xs] -> [f(x) | map_preserving_length(xs, f)]
-  end
+<p>def map<em>preserving</em>length(list: List(T, n), f: T -> U): List(U, n) =</p>
+<p>  match list do</p>
+<p>    [] -> []</p>
+<p>    [x | xs] -> [f(x) | map<em>preserving</em>length(xs, f)]</p>
+<p>  end</p>
 </code></pre>
 
 <h3>Mathematical Functions</h3>
@@ -135,10 +135,10 @@ def map_preserving_length(list: List(T, n), f: T -> U): List(U, n) =
 </ul>
 
 <pre><code>def gcd(a: Int, b: Int): Int =
-  match b do
-    0 -> abs(a)
-    _ -> gcd(b, remainder(a, b))
-  end
+<p>  match b do</p>
+<p>    0 -> abs(a)</p>
+<p>    _ -> gcd(b, remainder(a, b))</p>
+<p>  end</p>
 </code></pre>
 
 <h3>String Processing</h3>
@@ -153,7 +153,7 @@ def map_preserving_length(list: List(T, n), f: T -> U): List(U, n) =
 </ul>
 
 <pre><code>def trim(s: String): String =
-  trim_right(trim_left(s))
+<p>  trim<em>right(trim</em>left(s))</p>
 </code></pre>
 
 <h3>FSM Utilities (Std.Fsm)</h3>
@@ -168,14 +168,14 @@ def map_preserving_length(list: List(T, n), f: T -> U): List(U, n) =
 
 <strong>Example usage</strong> (from <code>examples/06<em>fsm</em>traffic_light.cure</code>):
 
-<pre><code>import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
-import Std.Pair [pair/2]
+<pre><code>import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]
+<p>import Std.Pair [pair/2]</p>
 
-let fsm_pid = fsm_spawn(:TrafficPayload, initial_data)
-let adv_result = fsm_advertise(fsm_pid, :traffic_light)
-let event = pair(:timer, [])
-let cast_result = fsm_cast(:traffic_light, event)
-let current_state = fsm_state(:traffic_light)
+<p>let fsm<em>pid = fsm</em>spawn(:TrafficPayload, initial_data)</p>
+<p>let adv<em>result = fsm</em>advertise(fsm<em>pid, :traffic</em>light)</p>
+<p>let event = pair(:timer, [])</p>
+<p>let cast<em>result = fsm</em>cast(:traffic_light, event)</p>
+<p>let current<em>state = fsm</em>state(:traffic_light)</p>
 </code></pre>
 
 <h2>Examples and Documentation</h2>
@@ -194,49 +194,49 @@ let current_state = fsm_state(:traffic_light)
 <strong>✅ WORKING Basic List Processing:</strong>
 <pre><code>import Std.List [map/2, filter/2, fold/3, length/1]
 
-let numbers = [1, 2, 3, 4, 5]
-let doubled = map(numbers, fn(x) -> x * 2 end)
-let evens = filter(numbers, fn(x) -> x % 2 == 0 end)
-let sum = fold(numbers, 0, fn(x) -> fn(acc) -> x + acc end end)
+<p>let numbers = [1, 2, 3, 4, 5]</p>
+<p>let doubled = map(numbers, fn(x) -> x * 2 end)</p>
+<p>let evens = filter(numbers, fn(x) -> x % 2 == 0 end)</p>
+<p>let sum = fold(numbers, 0, fn(x) -> fn(acc) -> x + acc end end)</p>
 
-# Note: fold/3 uses curried functions in current implementation
-# Format: fold(list, init, fn(element) -> fn(accumulator) -> result end end)
+<h1>Note: fold/3 uses curried functions in current implementation</h1>
+<h1>Format: fold(list, init, fn(element) -> fn(accumulator) -> result end end)</h1>
 </code></pre>
 
 <strong>Error Handling:</strong>
-<pre><code>import Std.Result [ok/1, error/1, map_result/2, is_ok/1, get_value/1]
-import Std.Io [println/1]
-import Std.Show [show/1]
+<pre><code>import Std.Result [ok/1, error/1, map<em>result/2, is</em>ok/1, get_value/1]
+<p>import Std.Io [println/1]</p>
+<p>import Std.Show [show/1]</p>
 
-# Current Result implementation uses simplified Int-based results
-let calc_result = ok(20)
-let doubled = map_result(calc_result, fn(x) -> x * 2 end)
+<h1>Current Result implementation uses simplified Int-based results</h1>
+<p>let calc_result = ok(20)</p>
+<p>let doubled = map<em>result(calc</em>result, fn(x) -> x * 2 end)</p>
 
-match is_ok(doubled) do
-  true -> 
-    let value = get_value(doubled)
-    println("Result: " <> show(value))
-  false -> println("Error occurred")
-end
+<p>match is_ok(doubled) do</p>
+<p>  true -> </p>
+<p>    let value = get_value(doubled)</p>
+<p>    println("Result: " <> show(value))</p>
+<p>  false -> println("Error occurred")</p>
+<p>end</p>
 </code></pre>
 
 <strong>FSM Operations:</strong>
-<pre><code>import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
-import Std.Pair [pair/2]
-import Std.Io [println/1]
+<pre><code>import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]
+<p>import Std.Pair [pair/2]</p>
+<p>import Std.Io [println/1]</p>
 
-record TrafficPayload do
-  cycles_completed: Int
-  timer_events: Int
-  emergency_stops: Int
-end
+<p>record TrafficPayload do</p>
+<p>  cycles_completed: Int</p>
+<p>  timer_events: Int</p>
+<p>  emergency_stops: Int</p>
+<p>end</p>
 
-let initial_data = TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0}
-let fsm_pid = fsm_spawn(:TrafficPayload, initial_data)
-let adv_result = fsm_advertise(fsm_pid, :traffic_light)
-let event = pair(:timer, [])
-let cast_result = fsm_cast(:traffic_light, event)
-println("FSM operations complete")
+<p>let initial<em>data = TrafficPayload{cycles</em>completed: 0, timer<em>events: 0, emergency</em>stops: 0}</p>
+<p>let fsm<em>pid = fsm</em>spawn(:TrafficPayload, initial_data)</p>
+<p>let adv<em>result = fsm</em>advertise(fsm<em>pid, :traffic</em>light)</p>
+<p>let event = pair(:timer, [])</p>
+<p>let cast<em>result = fsm</em>cast(:traffic_light, event)</p>
+<p>println("FSM operations complete")</p>
 </code></pre>
 
 <h2>Design Principles Followed</h2>
@@ -260,24 +260,24 @@ println("FSM operations complete")
 <p>The library makes extensive use of Cure's dependent type system:</p>
 
 <pre><code># Safe head function with default value
-def head(list: List(T), default: T): T =
-  match list do
-    [] -> default
-    [h | _] -> h
-  end
+<p>def head(list: List(T), default: T): T =</p>
+<p>  match list do</p>
+<p>    [] -> default</p>
+<p>    [h | _] -> h</p>
+<p>  end</p>
 
-# zip_with for combining two lists
-def zip_with(list1: List(T), list2: List(U), func: T -> U -> V): List(V) =
-  match list1 do
-    [] -> []
-    [h1 | t1] ->
-      match list2 do
-        [] -> []
-        [h2 | t2] -> 
-          let partial_func = func(h1)
-          [partial_func(h2) | zip_with(t1, t2, func)]
-      end
-  end
+<h1>zip_with for combining two lists</h1>
+<p>def zip_with(list1: List(T), list2: List(U), func: T -> U -> V): List(V) =</p>
+<p>  match list1 do</p>
+<p>    [] -> []</p>
+<p>    [h1 | t1] -></p>
+<p>      match list2 do</p>
+<p>        [] -> []</p>
+<p>        [h2 | t2] -> </p>
+<p>          let partial_func = func(h1)</p>
+<p>          [partial<em>func(h2) | zip</em>with(t1, t2, func)]</p>
+<p>      end</p>
+<p>  end</p>
 </code></pre>
 
 <h3>FSM Integration</h3>
@@ -285,16 +285,16 @@ def zip_with(list1: List(T), list2: List(U), func: T -> U -> V): List(V) =
 <p>First-class support for finite state machines as library constructs:</p>
 
 <pre><code># Current FSM syntax (Mermaid-style arrows)
-record PayloadName do
-  field: Type
-end
+<p>record PayloadName do</p>
+<p>  field: Type</p>
+<p>end</p>
 
-fsm PayloadName{field: value} do
-  State1 --> |event| State2
-  State2 --> |event| State1
-end
+<p>fsm PayloadName{field: value} do</p>
+<p>  State1 --> |event| State2</p>
+<p>  State2 --> |event| State1</p>
+<p>end</p>
 
-# See examples/06_fsm_traffic_light.cure for complete working example
+<h1>See examples/06<em>fsm</em>traffic_light.cure for complete working example</h1>
 </code></pre>
 
 <h3>Monadic Error Handling</h3>
@@ -302,13 +302,13 @@ end
 <p>Comprehensive support for functional error handling:</p>
 
 <pre><code>type Result(T, E) = Ok(T) | Error(E)
-type Option(T) = Some(T) | None
+<p>type Option(T) = Some(T) | None</p>
 
-def and_then(result: Result(T, E), f: T -> Result(U, E)): Result(U, E) =
-  match result do
-    Ok(value) -> f(value)
-    Error(err) -> Error(err)
-  end
+<p>def and_then(result: Result(T, E), f: T -> Result(U, E)): Result(U, E) =</p>
+<p>  match result do</p>
+<p>    Ok(value) -> f(value)</p>
+<p>    Error(err) -> Error(err)</p>
+<p>  end</p>
 </code></pre>
 
 <h2>Module Organization</h2>
@@ -316,31 +316,31 @@ def and_then(result: Result(T, E), f: T -> Result(U, E)): Result(U, E) =
 <h3>Current Module Structure:</h3>
 
 <pre><code>lib/
-├── std.cure                 # Main re-export module
-├── std/                     # Standard library modules
-├── README.md               # Library documentation
-└── STDLIB_SUMMARY.md       # Implementation summary
+<p>├── std.cure                 # Main re-export module</p>
+<p>├── std/                     # Standard library modules</p>
+<p>├── README.md               # Library documentation</p>
+<p>└── STDLIB_SUMMARY.md       # Implementation summary</p>
 
-src/
-├── runtime/
-│   ├── cure_std.erl        # Standard library runtime
-│   └── cure_runtime.erl    # Core runtime system
-├── lexer/
-│   └── cure_lexer.erl      # Tokenization engine
-├── parser/
-│   ├── cure_parser.erl     # Parser implementation
-│   ├── cure_ast.erl        # AST utilities
-│   └── cure_ast.hrl        # AST definitions
-├── types/
-│   ├── cure_types.erl      # Type system core
-│   ├── cure_typechecker.erl # Type checking
-│   └── cure_type_optimizer.erl # Type optimizations
-├── fsm/
-│   ├── cure_fsm_runtime.erl # FSM runtime system
-│   └── cure_fsm_builtins.erl # Built-in FSM functions
-└── codegen/
-    ├── cure_codegen.erl    # Code generation
-    └── cure_beam_compiler.erl # BEAM compilation
+<p>src/</p>
+<p>├── runtime/</p>
+<p>│   ├── cure_std.erl        # Standard library runtime</p>
+<p>│   └── cure_runtime.erl    # Core runtime system</p>
+<p>├── lexer/</p>
+<p>│   └── cure_lexer.erl      # Tokenization engine</p>
+<p>├── parser/</p>
+<p>│   ├── cure_parser.erl     # Parser implementation</p>
+<p>│   ├── cure_ast.erl        # AST utilities</p>
+<p>│   └── cure_ast.hrl        # AST definitions</p>
+<p>├── types/</p>
+<p>│   ├── cure_types.erl      # Type system core</p>
+<p>│   ├── cure_typechecker.erl # Type checking</p>
+<p>│   └── cure<em>type</em>optimizer.erl # Type optimizations</p>
+<p>├── fsm/</p>
+<p>│   ├── cure<em>fsm</em>runtime.erl # FSM runtime system</p>
+<p>│   └── cure<em>fsm</em>builtins.erl # Built-in FSM functions</p>
+<p>└── codegen/</p>
+<p>    ├── cure_codegen.erl    # Code generation</p>
+<p>    └── cure<em>beam</em>compiler.erl # BEAM compilation</p>
 </code></pre>
 
 <h3>Function Count Summary:</h3>
@@ -397,7 +397,7 @@ src/
 <li>Std.Rec         # Record/map operations</li>
 </ul>
 
-# Planned future modules:
+<h1>Planned future modules:</h1>
 <ul>
 <li>Std.Concurrent  # Concurrency primitives</li>
 <li>Std.Json        # JSON parsing/serialization</li>

@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TYPECLASS_GUIDE - Cure Documentation</title>
+    <meta name="description" content="Version: 1.0  
+Last Updated: November 5, 2025">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h2>Typeclass Guide for Cure</h2>
+
+<strong>Version</strong>: 1.0  
+<strong>Last Updated</strong>: November 5, 2025
+
+<p>---</p>
+
+<h2>Table of Contents</h2>
+
+<ol>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#quick-start">Quick Start</a></li>
+<li><a href="#typeclass-definitions">Typeclass Definitions</a></li>
+<li><a href="#instance-definitions">Instance Definitions</a></li>
+<li><a href="#automatic-derivation">Automatic Derivation</a></li>
+<li><a href="#using-typeclasses">Using Typeclasses</a></li>
+<li><a href="#standard-library">Standard Library</a></li>
+<li><a href="#advanced-topics">Advanced Topics</a></li>
+<li><a href="#best-practices">Best Practices</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+</ol>
+
+<p>---</p>
+
+<h2>Introduction</h2>
+
+<h3>What are Typeclasses?</h3>
+
+<p>Typeclasses are Cure's mechanism for <strong>ad-hoc polymorphism</strong> - allowing you to write generic code that works with any type that satisfies certain requirements. They're similar to:</p>
+
+<ul>
+<li><strong>Interfaces</strong> in Java/C# (but more powerful)</li>
+<li><strong>Traits</strong> in Rust</li>
+<li><strong>Protocols</strong> in Elixir/Clojure</li>
+<li><strong>Type Classes</strong> in Haskell (the inspiration)</li>
+</ul>
+
+<h3>Why Use Typeclasses?</h3>
+
+<strong>1. Code Reuse</strong>: Write generic functions once
+<pre><code>def sort(list: List(T)): List(T) where Ord(T)
+<p>% Works with ANY orderable type</p>
+</code></pre>
+
+<strong>2. Type Safety</strong>: Compiler ensures constraints are met
+<pre><code>% This won't compile - String doesn't have Num instance
+<p>def add_numbers(x: String, y: String) where Num(String) = x + y</p>
+</code></pre>
+
+<strong>3. Zero Boilerplate</strong>: Automatic derivation
+<pre><code>record Point do x: Int, y: Int end
+<p>derive Show, Eq, Ord  % No manual implementation needed!</p>
+</code></pre>
+
+<strong>4. Performance</strong>: Monomorphization means zero runtime cost
+
+<p>---</p>
+
+<h2>Quick Start</h2>
+
+<h3>1. Define a Typeclass</h3>
+
+<pre><code>typeclass Drawable(T) do
+<p>    def draw(x: T): String</p>
+<p>    def size(x: T): {Int, Int}</p>
+<p>end</p>
+</code></pre>
+
+<h3>2. Implement an Instance</h3>
+
+<pre><code>record Circle do
+<p>    radius: Float</p>
+<p>end</p>
+
+<p>instance Drawable(Circle) do</p>
+<p>    def draw(c: Circle): String = "⭕"</p>
+<p>    def size(c: Circle): {Int, Int} = {c.radius <em> 2, c.radius </em> 2}</p>
+<p>end</p>
+</code></pre>
+
+<h3>3. Use with Constraints</h3>
+
+<pre><code>def render(obj: T): String where Drawable(T) =
+<p>    draw(obj)</p>
+
+<p>% Works with any Drawable type</p>
+<p>render(Circle { radius: 5.0 })  % "⭕"</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>Typeclass Definitions</h2>
+
+<h3>Basic Syntax</h3>
+
+<pre><code>typeclass TypeclassName(TypeParam) do
+<p>    def method_name(params): ReturnType</p>
+<p>    % ... more methods</p>
+<p>end</p>
+</code></pre>
+
+<h3>Methods</h3>
+
+<strong>Required Methods</strong> (must be implemented by instances):
+<pre><code>typeclass Show(T) do
+<p>    def show(x: T): String</p>
+<p>end</p>
+</code></pre>
+
+<strong>Default Methods</strong> (optional, can be overridden):
+<pre><code>typeclass Eq(T) do
+<p>    def (==)(x: T, y: T): Bool</p>
+<p>    def (!=)(x: T, y: T): Bool = not (x == y)  % Default</p>
+<p>end</p>
+</code></pre>
+
+<h3>Superclass Constraints</h3>
+
+<p>Typeclasses can require other typeclasses:</p>
+
+<pre><code>typeclass Ord(T) when Eq(T) do
+<p>    def compare(x: T, y: T): Ordering</p>
+<p>    % Ord requires Eq</p>
+<p>end</p>
+</code></pre>
+
+<h3>Multiple Type Parameters</h3>
+
+<pre><code>typeclass Convertible(From, To) do
+<p>    def convert(x: From): To</p>
+<p>end</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>Instance Definitions</h2>
+
+<h3>Basic Instance</h3>
+
+<pre><code>instance Show(Int) do
+<p>    def show(x: Int): String = int<em>to</em>string(x)</p>
+<p>end</p>
+</code></pre>
+
+<h3>Parameterized Instances</h3>
+
+<p>For generic types, add constraints:</p>
+
+<pre><code>instance Show(List(T)) where Show(T) do
+<p>    def show(list: List(T)): String =</p>
+<p>        "[" ++ join(", ", map(show, list)) ++ "]"</p>
+<p>end</p>
+</code></pre>
+
+<h3>Instance Rules</h3>
+
+<strong>1. Coherence</strong>: Only one instance per typeclass/type pair
+<pre><code>% ❌ ERROR: Duplicate instance
+<p>instance Show(Int) do ... end</p>
+<p>instance Show(Int) do ... end  % Compiler error!</p>
+</code></pre>
+
+<strong>2. Orphan Prevention</strong>: Instances must be in same module as type or typeclass
+<pre><code>% ✅ OK: In same module as Int definition (built-in)
+<p>instance Show(Int) do ... end</p>
+
+<p>% ✅ OK: In same module as Circle definition</p>
+<p>instance Show(Circle) do ... end</p>
+
+<p>% ❌ ERROR: Orphan instance (neither Show nor String defined here)</p>
+<p>instance Show(String) do ... end  % If not in Std module</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>Automatic Derivation</h2>
+
+<h3>Syntax</h3>
+
+<pre><code>record TypeName do
+<p>    % fields</p>
+<p>end</p>
+<p>derive TypeclassA, TypeclassB, TypeclassC</p>
+</code></pre>
+
+<h3>Supported Typeclasses</h3>
+
+<h4>Show - String Representation</h4>
+
+<pre><code>record Point do
+<p>    x: Int</p>
+<p>    y: Int</p>
+<p>end</p>
+<p>derive Show</p>
+
+<p>% Generates:</p>
+<p>% show(Point{x: 10, y: 20}) → "Point { x: 10, y: 20 }"</p>
+</code></pre>
+
+<h4>Eq - Equality Testing</h4>
+
+<pre><code>record Person do
+<p>    name: String</p>
+<p>    age: Int</p>
+<p>end</p>
+<p>derive Eq</p>
+
+<p>% Generates structural equality:</p>
+<p>% Person{name: "Alice", age: 30} == Person{name: "Alice", age: 30} → true</p>
+</code></pre>
+
+<h4>Ord - Ordering</h4>
+
+<pre><code>record Book do
+<p>    title: String</p>
+<p>    year: Int</p>
+<p>end</p>
+<p>derive Ord  % Automatically includes Eq</p>
+
+<p>% Lexicographic ordering by fields (title, then year)</p>
+</code></pre>
+
+<h3>Constraint Inference</h3>
+
+<p>For parameterized types, constraints are inferred automatically:</p>
+
+<pre><code>record Container(T) do
+<p>    value: T</p>
+<p>end</p>
+<p>derive Show</p>
+
+<p>% Compiler generates:</p>
+<p>% instance Show(Container(T)) where Show(T) do ... end</p>
+</code></pre>
+
+<h3>When NOT to Derive</h3>
+
+<strong>Custom Behavior Needed</strong>:
+<pre><code>record Temperature do celsius: Float end
+
+<p>% Manual instance for custom formatting</p>
+<p>instance Show(Temperature) do</p>
+<p>    def show(t: Temperature): String =</p>
+<p>        float<em>to</em>string(t.celsius) ++ "°C"</p>
+<p>end</p>
+</code></pre>
+
+<strong>Performance Optimization</strong>:
+<pre><code>record User do
+<p>    id: Int</p>
+<p>    name: String</p>
+<p>    metadata: Map(String, String)  % Large field</p>
+<p>end</p>
+
+<p>% Custom Eq that only compares ID (faster)</p>
+<p>instance Eq(User) do</p>
+<p>    def ==(u1: User, u2: User): Bool = u1.id == u2.id</p>
+<p>end</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>Using Typeclasses</h2>
+
+<h3>Function Constraints</h3>
+
+<p>Single constraint:</p>
+<pre><code>def print_value(x: T): Unit where Show(T) =
+<p>    println(show(x))</p>
+</code></pre>
+
+<p>Multiple constraints:</p>
+<pre><code>def compare<em>and</em>show(x: T, y: T): String where Ord(T), Show(T) =
+<p>    match compare(x, y) do</p>
+<p>        LT -> show(x) ++ " < " ++ show(y)</p>
+<p>        EQ -> show(x) ++ " == " ++ show(y)</p>
+<p>        GT -> show(x) ++ " > " ++ show(y)</p>
+<p>    end</p>
+</code></pre>
+
+<h3>Generic Algorithms</h3>
+
+<pre><code>% Generic sort - works with ANY Ord type
+<p>def sort(list: List(T)): List(T) where Ord(T) =</p>
+<p>    match list do</p>
+<p>        [] -> []</p>
+<p>        [pivot | rest] -></p>
+<p>            let smaller = [x | x <- rest, compare(x, pivot) == LT]</p>
+<p>            let larger = [x | x <- rest, compare(x, pivot) != LT]</p>
+<p>            sort(smaller) ++ [pivot] ++ sort(larger)</p>
+<p>    end</p>
+
+<p>% Use with different types</p>
+<p>sort([3, 1, 4, 1, 5])              % Sort Ints</p>
+<p>sort(["cat", "ant", "dog"])        % Sort Strings  </p>
+<p>sort([Person{...}, Person{...}])   % Sort custom types</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>Standard Library</h2>
+
+<h3>Core Typeclasses</h3>
+
+<h4>Show</h4>
+<pre><code>typeclass Show(T) do
+<p>    def show(x: T): String</p>
+<p>end</p>
+
+<p>% Instances: Int, Float, String, Bool, Atom, List(T), Option(T), Result(T,E)</p>
+<p>% Helper: print, println, debug</p>
+</code></pre>
+
+<h4>Eq</h4>
+<pre><code>typeclass Eq(T) do
+<p>    def (==)(x: T, y: T): Bool</p>
+<p>    def (!=)(x: T, y: T): Bool  % Default</p>
+<p>end</p>
+
+<p>% Instances: All primitive types, List(T), Option(T), Result(T,E)</p>
+<p>% Helper: elem, nub, same_elements</p>
+</code></pre>
+
+<h4>Ord</h4>
+<pre><code>typeclass Ord(T) when Eq(T) do
+<p>    def compare(x: T, y: T): Ordering</p>
+<p>    def (<)(x: T, y: T): Bool    % Default</p>
+<p>    def (<=)(x: T, y: T): Bool   % Default</p>
+<p>    def (>)(x: T, y: T): Bool    % Default</p>
+<p>    def (>=)(x: T, y: T): Bool   % Default</p>
+<p>end</p>
+
+<p>% Instances: Int, Float, String, List(T)</p>
+<p>% Helper: max, min, clamp</p>
+</code></pre>
+
+<h4>Functor</h4>
+<pre><code>typeclass Functor(F) do
+<p>    def map(f: A -> B, fa: F(A)): F(B)</p>
+<p>end</p>
+
+<p>% Instances: List, Option, Result(*, E)</p>
+<p>% Helper: map_nested, void, as</p>
+</code></pre>
+
+<h4>Applicative</h4>
+<pre><code>typeclass Applicative(F) when Functor(F) do
+<p>    def pure(x: A): F(A)</p>
+<p>    def (<*>)(ff: F(A -> B), fa: F(A)): F(B)</p>
+<p>end</p>
+
+<p>% Instances: List, Option, Result(*, E)</p>
+</code></pre>
+
+<h4>Monad</h4>
+<pre><code>typeclass Monad(M) when Applicative(M) do
+<p>    def bind(ma: M(A), f: A -> M(B)): M(B)</p>
+<p>    def (>>=)(ma: M(A), f: A -> M(B)): M(B)  % Alias</p>
+<p>end</p>
+
+<p>% Instances: List, Option, Result(*, E)</p>
+</code></pre>
+
+<h3>Importing Typeclasses</h3>
+
+<pre><code>% Import specific typeclasses and methods
+<p>import typeclass [Show, Eq, show, compare]</p>
+
+<p>% Import all from standard library</p>
+<p>import Std [*]</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>Advanced Topics</h2>
+
+<h3>Higher-Kinded Types</h3>
+
+<p>Support for container types:</p>
+
+<pre><code>% Functor works with List, Option, Result, etc.
+<p>typeclass Functor(F) do</p>
+<p>    def map(f: A -> B, fa: F(A)): F(B)</p>
+<p>end</p>
+
+<p>instance Functor(Option) do</p>
+<p>    def map(f: A -> B, opt: Option(A)): Option(B) =</p>
+<p>        match opt do</p>
+<p>            Some(x) -> Some(f(x))</p>
+<p>            None -> None</p>
+<p>        end</p>
+<p>end</p>
+</code></pre>
+
+<h3>Associated Types</h3>
+
+<p>(Future feature - not yet implemented)</p>
+
+<pre><code>typeclass Collection(C) do
+<p>    type Element</p>
+<p>    def empty(): C</p>
+<p>    def insert(elem: Element, coll: C): C</p>
+<p>end</p>
+</code></pre>
+
+<h3>Overlapping Instances</h3>
+
+<p>Not allowed - ensures coherence:</p>
+
+<pre><code>% ❌ ERROR: Overlapping instances
+<p>instance Show(List(Int)) do ... end</p>
+<p>instance Show(List(T)) where Show(T) do ... end</p>
+</code></pre>
+
+<h3>Conditional Instances</h3>
+
+<p>Instances can have constraints:</p>
+
+<pre><code>instance Ord(Option(T)) where Ord(T) do
+<p>    def compare(opt1: Option(T), opt2: Option(T)): Ordering =</p>
+<p>        match {opt1, opt2} do</p>
+<p>            {None, None} -> EQ</p>
+<p>            {None, Some(_)} -> LT</p>
+<p>            {Some(_), None} -> GT</p>
+<p>            {Some(x), Some(y)} -> compare(x, y)</p>
+<p>        end</p>
+<p>end</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>Best Practices</h2>
+
+<h3>1. Prefer Derivation</h3>
+
+<p>Start with derive, override only when needed:</p>
+
+<pre><code>% ✅ Good: Use derive for standard behavior
+<p>record Point do x: Int, y: Int end</p>
+<p>derive Show, Eq, Ord</p>
+
+<p>% ❌ Avoid: Manual implementation unless necessary</p>
+</code></pre>
+
+<h3>2. Name Methods Clearly</h3>
+
+<pre><code>% ✅ Good: Clear method names
+<p>typeclass Serializable(T) do</p>
+<p>    def serialize(x: T): String</p>
+<p>    def deserialize(s: String): Option(T)</p>
+<p>end</p>
+
+<p>% ❌ Bad: Ambiguous names</p>
+<p>typeclass Serializable(T) do</p>
+<p>    def to(x: T): String</p>
+<p>    def from(s: String): Option(T)</p>
+<p>end</p>
+</code></pre>
+
+<h3>3. Use Superclass Constraints</h3>
+
+<pre><code>% ✅ Good: Express dependencies
+<p>typeclass Ord(T) when Eq(T) do</p>
+<p>    def compare(x: T, y: T): Ordering</p>
+<p>end</p>
+
+<p>% ❌ Bad: Duplicate Eq methods in Ord</p>
+</code></pre>
+
+<h3>4. Document Instances</h3>
+
+<pre><code>% Custom instance with non-obvious behavior
+<p>% Orders products by price (ascending)</p>
+<p>instance Ord(Product) do</p>
+<p>    def compare(p1: Product, p2: Product): Ordering =</p>
+<p>        compare(p1.price, p2.price)</p>
+<p>end</p>
+</code></pre>
+
+<h3>5. Test Generic Code</h3>
+
+<pre><code>% Test with multiple types
+<p>def test_sort() =</p>
+<p>    assert sort([3,1,2]) == [1,2,3]</p>
+<p>    assert sort(["c","a","b"]) == ["a","b","c"]</p>
+<p>    assert sort([Point{x:2,y:1}, Point{x:1,y:1}]) == [Point{x:1,y:1}, Point{x:2,y:1}]</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>Troubleshooting</h2>
+
+<h3>Common Errors</h3>
+
+<strong>1. No Instance Found</strong>
+<pre><code>Error: No instance of Show(MyType)
+</code></pre>
+<strong>Solution</strong>: Add derive or manual instance
+<pre><code>derive Show  % or
+<p>instance Show(MyType) do ... end</p>
+</code></pre>
+
+<strong>2. Overlapping Instances</strong>
+<pre><code>Error: Overlapping instance for Show(List(Int))
+</code></pre>
+<strong>Solution</strong>: Remove one instance, keep the more general one
+
+<strong>3. Missing Constraint</strong>
+<pre><code>Error: Cannot use '==' on type T
+</code></pre>
+<strong>Solution</strong>: Add Eq constraint
+<pre><code>def contains(x: T, list: List(T)) where Eq(T) = ...
+</code></pre>
+
+<strong>4. Orphan Instance</strong>
+<pre><code>Error: Orphan instance Show(ExternalType)
+</code></pre>
+<strong>Solution</strong>: Define instance in same module as type or typeclass
+
+<h3>Debugging Tips</h3>
+
+<strong>1. Check Instance Resolution</strong>
+<pre><code>% Explicitly annotate types to see what instances are used
+<p>let result: Int = show(42)  % Uses Show(Int)</p>
+</code></pre>
+
+<strong>2. Simplify Constraints</strong>
+<pre><code>% If complex constraints fail, break into simpler functions
+<p>def complex(x: T) where Show(T), Eq(T), Ord(T) = ...</p>
+
+<p>% Becomes:</p>
+<p>def simple_show(x: T) where Show(T) = ...</p>
+<p>def simple_eq(x: T) where Eq(T) = ...</p>
+</code></pre>
+
+<strong>3. Check Derivation</strong>
+<pre><code>% Verify generated instance exists
+<p>record Test do x: Int end</p>
+<p>derive Show</p>
+
+<p>% Test it</p>
+<p>show(Test{x: 42})  % Should work</p>
+</code></pre>
+
+<p>---</p>
+
+<h2>Known Limitations</h2>
+
+<h3>Ord Typeclass Temporarily Disabled</h3>
+
+<strong>Status</strong>: Compiler bug prevents Ord typeclass from compiling
+
+<strong>Issue</strong>: Union type variants cannot be returned from typeclass instance methods due to a type unification bug:
+<pre><code>Error: Type mismatch - unification failed between
+<p>  {primitive<em>type,'Ordering'} and {union</em>type,'Ordering',...}</p>
+</code></pre>
+
+<strong>Impact</strong>:
+<ul>
+<li>The <code>Ord</code> typeclass and <code>Ordering</code> type are commented out in <code>lib/std/typeclasses.cure</code></li>
+<li>You cannot use <code>compare()</code> method or derive <code>Ord</code> instances</li>
+<li><code>Show</code>, <code>Eq</code>, and <code>Serializable</code> typeclasses work correctly</li>
+</ul>
+
+<strong>Workaround</strong>:
+<p>Use comparison operators (<code><</code>, <code>></code>, <code><=</code>, <code>>=</code>) directly instead of the <code>compare()</code> method:</p>
+<pre><code>% ❌ Won't work until bug is fixed
+<p>def sort(list: List(T)) where Ord(T) = ...</p>
+
+<p>% ✅ Use direct comparisons instead</p>
+<p>def sort_int(list: List(Int)): List(Int) =</p>
+<p>    % Use < and > operators directly</p>
+<p>    ...</p>
+</code></pre>
+
+<strong>Expected Fix</strong>: The compiler's typeclass instance type checker needs to properly handle union type constructors.
+
+<p>---</p>
+
+<h2>Examples</h2>
+
+<p>See these files for complete examples:</p>
+<ul>
+<li><code>examples/08_typeclasses.cure</code> - Basic typeclass usage</li>
+<li><code>examples/09_derive.cure</code> - Automatic derivation</li>
+<li><code>examples/10<em>generic</em>algorithms.cure</code> - Real-world generic code</li>
+</ul>
+
+<p>---</p>
+
+<h2>Additional Resources</h2>
+
+<ul>
+<li><a href="./DERIVE_GUIDE.md">Derive Guide</a> - Detailed derivation documentation</li>
+<li><a href="./TYPECLASS<em>IMPLEMENTATION</em>STATUS.md">Implementation Status</a> - Technical details</li>
+<li><a href="./TYPE_SYSTEM.md">Type System</a> - Cure's type system overview</li>
+</ul>
+
+<p>---</p>
+
+<em>For questions or issues, see the project repository or documentation.</em>
+
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

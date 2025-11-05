@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Function Types in Cure - Cure Documentation</title>
+    <meta name="description" content=" Overview">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1>Function Types in Cure</h1>
+
+<h2>Overview</h2>
+
+<p>Cure uses the <code>=></code> operator to denote function types, distinct from the <code>-></code> operator used in pattern matching, lambdas, and FSM transitions.</p>
+
+<h2>Syntax</h2>
+
+<h3>Function Type Arrow: <code>=></code></h3>
+<p>Used to specify function types in type annotations:</p>
+
+<pre><code># Simple function type
+<p>def map(f: A => B, list: List(A)): List(B)</p>
+
+<h1>Curried function type (right-associative)</h1>
+<p>def compose(f: A => B, g: B => C): A => C</p>
+
+<h1>Function type nested in type constructor</h1>
+<p>def ap(ff: F(A => B), x: F(A)): F(B)</p>
+
+<h1>Function returning function</h1>
+<p>def curry(f: (A, B) => C): A => B => C</p>
+</code></pre>
+
+<h3>Match/Lambda Arrow: <code>-></code></h3>
+<p>Used for pattern matching and lambda expressions:</p>
+
+<pre><code># Match arms
+<p>match list do</p>
+<p>  [] -> 0</p>
+<p>  [x | xs] -> x + sum(xs)</p>
+<p>end</p>
+
+<h1>Lambda expressions</h1>
+<p>map(fn(x) -> x * 2 end, numbers)</p>
+
+<h1>FSM transitions</h1>
+<p>state Ready do</p>
+<p>  event(start) -> Running</p>
+<p>end</p>
+</code></pre>
+
+<h2>Rationale</h2>
+
+<p>The separation eliminates parsing ambiguity:</p>
+
+<pre><code># Without separation, this is ambiguous:
+<p>def func(f: A -> B, x: A): B  # Is "A -> B" a type or part of a match?</p>
+
+<h1>With =>, it's clear:</h1>
+<p>def func(f: A => B, x: A): B  # A => B is clearly a function type</p>
+</code></pre>
+
+<h2>Type System Integration</h2>
+
+<h3>In Typeclasses</h3>
+
+<pre><code>typeclass Functor(F) do
+<p>  def map(f: A => B, x: F(A)): F(B)</p>
+<p>end</p>
+
+<p>typeclass Monad(M) do</p>
+<p>  def bind(m: M(A), f: A => M(B)): M(B)</p>
+<p>end</p>
+</code></pre>
+
+<h3>In Type Definitions</h3>
+
+<pre><code>type Handler(A, B) = A => B
+<p>type Predicate(A) = A => Bool</p>
+<p>type Callback(A) = A => Unit</p>
+</code></pre>
+
+<h3>In Function Signatures</h3>
+
+<pre><code># Higher-order function
+<p>def filter(pred: A => Bool, list: List(A)): List(A)</p>
+
+<h1>Function taking function returning function</h1>
+<p>def compose(f: B => C, g: A => B): A => C</p>
+
+<h1>Multiple function parameters</h1>
+<p>def foldMap(f: A => B, op: B => B => B, init: B, list: List(A)): B</p>
+</code></pre>
+
+<h2>Implementation Details</h2>
+
+<ul>
+<li><strong>Lexer</strong>: <code>=></code> is tokenized as a two-character operator</li>
+<li><strong>Parser</strong>: <code>parse<em>type</em>with_arrows</code> handles <code>=></code> for function types</li>
+<li><strong>Operator Precedence</strong>: <code>=></code> is NOT an expression operator (not in <code>get<em>operator</em>info</code>)</li>
+<li><strong>Type Parameters</strong>: <code>parse<em>type</em>parameter</code> calls <code>parse_type</code> to properly handle function types in contexts like <code>F(A => B)</code></li>
+</ul>
+
+<h2>Examples</h2>
+
+<h3>Simple Function Type</h3>
+<pre><code>def apply(f: A => B, x: A): B = f(x)
+</code></pre>
+
+<h3>Nested Function Type</h3>
+<pre><code>typeclass Applicative(F) do
+<p>  def ap(ff: F(A => B), x: F(A)): F(B)</p>
+<p>end</p>
+</code></pre>
+
+<h3>Curried Function Type</h3>
+<pre><code>def add: Int => Int => Int = fn(x) -> fn(y) -> x + y end end
+</code></pre>
+
+<h3>Function Composition</h3>
+<pre><code>def compose(f: B => C, g: A => B): A => C =
+<p>  fn(x) -> f(g(x)) end</p>
+</code></pre>
+
+<h2>Migration Guide</h2>
+
+<p>If you have existing code using <code>-></code> for function types, replace with <code>=></code>:</p>
+
+<pre><code># Before
+<p>def map(f: A -> B, x: F(A)): F(B)</p>
+
+<h1>After  </h1>
+<p>def map(f: A => B, x: F(A)): F(B)</p>
+</code></pre>
+
+<p>Note: Do NOT change <code>-></code> in match arms, lambdas, or FSM transitions!</p>
+
+<h2>See Also</h2>
+
+<ul>
+<li><a href="TYPECLASSES.md">Typeclass System</a></li>
+<li><a href="PATTERN_MATCHING.md">Pattern Matching</a></li>
+<li><a href="LAMBDAS.md">Lambda Expressions</a></li>
+</ul>
+
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

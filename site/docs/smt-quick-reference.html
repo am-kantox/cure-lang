@@ -49,13 +49,13 @@ Test Coverage: 100% (12/12 tests passing)">
 
 <h3>1. Verify Z3 is Installed</h3>
 <pre><code>z3 --version
-# Z3 version 4.13.3 - 64 bit
+<h1>Z3 version 4.13.3 - 64 bit</h1>
 </code></pre>
 
 <h3>2. Run SMT Tests</h3>
 <pre><code>make clean && make all
-erl -pa _build/ebin -s smt_process_test run -s smt_parser_test run -s init stop
-# All 12 tests should pass
+<p>erl -pa <em>build/ebin -s smt</em>process<em>test run -s smt</em>parser_test run -s init stop</p>
+<h1>All 12 tests should pass</h1>
 </code></pre>
 
 <p>---</p>
@@ -65,41 +65,41 @@ erl -pa _build/ebin -s smt_process_test run -s smt_parser_test run -s init stop
 <h3>High-Level API (<code>cure<em>smt</em>solver.erl</code>)</h3>
 
 <h4>Check if Constraint is Satisfiable</h4>
-<pre><code>cure_smt_solver:check_constraint(Constraint, Env).
-% Returns: sat | unsat | unknown
+<pre><code>cure<em>smt</em>solver:check_constraint(Constraint, Env).
+<p>% Returns: sat | unsat | unknown</p>
 </code></pre>
 
 <h4>Prove Constraint Always Holds</h4>
-<pre><code>cure_smt_solver:prove_constraint(Constraint, Env).
-% Returns: true | false | unknown
+<pre><code>cure<em>smt</em>solver:prove_constraint(Constraint, Env).
+<p>% Returns: true | false | unknown</p>
 </code></pre>
 
 <h4>Find Counterexample</h4>
-<pre><code>cure_smt_solver:find_counterexample(Constraint, Env).
-% Returns: {ok, Model} | none | unknown
+<pre><code>cure<em>smt</em>solver:find_counterexample(Constraint, Env).
+<p>% Returns: {ok, Model} | none | unknown</p>
 </code></pre>
 
 <h3>Mid-Level API (Direct Solver Access)</h3>
 
 <h4>Start Solver</h4>
-<pre><code>{ok, Pid} = cure_smt_process:start_solver(z3, 5000).
-% Solver: z3 | cvc5
-% Timeout: milliseconds
+<pre><code>{ok, Pid} = cure<em>smt</em>process:start_solver(z3, 5000).
+<p>% Solver: z3 | cvc5</p>
+<p>% Timeout: milliseconds</p>
 </code></pre>
 
 <h4>Execute Query</h4>
-<pre><code>Query = cure_smt_translator:generate_query(Constraint, Env),
-Result = cure_smt_process:execute_query(Pid, Query).
-% Returns: sat | unsat | {sat, Lines} | {error, Reason}
+<pre><code>Query = cure<em>smt</em>translator:generate_query(Constraint, Env),
+<p>Result = cure<em>smt</em>process:execute_query(Pid, Query).</p>
+<p>% Returns: sat | unsat | {sat, Lines} | {error, Reason}</p>
 </code></pre>
 
 <h4>Parse Model</h4>
-<pre><code>{ok, Model} = cure_smt_parser:parse_model(Lines).
-% Returns: {ok, #{var => value}} | {error, Reason}
+<pre><code>{ok, Model} = cure<em>smt</em>parser:parse_model(Lines).
+<p>% Returns: {ok, #{var => value}} | {error, Reason}</p>
 </code></pre>
 
 <h4>Stop Solver</h4>
-<pre><code>cure_smt_process:stop_solver(Pid).
+<pre><code>cure<em>smt</em>process:stop_solver(Pid).
 </code></pre>
 
 <p>---</p>
@@ -108,88 +108,88 @@ Result = cure_smt_process:execute_query(Pid, Query).
 
 <h3>Example 1: Verify Positive Number</h3>
 <pre><code>% Constraint: x > 0
-Constraint = #binary_op_expr{
-    op = '>',
-    left = #identifier_expr{name = x},
-    right = #literal_expr{value = 0}
-},
+<p>Constraint = #binary<em>op</em>expr{</p>
+<p>    op = '>',</p>
+<p>    left = #identifier_expr{name = x},</p>
+<p>    right = #literal_expr{value = 0}</p>
+<p>},</p>
 
-Env = #{x => {type, int}},
+<p>Env = #{x => {type, int}},</p>
 
-% Check if satisfiable
-cure_smt_solver:check_constraint(Constraint, Env).
-% => sat (there exists x > 0)
+<p>% Check if satisfiable</p>
+<p>cure<em>smt</em>solver:check_constraint(Constraint, Env).</p>
+<p>% => sat (there exists x > 0)</p>
 
-% Find example
-cure_smt_solver:find_counterexample(
-    #unary_op_expr{op = 'not', operand = Constraint},
-    Env
-).
-% => {ok, #{x => 0}} (x=0 is counterexample to x > 0)
+<p>% Find example</p>
+<p>cure<em>smt</em>solver:find_counterexample(</p>
+<p>    #unary<em>op</em>expr{op = 'not', operand = Constraint},</p>
+<p>    Env</p>
+<p>).</p>
+<p>% => {ok, #{x => 0}} (x=0 is counterexample to x > 0)</p>
 </code></pre>
 
 <h3>Example 2: Verify Division Safety</h3>
 <pre><code>% Constraint: y /= 0
-Constraint = #binary_op_expr{
-    op = '/=',
-    left = #identifier_expr{name = y},
-    right = #literal_expr{value = 0}
-},
+<p>Constraint = #binary<em>op</em>expr{</p>
+<p>    op = '/=',</p>
+<p>    left = #identifier_expr{name = y},</p>
+<p>    right = #literal_expr{value = 0}</p>
+<p>},</p>
 
-Env = #{y => {type, int}},
+<p>Env = #{y => {type, int}},</p>
 
-% This is satisfiable (y can be non-zero)
-cure_smt_solver:check_constraint(Constraint, Env).
-% => sat
+<p>% This is satisfiable (y can be non-zero)</p>
+<p>cure<em>smt</em>solver:check_constraint(Constraint, Env).</p>
+<p>% => sat</p>
 
-% But can we find y = 0? (violates constraint)
-cure_smt_solver:find_counterexample(Constraint, Env).
-% => {ok, #{y => 0}} (counterexample exists)
+<p>% But can we find y = 0? (violates constraint)</p>
+<p>cure<em>smt</em>solver:find_counterexample(Constraint, Env).</p>
+<p>% => {ok, #{y => 0}} (counterexample exists)</p>
 </code></pre>
 
 <h3>Example 3: Prove Arithmetic Property</h3>
 <pre><code>% Constraint: x + y == y + x (commutativity)
-Constraint = #binary_op_expr{
-    op = '==',
-    left = #binary_op_expr{
-        op = '+',
-        left = #identifier_expr{name = x},
-        right = #identifier_expr{name = y}
-    },
-    right = #binary_op_expr{
-        op = '+',
-        left = #identifier_expr{name = y},
-        right = #identifier_expr{name = x}
-    }
-},
+<p>Constraint = #binary<em>op</em>expr{</p>
+<p>    op = '==',</p>
+<p>    left = #binary<em>op</em>expr{</p>
+<p>        op = '+',</p>
+<p>        left = #identifier_expr{name = x},</p>
+<p>        right = #identifier_expr{name = y}</p>
+<p>    },</p>
+<p>    right = #binary<em>op</em>expr{</p>
+<p>        op = '+',</p>
+<p>        left = #identifier_expr{name = y},</p>
+<p>        right = #identifier_expr{name = x}</p>
+<p>    }</p>
+<p>},</p>
 
-Env = #{x => {type, int}, y => {type, int}},
+<p>Env = #{x => {type, int}, y => {type, int}},</p>
 
-% This should be proven true
-cure_smt_solver:prove_constraint(Constraint, Env).
-% => true (no counterexample exists)
+<p>% This should be proven true</p>
+<p>cure<em>smt</em>solver:prove_constraint(Constraint, Env).</p>
+<p>% => true (no counterexample exists)</p>
 </code></pre>
 
 <h3>Example 4: Complex Constraint</h3>
 <pre><code>% Constraint: (x > 0) and (y > 0) => (x + y > 0)
-Constraint = #binary_op_expr{
-    op = '=>',
-    left = #binary_op_expr{
-        op = 'and',
-        left = #binary_op_expr{op = '>', left = var(x), right = lit(0)},
-        right = #binary_op_expr{op = '>', left = var(y), right = lit(0)}
-    },
-    right = #binary_op_expr{
-        op = '>',
-        left = #binary_op_expr{op = '+', left = var(x), right = var(y)},
-        right = lit(0)
-    }
-},
+<p>Constraint = #binary<em>op</em>expr{</p>
+<p>    op = '=>',</p>
+<p>    left = #binary<em>op</em>expr{</p>
+<p>        op = 'and',</p>
+<p>        left = #binary<em>op</em>expr{op = '>', left = var(x), right = lit(0)},</p>
+<p>        right = #binary<em>op</em>expr{op = '>', left = var(y), right = lit(0)}</p>
+<p>    },</p>
+<p>    right = #binary<em>op</em>expr{</p>
+<p>        op = '>',</p>
+<p>        left = #binary<em>op</em>expr{op = '+', left = var(x), right = var(y)},</p>
+<p>        right = lit(0)</p>
+<p>    }</p>
+<p>},</p>
 
-Env = #{x => {type, int}, y => {type, int}},
+<p>Env = #{x => {type, int}, y => {type, int}},</p>
 
-cure_smt_solver:prove_constraint(Constraint, Env).
-% => true (proven!)
+<p>cure<em>smt</em>solver:prove_constraint(Constraint, Env).</p>
+<p>% => true (proven!)</p>
 </code></pre>
 
 <p>---</p>
@@ -248,11 +248,11 @@ cure_smt_solver:prove_constraint(Constraint, Env).
 
 <p>Default timeout is 5000ms. Configure per-solver:</p>
 
-<pre><code>{ok, Pid} = cure_smt_process:start_solver(z3, 10000). % 10 seconds
+<pre><code>{ok, Pid} = cure<em>smt</em>process:start_solver(z3, 10000). % 10 seconds
 </code></pre>
 
 <p>Or use default:</p>
-<pre><code>{ok, Pid} = cure_smt_process:start_solver(z3, 5000).
+<pre><code>{ok, Pid} = cure<em>smt</em>process:start_solver(z3, 5000).
 </code></pre>
 
 <p>---</p>
@@ -261,12 +261,12 @@ cure_smt_solver:prove_constraint(Constraint, Env).
 
 <p>All functions have graceful error handling:</p>
 
-<pre><code>case cure_smt_solver:check_constraint(Constraint, Env) of
-    sat -> io:format("Satisfiable~n");
-    unsat -> io:format("Unsatisfiable~n");
-    unknown -> io:format("Solver could not determine~n");
-    {error, Reason} -> io:format("Error: ~p~n", [Reason])
-end.
+<pre><code>case cure<em>smt</em>solver:check_constraint(Constraint, Env) of
+<p>    sat -> io:format("Satisfiable~n");</p>
+<p>    unsat -> io:format("Unsatisfiable~n");</p>
+<p>    unknown -> io:format("Solver could not determine~n");</p>
+<p>    {error, Reason} -> io:format("Error: ~p~n", [Reason])</p>
+<p>end.</p>
 </code></pre>
 
 <p>If SMT solver fails, the system falls back to symbolic evaluation.</p>
@@ -276,15 +276,15 @@ end.
 <h2>Testing</h2>
 
 <h3>Run All Tests</h3>
-<pre><code>erl -pa _build/ebin -s smt_process_test run -s smt_parser_test run -s init stop
+<pre><code>erl -pa <em>build/ebin -s smt</em>process<em>test run -s smt</em>parser_test run -s init stop
 </code></pre>
 
 <h3>Run Process Tests Only</h3>
-<pre><code>erl -pa _build/ebin -s smt_process_test run -s init stop
+<pre><code>erl -pa <em>build/ebin -s smt</em>process_test run -s init stop
 </code></pre>
 
 <h3>Run Parser Tests Only</h3>
-<pre><code>erl -pa _build/ebin -s smt_parser_test run -s init stop
+<pre><code>erl -pa <em>build/ebin -s smt</em>parser_test run -s init stop
 </code></pre>
 
 <p>---</p>
@@ -296,14 +296,14 @@ end.
 </code></pre>
 <strong>Solution:</strong> Install Z3
 <pre><code>sudo apt install z3  # Ubuntu/Debian
-brew install z3      # macOS
+<p>brew install z3      # macOS</p>
 </code></pre>
 
 <h3>Timeout Errors</h3>
 <pre><code>{error, timeout}
 </code></pre>
 <strong>Solution:</strong> Increase timeout
-<pre><code>{ok, Pid} = cure_smt_process:start_solver(z3, 30000). % 30 seconds
+<pre><code>{ok, Pid} = cure<em>smt</em>process:start_solver(z3, 30000). % 30 seconds
 </code></pre>
 
 <h3>Parse Errors</h3>
@@ -327,18 +327,18 @@ brew install z3      # macOS
 <h2>Architecture</h2>
 
 <pre><code>User Code
-    ↓
-cure_smt_solver (High-level API)
-    ↓
-cure_smt_translator (AST → SMT-LIB)
-    ↓
-cure_smt_process (Solver management)
-    ↓
-Z3 Solver (via Erlang port)
-    ↓
-cure_smt_parser (Model extraction)
-    ↓
-Result
+<p>    ↓</p>
+<p>cure<em>smt</em>solver (High-level API)</p>
+<p>    ↓</p>
+<p>cure<em>smt</em>translator (AST → SMT-LIB)</p>
+<p>    ↓</p>
+<p>cure<em>smt</em>process (Solver management)</p>
+<p>    ↓</p>
+<p>Z3 Solver (via Erlang port)</p>
+<p>    ↓</p>
+<p>cure<em>smt</em>parser (Model extraction)</p>
+<p>    ↓</p>
+<p>Result</p>
 </code></pre>
 
 <p>---</p>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipe Operator Result Handling - Cure Documentation</title>
+    <meta name="description" content=" Overview">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1>Pipe Operator Result Handling</h1>
+
+<h2>Overview</h2>
+
+<p>The Cure pipe operator (<code>|></code>) implements Railway-Oriented Programming with automatic <code>Result</code> type handling. This provides elegant error propagation and composition without explicit error checking at each step.</p>
+
+<h2>Semantics</h2>
+
+<p>The pipe operator follows these rules:</p>
+
+<h3>Rule 1: Bare Value Input</h3>
+<p>When a bare value <code>T</code> is piped, it's treated as <code>Ok(T)</code> for subsequent operations:</p>
+<pre><code>def double(x: Int): Int = x * 2
+<p>5 |> double  # Returns: Ok(10)</p>
+</code></pre>
+
+<h3>Rule 2: <code>Ok(T)</code> Unwrapping</h3>
+<p>When <code>Ok(T)</code> flows through the pipe, the value is unwrapped before being passed to the transformation function:</p>
+<pre><code>def transformation_fun(x: Int): Int = x * 2
+<p>Ok(5) |> transformation_fun  # x receives 5 (unwrapped), returns Ok(10)</p>
+</code></pre>
+
+<h3>Rule 3: <code>Error(E)</code> Propagation</h3>
+<p>When <code>Error(E)</code> flows through the pipe, transformation functions are <strong>not called</strong> and the error propagates to the end:</p>
+<pre><code>def transformation_fun(x: Int): Int = x * 2
+<p>Error("failed") |> transformation<em>fun  # Returns: Error("failed"), transformation</em>fun never called</p>
+</code></pre>
+
+<h3>Rule 4: Result-Returning Functions</h3>
+<p>Transformation functions can return either bare values or <code>Result</code> types:</p>
+<pre><code># Bare return - wrapped in Ok automatically
+<p>def double(x: Int): Int = x * 2</p>
+<p>5 |> double  # Returns: Ok(10)</p>
+
+<h1>Result return - used as-is</h1>
+<p>def safe_divide(x: Int): Result(Int, String) =</p>
+<p>  match x do</p>
+<p>    0 -> error("Cannot divide by zero")</p>
+<p>    _ -> ok(10 / x)</p>
+<p>  end</p>
+
+<p>5 |> safe_divide  # Returns: Ok(2)</p>
+<p>0 |> safe_divide  # Returns: Error("Cannot divide by zero")</p>
+</code></pre>
+
+<h3>Rule 5: Chaining</h3>
+<p>Multiple pipes compose naturally with error short-circuiting:</p>
+<pre><code>def double(x: Int): Int = x * 2
+<p>def safe_divide(x: Int): Result(Int, String) = ...</p>
+
+<p>5 |> double |> safe_divide  </p>
+<h1>Flow: 5 -> Ok(10) -> Ok(1)</h1>
+
+<p>0 |> safe_divide |> double</p>
+<h1>Flow: 0 -> Error("Cannot divide by zero") -> Error(...) (double not called)</h1>
+</code></pre>
+
+<h3>Rule 6: Final Return Type</h3>
+<p>The entire pipe chain <strong>always</strong> returns <code>Result(T, E)</code>:</p>
+<pre><code>def f(): Result(Int, String) = 5 |> double  # Must declare Result return type
+</code></pre>
+
+<h2>Implementation</h2>
+
+<p>The pipe operator is implemented through:</p>
+
+<ol>
+<li><strong>Parser</strong> (<code>src/parser/cure_parser.erl</code>): Parses <code>|></code> as a binary operator</li>
+<li><strong>Codegen</strong> (<code>src/codegen/cure<em>codegen.erl</code>): Generates <code>monadic</em>pipe_call</code> instructions</li>
+<li><strong>Runtime</strong> (<code>src/runtime/cure_std.erl</code>): The <code>pipe/2</code> function handles all cases</li>
+</ol>
+
+<h3>Runtime Implementation</h3>
+
+<pre><code>% cure_std.erl
+<p>pipe({'Error', <em>} = Err, </em>RHO) -></p>
+<p>    % Rule 1: propagate error without calling RHO</p>
+<p>    Err;</p>
+<p>pipe({'Ok', V}, RHO) when is_function(RHO) -></p>
+<p>    % Rule 2: unwrap Ok(V), call RHO(V), wrap result if not already a monad</p>
+<p>    try</p>
+<p>        Res = RHO(V),</p>
+<p>        case is_monad(Res) of</p>
+<p>            true -> Res;</p>
+<p>            false -> {'Ok', Res}</p>
+<p>        end</p>
+<p>    catch</p>
+<p>        Error:Reason -> {'Error', {pipe<em>runtime</em>error, Error, Reason}}</p>
+<p>    end;</p>
+<p>pipe(LHO, RHO) when is_function(RHO) -></p>
+<p>    % Rule 3: pass bare LHO to RHO, wrap result if not already a monad</p>
+<p>    try</p>
+<p>        Res = RHO(LHO),</p>
+<p>        case is_monad(Res) of</p>
+<p>            true -> Res;</p>
+<p>            false -> {'Ok', Res}</p>
+<p>        end</p>
+<p>    catch</p>
+<p>        Error:Reason -> {'Error', {pipe<em>runtime</em>error, Error, Reason}}</p>
+<p>    end.</p>
+</code></pre>
+
+<h2>Examples</h2>
+
+<p>See <code>examples/simple_pipe.cure</code> for comprehensive examples:</p>
+
+<pre><code>module simple_pipe do
+<p>  export [</p>
+<p>    example<em>bare</em>to_bare/0,</p>
+<p>    example<em>bare</em>to_result/0,</p>
+<p>    example<em>result</em>ok_chain/0,</p>
+<p>    example<em>result</em>error_propagation/0,</p>
+<p>    example<em>mixed</em>chain/0</p>
+<p>  ]</p>
+  
+<p>  import Std.Core [Result, ok/1, error/1]</p>
+
+<p>  # Example 1: Bare -> Bare</p>
+<p>  def double(x: Int): Int = x * 2</p>
+<p>  def example<em>bare</em>to_bare(): Result(Int, String) =</p>
+<p>    5 |> double  # Returns: Ok(10)</p>
+
+<p>  # Example 2: Bare -> Result</p>
+<p>  def safe_divide(x: Int): Result(Int, String) =</p>
+<p>    match x do</p>
+<p>      0 -> error("Cannot divide by zero")</p>
+<p>      _ -> ok(10 / x)</p>
+<p>    end</p>
+<p>  def example<em>bare</em>to_result(): Result(Int, String) =</p>
+<p>    5 |> safe_divide  # Returns: Ok(2)</p>
+
+<p>  # Example 3: Chaining with Ok</p>
+<p>  def example<em>result</em>ok_chain(): Result(Int, String) =</p>
+<p>    5 |> double |> safe_divide  # Returns: Ok(1)</p>
+
+<p>  # Example 4: Error propagation</p>
+<p>  def example<em>result</em>error_propagation(): Result(Int, String) =</p>
+<p>    0 |> safe_divide |> double  # Returns: Error("Cannot divide by zero")</p>
+
+<p>  # Example 5: Mixed chain</p>
+<p>  def increment(x: Int): Int = x + 1</p>
+<p>  def example<em>mixed</em>chain(): Result(Int, String) =</p>
+<p>    5 |> double |> increment |> safe_divide  # Returns: Ok(0)</p>
+<p>end</p>
+</code></pre>
+
+<h2>Testing</h2>
+
+<p>Run the test suite with:</p>
+<pre><code>erl -pa <em>build/ebin -noshell -s simple</em>pipe_test run
+</code></pre>
+
+<p>All tests verify:</p>
+<ul>
+<li>✓ Bare value → Bare function returns <code>Ok(result)</code></li>
+<li>✓ Bare value → Result function preserves Result</li>
+<li>✓ Error returns propagate <code>Error</code> unchanged</li>
+<li>✓ Chaining bare functions works correctly</li>
+<li>✓ Error propagation short-circuits the chain</li>
+<li>✓ Mixed bare and Result functions compose properly</li>
+</ul>
+
+<h2>Benefits</h2>
+
+<ol>
+<li><strong>Railway-Oriented Programming</strong>: Errors flow on a separate "track"</li>
+<li><strong>No Explicit Error Checking</strong>: No need for <code>match</code> or <code>case</code> at every step</li>
+<li><strong>Composability</strong>: Functions compose naturally regardless of return type</li>
+<li><strong>Type Safety</strong>: All pipes return <code>Result</code>, making error handling explicit</li>
+<li><strong>Short-Circuiting</strong>: Errors stop execution immediately, avoiding wasted work</li>
+</ol>
+
+<h2>Related</h2>
+
+<ul>
+<li><code>Std.Core.Result(T, E)</code> - Result type definition</li>
+<li><code>Std.Core.ok/1</code> - Wrap value in Ok</li>
+<li><code>Std.Core.error/1</code> - Wrap value in Error</li>
+<li><code>Std.Core.and_then/2</code> - Monadic bind for manual composition</li>
+<li><code>Std.Core.map_ok/2</code> - Map function over Ok values</li>
+</ul>
+
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

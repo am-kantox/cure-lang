@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatic Typeclass Derivation in Cure - Cure Documentation</title>
+    <meta name="description" content=" Overview">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1>Automatic Typeclass Derivation in Cure</h1>
+
+<h2>Overview</h2>
+
+<p>Cure supports automatic derivation of typeclass instances for user-defined types using the <code>derive</code> clause. This feature eliminates boilerplate code and ensures consistency across your codebase.</p>
+
+<h2>Syntax</h2>
+
+<h3>Basic Derivation</h3>
+
+<pre><code>record Point do
+<p>    x: Int</p>
+<p>    y: Int</p>
+<p>end</p>
+<p>derive Show, Eq, Ord</p>
+</code></pre>
+
+<p>This automatically generates instances for <code>Show(Point)</code>, <code>Eq(Point)</code>, and <code>Ord(Point)</code>.</p>
+
+<h3>Derivation with Type Parameters</h3>
+
+<pre><code>record Container(T) do
+<p>    value: T</p>
+<p>    name: String</p>
+<p>end</p>
+<p>derive Show, Eq</p>
+</code></pre>
+
+<p>When deriving for parameterized types, the compiler automatically adds constraints:</p>
+<pre><code>% Generated instances:
+<p>instance Show(Container(T)) where Show(T) do</p>
+<p>    def show(c: Container(T)): String = ...</p>
+<p>end</p>
+
+<p>instance Eq(Container(T)) where Eq(T) do</p>
+<p>    def ==(c1: Container(T), c2: Container(T)): Bool = ...</p>
+<p>end</p>
+</code></pre>
+
+<h2>Supported Typeclasses</h2>
+
+<h3>Show</h3>
+
+<p>Derives a string representation of the type:</p>
+
+<pre><code>record Person do
+<p>    name: String</p>
+<p>    age: Int</p>
+<p>end</p>
+<p>derive Show</p>
+
+<p>% Usage:</p>
+<p>let p = Person { name: "Alice", age: 30 }</p>
+<p>show(p)  % "Person { name: \"Alice\", age: 30 }"</p>
+</code></pre>
+
+<strong>Generated Implementation:</strong>
+<ul>
+<li>Records: <code>TypeName { field1: show(value1), field2: show(value2), ... }</code></li>
+<li>Shows all fields in declaration order</li>
+</ul>
+
+<h3>Eq</h3>
+
+<p>Derives structural equality checking:</p>
+
+<pre><code>record Point do
+<p>    x: Int</p>
+<p>    y: Int</p>
+<p>end</p>
+<p>derive Eq</p>
+
+<p>% Usage:</p>
+<p>let p1 = Point { x: 10, y: 20 }</p>
+<p>let p2 = Point { x: 10, y: 20 }</p>
+<p>p1 == p2  % true</p>
+</code></pre>
+
+<strong>Generated Implementation:</strong>
+<ul>
+<li>Implements <code>==</code> operator</li>
+<li>Default <code>!=</code> provided by typeclass</li>
+<li>Compares all fields for equality</li>
+</ul>
+
+<h3>Ord</h3>
+
+<p>Derives lexicographic ordering:</p>
+
+<pre><code>record Person do
+<p>    name: String</p>
+<p>    age: Int</p>
+<p>end</p>
+<p>derive Ord  % Requires Eq as superclass</p>
+
+<p>% Usage:</p>
+<p>let alice = Person { name: "Alice", age: 30 }</p>
+<p>let bob = Person { name: "Bob", age: 25 }</p>
+
+<p>match compare(alice, bob) do</p>
+<p>    LT -> "Alice comes before Bob"</p>
+<p>    EQ -> "Equal"</p>
+<p>    GT -> "Alice comes after Bob"</p>
+<p>end</p>
+</code></pre>
+
+<strong>Generated Implementation:</strong>
+<ul>
+<li>Implements <code>compare</code> method returning <code>Ordering</code> (LT, EQ, or GT)</li>
+<li>Compares fields in declaration order (lexicographic)</li>
+<li>Automatically adds <code>Eq</code> constraint</li>
+</ul>
+
+<h2>Constraint Inference</h2>
+
+<p>The derive mechanism automatically infers required constraints for parameterized types:</p>
+
+<pre><code>record Pair(A, B) do
+<p>    first: A</p>
+<p>    second: B</p>
+<p>end</p>
+<p>derive Show, Eq</p>
+
+<p>% Compiler generates:</p>
+<p>% instance Show(Pair(A, B)) where Show(A), Show(B) do ... end</p>
+<p>% instance Eq(Pair(A, B)) where Eq(A), Eq(B) do ... end</p>
+</code></pre>
+
+<strong>Rules:</strong>
+<ol>
+<li>For each type variable in fields, add corresponding constraint</li>
+<li>Primitive types (Int, String, etc.) don't require constraints</li>
+<li>Nested parameterized types require constraints for their parameters</li>
+</ol>
+
+<h2>When to Use Manual Instances</h2>
+
+<p>While derivation is convenient, sometimes you need custom behavior:</p>
+
+<h3>Custom Show Format</h3>
+
+<pre><code>record Temperature do
+<p>    celsius: Float</p>
+<p>end</p>
+
+<p>% Manual instance for custom formatting</p>
+<p>instance Show(Temperature) do</p>
+<p>    def show(t: Temperature): String =</p>
+<p>        float<em>to</em>string(t.celsius) ++ "°C"</p>
+<p>end</p>
+</code></pre>
+
+<h3>Custom Equality</h3>
+
+<pre><code>record Person do
+<p>    id: Int</p>
+<p>    name: String</p>
+<p>    metadata: Map(String, String)</p>
+<p>end</p>
+
+<p>% Derive Show but manually implement Eq (compare only by ID)</p>
+<p>derive Show</p>
+
+<p>instance Eq(Person) do</p>
+<p>    def ==(p1: Person, p2: Person): Bool =</p>
+<p>        p1.id == p2.id  % Ignore name and metadata</p>
+<p>end</p>
+</code></pre>
+
+<h3>Custom Ordering</h3>
+
+<pre><code>record Task do
+<p>    priority: Int</p>
+<p>    name: String</p>
+<p>    deadline: Timestamp</p>
+<p>end</p>
+
+<p>derive Show, Eq</p>
+
+<p>% Custom ordering by priority, then deadline</p>
+<p>instance Ord(Task) do</p>
+<p>    def compare(t1: Task, t2: Task): Ordering =</p>
+<p>        match compare(t1.priority, t2.priority) do</p>
+<p>            EQ -> compare(t1.deadline, t2.deadline)</p>
+<p>            result -> result</p>
+<p>        end</p>
+<p>end</p>
+</code></pre>
+
+<h2>Limitations and Constraints</h2>
+
+<h3>What Can Be Derived</h3>
+
+<ul>
+<li>✅ Records with concrete field types</li>
+<li>✅ Records with type parameters</li>
+<li>✅ Nested records</li>
+<li>✅ Empty records (unit types)</li>
+</ul>
+
+<h3>What Cannot Be Derived</h3>
+
+<ul>
+<li>❌ Function types</li>
+<li>❌ FSM types</li>
+<li>❌ Recursive types (requires manual implementation)</li>
+<li>❌ Types with existential quantification</li>
+</ul>
+
+<h3>Typeclass Support</h3>
+
+<p>Currently supported:</p>
+<ul>
+<li><code>Show</code> - String representation</li>
+<li><code>Eq</code> - Equality testing</li>
+<li><code>Ord</code> - Ordering/comparison</li>
+</ul>
+
+<p>Not yet supported:</p>
+<ul>
+<li><code>Functor</code> - Requires higher-kinded types</li>
+<li><code>Monad</code> - Requires higher-kinded types</li>
+<li><code>Semigroup</code> / <code>Monoid</code> - Requires domain knowledge</li>
+</ul>
+
+<h2>Complete Examples</h2>
+
+<h3>Basic Usage</h3>
+
+<pre><code>module geometry
+
+<p>record Point do</p>
+<p>    x: Float</p>
+<p>    y: Float</p>
+<p>end</p>
+<p>derive Show, Eq</p>
+
+<p>def distance(p1: Point, p2: Point): Float =</p>
+<p>    let dx = p1.x - p2.x</p>
+<p>    let dy = p1.y - p2.y</p>
+<p>    sqrt(dx <em> dx + dy </em> dy)</p>
+
+<p>def main(): Unit =</p>
+<p>    let origin = Point { x: 0.0, y: 0.0 }</p>
+<p>    let p = Point { x: 3.0, y: 4.0 }</p>
+    
+<p>    println(show(origin))  % "Point { x: 0.0, y: 0.0 }"</p>
+<p>    println(show(p))       % "Point { x: 3.0, y: 4.0 }"</p>
+    
+<p>    if origin == p then</p>
+<p>        println("Points are equal")</p>
+<p>    else</p>
+<p>        let dist = distance(origin, p)</p>
+<p>        println("Distance: " ++ show(dist))</p>
+<p>    end</p>
+</code></pre>
+
+<h3>Parameterized Types</h3>
+
+<pre><code>module collections
+
+<p>record Box(T) do</p>
+<p>    value: T</p>
+<p>end</p>
+<p>derive Show, Eq</p>
+
+<p>def map_box(f: T -> U, box: Box(T)): Box(U) =</p>
+<p>    Box { value: f(box.value) }</p>
+
+<p>def main(): Unit where Show(Int), Show(String) =</p>
+<p>    let int_box = Box { value: 42 }</p>
+<p>    let str<em>box = map</em>box(int<em>to</em>string, int_box)</p>
+    
+<p>    println(show(int_box))  % "Box { value: 42 }"</p>
+<p>    println(show(str_box))  % "Box { value: \"42\" }"</p>
+</code></pre>
+
+<h3>Hierarchical Data</h3>
+
+<pre><code>module organization
+
+<p>record Address do</p>
+<p>    street: String</p>
+<p>    city: String</p>
+<p>    country: String</p>
+<p>end</p>
+<p>derive Show, Eq</p>
+
+<p>record Person do</p>
+<p>    name: String</p>
+<p>    age: Int</p>
+<p>    address: Address</p>
+<p>end</p>
+<p>derive Show, Eq, Ord</p>
+
+<p>record Department do</p>
+<p>    name: String</p>
+<p>    manager: Person</p>
+<p>    employees: List(Person)</p>
+<p>end</p>
+<p>derive Show, Eq</p>
+
+<p>def main(): Unit =</p>
+<p>    let addr = Address {</p>
+<p>        street: "123 Main St",</p>
+<p>        city: "Springfield",</p>
+<p>        country: "USA"</p>
+<p>    }</p>
+    
+<p>    let manager = Person {</p>
+<p>        name: "Alice",</p>
+<p>        age: 35,</p>
+<p>        address: addr</p>
+<p>    }</p>
+    
+<p>    let dept = Department {</p>
+<p>        name: "Engineering",</p>
+<p>        manager: manager,</p>
+<p>        employees: []</p>
+<p>    }</p>
+    
+<p>    println(show(dept))</p>
+</code></pre>
+
+<h2>Best Practices</h2>
+
+<h3>1. Derive by Default</h3>
+
+<p>Start with derivation for standard typeclasses:</p>
+<pre><code>record MyType do
+<p>    field1: T1</p>
+<p>    field2: T2</p>
+<p>end</p>
+<p>derive Show, Eq</p>
+</code></pre>
+
+<h3>2. Custom When Needed</h3>
+
+<p>Override with manual instances only when necessary:</p>
+<pre><code>% Derive most instances
+<p>derive Show, Ord</p>
+
+<p>% But custom Eq for special logic</p>
+<p>instance Eq(MyType) do</p>
+<p>    def ==(a: MyType, b: MyType): Bool = ...</p>
+<p>end</p>
+</code></pre>
+
+<h3>3. Document Custom Instances</h3>
+
+<p>When manually implementing, explain why:</p>
+<pre><code>% Custom equality compares only the ID field
+<p>% because other fields are metadata that should be ignored</p>
+<p>instance Eq(User) do</p>
+<p>    def ==(u1: User, u2: User): Bool =</p>
+<p>        u1.id == u2.id</p>
+<p>end</p>
+</code></pre>
+
+<h3>4. Order Fields Intentionally</h3>
+
+<p>For derived <code>Ord</code>, field order matters:</p>
+<pre><code>% First name, then age for ordering
+<p>record Person do</p>
+<p>    name: String    % Primary sort key</p>
+<p>    age: Int        % Secondary sort key</p>
+<p>    email: String   % Tertiary sort key</p>
+<p>end</p>
+<p>derive Ord</p>
+</code></pre>
+
+<h3>5. Consider Performance</h3>
+
+<p>Derived instances are straightforward but not always optimal:</p>
+<pre><code>% Many fields - derived Eq checks all
+<p>record LargeRecord do</p>
+<p>    id: Int</p>
+<p>    field1: String</p>
+<p>    field2: String</p>
+<p>    % ... 50 more fields</p>
+<p>end</p>
+
+<p>% Better: manual Eq that checks ID first</p>
+<p>instance Eq(LargeRecord) do</p>
+<p>    def ==(r1: LargeRecord, r2: LargeRecord): Bool =</p>
+<p>        r1.id == r2.id  % Fast path</p>
+<p>end</p>
+</code></pre>
+
+<h2>Implementation Details</h2>
+
+<h3>Code Generation</h3>
+
+<p>Derived instances generate AST nodes equivalent to hand-written code:</p>
+
+<pre><code>record Point do x: Int, y: Int end
+<p>derive Show</p>
+
+<p>% Equivalent to:</p>
+<p>instance Show(Point) do</p>
+<p>    def show(p: Point): String =</p>
+<p>        "Point { x: " ++ show(p.x) ++ ", y: " ++ show(p.y) ++ " }"</p>
+<p>end</p>
+</code></pre>
+
+<h3>Compilation Phases</h3>
+
+<ol>
+<li><strong>Parse</strong>: Recognize <code>derive</code> clause in AST</li>
+<li><strong>Validate</strong>: Check typeclass is derivable for type</li>
+<li><strong>Generate</strong>: Create instance definition AST</li>
+<li><strong>Typecheck</strong>: Verify generated instance is well-typed</li>
+<li><strong>Codegen</strong>: Compile instance to BEAM bytecode</li>
+</ol>
+
+<h3>Performance Characteristics</h3>
+
+<ul>
+<li><strong>Compile-time</strong>: Zero runtime overhead</li>
+<li><strong>Generated code</strong>: Equivalent to hand-written instances</li>
+<li><strong>Binary size</strong>: No difference from manual implementations</li>
+</ul>
+
+<h2>FAQ</h2>
+
+<strong>Q: Can I derive instances for existing types?</strong>  
+<p>A: No, derive clauses must appear in the same module as the type definition.</p>
+
+<strong>Q: Can I derive partial instances?</strong>  
+<p>A: No, you either derive the complete instance or write it manually.</p>
+
+<strong>Q: What if I derive and manually define the same instance?</strong>  
+<p>A: Compiler error - instance coherence violation.</p>
+
+<strong>Q: Can I derive instances conditionally?</strong>  
+<p>A: Not directly, but you can use different type definitions in different modules.</p>
+
+<strong>Q: How do I debug derived instances?</strong>  
+<p>A: Use compiler flags to emit generated code for inspection.</p>
+
+<h2>See Also</h2>
+
+<ul>
+<li><a href="./TYPECLASS_GUIDE.md">Typeclass Guide</a> - Complete typeclass system documentation</li>
+<li><a href="./TYPE_SYSTEM.md">Type System</a> - Cure's type system overview</li>
+<li><a href="./STDLIB.md">Standard Library</a> - Built-in typeclass instances</li>
+</ul>
+
+    </div>
+
+    <!-- Pill Decoration -->
+    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

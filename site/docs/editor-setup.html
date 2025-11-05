@@ -89,10 +89,10 @@
 <p>Create a custom keyboard layout in <code>~/.config/xkb/symbols/custom</code>:</p>
 
 <pre><code>partial alphanumeric_keys
-xkb_symbols "cure_quotes" {
-    include "us(basic)"
-    key <AC10> { [ apostrophe, quotedbl, U2018, U2019 ] };
-};
+<p>xkb<em>symbols "cure</em>quotes" {</p>
+<p>    include "us(basic)"</p>
+<p>    key <AC10> { [ apostrophe, quotedbl, U2018, U2019 ] };</p>
+<p>};</p>
 </code></pre>
 
 <p>Apply with: <code>setxkbmap -option "custom:cure_quotes"</code></p>
@@ -104,11 +104,11 @@ xkb_symbols "cure_quotes" {
 <p>Save as <code>cure_quotes.ahk</code>:</p>
 
 <pre><code>; Cure Charlist Quotes
-; Press Alt+[ for left curly quote
-; Press Alt+] for right curly quote
+<p>; Press Alt+[ for left curly quote</p>
+<p>; Press Alt+] for right curly quote</p>
 
-![ ::SendInput {U+2018}  ; Alt+[
-!] ::SendInput {U+2019}  ; Alt+]
+<p>![ ::SendInput {U+2018}  ; Alt+[</p>
+<p>!] ::SendInput {U+2019}  ; Alt+]</p>
 </code></pre>
 
 <p>Run the script on startup.</p>
@@ -122,19 +122,19 @@ xkb_symbols "cure_quotes" {
 <p>Add to <code>keybindings.json</code>:</p>
 
 <pre><code>[
-  {
-    "key": "alt+[",
-    "command": "type",
-    "args": { "text": "'" },
-    "when": "editorTextFocus && editorLangId == 'cure'"
-  },
-  {
-    "key": "alt+]",
-    "command": "type",
-    "args": { "text": "'" },
-    "when": "editorTextFocus && editorLangId == 'cure'"
-  }
-]
+<p>  {</p>
+<p>    "key": "alt+[",</p>
+<p>    "command": "type",</p>
+<p>    "args": { "text": "'" },</p>
+<p>    "when": "editorTextFocus && editorLangId == 'cure'"</p>
+<p>  },</p>
+<p>  {</p>
+<p>    "key": "alt+]",</p>
+<p>    "command": "type",</p>
+<p>    "args": { "text": "'" },</p>
+<p>    "when": "editorTextFocus && editorLangId == 'cure'"</p>
+<p>  }</p>
+<p>]</p>
 </code></pre>
 
 <strong>Method 2: Snippets</strong>
@@ -142,12 +142,12 @@ xkb_symbols "cure_quotes" {
 <p>Add to Cure language snippets:</p>
 
 <pre><code>{
-  "Charlist Literal": {
-    "prefix": "cl",
-    "body": "'$1'",
-    "description": "Insert charlist literal with curly quotes"
-  }
-}
+<p>  "Charlist Literal": {</p>
+<p>    "prefix": "cl",</p>
+<p>    "body": "'$1'",</p>
+<p>    "description": "Insert charlist literal with curly quotes"</p>
+<p>  }</p>
+<p>}</p>
 </code></pre>
 
 <strong>Method 3: Text Expander Extension</strong>
@@ -165,23 +165,23 @@ xkb_symbols "cure_quotes" {
 <p>Add to <code>.vimrc</code> or <code>init.vim</code>:</p>
 
 <pre><code>" Cure charlist quotes
-inoremap <A-[> '
-inoremap <A-]> '
+<p>inoremap <A-[> '</p>
+<p>inoremap <A-]> '</p>
 
-" Or use digraphs (Ctrl+K followed by code)
-" '<' for U+2018, '>' for U+2019
+<p>" Or use digraphs (Ctrl+K followed by code)</p>
+<p>" '<' for U+2018, '>' for U+2019</p>
 </code></pre>
 
 <strong>Method 2: Abbreviations</strong>
 
 <pre><code>" Auto-expand ''c to charlist quotes
-autocmd FileType cure inoreabbrev ''c ''
+<p>autocmd FileType cure inoreabbrev ''c ''</p>
 </code></pre>
 
 <strong>Method 3: Custom Digraphs</strong>
 
 <pre><code>digraphs c< 8216  " '<
-digraphs c> 8217  " '>
+<p>digraphs c> 8217  " '></p>
 </code></pre>
 
 <p>Then use: <kbd>Ctrl+K</kbd> <kbd>c</kbd> <kbd><</kbd> for <code>'</code></p>
@@ -193,10 +193,10 @@ digraphs c> 8217  " '>
 <p>Add to <code>.emacs</code> or <code>init.el</code>:</p>
 
 <pre><code>;; Cure charlist quotes
-(define-key cure-mode-map (kbd "M-[") 
-  (lambda () (interactive) (insert "'")))
-(define-key cure-mode-map (kbd "M-]") 
-  (lambda () (interactive) (insert "'")))
+<p>(define-key cure-mode-map (kbd "M-[") </p>
+<p>  (lambda () (interactive) (insert "'")))</p>
+<p>(define-key cure-mode-map (kbd "M-]") </p>
+<p>  (lambda () (interactive) (insert "'")))</p>
 </code></pre>
 
 <strong>Method 2: Abbrev Mode</strong>
@@ -208,11 +208,11 @@ digraphs c> 8217  " '>
 
 <p>Create <code>cure-mode/charlist.yasnippet</code>:</p>
 
-<pre><code># -_- mode: snippet -_-
-# name: charlist
-# key: cl
-# --
-'$1'$0
+<pre><code># -<em>- mode: snippet -</em>-
+<h1>name: charlist</h1>
+<h1>key: cl</h1>
+<h1>--</h1>
+<p>'$1'$0</p>
 </code></pre>
 
 <h3>Sublime Text</h3>
@@ -222,17 +222,17 @@ digraphs c> 8217  " '>
 <p>Add to <code>Preferences → Key Bindings</code>:</p>
 
 <pre><code>[
-  {
-    "keys": ["alt+["],
-    "command": "insert_snippet",
-    "args": {"contents": "'"}
-  },
-  {
-    "keys": ["alt+]"],
-    "command": "insert_snippet",
-    "args": {"contents": "'"}
-  }
-]
+<p>  {</p>
+<p>    "keys": ["alt+["],</p>
+<p>    "command": "insert_snippet",</p>
+<p>    "args": {"contents": "'"}</p>
+<p>  },</p>
+<p>  {</p>
+<p>    "keys": ["alt+]"],</p>
+<p>    "command": "insert_snippet",</p>
+<p>    "args": {"contents": "'"}</p>
+<p>  }</p>
+<p>]</p>
 </code></pre>
 
 <strong>Method 2: Snippets</strong>
@@ -277,9 +277,9 @@ digraphs c> 8217  " '>
 <p>Add to <code>snippets.cson</code>:</p>
 
 <pre><code>'.source.cure':
-  'Charlist Literal':
-    'prefix': 'cl'
-    'body': "'$1'"
+<p>  'Charlist Literal':</p>
+<p>    'prefix': 'cl'</p>
+<p>    'body': "'$1'"</p>
 </code></pre>
 
 <strong>Keybindings:</strong>
@@ -287,8 +287,8 @@ digraphs c> 8217  " '>
 <p>Add to <code>keymap.cson</code>:</p>
 
 <pre><code>'atom-text-editor[data-grammar="source cure"]':
-  'alt-[': 'snippets:insert-text-left-curly-quote'
-  'alt-]': 'snippets:insert-text-right-curly-quote'
+<p>  'alt-[': 'snippets:insert-text-left-curly-quote'</p>
+<p>  'alt-]': 'snippets:insert-text-right-curly-quote'</p>
 </code></pre>
 
 <h2>Language Server / LSP Support</h2>
@@ -320,8 +320,8 @@ digraphs c> 8217  " '>
 <li>Create a file <code>snippets.txt</code> with commonly-used patterns:</li>
 </ol>
    <pre><code>   '' (empty charlist)
-   'hello'
-   'world'
+<p>   'hello'</p>
+<p>   'world'</p>
    </code></pre>
 
 <ol>
@@ -337,23 +337,23 @@ digraphs c> 8217  " '>
 <p>Create a test file <code>test.cure</code>:</p>
 
 <pre><code>module Test do
-  export [main/0]
+<p>  export [main/0]</p>
   
-  import Std.Io [println/1]
+<p>  import Std.Io [println/1]</p>
   
-  def main(): Int =
-    # String literal (straight quotes)
-    let str = "hello"
-    println(str)
+<p>  def main(): Int =</p>
+<p>    # String literal (straight quotes)</p>
+<p>    let str = "hello"</p>
+<p>    println(str)</p>
     
-    # Charlist literal (curly quotes) - stores as [104, 101, 108, 108, 111]
-    # let chars = 'hello'
+<p>    # Charlist literal (curly quotes) - stores as [104, 101, 108, 108, 111]</p>
+<p>    # let chars = 'hello'</p>
     
-    # Atom (ASCII single quote)
-    let atom = :my_atom
+<p>    # Atom (ASCII single quote)</p>
+<p>    let atom = :my_atom</p>
     
-    0
-end
+<p>    0</p>
+<p>end</p>
 </code></pre>
 
 <p>Verify:</p>
@@ -403,10 +403,10 @@ end
 <p>If Unicode input is impossible in your environment, you can use ASCII single quotes for atoms instead:</p>
 
 <pre><code># ASCII single quote for atoms (fully supported)
-atom = 'my_atom'
+<p>atom = 'my_atom'</p>
 
-# Or use colon prefix (recommended)
-atom = :my_atom
+<h1>Or use colon prefix (recommended)</h1>
+<p>atom = :my_atom</p>
 </code></pre>
 
 <strong>Note</strong>: Charlists with Unicode curly quotes are implemented and tested in the compiler (see <code>test/string<em>lexer</em>test.erl</code>), but are rarely used in practice. Most Cure code uses strings (<code>"hello"</code>) for text and atoms (<code>:atom</code>) for symbolic values.
