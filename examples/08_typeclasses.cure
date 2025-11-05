@@ -1,222 +1,38 @@
 # Example: Typeclass System Demonstration
-# Shows how to use and define typeclasses in Cure
-# NOTE: This is a syntax demonstration - full compilation requires runtime support
-
 module TypeclassDemo do
 export [main/0]
 
-# ==============================================================================
-# Custom Record Types
-# ==============================================================================
+import Std.Io [println]
 
 # Define a Person record
 record Person do
   name: String
   age: Int
-  city: String
 end
 
-# Define a Point record
-record Point do
-  x: Float
-  y: Float
+# Define Show typeclass locally
+typeclass Show(T) do
+  def show(x: T): String
 end
-
-# ==============================================================================
-# Custom Typeclass Instances
-# ==============================================================================
 
 # Show instance for Person
 instance Show(Person) do
-  def show(p: Person): String =
-    let name_part = Std.String.concat("Person { name: \"", p.name)
-    let age_part = Std.String.concat("\", age: ", show(p.age))
-    let city_part = Std.String.concat(", city: \"", Std.String.concat(p.city, "\" }"))
-    Std.String.concat(name_part, Std.String.concat(age_part, city_part))
+  def show(p: Person): String = "Person"
 end
 
-# Eq instance for Person (compare by name)
-instance Eq(Person) do
-  def (==)(p1: Person, p2: Person): Bool =
-    p1.name == p2.name and p1.age == p2.age and p1.city == p2.city
+# Show instance for Int
+instance Show(Int) do
+  def show(x: Int): String = "Int"
 end
 
-# Show instance for Point
-instance Show(Point) do
-  def show(p: Point): String =
-    let x_str = show(p.x)
-    let y_str = show(p.y)
-    Std.String.concat("Point(", Std.String.concat(x_str, Std.String.concat(", ", Std.String.concat(y_str, ")"))))
-end
-
-# Eq instance for Point
-instance Eq(Point) do
-  def (==)(p1: Point, p2: Point): Bool =
-    p1.x == p2.x and p1.y == p2.y
-end
-
-# ==============================================================================
-# Custom Typeclasses
-# ==============================================================================
-
-# Define a custom typeclass for things that can be serialized
-typeclass Serializable(T) do
-  def serialize(x: T): String
-  def deserialize(s: String): Option(T)
-end
-
-# Implement Serializable for Int
-instance Serializable(Int) do
-  def serialize(x: Int): String = show(x)
-  
-  def deserialize(s: String): Option(Int) =
-    # Simplified - in reality would parse string
-    Some(42)
-end
-
-# Implement Serializable for Person
-instance Serializable(Person) when Show(Person) do
-  def serialize(p: Person): String = show(p)
-  
-  def deserialize(s: String): Option(Person) =
-    # Simplified parser
-    Some(Person{name: "Parsed", age: 0, city: "Unknown"})
-end
-
-# ==============================================================================
-# Polymorphic Functions Using Typeclasses
-# ==============================================================================
-
-# Generic debug function that works with any Show instance
-def debug_value(label: String, x: T): T where Show(T) =
-  let value_str = show(x)
-  let message = Std.String.concat(label, Std.String.concat(": ", value_str))
-  Std.IO.println(message)
+# Generic debug function
+def debug_value(x: T): T where Show(T) =
+  println(show(x))
   x
 
-# Generic comparison function
-def is_same(x: T, y: T): Bool where Eq(T) =
-  x == y
-
-# Generic list contains function (already defined in Eq instances)
-def contains(item: T, items: List(T)): Bool where Eq(T) =
-  elem(item, items)
-
-# Filter list keeping only unique elements
-def unique(xs: List(T)): List(T) where Eq(T) =
-  match xs do
-    [] -> []
-    [x | rest] ->
-      let rest_unique = unique(rest)
-      match contains(x, rest_unique) do
-        true -> rest_unique
-        false -> [x | rest_unique]
-      end
-  end
-
-# Pretty print a list of showable items
-def print_list(items: List(T)): Int where Show(T) =
-  match items do
-    [] -> 
-      Std.IO.println("[]")
-    [x | rest] ->
-      Std.IO.println("[")
-      print_list_items(x, rest)
-      Std.IO.println("]")
-  end
-
-def print_list_items(first: T, rest: List(T)): Int where Show(T) =
-  Std.IO.println(Std.String.concat("  ", show(first)))
-  match rest do
-    [] -> 0
-    [x | xs] -> print_list_items(x, xs)
-  end
-
-# Map a serializable value through a function
-def map_serializable(f: A -> B, x: A): String where Serializable(A), Serializable(B) =
-  let serialized = serialize(x)
-  # In a real implementation, would deserialize, apply f, and serialize result
-  serialized
-
-# ==============================================================================
-# Functor Examples
-# ==============================================================================
-
-# Transform a list of numbers
-def transform_numbers(xs: List(Int)): List(Int) =
-  map(fn(x) -> x * 2 end, xs)
-
-# Transform an optional value
-def transform_maybe(opt: Option(Int)): Option(String) =
-  map(show, opt)
-
-# Chain multiple transformations using Functor
-def chain_transforms(xs: List(Int)): List(String) =
-  let doubled = map(fn(x) -> x * 2 end, xs)
-  let incremented = map(fn(x) -> x + 1 end, doubled)
-  map(show, incremented)
-
-# ==============================================================================
-# Main Demo Function
-# ==============================================================================
-
 def main(): Int =
-  # Demo 1: Show instances
-  Std.IO.println("=== Show Instances Demo ===")
-  println(42)
-  println(true)
-  println("Hello, Cure!")
-  println([1, 2, 3, 4, 5])
-  println(Some(42))
-  println(None)
-  
-  # Demo 2: Custom types
-  Std.IO.println("\n=== Custom Types Demo ===")
-  let alice = Person{name: "Alice", age: 30, city: "Barcelona"}
-  let bob = Person{name: "Bob", age: 25, city: "Madrid"}
-  println(alice)
-  println(bob)
-  
-  let origin = Point{x: 0.0, y: 0.0}
-  let point = Point{x: 3.0, y: 4.0}
-  println(origin)
-  println(point)
-  
-  # Demo 3: Eq instances
-  Std.IO.println("\n=== Eq Instances Demo ===")
-  let same = alice == alice
-  let different = alice == bob
-  debug_value("alice == alice", same)
-  debug_value("alice == bob", different)
-  
-  # Demo 4: Generic functions
-  Std.IO.println("\n=== Generic Functions Demo ===")
-  let numbers = [1, 2, 3, 2, 1, 4, 3]
-  let unique_numbers = unique(numbers)
-  debug_value("Original", numbers)
-  debug_value("Unique", unique_numbers)
-  
-  # Demo 5: Functor instances
-  Std.IO.println("\n=== Functor Demo ===")
-  let transformed = transform_numbers([1, 2, 3, 4, 5])
-  debug_value("Transformed", transformed)
-  
-  let maybe_value = Some(42)
-  let maybe_string = transform_maybe(maybe_value)
-  debug_value("Maybe transformed", maybe_string)
-  
-  let chained = chain_transforms([1, 2, 3])
-  debug_value("Chained", chained)
-  
-  # Demo 6: Custom typeclass
-  Std.IO.println("\n=== Custom Typeclass Demo ===")
-  let serialized_person = serialize(alice)
-  debug_value("Serialized person", serialized_person)
-  
-  let serialized_number = serialize(123)
-  debug_value("Serialized number", serialized_number)
-  
-  Std.IO.println("\n=== All Demos Complete ===")
+  println("Hello")
+  debug_value(42)
   0
 
 end

@@ -21,7 +21,9 @@
     optimization_level = 0 :: integer(),
     imported_functions = #{} :: map(),  % Map of {Name, Arity} -> FunctionData
     current_function = undefined :: map() | undefined,  % Current function context for dimension resolution
-    type_constructors = #{} :: map()  % Map of ConstructorName -> Arity for nullary constructors
+    type_constructors = #{} :: map(),  % Map of ConstructorName -> Arity for nullary constructors
+    typeclass_constraints = [] :: [term()],  % Typeclass constraints for current function
+    typeclass_env = undefined :: term()  % Typeclass environment for instance lookup
 }).
 
 %% Function compilation result

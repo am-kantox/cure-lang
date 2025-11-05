@@ -320,17 +320,18 @@ check_item(TraitDef = #trait_def{}, Env) ->
 check_item(TraitImpl = #trait_impl{}, Env) ->
     check_trait_impl(TraitImpl, Env);
 check_item(TypeclassDef = #typeclass_def{}, Env) ->
-    % Typeclass definitions don't need deep type checking at this stage
-    % They will be validated when instances are checked
-    % Just register them in the environment if we have typeclass support
-    {ok, Env, success_result(TypeclassDef)};
+    % Deep validation of typeclass definitions
+    check_typeclass_def(TypeclassDef, Env);
 check_item(InstanceDef = #instance_def{}, Env) ->
-    % Instance definitions need type checking of their method implementations
-    % For now, just accept them - full checking requires typeclass infrastructure
-    {ok, Env, success_result(InstanceDef)};
+    % Deep validation of instance definitions
+    check_instance_def(InstanceDef, Env);
 check_item(
     #record_def{
-        name = RecordName, type_params = _TypeParams, fields = Fields, location = _Location
+        name = RecordName,
+        type_params = TypeParams,
+        fields = Fields,
+        derive_clause = DeriveClause,
+        location = Location
     },
     Env
 ) ->
@@ -338,8 +339,66 @@ check_item(
     ConvertedFields = [convert_and_resolve_record_field_def(F, Env) || F <- Fields],
     % Create a record type from the field definitions
     RecordType = {record_type, RecordName, ConvertedFields},
-    NewEnv = cure_types:extend_env(Env, RecordName, RecordType),
-    {ok, NewEnv, success_result(RecordType)}.
+    Env1 = cure_types:extend_env(Env, RecordName, RecordType),
+
+    % Process derive clause if present
+    case DeriveClause of
+        undefined ->
+            {ok, Env1, success_result(RecordType)};
+        #derive_clause{typeclasses = Typeclasses} ->
+            % Generate instances for each derived typeclass
+            case process_derive_clause(RecordName, TypeParams, Typeclasses, Env1, Location) of
+                {ok, EnvWithInstances} ->
+                    {ok, EnvWithInstances, success_result(RecordType)};
+                {error, Error} ->
+                    {ok, Env1, error_result(Error)}
+            end
+    end.
+
+%% Process derive clause to generate typeclass instances
+process_derive_clause(_RecordName, _TypeParams, [], Env, _Location) ->
+    % No typeclasses to derive
+    {ok, Env};
+process_derive_clause(RecordName, TypeParams, [Typeclass | RestTypeclasses], Env, Location) ->
+    % Lookup the record definition from the environment
+    RecordType = cure_types:lookup_env(Env, RecordName),
+
+    % Create a simplified record_def for derivation
+    % (The derive functions need record structure information)
+    ForType =
+        case RecordType of
+            {record_type, Name, Fields} ->
+                #record_def{
+                    name = Name,
+                    type_params = TypeParams,
+                    fields = Fields,
+                    derive_clause = undefined,
+                    location = Location
+                };
+            _ ->
+                #primitive_type{name = RecordName, location = Location}
+        end,
+
+    case cure_derive:derive_instance(Typeclass, ForType, [], Env) of
+        {ok, InstanceDef} ->
+            % Check and register the generated instance
+            case check_instance_def(InstanceDef, Env) of
+                {ok, NewEnv, _Result} ->
+                    % Continue with remaining typeclasses
+                    process_derive_clause(
+                        RecordName, TypeParams, RestTypeclasses, NewEnv, Location
+                    );
+                {error, Error} ->
+                    {error, Error}
+            end;
+        {error, Reason} ->
+            Error = #typecheck_error{
+                message = io_lib:format("Cannot derive ~p for ~p", [Typeclass, RecordName]),
+                location = Location,
+                details = Reason
+            },
+            {error, Error}
+    end.
 
 %% Check FSM definition with comprehensive validation and SMT verification
 check_fsm(
@@ -481,7 +540,7 @@ check_module({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
 
     % Add module name as an FSM type alias if there's an FSM defined with a record name
     % This allows patterns like: fsm RecordType{...} do ... end and start_fsm(ModuleName)
-    FunctionEnv =
+    FunctionEnv1 =
         case find_fsm_with_record_name(Items) of
             {ok, FSMName, States, Initial} ->
                 % Add module name as an alias to the FSM
@@ -491,7 +550,11 @@ check_module({module_def, Name, Imports, Exports, Items, _Location}, Env) ->
                 FunctionEnv0
         end,
 
-    % Pass 2: Check all items with function signatures in environment
+    % Typeclass two-pass processing:
+    % Pass 1: Register all typeclass definitions first
+    FunctionEnv = register_all_typeclasses(Items, FunctionEnv1),
+
+    % Pass 2: Check all items with function signatures AND typeclass definitions in environment
     case check_items(Items, FunctionEnv, new_result()) of
         Result = #typecheck_result{success = true} ->
             % Verify exported functions exist and have correct arities
@@ -2388,6 +2451,33 @@ collect_function_signatures_helper([Item | Rest], Env) ->
         end,
     collect_function_signatures_helper(Rest, UpdatedEnv).
 
+%% Two-pass typeclass processing: register all typeclass definitions first
+%% This allows instances in the same module to reference typeclasses defined earlier
+register_all_typeclasses(Items, Env) ->
+    cure_utils:debug("[TYPECLASS_PASS1] Starting typeclass registration pass~n"),
+    register_typeclasses_helper(Items, Env).
+
+register_typeclasses_helper([], Env) ->
+    cure_utils:debug("[TYPECLASS_PASS1] Completed typeclass registration pass~n"),
+    Env;
+register_typeclasses_helper([Item | Rest], Env) ->
+    UpdatedEnv =
+        case Item of
+            #typeclass_def{name = Name} = TypeclassDef ->
+                % Register the typeclass definition in the typeclass environment
+                TCEnv = get_typeclass_env(Env),
+                case cure_typeclass:register_typeclass(TypeclassDef, TCEnv) of
+                    {ok, NewTCEnv} ->
+                        put_typeclass_env(Env, NewTCEnv);
+                    {error, _Reason} ->
+                        Env
+                end;
+            _ ->
+                % Skip non-typeclass items
+                Env
+        end,
+    register_typeclasses_helper(Rest, UpdatedEnv).
+
 %% Result construction helpers
 new_result() ->
     #typecheck_result{
@@ -4211,3 +4301,610 @@ check_trait_implementation_exists(Type, TraitName, Env) ->
         {ok, _} -> true;
         error -> false
     end.
+
+%% ============================================================================
+%% Typeclass System Type Checking (Haskell-style)
+%% ============================================================================
+
+%% Deep validation of typeclass definitions
+check_typeclass_def(
+    #typeclass_def{
+        name = Name,
+        type_params = TypeParams,
+        constraints = Constraints,
+        methods = Methods,
+        default_methods = DefaultMethods,
+        location = Location
+    },
+    Env
+) ->
+    cure_utils:debug("[TYPECLASS] Checking typeclass definition: ~p~n", [Name]),
+
+    % Step 1: Validate type parameters
+    TypeParamResult = validate_typeclass_type_params(TypeParams, Location),
+    case TypeParamResult of
+        {error, Error} ->
+            {ok, Env, error_result(Error)};
+        ok ->
+            % Step 2: Create environment with type parameters
+            TypeParamEnv = add_typeclass_type_params_to_env(TypeParams, Env),
+
+            % Step 3: Check superclass constraints exist and are valid
+            ConstraintResult = validate_superclass_constraints(Constraints, TypeParamEnv, Location),
+            case ConstraintResult of
+                {error, Error} ->
+                    {ok, Env, error_result(Error)};
+                ok ->
+                    % Step 4: Validate method signatures
+                    MethodResult = validate_typeclass_methods(
+                        Methods, TypeParamEnv, TypeParams, Location
+                    ),
+                    case MethodResult of
+                        {error, Error} ->
+                            {ok, Env, error_result(Error)};
+                        ok ->
+                            % Step 5: Validate default method implementations
+                            DefaultResult = validate_default_methods(
+                                DefaultMethods, Methods, TypeParamEnv, Location
+                            ),
+                            case DefaultResult of
+                                {error, Error} ->
+                                    {ok, Env, error_result(Error)};
+                                ok ->
+                                    % Step 6: Register typeclass in environment (if not already registered in pass 1)
+                                    TCEnv = get_typeclass_env(Env),
+                                    case cure_typeclass:lookup_typeclass(Name, TCEnv) of
+                                        {ok, _ExistingInfo} ->
+                                            % Already registered in pass 1, just add as type
+                                            cure_utils:debug(
+                                                "[TYPECLASS] ~p already registered (pass 1), skipping re-registration~n",
+                                                [Name]
+                                            ),
+                                            TypeclassType =
+                                                {typeclass_type, Name, TypeParams, Methods},
+                                            FinalEnv = cure_types:extend_env(
+                                                Env, Name, TypeclassType
+                                            ),
+                                            {ok, FinalEnv, success_result(TypeclassType)};
+                                        not_found ->
+                                            % Not registered yet, register now
+                                            case
+                                                cure_typeclass:register_typeclass(
+                                                    #typeclass_def{
+                                                        name = Name,
+                                                        type_params = TypeParams,
+                                                        constraints = Constraints,
+                                                        methods = Methods,
+                                                        default_methods = DefaultMethods,
+                                                        location = Location
+                                                    },
+                                                    TCEnv
+                                                )
+                                            of
+                                                {ok, NewTCEnv} ->
+                                                    % Store updated typeclass environment
+                                                    NewEnv = put_typeclass_env(Env, NewTCEnv),
+
+                                                    % Also add as a type in the main environment
+                                                    TypeclassType =
+                                                        {typeclass_type, Name, TypeParams, Methods},
+                                                    FinalEnv = cure_types:extend_env(
+                                                        NewEnv, Name, TypeclassType
+                                                    ),
+
+                                                    cure_utils:debug(
+                                                        "[TYPECLASS] Successfully validated ~p~n", [
+                                                            Name
+                                                        ]
+                                                    ),
+                                                    {ok, FinalEnv, success_result(TypeclassType)};
+                                                {error, Reason} ->
+                                                    Error = #typecheck_error{
+                                                        message = io_lib:format(
+                                                            "Failed to register typeclass ~p", [
+                                                                Name
+                                                            ]
+                                                        ),
+                                                        location = Location,
+                                                        details = Reason
+                                                    },
+                                                    {ok, Env, error_result(Error)}
+                                            end
+                                    end
+                            end
+                    end
+            end
+    end.
+
+%% Deep validation of instance definitions
+check_instance_def(
+    #instance_def{
+        typeclass = TypeclassName,
+        type_args = TypeArgs,
+        constraints = Constraints,
+        methods = Methods,
+        location = Location
+    },
+    Env
+) ->
+    cure_utils:debug(
+        "[INSTANCE] Checking instance ~p(~p)~n",
+        [TypeclassName, TypeArgs]
+    ),
+
+    % Step 1: Check typeclass exists
+    TCEnv = get_typeclass_env(Env),
+    case cure_typeclass:lookup_typeclass(TypeclassName, TCEnv) of
+        {ok, TypeclassInfo} ->
+            % Step 2: Validate type arguments
+            TypeArgResult = validate_instance_type_args(TypeArgs, Env, Location),
+            case TypeArgResult of
+                {error, Error} ->
+                    {ok, Env, error_result(Error)};
+                ok ->
+                    % Step 3: Check arity matches typeclass parameters
+                    ExpectedArity = length(TypeclassInfo#typeclass_info.type_params),
+                    ActualArity = length(TypeArgs),
+                    if
+                        ExpectedArity =/= ActualArity ->
+                            Error = #typecheck_error{
+                                message = io_lib:format(
+                                    "Type argument arity mismatch: ~p expects ~p but got ~p",
+                                    [TypeclassName, ExpectedArity, ActualArity]
+                                ),
+                                location = Location,
+                                details = {arity_mismatch, ExpectedArity, ActualArity}
+                            },
+                            {ok, Env, error_result(Error)};
+                        true ->
+                            % Step 4: Validate instance constraints
+                            ConstraintResult = validate_instance_constraints(
+                                Constraints, TypeArgs, Env, Location
+                            ),
+                            case ConstraintResult of
+                                {error, Error} ->
+                                    {ok, Env, error_result(Error)};
+                                ok ->
+                                    % Step 5: Validate all required methods are implemented
+                                    MethodResult = validate_instance_methods(
+                                        Methods,
+                                        TypeclassInfo,
+                                        TypeArgs,
+                                        Env,
+                                        Location
+                                    ),
+                                    case MethodResult of
+                                        {error, Error} ->
+                                            {ok, Env, error_result(Error)};
+                                        ok ->
+                                            % Step 6: Type check each method implementation
+                                            ImplResult = typecheck_instance_method_impls(
+                                                Methods,
+                                                TypeclassInfo,
+                                                TypeArgs,
+                                                Env,
+                                                Location
+                                            ),
+                                            case ImplResult of
+                                                {error, Error} ->
+                                                    {ok, Env, error_result(Error)};
+                                                ok ->
+                                                    % Step 7: Register instance
+                                                    case
+                                                        cure_typeclass:register_instance(
+                                                            #instance_def{
+                                                                typeclass = TypeclassName,
+                                                                type_args = TypeArgs,
+                                                                constraints = Constraints,
+                                                                methods = Methods,
+                                                                location = Location
+                                                            },
+                                                            TCEnv
+                                                        )
+                                                    of
+                                                        {ok, NewTCEnv} ->
+                                                            NewEnv = put_typeclass_env(
+                                                                Env, NewTCEnv
+                                                            ),
+                                                            cure_utils:debug(
+                                                                "[INSTANCE] Successfully validated ~p(~p)~n",
+                                                                [TypeclassName, TypeArgs]
+                                                            ),
+                                                            {ok, NewEnv,
+                                                                success_result(
+                                                                    {instance, TypeclassName,
+                                                                        TypeArgs}
+                                                                )};
+                                                        {error, Reason} ->
+                                                            Error = #typecheck_error{
+                                                                message = io_lib:format(
+                                                                    "Failed to register instance ~p(~p)",
+                                                                    [TypeclassName, TypeArgs]
+                                                                ),
+                                                                location = Location,
+                                                                details = Reason
+                                                            },
+                                                            {ok, Env, error_result(Error)}
+                                                    end
+                                            end
+                                    end
+                            end
+                    end
+            end;
+        not_found ->
+            Error = #typecheck_error{
+                message = io_lib:format("Typeclass ~p not found", [TypeclassName]),
+                location = Location,
+                details = {undefined_typeclass, TypeclassName}
+            },
+            {ok, Env, error_result(Error)}
+    end.
+
+%% Helper functions for typeclass validation
+
+%% Validate typeclass type parameters
+validate_typeclass_type_params([], _Location) ->
+    ok;
+validate_typeclass_type_params(TypeParams, Location) when is_list(TypeParams) ->
+    % Check each type parameter is valid
+    case lists:all(fun is_valid_type_param/1, TypeParams) of
+        true ->
+            ok;
+        false ->
+            {error, #typecheck_error{
+                message = "Invalid type parameters in typeclass definition",
+                location = Location,
+                details = {invalid_type_params, TypeParams}
+            }}
+    end;
+validate_typeclass_type_params(TypeParams, Location) ->
+    {error, #typecheck_error{
+        message = "Type parameters must be a list",
+        location = Location,
+        details = {invalid_type_params, TypeParams}
+    }}.
+
+%% Check if a value is a valid type parameter
+is_valid_type_param(Atom) when is_atom(Atom) -> true;
+is_valid_type_param(#type_param{}) -> true;
+is_valid_type_param(_) -> false.
+
+%% Add typeclass type parameters to environment
+add_typeclass_type_params_to_env(TypeParams, Env) ->
+    lists:foldl(
+        fun(Param, AccEnv) ->
+            ParamName = extract_type_param_name(Param),
+            cure_types:extend_env(AccEnv, ParamName, {type_variable, ParamName})
+        end,
+        Env,
+        TypeParams
+    ).
+
+extract_type_param_name(Atom) when is_atom(Atom) -> Atom;
+extract_type_param_name(#type_param{name = Name}) -> Name;
+extract_type_param_name(_) -> undefined.
+
+%% Validate superclass constraints
+validate_superclass_constraints([], _Env, _Location) ->
+    ok;
+validate_superclass_constraints(Constraints, Env, Location) ->
+    TCEnv = get_typeclass_env(Env),
+    case validate_constraint_list(Constraints, TCEnv, Location) of
+        ok -> ok;
+        {error, Error} -> {error, Error}
+    end.
+
+validate_constraint_list([], _TCEnv, _Location) ->
+    ok;
+validate_constraint_list([#typeclass_constraint{typeclass = TC} | Rest], TCEnv, Location) ->
+    case cure_typeclass:lookup_typeclass(TC, TCEnv) of
+        {ok, _} ->
+            validate_constraint_list(Rest, TCEnv, Location);
+        not_found ->
+            {error, #typecheck_error{
+                message = io_lib:format("Superclass typeclass ~p not found", [TC]),
+                location = Location,
+                details = {undefined_typeclass, TC}
+            }}
+    end;
+validate_constraint_list([TC | Rest], TCEnv, Location) when is_atom(TC) ->
+    % Allow plain atoms as constraints
+    case cure_typeclass:lookup_typeclass(TC, TCEnv) of
+        {ok, _} ->
+            validate_constraint_list(Rest, TCEnv, Location);
+        not_found ->
+            {error, #typecheck_error{
+                message = io_lib:format("Superclass typeclass ~p not found", [TC]),
+                location = Location,
+                details = {undefined_typeclass, TC}
+            }}
+    end;
+validate_constraint_list([_ | Rest], TCEnv, Location) ->
+    % Skip invalid constraints but continue checking
+    validate_constraint_list(Rest, TCEnv, Location).
+
+%% Validate typeclass method signatures
+validate_typeclass_methods([], _Env, _TypeParams, _Location) ->
+    ok;
+validate_typeclass_methods(Methods, Env, TypeParams, Location) ->
+    % Check each method signature is well-formed
+    Results = lists:map(
+        fun(Method) ->
+            validate_method_signature(Method, Env, TypeParams, Location)
+        end,
+        Methods
+    ),
+    case
+        lists:filter(
+            fun
+                ({error, _}) -> true;
+                (_) -> false
+            end,
+            Results
+        )
+    of
+        [] -> ok;
+        [{error, Error} | _] -> {error, Error}
+    end.
+
+validate_method_signature(
+    #method_signature{name = Name, params = Params, return_type = RetType},
+    Env,
+    TypeParams,
+    Location
+) ->
+    % Check parameter types are valid
+    ParamResult = validate_method_params(Params, Env, TypeParams, Location),
+    case ParamResult of
+        ok ->
+            % Check return type is valid
+            case RetType of
+                undefined -> ok;
+                _ -> validate_type_expr(RetType, Env, TypeParams, Location)
+            end;
+        {error, Error} ->
+            {error, Error}
+    end;
+validate_method_signature(_, _Env, _TypeParams, Location) ->
+    {error, #typecheck_error{
+        message = "Invalid method signature format",
+        location = Location,
+        details = {invalid_method_signature}
+    }}.
+
+validate_method_params([], _Env, _TypeParams, _Location) ->
+    ok;
+validate_method_params([#param{type = Type} | Rest], Env, TypeParams, Location) ->
+    case validate_type_expr(Type, Env, TypeParams, Location) of
+        ok -> validate_method_params(Rest, Env, TypeParams, Location);
+        {error, Error} -> {error, Error}
+    end;
+validate_method_params([_ | Rest], Env, TypeParams, Location) ->
+    % Skip invalid params but continue
+    validate_method_params(Rest, Env, TypeParams, Location).
+
+validate_type_expr(undefined, _Env, _TypeParams, _Location) ->
+    ok;
+validate_type_expr(#primitive_type{}, _Env, _TypeParams, _Location) ->
+    ok;
+validate_type_expr(#function_type{}, _Env, _TypeParams, _Location) ->
+    ok;
+validate_type_expr(#dependent_type{}, _Env, _TypeParams, _Location) ->
+    ok;
+validate_type_expr(_Type, _Env, _TypeParams, _Location) ->
+    % Accept other type expressions
+    ok.
+
+%% Validate default method implementations
+validate_default_methods(undefined, _Methods, _Env, _Location) ->
+    ok;
+validate_default_methods([], _Methods, _Env, _Location) ->
+    ok;
+validate_default_methods(DefaultMethods, Methods, Env, Location) ->
+    % Check each default method corresponds to a declared method
+    MethodNames = [M#method_signature.name || M <- Methods],
+    DefaultNames = [D#function_def.name || D <- DefaultMethods],
+
+    % Check all defaults have corresponding signatures
+    ExtraDefaults = DefaultNames -- MethodNames,
+    case ExtraDefaults of
+        [] ->
+            % Type check each default implementation
+            Results = lists:map(
+                fun(DefaultMethod) ->
+                    % Find corresponding signature
+                    Name = DefaultMethod#function_def.name,
+                    case lists:keyfind(Name, #method_signature.name, Methods) of
+                        % Already checked above
+                        false ->
+                            ok;
+                        Sig ->
+                            % Type check the default implementation
+                            check_default_method_impl(DefaultMethod, Sig, Env, Location)
+                    end
+                end,
+                DefaultMethods
+            ),
+            case
+                lists:filter(
+                    fun
+                        ({error, _}) -> true;
+                        (_) -> false
+                    end,
+                    Results
+                )
+            of
+                [] -> ok;
+                [{error, Error} | _] -> {error, Error}
+            end;
+        _ ->
+            {error, #typecheck_error{
+                message = io_lib:format(
+                    "Default methods without signatures: ~p", [ExtraDefaults]
+                ),
+                location = Location,
+                details = {extra_default_methods, ExtraDefaults}
+            }}
+    end.
+
+check_default_method_impl(_DefaultMethod, _Sig, _Env, _Location) ->
+    % Simplified check - full implementation would type check the body
+    ok.
+
+%% Validate instance type arguments
+validate_instance_type_args([], _Env, _Location) ->
+    ok;
+validate_instance_type_args(TypeArgs, Env, Location) ->
+    % Check each type argument is a valid type
+    Results = lists:map(
+        fun(TypeArg) ->
+            validate_type_expr(TypeArg, Env, [], Location)
+        end,
+        TypeArgs
+    ),
+    case
+        lists:filter(
+            fun
+                ({error, _}) -> true;
+                (_) -> false
+            end,
+            Results
+        )
+    of
+        [] -> ok;
+        [{error, Error} | _] -> {error, Error}
+    end.
+
+%% Validate instance constraints
+validate_instance_constraints([], _TypeArgs, _Env, _Location) ->
+    ok;
+validate_instance_constraints(Constraints, TypeArgs, Env, Location) ->
+    TCEnv = get_typeclass_env(Env),
+    % Check each constraint references valid typeclasses and types
+    Results = lists:map(
+        fun(Constraint) ->
+            validate_instance_constraint(Constraint, TypeArgs, TCEnv, Location)
+        end,
+        Constraints
+    ),
+    case
+        lists:filter(
+            fun
+                ({error, _}) -> true;
+                (_) -> false
+            end,
+            Results
+        )
+    of
+        [] -> ok;
+        [{error, Error} | _] -> {error, Error}
+    end.
+
+validate_instance_constraint(#typeclass_constraint{typeclass = TC}, _TypeArgs, TCEnv, Location) ->
+    case cure_typeclass:lookup_typeclass(TC, TCEnv) of
+        {ok, _} ->
+            ok;
+        not_found ->
+            {error, #typecheck_error{
+                message = io_lib:format("Constraint typeclass ~p not found", [TC]),
+                location = Location,
+                details = {undefined_typeclass, TC}
+            }}
+    end;
+validate_instance_constraint(_, _TypeArgs, _TCEnv, _Location) ->
+    ok.
+
+%% Validate instance methods
+validate_instance_methods(Methods, TypeclassInfo, TypeArgs, Env, Location) ->
+    RequiredMethods = maps:keys(TypeclassInfo#typeclass_info.methods),
+    DefaultMethods = maps:keys(TypeclassInfo#typeclass_info.default_impls),
+    ProvidedMethods = [M#function_def.name || M <- Methods],
+
+    % Methods that must be provided (no default)
+    MustProvide = RequiredMethods -- DefaultMethods,
+
+    % Check all required methods are implemented
+    Missing = MustProvide -- ProvidedMethods,
+    case Missing of
+        [] ->
+            ok;
+        _ ->
+            {error, #typecheck_error{
+                message = io_lib:format(
+                    "Missing required methods in instance: ~p", [Missing]
+                ),
+                location = Location,
+                details = {missing_methods, Missing}
+            }}
+    end.
+
+%% Type check instance method implementations
+typecheck_instance_method_impls(Methods, TypeclassInfo, TypeArgs, Env, Location) ->
+    % For each method, check it matches the expected signature
+    Results = lists:map(
+        fun(Method) ->
+            typecheck_instance_method(Method, TypeclassInfo, TypeArgs, Env, Location)
+        end,
+        Methods
+    ),
+    case
+        lists:filter(
+            fun
+                ({error, _}) -> true;
+                (_) -> false
+            end,
+            Results
+        )
+    of
+        [] -> ok;
+        [{error, Error} | _] -> {error, Error}
+    end.
+
+typecheck_instance_method(
+    #function_def{name = Name} = Method, TypeclassInfo, _TypeArgs, Env, Location
+) ->
+    % Look up expected method signature
+    case maps:get(Name, TypeclassInfo#typeclass_info.methods, undefined) of
+        undefined ->
+            {error, #typecheck_error{
+                message = io_lib:format(
+                    "Method ~p is not part of typeclass", [Name]
+                ),
+                location = Location,
+                details = {extra_method, Name}
+            }};
+        _MethodInfo ->
+            % Type check the method implementation
+            case check_function(Method, Env) of
+                {ok, _NewEnv, Result} ->
+                    case Result#typecheck_result.success of
+                        true ->
+                            ok;
+                        false ->
+                            case Result#typecheck_result.errors of
+                                [Error | _] -> {error, Error};
+                                [] -> ok
+                            end
+                    end;
+                {error, Reason} ->
+                    {error, #typecheck_error{
+                        message = io_lib:format(
+                            "Failed to type check method ~p", [Name]
+                        ),
+                        location = Location,
+                        details = Reason
+                    }}
+            end
+    end.
+
+%% Get/put typeclass environment from main environment
+get_typeclass_env(Env) ->
+    % Look for typeclass environment in the main environment
+    % Note: lookup_env returns the value directly (or undefined), not {ok, Value}
+    case cure_types:lookup_env(Env, '__typeclass_env__') of
+        undefined -> cure_typeclass:new_env();
+        TCEnv -> TCEnv
+    end.
+
+put_typeclass_env(Env, TCEnv) ->
+    cure_types:extend_env(Env, '__typeclass_env__', TCEnv).

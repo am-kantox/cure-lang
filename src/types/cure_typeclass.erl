@@ -12,7 +12,8 @@
     resolve_method/4,
     check_constraints/3,
     get_all_instances/2,
-    validate_where_constraints/2
+    validate_where_constraints/2,
+    list_typeclasses/1
 ]).
 
 -include("../parser/cure_ast.hrl").
@@ -73,6 +74,28 @@ new_env() ->
         instance_index = #{},
         derive_rules = #{}
     }.
+
+%% ============================================================================
+%% Typeclass Introspection
+%% ============================================================================
+
+-doc """
+Lists all registered typeclass names in the environment.
+
+## Arguments
+- `Env` - Current typeclass environment
+
+## Returns
+- `[atom()]` - List of typeclass names
+
+## Example
+```erlang
+Names = cure_typeclass:list_typeclasses(Env).
+```
+""".
+-spec list_typeclasses(typeclass_env()) -> [atom()].
+list_typeclasses(#typeclass_env{classes = Classes}) ->
+    maps:keys(Classes).
 
 %% ============================================================================
 %% Typeclass Registration

@@ -959,10 +959,14 @@ compile_function_impl(
         params = Params,
         body = Body,
         constraint = Constraint,
+        where_clause = WhereClause,
         location = Location
     } = _Function,
     State
 ) ->
+    % Extract typeclass constraints from where clause
+    TypeclassConstraints = extract_typeclass_constraints(WhereClause),
+
     % Create function compilation context
     FunctionInfo = #{
         name => Name,
@@ -973,7 +977,8 @@ compile_function_impl(
         local_vars = create_param_bindings(Params),
         temp_counter = 0,
         label_counter = 0,
-        current_function = FunctionInfo
+        current_function = FunctionInfo,
+        typeclass_constraints = TypeclassConstraints
     },
 
     try
@@ -1615,22 +1620,37 @@ compile_function_call(
     },
     State
 ) ->
-    % Compile function expression first (function goes on bottom of stack)
-    {FuncInstructions, State1} = compile_expression(Function, State),
+    % Check if this is a typeclass method call
+    case try_resolve_typeclass_method(Function, Args, State) of
+        {ok, ResolvedFunction} ->
+            % Use resolved instance method
+            compile_function_call(
+                #function_call_expr{
+                    function = ResolvedFunction,
+                    args = Args,
+                    location = Location
+                },
+                State#codegen_state{typeclass_constraints = []}
+            );
+        not_typeclass ->
+            % Regular function call
+            % Compile function expression first (function goes on bottom of stack)
+            {FuncInstructions, State1} = compile_expression(Function, State),
 
-    % Compile arguments (arguments go on top of stack)
-    {ArgInstructions, State2} = compile_expressions(Args, State1),
+            % Compile arguments (arguments go on top of stack)
+            {ArgInstructions, State2} = compile_expressions(Args, State1),
 
-    % Generate call instruction
-    CallInstruction = #beam_instr{
-        op = call,
-        args = [length(Args)],
-        location = Location
-    },
+            % Generate call instruction
+            CallInstruction = #beam_instr{
+                op = call,
+                args = [length(Args)],
+                location = Location
+            },
 
-    % Instructions: Function first, then Args, then Call
-    Instructions = FuncInstructions ++ ArgInstructions ++ [CallInstruction],
-    {Instructions, State2}.
+            % Instructions: Function first, then Args, then Call
+            Instructions = FuncInstructions ++ ArgInstructions ++ [CallInstruction],
+            {Instructions, State2}
+    end.
 
 %% Compile type annotations (just compile the expression, ignore the type)
 compile_type_annotation(#type_annotation_expr{expr = Expr, type = _Type}, State) ->
@@ -2763,6 +2783,110 @@ extract_single_function_export({function, _Line, Name, Arity, _Clauses}) ->
     {ok, {Name, Arity}};
 extract_single_function_export(_) ->
     skip.
+
+%% Extract typeclass constraints from where clause
+extract_typeclass_constraints(undefined) ->
+    [];
+extract_typeclass_constraints(#where_clause{constraints = Constraints}) ->
+    Constraints;
+extract_typeclass_constraints(_) ->
+    [].
+
+%% Try to resolve typeclass method call to instance implementation
+%% Returns: {ok, ResolvedFunction} | not_typeclass
+try_resolve_typeclass_method(Function, Args, State) ->
+    % Check if we have any typeclass constraints
+    case State#codegen_state.typeclass_constraints of
+        [] ->
+            not_typeclass;
+        Constraints ->
+            % Check if Function is a simple identifier that matches a typeclass method
+            case Function of
+                #identifier_expr{name = MethodName} ->
+                    % Try to find which typeclass provides this method
+                    case find_typeclass_for_method(MethodName, Constraints, Args, State) of
+                        {ok, InstanceModule, InstanceMethodName} ->
+                            % Create a module-qualified call to the instance method
+                            ResolvedFunction = #binary_op_expr{
+                                op = '.',
+                                left = #identifier_expr{
+                                    name = InstanceModule, location = undefined
+                                },
+                                right = #identifier_expr{
+                                    name = InstanceMethodName, location = undefined
+                                },
+                                location = undefined
+                            },
+                            {ok, ResolvedFunction};
+                        not_found ->
+                            not_typeclass
+                    end;
+                _ ->
+                    % Not a simple identifier, can't be a typeclass method call
+                    not_typeclass
+            end
+    end.
+
+%% Find which typeclass provides the method and resolve to instance implementation
+find_typeclass_for_method(_MethodName, [], _Args, _State) ->
+    not_found;
+find_typeclass_for_method(MethodName, [Constraint | Rest], Args, State) ->
+    % Extract typeclass and type from constraint
+    case Constraint of
+        #typeclass_constraint{typeclass = TypeclassName, type_args = [TypeArg]} ->
+            % Infer the concrete type from the argument
+            case infer_type_from_arg(Args, State) of
+                {ok, ConcreteType} ->
+                    % Generate the instance method name
+                    % Format: show_Int, eq_String, etc.
+                    MethodNameStr = atom_to_list(MethodName),
+                    TypeNameStr = type_to_string(ConcreteType),
+                    InstanceMethodName = list_to_atom(MethodNameStr ++ "_" ++ TypeNameStr),
+                    % Instance module is usually 'Std.TypeclassName' or just the module where typeclass is defined
+                    % For stdlib typeclasses, use 'Std.TypeclassName' format
+                    InstanceModule = get_typeclass_module(TypeclassName),
+                    {ok, InstanceModule, InstanceMethodName};
+                unknown ->
+                    % Can't infer type, try next constraint
+                    find_typeclass_for_method(MethodName, Rest, Args, State)
+            end;
+        _ ->
+            find_typeclass_for_method(MethodName, Rest, Args, State)
+    end.
+
+%% Infer concrete type from the first argument
+infer_type_from_arg([], _State) ->
+    unknown;
+infer_type_from_arg([FirstArg | _], _State) ->
+    % Simple type inference based on literal values
+    case FirstArg of
+        #literal_expr{value = Value} ->
+            case Value of
+                V when is_integer(V) -> {ok, 'Int'};
+                V when is_float(V) -> {ok, 'Float'};
+                V when is_binary(V) -> {ok, 'String'};
+                V when is_boolean(V) -> {ok, 'Bool'};
+                _ -> unknown
+            end;
+        _ ->
+            % For complex expressions, we'd need full type inference
+            % For now, default to Int
+            {ok, 'Int'}
+    end.
+
+%% Convert type to string for mangled name
+type_to_string('Int') -> "Int";
+type_to_string('Float') -> "Float";
+type_to_string('String') -> "String";
+type_to_string('Bool') -> "Bool";
+type_to_string(Type) when is_atom(Type) -> atom_to_list(Type);
+type_to_string(_) -> "Unknown".
+
+%% Get the module where typeclass instances are defined
+get_typeclass_module('Show') -> 'Std.Show';
+get_typeclass_module('Eq') -> 'Std.Eq';
+get_typeclass_module('Ord') -> 'Std.Ord';
+get_typeclass_module(TypeclassName) -> TypeclassName.
 
 %% Convert internal representation to Erlang abstract forms
 convert_to_erlang_forms(Module) ->

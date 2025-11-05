@@ -33,24 +33,29 @@ Typeclasses compile to Erlang behaviour modules with:
 """.
 -spec compile_typeclass(#typeclass_def{}, term()) ->
     {ok, term(), term()} | {error, term()}.
-compile_typeclass(#typeclass_def{name = Name, methods = Methods}, State) ->
+compile_typeclass(
+    #typeclass_def{name = Name, methods = Methods, default_methods = DefaultMethods}, State
+) ->
     % Typeclass compiles to a behaviour module with behaviour_info/1
     % and optional default method implementations
 
     % Extract method signatures for behaviour_info
+    % Methods are #method_signature{} records
     MethodSpecs = [
-        {Method#function_def.name, length(Method#function_def.params)}
+        {Method#method_signature.name, length(Method#method_signature.params)}
      || Method <- Methods
     ],
 
     % Generate behaviour_info function as Erlang abstract form
     BehaviourInfoFunction = generate_behaviour_info_function(MethodSpecs),
 
-    % Compile default implementations if any
-    DefaultImpls = [
-        Method
-     || Method <- Methods, Method#function_def.body =/= undefined
-    ],
+    % Default methods come from the default_methods field as #function_def{} records
+    % not from methods field (which contains #method_signature{} records)
+    DefaultImpls =
+        case DefaultMethods of
+            undefined -> [];
+            _ -> DefaultMethods
+        end,
 
     % Compile default methods to actual BEAM functions
     case compile_default_methods(DefaultImpls, State) of

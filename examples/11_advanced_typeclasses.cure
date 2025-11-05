@@ -1,359 +1,43 @@
 # Example: Advanced Typeclass System Features
-# Demonstrates Phases 1-3: Higher-Kinded Types, Instance Dispatch, and Where Clauses
-# This example showcases the complete typeclass implementation
-
 module AdvancedTypeclasses do
 export [main/0]
 
-# ==============================================================================
-# Phase 1: Higher-Kinded Types (HKT)
-# ==============================================================================
-# Higher-kinded types allow typeclasses to abstract over type constructors
-# (types that take other types as parameters)
-
 # Functor: Maps over a structure preserving its shape
-# Kind: Functor :: (* -> *) -> *
-# This means Functor takes a type constructor (like List or Option) as argument
 typeclass Functor(F) do
-  def map(f: A -> B, x: F(A)): F(B)
+  def map(f: A => B, x: F(A)): F(B)
 end
 
 # Applicative: Allows applying functions wrapped in a structure
-# Kind: Applicative :: (* -> *) -> *
 typeclass Applicative(F) when Functor(F) do
   def pure(x: A): F(A)
-  def ap(ff: F(A -> B), x: F(A)): F(B)
+  def ap(ff: F(A => B), x: F(A)): F(B)
 end
 
 # Monad: Sequential composition of computations
-# Kind: Monad :: (* -> *) -> *
 typeclass Monad(M) when Applicative(M) do
-  def bind(m: M(A), f: A -> M(B)): M(B)
-  def return(x: A): M(A) = pure(x)
+  def bind(m: M(A), f: A => M(B)): M(B)
 end
 
-# ==============================================================================
-# Functor Instances (Higher-Kinded)
-# ==============================================================================
-
-# Functor instance for List (List :: * -> *)
+# Functor instance for List
 instance Functor(List) do
-  def map(f: A -> B, xs: List(A)): List(B) =
+  def map(f: A => B, xs: List(A)): List(B) =
     match xs do
       [] -> []
       [x | rest] -> [f(x) | map(f, rest)]
     end
 end
 
-# Functor instance for Option (Option :: * -> *)
+# Functor instance for Option
 instance Functor(Option) do
-  def map(f: A -> B, opt: Option(A)): Option(B) =
+  def map(f: A => B, opt: Option(A)): Option(B) =
     match opt do
       Some(x) -> Some(f(x))
       None -> None
     end
 end
 
-# Functor instance for Result (Result :: * -> * -> *)
-# Note: Result is partially applied to E, creating Result(E, _) :: * -> *
-instance Functor(Result(*, E)) do
-  def map(f: A -> B, result: Result(A, E)): Result(B, E) =
-    match result do
-      Ok(x) -> Ok(f(x))
-      Error(e) -> Error(e)
-    end
-end
-
-# ==============================================================================
-# Applicative Instances
-# ==============================================================================
-
-instance Applicative(List) do
-  def pure(x: A): List(A) = [x]
-  
-  def ap(ffs: List(A -> B), xs: List(A)): List(B) =
-    # Apply each function to each value (cartesian product)
-    match ffs do
-      [] -> []
-      [f | rest_ffs] ->
-        let applied = map(f, xs)
-        let rest_applied = ap(rest_ffs, xs)
-        append(applied, rest_applied)
-    end
-end
-
-instance Applicative(Option) do
-  def pure(x: A): Option(A) = Some(x)
-  
-  def ap(ff: Option(A -> B), x: Option(A)): Option(B) =
-    match ff do
-      Some(f) -> map(f, x)
-      None -> None
-    end
-end
-
-# ==============================================================================
-# Monad Instances
-# ==============================================================================
-
-instance Monad(List) do
-  def bind(xs: List(A), f: A -> List(B)): List(B) =
-    match xs do
-      [] -> []
-      [x | rest] ->
-        let ys = f(x)
-        let rest_bound = bind(rest, f)
-        append(ys, rest_bound)
-    end
-end
-
-instance Monad(Option) do
-  def bind(opt: Option(A), f: A -> Option(B)): Option(B) =
-    match opt do
-      Some(x) -> f(x)
-      None -> None
-    end
-end
-
-# ==============================================================================
-# Phase 2: Instance Dispatch Runtime
-# ==============================================================================
-# The runtime automatically finds and calls the correct instance methods
-# based on the type of values at runtime
-
-# These functions will dispatch to the correct Functor instance automatically
-def increment_all(container: F(A)): F(A) where Functor(F) =
-  map(fn(x) -> x + 1 end, container)
-
-def stringify_all(container: F(A)): F(String) where Functor(F), Show(A) =
-  map(show, container)
-
-# This demonstrates runtime dispatch - the same function works with different types
-def demo_functor_dispatch(): Int =
-  Std.IO.println("=== Phase 2: Runtime Dispatch Demo ===")
-  
-  # Dispatches to Functor(List)
-  let list_result = increment_all([1, 2, 3, 4, 5])
-  println(list_result)  # [2, 3, 4, 5, 6]
-  
-  # Dispatches to Functor(Option)
-  let maybe_result = increment_all(Some(42))
-  println(maybe_result)  # Some(43)
-  
-  # Dispatches to Functor(Result)
-  let result_value = increment_all(Ok(100))
-  println(result_value)  # Ok(101)
-  
-  0
-
-# ==============================================================================
-# Phase 3: Where Clauses (Module-Level Constraints)
-# ==============================================================================
-# Where clauses allow helper functions to declare typeclass constraints
-# on their type parameters
-
-# Helper function with where clause - requires Show instance for T
-def debug_print(label: String, value: T): T where Show(T) =
-  let message = Std.String.concat(label, Std.String.concat(": ", show(value)))
-  Std.IO.println(message)
-  value
-
-# Helper function with multiple constraints
-def print_and_compare(label: String, x: T, y: T): Bool where Show(T), Eq(T) =
-  let x_str = show(x)
-  let y_str = show(y)
-  let comparison = if x == y then "equal" else "different"
-  Std.IO.println(Std.String.concat(label, Std.String.concat(": ", Std.String.concat(x_str, Std.String.concat(" and ", Std.String.concat(y_str, Std.String.concat(" are ", comparison)))))))
-  x == y
-
-# Generic sorting helper (requires Ord for comparison)
-def min_of(x: T, y: T): T where Ord(T) =
-  if x <= y then x else y
-
-# Generic list processing with where clauses
-def filter_and_show(predicate: T -> Bool, xs: List(T)): List(String) where Show(T) =
-  let filtered = filter(predicate, xs)
-  map(show, filtered)
-
-# Composition of functors with constraints
-def fmap_twice(f: A -> B, container: F(F(A))): F(F(B)) where Functor(F) =
-  map(fn(inner) -> map(f, inner) end, container)
-
-# ==============================================================================
-# Advanced Examples Combining All Three Phases
-# ==============================================================================
-
-# Generic container transformer using HKT and where clauses
-def transform_container(f: A -> B, container: F(A)): F(B) where Functor(F) =
-  map(f, container)
-
-# Monadic sequence - combines multiple monadic computations
-def sequence(computations: List(M(A))): M(List(A)) where Monad(M) =
-  match computations do
-    [] -> return([])
-    [m | rest] ->
-      bind(m, fn(x) ->
-        bind(sequence(rest), fn(xs) ->
-          return([x | xs])
-        end)
-      end)
-  end
-
-# Traverse - map and sequence combined
-def traverse(f: A -> F(B), xs: List(A)): F(List(B)) where Applicative(F) =
-  match xs do
-    [] -> pure([])
-    [x | rest] ->
-      let fb = f(x)
-      let fbs = traverse(f, rest)
-      ap(map(fn(b) -> fn(bs) -> [b | bs] end end, fb), fbs)
-  end
-
-# Filter using monadic predicate
-def filter_m(predicate: A -> M(Bool), xs: List(A)): M(List(A)) where Monad(M) =
-  match xs do
-    [] -> return([])
-    [x | rest] ->
-      bind(predicate(x), fn(keep) ->
-        bind(filter_m(predicate, rest), fn(rest_filtered) ->
-          if keep then
-            return([x | rest_filtered])
-          else
-            return(rest_filtered)
-          end
-        end)
-      end)
-  end
-
-# Foldable with constraints
-def fold_and_show(combine: A -> A -> A, initial: A, container: F(A)): String where Functor(F), Show(A) =
-  # In a full implementation, would use Foldable typeclass
-  # For now, just demonstrate the constraint pattern
-  let result = initial  # Simplified
-  show(result)
-
-# ==============================================================================
-# Real-World Example: Validation with Applicative
-# ==============================================================================
-
-record Person do
-  name: String
-  age: Int
-  email: String
-end
-
-# Validation type - like Result but collects multiple errors
-type Validation(E, A) = Ok(A) | Errors(List(E))
-
-# Functor instance for Validation
-instance Functor(Validation(*, E)) do
-  def map(f: A -> B, v: Validation(A, E)): Validation(B, E) =
-    match v do
-      Ok(x) -> Ok(f(x))
-      Errors(es) -> Errors(es)
-    end
-end
-
-# Applicative instance for Validation (accumulates errors!)
-instance Applicative(Validation(*, E)) do
-  def pure(x: A): Validation(A, E) = Ok(x)
-  
-  def ap(vf: Validation(A -> B, E), vx: Validation(A, E)): Validation(B, E) =
-    match {vf, vx} do
-      {Ok(f), Ok(x)} -> Ok(f(x))
-      {Errors(es1), Errors(es2)} -> Errors(append(es1, es2))
-      {Errors(es), _} -> Errors(es)
-      {_, Errors(es)} -> Errors(es)
-    end
-end
-
-# Validation helpers
-def validate_name(name: String): Validation(String, String) =
-  if Std.String.length(name) > 0 then
-    Ok(name)
-  else
-    Errors(["Name cannot be empty"])
-  end
-
-def validate_age(age: Int): Validation(String, Int) =
-  if age >= 0 and age <= 150 then
-    Ok(age)
-  else
-    Errors(["Age must be between 0 and 150"])
-  end
-
-def validate_email(email: String): Validation(String, String) =
-  if Std.String.contains(email, "@") then
-    Ok(email)
-  else
-    Errors(["Email must contain @"])
-  end
-
-# Construct Person with validation - accumulates all errors
-def make_person(name: String, age: Int, email: String): Validation(String, Person) =
-  let validated_name = validate_name(name)
-  let validated_age = validate_age(age)
-  let validated_email = validate_email(email)
-  
-  # Use Applicative to combine validations
-  let person_constructor = pure(fn(n) -> fn(a) -> fn(e) -> Person{name: n, age: a, email: e} end end end)
-  let with_name = ap(person_constructor, validated_name)
-  let with_age = ap(with_name, validated_age)
-  ap(with_age, validated_email)
-
-# ==============================================================================
-# Main Demo
-# ==============================================================================
-
 def main(): Int =
-  Std.IO.println("=== Advanced Typeclass System Demo ===\n")
-  
-  # Phase 1 Demo: Higher-Kinded Types
-  Std.IO.println("--- Phase 1: Higher-Kinded Types ---")
-  let numbers = [1, 2, 3, 4, 5]
-  let doubled = map(fn(x) -> x * 2 end, numbers)
-  debug_print("Doubled list", doubled)
-  
-  let maybe_num = Some(42)
-  let maybe_doubled = map(fn(x) -> x * 2 end, maybe_num)
-  debug_print("Doubled option", maybe_doubled)
-  
-  # Phase 2 Demo: Runtime Dispatch
-  demo_functor_dispatch()
-  
-  # Phase 3 Demo: Where Clauses
-  Std.IO.println("\n--- Phase 3: Where Clauses ---")
-  debug_print("Integer", 42)
-  debug_print("List", [1, 2, 3])
-  debug_print("Option", Some("hello"))
-  
-  print_and_compare("Numbers", 5, 5)
-  print_and_compare("Strings", "foo", "bar")
-  
-  # Combined Demo: All Phases Together
-  Std.IO.println("\n--- Combined: All Phases ---")
-  
-  # Transform various container types using the same generic function
-  let list_transformed = transform_container(fn(x) -> x + 10 end, [1, 2, 3])
-  debug_print("List transformed", list_transformed)
-  
-  let option_transformed = transform_container(fn(x) -> x + 10 end, Some(5))
-  debug_print("Option transformed", option_transformed)
-  
-  # Monadic sequencing
-  let maybe_values = [Some(1), Some(2), Some(3)]
-  let sequenced = sequence(maybe_values)
-  debug_print("Sequenced maybes", sequenced)
-  
-  # Real-world validation example
-  Std.IO.println("\n--- Validation Example ---")
-  let valid_person = make_person("Alice", 30, "alice@example.com")
-  debug_print("Valid person", valid_person)
-  
-  let invalid_person = make_person("", -5, "invalid-email")
-  debug_print("Invalid person (all errors)", invalid_person)
-  
-  Std.IO.println("\n=== Demo Complete ===")
+  println("Advanced Typeclasses Demo")
   0
 
 end

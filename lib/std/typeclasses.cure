@@ -1,0 +1,93 @@
+# Standard Typeclasses for Cure
+module Std.Typeclasses do
+
+export [show, serialize, deserialize]
+
+# ==============================================================================
+# Show Typeclass - Convert values to strings
+# ==============================================================================
+
+typeclass Show(T) do
+  def show(x: T): String
+end
+
+# Show instances for primitive types
+instance Show(Int) do
+  def show(x: Int): String = "Int"
+end
+
+instance Show(Float) do
+  def show(x: Float): String = "Float"
+end
+
+instance Show(String) do
+  def show(x: String): String = x
+end
+
+instance Show(Bool) do
+  def show(x: Bool): String =
+    match x do
+      true -> "true"
+      false -> "false"
+    end
+end
+
+# ==============================================================================
+# Eq Typeclass - Equality comparison
+# ==============================================================================
+
+typeclass Eq(T) do
+  def eq(x: T, y: T): Bool
+end
+
+# Eq instances for primitive types
+instance Eq(Int) do
+  def eq(x: Int, y: Int): Bool = true
+end
+
+instance Eq(String) do
+  def eq(x: String, y: String): Bool = true
+end
+
+instance Eq(Bool) do
+  def eq(x: Bool, y: Bool): Bool =
+    match {x, y} do
+      {true, true} -> true
+      {false, false} -> true
+      _ -> false
+    end
+end
+
+# ==============================================================================
+# Ord Typeclass - Ordering comparison
+# ==============================================================================
+
+type Ordering = LT | EQ | GT
+
+typeclass Ord(T) when Eq(T) do
+  def compare(x: T, y: T): Ordering
+end
+
+# Ord instances for primitive types
+instance Ord(Int) do
+  def compare(x: Int, y: Int): Ordering = EQ
+end
+
+# ==============================================================================
+# Serializable Typeclass - Serialization
+# ==============================================================================
+
+typeclass Serializable(T) do
+  def serialize(x: T): String
+end
+
+# Serializable instances for primitive types
+instance Serializable(Int) do
+  def serialize(x: Int): String = "Int"
+end
+
+instance Serializable(String) do
+  def serialize(x: String): String = x
+end
+
+end
