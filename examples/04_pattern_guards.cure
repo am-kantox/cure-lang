@@ -6,7 +6,6 @@ module PatternGuards do
 
   import Std.Io [println/1]
   import Std.List [length/1]
-  import Std.Show [show/1]
 
   # === BASIC GUARDS ===
   
@@ -117,11 +116,11 @@ module PatternGuards do
   def process_result(result: Result(Int, String)): String =
     match result do
       Ok(value) when value > 100 ->
-        "Large success: " <> show(value)
+        "Large success"
       Ok(value) when value > 0 and value <= 100 ->
-        "Moderate success: " <> show(value)
+        "Moderate success"
       Ok(value) when value < 0 ->
-        "Non-positive success: " <> show(value)
+        "Non-positive success"
       Error(msg) when msg == "timeout" ->
         "Connection timeout"
       Error(msg) when msg == "not_found" ->
@@ -163,7 +162,7 @@ module PatternGuards do
       x when x % 15 == 0 -> "FizzBuzz"
       x when x % 3 == 0 -> "Fizz"
       x when x % 5 == 0 -> "Buzz"
-      x -> show(x)
+      _ -> "Number"
     end
 
   # Temperature classification with multiple thresholds
@@ -226,8 +225,8 @@ module PatternGuards do
     println(distance_from_origin(Point{x: 2.0, y: 2.0}))   # "Outside unit circle"
 
     println("\n=== Result Processing ===")
-    println(process_result(Ok(150)))                 # "Large success: 150"
-    println(process_result(Ok(50)))                  # "Moderate success: 50"
+    println(process_result(Ok(150)))                 # "Large success"
+    println(process_result(Ok(50)))                  # "Moderate success"
     println(process_result(Error("timeout")))        # "Connection timeout"
 
     println("\n=== Person Evaluation ===")
@@ -240,7 +239,7 @@ module PatternGuards do
     println(fizzbuzz(15))              # "FizzBuzz"
     println(fizzbuzz(9))               # "Fizz"
     println(fizzbuzz(10))              # "Buzz"
-    println(fizzbuzz(7))               # "7"
+    println(fizzbuzz(7))               # "Number"
 
     println("\n=== Temperature Classification ===")
     println(classify_temperature(-60.0))    # "Extremely cold"

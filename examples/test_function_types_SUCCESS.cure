@@ -20,8 +20,8 @@ end
 
 # Test 4: Function types with complex types  
 typeclass Foldable(F) do
-  def fold(combine: A => A => A, initial: A, container: F(A)): A
-  def foldMap(f: A => B, op: B => B => B, initial: B, container: F(A)): B
+  def fold(combine: A => A => A, init: A, container: F(A)): A
+  def foldMap(f: A => B, op: B => B => B, init: B, container: F(A)): B
 end
 
 end
