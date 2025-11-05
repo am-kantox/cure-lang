@@ -608,6 +608,7 @@ check_function(
         return_type = ReturnType,
         constraint = Constraint,
         body = Body,
+        where_clause = WhereClause,
         is_private = IsPrivate,
         location = Location
     },
@@ -618,17 +619,26 @@ check_function(
         undefined ->
             % No type params - regular monomorphic function
             check_single_clause_function(
-                Name, Params, ReturnType, Constraint, Body, IsPrivate, Location, Env
+                Name, Params, ReturnType, Constraint, Body, WhereClause, IsPrivate, Location, Env
             );
         [] ->
             % Empty type params list - regular monomorphic function
             check_single_clause_function(
-                Name, Params, ReturnType, Constraint, Body, IsPrivate, Location, Env
+                Name, Params, ReturnType, Constraint, Body, WhereClause, IsPrivate, Location, Env
             );
         _ ->
             % Polymorphic function with type parameters
             check_polymorphic_function(
-                Name, TypeParams, Params, ReturnType, Constraint, Body, IsPrivate, Location, Env
+                Name,
+                TypeParams,
+                Params,
+                ReturnType,
+                Constraint,
+                Body,
+                WhereClause,
+                IsPrivate,
+                Location,
+                Env
             )
     end;
 % 7-parameter format (old format without is_private)
@@ -803,7 +813,9 @@ check_function(
     end.
 
 %% Check single-clause function (extracted from original check_function)
-check_single_clause_function(Name, Params, ReturnType, Constraint, Body, _IsPrivate, Location, Env) ->
+check_single_clause_function(
+    Name, Params, ReturnType, Constraint, Body, WhereClause, _IsPrivate, Location, Env
+) ->
     try
         % Convert parameters to type environment and extract type parameters
         {ParamTypes, ParamEnv} = process_parameters(Params, Env),
@@ -818,16 +830,29 @@ check_single_clause_function(Name, Params, ReturnType, Constraint, Body, _IsPriv
                     extract_and_add_type_params_safe(ReturnType, ParamEnv)
             end,
 
+        % Add typeclass constraints from where clause to environment
+        EnvWithTypeclass =
+            case WhereClause of
+                undefined ->
+                    EnvWithReturnTypeParams;
+                #where_clause{constraints = TypeclassConstraints} ->
+                    cure_types:extend_env_with_typeclass_constraints(
+                        EnvWithReturnTypeParams, TypeclassConstraints
+                    );
+                _ ->
+                    EnvWithReturnTypeParams
+            end,
+
         % Check and process constraint if present
         FinalEnv =
             case Constraint of
                 undefined ->
-                    EnvWithReturnTypeParams;
+                    EnvWithTypeclass;
                 _ ->
                     % First check that constraint is boolean
                     case
                         cure_types:infer_type(
-                            convert_expr_to_tuple(Constraint), EnvWithReturnTypeParams
+                            convert_expr_to_tuple(Constraint), EnvWithTypeclass
                         )
                     of
                         {ok, InferenceResult} ->
@@ -836,7 +861,7 @@ check_single_clause_function(Name, Params, ReturnType, Constraint, Body, _IsPriv
                                 {ok, _} ->
                                     % Convert constraint to SMT and add to environment
                                     process_when_clause_constraint(
-                                        Constraint, EnvWithReturnTypeParams, Location
+                                        Constraint, EnvWithTypeclass, Location
                                     );
                                 {error, Reason} ->
                                     throw({constraint_not_bool, Reason, Location})
@@ -947,8 +972,9 @@ check_multiclause_function(Name, Clauses, Location, Env) ->
             } = Clause,
 
             % Check this clause as if it were a single function
+            % Note: Multi-clause functions don't have where_clause per clause
             check_single_clause_function(
-                Name, Params, ReturnType, Constraint, Body, false, Location, Env
+                Name, Params, ReturnType, Constraint, Body, undefined, false, Location, Env
             )
         end,
         Clauses
@@ -985,7 +1011,7 @@ check_multiclause_function(Name, Clauses, Location, Env) ->
 
 %% Check polymorphic function with type parameters
 check_polymorphic_function(
-    Name, TypeParams, Params, ReturnType, Constraint, Body, _IsPrivate, Location, Env
+    Name, TypeParams, Params, ReturnType, Constraint, Body, WhereClause, _IsPrivate, Location, Env
 ) ->
     cure_utils:debug("[POLY] Checking polymorphic function ~p with type params ~p~n", [
         Name, TypeParams
@@ -1018,15 +1044,28 @@ check_polymorphic_function(
                     extract_and_add_type_params_safe(ReturnType, ParamEnv)
             end,
 
+        % Add typeclass constraints from where clause to environment
+        EnvWithTypeclass =
+            case WhereClause of
+                undefined ->
+                    EnvWithReturnTypeParams;
+                #where_clause{constraints = TypeclassConstraints} ->
+                    cure_types:extend_env_with_typeclass_constraints(
+                        EnvWithReturnTypeParams, TypeclassConstraints
+                    );
+                _ ->
+                    EnvWithReturnTypeParams
+            end,
+
         % Check and process constraint if present
         FinalEnv =
             case Constraint of
                 undefined ->
-                    EnvWithReturnTypeParams;
+                    EnvWithTypeclass;
                 _ ->
                     case
                         cure_types:infer_type(
-                            convert_expr_to_tuple(Constraint), EnvWithReturnTypeParams
+                            convert_expr_to_tuple(Constraint), EnvWithTypeclass
                         )
                     of
                         {ok, InferenceResult} ->
@@ -1034,7 +1073,7 @@ check_polymorphic_function(
                             case cure_types:unify(ConstraintType, {primitive_type, 'Bool'}) of
                                 {ok, _} ->
                                     process_when_clause_constraint(
-                                        Constraint, EnvWithReturnTypeParams, Location
+                                        Constraint, EnvWithTypeclass, Location
                                     );
                                 {error, Reason} ->
                                     throw({constraint_not_bool, Reason, Location})
@@ -1116,8 +1155,18 @@ check_multiclause_polymorphic_function(Name, TypeParams, Clauses, Location, Env)
             } = Clause,
 
             % Check this clause as a polymorphic function
+            % Note: Multi-clause functions don't have where_clause per clause
             check_polymorphic_function(
-                Name, TypeParams, Params, ReturnType, Constraint, Body, false, Location, Env
+                Name,
+                TypeParams,
+                Params,
+                ReturnType,
+                Constraint,
+                Body,
+                undefined,
+                false,
+                Location,
+                Env
             )
         end,
         Clauses

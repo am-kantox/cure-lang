@@ -108,16 +108,17 @@ compile_instance(
     % Compile each method with mangled name, threading state through
     case compile_instance_methods(TypeclassName, PrimaryType, Methods, State, []) of
         {ok, CompiledMethods, NewState} ->
-            % Generate registration code for this instance
-            RegistrationCode = generate_instance_registration(
-                TypeclassName,
-                PrimaryType,
-                CompiledMethods,
-                NewState
-            ),
+            % TODO: Generate registration code for this instance
+            % For now, skip registration to avoid form conversion issues
+            % RegistrationCode = generate_instance_registration(
+            %     TypeclassName,
+            %     PrimaryType,
+            %     CompiledMethods,
+            %     NewState
+            % ),
 
-            % Return both compiled methods and registration code
-            {ok, CompiledMethods ++ [RegistrationCode], NewState};
+            % Return just compiled methods (no registration for now)
+            {ok, CompiledMethods, NewState};
         {error, Reason} ->
             {error, Reason}
     end.

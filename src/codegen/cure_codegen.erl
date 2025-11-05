@@ -207,6 +207,7 @@ local state that is not shared between threads.
     % Main compilation interface
     compile_module/1, compile_module/2,
     compile_function/1, compile_function/2,
+    compile_function_impl/2,
     compile_program/1, compile_program/2,
 
     % Expression compilation
@@ -289,7 +290,9 @@ new_state() ->
         constants = #{},
         type_info = cure_typechecker:builtin_env(),
         optimization_level = 0,
-        type_constructors = BuiltinConstructors
+        type_constructors = BuiltinConstructors,
+        typeclass_constraints = [],
+        typeclass_env = undefined
     }.
 
 %% ============================================================================
@@ -606,6 +609,13 @@ compile_module_items([Item | RestItems], State, Acc) ->
             InstanceItems = [{derived_instance, Inst} || Inst <- DerivedInstances],
             NewAcc = lists:reverse(InstanceItems) ++ [RecordItem | Acc],
             cure_utils:debug("Added record with ~p derived instances~n", [length(DerivedInstances)]),
+            compile_module_items(RestItems, NewState, NewAcc);
+        {ok, {instance, CompiledMethods}, NewState} ->
+            % Instance methods need to be unwrapped and added as individual functions
+            cure_utils:debug("[INSTANCE] Adding ~p instance methods to module~n", [
+                length(CompiledMethods)
+            ]),
+            NewAcc = lists:reverse(CompiledMethods) ++ Acc,
             compile_module_items(RestItems, NewState, NewAcc);
         {ok, CompiledItem, NewState} ->
             compile_module_items(RestItems, NewState, [CompiledItem | Acc]);
@@ -2803,29 +2813,64 @@ try_resolve_typeclass_method(Function, Args, State) ->
             % Check if Function is a simple identifier that matches a typeclass method
             case Function of
                 #identifier_expr{name = MethodName} ->
-                    % Try to find which typeclass provides this method
-                    case find_typeclass_for_method(MethodName, Constraints, Args, State) of
-                        {ok, InstanceModule, InstanceMethodName} ->
-                            % Create a module-qualified call to the instance method
-                            ResolvedFunction = #binary_op_expr{
-                                op = '.',
-                                left = #identifier_expr{
-                                    name = InstanceModule, location = undefined
-                                },
-                                right = #identifier_expr{
-                                    name = InstanceMethodName, location = undefined
-                                },
-                                location = undefined
-                            },
-                            {ok, ResolvedFunction};
-                        not_found ->
-                            not_typeclass
+                    % First check if this is actually a method in any of our constraints
+                    case is_typeclass_method(MethodName, Constraints) of
+                        false ->
+                            % Not a typeclass method in our constraints
+                            not_typeclass;
+                        true ->
+                            % Try to find which typeclass provides this method
+                            case find_typeclass_for_method(MethodName, Constraints, Args, State) of
+                                {ok, local, InstanceMethodName} ->
+                                    % Local instance - use direct call
+                                    ResolvedFunction = #identifier_expr{
+                                        name = InstanceMethodName,
+                                        location = undefined
+                                    },
+                                    {ok, ResolvedFunction};
+                                {ok, InstanceModule, InstanceMethodName} ->
+                                    % External instance - create module-qualified call
+                                    ResolvedFunction = #binary_op_expr{
+                                        op = '.',
+                                        left = #identifier_expr{
+                                            name = InstanceModule, location = undefined
+                                        },
+                                        right = #identifier_expr{
+                                            name = InstanceMethodName, location = undefined
+                                        },
+                                        location = undefined
+                                    },
+                                    {ok, ResolvedFunction};
+                                not_found ->
+                                    not_typeclass
+                            end
                     end;
                 _ ->
                     % Not a simple identifier, can't be a typeclass method call
                     not_typeclass
             end
     end.
+
+%% Check if a method name is defined in any of the typeclass constraints
+is_typeclass_method(_MethodName, []) ->
+    false;
+is_typeclass_method(MethodName, [#typeclass_constraint{typeclass = TypeclassName} | Rest]) ->
+    % Check if this typeclass defines the method
+    % For now, we assume 'show' is in Show, 'eq' is in Eq, etc.
+    % TODO: Look up actual typeclass definitions
+    KnownMethods =
+        case TypeclassName of
+            'Show' -> [show];
+            'Eq' -> [eq, ne];
+            'Ord' -> [compare, lt, le, gt, ge];
+            _ -> []
+        end,
+    case lists:member(MethodName, KnownMethods) of
+        true -> true;
+        false -> is_typeclass_method(MethodName, Rest)
+    end;
+is_typeclass_method(MethodName, [_ | Rest]) ->
+    is_typeclass_method(MethodName, Rest).
 
 %% Find which typeclass provides the method and resolve to instance implementation
 find_typeclass_for_method(_MethodName, [], _Args, _State) ->
@@ -2838,14 +2883,16 @@ find_typeclass_for_method(MethodName, [Constraint | Rest], Args, State) ->
             case infer_type_from_arg(Args, State) of
                 {ok, ConcreteType} ->
                     % Generate the instance method name
-                    % Format: show_Int, eq_String, etc.
-                    MethodNameStr = atom_to_list(MethodName),
+                    % Format: Show_Int_show (typeclass_codegen uses TypeclassName_TypeName_MethodName)
+                    TypeclassStr = atom_to_list(TypeclassName),
                     TypeNameStr = type_to_string(ConcreteType),
-                    InstanceMethodName = list_to_atom(MethodNameStr ++ "_" ++ TypeNameStr),
-                    % Instance module is usually 'Std.TypeclassName' or just the module where typeclass is defined
-                    % For stdlib typeclasses, use 'Std.TypeclassName' format
-                    InstanceModule = get_typeclass_module(TypeclassName),
-                    {ok, InstanceModule, InstanceMethodName};
+                    MethodNameStr = atom_to_list(MethodName),
+                    InstanceMethodName = list_to_atom(
+                        TypeclassStr ++ "_" ++ TypeNameStr ++ "_" ++ MethodNameStr
+                    ),
+                    % For now, assume all instances are local (in the same module)
+                    % TODO: Support cross-module instance lookup
+                    {ok, local, InstanceMethodName};
                 unknown ->
                     % Can't infer type, try next constraint
                     find_typeclass_for_method(MethodName, Rest, Args, State)

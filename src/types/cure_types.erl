@@ -145,6 +145,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     % Type environment
     new_env/0,
     extend_env/3,
+    extend_env_with_typeclass_constraints/2,
     lookup_env/2,
 
     % Type inference
@@ -205,6 +206,9 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     add_type_constructor/2,
     lookup_type_constructor/2,
     infer_constructor_kind/3,
+
+    % Typeclass method resolution
+    try_resolve_typeclass_method/2,
 
     % Typeclass kind checking
     check_typeclass_def/2,
@@ -284,7 +288,9 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     constraints :: [type_constraint()],
     parent :: type_env() | undefined,
     type_constructors :: #{atom() => type_constructor()},
-    typeclasses :: #{atom() => typeclass_info()}
+    typeclasses :: #{atom() => typeclass_info()},
+    % Track active typeclass constraints from where clauses
+    typeclass_constraints :: [term()]
 }).
 
 %% Recursive call context tracking
@@ -691,7 +697,8 @@ new_env() ->
         constraints = [],
         parent = undefined,
         type_constructors = #{},
-        typeclasses = #{}
+        typeclasses = #{},
+        typeclass_constraints = []
     }.
 
 -doc """
@@ -771,6 +778,31 @@ lookup_env([{Var, Type} | _Rest], Var) ->
 lookup_env([_ | Rest], Var) ->
     % Search rest of association list
     lookup_env(Rest, Var).
+
+-doc """
+Extends type environment with typeclass constraints from where clause.
+
+Adds active typeclass constraints to the environment so they can be used
+during type checking of function bodies.
+
+## Arguments
+- `Env` - Type environment (type_env() record)
+- `Constraints` - List of typeclass constraints from where clause
+
+## Returns
+- Updated environment with typeclass constraints added
+
+## Example
+```erlang
+Constraints = [#typeclass_constraint{typeclass = 'Show', type_args = [T]}],
+Env2 = cure_types:extend_env_with_typeclass_constraints(Env, Constraints).
+```
+""".
+extend_env_with_typeclass_constraints(Env = #type_env{}, Constraints) ->
+    Env#type_env{typeclass_constraints = Constraints};
+extend_env_with_typeclass_constraints(Env, _Constraints) ->
+    % For non-type_env environments, just return as-is
+    Env.
 
 -doc """
 Unifies two types using the Robinson unification algorithm.
@@ -856,6 +888,19 @@ unify_impl(Var = #type_var{id = Id}, Type, Subst) ->
 unify_impl(Type, Var = #type_var{}, Subst) ->
     unify_impl(Var, Type, Subst);
 unify_impl({primitive_type, Name1}, {primitive_type, Name2}, Subst) when
+    Name1 =:= Name2
+->
+    {ok, Subst};
+%% Handle primitive types with location fields
+unify_impl({primitive_type, Name1, _Loc1}, {primitive_type, Name2, _Loc2}, Subst) when
+    Name1 =:= Name2
+->
+    {ok, Subst};
+unify_impl({primitive_type, Name1}, {primitive_type, Name2, _Loc}, Subst) when
+    Name1 =:= Name2
+->
+    {ok, Subst};
+unify_impl({primitive_type, Name1, _Loc}, {primitive_type, Name2}, Subst) when
     Name1 =:= Name2
 ->
     {ok, Subst};
@@ -1841,7 +1886,13 @@ infer_expr({literal_expr, Value, _Location}, _Env) ->
 infer_expr({identifier_expr, Name, Location}, Env) ->
     case lookup_env(Env, Name) of
         undefined ->
-            {error, {unbound_variable, Name, Location}};
+            % Check if this is a typeclass method in active constraints
+            case try_resolve_typeclass_method(Name, Env) of
+                {ok, MethodType} ->
+                    {ok, MethodType, []};
+                not_found ->
+                    {error, {unbound_variable, Name, Location}}
+            end;
         Type ->
             % Check if this is a polymorphic type and instantiate it
             InstantiatedType = instantiate_polymorphic_type_if_needed(Type),
@@ -7493,3 +7544,169 @@ is_nat_type({refined_type, 'Int', Pred}) when is_function(Pred, 1) ->
     end;
 is_nat_type(_) ->
     false.
+
+-doc """
+Tries to resolve an identifier as a typeclass method.
+
+Checks if the identifier matches a method in any active typeclass
+constraints from the where clause. If found, returns the method type.
+
+## Arguments
+- `Name` - The identifier name (atom)
+- `Env` - Type environment with typeclass constraints
+
+## Returns
+- `{ok, MethodType}` - If the identifier is a typeclass method
+- `not_found` - If not a typeclass method
+
+## Example
+```erlang
+% In a function with 'where Show(T)' and a call to 'show(x)'
+Env = cure_types:extend_env_with_typeclass_constraints(Env0, Constraints),
+{ok, ShowType} = cure_types:try_resolve_typeclass_method(show, Env).
+```
+""".
+try_resolve_typeclass_method(Name, #type_env{typeclass_constraints = Constraints} = Env) ->
+    cure_utils:debug("[TYPECLASS_METHOD_RESOLVE] Trying to resolve: ~p~n", [Name]),
+    % Get typeclass environment from bindings
+    TypeclassEnv =
+        case lookup_env(Env, '__typeclass_env__') of
+            undefined -> undefined;
+            TCEnv -> TCEnv
+        end,
+    cure_utils:debug("[TYPECLASS_METHOD_RESOLVE] TCEnv found: ~p~n", [TypeclassEnv =/= undefined]),
+
+    case TypeclassEnv of
+        undefined ->
+            % No typeclass environment, can't resolve
+            not_found;
+        _ ->
+            % Get typeclass definitions from the typeclass environment
+            % The typeclass_env is a record from cure_typeclass module
+            % Extract classes map: #typeclass_env{classes = Classes}
+            TypeclassDefs =
+                case TypeclassEnv of
+                    {typeclass_env, Classes, _, _, _} -> Classes;
+                    _ -> #{}
+                end,
+
+            case Constraints of
+                [] ->
+                    % No active constraints, but check if it's a known typeclass method
+                    find_method_in_typeclasses(Name, TypeclassDefs);
+                _ ->
+                    % Active typeclass constraints - check if Name is a method in any of them
+                    find_method_in_constraints(Name, Constraints, TypeclassDefs)
+            end
+    end;
+try_resolve_typeclass_method(_Name, _Env) ->
+    % Not a type_env record or no typeclass info
+    not_found.
+
+%% Helper: Find method in active typeclass constraints
+find_method_in_constraints(_Name, [], _TypeclassDefs) ->
+    not_found;
+find_method_in_constraints(Name, [Constraint | Rest], TypeclassDefs) ->
+    % Extract typeclass name from constraint
+    TypeclassName =
+        case Constraint of
+            #typeclass_constraint{typeclass = TC} -> TC;
+            _ -> undefined
+        end,
+
+    case TypeclassName of
+        undefined ->
+            find_method_in_constraints(Name, Rest, TypeclassDefs);
+        _ ->
+            % Look up the typeclass definition
+            case maps:get(TypeclassName, TypeclassDefs, undefined) of
+                undefined ->
+                    find_method_in_constraints(Name, Rest, TypeclassDefs);
+                TypeclassInfo ->
+                    % Check if Name is a method in this typeclass
+                    case find_method_in_typeclass_info(Name, TypeclassInfo) of
+                        {ok, MethodType} -> {ok, MethodType};
+                        not_found -> find_method_in_constraints(Name, Rest, TypeclassDefs)
+                    end
+            end
+    end.
+
+%% Helper: Find method in all known typeclasses
+find_method_in_typeclasses(_Name, TypeclassDefs) when map_size(TypeclassDefs) =:= 0 ->
+    not_found;
+find_method_in_typeclasses(Name, TypeclassDefs) ->
+    % Iterate through all typeclasses looking for the method
+    TypeclassList = maps:values(TypeclassDefs),
+    find_method_in_typeclass_list(Name, TypeclassList).
+
+find_method_in_typeclass_list(_Name, []) ->
+    not_found;
+find_method_in_typeclass_list(Name, [TypeclassInfo | Rest]) ->
+    case find_method_in_typeclass_info(Name, TypeclassInfo) of
+        {ok, MethodType} -> {ok, MethodType};
+        not_found -> find_method_in_typeclass_list(Name, Rest)
+    end.
+
+%% Helper: Extract method type from typeclass info
+%% TypeclassInfo is a #typeclass_info{} record
+%% But since it might be from another module, we access as tuple
+find_method_in_typeclass_info(Name, TypeclassInfo) when is_tuple(TypeclassInfo) ->
+    % Try to extract methods field from typeclass_info record
+    % #typeclass_info{name, type_params, superclasses, methods, default_impls, kind}
+    % Record structure: {typeclass_info, Name, TypeParams, Superclasses, Methods, DefaultImpls, Kind}
+    try
+        Methods =
+            case TypeclassInfo of
+                {typeclass_info, _, _, _, M, _, _} -> M;
+                % methods is field 5
+                _ -> element(5, TypeclassInfo)
+            end,
+
+        case is_map(Methods) of
+            true ->
+                case maps:get(Name, Methods, undefined) of
+                    undefined ->
+                        not_found;
+                    MethodInfo when is_tuple(MethodInfo) ->
+                        % method_info record: {method_info, Name, TypeSig, Constraints, HasDefault}
+
+                        % type_signature is field 3
+                        TypeSig = element(3, MethodInfo),
+                        {ok, TypeSig};
+                    MethodInfo when is_map(MethodInfo) ->
+                        case maps:get(type_signature, MethodInfo, undefined) of
+                            undefined -> not_found;
+                            TypeSig -> {ok, TypeSig}
+                        end;
+                    _ ->
+                        not_found
+                end;
+            false ->
+                not_found
+        end
+    catch
+        _:_ -> not_found
+    end;
+find_method_in_typeclass_info(Name, TypeclassInfo) when is_map(TypeclassInfo) ->
+    % Fallback for map representation
+    Methods = maps:get(methods, TypeclassInfo, #{}),
+    case maps:get(Name, Methods, undefined) of
+        undefined ->
+            not_found;
+        MethodInfo when is_tuple(MethodInfo) ->
+            try
+                TypeSig = element(3, MethodInfo),
+                {ok, TypeSig}
+            catch
+                _:_ -> not_found
+            end;
+        MethodInfo when is_map(MethodInfo) ->
+            case maps:get(type_signature, MethodInfo, undefined) of
+                undefined -> not_found;
+                TypeSig -> {ok, TypeSig}
+            end;
+        _ ->
+            not_found
+    end;
+find_method_in_typeclass_info(_Name, _TypeclassInfo) ->
+    not_found.
