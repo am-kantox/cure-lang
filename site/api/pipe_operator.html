@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>Pipe Operator — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/docs/pipe_operator.md#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+
+    <span>Pipe Operator (<code class="inline">|&gt;</code>)</span>
+  </h1>
+
+<p>The pipe operator (<code class="inline">|&gt;</code>) is a fundamental feature of Cure that provides elegant error handling and function composition through monadic semantics with automatic Result type management.</p><h2 id="table-of-contents" class="section-heading">
+  <a href="#table-of-contents" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Table of Contents</span>
+</h2>
+<ul><li><a href="#overview">Overview</a></li><li><a href="#syntax">Syntax</a></li><li><a href="#semantics">Semantics</a></li><li><a href="#type-system-integration">Type System Integration</a></li><li><a href="#examples">Examples</a></li><li><a href="#implementation-details">Implementation Details</a></li><li><a href="#best-practices">Best Practices</a></li><li><a href="#comparison-with-other-languages">Comparison with Other Languages</a></li></ul><h2 id="overview" class="section-heading">
+  <a href="#overview" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Overview</span>
+</h2>
+<p>The pipe operator enables you to write data transformation pipelines in a readable, left-to-right flow while automatically handling error propagation. It combines the ergonomics of Elixir's pipe operator with the safety of Rust's <code class="inline">?</code> operator.</p><h3 id="key-features" class="section-heading">
+  <a href="#key-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Key Features</span>
+</h3>
+<ul><li><strong>Automatic Error Propagation</strong>: Errors short-circuit the pipeline without requiring explicit checks</li><li><strong>Result Type Wrapping</strong>: Non-monadic values are automatically wrapped in <code class="inline">Ok()</code></li><li><strong>Exception Safety</strong>: Runtime exceptions are caught and converted to <code class="inline">Error()</code> values</li><li><strong>Clean Syntax</strong>: Write sequential transformations without nesting or intermediate variables</li></ul><h2 id="syntax" class="section-heading">
+  <a href="#syntax" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Syntax</span>
+</h2>
+<pre><code class="cure">expression |&gt; function
+expression |&gt; function(arg1, arg2)</code></pre><p>The pipe operator has the lowest precedence (1) and left associativity, meaning:</p><pre><code class="cure">a |&gt; b |&gt; c  # Parsed as: (a |&gt; b) |&gt; c
+1 + 2 |&gt; f   # Parsed as: (1 + 2) |&gt; f</code></pre><h2 id="semantics" class="section-heading">
+  <a href="#semantics" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Semantics</span>
+</h2>
+<p>The pipe operator implements three fundamental rules:</p><h3 id="rule-1-error-propagation" class="section-heading">
+  <a href="#rule-1-error-propagation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Rule 1: Error Propagation</span>
+</h3>
+<pre><code class="cure">Error(reason) |&gt; function
+# =&gt; Error(reason)  # function is NOT called</code></pre><p>If the left-hand side is an <code class="inline">Error</code>, the entire pipeline stops and the error is propagated without calling the function.</p><h3 id="rule-2-ok-unwrapping" class="section-heading">
+  <a href="#rule-2-ok-unwrapping" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Rule 2: Ok Unwrapping</span>
+</h3>
+<pre><code class="cure">Ok(value) |&gt; function
+# =&gt; Ok(function(value))  # value is unwrapped before calling function</code></pre><p>If the left-hand side is <code class="inline">Ok(value)</code>, the value is extracted, passed to the function, and the result is wrapped in <code class="inline">Ok()</code> (unless the function already returns a Result type).</p><h3 id="rule-3-value-passing" class="section-heading">
+  <a href="#rule-3-value-passing" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Rule 3: Value Passing</span>
+</h3>
+<pre><code class="cure">value |&gt; function
+# =&gt; Ok(function(value))  # value is passed directly, result is wrapped</code></pre><p>If the left-hand side is a plain value (not a Result type), it's passed to the function and the result is wrapped in <code class="inline">Ok()</code>.</p><h3 id="exception-handling" class="section-heading">
+  <a href="#exception-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Exception Handling</span>
+</h3>
+<p>If a function in the pipeline throws an exception, it's automatically caught and converted to an Error:</p><pre><code class="cure">Ok(0) |&gt; (fun(x) -&gt; 1 / x)
+# =&gt; Error({pipe_runtime_error, error, badarith})</code></pre><h2 id="type-system-integration" class="section-heading">
+  <a href="#type-system-integration" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type System Integration</span>
+</h2>
+<p>The type checker understands the pipe operator and performs proper type inference:</p><pre><code class="cure">def process_data(input: String) -&gt; Result(Int, String) do
+  input
+    |&gt; parse_int       # String -&gt; Result(Int, String)
+    |&gt; validate_range  # Int -&gt; Result(Int, String) 
+    |&gt; double          # Int -&gt; Int (automatically wrapped)
+end</code></pre><p>Type inference ensures:</p><ul><li>The piped value's type matches the function's first parameter</li><li>Result types are properly propagated through the chain</li><li>Non-monadic return values are wrapped in Result&lt;T&gt;</li></ul><h2 id="examples" class="section-heading">
+  <a href="#examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Examples</span>
+</h2>
+<h3 id="basic-piping" class="section-heading">
+  <a href="#basic-piping" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Basic Piping</span>
+</h3>
+<pre><code class="cure">def example1() do
+  5
+    |&gt; double      # 10
+    |&gt; increment   # 11
+  # Result: Ok(11)
+end
+
+def double(x: Int) -&gt; Int = x * 2
+def increment(x: Int) -&gt; Int = x + 1</code></pre><h3 id="error-handling" class="section-heading">
+  <a href="#error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h3>
+<pre><code class="cure">def parse_and_process(input: String) -&gt; Result(String, String) do
+  input
+    |&gt; parse_data        # Returns Error if invalid
+    |&gt; validate          # Only runs if parse succeeded
+    |&gt; transform         # Only runs if validate succeeded
+    |&gt; format_output     # Only runs if transform succeeded
+end</code></pre><h3 id="piping-with-arguments" class="section-heading">
+  <a href="#piping-with-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Piping with Arguments</span>
+</h3>
+<p>The piped value becomes the first argument:</p><pre><code class="cure">def example2() do
+  10
+    |&gt; add(5)       # add(10, 5) =&gt; 15
+    |&gt; multiply(3)  # multiply(15, 3) =&gt; 45
+  # Result: Ok(45)
+end
+
+def add(x: Int, y: Int) -&gt; Int = x + y
+def multiply(x: Int, y: Int) -&gt; Int = x * y</code></pre><h3 id="real-world-example" class="section-heading">
+  <a href="#real-world-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Real-World Example</span>
+</h3>
+<pre><code class="cure">def process_user_input(input: String) -&gt; Result(User, String) do
+  input
+    |&gt; trim_whitespace
+    |&gt; validate_email
+    |&gt; normalize_email
+    |&gt; check_not_taken
+    |&gt; create_user
+end</code></pre><h3 id="error-recovery" class="section-heading">
+  <a href="#error-recovery" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Recovery</span>
+</h3>
+<pre><code class="cure">def safe_divide(x: Int, y: Int) -&gt; String do
+  let result = x |&gt; divide_by(y) in
+  match result do
+    Ok(value) -&gt; &quot;Result: &quot; &lt;&gt; show(value)
+    Error(reason) -&gt; &quot;Error: &quot; &lt;&gt; reason
+  end
+end</code></pre><h3 id="combining-operators" class="section-heading">
+  <a href="#combining-operators" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Combining Operators</span>
+</h3>
+<pre><code class="cure">def complex_computation() do
+  (calculate_base() + 10)
+    |&gt; apply_discount
+    |&gt; format_price
+end</code></pre><h2 id="implementation-details" class="section-heading">
+  <a href="#implementation-details" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Implementation Details</span>
+</h2>
+<h3 id="lexer" class="section-heading">
+  <a href="#lexer" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Lexer</span>
+</h3>
+<p>The pipe operator is tokenized as a two-character operator:</p><pre><code class="makeup erlang" translate="no"><span class="p">&lt;&lt;</span><span class="s">&quot;|&gt;&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;|&gt;&#39;</span></code></pre><h3 id="parser" class="section-heading">
+  <a href="#parser" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Parser</span>
+</h3>
+<p>The operator is parsed with:</p><ul><li><strong>Precedence</strong>: 1 (lowest)</li><li><strong>Associativity</strong>: left</li></ul><p>This ensures pipes are evaluated left-to-right and have lower precedence than all other operations.</p><h3 id="code-generation" class="section-heading">
+  <a href="#code-generation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Code Generation</span>
+</h3>
+<p>The compiler generates a <code class="inline">monadic_pipe_call</code> instruction that is translated to BEAM bytecode as a call to <a href="cure_std.html#pipe/2"><code class="inline">cure_std:pipe/2</code></a>:</p><pre><code class="makeup erlang" translate="no"><span class="nf">generate_monadic_pipe_form</span><span class="p" data-group-id="4788598917-1">(</span><span class="n">Function</span><span class="p">,</span><span class="w"> </span><span class="n">PipedValue</span><span class="p">,</span><span class="w"> </span><span class="n">RestArgs</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p" data-group-id="4788598917-1">)</span></code></pre><p>This creates Erlang code that:</p><ol><li>Wraps the piped value with <code class="inline">ok()</code> if not already a Result</li><li>Checks if it's <code class="inline">Ok(value)</code> or <code class="inline">Error(reason)</code></li><li>If Ok, unwraps and calls the function</li><li>If Error, propagates without calling the function</li><li>Wraps non-monadic results in <code class="inline">Ok()</code></li></ol><h3 id="runtime" class="section-heading">
+  <a href="#runtime" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Runtime</span>
+</h3>
+<p>The runtime function <a href="cure_std.html#pipe/2"><code class="inline">cure_std:pipe/2</code></a> implements the three semantic rules:</p><pre><code class="makeup erlang" translate="no"><span class="nf">pipe</span><span class="p" data-group-id="1762981597-1">(</span><span class="p" data-group-id="1762981597-2">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="1762981597-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Err</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="n">RHO</span><span class="p" data-group-id="1762981597-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">Err</span><span class="p">;</span><span class="w">  </span><span class="c1">% Rule 1</span><span class="w">
+</span><span class="nf">pipe</span><span class="p" data-group-id="1762981597-3">(</span><span class="p" data-group-id="1762981597-4">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">V</span><span class="p" data-group-id="1762981597-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">RHO</span><span class="p" data-group-id="1762981597-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">wrap_result</span><span class="p" data-group-id="1762981597-5">(</span><span class="n">RHO</span><span class="p" data-group-id="1762981597-6">(</span><span class="n">V</span><span class="p" data-group-id="1762981597-6">)</span><span class="p" data-group-id="1762981597-5">)</span><span class="p">;</span><span class="w">  </span><span class="c1">% Rule 2</span><span class="w">
+</span><span class="nf">pipe</span><span class="p" data-group-id="1762981597-7">(</span><span class="n">LHO</span><span class="p">,</span><span class="w"> </span><span class="n">RHO</span><span class="p" data-group-id="1762981597-7">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">wrap_result</span><span class="p" data-group-id="1762981597-8">(</span><span class="n">RHO</span><span class="p" data-group-id="1762981597-9">(</span><span class="n">LHO</span><span class="p" data-group-id="1762981597-9">)</span><span class="p" data-group-id="1762981597-8">)</span><span class="p">.</span><span class="w">  </span><span class="c1">% Rule 3</span></code></pre><h2 id="best-practices" class="section-heading">
+  <a href="#best-practices" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Best Practices</span>
+</h2>
+<h3 id="do-use-for-sequential-transformations" class="section-heading">
+  <a href="#do-use-for-sequential-transformations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Do: Use for Sequential Transformations</span>
+</h3>
+<pre><code class="cure"># Good: Clear data flow
+input
+  |&gt; step1
+  |&gt; step2
+  |&gt; step3</code></pre><h3 id="don-t-overuse-in-simple-cases" class="section-heading">
+  <a href="#don-t-overuse-in-simple-cases" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Don't: Overuse in Simple Cases</span>
+</h3>
+<pre><code class="cure"># Bad: Overkill for single operation
+value |&gt; function
+
+# Better: Direct call
+function(value)</code></pre><h3 id="do-handle-errors-at-pipeline-end" class="section-heading">
+  <a href="#do-handle-errors-at-pipeline-end" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Do: Handle Errors at Pipeline End</span>
+</h3>
+<pre><code class="cure"># Good: Single error handling point
+let result = data |&gt; pipeline |&gt; of |&gt; operations in
+match result do
+  Ok(value) -&gt; handle_success(value)
+  Error(e) -&gt; handle_error(e)
+end</code></pre><h3 id="do-use-with-result-returning-functions" class="section-heading">
+  <a href="#do-use-with-result-returning-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Do: Use with Result-Returning Functions</span>
+</h3>
+<pre><code class="cure"># Good: Natural error propagation
+def process(input: String) -&gt; Result(Output, Error) do
+  input
+    |&gt; parse         # Returns Result
+    |&gt; validate      # Returns Result
+    |&gt; transform     # Returns Result
+end</code></pre><h3 id="don-t-mix-with-non-result-returns-unnecessarily" class="section-heading">
+  <a href="#don-t-mix-with-non-result-returns-unnecessarily" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Don't: Mix with Non-Result Returns Unnecessarily</span>
+</h3>
+<pre><code class="cure"># Inconsistent: mix of Result and non-Result
+input
+  |&gt; operation1    # Returns Int
+  |&gt; operation2    # Returns Result(Int, Error)
+  |&gt; operation3    # Returns Int
+
+# Better: Consistent Result types
+input
+  |&gt; operation1_safe   # Returns Result(Int, Error)
+  |&gt; operation2        # Returns Result(Int, Error)
+  |&gt; operation3_safe   # Returns Result(Int, Error)</code></pre><h2 id="performance-considerations" class="section-heading">
+  <a href="#performance-considerations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Performance Considerations</span>
+</h2>
+<p>The pipe operator has minimal overhead:</p><ol><li><strong>Compile-time</strong>: Parser precedence handling and AST construction</li><li><strong>Runtime</strong>: One function call to <a href="cure_std.html#pipe/2"><code class="inline">cure_std:pipe/2</code></a> per pipe operation</li><li><strong>Optimization</strong>: The type optimizer can inline simple pipes in monomorphic code</li></ol><p>For performance-critical paths where you know errors won't occur, consider direct function calls instead of piping.</p><h2 id="comparison-with-other-languages" class="section-heading">
+  <a href="#comparison-with-other-languages" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Comparison with Other Languages</span>
+</h2>
+<h3 id="vs-elixir" class="section-heading">
+  <a href="#vs-elixir" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">vs. Elixir <code class="inline">|&gt;</code></span>
+</h3>
+<p><strong>Similarities</strong>:</p><ul><li>Left-to-right data flow</li><li>Lowest precedence</li><li>Natural transformation pipelines</li></ul><p><strong>Differences</strong>:</p><ul><li>Cure's pipe has monadic semantics (automatic error handling)</li><li>Elixir's pipe is purely syntactic (no error propagation)</li></ul><h3 id="vs-rust-operator" class="section-heading">
+  <a href="#vs-rust-operator" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">vs. Rust <code class="inline">?</code> Operator</span>
+</h3>
+<p><strong>Similarities</strong>:</p><ul><li>Automatic error propagation</li><li>Short-circuit on error</li><li>Result/Option type integration</li></ul><p><strong>Differences</strong>:</p><ul><li>Cure's pipe is an infix operator (readable left-to-right)</li><li>Rust's <code class="inline">?</code> is a postfix operator (early return semantics)</li></ul><h3 id="vs-haskell-bind" class="section-heading">
+  <a href="#vs-haskell-bind" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">vs. Haskell <code class="inline">&gt;&gt;=</code> (Bind)</span>
+</h3>
+<p><strong>Similarities</strong>:</p><ul><li>Monadic composition</li><li>Error propagation through Maybe/Either</li></ul><p><strong>Differences</strong>:</p><ul><li>Cure's pipe is operator-based (more accessible syntax)</li><li>Haskell's bind is more general (works with any Monad)</li></ul><h2 id="advanced-topics" class="section-heading">
+  <a href="#advanced-topics" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Advanced Topics</span>
+</h2>
+<h3 id="custom-monadic-types" class="section-heading">
+  <a href="#custom-monadic-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Custom Monadic Types</span>
+</h3>
+<p>The pipe operator currently works with Result types (<code class="inline">Ok</code>/<code class="inline">Error</code>). Future versions may support:</p><ul><li>Option types (<code class="inline">Some</code>/<code class="inline">None</code>)</li><li>Custom monadic types through traits</li><li>Async/await integration</li></ul><h3 id="type-level-optimizations" class="section-heading">
+  <a href="#type-level-optimizations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type-Level Optimizations</span>
+</h3>
+<p>The type checker and optimizer can:</p><ul><li>Eliminate redundant wrapping/unwrapping</li><li>Inline monomorphic pipe chains</li><li>Prove error-free pipelines and generate direct calls</li></ul><h3 id="debugging-pipelines" class="section-heading">
+  <a href="#debugging-pipelines" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Debugging Pipelines</span>
+</h3>
+<p>Use <code class="inline">let</code> bindings to inspect intermediate values:</p><pre><code class="cure">def debug_pipeline(input: String) do
+  let step1 = input |&gt; parse in
+  let step2 = step1 |&gt; validate in
+  let step3 = step2 |&gt; process in
+  step3
+end</code></pre><h2 id="see-also" class="section-heading">
+  <a href="#see-also" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">See Also</span>
+</h2>
+<ul><li><a href="result_type.md">Result Type Documentation</a></li><li><a href="error_handling.md">Error Handling Guide</a></li><li><a href="composition.md">Function Composition</a></li><li><a href="type_system.md">Type System Overview</a></li></ul>
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="type_system.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+Type System
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+  </div>
+</div>
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+              (<a href="https://preview.hex.pm/preview/cure/0.1.0/show/docs/pipe_operator.md">current file</a>)
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

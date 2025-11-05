@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>Syntax Guide — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/docs/CURE_SYNTAX_GUIDE.md#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+
+    <span>Cure Language Syntax Guide</span>
+  </h1>
+
+<p><strong>Based on</strong>: Actual Cure implementation (Standard Library v1.0)<br/><strong>Purpose</strong>: Reference for creating correct Cure examples<br/><strong>Last Updated</strong>: October 30, 2025</p><hr class="thin"/><h2 id="1-module-structure" class="section-heading">
+  <a href="#1-module-structure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">1. Module Structure</span>
+</h2>
+<p>Every Cure file should define a module:</p><pre><code class="cure">module ModuleName do
+  export [function_name/1, TypeName]
+  
+  # Module contents
+end</code></pre><h3 id="exports" class="section-heading">
+  <a href="#exports" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Exports</span>
+</h3>
+<p>Export declarations specify what's public:</p><pre><code class="cure">export [
+  function_name/1,    # Function with arity
+  TypeName,           # Type constructor
+  constructor_name    # Data constructor
+]</code></pre><h3 id="imports" class="section-heading">
+  <a href="#imports" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Imports</span>
+</h3>
+<p>Import from other modules (including standard library):</p><pre><code class="cure">import Std.Core [Result, Option, ok/1, error/1]
+import Std.List [map/2, filter/2, fold/3]
+import Std.Io [print/1, println/1]</code></pre><hr class="thin"/><h2 id="2-comments" class="section-heading">
+  <a href="#2-comments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">2. Comments</span>
+</h2>
+<p>Single-line comments only:</p><pre><code class="cure"># This is a comment</code></pre><hr class="thin"/><h2 id="3-type-definitions" class="section-heading">
+  <a href="#3-type-definitions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">3. Type Definitions</span>
+</h2>
+<h3 id="type-aliases-with-sum-types" class="section-heading">
+  <a href="#type-aliases-with-sum-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type Aliases with Sum Types</span>
+</h3>
+<pre><code class="cure">type Result(T, E) = Ok(T) | Error(E)
+type Option(T) = Some(T) | None
+type Ordering = Lt | Eq | Gt</code></pre><h3 id="record-types" class="section-heading">
+  <a href="#record-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Record Types</span>
+</h3>
+<p>Records define structured data with named fields:</p><pre><code class="cure">record RecordName do
+  field1: Type1
+  field2: Type2
+  field3: Type3
+end</code></pre><h4>Record with Type Parameters</h4><pre><code class="cure">record Point(T) do
+  x: T
+  y: T
+end</code></pre><h4>Record Construction</h4><pre><code class="cure"># Create a record instance
+let point = Point{x: 3.0, y: 4.0}
+let payload = TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0}</code></pre><h4>Record Pattern Matching</h4><pre><code class="cure"># Match and extract fields
+match point do
+  Point{x: x, y: y} when x == 0.0 and y == 0.0 -&gt;
+    &quot;Origin&quot;
+  Point{x: x, y: y} when x &gt; 0.0 and y &gt; 0.0 -&gt;
+    &quot;First quadrant&quot;
+  Point{x: _, y: y} when y == 0.0 -&gt;
+    &quot;On X-axis&quot;
+end
+
+# Partial field matching (other fields ignored)
+match person do
+  Person{age: age, score: score} when age &lt; 18 and score &gt;= 90 -&gt;
+    &quot;Outstanding young achiever&quot;
+end</code></pre><hr class="thin"/><h2 id="4-function-definitions" class="section-heading">
+  <a href="#4-function-definitions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">4. Function Definitions</span>
+</h2>
+<h3 id="basic-function-syntax" class="section-heading">
+  <a href="#basic-function-syntax" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Basic Function Syntax</span>
+</h3>
+<pre><code class="cure">def function_name(param1: Type1, param2: Type2): ReturnType =
+  expression</code></pre><h3 id="function-with-match-expression" class="section-heading">
+  <a href="#function-with-match-expression" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function with Match Expression</span>
+</h3>
+<pre><code class="cure">def length(list: List(T)): Nat =
+  match list do
+    [] -&gt; Zero
+    [_ | t] -&gt; Succ(length(t))
+  end</code></pre><h3 id="functions-with-let-bindings" class="section-heading">
+  <a href="#functions-with-let-bindings" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Functions with Let Bindings</span>
+</h3>
+<pre><code class="cure">def filter(list: List(T), predicate: T -&gt; Bool): List(T) =
+  match list do
+    [] -&gt; []
+    [h | t] -&gt; 
+      let filtered_tail = filter(t, predicate)
+      match predicate(h) do
+        true -&gt; [h | filtered_tail]
+        false -&gt; filtered_tail
+      end
+  end</code></pre><h3 id="lambda-functions" class="section-heading">
+  <a href="#lambda-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Lambda Functions</span>
+</h3>
+<p>Lambda syntax: <code class="inline">fn(params) -&gt; expression end</code></p><pre><code class="cure"># Simple lambda
+let double = fn(x) -&gt; x * 2 end
+
+# Lambda with multiple params
+let add = fn(x, y) -&gt; x + y end
+
+# Curried function application
+let partial_func = func(h)
+partial_func(fold(t, init, func))</code></pre><hr class="thin"/><h2 id="5-pattern-matching" class="section-heading">
+  <a href="#5-pattern-matching" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">5. Pattern Matching</span>
+</h2>
+<h3 id="match-expression-structure" class="section-heading">
+  <a href="#match-expression-structure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Match Expression Structure</span>
+</h3>
+<pre><code class="cure">match value do
+  pattern1 -&gt; result1
+  pattern2 -&gt; result2
+  _ -&gt; default_result
+end</code></pre><h3 id="pattern-guards" class="section-heading">
+  <a href="#pattern-guards" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Pattern Guards</span>
+</h3>
+<p>Guards allow additional conditions on patterns using <code class="inline">when</code>:</p><pre><code class="cure">match value do
+  x when x &lt; 0 -&gt; &quot;Negative&quot;
+  x when x == 0 -&gt; &quot;Zero&quot;
+  x when x &gt; 0 -&gt; &quot;Positive&quot;
+end
+
+# Multiple conditions with logical operators
+match n do
+  x when x &gt;= 10 and x &lt;= 20 -&gt; &quot;In range&quot;
+  x when x &lt; 10 or x &gt; 20 -&gt; &quot;Out of range&quot;
+end
+
+# Guards with record patterns
+match point do
+  Point{x: x, y: y} when x &gt; 0.0 and y &gt; 0.0 -&gt;
+    &quot;First quadrant&quot;
+  Point{x: x, y: _} when x == 0.0 -&gt;
+    &quot;On Y-axis&quot;
+end</code></pre><h3 id="list-patterns" class="section-heading">
+  <a href="#list-patterns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">List Patterns</span>
+</h3>
+<pre><code class="cure">match list do
+  [] -&gt; # empty list
+  [h | t] -&gt; # head and tail
+  [a, b, c] -&gt; # exact length (if supported)
+end</code></pre><h3 id="constructor-patterns" class="section-heading">
+  <a href="#constructor-patterns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Constructor Patterns</span>
+</h3>
+<pre><code class="cure">match result do
+  Ok(value) -&gt; # success case
+  Error(err) -&gt; # error case
+end
+
+match option do
+  Some(value) -&gt; # present
+  None -&gt; # absent
+end</code></pre><h3 id="nested-match" class="section-heading">
+  <a href="#nested-match" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Nested Match</span>
+</h3>
+<pre><code class="cure">match list do
+  [] -&gt; []
+  [h | t] -&gt;
+    match predicate(h) do
+      true -&gt; [h | filtered_tail]
+      false -&gt; filtered_tail
+    end
+end</code></pre><hr class="thin"/><h2 id="6-type-annotations" class="section-heading">
+  <a href="#6-type-annotations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">6. Type Annotations</span>
+</h2>
+<h3 id="function-types" class="section-heading">
+  <a href="#function-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function Types</span>
+</h3>
+<p>Arrow notation for function types:</p><pre><code class="cure"># Function taking T, returning U
+T -&gt; U
+
+# Function taking two params
+T -&gt; U -&gt; V
+
+# Can be curried
+def func(x: T): U -&gt; V =
+  fn(y) -&gt; result end</code></pre><h3 id="polymorphic-types" class="section-heading">
+  <a href="#polymorphic-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Polymorphic Types</span>
+</h3>
+<p>Generic type parameters:</p><pre><code class="cure">def identity(x: T): T = x
+def map(list: List(T), f: T -&gt; U): List(U) = ...</code></pre><hr class="thin"/><h2 id="7-literals-and-basic-types" class="section-heading">
+  <a href="#7-literals-and-basic-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">7. Literals and Basic Types</span>
+</h2>
+<h3 id="primitives" class="section-heading">
+  <a href="#primitives" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Primitives</span>
+</h3>
+<pre><code class="cure">42              # Int
+3.14            # Float
+&quot;hello&quot;         # String
+true            # Bool
+false           # Bool
+:atom_name      # Atom</code></pre><h3 id="lists" class="section-heading">
+  <a href="#lists" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Lists</span>
+</h3>
+<pre><code class="cure">[]              # Empty list
+[1, 2, 3]       # List of integers
+[h | t]         # Cons pattern/constructor</code></pre><h3 id="tuples-limited-support" class="section-heading">
+  <a href="#tuples-limited-support" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Tuples (Limited Support)</span>
+</h3>
+<p>Check actual implementation before using tuples extensively.</p><hr class="thin"/><h2 id="8-operators" class="section-heading">
+  <a href="#8-operators" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">8. Operators</span>
+</h2>
+<h3 id="arithmetic" class="section-heading">
+  <a href="#arithmetic" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arithmetic</span>
+</h3>
+<pre><code class="cure">x + y           # Addition
+x - y           # Subtraction
+x * y           # Multiplication
+x / y           # Division (may be integer division)</code></pre><h3 id="comparison" class="section-heading">
+  <a href="#comparison" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Comparison</span>
+</h3>
+<pre><code class="cure">x == y          # Equality
+x != y          # Inequality
+x &lt; y           # Less than
+x &gt; y           # Greater than
+x &lt;= y          # Less than or equal
+x &gt;= y          # Greater than or equal</code></pre><h3 id="list-construction" class="section-heading">
+  <a href="#list-construction" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">List Construction</span>
+</h3>
+<pre><code class="cure">[element | list]    # Cons (prepend)</code></pre><h3 id="string-concatenation" class="section-heading">
+  <a href="#string-concatenation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">String Concatenation</span>
+</h3>
+<pre><code class="cure">str1 &lt;&gt; str2    # Diamond operator for string concatenation</code></pre><hr class="thin"/><h2 id="9-let-bindings" class="section-heading">
+  <a href="#9-let-bindings" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">9. Let Bindings</span>
+</h2>
+<p>Simple let syntax:</p><pre><code class="cure">let variable = expression body_expression
+let result = function_call() result + 10</code></pre><p>The body expression follows the binding immediately without requiring an explicit <code class="inline">in</code> keyword.</p><p>Example:</p><pre><code class="cure">let x = 5 x + 10</code></pre><hr class="thin"/><h2 id="10-special-constructs" class="section-heading">
+  <a href="#10-special-constructs" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">10. Special Constructs</span>
+</h2>
+<h3 id="curify-erlang-ffi" class="section-heading">
+  <a href="#curify-erlang-ffi" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Curify (Erlang FFI)</span>
+</h3>
+<p>Declare Erlang FFI functions:</p><pre><code class="cure">curify function_name(param: Type): ReturnType = {module, function, arity}</code></pre><p>Example:</p><pre><code class="cure">curify print_raw(format: String, args: List(String)): Unit = {io, format, 2}</code></pre><h3 id="nat-type-and-peano-numbers" class="section-heading">
+  <a href="#nat-type-and-peano-numbers" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Nat Type and Peano Numbers</span>
+</h3>
+<p>Natural numbers use Peano encoding:</p><pre><code class="cure">Zero            # Zero
+Succ(n)         # Successor of n</code></pre><p>Example:</p><pre><code class="cure">def length(list: List(T)): Nat =
+  match list do
+    [] -&gt; Zero
+    [_ | t] -&gt; Succ(length(t))
+  end</code></pre><hr class="thin"/><h2 id="11-fsm-syntax" class="section-heading">
+  <a href="#11-fsm-syntax" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">11. FSM Syntax</span>
+</h2>
+<p>FSMs are defined with an initial payload record and transition arrows:</p><pre><code class="cure"># Define a payload record for FSM state tracking
+record PayloadName do
+  field1: Type1
+  field2: Type2
+end
+
+# FSM definition with initial payload values
+fsm PayloadName{field1: value1, field2: value2} do
+  State1 --&gt; |event1| State2
+  State1 --&gt; |event2| State1
+  State2 --&gt; |event3| State1
+end</code></pre><h3 id="fsm-example-turnstile" class="section-heading">
+  <a href="#fsm-example-turnstile" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">FSM Example: Turnstile</span>
+</h3>
+<pre><code class="cure">record TurnstilePayload do
+  coins_inserted: Int
+  people_passed: Int
+  denied_attempts: Int
+end
+
+fsm TurnstilePayload{coins_inserted: 0, people_passed: 0, denied_attempts: 0} do
+  Locked --&gt; |coin| Unlocked
+  Locked --&gt; |push| Locked
+  Unlocked --&gt; |coin| Unlocked
+  Unlocked --&gt; |push| Locked
+end</code></pre><h3 id="fsm-runtime-operations" class="section-heading">
+  <a href="#fsm-runtime-operations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">FSM Runtime Operations</span>
+</h3>
+<pre><code class="cure">import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
+import Std.Pair [pair/2]
+
+# Spawn an FSM instance
+let fsm_pid = fsm_spawn(:PayloadName, initial_data)
+
+# Give it a name
+let adv_result = fsm_advertise(fsm_pid, :fsm_name)
+
+# Send an event (with empty data list)
+let empty_list = []
+let event = pair(:event_name, empty_list)
+let cast_result = fsm_cast(:fsm_name, event)
+
+# Get current state
+let current_state = fsm_state(:fsm_name)</code></pre><p><strong>Key Points</strong>:</p><ul><li>First state in transitions is the initial state</li><li>Events are atoms (<code class="inline">:event_name</code>)</li><li>Transitions use <code class="inline">--&gt;</code> and <code class="inline">|event|</code> syntax</li><li>Must define a payload record even if empty</li></ul><hr class="thin"/><h2 id="12-common-patterns-from-std-library" class="section-heading">
+  <a href="#12-common-patterns-from-std-library" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">12. Common Patterns from Std Library</span>
+</h2>
+<h3 id="result-option-handling" class="section-heading">
+  <a href="#result-option-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Result/Option Handling</span>
+</h3>
+<pre><code class="cure">match result do
+  Ok(value) -&gt; # handle success
+  Error(err) -&gt; # handle error
+end
+
+match option do
+  Some(value) -&gt; # handle present value
+  None -&gt; # handle absence
+end</code></pre><h3 id="recursive-list-processing" class="section-heading">
+  <a href="#recursive-list-processing" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Recursive List Processing</span>
+</h3>
+<pre><code class="cure">def map(list: List(T), f: T -&gt; U): List(U) =
+  match list do
+    [] -&gt; []
+    [h | t] -&gt; [f(h) | map(t, f)]
+  end</code></pre><h3 id="tail-recursion-with-accumulator" class="section-heading">
+  <a href="#tail-recursion-with-accumulator" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Tail Recursion with Accumulator</span>
+</h3>
+<pre><code class="cure">def reverse(list: List(T), acc: List(T)): List(T) =
+  match list do
+    [] -&gt; acc
+    [h | t] -&gt; reverse(t, [h | acc])
+  end</code></pre><h3 id="curried-functions" class="section-heading">
+  <a href="#curried-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Curried Functions</span>
+</h3>
+<pre><code class="cure"># Function returns another function
+def flip(f: A -&gt; B -&gt; C): B -&gt; A -&gt; C =
+  fn(b, a) -&gt; 
+    let g = f(a) g(b)
+  end</code></pre><hr class="thin"/><h2 id="13-key-syntactic-rules" class="section-heading">
+  <a href="#13-key-syntactic-rules" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">13. Key Syntactic Rules</span>
+</h2>
+<ol><li><strong>Module Required</strong>: Every file needs a <code class="inline">module ModuleName do ... end</code></li><li><strong>Type Annotations</strong>: All function parameters and return types must be annotated</li><li><strong>Pattern Matching</strong>: Use <code class="inline">match ... do ... end</code> blocks</li><li><strong>Lambdas</strong>: Use <code class="inline">fn(params) -&gt; body end</code> syntax</li><li><strong>Let Binding</strong>: Simple <code class="inline">let name = value</code> without semicolons</li><li><strong>Function Application</strong>: Standard <code class="inline">func(arg1, arg2)</code> syntax</li><li><strong>Comments</strong>: Only <code class="inline">#</code> single-line comments</li><li><strong>Indentation</strong>: Not significant (use <code class="inline">do ... end</code> blocks)</li></ol><hr class="thin"/><h2 id="14-things-to-avoid-not-in-std-library" class="section-heading">
+  <a href="#14-things-to-avoid-not-in-std-library" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">14. Things to AVOID (Not in Std Library)</span>
+</h2>
+<p>Based on actual standard library, these features may not be implemented:</p><ol><li><strong>Process definitions</strong>: <code class="inline">process name(...) do ... end</code> - verify syntax</li><li><strong>Dependent types</strong>: <code class="inline">Vector(T, n: Nat)</code> - may not fully work yet</li><li><strong>String interpolation</strong>: <code class="inline">&quot;text #{expr}&quot;</code> - use <code class="inline">&lt;&gt;</code> for concatenation instead</li><li><strong>If-then-else</strong>: May exist but std lib uses match expressions</li></ol><hr class="thin"/><h2 id="15-recommended-workflow" class="section-heading">
+  <a href="#15-recommended-workflow" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">15. Recommended Workflow</span>
+</h2>
+<p>When creating examples:</p><ol><li>Start with module definition</li><li>Import needed functions from Std library</li><li>Define types (sum types with constructors)</li><li>Define functions with explicit type signatures</li><li>Use pattern matching for control flow</li><li>Use lambdas for higher-order functions</li><li>Keep it simple - mirror std library style</li></ol><hr class="thin"/><h2 id="example-complete-module-template" class="section-heading">
+  <a href="#example-complete-module-template" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example: Complete Module Template</span>
+</h2>
+<pre><code class="cure">module ExampleModule do
+  export [
+    main/0,
+    helper_function/1
+  ]
+  
+  # Import standard library functions
+  import Std.Core [Result, ok/1, error/1]
+  import Std.List [map/2, filter/2]
+  import Std.Io [print/1]
+  
+  # Type definition
+  type MyType(T) = Constructor1(T) | Constructor2(String)
+  
+  # Main function
+  def main(): Unit =
+    let result = helper_function(42)
+    print(&quot;Done&quot;)
+  
+  # Helper with pattern matching
+  def helper_function(value: Int): Result(String, String) =
+    match value &gt; 0 do
+      true -&gt; ok(&quot;positive&quot;)
+      false -&gt; error(&quot;non-positive&quot;)
+    end
+end</code></pre><hr class="thin"/><p><strong>This guide is based on actual working code in the Cure standard library. When in doubt, refer to <code class="inline">lib/std/</code> directory for real examples.</strong></p>
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="cli_usage.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+CLI Usage
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="cure_ultimate_description.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Ultimate Description
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+              (<a href="https://preview.hex.pm/preview/cure/0.1.0/show/docs/CURE_SYNTAX_GUIDE.md">current file</a>)
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

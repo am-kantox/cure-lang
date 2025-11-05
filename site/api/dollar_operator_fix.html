@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>Dollar Operator Fix — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/docs/DOLLAR_OPERATOR_FIX.md#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+
+    <span>The <code class="inline">$</code> Operator Issue and Fix</span>
+  </h1>
+
+<h2 id="summary" class="section-heading">
+  <a href="#summary" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Summary</span>
+</h2>
+<p>Cure's typeclass specifications use operators containing <code class="inline">$</code> (dollar sign), which were causing lexer errors. This document explains the issue, why we need these operators, and how we fixed it.</p><h2 id="the-problem" class="section-heading">
+  <a href="#the-problem" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">The Problem</span>
+</h2>
+<h3 id="error-message" class="section-heading">
+  <a href="#error-message" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Message</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Lexical</span><span class="w"> </span><span class="n">Analysis</span><span class="w"> </span><span class="nc">failed</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8132926706-1">{</span><span class="p" data-group-id="8132926706-2">{</span><span class="ss">unexpected_character</span><span class="p">,</span><span class="mi">36</span><span class="p" data-group-id="8132926706-2">}</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">9</span><span class="p" data-group-id="8132926706-1">}</span></code></pre><ul><li>Character 36 is ASCII for <code class="inline">$</code></li><li>Occurred when parsing typeclass specification files</li></ul><h3 id="root-cause" class="section-heading">
+  <a href="#root-cause" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Root Cause</span>
+</h3>
+<p>The lexer (<code class="inline">src/lexer/cure_lexer.erl</code>) only recognized characters in the <code class="inline">operators()</code> map. When it encountered <code class="inline">$</code>, it threw <code class="inline">{lexer_error, {unexpected_character, 36}, Line, Column}</code>.</p><p>This happened at two locations:</p><ul><li><strong>Line 448</strong>: <code class="inline">scan_single_char/4</code> - handles single-character operators</li><li><strong>Line 630</strong>: <code class="inline">scan_one_token/3</code> - used during string interpolation</li></ul><h2 id="why-we-need-operators" class="section-heading">
+  <a href="#why-we-need-operators" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Why We Need <code class="inline">$</code> Operators</span>
+</h2>
+<p>These operators come from <strong>Haskell's Functor and Applicative typeclasses</strong> and are standard in functional programming languages.</p><h3 id="the-operators" class="section-heading">
+  <a href="#the-operators" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">The Operators</span>
+</h3>
+<h4>Functor Operators</h4><ol><li><p><strong><code class="inline">&lt;$</code> (replace-left)</strong> - Replace all values in a container with a constant</p><pre><code class="cure">def (&lt;$)(value: A, fb: F(B)): F(A) =
+  map(fn(_) -&gt; value end, fb)</code></pre><p>Example usage:</p><pre><code class="cure">5 &lt;$ Some(10)     # Result: Some(5)
+&quot;x&quot; &lt;$ [1,2,3]    # Result: [&quot;x&quot;, &quot;x&quot;, &quot;x&quot;]</code></pre></li><li><p><strong><code class="inline">$&gt;</code> (replace-right)</strong> - Same as <code class="inline">&lt;$</code> but with flipped arguments</p><pre><code class="cure">def ($&gt;)(fa: F(A), value: B): F(B) =
+  map(fn(_) -&gt; value end, fa)</code></pre><p>Example usage:</p><pre><code class="cure">Some(10) $&gt; 5     # Result: Some(5)
+[1,2,3] $&gt; &quot;x&quot;    # Result: [&quot;x&quot;, &quot;x&quot;, &quot;x&quot;]</code></pre></li></ol><h4>Applicative Operators</h4><ol start="3"><li><p><strong><code class="inline">&lt;*&gt;</code> (apply)</strong> - Apply a function in a context to a value in a context</p><pre><code class="cure">def (&lt;*&gt;)(ff: F(A -&gt; B), fa: F(A)): F(B)</code></pre></li><li><p><strong><code class="inline">*&gt;</code> (sequence-right)</strong> - Sequence two actions, keeping only the second result</p><pre><code class="cure">def (*&gt;)(fa: F(A), fb: F(B)): F(B)</code></pre></li><li><p><strong><code class="inline">&lt;*</code> (sequence-left)</strong> - Sequence two actions, keeping only the first result</p><pre><code class="cure">def (&lt;*)(fa: F(A), fb: F(B)): F(A)</code></pre></li></ol><h4>Monad Operators</h4><ol start="6"><li><p><strong><code class="inline">&gt;&gt;=</code> (bind)</strong> - Monadic bind operator</p><pre><code class="cure">def (&gt;&gt;=)(ma: M(A), f: A -&gt; M(B)): M(B) = bind(ma, f)</code></pre></li><li><p><strong><code class="inline">&gt;&gt;</code> (then)</strong> - Sequence two monadic actions, discarding the first result</p><pre><code class="cure">def (&gt;&gt;)(ma: M(A), mb: M(B)): M(B) =
+  ma &gt;&gt;= fn(_) -&gt; mb end</code></pre></li></ol><h3 id="why-use-specifically" class="section-heading">
+  <a href="#why-use-specifically" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Why Use <code class="inline">$</code> Specifically?</span>
+</h3>
+<ol><li><p><strong>Historical Convention</strong>: Established by Haskell decades ago</p><ul><li><code class="inline">&lt;$&gt;</code> is the infix operator for <code class="inline">fmap</code> (our <code class="inline">map</code>)</li><li><code class="inline">&lt;$</code> and <code class="inline">$&gt;</code> are natural variants</li></ul></li><li><p><strong>Visual Distinction</strong>: The <code class="inline">$</code> clearly indicates:</p><ul><li>Function application</li><li>Value replacement</li><li>&quot;Lifting&quot; operations into contexts</li></ul></li><li><p><strong>Ecosystem Compatibility</strong>: Anyone familiar with Functor/Applicative expects these names</p><ul><li>Haskell programmers</li><li>Scala programmers (similar operators)</li><li>PureScript programmers</li><li>Elm programmers (adapted versions)</li></ul></li><li><p><strong>Semantic Clarity</strong>: The operators form a visual pattern:</p><ul><li><code class="inline">&lt;</code> points to what's kept</li><li><code class="inline">$</code> indicates the operation</li><li><code class="inline">&gt;</code> shows direction</li></ul></li></ol><h2 id="the-fix" class="section-heading">
+  <a href="#the-fix" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">The Fix</span>
+</h2>
+<h3 id="what-we-changed" class="section-heading">
+  <a href="#what-we-changed" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">What We Changed</span>
+</h3>
+<p>Added the new operators to the <code class="inline">operators()</code> map in <code class="inline">src/lexer/cure_lexer.erl</code>:</p><pre><code class="makeup erlang" translate="no"><span class="nf">operators</span><span class="p" data-group-id="8005047526-1">(</span><span class="p" data-group-id="8005047526-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="p" data-group-id="8005047526-2">#{</span><span class="w">
+        </span><span class="c1">% ... existing operators ...</span><span class="w">
+        </span><span class="p">&lt;&lt;</span><span class="s">&quot;|&gt;&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;|&gt;&#39;</span><span class="p">,</span><span class="w">
+        </span><span class="p">&lt;&lt;</span><span class="s">&quot;#{&quot;</span><span class="p">&gt;&gt;</span><span class="p">=&gt;</span><span class="o">&gt;</span><span class="w">  </span><span class="ss">&#39;interpolation_start&#39;</span><span class="p">,</span><span class="w">
+        </span><span class="c1">% Functor/Applicative operators</span><span class="w">
+        </span><span class="p">&lt;&lt;</span><span class="s">&quot;&lt;$&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;&lt;$&#39;</span><span class="p">,</span><span class="w">
+        </span><span class="p">&lt;&lt;</span><span class="s">&quot;$&gt;&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;$&gt;&#39;</span><span class="p">,</span><span class="w">
+        </span><span class="p">&lt;&lt;</span><span class="s">&quot;&lt;*&gt;&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;&lt;*&gt;&#39;</span><span class="p">,</span><span class="w">
+        </span><span class="p">&lt;&lt;</span><span class="s">&quot;*&gt;&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;*&gt;&#39;</span><span class="p">,</span><span class="w">
+        </span><span class="p">&lt;&lt;</span><span class="s">&quot;&lt;*&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;&lt;*&#39;</span><span class="p">,</span><span class="w">
+        </span><span class="c1">% Monad operators</span><span class="w">
+        </span><span class="p">&lt;&lt;</span><span class="s">&quot;&gt;&gt;=&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;&gt;&gt;=&#39;</span><span class="p">,</span><span class="w">
+        </span><span class="p">&lt;&lt;</span><span class="s">&quot;&gt;&gt;&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;&gt;&gt;&#39;</span><span class="w">
+    </span><span class="p" data-group-id="8005047526-2">}</span><span class="p">.</span></code></pre><h3 id="how-it-works" class="section-heading">
+  <a href="#how-it-works" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">How It Works</span>
+</h3>
+<p>The lexer now follows this process:</p><ol><li><strong>Three-character check</strong>: Tries <code class="inline">&lt;*&gt;</code> and <code class="inline">&gt;&gt;=</code> first (lines 412-421)</li><li><strong>Two-character check</strong>: Tries <code class="inline">&lt;$</code>, <code class="inline">$&gt;</code>, <code class="inline">*&gt;</code>, <code class="inline">&lt;*</code>, <code class="inline">&gt;&gt;</code> (lines 429-441)</li><li><strong>Single-character check</strong>: Only if no multi-char match (lines 444-454)</li></ol><p>The order matters because:</p><ul><li><code class="inline">&lt;*&gt;</code> must be checked before <code class="inline">&lt;*</code> and <code class="inline">*&gt;</code></li><li><code class="inline">&gt;&gt;=</code> must be checked before <code class="inline">&gt;&gt;</code></li><li>Longer operators take precedence</li></ul><h3 id="testing" class="section-heading">
+  <a href="#testing" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Testing</span>
+</h3>
+<p>Verified the fix works:</p><pre><code class="makeup bash" translate="no"><span class="gp unselectable">$ </span><span class="">erl -pa _build/ebin -noshell -eval \
+</span><span class="">  &quot;case cure_lexer:tokenize_file(\&quot;lib/typeclass_spec/typeclass.cure\&quot;) of \
+</span><span class="">     {ok, Tokens} -&gt; io:format(\&quot;Success! Tokenized ~p tokens~n\&quot;, [length(Tokens)]); \
+</span><span class="">     {error, E} -&gt; io:format(\&quot;Error: ~p~n\&quot;, [E]) \
+</span><span class="">   end, halt(0).&quot;
+</span><span class="">   
+</span><span class="">Success! Tokenized 1026 tokens
+</span></code></pre><h2 id="alternative-approaches-not-chosen" class="section-heading">
+  <a href="#alternative-approaches-not-chosen" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Alternative Approaches (Not Chosen)</span>
+</h2>
+<h3 id="option-2-use-different-operator-names" class="section-heading">
+  <a href="#option-2-use-different-operator-names" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Option 2: Use Different Operator Names</span>
+</h3>
+<p>We could have avoided <code class="inline">$</code> by using different names:</p><pre><code class="cure">def replace_left(value: A, fb: F(B)): F(A)
+def replace_right(fa: F(A), value: B): F(B)</code></pre><p><strong>Rejected because</strong>:</p><ul><li>Loses the elegant infix notation</li><li>Breaks compatibility with functional programming conventions</li><li>Makes code more verbose</li><li>Reduces readability for experienced functional programmers</li></ul><h3 id="option-3-use-unicode-operators" class="section-heading">
+  <a href="#option-3-use-unicode-operators" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Option 3: Use Unicode Operators</span>
+</h3>
+<p>We could have used Unicode symbols:</p><pre><code class="cure">def (⊳)(value: A, fb: F(B)): F(A)  # U+22B3 CONTAINS AS NORMAL SUBGROUP
+def (⊲)(fa: F(A), value: B): F(B)  # U+22B2 NORMAL SUBGROUP OF</code></pre><p><strong>Rejected because</strong>:</p><ul><li>Harder to type on standard keyboards</li><li>Not widely recognized in the functional programming community</li><li>Adds unnecessary complexity</li><li>Poor tool support</li></ul><h2 id="impact-on-existing-code" class="section-heading">
+  <a href="#impact-on-existing-code" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Impact on Existing Code</span>
+</h2>
+<h3 id="no-breaking-changes" class="section-heading">
+  <a href="#no-breaking-changes" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">No Breaking Changes</span>
+</h3>
+<p>Adding these operators is <strong>backward compatible</strong>:</p><ul><li>Existing code continues to work</li><li><code class="inline">$</code> was previously an error, so no code used it</li><li>Parser needs updates to handle operator definitions</li></ul><h3 id="what-s-still-needed" class="section-heading">
+  <a href="#what-s-still-needed" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">What's Still Needed</span>
+</h3>
+<ol><li><p><strong>Parser Updates</strong>: Add grammar rules for operator function definitions</p><pre><code class="cure">def (&lt;$)(value: A, fb: F(B)): F(A) = ...</code></pre></li><li><p><strong>Operator Precedence</strong>: Define precedence and associativity</p><ul><li><code class="inline">&lt;$</code> and <code class="inline">$&gt;</code>: Same as <code class="inline">map</code> (high precedence)</li><li><code class="inline">&lt;*&gt;</code>: Lower than <code class="inline">&lt;$</code> (function application)</li><li><code class="inline">*&gt;</code> and <code class="inline">&lt;*</code>: Same as <code class="inline">&lt;*&gt;</code></li><li><code class="inline">&gt;&gt;=</code> and <code class="inline">&gt;&gt;</code>: Lowest (sequencing)</li></ul></li><li><p><strong>Type System</strong>: Already supports these through typeclass definitions</p></li></ol><h2 id="references" class="section-heading">
+  <a href="#references" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">References</span>
+</h2>
+<ul><li><strong>Haskell Functor</strong>: <a href="https://hackage.haskell.org/package/base/docs/Data-Functor.html">https://hackage.haskell.org/package/base/docs/Data-Functor.html</a></li><li><strong>Haskell Applicative</strong>: <a href="https://hackage.haskell.org/package/base/docs/Control-Applicative.html">https://hackage.haskell.org/package/base/docs/Control-Applicative.html</a></li><li><strong>Haskell Monad</strong>: <a href="https://hackage.haskell.org/package/base/docs/Control-Monad.html">https://hackage.haskell.org/package/base/docs/Control-Monad.html</a></li><li><strong>Learn You a Haskell</strong>: <a href="http://learnyouahaskell.com/functors-applicative-functors-and-monoids">http://learnyouahaskell.com/functors-applicative-functors-and-monoids</a></li></ul><h2 id="summary-of-changes" class="section-heading">
+  <a href="#summary-of-changes" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Summary of Changes</span>
+</h2>
+<h3 id="files-modified" class="section-heading">
+  <a href="#files-modified" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Files Modified</span>
+</h3>
+<ul><li><code class="inline">src/lexer/cure_lexer.erl</code> - Added 7 new operators to <code class="inline">operators()</code> map</li></ul><h3 id="operators-added" class="section-heading">
+  <a href="#operators-added" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Operators Added</span>
+</h3>
+<ul><li><code class="inline">&lt;$</code> - Functor replace-left</li><li><code class="inline">$&gt;</code> - Functor replace-right  </li><li><code class="inline">&lt;*&gt;</code> - Applicative apply</li><li><code class="inline">*&gt;</code> - Applicative sequence-right</li><li><code class="inline">&lt;*</code> - Applicative sequence-left</li><li><code class="inline">&gt;&gt;=</code> - Monad bind</li><li><code class="inline">&gt;&gt;</code> - Monad then</li></ul><h3 id="testing-status" class="section-heading">
+  <a href="#testing-status" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Testing Status</span>
+</h3>
+<ul><li>✅ Lexer successfully tokenizes typeclass specifications</li><li>⏳ Parser grammar rules needed for operator definitions</li><li>⏳ Operator precedence rules needed</li><li>✅ Type system already supports typeclasses</li></ul><h2 id="next-steps" class="section-heading">
+  <a href="#next-steps" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Next Steps</span>
+</h2>
+<ol><li><strong>Update Parser</strong>: Add grammar rules for operator function definitions</li><li><strong>Define Precedence</strong>: Establish operator precedence table</li><li><strong>Move Typeclass Files</strong>: Once parser is ready, move from <code class="inline">lib/typeclass_spec/</code> to <code class="inline">lib/std/</code></li><li><strong>Documentation</strong>: Add operator documentation to language guide</li><li><strong>Examples</strong>: Create example programs using these operators</li></ol>
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="derive_guide.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+Derive Guide
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="editor_setup.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Editor Setup
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+              (<a href="https://preview.hex.pm/preview/cure/0.1.0/show/docs/DOLLAR_OPERATOR_FIX.md">current file</a>)
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

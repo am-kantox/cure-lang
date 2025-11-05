@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>Typeclass Guide — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/docs/TYPECLASS_GUIDE.md#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+
+    <span>Typeclass Guide</span>
+  </h1>
+
+<h2 id="typeclass-guide-for-cure" class="section-heading">
+  <a href="#typeclass-guide-for-cure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Typeclass Guide for Cure</span>
+</h2>
+<p><strong>Version</strong>: 1.0<br/><strong>Last Updated</strong>: November 5, 2025</p><hr class="thin"/><h2 id="table-of-contents" class="section-heading">
+  <a href="#table-of-contents" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Table of Contents</span>
+</h2>
+<ol><li><a href="#introduction">Introduction</a></li><li><a href="#quick-start">Quick Start</a></li><li><a href="#typeclass-definitions">Typeclass Definitions</a></li><li><a href="#instance-definitions">Instance Definitions</a></li><li><a href="#automatic-derivation">Automatic Derivation</a></li><li><a href="#using-typeclasses">Using Typeclasses</a></li><li><a href="#standard-library">Standard Library</a></li><li><a href="#advanced-topics">Advanced Topics</a></li><li><a href="#best-practices">Best Practices</a></li><li><a href="#troubleshooting">Troubleshooting</a></li></ol><hr class="thin"/><h2 id="introduction" class="section-heading">
+  <a href="#introduction" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Introduction</span>
+</h2>
+<h3 id="what-are-typeclasses" class="section-heading">
+  <a href="#what-are-typeclasses" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">What are Typeclasses?</span>
+</h3>
+<p>Typeclasses are Cure's mechanism for <strong>ad-hoc polymorphism</strong> - allowing you to write generic code that works with any type that satisfies certain requirements. They're similar to:</p><ul><li><strong>Interfaces</strong> in Java/C# (but more powerful)</li><li><strong>Traits</strong> in Rust</li><li><strong>Protocols</strong> in Elixir/Clojure</li><li><strong>Type Classes</strong> in Haskell (the inspiration)</li></ul><h3 id="why-use-typeclasses" class="section-heading">
+  <a href="#why-use-typeclasses" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Why Use Typeclasses?</span>
+</h3>
+<p><strong>1. Code Reuse</strong>: Write generic functions once</p><pre><code class="cure">def sort(list: List(T)): List(T) where Ord(T)
+% Works with ANY orderable type</code></pre><p><strong>2. Type Safety</strong>: Compiler ensures constraints are met</p><pre><code class="cure">% This won't compile - String doesn't have Num instance
+def add_numbers(x: String, y: String) where Num(String) = x + y</code></pre><p><strong>3. Zero Boilerplate</strong>: Automatic derivation</p><pre><code class="cure">record Point do x: Int, y: Int end
+derive Show, Eq, Ord  % No manual implementation needed!</code></pre><p><strong>4. Performance</strong>: Monomorphization means zero runtime cost</p><hr class="thin"/><h2 id="quick-start" class="section-heading">
+  <a href="#quick-start" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Quick Start</span>
+</h2>
+<h3 id="1-define-a-typeclass" class="section-heading">
+  <a href="#1-define-a-typeclass" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">1. Define a Typeclass</span>
+</h3>
+<pre><code class="cure">typeclass Drawable(T) do
+    def draw(x: T): String
+    def size(x: T): {Int, Int}
+end</code></pre><h3 id="2-implement-an-instance" class="section-heading">
+  <a href="#2-implement-an-instance" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">2. Implement an Instance</span>
+</h3>
+<pre><code class="cure">record Circle do
+    radius: Float
+end
+
+instance Drawable(Circle) do
+    def draw(c: Circle): String = &quot;⭕&quot;
+    def size(c: Circle): {Int, Int} = {c.radius * 2, c.radius * 2}
+end</code></pre><h3 id="3-use-with-constraints" class="section-heading">
+  <a href="#3-use-with-constraints" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">3. Use with Constraints</span>
+</h3>
+<pre><code class="cure">def render(obj: T): String where Drawable(T) =
+    draw(obj)
+
+% Works with any Drawable type
+render(Circle { radius: 5.0 })  % &quot;⭕&quot;</code></pre><hr class="thin"/><h2 id="typeclass-definitions" class="section-heading">
+  <a href="#typeclass-definitions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Typeclass Definitions</span>
+</h2>
+<h3 id="basic-syntax" class="section-heading">
+  <a href="#basic-syntax" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Basic Syntax</span>
+</h3>
+<pre><code class="cure">typeclass TypeclassName(TypeParam) do
+    def method_name(params): ReturnType
+    % ... more methods
+end</code></pre><h3 id="methods" class="section-heading">
+  <a href="#methods" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Methods</span>
+</h3>
+<p><strong>Required Methods</strong> (must be implemented by instances):</p><pre><code class="cure">typeclass Show(T) do
+    def show(x: T): String
+end</code></pre><p><strong>Default Methods</strong> (optional, can be overridden):</p><pre><code class="cure">typeclass Eq(T) do
+    def (==)(x: T, y: T): Bool
+    def (!=)(x: T, y: T): Bool = not (x == y)  % Default
+end</code></pre><h3 id="superclass-constraints" class="section-heading">
+  <a href="#superclass-constraints" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Superclass Constraints</span>
+</h3>
+<p>Typeclasses can require other typeclasses:</p><pre><code class="cure">typeclass Ord(T) when Eq(T) do
+    def compare(x: T, y: T): Ordering
+    % Ord requires Eq
+end</code></pre><h3 id="multiple-type-parameters" class="section-heading">
+  <a href="#multiple-type-parameters" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Multiple Type Parameters</span>
+</h3>
+<pre><code class="cure">typeclass Convertible(From, To) do
+    def convert(x: From): To
+end</code></pre><hr class="thin"/><h2 id="instance-definitions" class="section-heading">
+  <a href="#instance-definitions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Instance Definitions</span>
+</h2>
+<h3 id="basic-instance" class="section-heading">
+  <a href="#basic-instance" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Basic Instance</span>
+</h3>
+<pre><code class="cure">instance Show(Int) do
+    def show(x: Int): String = int_to_string(x)
+end</code></pre><h3 id="parameterized-instances" class="section-heading">
+  <a href="#parameterized-instances" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Parameterized Instances</span>
+</h3>
+<p>For generic types, add constraints:</p><pre><code class="cure">instance Show(List(T)) where Show(T) do
+    def show(list: List(T)): String =
+        &quot;[&quot; ++ join(&quot;, &quot;, map(show, list)) ++ &quot;]&quot;
+end</code></pre><h3 id="instance-rules" class="section-heading">
+  <a href="#instance-rules" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Instance Rules</span>
+</h3>
+<p><strong>1. Coherence</strong>: Only one instance per typeclass/type pair</p><pre><code class="cure">% ❌ ERROR: Duplicate instance
+instance Show(Int) do ... end
+instance Show(Int) do ... end  % Compiler error!</code></pre><p><strong>2. Orphan Prevention</strong>: Instances must be in same module as type or typeclass</p><pre><code class="cure">% ✅ OK: In same module as Int definition (built-in)
+instance Show(Int) do ... end
+
+% ✅ OK: In same module as Circle definition
+instance Show(Circle) do ... end
+
+% ❌ ERROR: Orphan instance (neither Show nor String defined here)
+instance Show(String) do ... end  % If not in Std module</code></pre><hr class="thin"/><h2 id="automatic-derivation" class="section-heading">
+  <a href="#automatic-derivation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Automatic Derivation</span>
+</h2>
+<h3 id="syntax" class="section-heading">
+  <a href="#syntax" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Syntax</span>
+</h3>
+<pre><code class="cure">record TypeName do
+    % fields
+end
+derive TypeclassA, TypeclassB, TypeclassC</code></pre><h3 id="supported-typeclasses" class="section-heading">
+  <a href="#supported-typeclasses" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Supported Typeclasses</span>
+</h3>
+<h4>Show - String Representation</h4><pre><code class="cure">record Point do
+    x: Int
+    y: Int
+end
+derive Show
+
+% Generates:
+% show(Point{x: 10, y: 20}) → &quot;Point { x: 10, y: 20 }&quot;</code></pre><h4>Eq - Equality Testing</h4><pre><code class="cure">record Person do
+    name: String
+    age: Int
+end
+derive Eq
+
+% Generates structural equality:
+% Person{name: &quot;Alice&quot;, age: 30} == Person{name: &quot;Alice&quot;, age: 30} → true</code></pre><h4>Ord - Ordering</h4><pre><code class="cure">record Book do
+    title: String
+    year: Int
+end
+derive Ord  % Automatically includes Eq
+
+% Lexicographic ordering by fields (title, then year)</code></pre><h3 id="constraint-inference" class="section-heading">
+  <a href="#constraint-inference" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Constraint Inference</span>
+</h3>
+<p>For parameterized types, constraints are inferred automatically:</p><pre><code class="cure">record Container(T) do
+    value: T
+end
+derive Show
+
+% Compiler generates:
+% instance Show(Container(T)) where Show(T) do ... end</code></pre><h3 id="when-not-to-derive" class="section-heading">
+  <a href="#when-not-to-derive" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">When NOT to Derive</span>
+</h3>
+<p><strong>Custom Behavior Needed</strong>:</p><pre><code class="cure">record Temperature do celsius: Float end
+
+% Manual instance for custom formatting
+instance Show(Temperature) do
+    def show(t: Temperature): String =
+        float_to_string(t.celsius) ++ &quot;°C&quot;
+end</code></pre><p><strong>Performance Optimization</strong>:</p><pre><code class="cure">record User do
+    id: Int
+    name: String
+    metadata: Map(String, String)  % Large field
+end
+
+% Custom Eq that only compares ID (faster)
+instance Eq(User) do
+    def ==(u1: User, u2: User): Bool = u1.id == u2.id
+end</code></pre><hr class="thin"/><h2 id="using-typeclasses" class="section-heading">
+  <a href="#using-typeclasses" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Using Typeclasses</span>
+</h2>
+<h3 id="function-constraints" class="section-heading">
+  <a href="#function-constraints" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function Constraints</span>
+</h3>
+<p>Single constraint:</p><pre><code class="cure">def print_value(x: T): Unit where Show(T) =
+    println(show(x))</code></pre><p>Multiple constraints:</p><pre><code class="cure">def compare_and_show(x: T, y: T): String where Ord(T), Show(T) =
+    match compare(x, y) do
+        LT -&gt; show(x) ++ &quot; &lt; &quot; ++ show(y)
+        EQ -&gt; show(x) ++ &quot; == &quot; ++ show(y)
+        GT -&gt; show(x) ++ &quot; &gt; &quot; ++ show(y)
+    end</code></pre><h3 id="generic-algorithms" class="section-heading">
+  <a href="#generic-algorithms" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Generic Algorithms</span>
+</h3>
+<pre><code class="cure">% Generic sort - works with ANY Ord type
+def sort(list: List(T)): List(T) where Ord(T) =
+    match list do
+        [] -&gt; []
+        [pivot | rest] -&gt;
+            let smaller = [x | x &lt;- rest, compare(x, pivot) == LT]
+            let larger = [x | x &lt;- rest, compare(x, pivot) != LT]
+            sort(smaller) ++ [pivot] ++ sort(larger)
+    end
+
+% Use with different types
+sort([3, 1, 4, 1, 5])              % Sort Ints
+sort([&quot;cat&quot;, &quot;ant&quot;, &quot;dog&quot;])        % Sort Strings  
+sort([Person{...}, Person{...}])   % Sort custom types</code></pre><hr class="thin"/><h2 id="standard-library" class="section-heading">
+  <a href="#standard-library" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Standard Library</span>
+</h2>
+<h3 id="core-typeclasses" class="section-heading">
+  <a href="#core-typeclasses" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Core Typeclasses</span>
+</h3>
+<h4>Show</h4><pre><code class="cure">typeclass Show(T) do
+    def show(x: T): String
+end
+
+% Instances: Int, Float, String, Bool, Atom, List(T), Option(T), Result(T,E)
+% Helper: print, println, debug</code></pre><h4>Eq</h4><pre><code class="cure">typeclass Eq(T) do
+    def (==)(x: T, y: T): Bool
+    def (!=)(x: T, y: T): Bool  % Default
+end
+
+% Instances: All primitive types, List(T), Option(T), Result(T,E)
+% Helper: elem, nub, same_elements</code></pre><h4>Ord</h4><pre><code class="cure">typeclass Ord(T) when Eq(T) do
+    def compare(x: T, y: T): Ordering
+    def (&lt;)(x: T, y: T): Bool    % Default
+    def (&lt;=)(x: T, y: T): Bool   % Default
+    def (&gt;)(x: T, y: T): Bool    % Default
+    def (&gt;=)(x: T, y: T): Bool   % Default
+end
+
+% Instances: Int, Float, String, List(T)
+% Helper: max, min, clamp</code></pre><h4>Functor</h4><pre><code class="cure">typeclass Functor(F) do
+    def map(f: A -&gt; B, fa: F(A)): F(B)
+end
+
+% Instances: List, Option, Result(*, E)
+% Helper: map_nested, void, as</code></pre><h4>Applicative</h4><pre><code class="cure">typeclass Applicative(F) when Functor(F) do
+    def pure(x: A): F(A)
+    def (&lt;*&gt;)(ff: F(A -&gt; B), fa: F(A)): F(B)
+end
+
+% Instances: List, Option, Result(*, E)</code></pre><h4>Monad</h4><pre><code class="cure">typeclass Monad(M) when Applicative(M) do
+    def bind(ma: M(A), f: A -&gt; M(B)): M(B)
+    def (&gt;&gt;=)(ma: M(A), f: A -&gt; M(B)): M(B)  % Alias
+end
+
+% Instances: List, Option, Result(*, E)</code></pre><h3 id="importing-typeclasses" class="section-heading">
+  <a href="#importing-typeclasses" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Importing Typeclasses</span>
+</h3>
+<pre><code class="cure">% Import specific typeclasses and methods
+import typeclass [Show, Eq, show, compare]
+
+% Import all from standard library
+import Std [*]</code></pre><hr class="thin"/><h2 id="advanced-topics" class="section-heading">
+  <a href="#advanced-topics" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Advanced Topics</span>
+</h2>
+<h3 id="higher-kinded-types" class="section-heading">
+  <a href="#higher-kinded-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Higher-Kinded Types</span>
+</h3>
+<p>Support for container types:</p><pre><code class="cure">% Functor works with List, Option, Result, etc.
+typeclass Functor(F) do
+    def map(f: A -&gt; B, fa: F(A)): F(B)
+end
+
+instance Functor(Option) do
+    def map(f: A -&gt; B, opt: Option(A)): Option(B) =
+        match opt do
+            Some(x) -&gt; Some(f(x))
+            None -&gt; None
+        end
+end</code></pre><h3 id="associated-types" class="section-heading">
+  <a href="#associated-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Associated Types</span>
+</h3>
+<p>(Future feature - not yet implemented)</p><pre><code class="cure">typeclass Collection(C) do
+    type Element
+    def empty(): C
+    def insert(elem: Element, coll: C): C
+end</code></pre><h3 id="overlapping-instances" class="section-heading">
+  <a href="#overlapping-instances" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Overlapping Instances</span>
+</h3>
+<p>Not allowed - ensures coherence:</p><pre><code class="cure">% ❌ ERROR: Overlapping instances
+instance Show(List(Int)) do ... end
+instance Show(List(T)) where Show(T) do ... end</code></pre><h3 id="conditional-instances" class="section-heading">
+  <a href="#conditional-instances" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Conditional Instances</span>
+</h3>
+<p>Instances can have constraints:</p><pre><code class="cure">instance Ord(Option(T)) where Ord(T) do
+    def compare(opt1: Option(T), opt2: Option(T)): Ordering =
+        match {opt1, opt2} do
+            {None, None} -&gt; EQ
+            {None, Some(_)} -&gt; LT
+            {Some(_), None} -&gt; GT
+            {Some(x), Some(y)} -&gt; compare(x, y)
+        end
+end</code></pre><hr class="thin"/><h2 id="best-practices" class="section-heading">
+  <a href="#best-practices" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Best Practices</span>
+</h2>
+<h3 id="1-prefer-derivation" class="section-heading">
+  <a href="#1-prefer-derivation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">1. Prefer Derivation</span>
+</h3>
+<p>Start with derive, override only when needed:</p><pre><code class="cure">% ✅ Good: Use derive for standard behavior
+record Point do x: Int, y: Int end
+derive Show, Eq, Ord
+
+% ❌ Avoid: Manual implementation unless necessary</code></pre><h3 id="2-name-methods-clearly" class="section-heading">
+  <a href="#2-name-methods-clearly" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">2. Name Methods Clearly</span>
+</h3>
+<pre><code class="cure">% ✅ Good: Clear method names
+typeclass Serializable(T) do
+    def serialize(x: T): String
+    def deserialize(s: String): Option(T)
+end
+
+% ❌ Bad: Ambiguous names
+typeclass Serializable(T) do
+    def to(x: T): String
+    def from(s: String): Option(T)
+end</code></pre><h3 id="3-use-superclass-constraints" class="section-heading">
+  <a href="#3-use-superclass-constraints" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">3. Use Superclass Constraints</span>
+</h3>
+<pre><code class="cure">% ✅ Good: Express dependencies
+typeclass Ord(T) when Eq(T) do
+    def compare(x: T, y: T): Ordering
+end
+
+% ❌ Bad: Duplicate Eq methods in Ord</code></pre><h3 id="4-document-instances" class="section-heading">
+  <a href="#4-document-instances" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">4. Document Instances</span>
+</h3>
+<pre><code class="cure">% Custom instance with non-obvious behavior
+% Orders products by price (ascending)
+instance Ord(Product) do
+    def compare(p1: Product, p2: Product): Ordering =
+        compare(p1.price, p2.price)
+end</code></pre><h3 id="5-test-generic-code" class="section-heading">
+  <a href="#5-test-generic-code" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">5. Test Generic Code</span>
+</h3>
+<pre><code class="cure">% Test with multiple types
+def test_sort() =
+    assert sort([3,1,2]) == [1,2,3]
+    assert sort([&quot;c&quot;,&quot;a&quot;,&quot;b&quot;]) == [&quot;a&quot;,&quot;b&quot;,&quot;c&quot;]
+    assert sort([Point{x:2,y:1}, Point{x:1,y:1}]) == [Point{x:1,y:1}, Point{x:2,y:1}]</code></pre><hr class="thin"/><h2 id="troubleshooting" class="section-heading">
+  <a href="#troubleshooting" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Troubleshooting</span>
+</h2>
+<h3 id="common-errors" class="section-heading">
+  <a href="#common-errors" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Common Errors</span>
+</h3>
+<p><strong>1. No Instance Found</strong></p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">No</span><span class="w"> </span><span class="ss">instance</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="n">Show</span><span class="p" data-group-id="1994018927-1">(</span><span class="n">MyType</span><span class="p" data-group-id="1994018927-1">)</span></code></pre><p><strong>Solution</strong>: Add derive or manual instance</p><pre><code class="cure">derive Show  % or
+instance Show(MyType) do ... end</code></pre><p><strong>2. Overlapping Instances</strong></p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Overlapping</span><span class="w"> </span><span class="ss">instance</span><span class="w"> </span><span class="ss">for</span><span class="w"> </span><span class="n">Show</span><span class="p" data-group-id="0229279374-1">(</span><span class="n">List</span><span class="p" data-group-id="0229279374-2">(</span><span class="n">Int</span><span class="p" data-group-id="0229279374-2">)</span><span class="p" data-group-id="0229279374-1">)</span></code></pre><p><strong>Solution</strong>: Remove one instance, keep the more general one</p><p><strong>3. Missing Constraint</strong></p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="ss">use</span><span class="w"> </span><span class="ss">&#39;==&#39;</span><span class="w"> </span><span class="ss">on</span><span class="w"> </span><span class="ss">type</span><span class="w"> </span><span class="n">T</span></code></pre><p><strong>Solution</strong>: Add Eq constraint</p><pre><code class="cure">def contains(x: T, list: List(T)) where Eq(T) = ...</code></pre><p><strong>4. Orphan Instance</strong></p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Orphan</span><span class="w"> </span><span class="ss">instance</span><span class="w"> </span><span class="n">Show</span><span class="p" data-group-id="2725470897-1">(</span><span class="n">ExternalType</span><span class="p" data-group-id="2725470897-1">)</span></code></pre><p><strong>Solution</strong>: Define instance in same module as type or typeclass</p><h3 id="debugging-tips" class="section-heading">
+  <a href="#debugging-tips" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Debugging Tips</span>
+</h3>
+<p><strong>1. Check Instance Resolution</strong></p><pre><code class="cure">% Explicitly annotate types to see what instances are used
+let result: Int = show(42)  % Uses Show(Int)</code></pre><p><strong>2. Simplify Constraints</strong></p><pre><code class="cure">% If complex constraints fail, break into simpler functions
+def complex(x: T) where Show(T), Eq(T), Ord(T) = ...
+
+% Becomes:
+def simple_show(x: T) where Show(T) = ...
+def simple_eq(x: T) where Eq(T) = ...</code></pre><p><strong>3. Check Derivation</strong></p><pre><code class="cure">% Verify generated instance exists
+record Test do x: Int end
+derive Show
+
+% Test it
+show(Test{x: 42})  % Should work</code></pre><hr class="thin"/><h2 id="known-limitations" class="section-heading">
+  <a href="#known-limitations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Known Limitations</span>
+</h2>
+<h3 id="ord-typeclass-temporarily-disabled" class="section-heading">
+  <a href="#ord-typeclass-temporarily-disabled" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Ord Typeclass Temporarily Disabled</span>
+</h3>
+<p><strong>Status</strong>: Compiler bug prevents Ord typeclass from compiling</p><p><strong>Issue</strong>: Union type variants cannot be returned from typeclass instance methods due to a type unification bug:</p><pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Type</span><span class="w"> </span><span class="ss">mismatch</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="ss">unification</span><span class="w"> </span><span class="ss">failed</span><span class="w"> </span><span class="ss">between</span><span class="w">
+  </span><span class="p" data-group-id="2649115734-1">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="ss">&#39;Ordering&#39;</span><span class="p" data-group-id="2649115734-1">}</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="p" data-group-id="2649115734-2">{</span><span class="ss">union_type</span><span class="p">,</span><span class="ss">&#39;Ordering&#39;</span><span class="p">,</span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="2649115734-2">}</span></code></pre><p><strong>Impact</strong>:</p><ul><li>The <code class="inline">Ord</code> typeclass and <code class="inline">Ordering</code> type are commented out in <code class="inline">lib/std/typeclasses.cure</code></li><li>You cannot use <code class="inline">compare()</code> method or derive <code class="inline">Ord</code> instances</li><li><code class="inline">Show</code>, <code class="inline">Eq</code>, and <code class="inline">Serializable</code> typeclasses work correctly</li></ul><p><strong>Workaround</strong>:
+Use comparison operators (<code class="inline">&lt;</code>, <code class="inline">&gt;</code>, <code class="inline">&lt;=</code>, <code class="inline">&gt;=</code>) directly instead of the <code class="inline">compare()</code> method:</p><pre><code class="cure">% ❌ Won't work until bug is fixed
+def sort(list: List(T)) where Ord(T) = ...
+
+% ✅ Use direct comparisons instead
+def sort_int(list: List(Int)): List(Int) =
+    % Use &lt; and &gt; operators directly
+    ...</code></pre><p><strong>Expected Fix</strong>: The compiler's typeclass instance type checker needs to properly handle union type constructors.</p><hr class="thin"/><h2 id="examples" class="section-heading">
+  <a href="#examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Examples</span>
+</h2>
+<p>See these files for complete examples:</p><ul><li><code class="inline">examples/08_typeclasses.cure</code> - Basic typeclass usage</li><li><code class="inline">examples/09_derive.cure</code> - Automatic derivation</li><li><code class="inline">examples/10_generic_algorithms.cure</code> - Real-world generic code</li></ul><hr class="thin"/><h2 id="additional-resources" class="section-heading">
+  <a href="#additional-resources" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Additional Resources</span>
+</h2>
+<ul><li><a href="derive_guide.html">Derive Guide</a> - Detailed derivation documentation</li><li><a href="./TYPECLASS_IMPLEMENTATION_STATUS.md">Implementation Status</a> - Technical details</li><li><a href="type_system.html">Type System</a> - Cure's type system overview</li></ul><hr class="thin"/><p><em>For questions or issues, see the project repository or documentation.</em></p>
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="std_summary.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+Standard Library Summary
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="typeclass_implementation.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Typeclass Implementation
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+              (<a href="https://preview.hex.pm/preview/cure/0.1.0/show/docs/TYPECLASS_GUIDE.md">current file</a>)
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

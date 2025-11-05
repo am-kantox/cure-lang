@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>FSM Usage Guide — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/docs/FSM_USAGE.md#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+
+    <span>Cure FSM Usage Guide</span>
+  </h1>
+
+<p><strong>Last Updated</strong>: October 31, 2025</p><p>This document provides comprehensive guidance on using Finite State Machines (FSMs) in the Cure programming language.</p><h2 id="introduction" class="section-heading">
+  <a href="#introduction" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Introduction</span>
+</h2>
+<p>Cure provides first-class support for Finite State Machines (FSMs) as a core language feature. FSMs in Cure compile directly to BEAM <code class="inline">gen_statem</code> processes and provide:</p><ul><li><strong>Declarative Syntax</strong>: Simple arrow-based transition definitions</li><li><strong>Type-safe</strong>: FSM definitions are checked at compile time  </li><li><strong>Record-based Payloads</strong>: Structured data carried through transitions</li><li><strong>Process-based</strong>: Each FSM instance runs as a separate BEAM process</li><li><strong>Named References</strong>: FSMs can be registered with atoms for easy access</li></ul><h2 id="quick-start" class="section-heading">
+  <a href="#quick-start" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Quick Start</span>
+</h2>
+<p>Here's a minimal FSM example:</p><pre><code class="cure">module SimpleFSM do
+  export [main/0]
+  
+  import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
+  import Std.Pair [pair/2]
+  
+  # Define payload record
+  record SimplePayload do
+    counter: Int
+  end
+  
+  # Define FSM with transitions
+  fsm SimplePayload{counter: 0} do
+    Idle --&gt; |start| Running
+    Running --&gt; |stop| Idle
+  end
+  
+  def main(): Int =
+    # Spawn FSM
+    let initial_data = SimplePayload{counter: 0}
+    let fsm_pid = fsm_spawn(:SimplePayload, initial_data)
+    
+    # Name it
+    let _ = fsm_advertise(fsm_pid, :simple_fsm)
+    
+    # Send event
+    let event = pair(:start, [])
+    let _ = fsm_cast(:simple_fsm, event)
+    
+    # Query state
+    let current_state = fsm_state(:simple_fsm)  # Returns :Running
+    
+    0
+end</code></pre><h2 id="defining-fsms-in-cure" class="section-heading">
+  <a href="#defining-fsms-in-cure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Defining FSMs in Cure</span>
+</h2>
+<h3 id="basic-structure" class="section-heading">
+  <a href="#basic-structure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Basic Structure</span>
+</h3>
+<p>Every FSM definition requires:</p><ol><li>A payload record</li><li>An <code class="inline">fsm</code> block with initial payload values</li><li>Transition definitions using arrow syntax</li></ol><pre><code class="cure"># 1. Define payload record
+record MyPayload do
+  field1: Type1
+  field2: Type2
+end
+
+# 2. Define FSM
+fsm MyPayload{field1: value1, field2: value2} do
+  StateA --&gt; |event1| StateB
+  StateB --&gt; |event2| StateC
+  StateC --&gt; |event3| StateA
+end</code></pre><h3 id="transition-syntax" class="section-heading">
+  <a href="#transition-syntax" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Transition Syntax</span>
+</h3>
+<p>Transitions use the format: <code class="inline">FromState --&gt; |event| ToState</code></p><ul><li><strong>States</strong>: Capitalized identifiers (become atoms at runtime)</li><li><strong>Events</strong>: Lowercase identifiers in <code class="inline">|event|</code> notation</li><li><strong>Initial State</strong>: The first state mentioned is the initial state</li></ul><p><strong>Example:</strong></p><pre><code class="cure">fsm TrafficPayload{cycles: 0} do
+  Red --&gt; |timer| Green      # Red is initial state
+  Green --&gt; |timer| Yellow
+  Yellow --&gt; |timer| Red
+end</code></pre><h3 id="self-transitions" class="section-heading">
+  <a href="#self-transitions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Self-Transitions</span>
+</h3>
+<p>A state can transition to itself:</p><pre><code class="cure">fsm DoorPayload{locked: true} do
+  Locked --&gt; |unlock| Unlocked
+  Locked --&gt; |knock| Locked    # Self-transition
+  Unlocked --&gt; |lock| Locked
+end</code></pre><h2 id="working-with-payloads" class="section-heading">
+  <a href="#working-with-payloads" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Working with Payloads</span>
+</h2>
+<p>Payloads are records that carry data through FSM transitions. They must be defined before the FSM.</p><h3 id="payload-record-definition" class="section-heading">
+  <a href="#payload-record-definition" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Payload Record Definition</span>
+</h3>
+<pre><code class="cure">record TrafficPayload do
+  cycles_completed: Int
+  timer_events: Int
+  emergency_stops: Int
+end</code></pre><h3 id="initializing-payload" class="section-heading">
+  <a href="#initializing-payload" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Initializing Payload</span>
+</h3>
+<p>Provide initial values in the FSM declaration:</p><pre><code class="cure">fsm TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0} do
+  # transitions...
+end</code></pre><h3 id="payload-purpose" class="section-heading">
+  <a href="#payload-purpose" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Payload Purpose</span>
+</h3>
+<p>Payloads are useful for:</p><ul><li>Tracking statistics (counters, timestamps)</li><li>Storing configuration</li><li>Maintaining state-specific data</li><li>Debugging information</li></ul><h2 id="using-fsms-from-cure-code" class="section-heading">
+  <a href="#using-fsms-from-cure-code" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Using FSMs from Cure Code</span>
+</h2>
+<h3 id="required-imports" class="section-heading">
+  <a href="#required-imports" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Required Imports</span>
+</h3>
+<pre><code class="cure">import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
+import Std.Pair [pair/2]</code></pre><h3 id="spawning-an-fsm" class="section-heading">
+  <a href="#spawning-an-fsm" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Spawning an FSM</span>
+</h3>
+<p>Use <code class="inline">fsm_spawn/2</code> with the payload type and initial data:</p><pre><code class="cure">let initial_data = TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0}
+let fsm_pid = fsm_spawn(:TrafficPayload, initial_data)</code></pre><h3 id="registering-a-name" class="section-heading">
+  <a href="#registering-a-name" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Registering a Name</span>
+</h3>
+<p>Make the FSM accessible by name:</p><pre><code class="cure">let _ = fsm_advertise(fsm_pid, :traffic_light)
+# Now you can use :traffic_light instead of fsm_pid</code></pre><h3 id="sending-events" class="section-heading">
+  <a href="#sending-events" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Sending Events</span>
+</h3>
+<p>Events are sent using pairs (tuples):</p><pre><code class="cure"># Create event with empty data list
+let empty_list = []
+let event = pair(:timer, empty_list)
+
+# Send to FSM
+let _ = fsm_cast(:traffic_light, event)</code></pre><h3 id="querying-state" class="section-heading">
+  <a href="#querying-state" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Querying State</span>
+</h3>
+<p>Get the current state:</p><pre><code class="cure">let current_state = fsm_state(:traffic_light)
+# Returns atom like :Red, :Green, or :Yellow</code></pre><h2 id="complete-working-example" class="section-heading">
+  <a href="#complete-working-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Complete Working Example</span>
+</h2>
+<p>Here's the traffic light example from <code class="inline">examples/06_fsm_traffic_light.cure</code>:</p><pre><code class="cure">module TrafficLightFSM do
+  export [main/0]
+  
+  import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
+  import Std.Io [println/1]
+  import Std.Pair [pair/2]
+  
+  # Payload record - tracks traffic light statistics
+  record TrafficPayload do
+    cycles_completed: Int
+    timer_events: Int
+    emergency_stops: Int
+  end
+  
+  # Define the TrafficLight FSM
+  # Initial state is Red (first state in transitions)
+  # Events: :timer (normal progression), :emergency (immediate red)
+  fsm TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0} do
+    Red --&gt; |timer| Green
+    Red --&gt; |emergency| Red
+    Green --&gt; |timer| Yellow
+    Green --&gt; |emergency| Red
+    Yellow --&gt; |timer| Red
+    Yellow --&gt; |emergency| Red
+  end
+  
+  # Main demonstration
+  def main(): Int =
+    println(&quot;=== Traffic Light FSM Demo ===&quot;)
+    println(&quot;&quot;)
+    
+    # Initialize FSM with starting data
+    let initial_data = TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0}
+    let fsm_pid = fsm_spawn(:TrafficPayload, initial_data)
+    
+    # Give the FSM a friendly name
+    let adv_result = fsm_advertise(fsm_pid, :traffic_light)
+    
+    # Check initial state (should be Red - first in transition list)
+    println(&quot;Initial state:&quot;)
+    let state0 = fsm_state(:traffic_light)
+    println(&quot;State: Red (expected)&quot;)
+    println(&quot;&quot;)
+    
+    # Scenario 1: Normal timer progression Red -&gt; Green
+    println(&quot;Scenario 1: Timer event from Red&quot;)
+    let empty1 = []
+    let event1 = pair(:timer, empty1)
+    let cast1 = fsm_cast(:traffic_light, event1)
+    let state1 = fsm_state(:traffic_light)
+    println(&quot;State: Green (expected)&quot;)
+    println(&quot;&quot;)
+    
+    # Scenario 2: Normal timer progression Green -&gt; Yellow
+    println(&quot;Scenario 2: Timer event from Green&quot;)
+    let empty2 = []
+    let event2 = pair(:timer, empty2)
+    let cast2 = fsm_cast(:traffic_light, event2)
+    let state2 = fsm_state(:traffic_light)
+    println(&quot;State: Yellow (expected)&quot;)
+    println(&quot;&quot;)
+    
+    # Scenario 3: Emergency from Yellow -&gt; Red
+    println(&quot;Scenario 3: Emergency stop from Yellow&quot;)
+    let empty3 = []
+    let event3 = pair(:emergency, empty3)
+    let cast3 = fsm_cast(:traffic_light, event3)
+    let state3 = fsm_state(:traffic_light)
+    println(&quot;State: Red (expected - emergency stop)&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;=== Demo Complete ===&quot;)
+    0
+end</code></pre><h2 id="api-reference" class="section-heading">
+  <a href="#api-reference" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">API Reference</span>
+</h2>
+<h3 id="core-functions" class="section-heading">
+  <a href="#core-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Core Functions</span>
+</h3>
+<h4><code class="inline">fsm_spawn(fsm_type: Atom, initial_data: Any): Pid</code></h4><p>Spawn a new FSM instance.</p><ul><li><code class="inline">fsm_type</code>: Payload record type name (e.g., <code class="inline">:TrafficPayload</code>)</li><li><code class="inline">initial_data</code>: Initial payload record instance</li><li>Returns: Process ID</li></ul><h4><code class="inline">fsm_cast(target: Pid | Atom, event: Pair): Any</code></h4><p>Send an event to an FSM (asynchronous).</p><ul><li><code class="inline">target</code>: FSM Pid or registered name</li><li><code class="inline">event</code>: Pair of <code class="inline">(event_name, event_data)</code> created with <code class="inline">pair/2</code></li><li>Returns: Cast result</li></ul><h4><code class="inline">fsm_advertise(pid: Pid, name: Atom): Any</code></h4><p>Register a name for an FSM process.</p><ul><li><code class="inline">pid</code>: FSM process ID</li><li><code class="inline">name</code>: Atom to register (e.g., <code class="inline">:my_fsm</code>)</li><li>Returns: Advertisement result</li></ul><h4><code class="inline">fsm_state(target: Pid | Atom): Atom</code></h4><p>Query current FSM state.</p><ul><li><code class="inline">target</code>: FSM Pid or registered name</li><li>Returns: Current state atom</li></ul><h3 id="additional-functions" class="section-heading">
+  <a href="#additional-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Additional Functions</span>
+</h3>
+<h4><code class="inline">fsm_stop(pid: Pid): Any</code></h4><p>Stop an FSM instance gracefully.</p><h4><code class="inline">fsm_info(pid: Pid): Any</code></h4><p>Get detailed FSM information (state, data, history).</p><h4><code class="inline">fsm_is_alive(pid: Pid): Bool</code></h4><p>Check if FSM process is running.</p><h2 id="best-practices" class="section-heading">
+  <a href="#best-practices" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Best Practices</span>
+</h2>
+<ol><li><strong>Keep States Simple</strong>: Each state should represent a clear mode of operation</li><li><strong>Use Descriptive Names</strong>: State and event names should be self-documenting</li><li><strong>Initialize Payloads</strong>: Always provide initial values for all record fields</li><li><strong>Name Your FSMs</strong>: Use <code class="inline">fsm_advertise/2</code> for important FSMs</li><li><strong>Handle All Transitions</strong>: Ensure every state can handle expected events</li><li><strong>Use Self-Transitions</strong>: For events that don't change state but need to be acknowledged</li><li><strong>Track Statistics</strong>: Use payload fields to track FSM behavior (counters, timestamps)</li></ol><h2 id="troubleshooting" class="section-heading">
+  <a href="#troubleshooting" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Troubleshooting</span>
+</h2>
+<h3 id="fsm-not-responding" class="section-heading">
+  <a href="#fsm-not-responding" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">FSM Not Responding</span>
+</h3>
+<ul><li>Verify FSM process is alive with <code class="inline">fsm_is_alive/1</code></li><li>Check that you're using the correct registered name or Pid</li><li>Ensure events are created correctly with <code class="inline">pair/2</code></li></ul><h3 id="wrong-initial-state" class="section-heading">
+  <a href="#wrong-initial-state" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Wrong Initial State</span>
+</h3>
+<ul><li>Remember: the first state in the transition list is the initial state</li><li>Check the order of your transitions in the <code class="inline">fsm</code> block</li></ul><h3 id="event-not-causing-transition" class="section-heading">
+  <a href="#event-not-causing-transition" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Event Not Causing Transition</span>
+</h3>
+<ul><li>Verify the event name matches exactly (case-sensitive)</li><li>Check that a transition exists for that event from the current state</li><li>Use <code class="inline">fsm_state/1</code> to confirm the current state before sending events</li></ul><h3 id="import-errors" class="section-heading">
+  <a href="#import-errors" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Import Errors</span>
+</h3>
+<ul><li>Make sure to import <code class="inline">Std.Fsm</code> functions</li><li>Don't forget to import <code class="inline">Std.Pair [pair/2]</code> for creating events</li><li>Import <code class="inline">Std.Io [println/1]</code> if you need to print output</li></ul><h2 id="see-also" class="section-heading">
+  <a href="#see-also" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">See Also</span>
+</h2>
+<ul><li><a href="fsm_api_design.html">FSM_API_DESIGN.md</a> - Detailed API design documentation</li><li><a href="fsm_implementation_summary.html">FSM_IMPLEMENTATION_SUMMARY.md</a> - Implementation details</li><li><a href="../examples/06_fsm_traffic_light.cure">examples/06_fsm_traffic_light.cure</a> - Complete working example</li><li><a href="../lib/std/fsm.cure">lib/std/fsm.cure</a> - Standard library FSM module</li></ul><hr class="thin"/><p>For questions or issues, consult the main Cure documentation or examine the FSM runtime source code in <code class="inline">src/fsm/</code>.</p>
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="fsm_implementation_summary.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+FSM Implementation Summary
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="function_types.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Function Types
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+              (<a href="https://preview.hex.pm/preview/cure/0.1.0/show/docs/FSM_USAGE.md">current file</a>)
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

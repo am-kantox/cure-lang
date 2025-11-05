@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>Record Operations — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/docs/RECORD_OPERATIONS_IMPLEMENTATION.md#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+
+    <span>Record Operations Implementation Summary</span>
+  </h1>
+
+<h2 id="overview" class="section-heading">
+  <a href="#overview" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Overview</span>
+</h2>
+<p>This document summarizes the implementation of two new record operations in the Cure programming language:</p><ol><li><strong>Direct field access</strong> using dot notation: <code class="inline">record.field</code></li><li><p><strong>Record update syntax</strong> using pipe notation: <code class="inline">Record{base | field: value}</code></p></li></ol><h2 id="implementation-date" class="section-heading">
+  <a href="#implementation-date" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Implementation Date</span>
+</h2>
+<p>2025-10-31</p><h2 id="changes-made" class="section-heading">
+  <a href="#changes-made" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Changes Made</span>
+</h2>
+<h3 id="1-ast-extensions-src-parser-cure_ast-hrl" class="section-heading">
+  <a href="#1-ast-extensions-src-parser-cure_ast-hrl" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">1. AST Extensions (<code class="inline">src/parser/cure_ast.hrl</code>)</span>
+</h3>
+<p>Added two new expression record types:</p><pre><code class="makeup erlang" translate="no"><span class="c1">%% Field access expressions (record.field)</span><span class="w">
+</span><span class="p">-</span><span class="na">record</span><span class="p" data-group-id="1007703653-1">(</span><span class="ss">field_access_expr</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1007703653-2">{</span><span class="w">
+    </span><span class="ss">record</span><span class="p">,</span><span class="w">    </span><span class="c1">% Expression evaluating to a record</span><span class="w">
+    </span><span class="ss">field</span><span class="p">,</span><span class="w">     </span><span class="c1">% Atom: field name</span><span class="w">
+    </span><span class="ss">location</span><span class="w">
+</span><span class="p" data-group-id="1007703653-2">}</span><span class="p" data-group-id="1007703653-1">)</span><span class="p">.</span><span class="w">
+
+</span><span class="c1">%% Record update expressions (Record{old | field: value})</span><span class="w">
+</span><span class="p">-</span><span class="na">record</span><span class="p" data-group-id="1007703653-3">(</span><span class="ss">record_update_expr</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1007703653-4">{</span><span class="w">
+    </span><span class="ss">name</span><span class="p">,</span><span class="w">      </span><span class="c1">% Record type name</span><span class="w">
+    </span><span class="ss">base</span><span class="p">,</span><span class="w">      </span><span class="c1">% Expression for the base record</span><span class="w">
+    </span><span class="ss">fields</span><span class="p">,</span><span class="w">    </span><span class="c1">% List of #field_expr{} records</span><span class="w">
+    </span><span class="ss">location</span><span class="w">
+</span><span class="p" data-group-id="1007703653-4">}</span><span class="p" data-group-id="1007703653-3">)</span><span class="p">.</span></code></pre><p>Updated the <code class="inline">expr()</code> type definition to include these new types.</p><h3 id="2-parser-enhancements-src-parser-cure_parser-erl" class="section-heading">
+  <a href="#2-parser-enhancements-src-parser-cure_parser-erl" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">2. Parser Enhancements (<code class="inline">src/parser/cure_parser.erl</code>)</span>
+</h3>
+<h4>Field Access Parsing</h4><ul><li>Added <code class="inline">parse_postfix_operators/2</code> function to handle postfix operators like <code class="inline">.field</code></li><li>Modified <code class="inline">parse_binary_expression/2</code> to call postfix operator parsing</li><li>Implemented smart disambiguation between module qualification (<code class="inline">Module.function()</code>) and field access (<code class="inline">record.field</code>)</li></ul><h4>Record Update Parsing</h4><ul><li>Enhanced <code class="inline">parse_identifier_or_call/1</code> to detect the <code class="inline">|</code> pipe operator in record construction</li><li><p>Added logic to distinguish between <code class="inline">Record{field: value}</code> (construction) and <code class="inline">Record{base | field: value}</code> (update)</p></li><li>Implemented backtracking for ambiguous cases</li></ul><h4>Helper Functions</h4><ul><li>Added <code class="inline">is_identifier_token/1</code> to check if a token is an identifier</li><li>Updated <code class="inline">get_expr_location/1</code> to handle new expression types</li></ul><h3 id="3-type-system-integration-src-types-cure_typechecker-erl" class="section-heading">
+  <a href="#3-type-system-integration-src-types-cure_typechecker-erl" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">3. Type System Integration (<code class="inline">src/types/cure_typechecker.erl</code>)</span>
+</h3>
+<h4>Type Inference for Field Access</h4><pre><code class="makeup erlang" translate="no"><span class="nf">infer_expr</span><span class="p" data-group-id="9518049176-1">(</span><span class="p" data-group-id="9518049176-2">{</span><span class="ss">field_access_expr</span><span class="p">,</span><span class="w"> </span><span class="n">RecordExpr</span><span class="p">,</span><span class="w"> </span><span class="n">FieldName</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="9518049176-2">}</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="9518049176-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="c1">% Infer record type, look up field type from record definition</span><span class="w">
+    </span><span class="c1">% Return field type or error if field doesn&#39;t exist</span></code></pre><h4>Type Inference for Record Update</h4><pre><code class="makeup erlang" translate="no"><span class="nf">infer_expr</span><span class="p" data-group-id="4477145465-1">(</span><span class="p" data-group-id="4477145465-2">{</span><span class="ss">record_update_expr</span><span class="p">,</span><span class="w"> </span><span class="n">RecordName</span><span class="p">,</span><span class="w"> </span><span class="n">BaseExpr</span><span class="p">,</span><span class="w"> </span><span class="n">Fields</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="4477145465-2">}</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="4477145465-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="c1">% Check base expression matches record type</span><span class="w">
+    </span><span class="c1">% Validate updated fields exist and have correct types</span><span class="w">
+    </span><span class="c1">% Return updated record type</span></code></pre><h4>AST Conversion</h4><ul><li>Added conversion functions in <code class="inline">convert_expr_to_tuple/1</code> for the new expression types</li><li>Integrated with existing type inference pipeline</li></ul><h3 id="4-code-generation-src-codegen-cure_codegen-erl" class="section-heading">
+  <a href="#4-code-generation-src-codegen-cure_codegen-erl" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">4. Code Generation (<code class="inline">src/codegen/cure_codegen.erl</code>)</span>
+</h3>
+<h4>Field Access Codegen</h4><pre><code class="makeup erlang" translate="no"><span class="nf">compile_record_expr</span><span class="p" data-group-id="7853188515-1">(</span><span class="o">#</span><span class="ss">field_access_expr</span><span class="p" data-group-id="7853188515-2">{</span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="7853188515-2">}</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="7853188515-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="c1">% Generate: maps:get(FieldName, Record)</span></code></pre><h4>Record Update Codegen</h4><pre><code class="makeup erlang" translate="no"><span class="nf">compile_record_expr</span><span class="p" data-group-id="4082010512-1">(</span><span class="o">#</span><span class="ss">record_update_expr</span><span class="p" data-group-id="4082010512-2">{</span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="4082010512-2">}</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="4082010512-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="c1">% Generate: BaseRecord#{field1 := Value1, field2 := Value2, ...}</span></code></pre><p>Added dispatch cases in <code class="inline">compile_expression/2</code> for the new expression types.</p><h3 id="5-beam-compiler-integration-src-codegen-cure_beam_compiler-erl" class="section-heading">
+  <a href="#5-beam-compiler-integration-src-codegen-cure_beam_compiler-erl" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">5. BEAM Compiler Integration (<code class="inline">src/codegen/cure_beam_compiler.erl</code>)</span>
+</h3>
+<h4>New BEAM Instructions</h4><ul><li><code class="inline">record_field_access</code>: Compiles to <code class="inline">maps:get(Field, Record)</code></li><li><code class="inline">record_update</code>: Compiles to map update syntax <code class="inline">Map#{field := value}</code></li></ul><h4>Record Representation</h4><p>Changed record compilation from Erlang records to maps:</p><ul><li>Records are now represented as Erlang maps</li><li>Field access uses <a href="https://www.erlang.org/doc/apps/stdlib/maps.html#get/2"><code class="inline">maps:get/2</code></a></li><li>Updates use map update syntax <code class="inline">#{...}</code></li></ul><pre><code class="makeup erlang" translate="no"><span class="nf">compile_make_record</span><span class="p" data-group-id="4155410669-1">(</span><span class="p" data-group-id="4155410669-2">[</span><span class="n">RecordName</span><span class="p">,</span><span class="w"> </span><span class="n">FieldNames</span><span class="p">,</span><span class="w"> </span><span class="n">FieldCount</span><span class="p" data-group-id="4155410669-2">]</span><span class="p">,</span><span class="w"> </span><span class="n">Context</span><span class="p" data-group-id="4155410669-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="c1">% Generate: #{field1 =&gt; Val1, field2 =&gt; Val2, ...}</span><span class="w">
+    </span><span class="n">MapForm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="4155410669-3">{</span><span class="ss">map</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">MapAssocs</span><span class="p" data-group-id="4155410669-3">}</span></code></pre><h3 id="6-documentation-and-examples" class="section-heading">
+  <a href="#6-documentation-and-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">6. Documentation and Examples</span>
+</h3>
+<h4>Current State</h4><p><strong>Note</strong>: As of October 31, 2025, the record field access and update operations are <strong>fully implemented</strong> in the compiler (parser, AST, codegen), but the example files mentioned in earlier documentation do not currently exist.</p><p><strong>Existing Examples</strong>: The current Cure examples that demonstrate record syntax are:</p><ul><li><code class="inline">examples/04_pattern_guards.cure</code> - Shows record pattern matching with guards (e.g., <code class="inline">Point{x: x, y: y} when x == 0.0 and y == 0.0</code>)</li><li>Other example files show basic record construction (e.g., <code class="inline">Point{x: 1.0, y: 2.0}</code>)</li></ul><p><strong>Implementation Status</strong>:</p><ul><li><p>✅ Parser fully supports both field access (<code class="inline">.field</code>) and record update (<code class="inline">Record{base | field: value}</code>) syntax</p></li><li>✅ AST definitions complete (<code class="inline">#field_access_expr{}</code> and <code class="inline">#record_update_expr{}</code>)</li><li>✅ Code generation implemented (<code class="inline">compile_field_access_expr/2</code> and <code class="inline">compile_record_update_expr/2</code>)</li><li>⚠️  Example files demonstrating these features have not yet been added</li></ul><h2 id="syntax-examples" class="section-heading">
+  <a href="#syntax-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Syntax Examples</span>
+</h2>
+<h3 id="direct-field-access" class="section-heading">
+  <a href="#direct-field-access" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Direct Field Access</span>
+</h3>
+<pre><code class="cure">def get_name(p: Person): String =
+  p.name  # Direct field access
+
+# Chained access
+def get_nested_field(contact: Contact): String =
+  contact.person.name  # Access nested record fields</code></pre><h3 id="record-update" class="section-heading">
+  <a href="#record-update" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Record Update</span>
+</h3>
+<pre><code class="cure">def birthday(p: Person): Person =
+  Person{p | age: p.age + 1}  # Update single field
+
+def move_point(pt: Point, dx: Float, dy: Float): Point =
+  Point{pt | x: pt.x + dx, y: pt.y + dy}  # Update multiple fields</code></pre><h2 id="testing" class="section-heading">
+  <a href="#testing" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Testing</span>
+</h2>
+<h3 id="implementation-verification" class="section-heading">
+  <a href="#implementation-verification" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Implementation Verification</span>
+</h3>
+<p>✅ <strong>Parser Implementation</strong>:</p><ul><li>Field access parsing: <code class="inline">parse_postfix_operators/2</code> (lines 2756-2801)</li><li>Record update parsing: lines 3136-3152 in <code class="inline">cure_parser.erl</code></li><li>Proper disambiguation between module qualification and field access</li></ul><p>✅ <strong>Codegen Implementation</strong>:</p><ul><li><code class="inline">compile_field_access_expr/2</code>: lines 1692-1706 in <code class="inline">cure_codegen.erl</code></li><li><code class="inline">compile_record_update_expr/2</code>: lines 1668-1689 in <code class="inline">cure_codegen.erl</code></li><li>Generates <code class="inline">record_field_access</code> and <code class="inline">update_record</code> BEAM instructions</li></ul><p>✅ <strong>AST Definitions</strong>:</p><ul><li><code class="inline">#field_access_expr{}</code>: lines 293-298 in <code class="inline">cure_ast.hrl</code></li><li><code class="inline">#record_update_expr{}</code>: lines 300-306 in <code class="inline">cure_ast.hrl</code></li></ul><h3 id="testing-status" class="section-heading">
+  <a href="#testing-status" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Testing Status</span>
+</h3>
+<ul><li>✓ Core implementation complete in compiler pipeline</li><li>⚠️ Dedicated example files for these features not yet created</li><li>✓ Build system compiles without errors</li></ul><h2 id="technical-notes" class="section-heading">
+  <a href="#technical-notes" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Technical Notes</span>
+</h2>
+<h3 id="disambiguation-strategy" class="section-heading">
+  <a href="#disambiguation-strategy" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Disambiguation Strategy</span>
+</h3>
+<p>The parser disambiguates between module qualification and field access by checking:</p><ol><li>If the base expression is a simple identifier (<code class="inline">#identifier_expr{}</code>)</li><li>If there's a <code class="inline">(</code> token after the field name</li><li>If both are true → module qualification</li><li>Otherwise → field access</li></ol><h3 id="record-update-implementation" class="section-heading">
+  <a href="#record-update-implementation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Record Update Implementation</span>
+</h3>
+<p>The record update syntax is parsed by:</p><ol><li>Detecting <code class="inline">{</code> after a record type name</li><li>Parsing the first expression after <code class="inline">{</code></li><li>Checking for <code class="inline">|</code> token</li><li>If <code class="inline">|</code> found → record update, otherwise backtrack to regular construction</li></ol><h3 id="beam-compilation" class="section-heading">
+  <a href="#beam-compilation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">BEAM Compilation</span>
+</h3>
+<p>Records compile to Erlang maps, which provides:</p><ul><li>Efficient field access via <a href="https://www.erlang.org/doc/apps/stdlib/maps.html#get/2"><code class="inline">maps:get/2</code></a></li><li>Efficient updates via map update syntax</li><li>No runtime record definitions needed</li><li>Better interoperability with Erlang code</li></ul><h2 id="future-enhancements" class="section-heading">
+  <a href="#future-enhancements" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Future Enhancements</span>
+</h2>
+<p>Potential improvements for future iterations:</p><ol><li><p><strong>Nested updates</strong>: <code class="inline">Person{p | address.city: &quot;New York&quot;}</code></p></li><li><p><strong>Pattern-based updates</strong>: <code class="inline">Person{p | age: a} when a &gt; 18 -&gt; ..}</code></p></li><li><strong>Partial construction</strong>: Allow omitting some fields with defaults</li><li><p><strong>Record spreading</strong>: <code class="inline">Person{p1 | ...p2}</code> to merge records</p></li><li><strong>Type-safe field access</strong>: Compile-time verification of field existence</li></ol><h2 id="compatibility" class="section-heading">
+  <a href="#compatibility" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Compatibility</span>
+</h2>
+<ul><li><strong>Backward Compatible</strong>: Existing record syntax and pattern matching work unchanged</li><li><strong>New Syntax</strong>: Field access and update syntax are additive features</li><li><strong>BEAM Integration</strong>: Maps-based implementation is standard Erlang</li></ul><h2 id="references" class="section-heading">
+  <a href="#references" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">References</span>
+</h2>
+<h3 id="implementation-files" class="section-heading">
+  <a href="#implementation-files" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Implementation Files</span>
+</h3>
+<ul><li><strong>AST definitions</strong>: <code class="inline">src/parser/cure_ast.hrl</code> (lines 293-306)</li><li><strong>Parser implementation</strong>: <code class="inline">src/parser/cure_parser.erl</code><ul><li>Field access: lines 2756-2801 (<code class="inline">parse_postfix_operators/2</code>)</li><li>Record update: lines 3136-3152 (in <code class="inline">parse_identifier_or_call/1</code>)</li></ul></li><li><strong>Code generation</strong>: <code class="inline">src/codegen/cure_codegen.erl</code><ul><li><code class="inline">compile_field_access_expr/2</code>: lines 1692-1706</li><li><code class="inline">compile_record_update_expr/2</code>: lines 1668-1689</li><li>Expression dispatch: lines 1219-1220</li></ul></li><li><strong>Type checker</strong>: <code class="inline">src/types/cure_typechecker.erl</code> (type inference for new expressions)</li><li><strong>BEAM compiler</strong>: <code class="inline">src/codegen/cure_beam_compiler.erl</code> (BEAM bytecode generation)</li></ul><h3 id="example-files" class="section-heading">
+  <a href="#example-files" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example Files</span>
+</h3>
+<ul><li><strong>Existing</strong>: <code class="inline">examples/04_pattern_guards.cure</code> (record pattern matching)</li><li><strong>Future</strong>: Dedicated examples for field access and record update syntax to be added</li></ul>
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="project_overview.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+Project Overview
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="smt_quick_reference.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+SMT Quick Reference
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+              (<a href="https://preview.hex.pm/preview/cure/0.1.0/show/docs/RECORD_OPERATIONS_IMPLEMENTATION.md">current file</a>)
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

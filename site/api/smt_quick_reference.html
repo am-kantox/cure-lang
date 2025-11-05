@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>SMT Quick Reference — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/docs/SMT_QUICK_REFERENCE.md#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+
+    <span>SMT Solver Quick Reference</span>
+  </h1>
+
+<p><strong>Status:</strong> ✅ Production Ready<br/><strong>Solver:</strong> Z3 4.13.3<br/><strong>Test Coverage:</strong> 100% (12/12 tests passing)</p><hr class="thin"/><h2 id="quick-start" class="section-heading">
+  <a href="#quick-start" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Quick Start</span>
+</h2>
+<h3 id="1-verify-z3-is-installed" class="section-heading">
+  <a href="#1-verify-z3-is-installed" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">1. Verify Z3 is Installed</span>
+</h3>
+<pre><code class="makeup bash" translate="no"><span class="">z3 --version
+</span><span class=""># Z3 version 4.13.3 - 64 bit
+</span></code></pre><h3 id="2-run-smt-tests" class="section-heading">
+  <a href="#2-run-smt-tests" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">2. Run SMT Tests</span>
+</h3>
+<pre><code class="makeup bash" translate="no"><span class="">make clean &amp;&amp; make all
+</span><span class="">erl -pa _build/ebin -s smt_process_test run -s smt_parser_test run -s init stop
+</span><span class=""># All 12 tests should pass
+</span></code></pre><hr class="thin"/><h2 id="api-reference" class="section-heading">
+  <a href="#api-reference" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">API Reference</span>
+</h2>
+<h3 id="high-level-api-cure_smt_solver-erl" class="section-heading">
+  <a href="#high-level-api-cure_smt_solver-erl" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">High-Level API (<code class="inline">cure_smt_solver.erl</code>)</span>
+</h3>
+<h4>Check if Constraint is Satisfiable</h4><pre><code class="makeup erlang" translate="no"><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">check_constraint</span><span class="p" data-group-id="5381922792-1">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="5381922792-1">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% Returns: sat | unsat | unknown</span></code></pre><h4>Prove Constraint Always Holds</h4><pre><code class="makeup erlang" translate="no"><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_constraint</span><span class="p" data-group-id="8995667208-1">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="8995667208-1">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% Returns: true | false | unknown</span></code></pre><h4>Find Counterexample</h4><pre><code class="makeup erlang" translate="no"><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">find_counterexample</span><span class="p" data-group-id="7107653369-1">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="7107653369-1">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% Returns: {ok, Model} | none | unknown</span></code></pre><h3 id="mid-level-api-direct-solver-access" class="section-heading">
+  <a href="#mid-level-api-direct-solver-access" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Mid-Level API (Direct Solver Access)</span>
+</h3>
+<h4>Start Solver</h4><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="0290410596-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Pid</span><span class="p" data-group-id="0290410596-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_process</span><span class="p">:</span><span class="nf">start_solver</span><span class="p" data-group-id="0290410596-2">(</span><span class="ss">z3</span><span class="p">,</span><span class="w"> </span><span class="mi">5000</span><span class="p" data-group-id="0290410596-2">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% Solver: z3 | cvc5</span><span class="w">
+</span><span class="c1">% Timeout: milliseconds</span></code></pre><h4>Execute Query</h4><pre><code class="makeup erlang" translate="no"><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_translator</span><span class="p">:</span><span class="nf">generate_query</span><span class="p" data-group-id="8039250043-1">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="8039250043-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_process</span><span class="p">:</span><span class="nf">execute_query</span><span class="p" data-group-id="8039250043-2">(</span><span class="n">Pid</span><span class="p">,</span><span class="w"> </span><span class="n">Query</span><span class="p" data-group-id="8039250043-2">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% Returns: sat | unsat | {sat, Lines} | {error, Reason}</span></code></pre><h4>Parse Model</h4><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="0846518817-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Model</span><span class="p" data-group-id="0846518817-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_parser</span><span class="p">:</span><span class="nf">parse_model</span><span class="p" data-group-id="0846518817-2">(</span><span class="n">Lines</span><span class="p" data-group-id="0846518817-2">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% Returns: {ok, #{var =&gt; value}} | {error, Reason}</span></code></pre><h4>Stop Solver</h4><pre><code class="makeup erlang" translate="no"><span class="nc">cure_smt_process</span><span class="p">:</span><span class="nf">stop_solver</span><span class="p" data-group-id="2213640776-1">(</span><span class="n">Pid</span><span class="p" data-group-id="2213640776-1">)</span><span class="p">.</span></code></pre><hr class="thin"/><h2 id="examples" class="section-heading">
+  <a href="#examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Examples</span>
+</h2>
+<h3 id="example-1-verify-positive-number" class="section-heading">
+  <a href="#example-1-verify-positive-number" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example 1: Verify Positive Number</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="c1">% Constraint: x &gt; 0</span><span class="w">
+</span><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="1072241052-1">{</span><span class="w">
+    </span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w">
+    </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">identifier_expr</span><span class="p" data-group-id="1072241052-2">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">x</span><span class="p" data-group-id="1072241052-2">}</span><span class="p">,</span><span class="w">
+    </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">literal_expr</span><span class="p" data-group-id="1072241052-3">{</span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="1072241052-3">}</span><span class="w">
+</span><span class="p" data-group-id="1072241052-1">}</span><span class="p">,</span><span class="w">
+
+</span><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1072241052-4">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="1072241052-5">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="1072241052-5">}</span><span class="p" data-group-id="1072241052-4">}</span><span class="p">,</span><span class="w">
+
+</span><span class="c1">% Check if satisfiable</span><span class="w">
+</span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">check_constraint</span><span class="p" data-group-id="1072241052-6">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="1072241052-6">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; sat (there exists x &gt; 0)</span><span class="w">
+
+</span><span class="c1">% Find example</span><span class="w">
+</span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">find_counterexample</span><span class="p" data-group-id="1072241052-7">(</span><span class="w">
+    </span><span class="o">#</span><span class="ss">unary_op_expr</span><span class="p" data-group-id="1072241052-8">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;not&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">operand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Constraint</span><span class="p" data-group-id="1072241052-8">}</span><span class="p">,</span><span class="w">
+    </span><span class="n">Env</span><span class="w">
+</span><span class="p" data-group-id="1072241052-7">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; {ok, #{x =&gt; 0}} (x=0 is counterexample to x &gt; 0)</span></code></pre><h3 id="example-2-verify-division-safety" class="section-heading">
+  <a href="#example-2-verify-division-safety" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example 2: Verify Division Safety</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="c1">% Constraint: y /= 0</span><span class="w">
+</span><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="5805123006-1">{</span><span class="w">
+    </span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;/=&#39;</span><span class="p">,</span><span class="w">
+    </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">identifier_expr</span><span class="p" data-group-id="5805123006-2">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">y</span><span class="p" data-group-id="5805123006-2">}</span><span class="p">,</span><span class="w">
+    </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">literal_expr</span><span class="p" data-group-id="5805123006-3">{</span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="5805123006-3">}</span><span class="w">
+</span><span class="p" data-group-id="5805123006-1">}</span><span class="p">,</span><span class="w">
+
+</span><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="5805123006-4">#{</span><span class="ss">y</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="5805123006-5">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="5805123006-5">}</span><span class="p" data-group-id="5805123006-4">}</span><span class="p">,</span><span class="w">
+
+</span><span class="c1">% This is satisfiable (y can be non-zero)</span><span class="w">
+</span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">check_constraint</span><span class="p" data-group-id="5805123006-6">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="5805123006-6">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; sat</span><span class="w">
+
+</span><span class="c1">% But can we find y = 0? (violates constraint)</span><span class="w">
+</span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">find_counterexample</span><span class="p" data-group-id="5805123006-7">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="5805123006-7">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; {ok, #{y =&gt; 0}} (counterexample exists)</span></code></pre><h3 id="example-3-prove-arithmetic-property" class="section-heading">
+  <a href="#example-3-prove-arithmetic-property" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example 3: Prove Arithmetic Property</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="c1">% Constraint: x + y == y + x (commutativity)</span><span class="w">
+</span><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="4843268918-1">{</span><span class="w">
+    </span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;==&#39;</span><span class="p">,</span><span class="w">
+    </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="4843268918-2">{</span><span class="w">
+        </span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w">
+        </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">identifier_expr</span><span class="p" data-group-id="4843268918-3">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">x</span><span class="p" data-group-id="4843268918-3">}</span><span class="p">,</span><span class="w">
+        </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">identifier_expr</span><span class="p" data-group-id="4843268918-4">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">y</span><span class="p" data-group-id="4843268918-4">}</span><span class="w">
+    </span><span class="p" data-group-id="4843268918-2">}</span><span class="p">,</span><span class="w">
+    </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="4843268918-5">{</span><span class="w">
+        </span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w">
+        </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">identifier_expr</span><span class="p" data-group-id="4843268918-6">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">y</span><span class="p" data-group-id="4843268918-6">}</span><span class="p">,</span><span class="w">
+        </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">identifier_expr</span><span class="p" data-group-id="4843268918-7">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">x</span><span class="p" data-group-id="4843268918-7">}</span><span class="w">
+    </span><span class="p" data-group-id="4843268918-5">}</span><span class="w">
+</span><span class="p" data-group-id="4843268918-1">}</span><span class="p">,</span><span class="w">
+
+</span><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="4843268918-8">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="4843268918-9">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="4843268918-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">y</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="4843268918-10">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="4843268918-10">}</span><span class="p" data-group-id="4843268918-8">}</span><span class="p">,</span><span class="w">
+
+</span><span class="c1">% This should be proven true</span><span class="w">
+</span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_constraint</span><span class="p" data-group-id="4843268918-11">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="4843268918-11">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; true (no counterexample exists)</span></code></pre><h3 id="example-4-complex-constraint" class="section-heading">
+  <a href="#example-4-complex-constraint" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example 4: Complex Constraint</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="c1">% Constraint: (x &gt; 0) and (y &gt; 0) =&gt; (x + y &gt; 0)</span><span class="w">
+</span><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="1939998209-1">{</span><span class="w">
+    </span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;=&gt;&#39;</span><span class="p">,</span><span class="w">
+    </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="1939998209-2">{</span><span class="w">
+        </span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;and&#39;</span><span class="p">,</span><span class="w">
+        </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="1939998209-3">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="1939998209-4">(</span><span class="ss">x</span><span class="p" data-group-id="1939998209-4">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="1939998209-5">(</span><span class="mi">0</span><span class="p" data-group-id="1939998209-5">)</span><span class="p" data-group-id="1939998209-3">}</span><span class="p">,</span><span class="w">
+        </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="1939998209-6">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="1939998209-7">(</span><span class="ss">y</span><span class="p" data-group-id="1939998209-7">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="1939998209-8">(</span><span class="mi">0</span><span class="p" data-group-id="1939998209-8">)</span><span class="p" data-group-id="1939998209-6">}</span><span class="w">
+    </span><span class="p" data-group-id="1939998209-2">}</span><span class="p">,</span><span class="w">
+    </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="1939998209-9">{</span><span class="w">
+        </span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w">
+        </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="1939998209-10">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="1939998209-11">(</span><span class="ss">x</span><span class="p" data-group-id="1939998209-11">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="1939998209-12">(</span><span class="ss">y</span><span class="p" data-group-id="1939998209-12">)</span><span class="p" data-group-id="1939998209-10">}</span><span class="p">,</span><span class="w">
+        </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="1939998209-13">(</span><span class="mi">0</span><span class="p" data-group-id="1939998209-13">)</span><span class="w">
+    </span><span class="p" data-group-id="1939998209-9">}</span><span class="w">
+</span><span class="p" data-group-id="1939998209-1">}</span><span class="p">,</span><span class="w">
+
+</span><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1939998209-14">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="1939998209-15">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="1939998209-15">}</span><span class="p">,</span><span class="w"> </span><span class="ss">y</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="1939998209-16">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="1939998209-16">}</span><span class="p" data-group-id="1939998209-14">}</span><span class="p">,</span><span class="w">
+
+</span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_constraint</span><span class="p" data-group-id="1939998209-17">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="1939998209-17">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; true (proven!)</span></code></pre><hr class="thin"/><h2 id="constraint-translation" class="section-heading">
+  <a href="#constraint-translation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Constraint Translation</span>
+</h2>
+<h3 id="supported-operators" class="section-heading">
+  <a href="#supported-operators" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Supported Operators</span>
+</h3>
+<h4>Arithmetic</h4><ul><li><code class="inline">+</code>, <code class="inline">-</code>, <code class="inline">*</code> → <code class="inline">(+ x y)</code>, <code class="inline">(- x y)</code>, <code class="inline">(* x y)</code></li><li><code class="inline">/</code> → <code class="inline">(/ x y)</code> (real division)</li><li><code class="inline">div</code> → <code class="inline">(div x y)</code> (integer division)</li><li><code class="inline">rem</code> → <code class="inline">(mod x y)</code> (remainder)</li></ul><h4>Comparison</h4><ul><li><code class="inline">==</code>, <code class="inline">/=</code> → <code class="inline">(= x y)</code>, <code class="inline">(not (= x y))</code></li><li><code class="inline">&lt;</code>, <code class="inline">&gt;</code> → <code class="inline">(&lt; x y)</code>, <code class="inline">(&gt; x y)</code></li><li><code class="inline">=&lt;</code>, <code class="inline">&gt;=</code> → <code class="inline">(&lt;= x y)</code>, <code class="inline">(&gt;= x y)</code></li></ul><h4>Boolean</h4><ul><li><code class="inline">and</code>, <code class="inline">or</code>, <code class="inline">not</code> → <code class="inline">(and x y)</code>, <code class="inline">(or x y)</code>, <code class="inline">(not x)</code></li><li><code class="inline">andalso</code>, <code class="inline">orelse</code> → same as <code class="inline">and</code>, <code class="inline">or</code></li><li><code class="inline">=&gt;</code> → <code class="inline">(=&gt; x y)</code> (implication)</li></ul><h4>Unary</h4><ul><li><code class="inline">-</code> (negation) → <code class="inline">(- x)</code></li><li><code class="inline">not</code> (boolean) → <code class="inline">(not x)</code></li></ul><h3 id="type-mapping" class="section-heading">
+  <a href="#type-mapping" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type Mapping</span>
+</h3>
+<ul><li><code class="inline">Int</code>, <code class="inline">Nat</code> → <code class="inline">Int</code> (SMT integer)</li><li><code class="inline">Bool</code> → <code class="inline">Bool</code> (SMT boolean)</li><li><code class="inline">Float</code>, <code class="inline">Real</code> → <code class="inline">Real</code> (SMT real)</li></ul><h3 id="logic-inference" class="section-heading">
+  <a href="#logic-inference" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Logic Inference</span>
+</h3>
+<p>The translator automatically infers the SMT logic:</p><ul><li><code class="inline">QF_LIA</code> - Linear Integer Arithmetic (Int only)</li><li><code class="inline">QF_LRA</code> - Linear Real Arithmetic (Real only)</li><li><code class="inline">QF_LIRA</code> - Linear Mixed Integer/Real Arithmetic</li><li><code class="inline">QF_NIA</code> - Nonlinear Integer Arithmetic (with *, /)</li></ul><hr class="thin"/><h2 id="timeout-configuration" class="section-heading">
+  <a href="#timeout-configuration" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Timeout Configuration</span>
+</h2>
+<p>Default timeout is 5000ms. Configure per-solver:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="6294635471-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Pid</span><span class="p" data-group-id="6294635471-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_process</span><span class="p">:</span><span class="nf">start_solver</span><span class="p" data-group-id="6294635471-2">(</span><span class="ss">z3</span><span class="p">,</span><span class="w"> </span><span class="mi">10000</span><span class="p" data-group-id="6294635471-2">)</span><span class="p">.</span><span class="w"> </span><span class="c1">% 10 seconds</span></code></pre><p>Or use default:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4353927703-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Pid</span><span class="p" data-group-id="4353927703-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_process</span><span class="p">:</span><span class="nf">start_solver</span><span class="p" data-group-id="4353927703-2">(</span><span class="ss">z3</span><span class="p">,</span><span class="w"> </span><span class="mi">5000</span><span class="p" data-group-id="4353927703-2">)</span><span class="p">.</span></code></pre><hr class="thin"/><h2 id="error-handling" class="section-heading">
+  <a href="#error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h2>
+<p>All functions have graceful error handling:</p><pre><code class="makeup erlang" translate="no"><span class="k">case</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">check_constraint</span><span class="p" data-group-id="7527064953-1">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="7527064953-1">)</span><span class="w"> </span><span class="k">of</span><span class="w">
+    </span><span class="ss">sat</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="7527064953-2">(</span><span class="s">&quot;Satisfiable</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="7527064953-2">)</span><span class="p">;</span><span class="w">
+    </span><span class="ss">unsat</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="7527064953-3">(</span><span class="s">&quot;Unsatisfiable</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="7527064953-3">)</span><span class="p">;</span><span class="w">
+    </span><span class="ss">unknown</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="7527064953-4">(</span><span class="s">&quot;Solver could not determine</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="7527064953-4">)</span><span class="p">;</span><span class="w">
+    </span><span class="p" data-group-id="7527064953-5">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p" data-group-id="7527064953-5">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="7527064953-6">(</span><span class="s">&quot;Error: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7527064953-7">[</span><span class="n">Reason</span><span class="p" data-group-id="7527064953-7">]</span><span class="p" data-group-id="7527064953-6">)</span><span class="w">
+</span><span class="k">end</span><span class="p">.</span></code></pre><p>If SMT solver fails, the system falls back to symbolic evaluation.</p><hr class="thin"/><h2 id="testing" class="section-heading">
+  <a href="#testing" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Testing</span>
+</h2>
+<h3 id="run-all-tests" class="section-heading">
+  <a href="#run-all-tests" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Run All Tests</span>
+</h3>
+<pre><code class="makeup bash" translate="no"><span class="">erl -pa _build/ebin -s smt_process_test run -s smt_parser_test run -s init stop
+</span></code></pre><h3 id="run-process-tests-only" class="section-heading">
+  <a href="#run-process-tests-only" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Run Process Tests Only</span>
+</h3>
+<pre><code class="makeup bash" translate="no"><span class="">erl -pa _build/ebin -s smt_process_test run -s init stop
+</span></code></pre><h3 id="run-parser-tests-only" class="section-heading">
+  <a href="#run-parser-tests-only" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Run Parser Tests Only</span>
+</h3>
+<pre><code class="makeup bash" translate="no"><span class="">erl -pa _build/ebin -s smt_parser_test run -s init stop
+</span></code></pre><hr class="thin"/><h2 id="troubleshooting" class="section-heading">
+  <a href="#troubleshooting" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Troubleshooting</span>
+</h2>
+<h3 id="z3-not-found" class="section-heading">
+  <a href="#z3-not-found" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Z3 Not Found</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Z3</span><span class="w"> </span><span class="ss">solver</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="ss">found</span></code></pre><p><strong>Solution:</strong> Install Z3</p><pre><code class="makeup bash" translate="no"><span class="">sudo apt install z3  # Ubuntu/Debian
+</span><span class="">brew install z3      # macOS
+</span></code></pre><h3 id="timeout-errors" class="section-heading">
+  <a href="#timeout-errors" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Timeout Errors</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="8030113887-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="ss">timeout</span><span class="p" data-group-id="8030113887-1">}</span></code></pre><p><strong>Solution:</strong> Increase timeout</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4079223894-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Pid</span><span class="p" data-group-id="4079223894-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_process</span><span class="p">:</span><span class="nf">start_solver</span><span class="p" data-group-id="4079223894-2">(</span><span class="ss">z3</span><span class="p">,</span><span class="w"> </span><span class="mi">30000</span><span class="p" data-group-id="4079223894-2">)</span><span class="p">.</span><span class="w"> </span><span class="c1">% 30 seconds</span></code></pre><h3 id="parse-errors" class="section-heading">
+  <a href="#parse-errors" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Parse Errors</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4420047581-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4420047581-2">{</span><span class="ss">parse_error</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p" data-group-id="4420047581-2">}</span><span class="p" data-group-id="4420047581-1">}</span></code></pre><p><strong>Solution:</strong> Check constraint syntax and types in environment.</p><hr class="thin"/><h2 id="performance-tips" class="section-heading">
+  <a href="#performance-tips" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Performance Tips</span>
+</h2>
+<ol><li><strong>Reuse solver processes</strong> - Starting solver has ~50ms overhead</li><li><strong>Use appropriate timeout</strong> - Complex constraints may need &gt;5s</li><li><strong>Simplify constraints</strong> - Break complex constraints into parts</li><li><strong>Cache results</strong> - Identical constraints return same result</li></ol><hr class="thin"/><h2 id="architecture" class="section-heading">
+  <a href="#architecture" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Architecture</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">User</span><span class="w"> </span><span class="n">Code</span><span class="w">
+    </span><span class="err">↓</span><span class="w">
+</span><span class="nf">cure_smt_solver</span><span class="w"> </span><span class="p" data-group-id="0001261529-1">(</span><span class="n">High</span><span class="o">-</span><span class="ss">level</span><span class="w"> </span><span class="n">API</span><span class="p" data-group-id="0001261529-1">)</span><span class="w">
+    </span><span class="err">↓</span><span class="w">
+</span><span class="nf">cure_smt_translator</span><span class="w"> </span><span class="p" data-group-id="0001261529-2">(</span><span class="n">AST</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">SMT</span><span class="o">-</span><span class="n">LIB</span><span class="p" data-group-id="0001261529-2">)</span><span class="w">
+    </span><span class="err">↓</span><span class="w">
+</span><span class="nf">cure_smt_process</span><span class="w"> </span><span class="p" data-group-id="0001261529-3">(</span><span class="n">Solver</span><span class="w"> </span><span class="ss">management</span><span class="p" data-group-id="0001261529-3">)</span><span class="w">
+    </span><span class="err">↓</span><span class="w">
+</span><span class="n">Z3</span><span class="w"> </span><span class="n">Solver</span><span class="w"> </span><span class="p" data-group-id="0001261529-4">(</span><span class="ss">via</span><span class="w"> </span><span class="n">Erlang</span><span class="w"> </span><span class="ss">port</span><span class="p" data-group-id="0001261529-4">)</span><span class="w">
+    </span><span class="err">↓</span><span class="w">
+</span><span class="nf">cure_smt_parser</span><span class="w"> </span><span class="p" data-group-id="0001261529-5">(</span><span class="n">Model</span><span class="w"> </span><span class="ss">extraction</span><span class="p" data-group-id="0001261529-5">)</span><span class="w">
+    </span><span class="err">↓</span><span class="w">
+</span><span class="n">Result</span></code></pre><hr class="thin"/><h2 id="files" class="section-heading">
+  <a href="#files" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Files</span>
+</h2>
+<h3 id="core-implementation" class="section-heading">
+  <a href="#core-implementation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Core Implementation</span>
+</h3>
+<ul><li><code class="inline">src/smt/cure_smt_solver.erl</code> - High-level API</li><li><code class="inline">src/smt/cure_smt_translator.erl</code> - Constraint translation</li><li><code class="inline">src/smt/cure_smt_process.erl</code> - Solver process management</li><li><code class="inline">src/smt/cure_smt_parser.erl</code> - Model parser</li></ul><h3 id="tests" class="section-heading">
+  <a href="#tests" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Tests</span>
+</h3>
+<ul><li><code class="inline">test/smt_process_test.erl</code> - Process management tests (7 tests)</li><li><code class="inline">test/smt_parser_test.erl</code> - Parser tests (5 tests)</li></ul><h3 id="documentation" class="section-heading">
+  <a href="#documentation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Documentation</span>
+</h3>
+<ul><li><code class="inline">docs/SMT_INTEGRATION_COMPLETE.md</code> - Complete overview</li><li><code class="inline">docs/SMT_INTEGRATION_PLAN.md</code> - Original plan</li><li><code class="inline">docs/SMT_COMPLETION_PLAN.md</code> - 4-step completion plan</li><li><code class="inline">docs/SMT_SOLVER_INSTALLATION.md</code> - Installation guide</li></ul><hr class="thin"/><h2 id="integration-status" class="section-heading">
+  <a href="#integration-status" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Integration Status</span>
+</h2>
+<h3 id="completed" class="section-heading">
+  <a href="#completed" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">✅ Completed</span>
+</h3>
+<ul><li>Core SMT solver implementation</li><li>Z3 solver support with process management</li><li>Constraint translation (AST → SMT-LIB)</li><li>Model parsing and result extraction</li><li>Comprehensive test suite (12/12 tests passing)</li><li>High-level API for constraint checking</li></ul><h3 id="planned" class="section-heading">
+  <a href="#planned" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">📋 Planned</span>
+</h3>
+<ol><li><strong>CLI Integration</strong>: Add command-line flags for SMT solver control<ul><li><code class="inline">--smt-solver [z3|cvc5]</code></li><li><code class="inline">--smt-timeout &lt;ms&gt;</code></li><li><code class="inline">--no-smt</code></li></ul></li><li><strong>Type Checker Integration</strong>: Automatic verification during type checking</li><li><strong>CVC5 Support</strong>: Complete CVC5 solver implementation (stub exists)</li><li><strong>Result Caching</strong>: Cache constraint checking results for performance</li><li><strong>Distributed Solver Pool</strong>: Parallel constraint solving</li></ol><hr class="thin"/><p><strong>Version:</strong> 1.0<br/><strong>Last Updated:</strong> October 31, 2025<br/><strong>Status:</strong> Production Ready ✅</p><p><strong>Note</strong>: SMT solver integration is available at the Erlang API level. CLI integration is not yet implemented.</p>
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="record_operations_implementation.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+Record Operations
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="smt_solver_installation.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+SMT Solver Installation
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+              (<a href="https://preview.hex.pm/preview/cure/0.1.0/show/docs/SMT_QUICK_REFERENCE.md">current file</a>)
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

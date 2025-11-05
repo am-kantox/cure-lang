@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>Derive Guide — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/docs/DERIVE_GUIDE.md#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+
+    <span>Automatic Typeclass Derivation in Cure</span>
+  </h1>
+
+<h2 id="overview" class="section-heading">
+  <a href="#overview" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Overview</span>
+</h2>
+<p>Cure supports automatic derivation of typeclass instances for user-defined types using the <code class="inline">derive</code> clause. This feature eliminates boilerplate code and ensures consistency across your codebase.</p><h2 id="syntax" class="section-heading">
+  <a href="#syntax" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Syntax</span>
+</h2>
+<h3 id="basic-derivation" class="section-heading">
+  <a href="#basic-derivation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Basic Derivation</span>
+</h3>
+<pre><code class="cure">record Point do
+    x: Int
+    y: Int
+end
+derive Show, Eq, Ord</code></pre><p>This automatically generates instances for <code class="inline">Show(Point)</code>, <code class="inline">Eq(Point)</code>, and <code class="inline">Ord(Point)</code>.</p><h3 id="derivation-with-type-parameters" class="section-heading">
+  <a href="#derivation-with-type-parameters" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Derivation with Type Parameters</span>
+</h3>
+<pre><code class="cure">record Container(T) do
+    value: T
+    name: String
+end
+derive Show, Eq</code></pre><p>When deriving for parameterized types, the compiler automatically adds constraints:</p><pre><code class="cure">% Generated instances:
+instance Show(Container(T)) where Show(T) do
+    def show(c: Container(T)): String = ...
+end
+
+instance Eq(Container(T)) where Eq(T) do
+    def ==(c1: Container(T), c2: Container(T)): Bool = ...
+end</code></pre><h2 id="supported-typeclasses" class="section-heading">
+  <a href="#supported-typeclasses" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Supported Typeclasses</span>
+</h2>
+<h3 id="show" class="section-heading">
+  <a href="#show" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Show</span>
+</h3>
+<p>Derives a string representation of the type:</p><pre><code class="cure">record Person do
+    name: String
+    age: Int
+end
+derive Show
+
+% Usage:
+let p = Person { name: &quot;Alice&quot;, age: 30 }
+show(p)  % &quot;Person { name: \&quot;Alice\&quot;, age: 30 }&quot;</code></pre><p><strong>Generated Implementation:</strong></p><ul><li>Records: <code class="inline">TypeName { field1: show(value1), field2: show(value2), ... }</code></li><li>Shows all fields in declaration order</li></ul><h3 id="eq" class="section-heading">
+  <a href="#eq" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Eq</span>
+</h3>
+<p>Derives structural equality checking:</p><pre><code class="cure">record Point do
+    x: Int
+    y: Int
+end
+derive Eq
+
+% Usage:
+let p1 = Point { x: 10, y: 20 }
+let p2 = Point { x: 10, y: 20 }
+p1 == p2  % true</code></pre><p><strong>Generated Implementation:</strong></p><ul><li>Implements <code class="inline">==</code> operator</li><li>Default <code class="inline">!=</code> provided by typeclass</li><li>Compares all fields for equality</li></ul><h3 id="ord" class="section-heading">
+  <a href="#ord" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Ord</span>
+</h3>
+<p>Derives lexicographic ordering:</p><pre><code class="cure">record Person do
+    name: String
+    age: Int
+end
+derive Ord  % Requires Eq as superclass
+
+% Usage:
+let alice = Person { name: &quot;Alice&quot;, age: 30 }
+let bob = Person { name: &quot;Bob&quot;, age: 25 }
+
+match compare(alice, bob) do
+    LT -&gt; &quot;Alice comes before Bob&quot;
+    EQ -&gt; &quot;Equal&quot;
+    GT -&gt; &quot;Alice comes after Bob&quot;
+end</code></pre><p><strong>Generated Implementation:</strong></p><ul><li>Implements <code class="inline">compare</code> method returning <code class="inline">Ordering</code> (LT, EQ, or GT)</li><li>Compares fields in declaration order (lexicographic)</li><li>Automatically adds <code class="inline">Eq</code> constraint</li></ul><h2 id="constraint-inference" class="section-heading">
+  <a href="#constraint-inference" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Constraint Inference</span>
+</h2>
+<p>The derive mechanism automatically infers required constraints for parameterized types:</p><pre><code class="cure">record Pair(A, B) do
+    first: A
+    second: B
+end
+derive Show, Eq
+
+% Compiler generates:
+% instance Show(Pair(A, B)) where Show(A), Show(B) do ... end
+% instance Eq(Pair(A, B)) where Eq(A), Eq(B) do ... end</code></pre><p><strong>Rules:</strong></p><ol><li>For each type variable in fields, add corresponding constraint</li><li>Primitive types (Int, String, etc.) don't require constraints</li><li>Nested parameterized types require constraints for their parameters</li></ol><h2 id="when-to-use-manual-instances" class="section-heading">
+  <a href="#when-to-use-manual-instances" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">When to Use Manual Instances</span>
+</h2>
+<p>While derivation is convenient, sometimes you need custom behavior:</p><h3 id="custom-show-format" class="section-heading">
+  <a href="#custom-show-format" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Custom Show Format</span>
+</h3>
+<pre><code class="cure">record Temperature do
+    celsius: Float
+end
+
+% Manual instance for custom formatting
+instance Show(Temperature) do
+    def show(t: Temperature): String =
+        float_to_string(t.celsius) ++ &quot;°C&quot;
+end</code></pre><h3 id="custom-equality" class="section-heading">
+  <a href="#custom-equality" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Custom Equality</span>
+</h3>
+<pre><code class="cure">record Person do
+    id: Int
+    name: String
+    metadata: Map(String, String)
+end
+
+% Derive Show but manually implement Eq (compare only by ID)
+derive Show
+
+instance Eq(Person) do
+    def ==(p1: Person, p2: Person): Bool =
+        p1.id == p2.id  % Ignore name and metadata
+end</code></pre><h3 id="custom-ordering" class="section-heading">
+  <a href="#custom-ordering" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Custom Ordering</span>
+</h3>
+<pre><code class="cure">record Task do
+    priority: Int
+    name: String
+    deadline: Timestamp
+end
+
+derive Show, Eq
+
+% Custom ordering by priority, then deadline
+instance Ord(Task) do
+    def compare(t1: Task, t2: Task): Ordering =
+        match compare(t1.priority, t2.priority) do
+            EQ -&gt; compare(t1.deadline, t2.deadline)
+            result -&gt; result
+        end
+end</code></pre><h2 id="limitations-and-constraints" class="section-heading">
+  <a href="#limitations-and-constraints" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Limitations and Constraints</span>
+</h2>
+<h3 id="what-can-be-derived" class="section-heading">
+  <a href="#what-can-be-derived" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">What Can Be Derived</span>
+</h3>
+<ul><li>✅ Records with concrete field types</li><li>✅ Records with type parameters</li><li>✅ Nested records</li><li>✅ Empty records (unit types)</li></ul><h3 id="what-cannot-be-derived" class="section-heading">
+  <a href="#what-cannot-be-derived" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">What Cannot Be Derived</span>
+</h3>
+<ul><li>❌ Function types</li><li>❌ FSM types</li><li>❌ Recursive types (requires manual implementation)</li><li>❌ Types with existential quantification</li></ul><h3 id="typeclass-support" class="section-heading">
+  <a href="#typeclass-support" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Typeclass Support</span>
+</h3>
+<p>Currently supported:</p><ul><li><code class="inline">Show</code> - String representation</li><li><code class="inline">Eq</code> - Equality testing</li><li><code class="inline">Ord</code> - Ordering/comparison</li></ul><p>Not yet supported:</p><ul><li><code class="inline">Functor</code> - Requires higher-kinded types</li><li><code class="inline">Monad</code> - Requires higher-kinded types</li><li><code class="inline">Semigroup</code> / <code class="inline">Monoid</code> - Requires domain knowledge</li></ul><h2 id="complete-examples" class="section-heading">
+  <a href="#complete-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Complete Examples</span>
+</h2>
+<h3 id="basic-usage" class="section-heading">
+  <a href="#basic-usage" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Basic Usage</span>
+</h3>
+<pre><code class="cure">module geometry
+
+record Point do
+    x: Float
+    y: Float
+end
+derive Show, Eq
+
+def distance(p1: Point, p2: Point): Float =
+    let dx = p1.x - p2.x
+    let dy = p1.y - p2.y
+    sqrt(dx * dx + dy * dy)
+
+def main(): Unit =
+    let origin = Point { x: 0.0, y: 0.0 }
+    let p = Point { x: 3.0, y: 4.0 }
+    
+    println(show(origin))  % &quot;Point { x: 0.0, y: 0.0 }&quot;
+    println(show(p))       % &quot;Point { x: 3.0, y: 4.0 }&quot;
+    
+    if origin == p then
+        println(&quot;Points are equal&quot;)
+    else
+        let dist = distance(origin, p)
+        println(&quot;Distance: &quot; ++ show(dist))
+    end</code></pre><h3 id="parameterized-types" class="section-heading">
+  <a href="#parameterized-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Parameterized Types</span>
+</h3>
+<pre><code class="cure">module collections
+
+record Box(T) do
+    value: T
+end
+derive Show, Eq
+
+def map_box(f: T -&gt; U, box: Box(T)): Box(U) =
+    Box { value: f(box.value) }
+
+def main(): Unit where Show(Int), Show(String) =
+    let int_box = Box { value: 42 }
+    let str_box = map_box(int_to_string, int_box)
+    
+    println(show(int_box))  % &quot;Box { value: 42 }&quot;
+    println(show(str_box))  % &quot;Box { value: \&quot;42\&quot; }&quot;</code></pre><h3 id="hierarchical-data" class="section-heading">
+  <a href="#hierarchical-data" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Hierarchical Data</span>
+</h3>
+<pre><code class="cure">module organization
+
+record Address do
+    street: String
+    city: String
+    country: String
+end
+derive Show, Eq
+
+record Person do
+    name: String
+    age: Int
+    address: Address
+end
+derive Show, Eq, Ord
+
+record Department do
+    name: String
+    manager: Person
+    employees: List(Person)
+end
+derive Show, Eq
+
+def main(): Unit =
+    let addr = Address {
+        street: &quot;123 Main St&quot;,
+        city: &quot;Springfield&quot;,
+        country: &quot;USA&quot;
+    }
+    
+    let manager = Person {
+        name: &quot;Alice&quot;,
+        age: 35,
+        address: addr
+    }
+    
+    let dept = Department {
+        name: &quot;Engineering&quot;,
+        manager: manager,
+        employees: []
+    }
+    
+    println(show(dept))</code></pre><h2 id="best-practices" class="section-heading">
+  <a href="#best-practices" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Best Practices</span>
+</h2>
+<h3 id="1-derive-by-default" class="section-heading">
+  <a href="#1-derive-by-default" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">1. Derive by Default</span>
+</h3>
+<p>Start with derivation for standard typeclasses:</p><pre><code class="cure">record MyType do
+    field1: T1
+    field2: T2
+end
+derive Show, Eq</code></pre><h3 id="2-custom-when-needed" class="section-heading">
+  <a href="#2-custom-when-needed" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">2. Custom When Needed</span>
+</h3>
+<p>Override with manual instances only when necessary:</p><pre><code class="cure">% Derive most instances
+derive Show, Ord
+
+% But custom Eq for special logic
+instance Eq(MyType) do
+    def ==(a: MyType, b: MyType): Bool = ...
+end</code></pre><h3 id="3-document-custom-instances" class="section-heading">
+  <a href="#3-document-custom-instances" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">3. Document Custom Instances</span>
+</h3>
+<p>When manually implementing, explain why:</p><pre><code class="cure">% Custom equality compares only the ID field
+% because other fields are metadata that should be ignored
+instance Eq(User) do
+    def ==(u1: User, u2: User): Bool =
+        u1.id == u2.id
+end</code></pre><h3 id="4-order-fields-intentionally" class="section-heading">
+  <a href="#4-order-fields-intentionally" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">4. Order Fields Intentionally</span>
+</h3>
+<p>For derived <code class="inline">Ord</code>, field order matters:</p><pre><code class="cure">% First name, then age for ordering
+record Person do
+    name: String    % Primary sort key
+    age: Int        % Secondary sort key
+    email: String   % Tertiary sort key
+end
+derive Ord</code></pre><h3 id="5-consider-performance" class="section-heading">
+  <a href="#5-consider-performance" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">5. Consider Performance</span>
+</h3>
+<p>Derived instances are straightforward but not always optimal:</p><pre><code class="cure">% Many fields - derived Eq checks all
+record LargeRecord do
+    id: Int
+    field1: String
+    field2: String
+    % ... 50 more fields
+end
+
+% Better: manual Eq that checks ID first
+instance Eq(LargeRecord) do
+    def ==(r1: LargeRecord, r2: LargeRecord): Bool =
+        r1.id == r2.id  % Fast path
+end</code></pre><h2 id="implementation-details" class="section-heading">
+  <a href="#implementation-details" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Implementation Details</span>
+</h2>
+<h3 id="code-generation" class="section-heading">
+  <a href="#code-generation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Code Generation</span>
+</h3>
+<p>Derived instances generate AST nodes equivalent to hand-written code:</p><pre><code class="cure">record Point do x: Int, y: Int end
+derive Show
+
+% Equivalent to:
+instance Show(Point) do
+    def show(p: Point): String =
+        &quot;Point { x: &quot; ++ show(p.x) ++ &quot;, y: &quot; ++ show(p.y) ++ &quot; }&quot;
+end</code></pre><h3 id="compilation-phases" class="section-heading">
+  <a href="#compilation-phases" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Compilation Phases</span>
+</h3>
+<ol><li><strong>Parse</strong>: Recognize <code class="inline">derive</code> clause in AST</li><li><strong>Validate</strong>: Check typeclass is derivable for type</li><li><strong>Generate</strong>: Create instance definition AST</li><li><strong>Typecheck</strong>: Verify generated instance is well-typed</li><li><strong>Codegen</strong>: Compile instance to BEAM bytecode</li></ol><h3 id="performance-characteristics" class="section-heading">
+  <a href="#performance-characteristics" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Performance Characteristics</span>
+</h3>
+<ul><li><strong>Compile-time</strong>: Zero runtime overhead</li><li><strong>Generated code</strong>: Equivalent to hand-written instances</li><li><strong>Binary size</strong>: No difference from manual implementations</li></ul><h2 id="faq" class="section-heading">
+  <a href="#faq" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">FAQ</span>
+</h2>
+<p><strong>Q: Can I derive instances for existing types?</strong><br/>A: No, derive clauses must appear in the same module as the type definition.</p><p><strong>Q: Can I derive partial instances?</strong><br/>A: No, you either derive the complete instance or write it manually.</p><p><strong>Q: What if I derive and manually define the same instance?</strong><br/>A: Compiler error - instance coherence violation.</p><p><strong>Q: Can I derive instances conditionally?</strong><br/>A: Not directly, but you can use different type definitions in different modules.</p><p><strong>Q: How do I debug derived instances?</strong><br/>A: Use compiler flags to emit generated code for inspection.</p><h2 id="see-also" class="section-heading">
+  <a href="#see-also" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">See Also</span>
+</h2>
+<ul><li><a href="typeclass_guide.html">Typeclass Guide</a> - Complete typeclass system documentation</li><li><a href="type_system.html">Type System</a> - Cure's type system overview</li><li><a href="./STDLIB.md">Standard Library</a> - Built-in typeclass instances</li></ul>
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="cure_ultimate_description.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+Ultimate Description
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="dollar_operator_fix.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Dollar Operator Fix
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+              (<a href="https://preview.hex.pm/preview/cure/0.1.0/show/docs/DERIVE_GUIDE.md">current file</a>)
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

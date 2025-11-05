@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>Feature Reference — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/docs/FEATURE_REFERENCE.md#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+
+    <span>Cure Language Features Reference</span>
+  </h1>
+
+<p><strong>Version</strong>: Current Implementation Status<br/><strong>Last Updated</strong>: October 31, 2025</p><p>This document provides a comprehensive reference for all Cure language features, including current implementation status, syntax examples, and usage patterns.</p><h2 id="table-of-contents" class="section-heading">
+  <a href="#table-of-contents" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Table of Contents</span>
+</h2>
+<ol><li><a href="#core-language-syntax">Core Language Syntax</a></li><li><a href="#data-types-and-type-system">Data Types and Type System</a></li><li><a href="#finite-state-machines">Finite State Machines</a></li><li><a href="#type-classes-and-constraints">Type Classes and Constraints</a></li><li><a href="#advanced-features">Advanced Features</a></li><li><a href="#standard-library-integration">Standard Library Integration</a></li><li><a href="#cli-and-build-system">CLI and Build System</a></li><li><a href="#compilation-and-runtime">Compilation and Runtime</a></li><li><a href="#testing-infrastructure">Testing Infrastructure</a></li><li><a href="#performance-and-optimization">Performance and Optimization</a></li></ol><h2 id="core-language-syntax" class="section-heading">
+  <a href="#core-language-syntax" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Core Language Syntax</span>
+</h2>
+<h3 id="module-system" class="section-heading">
+  <a href="#module-system" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Module System</span>
+</h3>
+<pre><code class="cure">module ModuleName do
+  import Std [abs/1, sqrt/1, Option, Result]
+  import Std.Math [sin/1, cos/1]
+  
+  export [main/0, demo_function/1]
+  
+  # Module contents...
+end</code></pre><h3 id="function-definitions" class="section-heading">
+  <a href="#function-definitions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function Definitions</span>
+</h3>
+<pre><code class="cure"># Simple function
+def add(x: Int, y: Int): Int = x + y
+
+# Function with complex body
+def demo(): Unit =
+  let result = calculate_something()
+  println(&quot;Result: &quot; &lt;&gt; show(result))
+  0
+
+# Helper function
+def helper(x: Int): String = int_to_string(x)</code></pre><h3 id="lambda-expressions" class="section-heading">
+  <a href="#lambda-expressions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Lambda Expressions</span>
+</h3>
+<pre><code class="cure"># Simple lambda
+let double = fn(x) -&gt; x * 2 end
+
+# Lambda with pattern matching instead of if-then-else
+let safe_div = fn(x, y) -&gt;
+  match y == 0 do
+    true -&gt; error(&quot;Division by zero&quot;)
+    false -&gt; ok(x / y)
+  end
+end
+
+# Lambda with multiple parameters
+let fold_sum = fold(numbers, 0, fn(x, acc) -&gt; x + acc end)</code></pre><h3 id="pattern-matching" class="section-heading">
+  <a href="#pattern-matching" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Pattern Matching</span>
+</h3>
+<pre><code class="cure">match expression do
+  Ok(value) -&gt; handle_success(value)
+  Error(msg) -&gt; handle_error(msg)
+end
+
+match list do
+  [] -&gt; &quot;empty&quot;
+  [x] -&gt; &quot;single: &quot; &lt;&gt; show(x)
+  [x | rest] -&gt; &quot;head: &quot; &lt;&gt; show(x) &lt;&gt; &quot;, rest: &quot; &lt;&gt; show(rest)
+end
+
+match option do
+  Some(found) -&gt; &quot;Found: &quot; &lt;&gt; show(found)
+  None -&gt; &quot;Not found&quot;
+end</code></pre><h3 id="case-expressions" class="section-heading">
+  <a href="#case-expressions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Case Expressions</span>
+</h3>
+<p>Cure supports <code class="inline">case</code> expressions as an alternative to <code class="inline">match</code> (they are semantically identical):</p><pre><code class="cure"># Case with 'of' keyword
+case expression of
+  Ok(value) -&gt; handle_success(value)
+  Error(msg) -&gt; handle_error(msg)
+end
+
+# Functionally equivalent to match
+match expression do
+  Ok(value) -&gt; handle_success(value)
+  Error(msg) -&gt; handle_error(msg)
+end</code></pre><p><strong>Note</strong>: Cure does not have <code class="inline">if-then-else</code> expressions. Use <code class="inline">match</code> or <code class="inline">case</code> for conditional logic.</p><h3 id="let-bindings" class="section-heading">
+  <a href="#let-bindings" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Let Bindings</span>
+</h3>
+<pre><code class="cure"># Simple let
+let x = 42
+
+# Let with complex expression
+let result = calculate()
+  |&gt; map(fn(x) -&gt; x * 2 end)
+  |&gt; filter(fn(x) -&gt; x &gt; 10 end)</code></pre><h3 id="pipe-operations" class="section-heading">
+  <a href="#pipe-operations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Pipe Operations</span>
+</h3>
+<pre><code class="cure">result = input
+  |&gt; transform1()
+  |&gt; transform2(argument)
+  |&gt; final_transform()</code></pre><h2 id="data-types-and-type-system" class="section-heading">
+  <a href="#data-types-and-type-system" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Data Types and Type System</span>
+</h2>
+<h3 id="primitive-types" class="section-heading">
+  <a href="#primitive-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Primitive Types</span>
+</h3>
+<ul><li><code class="inline">Int</code>: 64-bit signed integers</li><li><code class="inline">Float</code>: 64-bit IEEE floating-point numbers  </li><li><code class="inline">String</code>: UTF-8 encoded text strings</li><li><code class="inline">Bool</code>: Boolean values (<code class="inline">true</code>, <code class="inline">false</code>)</li><li><code class="inline">Atom</code>: Symbolic constants (<code class="inline">:atom_name</code>)</li><li><code class="inline">Binary</code>: Byte sequences</li><li><code class="inline">Unit</code>: Unit type for functions with no return value</li><li><code class="inline">Nat</code>: Natural numbers (Int &gt;= 0) - refinement type</li><li><code class="inline">Pos</code>: Positive integers (Int &gt; 0) - refinement type</li><li><code class="inline">Pid</code>: BEAM process identifier</li></ul><h3 id="composite-types" class="section-heading">
+  <a href="#composite-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Composite Types</span>
+</h3>
+<pre><code class="cure">List(T)                    # Homogeneous lists
+List(T, n)                 # Length-indexed lists (dependent type)
+Tuple(T1, T2, ...)         # Fixed-size tuples
+Result(T, E)               # Error handling without exceptions
+Option(T)                  # Nullable values</code></pre><h3 id="constructor-types" class="section-heading">
+  <a href="#constructor-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Constructor Types</span>
+</h3>
+<pre><code class="cure">Ok(value)                  # Success result
+Error(message)             # Error result
+Some(value)                # Present optional value
+None                       # Absent optional value</code></pre><h3 id="dependent-types" class="section-heading">
+  <a href="#dependent-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Dependent Types</span>
+</h3>
+<pre><code class="cure"># Length-indexed types
+Vector(T, n: Nat)          # Fixed-length vector
+List(T, n: Nat)            # List with compile-time known length
+Matrix(rows: Nat, cols: Nat, T)  # 2D matrix with dimensions
+
+# Constraint-based types
+{x: Int | x &gt; 0}           # Positive integers
+{x: Float | x &gt;= 0.0}      # Non-negative floats
+{xs: List(T) | length(xs) &gt; 0}  # Non-empty lists
+
+# Function-dependent types
+def replicate(n: Nat, x: T): List(T, n)  # Return type depends on argument
+def safe_head(xs: List(T, n)): T when n &gt; 0  # Precondition constraint</code></pre><h2 id="operators" class="section-heading">
+  <a href="#operators" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Operators</span>
+</h2>
+<h3 id="binary-operators" class="section-heading">
+  <a href="#binary-operators" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Binary Operators</span>
+</h3>
+<ul><li>Arithmetic: <code class="inline">+</code>, <code class="inline">-</code>, <code class="inline">*</code>, <code class="inline">/</code>, <code class="inline">%</code></li><li>Comparison: <code class="inline">==</code>, <code class="inline">!=</code>, <code class="inline">&lt;</code>, <code class="inline">&gt;</code>, <code class="inline">&lt;=</code>, <code class="inline">&gt;=</code></li><li>String: <code class="inline">&lt;&gt;</code> (concatenation)</li><li><p>List: <code class="inline">|</code> (cons operator, used in <code class="inline">[h | t]</code> syntax)</p></li><li>Pipe: <code class="inline">|&gt;</code> (function composition)</li></ul><h3 id="unary-operators" class="section-heading">
+  <a href="#unary-operators" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Unary Operators</span>
+</h3>
+<ul><li>Arithmetic: <code class="inline">+x</code>, <code class="inline">-x</code></li><li>Logical: <code class="inline">not(expr)</code></li></ul><h2 id="literals" class="section-heading">
+  <a href="#literals" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Literals</span>
+</h2>
+<h3 id="numbers" class="section-heading">
+  <a href="#numbers" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Numbers</span>
+</h3>
+<pre><code class="cure">42          # Integer
+3.14        # Float
+-5          # Negative integer</code></pre><h3 id="strings" class="section-heading">
+  <a href="#strings" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Strings</span>
+</h3>
+<pre><code class="cure">&quot;Hello, World!&quot;       # Simple string
+&quot;Line 1\nLine 2&quot;      # String with escape sequences
+&quot;Quote: \&quot;text\&quot;&quot;     # String with escaped quotes</code></pre><h3 id="lists" class="section-heading">
+  <a href="#lists" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Lists</span>
+</h3>
+<pre><code class="cure">[]                    # Empty list
+[1, 2, 3]            # List of integers
+[&quot;a&quot;, &quot;b&quot;, &quot;c&quot;]      # List of strings</code></pre><h3 id="tuples" class="section-heading">
+  <a href="#tuples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Tuples</span>
+</h3>
+<p>Tuples use curly brace <code class="inline">{}</code> syntax:</p><pre><code class="cure">{}                    # Empty tuple (Unit)
+{42}                  # Single element tuple
+{1, &quot;hello&quot;, true}    # Multi-element tuple
+{:ok, &quot;success&quot;}      # Tagged tuple (atom + value)
+{:error, &quot;failed&quot;}    # Error tuple (atom + value)</code></pre><p><strong>Note</strong>: Tuple pattern matching is fully supported:</p><pre><code class="cure">match point do
+  {x, y} when x &gt; 0.0 and y &gt; 0.0 -&gt; &quot;First quadrant&quot;
+  {x, y} when x == 0.0 and y == 0.0 -&gt; &quot;Origin&quot;
+  _ -&gt; &quot;Other quadrant&quot;
+end</code></pre><h3 id="atoms" class="section-heading">
+  <a href="#atoms" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Atoms</span>
+</h3>
+<pre><code class="cure">:atom_name
+:increment
+:ok</code></pre><h2 id="finite-state-machines" class="section-heading">
+  <a href="#finite-state-machines" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Finite State Machines</span>
+</h2>
+<p>Cure provides first-class support for finite state machines with compile-time verification, state-dependent data, and integration with the BEAM actor model.</p><h3 id="basic-fsm-definition" class="section-heading">
+  <a href="#basic-fsm-definition" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Basic FSM Definition</span>
+</h3>
+<p>Cure FSMs use a record-based payload system with arrow transition syntax:</p><pre><code class="cure"># Define a payload record to track FSM data
+record TrafficPayload do
+  cycles_completed: Int
+  timer_events: Int
+  emergency_stops: Int
+end
+
+# FSM with initial payload values
+fsm TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0} do
+  Red --&gt; |timer| Green
+  Red --&gt; |emergency| Red      # Self-transition
+  Green --&gt; |timer| Yellow
+  Green --&gt; |emergency| Red
+  Yellow --&gt; |timer| Red
+  Yellow --&gt; |emergency| Red
+end</code></pre><p><strong>Key Points</strong>:</p><ul><li>First state in transitions is the initial state (Red in this example)</li><li>Transitions use <code class="inline">--&gt;</code> arrow with <code class="inline">|event|</code> syntax</li><li>Must define a payload record even if fields are unused</li></ul><h3 id="fsm-runtime-operations" class="section-heading">
+  <a href="#fsm-runtime-operations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">FSM Runtime Operations</span>
+</h3>
+<p>FSMs compile to BEAM <code class="inline">gen_statem</code> processes:</p><pre><code class="cure">import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
+import Std.Pair [pair/2]
+
+# Spawn an FSM instance with initial data
+let initial_data = TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0}
+let fsm_pid = fsm_spawn(:TrafficPayload, initial_data)
+
+# Give the FSM a name for easy reference
+let adv_result = fsm_advertise(fsm_pid, :traffic_light)
+
+# Send events to the FSM
+let empty_list = []
+let event = pair(:timer, empty_list)
+let cast_result = fsm_cast(:traffic_light, event)
+
+# Query current state
+let current_state = fsm_state(:traffic_light)  # Returns current state atom</code></pre><h3 id="fsm-implementation-notes" class="section-heading">
+  <a href="#fsm-implementation-notes" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">FSM Implementation Notes</span>
+</h3>
+<p>Cure FSMs compile to Erlang <code class="inline">gen_statem</code> behaviors with the following features:</p><p><strong>Compile-Time Verification</strong>:</p><ul><li>State machine structure validated at compile time</li><li>Transition completeness checked</li><li>Event type checking</li></ul><p><strong>Runtime Integration</strong>:</p><ul><li>Native BEAM process integration</li><li>Mailbox-based event handling</li><li>OTP supervision tree compatible</li><li>Hot code reloading support</li></ul><p><strong>Current Implementation</strong>:</p><ul><li>Simple arrow-based transition syntax (<code class="inline">State1 --&gt; |event| State2</code>)</li><li>Record-based payload data tracking</li><li>Event casting with atom-based event names</li><li>State querying via FSM references</li></ul><h2 id="records-and-dependent-types" class="section-heading">
+  <a href="#records-and-dependent-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Records and Dependent Types</span>
+</h2>
+<h3 id="record-definitions" class="section-heading">
+  <a href="#record-definitions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Record Definitions</span>
+</h3>
+<pre><code class="cure">record Person do
+  name: String
+  age: Nat
+  email: String
+end
+
+# Creating records
+let person = Person{name: &quot;Alice&quot;, age: 30, email: &quot;alice@example.com&quot;}
+
+# Pattern matching on records
+match person do
+  Person{name: name, age: age} when age &gt;= 18 -&gt;
+    &quot;Hello, adult &quot; &lt;&gt; name &lt;&gt; &quot;!&quot;
+  Person{name: name} -&gt;
+    &quot;Hello, young &quot; &lt;&gt; name &lt;&gt; &quot;!&quot;
+end</code></pre><h3 id="dependent-types-1" class="section-heading">
+  <a href="#dependent-types-1" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Dependent Types</span>
+</h3>
+<pre><code class="cure"># Length-indexed types
+Vector(T, n: Nat)      # Fixed-length vector
+List(T, n: Nat)        # List with known length
+Range(min: Int, max: Int)  # Integer range type
+
+# Matrix with dimension checking
+record Matrix(rows: Nat, cols: Nat, T) do
+  data: Vector(Vector(T, cols), rows)
+end
+
+# Refinement types
+type NonEmptyList(T) = List(T, n) when n &gt; 0
+
+def head(list: NonEmptyList(T)): T =
+  match list do
+    [x|_] -&gt; x
+    # No need for empty case - type system guarantees non-empty
+  end</code></pre><h2 id="advanced-features" class="section-heading">
+  <a href="#advanced-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Advanced Features</span>
+</h2>
+<h3 id="function-imports-with-arity" class="section-heading">
+  <a href="#function-imports-with-arity" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function Imports with Arity</span>
+</h3>
+<pre><code class="cure">import ModuleName [
+  function1/1,    # Function with 1 parameter
+  function2/2,    # Function with 2 parameters
+  TypeName,       # Type import
+  constructor     # Constructor import
+]</code></pre><h3 id="complex-nested-expressions" class="section-heading">
+  <a href="#complex-nested-expressions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Complex Nested Expressions</span>
+</h3>
+<pre><code class="cure"># Nested lambdas in higher-order functions
+processed = data
+  |&gt; filter(fn(item) -&gt; not(is_empty(item)) end)
+  |&gt; map(fn(item) -&gt; 
+      process_item(item)
+        |&gt; validate()
+        |&gt; transform()
+     end)
+  |&gt; collect_results()</code></pre><h3 id="match-vs-case" class="section-heading">
+  <a href="#match-vs-case" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Match vs Case</span>
+</h3>
+<p>Both <code class="inline">match</code> and <code class="inline">case</code> are supported and functionally equivalent:</p><pre><code class="cure"># Case expression with 'of' keyword (alternative to match)
+case expression of
+  Ok(value) -&gt; handle_success(value)
+  Error(msg) -&gt; handle_error(msg)
+end
+
+case list of
+  [] -&gt; &quot;empty&quot;
+  [x] -&gt; &quot;single: &quot; &lt;&gt; show(x)
+  [x | rest] -&gt; &quot;head: &quot; &lt;&gt; show(x)
+end</code></pre><h3 id="pattern-matching-with-guards" class="section-heading">
+  <a href="#pattern-matching-with-guards" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Pattern Matching with Guards</span>
+</h3>
+<pre><code class="cure">match value do
+  x when x &gt; 0 -&gt; &quot;positive&quot;
+  x when x &lt; 0 -&gt; &quot;negative&quot;
+  _ -&gt; &quot;zero&quot;
+end
+
+# Guards in case expressions
+case number do
+  n when n &gt; 100 -&gt; &quot;large&quot;
+  n when n &gt; 10 -&gt; &quot;medium&quot; 
+  _ -&gt; &quot;small&quot;
+end</code></pre><h2 id="error-handling-patterns" class="section-heading">
+  <a href="#error-handling-patterns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling Patterns</span>
+</h2>
+<h3 id="result-types" class="section-heading">
+  <a href="#result-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Result Types</span>
+</h3>
+<pre><code class="cure">def safe_operation(input: Int): Result(Int, String) =
+  match input &lt; 0 do
+    true -&gt; error(&quot;Negative input not allowed&quot;)
+    false -&gt; ok(input * 2)
+  end</code></pre><h3 id="option-types" class="section-heading">
+  <a href="#option-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Option Types</span>
+</h3>
+<pre><code class="cure">def find_item(list: List(String), target: String): Option(String) =
+  match search(list, target) do
+    found when found != &quot;&quot; -&gt; Some(found)
+    _ -&gt; None
+  end</code></pre><h2 id="best-practices" class="section-heading">
+  <a href="#best-practices" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Best Practices</span>
+</h2>
+<h3 id="function-composition" class="section-heading">
+  <a href="#function-composition" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function Composition</span>
+</h3>
+<p>Use pipe operators for readable data transformations:</p><pre><code class="cure">result = input
+  |&gt; validate_input()
+  |&gt; process_data()
+  |&gt; format_output()</code></pre><h3 id="error-handling" class="section-heading">
+  <a href="#error-handling" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Error Handling</span>
+</h3>
+<p>Use Result types for operations that can fail:</p><pre><code class="cure">def divide(x: Float, y: Float): Result(Float, String) =
+  match y == 0.0 do
+    true -&gt; error(&quot;Division by zero&quot;)
+    false -&gt; ok(x / y)
+  end</code></pre><h3 id="pattern-matching-1" class="section-heading">
+  <a href="#pattern-matching-1" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Pattern Matching</span>
+</h3>
+<p>Prefer pattern matching for control flow:</p><pre><code class="cure"># Good - using pattern matching
+match result do
+  Ok(value) -&gt; use_value(value)
+  Error(msg) -&gt; handle_error(msg)
+end
+
+# Also good - using case
+case result of
+  Ok(value) -&gt; use_value(value)
+  Error(msg) -&gt; handle_error(msg)
+end</code></pre><h2 id="type-classes-and-constraints" class="section-heading">
+  <a href="#type-classes-and-constraints" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type Classes and Constraints</span>
+</h2>
+<p>Cure supports type classes for ad-hoc polymorphism and constraint-based programming.</p><h3 id="type-class-definition" class="section-heading">
+  <a href="#type-class-definition" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type Class Definition</span>
+</h3>
+<pre><code class="cure">typeclass Ord(T) where
+  def compare(x: T, y: T): Ordering
+  def (&lt;)(x: T, y: T): Bool = compare(x, y) == LT
+  def (&lt;=)(x: T, y: T): Bool = compare(x, y) != GT
+end
+
+typeclass Show(T) where
+  def show(x: T): String
+end
+
+typeclass Functor(F) where
+  def map(f: A -&gt; B, fa: F(A)): F(B)
+end</code></pre><h3 id="type-class-instances" class="section-heading">
+  <a href="#type-class-instances" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type Class Instances</span>
+</h3>
+<pre><code class="cure"># Manual instances
+instance Ord(Int) where
+  def compare(x, y) =
+    if x &lt; y then LT
+    else if x &gt; y then GT
+    else EQ
+    end
+end
+
+# Automatic derivation
+derive Ord for List(T) when Ord(T)
+derive Show for Option(T) when Show(T)
+derive Functor for List
+derive Functor for Option</code></pre><h3 id="constraint-based-programming" class="section-heading">
+  <a href="#constraint-based-programming" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Constraint-Based Programming</span>
+</h3>
+<pre><code class="cure"># Generic sorting with constraints
+def sort(xs: List(T)): List(T) where Ord(T) =
+  quicksort_impl(xs)
+
+# Pretty printing with constraints  
+def debug_print(x: T): Unit where Show(T) =
+  print(show(x))
+
+# Functor mapping
+def transform(f: A -&gt; B, container: F(A)): F(B) where Functor(F) =
+  map(f, container)</code></pre><h2 id="advanced-features-1" class="section-heading">
+  <a href="#advanced-features-1" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Advanced Features</span>
+</h2>
+<h3 id="pi-types-dependent-functions" class="section-heading">
+  <a href="#pi-types-dependent-functions" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Pi Types (Dependent Functions)</span>
+</h3>
+<pre><code class="cure"># Function types that depend on their arguments
+def replicate(n: Nat, x: T): List(T, n) = 
+  if n == 0 then [] else x :: replicate(n-1, x)</code></pre><h3 id="sigma-types-dependent-pairs" class="section-heading">
+  <a href="#sigma-types-dependent-pairs" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Sigma Types (Dependent Pairs)</span>
+</h3>
+<pre><code class="cure"># Pairs where the second type depends on the first value
+{x: Nat, Vector(Int, x)}  # Pair of number and vector of that length</code></pre><h3 id="refinement-types" class="section-heading">
+  <a href="#refinement-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Refinement Types</span>
+</h3>
+<pre><code class="cure"># Types with predicates
+{x: Int | x &gt; 0}          # Positive integers
+{x: List(T) | length(x) &gt; 0}  # Non-empty lists</code></pre><h3 id="indexed-types" class="section-heading">
+  <a href="#indexed-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Indexed Types</span>
+</h3>
+<pre><code class="cure"># Types parameterized by values
+Vector(T, n: Nat)         # Vector of type T with length n
+Matrix(rows: Nat, cols: Nat, T)  # Matrix with compile-time dimensions</code></pre><h2 id="cli-and-build-system" class="section-heading">
+  <a href="#cli-and-build-system" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">CLI and Build System</span>
+</h2>
+<p>Cure provides a sophisticated command-line interface with wrapper script automation and intelligent build management.</p><h3 id="wrapper-script-commands" class="section-heading">
+  <a href="#wrapper-script-commands" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Wrapper Script Commands</span>
+</h3>
+<pre><code class="makeup bash" translate="no"><span class=""># Special wrapper script commands
+</span><span class="">cure build      # Execute &#39;make all&#39; to build compiler
+</span><span class="">cure test       # Execute &#39;make test&#39; to run test suite
+</span><span class="">cure clean      # Execute &#39;make clean&#39; to clean build artifacts
+</span><span class="">cure shell      # Start Erlang development shell with modules loaded
+</span></code></pre><h3 id="file-compilation" class="section-heading">
+  <a href="#file-compilation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">File Compilation</span>
+</h3>
+<pre><code class="makeup bash" translate="no"><span class=""># Basic compilation
+</span><span class="">cure input.cure                    # Compile with defaults
+</span><span class="">cure input.cure -o output.beam     # Specify output file
+</span><span class="">cure input.cure --verbose          # Verbose compilation
+</span><span class="">cure input.cure --no-optimize      # Disable optimizations
+</span></code></pre><h3 id="automatic-standard-library-management" class="section-heading">
+  <a href="#automatic-standard-library-management" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Automatic Standard Library Management</span>
+</h3>
+<ul><li><strong>Import Detection</strong>: Automatically detects if source files need stdlib imports</li><li><strong>Smart Imports</strong>: Adds common stdlib imports to files without explicit module/import declarations</li><li><strong>Conflict Avoidance</strong>: Skips automatic imports for files with explicit module definitions or imports</li><li><strong>Partial Failure Handling</strong>: Reports detailed errors when stdlib compilation partially fails</li></ul><h3 id="module-detection-and-validation" class="section-heading">
+  <a href="#module-detection-and-validation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Module Detection and Validation</span>
+</h3>
+<ul><li><strong>Required Modules Check</strong>: Validates presence of all required BEAM compiler modules</li><li><strong>Missing Module Reporting</strong>: Provides detailed error messages for missing components</li><li><strong>Build Automation</strong>: Automatically triggers 'make all' when modules are missing</li><li><strong>Error Recovery</strong>: Graceful error handling with instructions for resolution</li></ul><h3 id="standard-library-compilation" class="section-heading">
+  <a href="#standard-library-compilation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Standard Library Compilation</span>
+</h3>
+<ul><li><strong>Automatic Compilation</strong>: Compiles stdlib modules as needed during user file compilation</li><li><strong>Dependency Resolution</strong>: Handles stdlib dependencies and compilation order</li><li><strong>Partial Failure Recovery</strong>: Attempts individual file compilation when batch compilation fails</li><li><strong>Path Conversion</strong>: Converts BEAM paths to source paths for error reporting</li></ul><h2 id="standard-library-integration" class="section-heading">
+  <a href="#standard-library-integration" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Standard Library Integration</span>
+</h2>
+<p>Cure includes a comprehensive standard library implemented in Cure itself with Erlang runtime support.</p><h3 id="core-standard-library-modules" class="section-heading">
+  <a href="#core-standard-library-modules" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Core Standard Library Modules</span>
+</h3>
+<pre><code class="cure"># Import common types and functions
+import Std [Result, Option, ok, error, some, none]
+import Std [map/2, filter/2, fold_left/3, fold_right/3]
+
+# Mathematical operations
+import Std.Math [abs/1, sqrt/1, sin/1, cos/1, pi, e]
+
+# String operations
+import Std.String [length/1, concat/2, split/2, trim/1]
+
+# FSM utilities
+import Std.FSM [create/2, send_event/2, get_state/1]</code></pre><h3 id="result-and-option-types" class="section-heading">
+  <a href="#result-and-option-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Result and Option Types</span>
+</h3>
+<pre><code class="cure"># Chainable error handling
+result = safe_divide(x, y)
+  |&gt; map_ok(fn(val) -&gt; val * 2 end)
+  |&gt; and_then(fn(doubled) -&gt; safe_sqrt(doubled) end)
+
+match result do
+  Ok(final_value) -&gt; println(&quot;Success: &quot; &lt;&gt; show(final_value))
+  Error(msg) -&gt; println(&quot;Error: &quot; &lt;&gt; msg)
+end
+
+# Optional value handling
+opt_value = find_in_list(items, predicate)
+  |&gt; map(fn(item) -&gt; process(item) end)
+  |&gt; filter(fn(processed) -&gt; is_valid(processed) end)</code></pre><h2 id="testing-infrastructure" class="section-heading">
+  <a href="#testing-infrastructure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Testing Infrastructure</span>
+</h2>
+<p>Cure includes comprehensive testing infrastructure covering all aspects of the compiler and standard library.</p><h3 id="comprehensive-test-suites" class="section-heading">
+  <a href="#comprehensive-test-suites" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Comprehensive Test Suites</span>
+</h3>
+<pre><code class="makeup bash" translate="no"><span class=""># Master test runner for all new CLI and stdlib tests
+</span><span class="">erl -pa _build/ebin -pa test -s run_all_new_tests run -s init stop
+</span><span class="">
+</span><span class=""># Individual comprehensive test suites
+</span><span class="">erl -pa _build/ebin -pa test -s cli_wrapper_comprehensive_test run -s init stop
+</span><span class="">erl -pa _build/ebin -pa test -s cure_wrapper_script_test run -s init stop
+</span></code></pre><h3 id="cli-and-wrapper-testing" class="section-heading">
+  <a href="#cli-and-wrapper-testing" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">CLI and Wrapper Testing</span>
+</h3>
+<ul><li><strong>Build Command Testing</strong>: Verifies wrapper script correctly executes 'make all' for build command</li><li><strong>Missing Module Detection</strong>: Tests wrapper script detection and reporting of missing BEAM modules</li><li><strong>Error Message Validation</strong>: Ensures proper error reporting with helpful instructions</li><li><strong>Script Logic Verification</strong>: Tests all wrapper script conditional logic and edge cases</li></ul><h3 id="standard-library-testing" class="section-heading">
+  <a href="#standard-library-testing" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Standard Library Testing</span>
+</h3>
+<ul><li><strong>Automatic Import Testing</strong>: Validates CLI automatic stdlib import addition and detection</li><li><strong>Import Conflict Detection</strong>: Tests detection of explicit modules/imports to prevent conflicts</li><li><strong>Compilation Failure Testing</strong>: Tests stdlib compilation partial failure reporting</li><li><strong>Performance Testing</strong>: Benchmarks Std.List.length function with large datasets (up to 50k elements)</li></ul><h3 id="test-coverage-areas" class="section-heading">
+  <a href="#test-coverage-areas" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Test Coverage Areas</span>
+</h3>
+<ul><li><strong>Lexical Analysis</strong>: Token recognition and error handling</li><li><strong>Parsing</strong>: AST construction and syntax validation</li><li><strong>Type System</strong>: Inference, checking, and unification</li><li><strong>Code Generation</strong>: BEAM instruction generation</li><li><strong>FSM Runtime</strong>: State transitions and event handling</li><li><strong>CLI Functionality</strong>: Complete wrapper script and CLI module coverage</li><li><strong>Error Handling</strong>: Comprehensive error message formatting and reporting</li></ul><h3 id="testing-features" class="section-heading">
+  <a href="#testing-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Testing Features</span>
+</h3>
+<ul><li><strong>EUnit Integration</strong>: All tests use EUnit assertions for reliable verification</li><li><strong>Performance Benchmarks</strong>: Tests include timing validation for large datasets</li><li><strong>Edge Case Coverage</strong>: Comprehensive testing of boundary conditions and error scenarios</li><li><strong>Master Test Runner</strong>: Orchestrated execution of all test suites with detailed reporting</li><li><strong>Component Isolation</strong>: Both comprehensive and focused component-specific test suites</li></ul><h2 id="compilation-and-runtime" class="section-heading">
+  <a href="#compilation-and-runtime" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Compilation and Runtime</span>
+</h2>
+<h3 id="current-compilation-pipeline" class="section-heading">
+  <a href="#current-compilation-pipeline" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Current Compilation Pipeline</span>
+</h3>
+<ol><li><strong>Source (.cure)</strong> → <strong>Tokens</strong> (<code class="inline">cure_lexer.erl</code>)</li><li><strong>Tokens</strong> → <strong>AST</strong> (<code class="inline">cure_parser.erl</code>)</li><li><strong>AST</strong> → <strong>Typed AST</strong> (<code class="inline">cure_typechecker.erl</code>)</li><li><strong>Type Optimization</strong> (<code class="inline">cure_type_optimizer.erl</code>)<ul><li>Monomorphization</li><li>Function specialization  </li><li>Inlining analysis</li><li>Dead code elimination</li></ul></li><li><strong>BEAM Bytecode</strong> (<code class="inline">cure_codegen.erl</code>, <code class="inline">cure_beam_compiler.erl</code>)</li></ol><h3 id="beam-integration-features" class="section-heading">
+  <a href="#beam-integration-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">BEAM Integration Features</span>
+</h3>
+<ul><li><strong>Native Processes</strong>: FSMs compile to BEAM processes with supervision</li><li><strong>gen_statem Integration</strong>: FSMs use OTP gen_statem behavior</li><li><strong>Pattern Matching</strong>: Leverages BEAM's efficient pattern matching</li><li><strong>Tail Call Optimization</strong>: Preserves BEAM's tail recursion optimization</li><li><strong>Hot Code Loading</strong>: Supports BEAM's live code upgrade</li><li><strong>Distributed Computing</strong>: Transparent distribution across BEAM nodes</li><li><strong>OTP Compatibility</strong>: Seamless integration with Erlang/Elixir ecosystems</li></ul><h2 id="performance-and-optimization" class="section-heading">
+  <a href="#performance-and-optimization" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Performance and Optimization</span>
+</h2>
+<h3 id="type-directed-optimizations" class="section-heading">
+  <a href="#type-directed-optimizations" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Type-Directed Optimizations</span>
+</h3>
+<p>Cure's type system enables aggressive optimizations:</p><pre><code class="cure"># Before optimization (polymorphic)
+def map(f: T -&gt; U, xs: List(T)): List(U) = ...
+
+# After monomorphization (specialized for Int -&gt; String)
+def map_Int_String(f: Int -&gt; String, xs: List(Int)): List(String) = 
+  # Optimized implementation for specific types
+  specialized_map_impl(f, xs)</code></pre><h3 id="performance-characteristics" class="section-heading">
+  <a href="#performance-characteristics" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Performance Characteristics</span>
+</h3>
+<ul><li><strong>Function calls</strong>: ~10ns overhead (optimized)</li><li><strong>FSM events</strong>: ~1μs including message passing</li><li><strong>Type checking</strong>: Zero runtime overhead (compile-time only)</li><li><strong>Pattern matching</strong>: BEAM-native performance</li><li><strong>Memory usage</strong>: Comparable to equivalent Erlang code</li><li><strong>Optimizations</strong>: 25-60% performance improvement over unoptimized code</li></ul><h3 id="compiler-performance" class="section-heading">
+  <a href="#compiler-performance" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Compiler Performance</span>
+</h3>
+<ul><li>Small files (&lt;100 lines): &lt;1 second compilation</li><li>Medium projects (1K-10K lines): 5-30 seconds</li><li>Large projects (100K+ lines): 30-300 seconds with incremental compilation</li><li>Type checking scales O(n²) due to dependent types</li><li>SMT constraint solving typically sub-second for realistic programs</li></ul><hr class="thin"/><h2 id="implementation-status" class="section-heading">
+  <a href="#implementation-status" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Implementation Status</span>
+</h2>
+<h3 id="fully-implemented" class="section-heading">
+  <a href="#fully-implemented" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">✅ <strong>Fully Implemented</strong></span>
+</h3>
+<ul><li>Core syntax and semantics</li><li>Dependent type system with SMT solving</li><li>FSM compilation and runtime</li><li>Type-directed optimizations</li><li>BEAM code generation</li><li>Standard library with runtime support</li><li>Advanced CLI with wrapper script automation</li><li>Automatic standard library import management</li><li>Comprehensive test suite with performance benchmarks</li><li>CLI wrapper functionality with missing module detection</li><li>Partial compilation failure handling and recovery</li></ul><h3 id="advanced-features-2" class="section-heading">
+  <a href="#advanced-features-2" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">🚧 <strong>Advanced Features</strong></span>
+</h3>
+<ul><li>Complex type class hierarchies</li><li>Advanced dependent type features (proof obligations)</li><li>Linear types for resource management</li><li>Distributed FSM coordination</li></ul><p>This reference covers all currently implemented language features and provides insight into Cure's unique combination of dependent types, native FSM support, and BEAM integration.</p>
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="editor_setup.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+Editor Setup
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="fsm_api_design.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+FSM API Design
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+              (<a href="https://preview.hex.pm/preview/cure/0.1.0/show/docs/FEATURE_REFERENCE.md">current file</a>)
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

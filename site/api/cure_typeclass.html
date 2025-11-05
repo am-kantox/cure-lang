@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.1.0">
+
+
+    <title>cure_typeclass — cure v0.1.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.1.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+    <span translate="no">cure_typeclass</span> 
+    <small class="app-vsn" translate="no">(cure v0.1.0)</small>
+
+  </h1>
+
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-types summary">
+  <h2>
+    <a href="#types">Types</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:instance_info/0" data-no-tooltip translate="no">instance_info()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:typeclass_constraint/0" data-no-tooltip translate="no">typeclass_constraint()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:typeclass_env/0" data-no-tooltip translate="no">typeclass_env()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:typeclass_info/0" data-no-tooltip translate="no">typeclass_info()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_constraints/3" data-no-tooltip translate="no">check_constraints(Constraints, TypeEnv, TypeclassEnv)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if typeclass constraints are satisfied.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_instance_coherence/2" data-no-tooltip translate="no">check_instance_coherence/2</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Checks if a new instance would create overlapping instances.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#find_instance/3" data-no-tooltip translate="no">find_instance/3</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Finds an instance by unification (supports type variables).</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#get_all_instances/2" data-no-tooltip translate="no">get_all_instances/2</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Gets all instances for a given typeclass.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#list_typeclasses/1" data-no-tooltip translate="no">list_typeclasses/1</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Lists all registered typeclass names in the environment.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#lookup_instance/3" data-no-tooltip translate="no">lookup_instance/3</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Looks up an exact instance by typeclass name and type arguments.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#lookup_typeclass/2" data-no-tooltip translate="no">lookup_typeclass/2</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Looks up a typeclass by name.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#new_env/0" data-no-tooltip translate="no">new_env()</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Creates a new empty typeclass environment.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#register_instance/2" data-no-tooltip translate="no">register_instance/2</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Registers a typeclass instance in the environment.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#register_typeclass/2" data-no-tooltip translate="no">register_typeclass/2</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Registers a typeclass definition in the environment.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#resolve_method/4" data-no-tooltip translate="no">resolve_method(TypeclassName, MethodName, ReceiverType, Env)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Resolves a method call to its implementation.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#validate_where_constraints/2" data-no-tooltip translate="no">validate_where_constraints/2</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Validates where clause constraints for a function.</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h1>
+    <div class="types-list">
+<section class="detail" id="t:instance_info/0">
+
+  <div class="detail-header">
+    <a href="#t:instance_info/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">instance_info()</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L52" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> instance_info() ::
+          #instance_info{typeclass :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
+                         type_args :: [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()],
+                         constraints :: [<a href="#t:typeclass_constraint/0">typeclass_constraint</a>()],
+                         method_impls ::
+                             #{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>() =>
+                                   #function_def{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                 type_params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                 clauses :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                 params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                 return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                 constraint :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                 body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                 where_clause :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                 is_private :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                 location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}},
+                         source_location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:typeclass_constraint/0">
+
+  <div class="detail-header">
+    <a href="#t:typeclass_constraint/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">typeclass_constraint()</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/parser/cure_ast.hrl#L620" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> typeclass_constraint() ::
+          #typeclass_constraint{typeclass :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), type_args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:typeclass_env/0">
+
+  <div class="detail-header">
+    <a href="#t:typeclass_env/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">typeclass_env()</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L50" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> typeclass_env() ::
+          #typeclass_env{classes :: #{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>() => <a href="#t:typeclass_info/0">typeclass_info</a>()},
+                         instances :: #{{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]} => <a href="#t:instance_info/0">instance_info</a>()},
+                         instance_index :: #{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>() => [{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]}]},
+                         derive_rules :: #{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>() => fun()}}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:typeclass_info/0">
+
+  <div class="detail-header">
+    <a href="#t:typeclass_info/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">typeclass_info()</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/parser/cure_ast.hrl#L619" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> typeclass_info() ::
+          #typeclass_info{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
+                          type_params :: [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()],
+                          superclasses ::
+                              [#typeclass_constraint{typeclass :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                     type_args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                     location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}],
+                          methods :: #{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>() => <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()},
+                          default_impls ::
+                              #{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>() =>
+                                    #function_def{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  type_params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  clauses :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  constraint :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  where_clause :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  is_private :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}},
+                          kind :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="check_constraints/3">
+
+  <div class="detail-header">
+    <a href="#check_constraints/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_constraints(Constraints, TypeEnv, TypeclassEnv)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L497" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_constraints([<a href="#t:typeclass_constraint/0">typeclass_constraint</a>()], <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="#t:typeclass_env/0">typeclass_env</a>()) ->
+                           ok | {error, [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]} | {pending, [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]}.</pre>
+
+      </div>
+
+<p>Checks if typeclass constraints are satisfied.</p><h2 id="check_constraints/3-arguments" class="section-heading">
+  <a href="#check_constraints/3-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Constraints</code> - List of typeclass constraints to check</li><li><code class="inline">TypeEnv</code> - Type environment (for type variable resolution)</li><li><code class="inline">TypeclassEnv</code> - Typeclass environment</li></ul><h2 id="check_constraints/3-returns" class="section-heading">
+  <a href="#check_constraints/3-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">ok</code> - All constraints satisfied</li><li><code class="inline">{error, UnsatisfiedConstraints}</code> - Some constraints not satisfied</li><li><code class="inline">{pending, PendingConstraints}</code> - Constraints depend on type variables</li></ul>
+  </section>
+</section>
+<section class="detail" id="check_instance_coherence/2">
+
+  <div class="detail-header">
+    <a href="#check_instance_coherence/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_instance_coherence/2</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L402" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_instance_coherence(#instance_def{typeclass :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                             type_args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                             constraints :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                             methods :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                             location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()},
+                               <a href="#t:typeclass_env/0">typeclass_env</a>()) ->
+                                  ok | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+<p>Checks if a new instance would create overlapping instances.</p><p>Ensures the global uniqueness property required for type class coherence.</p><h2 id="check_instance_coherence/2-arguments" class="section-heading">
+  <a href="#check_instance_coherence/2-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">NewInstance</code> - The instance to check</li><li><code class="inline">Env</code> - Current typeclass environment</li></ul><h2 id="check_instance_coherence/2-returns" class="section-heading">
+  <a href="#check_instance_coherence/2-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">ok</code> - No overlap detected</li><li><code class="inline">{error, {overlapping_instance, ExistingInstance}}</code> - Overlap detected</li></ul>
+  </section>
+</section>
+<section class="detail" id="find_instance/3">
+
+  <div class="detail-header">
+    <a href="#find_instance/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">find_instance/3</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L341" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> find_instance(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="#t:typeclass_env/0">typeclass_env</a>()) ->
+                       {ok, <a href="#t:instance_info/0">instance_info</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()} | not_found | {ambiguous, [<a href="#t:instance_info/0">instance_info</a>()]}.</pre>
+
+      </div>
+
+<p>Finds an instance by unification (supports type variables).</p><h2 id="find_instance/3-arguments" class="section-heading">
+  <a href="#find_instance/3-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">TypeclassName</code> - Name of the typeclass</li><li><code class="inline">Type</code> - Type to find instance for (may contain type variables)</li><li><code class="inline">Env</code> - Typeclass environment</li></ul><h2 id="find_instance/3-returns" class="section-heading">
+  <a href="#find_instance/3-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, InstanceInfo, Substitution}</code> - Instance found with type variable substitution</li><li><code class="inline">not_found</code> - No matching instance</li><li><code class="inline">{ambiguous, [InstanceInfo]}</code> - Multiple instances could match</li></ul>
+  </section>
+</section>
+<section class="detail" id="get_all_instances/2">
+
+  <div class="detail-header">
+    <a href="#get_all_instances/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">get_all_instances/2</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L561" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> get_all_instances(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="#t:typeclass_env/0">typeclass_env</a>()) -> [<a href="#t:instance_info/0">instance_info</a>()].</pre>
+
+      </div>
+
+<p>Gets all instances for a given typeclass.</p><h2 id="get_all_instances/2-arguments" class="section-heading">
+  <a href="#get_all_instances/2-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">TypeclassName</code> - Name of the typeclass</li><li><code class="inline">Env</code> - Typeclass environment</li></ul><h2 id="get_all_instances/2-returns" class="section-heading">
+  <a href="#get_all_instances/2-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">[InstanceInfo]</code> - List of all instances for the typeclass</li></ul>
+  </section>
+</section>
+<section class="detail" id="list_typeclasses/1">
+
+  <div class="detail-header">
+    <a href="#list_typeclasses/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">list_typeclasses/1</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L97" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> list_typeclasses(<a href="#t:typeclass_env/0">typeclass_env</a>()) -> [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()].</pre>
+
+      </div>
+
+<p>Lists all registered typeclass names in the environment.</p><h2 id="list_typeclasses/1-arguments" class="section-heading">
+  <a href="#list_typeclasses/1-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Env</code> - Current typeclass environment</li></ul><h2 id="list_typeclasses/1-returns" class="section-heading">
+  <a href="#list_typeclasses/1-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">[atom()]</code> - List of typeclass names</li></ul><h2 id="list_typeclasses/1-example" class="section-heading">
+  <a href="#list_typeclasses/1-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">Names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typeclass</span><span class="p">:</span><span class="nf">list_typeclasses</span><span class="p" data-group-id="3950956435-1">(</span><span class="n">Env</span><span class="p" data-group-id="3950956435-1">)</span><span class="p">.</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="lookup_instance/3">
+
+  <div class="detail-header">
+    <a href="#lookup_instance/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">lookup_instance/3</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L319" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> lookup_instance(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()], <a href="#t:typeclass_env/0">typeclass_env</a>()) -> {ok, <a href="#t:instance_info/0">instance_info</a>()} | not_found.</pre>
+
+      </div>
+
+<p>Looks up an exact instance by typeclass name and type arguments.</p><h2 id="lookup_instance/3-arguments" class="section-heading">
+  <a href="#lookup_instance/3-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">TypeclassName</code> - Name of the typeclass</li><li><code class="inline">TypeArgs</code> - List of type arguments</li><li><code class="inline">Env</code> - Typeclass environment</li></ul><h2 id="lookup_instance/3-returns" class="section-heading">
+  <a href="#lookup_instance/3-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, InstanceInfo}</code> - Instance found</li><li><code class="inline">not_found</code> - No matching instance</li></ul>
+  </section>
+</section>
+<section class="detail" id="lookup_typeclass/2">
+
+  <div class="detail-header">
+    <a href="#lookup_typeclass/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">lookup_typeclass/2</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L299" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> lookup_typeclass(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="#t:typeclass_env/0">typeclass_env</a>()) -> {ok, <a href="#t:typeclass_info/0">typeclass_info</a>()} | not_found.</pre>
+
+      </div>
+
+<p>Looks up a typeclass by name.</p><h2 id="lookup_typeclass/2-arguments" class="section-heading">
+  <a href="#lookup_typeclass/2-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Name</code> - Typeclass name (atom)</li><li><code class="inline">Env</code> - Typeclass environment</li></ul><h2 id="lookup_typeclass/2-returns" class="section-heading">
+  <a href="#lookup_typeclass/2-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, TypeclassInfo}</code> - Typeclass found</li><li><code class="inline">not_found</code> - Typeclass not registered</li></ul>
+  </section>
+</section>
+<section class="detail" id="new_env/0">
+
+  <div class="detail-header">
+    <a href="#new_env/0" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">new_env()</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L70" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> new_env() -> <a href="#t:typeclass_env/0">typeclass_env</a>().</pre>
+
+      </div>
+
+<p>Creates a new empty typeclass environment.</p><h2 id="new_env/0-returns" class="section-heading">
+  <a href="#new_env/0-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">typeclass_env()</code> - New empty environment</li></ul><h2 id="new_env/0-example" class="section-heading">
+  <a href="#new_env/0-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typeclass</span><span class="p">:</span><span class="nf">new_env</span><span class="p" data-group-id="0634870554-1">(</span><span class="p" data-group-id="0634870554-1">)</span><span class="p">.</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="register_instance/2">
+
+  <div class="detail-header">
+    <a href="#register_instance/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">register_instance/2</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L203" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> register_instance(#instance_def{typeclass :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                      type_args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                      constraints :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                      methods :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                      location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()},
+                        <a href="#t:typeclass_env/0">typeclass_env</a>()) ->
+                           {ok, <a href="#t:typeclass_env/0">typeclass_env</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+<p>Registers a typeclass instance in the environment.</p><h2 id="register_instance/2-arguments" class="section-heading">
+  <a href="#register_instance/2-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">InstanceDef</code> - The instance definition AST node</li><li><code class="inline">Env</code> - Current typeclass environment</li></ul><h2 id="register_instance/2-returns" class="section-heading">
+  <a href="#register_instance/2-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, NewEnv}</code> - Updated environment</li><li><code class="inline">{error, Reason}</code> - Registration failed (e.g., overlapping instance)</li></ul><h2 id="register_instance/2-example" class="section-heading">
+  <a href="#register_instance/2-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">InstanceDef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">instance_def</span><span class="p" data-group-id="6562504338-1">{</span><span class="ss">typeclass</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;Show&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="6562504338-1">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="6562504338-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">NewEnv</span><span class="p" data-group-id="6562504338-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typeclass</span><span class="p">:</span><span class="nf">register_instance</span><span class="p" data-group-id="6562504338-3">(</span><span class="n">InstanceDef</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="6562504338-3">)</span><span class="p">.</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="register_typeclass/2">
+
+  <div class="detail-header">
+    <a href="#register_typeclass/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">register_typeclass/2</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L123" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> register_typeclass(#typeclass_def{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                        type_params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                        constraints :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                        methods :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                        default_methods :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                        location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()},
+                         <a href="#t:typeclass_env/0">typeclass_env</a>()) ->
+                            {ok, <a href="#t:typeclass_env/0">typeclass_env</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+<p>Registers a typeclass definition in the environment.</p><h2 id="register_typeclass/2-arguments" class="section-heading">
+  <a href="#register_typeclass/2-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">TypeclassDef</code> - The typeclass definition AST node</li><li><code class="inline">Env</code> - Current typeclass environment</li></ul><h2 id="register_typeclass/2-returns" class="section-heading">
+  <a href="#register_typeclass/2-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, NewEnv}</code> - Updated environment</li><li><code class="inline">{error, Reason}</code> - Registration failed</li></ul><h2 id="register_typeclass/2-example" class="section-heading">
+  <a href="#register_typeclass/2-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">TypeclassDef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">typeclass_def</span><span class="p" data-group-id="8549331163-1">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;Show&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="8549331163-1">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="8549331163-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">NewEnv</span><span class="p" data-group-id="8549331163-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typeclass</span><span class="p">:</span><span class="nf">register_typeclass</span><span class="p" data-group-id="8549331163-3">(</span><span class="n">TypeclassDef</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="8549331163-3">)</span><span class="p">.</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="resolve_method/4">
+
+  <div class="detail-header">
+    <a href="#resolve_method/4" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">resolve_method(TypeclassName, MethodName, ReceiverType, Env)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L444" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> resolve_method(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="#t:typeclass_env/0">typeclass_env</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+<p>Resolves a method call to its implementation.</p><h2 id="resolve_method/4-arguments" class="section-heading">
+  <a href="#resolve_method/4-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">TypeclassName</code> - Name of the typeclass</li><li><code class="inline">MethodName</code> - Name of the method</li><li><code class="inline">ReceiverType</code> - Type of the receiver</li><li><code class="inline">Env</code> - Typeclass environment</li></ul><h2 id="resolve_method/4-returns" class="section-heading">
+  <a href="#resolve_method/4-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">{ok, Implementation}</code> - Method implementation found</li><li><code class="inline">{error, Reason}</code> - Resolution failed</li></ul>
+  </section>
+</section>
+<section class="detail" id="validate_where_constraints/2">
+
+  <div class="detail-header">
+    <a href="#validate_where_constraints/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">validate_where_constraints/2</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.1.0/src/types/cure_typeclass.erl#L593" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> validate_where_constraints(#where_clause{constraints :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} | undefined,
+                                 <a href="#t:typeclass_env/0">typeclass_env</a>()) ->
+                                    ok | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+<p>Validates where clause constraints for a function.</p><p>Verifies that:</p><ul><li>All referenced typeclasses exist</li><li>Type arguments in constraints are valid</li><li>Arity of constraint matches typeclass definition</li></ul><h2 id="validate_where_constraints/2-arguments" class="section-heading">
+  <a href="#validate_where_constraints/2-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">WhereClause</code> - The where_clause record or undefined</li><li><code class="inline">Env</code> - Typeclass environment</li></ul><h2 id="validate_where_constraints/2-returns" class="section-heading">
+  <a href="#validate_where_constraints/2-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">ok</code> - All constraints are valid</li><li><code class="inline">{error, Reason}</code> - Validation failed</li></ul><h2 id="validate_where_constraints/2-example" class="section-heading">
+  <a href="#validate_where_constraints/2-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="n">WhereClause</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">where_clause</span><span class="p" data-group-id="5494455458-1">{</span><span class="ss">constraints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="5494455458-2">[</span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="5494455458-2">]</span><span class="p" data-group-id="5494455458-1">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="5494455458-3">{</span><span class="ss">ok</span><span class="p" data-group-id="5494455458-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typeclass</span><span class="p">:</span><span class="nf">validate_where_constraints</span><span class="p" data-group-id="5494455458-4">(</span><span class="n">WhereClause</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="5494455458-4">)</span><span class="p">.</span></code></pre>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.1.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.1.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>
