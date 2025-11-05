@@ -2,7 +2,7 @@
 # Shows how to use and define typeclasses in Cure
 # NOTE: This is a syntax demonstration - full compilation requires runtime support
 
-module TypeclassDemo
+module TypeclassDemo do
 export [main/0]
 
 # ==============================================================================
@@ -218,3 +218,5 @@ def main(): Int =
   
   Std.IO.println("\n=== All Demos Complete ===")
   0
+
+end

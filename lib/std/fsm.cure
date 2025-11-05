@@ -29,8 +29,8 @@ module Std.Fsm do
   type State = Atom
   
   # Transition handler signature:
-  # (from_state, event, current_payload) -> Result(new_state_with_payload, error)
-  type TransitionHandler = Pair(Event, Pair(StateName, State)) -> Result(Pair(StateName, State), FsmError)
+  # (from_state, event, current_payload) => Result(new_state_with_payload, error)
+  type TransitionHandler = Pair(Event, Pair(StateName, State)) => Result(Pair(StateName, State), FsmError)
 
   record FsmDefinition do
     initial_state: StateName

@@ -64,13 +64,13 @@ module Std.List do
       [h | t] -> append(h, concat(t))
     end
 
-  def map(list: List(T), f: T -> U): List(U) =
+  def map(list: List(T), f: T => U): List(U) =
     match list do
       [] -> []
       [h | t] -> [f(h) | map(t, f)]
     end
 
-  def filter(list: List(T), predicate: T -> Bool): List(T) =
+  def filter(list: List(T), predicate: T => Bool): List(T) =
     match list do
       [] -> []
       [h | t] -> 
@@ -81,7 +81,7 @@ module Std.List do
         end
     end
 
-  def fold(list: List(T), init: U, func: T -> U -> U): U =
+  def fold(list: List(T), init: U, func: T => U => U): U =
     match list do
       [] -> init
       [h | t] -> 
@@ -89,7 +89,7 @@ module Std.List do
         partial_func(fold(t, init, func))
     end
 
-  def zip_with(list1: List(T), list2: List(U), func: T -> U -> V): List(V) =
+  def zip_with(list1: List(T), list2: List(U), func: T => U => V): List(V) =
     match list1 do
       [] -> []
       [h1 | t1] ->

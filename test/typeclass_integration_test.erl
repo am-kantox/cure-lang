@@ -57,15 +57,17 @@ run_tests([{Name, TestFun} | Rest], Acc, Passed, Failed) ->
 test_parse_typeclass_instance() ->
     % Create a simple typeclass definition in Cure code
     Code =
-        <<"\n"
-        "        typeclass Show(T) do\n"
-        "            def show(x: T): String\n"
-        "        end\n"
-        "        \n"
-        "        instance Show(Int) do\n"
-        "            def show(x: Int): String = int_to_string(x)\n"
-        "        end\n"
-        "    ">>,
+        <<
+            "\n"
+            "        typeclass Show(T) do\n"
+            "            def show(x: T): String\n"
+            "        end\n"
+            "        \n"
+            "        instance Show(Int) do\n"
+            "            def show(x: Int): String = int_to_string(x)\n"
+            "        end\n"
+            "    "
+        >>,
 
     % Parse the code
     {ok, Tokens} = cure_lexer:tokenize(binary_to_list(Code)),
@@ -83,13 +85,15 @@ test_parse_typeclass_instance() ->
 test_parse_derive_clause() ->
     % Test parsing of derive clause
     Code =
-        <<"\n"
-        "        record Point do\n"
-        "            x: Int\n"
-        "            y: Int\n"
-        "        end\n"
-        "        derive Show, Eq\n"
-        "    ">>,
+        <<
+            "\n"
+            "        record Point do\n"
+            "            x: Int\n"
+            "            y: Int\n"
+            "        end\n"
+            "        derive Show, Eq\n"
+            "    "
+        >>,
 
     {ok, Tokens} = cure_lexer:tokenize(binary_to_list(Code)),
     {ok, AST} = cure_parser:parse(Tokens),

@@ -1,0 +1,141 @@
+# Functor Instances for Container Types
+# Provides map operation for standard Cure container types
+
+module Std.Instances.Functor do
+  export [Functor]
+
+  import Std.Typeclass [Functor]
+  import Std.List [map as list_map]
+
+  # ==============================================================================
+  # List Functor
+  # ==============================================================================
+
+  # Functor instance for List
+  instance Functor(List) do
+    def map(f: A -> B, xs: List(A)): List(B) =
+      list_map(f, xs)
+  end
+
+  # ==============================================================================
+  # Option/Maybe Functor
+  # ==============================================================================
+
+  # Functor instance for Option
+  instance Functor(Option) do
+    def map(f: A -> B, opt: Option(A)): Option(B) =
+      match opt do
+        Some(x) -> Some(f(x))
+        None -> None
+      end
+  end
+
+  # ==============================================================================
+  # Result Functor
+  # ==============================================================================
+
+  # Functor instance for Result (maps over success value)
+  instance Functor(Result(*, E)) do
+    def map(f: A -> B, result: Result(A, E)): Result(B, E) =
+      match result do
+        Ok(x) -> Ok(f(x))
+        Error(e) -> Error(e)
+      end
+  end
+
+  # ==============================================================================
+  # Function Functor (Reader)
+  # ==============================================================================
+
+  # Functor instance for functions (function composition)
+  # (r -> a) can be mapped to (r -> b) by composing with (a -> b)
+  instance Functor(fn(R) -> *) do
+    def map(f: A -> B, g: R -> A): R -> B =
+      fn(r) -> f(g(r)) end
+  end
+
+  # ==============================================================================
+  # Tuple Functor (maps second component)
+  # ==============================================================================
+
+  # Functor instance for 2-tuple (maps second element)
+  instance Functor({A, *}) do
+    def map(f: B -> C, pair: {A, B}): {A, C} =
+      match pair do
+        {a, b} -> {a, f(b)}
+      end
+  end
+
+  # ==============================================================================
+  # IO Functor (theoretical - for future IO monad)
+  # ==============================================================================
+
+  # Note: This is a placeholder for when we implement the IO monad
+  # instance Functor(IO) do
+  #   def map(f: A -> B, io: IO(A)): IO(B) =
+  #     # Would transform the result of an IO action
+  #     io_map(f, io)
+  # end
+
+  # ==============================================================================
+  # Helper Functions
+  # ==============================================================================
+
+  # Map a function over a nested structure
+  def map_nested(f: A -> B, xss: List(List(A))): List(List(B)) =
+    map(fn(xs) -> map(f, xs) end, xss)
+
+  # Map a function that might fail
+  def map_maybe(f: A -> Option(B), xs: List(A)): List(B) =
+    match xs do
+      [] -> []
+      [x | rest] ->
+        match f(x) do
+          Some(y) -> [y | map_maybe(f, rest)]
+          None -> map_maybe(f, rest)
+        end
+    end
+
+  # Map with index
+  def map_indexed(f: {Int, A} -> B, xs: List(A)): List(B) =
+    map_indexed_helper(f, xs, 0)
+
+  def map_indexed_helper(f: {Int, A} -> B, xs: List(A), idx: Int): List(B) =
+    match xs do
+      [] -> []
+      [x | rest] ->
+        [f({idx, x}) | map_indexed_helper(f, rest, idx + 1)]
+    end
+
+  # Void: replace all values with a constant
+  def void(fa: F(A)): F(Unit) where Functor(F) =
+    map(fn(_) -> Unit end, fa)
+
+  # Replace all values with a specific value
+  def as(value: B, fa: F(A)): F(B) where Functor(F) =
+    map(fn(_) -> value end, fa)
+
+  # Flipped version of map
+  def (<$>)(f: A -> B, fa: F(A)): F(B) where Functor(F) =
+    map(f, fa)
+
+  # Map and flatten one level (useful for nested structures)
+  def map_flatten(f: A -> List(B), xs: List(A)): List(B) =
+    match xs do
+      [] -> []
+      [x | rest] ->
+        let ys = f(x)
+        concat_lists(ys, map_flatten(f, rest))
+    end
+
+  def concat_lists(xs: List(A), ys: List(A)): List(A) =
+    match xs do
+      [] -> ys
+      [x | rest] -> [x | concat_lists(rest, ys)]
+    end
+
+  # Functor composition: if F and G are functors, so is F(G(*))
+  def fmap_composed(f: A -> B, fga: F(G(A))): F(G(B)) where Functor(F), Functor(G) =
+    map(fn(ga) -> map(f, ga) end, fga)
+
+end

@@ -192,7 +192,7 @@ module Std.String do
 
   # Check if all strings match the condition
   # all_of(["test", "best"], fn(s) -> starts_with(s, "t") end) => false
-  def all_of(strings: List(String), pred: String -> Bool): Bool do
+  def all_of(strings: List(String), pred: String => Bool): Bool do
     match strings do
       [] -> true
       [h | t] ->
@@ -205,7 +205,7 @@ module Std.String do
 
   # Check if any string matches the condition
   # any_of(["test", "best"], fn(s) -> starts_with(s, "t") end) => true
-  def any_of(strings: List(String), pred: String -> Bool): Bool do
+  def any_of(strings: List(String), pred: String => Bool): Bool do
     match strings do
       [] -> false
       [h | t] ->
@@ -217,7 +217,7 @@ module Std.String do
   end
 
   # Filter strings by a predicate
-  def filter(strings: List(String), pred: String -> Bool): List(String) do
+  def filter(strings: List(String), pred: String => Bool): List(String) do
     match strings do
       [] -> []
       [h | t] ->
@@ -230,7 +230,7 @@ module Std.String do
   end
 
   # Map a function over a list of strings
-  def map(strings: List(String), f: String -> String): List(String) do
+  def map(strings: List(String), f: String => String): List(String) do
     match strings do
       [] -> []
       [h | t] -> [f(h) | map(t, f)]

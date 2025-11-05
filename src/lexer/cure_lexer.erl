@@ -220,8 +220,10 @@ scan(Source) when is_binary(Source) ->
     end.
 
 %% Convert token record to simple tuple format
-convert_token_to_tuple(#token{type = number, value = Value, line = Line}) ->
+convert_token_to_tuple(#token{type = integer, value = Value, line = Line}) ->
     {integer, Line, Value};
+convert_token_to_tuple(#token{type = float, value = Value, line = Line}) ->
+    {float, Line, Value};
 convert_token_to_tuple(#token{type = string, value = Value, line = Line}) ->
     {string, Line, Value};
 convert_token_to_tuple(#token{type = charlist, value = Value, line = Line}) ->
@@ -240,6 +242,8 @@ convert_token_to_tuple(#token{type = Type, line = Line}) ->
 operators() ->
     #{
         <<"=">> => '=',
+        % Function type arrow
+        <<"=>">> => '=>',
         <<"->">> => '->',
         <<"-->">> => '-->',
         <<":">> => ':',
@@ -269,7 +273,16 @@ operators() ->
         <<"++">> => '++',
         <<"--">> => '--',
         <<"|>">> => '|>',
-        <<"#{">> => 'interpolation_start'
+        <<"#{">> => 'interpolation_start',
+        % Functor/Applicative operators
+        <<"<$">> => '<$',
+        <<"$>">> => '$>',
+        <<"<*>">> => '<*>',
+        <<"*>">> => '*>',
+        <<"<*">> => '<*',
+        % Monad operators
+        <<">>=">> => '>>=',
+        <<">>">> => '>>'
     }.
 
 %% Get keywords map
@@ -281,6 +294,7 @@ keywords() ->
         <<"do">> => 'do',
         <<"match">> => 'match',
         <<"when">> => 'when',
+        <<"where">> => 'where',
         <<"let">> => 'let',
         <<"in">> => 'in',
         <<"as">> => 'as',
@@ -389,7 +403,12 @@ scan_tokens(<<$:, Rest/binary>>, Line, Column, Acc) ->
 %% Numbers
 scan_tokens(<<C, Rest/binary>>, Line, Column, Acc) when C >= $0, C =< $9 ->
     {Number, NewRest, NewColumn} = scan_number(<<C, Rest/binary>>, Column, <<>>),
-    Token = #token{type = number, value = Number, line = Line, column = Column},
+    TokenType =
+        if
+            is_float(Number) -> float;
+            true -> integer
+        end,
+    Token = #token{type = TokenType, value = Number, line = Line, column = Column},
     scan_tokens(NewRest, Line, NewColumn, [Token | Acc]);
 %% Identifiers and keywords
 scan_tokens(<<C, Rest/binary>>, Line, Column, Acc) when
@@ -599,7 +618,12 @@ scan_one_token(<<$\n, Rest/binary>>, Line, _Column) ->
 %% Numbers
 scan_one_token(<<C, Rest/binary>>, Line, Column) when C >= $0, C =< $9 ->
     {Number, NewRest, NewColumn} = scan_number(<<C, Rest/binary>>, Column, <<>>),
-    Token = #token{type = number, value = Number, line = Line, column = Column},
+    TokenType =
+        if
+            is_float(Number) -> float;
+            true -> integer
+        end,
+    Token = #token{type = TokenType, value = Number, line = Line, column = Column},
     {Token, NewRest, Line, NewColumn};
 %% Identifiers and keywords
 scan_one_token(<<C, Rest/binary>>, Line, Column) when

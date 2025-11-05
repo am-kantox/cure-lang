@@ -21,13 +21,13 @@ module Std.Vector do
       [h | t] -> reverse(t, [h | acc])
     end
 
-  def map(v: Vector(T, n), f: T -> U): Vector(U, n) =
+  def map(v: Vector(T, n), f: T => U): Vector(U, n) =
     match v do
       [] -> []
       [h | t] -> [f(h) | map(t, f)]
     end
 
-  def filter(v: Vector(T, n), predicate: T -> Bool): List(T) =
+  def filter(v: Vector(T, n), predicate: T => Bool): List(T) =
     match v do
       [] -> []
       [h | t] -> 
@@ -38,7 +38,7 @@ module Std.Vector do
         end
     end
 
-  def fold(v: Vector(T, n), init: U, func: T -> U -> U): U =
+  def fold(v: Vector(T, n), init: U, func: T => U => U): U =
     match v do
       [] -> init
       [h | t] -> 
@@ -46,7 +46,7 @@ module Std.Vector do
         partial_func(fold(t, init, func))
     end
 
-  def zip_with(v1: Vector(T, n), v2: Vector(U, n), func: T -> U -> V): Vector(V, n) =
+  def zip_with(v1: Vector(T, n), v2: Vector(U, n), func: T => U => V): Vector(V, n) =
     match v1 do
       [] -> []
       [h1 | t1] -> 

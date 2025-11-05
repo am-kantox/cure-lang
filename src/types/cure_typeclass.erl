@@ -11,7 +11,8 @@
     check_instance_coherence/2,
     resolve_method/4,
     check_constraints/3,
-    get_all_instances/2
+    get_all_instances/2,
+    validate_where_constraints/2
 ]).
 
 -include("../parser/cure_ast.hrl").
@@ -26,15 +27,6 @@
     instances = #{} :: #{{atom(), [term()]} => instance_info()},
     instance_index = #{} :: #{atom() => [{atom(), [term()]}]},
     derive_rules = #{} :: #{atom() => fun()}
-}).
-
-%% Information about a typeclass
--record(typeclass_info, {
-    name :: atom(),
-    type_params = [] :: [atom()],
-    superclasses = [] :: [typeclass_constraint()],
-    methods = #{} :: #{atom() => method_info()},
-    default_impls = #{} :: #{atom() => #function_def{}}
 }).
 
 %% Information about a method in a typeclass
@@ -55,10 +47,8 @@
 }).
 
 -type typeclass_env() :: #typeclass_env{}.
--type typeclass_info() :: #typeclass_info{}.
 -type method_info() :: #method_info{}.
 -type instance_info() :: #instance_info{}.
--type typeclass_constraint() :: #typeclass_constraint{}.
 
 %% ============================================================================
 %% Environment Creation
@@ -548,3 +538,113 @@ Gets all instances for a given typeclass.
 get_all_instances(TypeclassName, #typeclass_env{instance_index = Index, instances = Instances}) ->
     InstanceKeys = maps:get(TypeclassName, Index, []),
     [maps:get(Key, Instances) || Key <- InstanceKeys].
+
+%% ============================================================================
+%% Where Clause Validation
+%% ============================================================================
+
+-doc """
+Validates where clause constraints for a function.
+
+Verifies that:
+- All referenced typeclasses exist
+- Type arguments in constraints are valid
+- Arity of constraint matches typeclass definition
+
+## Arguments
+- `WhereClause` - The where_clause record or undefined
+- `Env` - Typeclass environment
+
+## Returns
+- `ok` - All constraints are valid
+- `{error, Reason}` - Validation failed
+
+## Example
+```erlang
+WhereClause = #where_clause{constraints = [...]},
+{ok} = cure_typeclass:validate_where_constraints(WhereClause, Env).
+```
+""".
+-spec validate_where_constraints(#where_clause{} | undefined, typeclass_env()) ->
+    ok | {error, term()}.
+validate_where_constraints(undefined, _Env) ->
+    ok;
+validate_where_constraints(#where_clause{constraints = Constraints}, Env) ->
+    validate_constraints_list(Constraints, Env, []).
+
+%% Validate a list of typeclass constraints
+validate_constraints_list([], _Env, _Seen) ->
+    ok;
+validate_constraints_list([Constraint | Rest], Env, Seen) ->
+    case validate_single_constraint(Constraint, Env) of
+        ok ->
+            % Check for duplicates
+            ConstraintKey = constraint_key(Constraint),
+            case lists:member(ConstraintKey, Seen) of
+                true ->
+                    {error, {duplicate_constraint, Constraint}};
+                false ->
+                    validate_constraints_list(Rest, Env, [ConstraintKey | Seen])
+            end;
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Validate a single typeclass constraint
+validate_single_constraint(#typeclass_constraint{typeclass = Name, type_args = TypeArgs}, Env) ->
+    % Check if typeclass exists
+    case lookup_typeclass(Name, Env) of
+        {ok, TypeclassInfo} ->
+            % Verify arity matches
+            ExpectedArity = length(TypeclassInfo#typeclass_info.type_params),
+            ActualArity = length(TypeArgs),
+
+            case ExpectedArity =:= ActualArity of
+                true ->
+                    % Validate each type argument
+                    validate_type_args(TypeArgs);
+                false ->
+                    {error, {arity_mismatch, Name, ExpectedArity, ActualArity}}
+            end;
+        {error, not_found} ->
+            {error, {unknown_typeclass, Name}}
+    end.
+
+%% Validate type arguments in constraints
+validate_type_args([]) ->
+    ok;
+validate_type_args([TypeArg | Rest]) ->
+    case is_valid_type_arg(TypeArg) of
+        true ->
+            validate_type_args(Rest);
+        false ->
+            {error, {invalid_type_arg, TypeArg}}
+    end.
+
+%% Check if a type argument is valid for use in constraints
+is_valid_type_arg(#primitive_type{}) ->
+    true;
+is_valid_type_arg(#dependent_type{}) ->
+    true;
+is_valid_type_arg(#function_type{}) ->
+    true;
+is_valid_type_arg(#tuple_type{}) ->
+    true;
+is_valid_type_arg(#list_type{}) ->
+    true;
+is_valid_type_arg(#union_type{}) ->
+    true;
+is_valid_type_arg(_) ->
+    false.
+
+%% Create a key for a constraint (for duplicate checking)
+constraint_key(#typeclass_constraint{typeclass = Name, type_args = TypeArgs}) ->
+    {Name, [type_to_key(T) || T <- TypeArgs]}.
+
+%% Convert type to a key for comparison
+type_to_key(#primitive_type{name = Name}) ->
+    {primitive, Name};
+type_to_key(#dependent_type{name = Name, params = Params}) ->
+    {dependent, Name, [type_to_key(P) || P <- Params]};
+type_to_key(Type) ->
+    Type.

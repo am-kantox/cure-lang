@@ -1,0 +1,9 @@
+module FunctionTypeTestParen do
+export []
+
+# Test with parentheses
+typeclass Functor(F) do
+  def map(f: (A -> B), x: F(A)): F(B)
+end
+
+end

@@ -338,6 +338,50 @@ expect(State, TokenType) ->
             )
     end.
 
+%% Expect an operator token (any valid operator) and consume it
+expect_operator(State) ->
+    Token = current_token(State),
+    TokenType = get_token_type(Token),
+    case is_operator_token(TokenType) of
+        true ->
+            {Token, advance(State)};
+        false ->
+            {Line, Col} = get_token_line_col(Token),
+            throw(
+                {parse_error, {expected_operator, got, TokenType}, Line, Col}
+            )
+    end.
+
+%% Check if a token type is an operator
+is_operator_token('+') -> true;
+is_operator_token('-') -> true;
+is_operator_token('*') -> true;
+is_operator_token('/') -> true;
+is_operator_token('%') -> true;
+is_operator_token('<') -> true;
+is_operator_token('>') -> true;
+is_operator_token('<=') -> true;
+is_operator_token('>=') -> true;
+is_operator_token('==') -> true;
+is_operator_token('!=') -> true;
+is_operator_token('++') -> true;
+is_operator_token('--') -> true;
+is_operator_token('<>') -> true;
+is_operator_token('|>') -> true;
+% Functor/Applicative/Monad operators
+is_operator_token('<$') -> true;
+is_operator_token('$>') -> true;
+is_operator_token('<*>') -> true;
+is_operator_token('*>') -> true;
+is_operator_token('<*') -> true;
+is_operator_token('>>=') -> true;
+is_operator_token('>>') -> true;
+% Logical operators
+is_operator_token('and') -> true;
+is_operator_token('or') -> true;
+is_operator_token('not') -> true;
+is_operator_token(_) -> false.
+
 %% Parse the entire program
 parse_program(State) ->
     parse_items(State, []).
@@ -385,30 +429,60 @@ parse_item(State) ->
 parse_module(State) ->
     {_, State1} = expect(State, module),
     {Name, State2} = parse_module_name(State1),
-    {_, State3} = expect(State2, do),
 
-    {Exports, State4} =
-        case match_token(State3, export) of
-            true ->
-                parse_export_list(State3);
-            false ->
-                {[], State3}
-        end,
+    % Check if this is an explicit module (do...end) or implicit module
+    case match_token(State2, do) of
+        true ->
+            % Explicit module with do...end
+            {_, State3} = expect(State2, do),
 
-    {Items, State5} = parse_module_items(State4, []),
-    {_, State6} = expect(State5, 'end'),
+            {Exports, State4} =
+                case match_token(State3, export) of
+                    true ->
+                        parse_export_list(State3);
+                    false ->
+                        {[], State3}
+                end,
 
-    % Collect all exports from items
-    {AllExports, FilteredItems} = collect_exports(Exports, Items),
+            {Items, State5} = parse_module_items(State4, []),
+            {_, State6} = expect(State5, 'end'),
 
-    Location = get_token_location(current_token(State)),
-    Module = #module_def{
-        name = Name,
-        exports = AllExports,
-        items = FilteredItems,
-        location = Location
-    },
-    {Module, State6}.
+            % Collect all exports from items
+            {AllExports, FilteredItems} = collect_exports(Exports, Items),
+
+            Location = get_token_location(current_token(State)),
+            Module = #module_def{
+                name = Name,
+                exports = AllExports,
+                items = FilteredItems,
+                location = Location
+            },
+            {Module, State6};
+        false ->
+            % Implicit module - parse items until EOF
+            {Exports, State3} =
+                case match_token(State2, export) of
+                    true ->
+                        parse_export_list(State2);
+                    false ->
+                        {[], State2}
+                end,
+
+            % Parse all remaining items until EOF
+            {Items, StateEOF} = parse_implicit_module_items(State3, []),
+
+            % Collect all exports from items
+            {AllExports, FilteredItems} = collect_exports(Exports, Items),
+
+            Location = get_token_location(current_token(State)),
+            Module = #module_def{
+                name = Name,
+                exports = AllExports,
+                items = FilteredItems,
+                location = Location
+            },
+            {Module, StateEOF}
+    end.
 
 %% Parse export list
 parse_export_list(State) ->
@@ -454,7 +528,7 @@ parse_export_spec(State) ->
         end,
     Name =
         case get_token_type(NameToken) of
-            identifier -> binary_to_atom(get_token_value(NameToken), utf8);
+            identifier -> token_value_to_atom(get_token_value(NameToken));
             % Already an atom from lexer
             atom -> get_token_value(NameToken);
             'Ok' -> 'Ok';
@@ -473,7 +547,7 @@ parse_export_spec(State) ->
         true ->
             % Function/arity specification
             {_, State2} = expect(State1, '/'),
-            {ArityToken, State3} = expect(State2, number),
+            {ArityToken, State3} = expect(State2, integer),
             Arity = get_token_value(ArityToken),
 
             Export = #export_spec{
@@ -514,7 +588,7 @@ collect_exports_helper([{{export_list, Exports}} | Rest], ExportsAcc, ItemsAcc, 
 collect_exports_helper([Item | Rest], ExportsAcc, ItemsAcc, _) ->
     collect_exports_helper(Rest, ExportsAcc, [Item | ItemsAcc], []).
 
-%% Parse module items
+%% Parse module items (explicit module with do...end)
 parse_module_items(State, Acc) ->
     case get_token_type(current_token(State)) of
         'end' ->
@@ -524,6 +598,18 @@ parse_module_items(State, Acc) ->
         _ ->
             {Item, State1} = parse_module_item(State),
             parse_module_items(State1, [Item | Acc])
+    end.
+
+%% Parse module items for implicit module (module X without do...end)
+parse_implicit_module_items(State, Acc) ->
+    case get_token_type(current_token(State)) of
+        eof ->
+            % Group function clauses before returning
+            GroupedItems = group_function_clauses(lists:reverse(Acc)),
+            {GroupedItems, State};
+        _ ->
+            {Item, State1} = parse_module_item(State),
+            parse_implicit_module_items(State1, [Item | Acc])
     end.
 
 %% Parse single module item (similar to parse_item but includes export)
@@ -563,36 +649,49 @@ parse_module_item(State) ->
 parse_function(State) ->
     {DefToken, State1} = expect(State, def),
 
-    % Allow certain keywords to be used as function names (same as export specs)
-    {NameToken, State2} =
+    % Check if this is an operator function definition: def (op)(params)
+    {Name, State2} =
         case get_token_type(current_token(State1)) of
-            identifier -> expect(State1, identifier);
-            atom -> expect(State1, atom);
-            'Ok' -> expect(State1, 'Ok');
-            'Error' -> expect(State1, 'Error');
-            'Some' -> expect(State1, 'Some');
-            'None' -> expect(State1, 'None');
-            'ok' -> expect(State1, 'ok');
-            'error' -> expect(State1, 'error');
-            'not' -> expect(State1, 'not');
-            'and' -> expect(State1, 'and');
-            'or' -> expect(State1, 'or');
-            _ -> expect(State1, identifier)
-        end,
-    Name =
-        case get_token_type(NameToken) of
-            identifier -> binary_to_atom(get_token_value(NameToken), utf8);
-            % Already an atom from lexer
-            atom -> get_token_value(NameToken);
-            'Ok' -> 'Ok';
-            'Error' -> 'Error';
-            'Some' -> 'Some';
-            'None' -> 'None';
-            'ok' -> ok;
-            'error' -> error;
-            'not' -> 'not';
-            'and' -> 'and';
-            'or' -> 'or'
+            '(' ->
+                % Operator function: def (op)(params)
+                {_, State1a} = expect(State1, '('),
+                {OpToken, State1b} = expect_operator(State1a),
+                {_, State1c} = expect(State1b, ')'),
+                OpName = get_token_type(OpToken),
+                {OpName, State1c};
+            _ ->
+                % Regular function or keyword as name
+                {NameToken, State1x} =
+                    case get_token_type(current_token(State1)) of
+                        identifier -> expect(State1, identifier);
+                        atom -> expect(State1, atom);
+                        'Ok' -> expect(State1, 'Ok');
+                        'Error' -> expect(State1, 'Error');
+                        'Some' -> expect(State1, 'Some');
+                        'None' -> expect(State1, 'None');
+                        'ok' -> expect(State1, 'ok');
+                        'error' -> expect(State1, 'error');
+                        'not' -> expect(State1, 'not');
+                        'and' -> expect(State1, 'and');
+                        'or' -> expect(State1, 'or');
+                        _ -> expect(State1, identifier)
+                    end,
+                FuncName =
+                    case get_token_type(NameToken) of
+                        identifier -> token_value_to_atom(get_token_value(NameToken));
+                        % Already an atom from lexer
+                        atom -> get_token_value(NameToken);
+                        'Ok' -> 'Ok';
+                        'Error' -> 'Error';
+                        'Some' -> 'Some';
+                        'None' -> 'None';
+                        'ok' -> ok;
+                        'error' -> error;
+                        'not' -> 'not';
+                        'and' -> 'and';
+                        'or' -> 'or'
+                    end,
+                {FuncName, State1x}
         end,
 
     % Parse optional type parameters: fn<T, U>(...)
@@ -657,20 +756,31 @@ parse_function(State) ->
                 end
         end,
 
+    % Parse optional where clause for typeclass constraints
+    % Syntax: where Show(T), Eq(T)
+    {WhereClause, State8} =
+        case match_token(State7, where) of
+            true ->
+                {_, State7a} = expect(State7, where),
+                parse_typeclass_where_clause(State7a);
+            false ->
+                {undefined, State7}
+        end,
+
     % Support both = syntax and do...end syntax
     {Body, State10} =
-        case match_token(State7, do) of
+        case match_token(State8, do) of
             true ->
                 % do...end syntax
-                {_, State8} = expect(State7, do),
-                {FuncBody, State9} = parse_function_body(State8),
-                {_, State10_do} = expect(State9, 'end'),
+                {_, State9} = expect(State8, do),
+                {FuncBody, State9a} = parse_function_body(State9),
+                {_, State10_do} = expect(State9a, 'end'),
                 {FuncBody, State10_do};
             false ->
                 % = syntax
-                {_, State8} = expect(State7, '='),
-                {FuncBody, State9} = parse_function_body(State8),
-                {FuncBody, State9}
+                {_, State9} = expect(State8, '='),
+                {FuncBody, State9a} = parse_function_body(State9),
+                {FuncBody, State9a}
         end,
 
     % Use the correct return type (ReturnType2 if set, otherwise ReturnType)
@@ -708,6 +818,7 @@ parse_function(State) ->
         constraint = Constraint,
         % DEPRECATED: kept for backward compatibility
         body = Body,
+        where_clause = WhereClause,
         is_private = IsPrivate,
         location = Location
     },
@@ -736,7 +847,7 @@ parse_curify_function(State) ->
         end,
     Name =
         case get_token_type(NameToken) of
-            identifier -> binary_to_atom(get_token_value(NameToken), utf8);
+            identifier -> token_value_to_atom(get_token_value(NameToken));
             % Already an atom from lexer
             atom -> get_token_value(NameToken);
             'Ok' -> 'Ok';
@@ -784,14 +895,14 @@ parse_curify_function(State) ->
     % Parse the Erlang function reference tuple: {module, function, arity}
     {_, State9} = expect(State8, '{'),
     {ModuleToken, State10} = expect(State9, identifier),
-    ErlangModule = binary_to_atom(get_token_value(ModuleToken), utf8),
+    ErlangModule = token_value_to_atom(get_token_value(ModuleToken)),
 
     {_, State11} = expect(State10, ','),
     {FunctionToken, State12} = expect(State11, identifier),
-    ErlangFunction = binary_to_atom(get_token_value(FunctionToken), utf8),
+    ErlangFunction = token_value_to_atom(get_token_value(FunctionToken)),
 
     {_, State13} = expect(State12, ','),
-    {ArityToken, State14} = expect(State13, number),
+    {ArityToken, State14} = expect(State13, integer),
     ErlangArity = get_token_value(ArityToken),
 
     {_, State15} = expect(State14, '}'),
@@ -867,7 +978,7 @@ parse_parameter(State) ->
 parse_record_def(State) ->
     {_, State1} = expect(State, record),
     {NameToken, State2} = expect(State1, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Name = token_value_to_atom(get_token_value(NameToken)),
 
     % Parse optional type parameters
     {TypeParams, State3} =
@@ -918,7 +1029,7 @@ parse_record_fields(State, Acc) ->
 %% Parse single record field: name: Type
 parse_record_field(State) ->
     {NameToken, State1} = expect(State, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Name = token_value_to_atom(get_token_value(NameToken)),
     {_, State2} = expect(State1, ':'),
     {Type, State3} = parse_type(State2),
 
@@ -940,7 +1051,7 @@ parse_fsm(State) ->
 
     % Parse FSM name
     {NameToken, State2} = expect(State1, identifier),
-    FSMName = binary_to_atom(get_token_value(NameToken), utf8),
+    FSMName = token_value_to_atom(get_token_value(NameToken)),
 
     % Check if this is new Mermaid-style (has '{') or old style (has 'do' directly)
     case match_token(State2, '{') of
@@ -1030,7 +1141,7 @@ parse_fsm_initial(State) ->
         end,
     Initial =
         case get_token_type(StateToken) of
-            identifier -> binary_to_atom(get_token_value(StateToken), utf8);
+            identifier -> token_value_to_atom(get_token_value(StateToken));
             'Zero' -> 'Zero';
             'Succ' -> 'Succ';
             'Ok' -> 'Ok';
@@ -1069,7 +1180,7 @@ parse_fsm_state_definition(State) ->
         end,
     Name =
         case get_token_type(NameToken) of
-            identifier -> binary_to_atom(get_token_value(NameToken), utf8);
+            identifier -> token_value_to_atom(get_token_value(NameToken));
             'Zero' -> 'Zero';
             'Succ' -> 'Succ';
             'Ok' -> 'Ok';
@@ -1139,7 +1250,7 @@ parse_fsm_transition(State) ->
                 end,
             Target =
                 case get_token_type(TargetToken) of
-                    identifier -> binary_to_atom(get_token_value(TargetToken), utf8);
+                    identifier -> token_value_to_atom(get_token_value(TargetToken));
                     'Zero' -> 'Zero';
                     'Succ' -> 'Succ';
                     'Ok' -> 'Ok';
@@ -1182,7 +1293,7 @@ parse_fsm_transition(State) ->
                                 case match_token(State7b, 'end') of
                                     true ->
                                         % Simple function name reference
-                                        Name = binary_to_atom(get_token_value(NameToken), utf8),
+                                        Name = token_value_to_atom(get_token_value(NameToken)),
                                         ActionLocation = get_token_location(NameToken),
                                         {{function_ref, Name, ActionLocation}, State7b};
                                     false ->
@@ -1240,7 +1351,7 @@ parse_fsm_transition(State) ->
                 end,
             Target =
                 case get_token_type(TargetToken) of
-                    identifier -> binary_to_atom(get_token_value(TargetToken), utf8);
+                    identifier -> token_value_to_atom(get_token_value(TargetToken));
                     'Zero' -> 'Zero';
                     'Succ' -> 'Succ';
                     'Ok' -> 'Ok';
@@ -1283,7 +1394,7 @@ parse_fsm_transition(State) ->
                                 case match_token(State7b, 'end') of
                                     true ->
                                         % Simple function name reference
-                                        Name = binary_to_atom(get_token_value(NameToken), utf8),
+                                        Name = token_value_to_atom(get_token_value(NameToken)),
                                         ActionLocation = get_token_location(NameToken),
                                         {{function_ref, Name, ActionLocation}, State7b};
                                     false ->
@@ -1323,7 +1434,7 @@ parse_record_fields_literal(State, Acc) ->
             {lists:reverse(Acc), State};
         false ->
             {FieldNameToken, State1} = expect(State, identifier),
-            FieldName = binary_to_atom(get_token_value(FieldNameToken), utf8),
+            FieldName = token_value_to_atom(get_token_value(FieldNameToken)),
             {_, State2} = expect(State1, ':'),
             {Value, State3} = parse_primary_expression(State2),
 
@@ -1352,7 +1463,7 @@ parse_mermaid_transitions(State, Acc) ->
 parse_single_mermaid_transition(State) ->
     % Parse from state
     {FromStateToken, State1} = expect(State, identifier),
-    FromState = binary_to_atom(get_token_value(FromStateToken), utf8),
+    FromState = token_value_to_atom(get_token_value(FromStateToken)),
     FromLocation = get_token_location(FromStateToken),
 
     % Expect -->
@@ -1361,12 +1472,12 @@ parse_single_mermaid_transition(State) ->
     % Expect |event|
     {_, State3} = expect(State2, '|'),
     {EventToken, State4} = expect(State3, identifier),
-    EventName = binary_to_atom(get_token_value(EventToken), utf8),
+    EventName = token_value_to_atom(get_token_value(EventToken)),
     {_, State5} = expect(State4, '|'),
 
     % Parse to state
     {ToStateToken, State6} = expect(State5, identifier),
-    ToState = binary_to_atom(get_token_value(ToStateToken), utf8),
+    ToState = token_value_to_atom(get_token_value(ToStateToken)),
 
     % Create transition record
     % Event is just the atom for the handler function name
@@ -1452,7 +1563,7 @@ parse_atom_list(State, Acc) ->
                 end,
             Atom =
                 case get_token_type(Token) of
-                    identifier -> binary_to_atom(get_token_value(Token), utf8);
+                    identifier -> token_value_to_atom(get_token_value(Token));
                     'Zero' -> 'Zero';
                     'Succ' -> 'Succ';
                     'Ok' -> 'Ok';
@@ -1508,7 +1619,7 @@ parse_import_item(State) ->
         end,
     Name =
         case get_token_type(Token) of
-            identifier -> binary_to_atom(get_token_value(Token), utf8);
+            identifier -> token_value_to_atom(get_token_value(Token));
             % Already an atom from lexer
             atom -> get_token_value(Token);
             'Ok' -> 'Ok';
@@ -1530,7 +1641,7 @@ parse_import_item(State) ->
         true ->
             % Function/arity specification
             {_, State2} = expect(State1, '/'),
-            {ArityToken, State3} = expect(State2, number),
+            {ArityToken, State3} = expect(State2, integer),
             Arity = get_token_value(ArityToken),
 
             % Check for optional 'as' alias
@@ -1539,7 +1650,7 @@ parse_import_item(State) ->
                     true ->
                         {_, State3a} = expect(State3, 'as'),
                         {AliasToken, State3b} = expect(State3a, identifier),
-                        AliasName = binary_to_atom(get_token_value(AliasToken), utf8),
+                        AliasName = token_value_to_atom(get_token_value(AliasToken)),
                         {AliasName, State3b};
                     false ->
                         {undefined, State3}
@@ -1560,7 +1671,7 @@ parse_import_item(State) ->
                     true ->
                         {_, State1a} = expect(State1, 'as'),
                         {AliasToken, State1b} = expect(State1a, identifier),
-                        AliasName = binary_to_atom(get_token_value(AliasToken), utf8),
+                        AliasName = token_value_to_atom(get_token_value(AliasToken)),
                         {AliasName, State1b};
                     false ->
                         {undefined, State1}
@@ -1605,7 +1716,7 @@ parse_import(State) ->
 %% Parse module name (supports dotted names like Std.Math)
 parse_module_name(State) ->
     {FirstToken, State1} = expect(State, identifier),
-    FirstPart = binary_to_atom(get_token_value(FirstToken), utf8),
+    FirstPart = token_value_to_atom(get_token_value(FirstToken)),
     parse_module_name_parts(State1, [FirstPart]).
 
 parse_module_name_parts(State, Acc) ->
@@ -1613,7 +1724,7 @@ parse_module_name_parts(State, Acc) ->
         true ->
             {_, State1} = expect(State, '.'),
             {PartToken, State2} = expect(State1, identifier),
-            Part = binary_to_atom(get_token_value(PartToken), utf8),
+            Part = token_value_to_atom(get_token_value(PartToken)),
             parse_module_name_parts(State2, [Part | Acc]);
         false ->
             % Combine parts into a dotted atom
@@ -1626,7 +1737,7 @@ parse_module_name_parts(State, Acc) ->
 parse_type_def(State) ->
     {_, State1} = expect(State, type),
     {NameToken, State2} = expect(State1, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Name = token_value_to_atom(get_token_value(NameToken)),
 
     % Parse type parameters if present: type MyType(T, U) = ...
     {TypeParams, State3} =
@@ -1675,7 +1786,7 @@ parse_type_parameter_list(State, Acc) ->
             {lists:reverse(Acc), State};
         false ->
             {Token, State1} = expect(State, identifier),
-            ParamName = binary_to_atom(get_token_value(Token), utf8),
+            ParamName = token_value_to_atom(get_token_value(Token)),
 
             % Check for optional bounds: T: Eq + Ord
             {Bounds, State2} =
@@ -1714,7 +1825,7 @@ parse_type_parameter_list(State, Acc) ->
 %% Parse type bounds for bounded polymorphism: Eq + Ord + Show
 parse_type_bounds(State, Acc) ->
     {Token, State1} = expect(State, identifier),
-    Bound = binary_to_atom(get_token_value(Token), utf8),
+    Bound = token_value_to_atom(get_token_value(Token)),
 
     case match_token(State1, '+') of
         true ->
@@ -1734,7 +1845,7 @@ parse_type_bounds(State, Acc) ->
 parse_trait_def(State) ->
     {TraitToken, State1} = expect(State, trait),
     {NameToken, State2} = expect(State1, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Name = token_value_to_atom(get_token_value(NameToken)),
     Location = get_token_location(TraitToken),
 
     % Parse optional type parameters: trait Container<T>
@@ -1778,7 +1889,7 @@ parse_trait_def(State) ->
 %% Parse supertrait list: Eq + Ord + Show
 parse_trait_supertraits(State, Acc) ->
     {Token, State1} = expect(State, identifier),
-    Supertrait = binary_to_atom(get_token_value(Token), utf8),
+    Supertrait = token_value_to_atom(get_token_value(Token)),
 
     case match_token(State1, '+') of
         true ->
@@ -1811,7 +1922,7 @@ parse_trait_body(State, MethodsAcc, TypesAcc) ->
 parse_associated_type(State) ->
     {TypeToken, State1} = expect(State, type),
     {NameToken, State2} = expect(State1, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Name = token_value_to_atom(get_token_value(NameToken)),
     Location = get_token_location(TypeToken),
 
     % Parse optional bounds: type Item: Eq
@@ -1847,7 +1958,7 @@ parse_associated_type(State) ->
 parse_method_signature(State) ->
     {DefToken, State1} = expect(State, def),
     {NameToken, State2} = expect(State1, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Name = token_value_to_atom(get_token_value(NameToken)),
     Location = get_token_location(DefToken),
 
     % Parse optional type parameters: def method<T>(...)
@@ -1919,7 +2030,7 @@ parse_trait_impl(State) ->
 
     % Parse trait name
     {TraitNameToken, State3} = expect(State2, identifier),
-    TraitName = binary_to_atom(get_token_value(TraitNameToken), utf8),
+    TraitName = token_value_to_atom(get_token_value(TraitNameToken)),
 
     % Expect 'for' keyword
 
@@ -1965,7 +2076,7 @@ parse_impl_body(State, MethodsAcc, TypesAcc) ->
             % Associated type binding: type Item = Int
             {_, State1} = expect(State, type),
             {NameToken, State2} = expect(State1, identifier),
-            Name = binary_to_atom(get_token_value(NameToken), utf8),
+            Name = token_value_to_atom(get_token_value(NameToken)),
             {_, State3} = expect(State2, '='),
             {TypeExpr, State4} = parse_type(State3),
             NewTypesAcc = maps:put(Name, TypeExpr, TypesAcc),
@@ -1984,7 +2095,7 @@ parse_impl_body(State, MethodsAcc, TypesAcc) ->
 parse_method_impl(State) ->
     {DefToken, State1} = expect(State, def),
     {NameToken, State2} = expect(State1, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Name = token_value_to_atom(get_token_value(NameToken)),
     Location = get_token_location(DefToken),
 
     % Parse parameters
@@ -2026,7 +2137,7 @@ parse_where_constraints(State, Acc) ->
     case get_token_type(current_token(State)) of
         identifier ->
             {TypeVarToken, State1} = expect(State, identifier),
-            TypeVar = binary_to_atom(get_token_value(TypeVarToken), utf8),
+            TypeVar = token_value_to_atom(get_token_value(TypeVarToken)),
 
             % Expect colon for trait bound
             case match_token(State1, ':') of
@@ -2064,7 +2175,7 @@ parse_where_constraints(State, Acc) ->
 %% Parse trait bounds separated by '+' (Trait1 + Trait2 + Trait3)
 parse_trait_bounds(State, Acc) ->
     {TraitToken, State1} = expect(State, identifier),
-    TraitName = binary_to_atom(get_token_value(TraitToken), utf8),
+    TraitName = token_value_to_atom(get_token_value(TraitToken)),
 
     % Check for more trait bounds with '+'
     case match_token(State1, '+') of
@@ -2152,8 +2263,24 @@ parse_typeclass_body(State, MethodsAcc, DefaultsAcc) ->
 %% Parse typeclass method signature (possibly with default)
 parse_typeclass_method(State) ->
     {DefToken, State1} = expect(State, def),
-    {NameToken, State2} = expect(State1, identifier),
-    Name = token_value_to_atom(get_token_value(NameToken)),
+
+    % Check if this is an operator method definition: def (op)(params)
+    {Name, State2} =
+        case get_token_type(current_token(State1)) of
+            '(' ->
+                % Operator method: def (op)(params)
+                {_, State1a} = expect(State1, '('),
+                {OpToken, State1b} = expect_operator(State1a),
+                {_, State1c} = expect(State1b, ')'),
+                OpName = get_token_type(OpToken),
+                {OpName, State1c};
+            _ ->
+                % Regular method name
+                {NameToken, State1x} = expect(State1, identifier),
+                MethodName = token_value_to_atom(get_token_value(NameToken)),
+                {MethodName, State1x}
+        end,
+
     Location = get_token_location(DefToken),
 
     % Parse parameters
@@ -2204,6 +2331,7 @@ parse_typeclass_method(State) ->
                 return_type = ReturnType,
                 constraint = undefined,
                 body = Body,
+                where_clause = undefined,
                 is_private = false,
                 location = Location
             },
@@ -2265,8 +2393,24 @@ parse_instance_body(State, MethodsAcc) ->
 %% Parse instance method implementation
 parse_instance_method(State) ->
     {DefToken, State1} = expect(State, def),
-    {NameToken, State2} = expect(State1, identifier),
-    Name = token_value_to_atom(get_token_value(NameToken)),
+
+    % Check if this is an operator method implementation: def (op)(params)
+    {Name, State2} =
+        case get_token_type(current_token(State1)) of
+            '(' ->
+                % Operator method: def (op)(params)
+                {_, State1a} = expect(State1, '('),
+                {OpToken, State1b} = expect_operator(State1a),
+                {_, State1c} = expect(State1b, ')'),
+                OpName = get_token_type(OpToken),
+                {OpName, State1c};
+            _ ->
+                % Regular method name
+                {NameToken, State1x} = expect(State1, identifier),
+                MethodName = token_value_to_atom(get_token_value(NameToken)),
+                {MethodName, State1x}
+        end,
+
     Location = get_token_location(DefToken),
 
     % Parse parameters
@@ -2296,6 +2440,7 @@ parse_instance_method(State) ->
         return_type = ReturnType,
         constraint = undefined,
         body = Body,
+        where_clause = undefined,
         is_private = false,
         location = Location
     },
@@ -2391,6 +2536,19 @@ parse_typeclass_constraint(State) ->
     },
     {Constraint, State1}.
 
+%% Parse typeclass where clause for function definitions
+%% This creates a #where_clause{} record with typeclass constraints
+%% Syntax: where Show(T), Eq(T)
+parse_typeclass_where_clause(State) ->
+    Location = get_token_location(current_token(State)),
+    {Constraints, State1} = parse_typeclass_constraints(State, []),
+
+    WhereClause = #where_clause{
+        constraints = Constraints,
+        location = Location
+    },
+    {WhereClause, State1}.
+
 %% Parse type parameter names (for type definitions)
 parse_type_parameter_names(State, Acc) ->
     case match_token(State, ')') of
@@ -2465,16 +2623,16 @@ parse_type_with_unions(State, LeftType) ->
             {LeftType, State}
     end.
 
-%% Parse type with arrow function types (T -> U -> V)
+%% Parse type with arrow function types (T => U => V)
 parse_type_with_arrows(State, LeftType) ->
-    case match_token(State, '->') of
+    case match_token(State, '=>') of
         true ->
-            {_, State1} = expect(State, '->'),
+            {_, State1} = expect(State, '=>'),
             % Right associative
             {RightType, State2} = parse_type(State1),
             Location = get_type_location(LeftType),
 
-            % Create function type: LeftType -> RightType
+            % Create function type: LeftType => RightType
             FunctionType = #function_type{
                 params = [LeftType],
                 return_type = RightType,
@@ -2733,9 +2891,23 @@ parse_type_parameters(State, Acc) ->
 parse_type_parameter(State) ->
     Token = current_token(State),
     case get_token_type(Token) of
-        % Handle numeric literals as type-level values
-        number ->
-            {NumberToken, State1} = expect(State, number),
+        % Handle integer literals as type-level values
+        integer ->
+            {NumberToken, State1} = expect(State, integer),
+            Value = get_token_value(NumberToken),
+            Location = get_token_location(NumberToken),
+            Param = #type_param{
+                name = undefined,
+                value = #literal_expr{
+                    value = Value,
+                    location = Location
+                },
+                location = Location
+            },
+            {Param, State1};
+        % Handle float literals as type-level values
+        float ->
+            {NumberToken, State1} = expect(State, float),
             Value = get_token_value(NumberToken),
             Location = get_token_location(NumberToken),
             Param = #type_param{
@@ -2767,7 +2939,7 @@ parse_type_parameter(State) ->
                         throw:{parse_error, _, _, _} ->
                             % Fall back to simple identifier handling
                             {IdToken, StateId} = expect(State, identifier),
-                            Name = binary_to_atom(get_token_value(IdToken), utf8),
+                            Name = token_value_to_atom(get_token_value(IdToken)),
                             Location = get_token_location(IdToken),
                             TypeVar = #identifier_expr{
                                 name = Name,
@@ -2781,58 +2953,16 @@ parse_type_parameter(State) ->
                             {FallbackParam, StateId}
                     end;
                 false ->
-                    % Simple identifier case - could be type variable or parameterized type
-                    {IdToken, State1} = expect(State, identifier),
-                    Name = binary_to_atom(get_token_value(IdToken), utf8),
-                    Location = get_token_location(IdToken),
-
-                    % Check if this is a type constraint (name: Type)
-                    case match_token(State1, ':') of
-                        true ->
-                            % This is a type constraint like 'rows: Nat'
-                            {_, State2} = expect(State1, ':'),
-                            {ConstraintType, State3} = parse_type(State2),
-                            Param = #type_param{
-                                name = Name,
-                                value = ConstraintType,
-                                location = Location
-                            },
-                            {Param, State3};
-                        false ->
-                            % Check if this is a parameterized type (e.g., List(T) within another type)
-                            case match_token(State1, '(') of
-                                true ->
-                                    % This is a parameterized type, parse it as such
-                                    {_, State2} = expect(State1, '('),
-                                    {Params, State3} = parse_type_parameters(State2, []),
-                                    {_, State4} = expect(State3, ')'),
-
-                                    Type = #dependent_type{
-                                        name = Name,
-                                        params = Params,
-                                        location = Location
-                                    },
-                                    Param = #type_param{
-                                        name = undefined,
-                                        value = Type,
-                                        location = Location
-                                    },
-                                    {Param, State4};
-                                false ->
-                                    % This is either a type variable or a simple type
-                                    % Create as type variable (identifier expression)
-                                    TypeVar = #identifier_expr{
-                                        name = Name,
-                                        location = Location
-                                    },
-                                    Param = #type_param{
-                                        name = undefined,
-                                        value = TypeVar,
-                                        location = Location
-                                    },
-                                    {Param, State1}
-                            end
-                    end
+                    % Parse as a full type - this handles simple identifiers,
+                    % parameterized types, AND function types (A => B)
+                    {Type, State2} = parse_type(State),
+                    Location = get_type_location(Type),
+                    Param = #type_param{
+                        name = undefined,
+                        value = Type,
+                        location = Location
+                    },
+                    {Param, State2}
             end;
         % Handle other cases by trying expression parsing for type parameters
         _ ->
@@ -2995,7 +3125,8 @@ is_let_body_continuation(State) ->
         % Variable or function call
         identifier -> true;
         % Literal
-        number -> true;
+        integer -> true;
+        float -> true;
         % Literal
         string -> true;
         % Atom literal
@@ -3126,7 +3257,7 @@ parse_postfix_operators(State, Expr) ->
                             case get_token_type(NextToken) of
                                 identifier ->
                                     {FieldToken, State2} = expect(State1, identifier),
-                                    FieldName = binary_to_atom(get_token_value(FieldToken), utf8),
+                                    FieldName = token_value_to_atom(get_token_value(FieldToken)),
                                     FieldLocation = get_token_location(FieldToken),
 
                                     % Check if this is module.function(args) pattern
@@ -3221,6 +3352,16 @@ get_operator_info('==') -> {5, left};
 get_operator_info('!=') -> {5, left};
 get_operator_info('and') -> {3, left};
 get_operator_info('or') -> {2, left};
+% Monad operators (lowest precedence - they sequence computations)
+get_operator_info('>>=') -> {1, left};
+get_operator_info('>>') -> {1, left};
+% Applicative operators (higher than monad, lower than functor)
+get_operator_info('<*>') -> {7, left};
+get_operator_info('*>') -> {7, left};
+get_operator_info('<*') -> {7, left};
+% Functor operators (higher than applicative)
+get_operator_info('<$') -> {8, left};
+get_operator_info('$>') -> {8, left};
 get_operator_info(_) -> undefined.
 
 %% Parse primary expressions
@@ -3271,8 +3412,17 @@ parse_primary_expression(State) ->
                         location = Location
                     },
                     {UnaryExpr, State2};
-                number ->
-                    {Token, State1} = expect(State, number),
+                integer ->
+                    {Token, State1} = expect(State, integer),
+                    Value = get_token_value(Token),
+                    Location = get_token_location(Token),
+                    Expr = #literal_expr{
+                        value = Value,
+                        location = Location
+                    },
+                    {Expr, State1};
+                float ->
+                    {Token, State1} = expect(State, float),
                     Value = get_token_value(Token),
                     Location = get_token_location(Token),
                     Expr = #literal_expr{
@@ -3413,7 +3563,7 @@ parse_identifier_or_call(State) ->
         end,
     Name =
         case get_token_type(Token) of
-            identifier -> binary_to_atom(get_token_value(Token), utf8);
+            identifier -> token_value_to_atom(get_token_value(Token));
             'ok' -> ok;
             'error' -> error;
             'state' -> state;
@@ -3427,7 +3577,7 @@ parse_identifier_or_call(State) ->
         true ->
             {_, State2} = expect(State1, '.'),
             {FuncToken, State3} = expect(State2, identifier),
-            FuncName = binary_to_atom(get_token_value(FuncToken), utf8),
+            FuncName = token_value_to_atom(get_token_value(FuncToken)),
             case match_token(State3, '(') of
                 true ->
                     {_, State4} = expect(State3, '('),
@@ -3576,7 +3726,7 @@ parse_let_expression(State) ->
     % Parse binding value - use primary expression to avoid consuming 'in'
     {Value, State4} = parse_let_value_expression(State3),
 
-    VarName = binary_to_atom(get_token_value(BindingVar), utf8),
+    VarName = token_value_to_atom(get_token_value(BindingVar)),
     Location = get_location(State2, BindingVar),
 
     % Create a simple identifier pattern for the binding
@@ -3721,7 +3871,7 @@ parse_lambda_parameters(State, Acc) ->
             {lists:reverse(Acc), State};
         false ->
             {Token, State1} = expect(State, identifier),
-            ParamName = binary_to_atom(get_token_value(Token), utf8),
+            ParamName = token_value_to_atom(get_token_value(Token)),
             Location = get_token_location(Token),
 
             % Create parameter without type for now
@@ -3824,7 +3974,7 @@ parse_pattern(State) ->
             {Token, State1} = expect(State, TokenType),
             Name =
                 case TokenType of
-                    identifier -> binary_to_atom(get_token_value(Token), utf8);
+                    identifier -> token_value_to_atom(get_token_value(Token));
                     % For keywords, use the atom directly
                     _ -> TokenType
                 end,
@@ -3884,8 +4034,17 @@ parse_pattern(State) ->
             parse_list_pattern(State);
         '{' ->
             parse_tuple_pattern(State);
-        number ->
-            {Token, State1} = expect(State, number),
+        integer ->
+            {Token, State1} = expect(State, integer),
+            Value = get_token_value(Token),
+            Location = get_token_location(Token),
+            Pattern = #literal_pattern{
+                value = Value,
+                location = Location
+            },
+            {Pattern, State1};
+        float ->
+            {Token, State1} = expect(State, float),
             Value = get_token_value(Token),
             Location = get_token_location(Token),
             Pattern = #literal_pattern{
@@ -4364,7 +4523,7 @@ parse_record_field_patterns(State, Acc) ->
         false ->
             % Parse field name
             {NameToken, State1} = expect(State, identifier),
-            FieldName = binary_to_atom(get_token_value(NameToken), utf8),
+            FieldName = token_value_to_atom(get_token_value(NameToken)),
             FieldLocation = get_token_location(NameToken),
 
             % Expect colon
@@ -4615,7 +4774,7 @@ parse_action_sequence(State, Acc) ->
 %% Parse a single action
 parse_single_action(State) ->
     {NameToken, State1} = expect(State, identifier),
-    Name = binary_to_atom(get_token_value(NameToken), utf8),
+    Name = token_value_to_atom(get_token_value(NameToken)),
     Location = get_token_location(NameToken),
 
     case get_token_type(current_token(State1)) of
@@ -4646,7 +4805,7 @@ parse_single_action(State) ->
                 true ->
                     {_, State2} = expect(State1, '.'),
                     {FieldToken, State3} = expect(State2, identifier),
-                    Field = binary_to_atom(get_token_value(FieldToken), utf8),
+                    Field = token_value_to_atom(get_token_value(FieldToken)),
 
                     case match_token(State3, '=') of
                         true ->
@@ -4686,7 +4845,7 @@ parse_log_action(State) ->
     {_, State1} = expect(State, 'log'),
     {_, State2} = expect(State1, '('),
     {LevelToken, State3} = expect(State2, identifier),
-    Level = binary_to_atom(get_token_value(LevelToken), utf8),
+    Level = token_value_to_atom(get_token_value(LevelToken)),
     {_, State4} = expect(State3, ','),
     {Message, State5} = parse_action_value(State4),
     {_, State6} = expect(State5, ')'),
@@ -4719,8 +4878,13 @@ parse_action_condition(State) ->
 %% Parse action values (expressions that produce values)
 parse_action_value(State) ->
     case get_token_type(current_token(State)) of
-        number ->
-            {Token, State1} = expect(State, number),
+        integer ->
+            {Token, State1} = expect(State, integer),
+            Value = get_token_value(Token),
+            Location = get_token_location(Token),
+            {{literal, Value, Location}, State1};
+        float ->
+            {Token, State1} = expect(State, float),
             Value = get_token_value(Token),
             Location = get_token_location(Token),
             {{literal, Value, Location}, State1};
@@ -4736,7 +4900,7 @@ parse_action_value(State) ->
             {{literal, Value, Location}, State1};
         identifier ->
             {NameToken, State1} = expect(State, identifier),
-            Name = binary_to_atom(get_token_value(NameToken), utf8),
+            Name = token_value_to_atom(get_token_value(NameToken)),
             Location = get_token_location(NameToken),
 
             case Name of
@@ -4749,7 +4913,7 @@ parse_action_value(State) ->
                         true ->
                             {_, State2} = expect(State1, '.'),
                             {FieldToken, State3} = expect(State2, identifier),
-                            Field = binary_to_atom(get_token_value(FieldToken), utf8),
+                            Field = token_value_to_atom(get_token_value(FieldToken)),
                             {{state_field, Field, Location}, State3};
                         false ->
                             case match_token(State1, '(') of
@@ -4867,7 +5031,7 @@ parse_record_expr_fields(State, Acc) ->
             {lists:reverse(Acc), State};
         false ->
             {FieldName, State1} = expect(State, identifier),
-            Name = binary_to_atom(get_token_value(FieldName), utf8),
+            Name = token_value_to_atom(get_token_value(FieldName)),
             Location = get_token_location(FieldName),
 
             % Expect colon

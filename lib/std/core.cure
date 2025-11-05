@@ -35,12 +35,12 @@ module Std.Core do
   def identity(x: T): T = x
 
   # Function composition - (f ∘ g)(x) = f(g(x))
-  def compose(f: B -> C, g: A -> B): A -> C =
+  def compose(f: B => C, g: A => B): A => C =
     fn(x) -> f(g(x)) end
 
   # Flip the order of arguments for a binary function
   # TODO: Fix currying syntax for flip
-  # def flip(f: A -> B -> C): B -> A -> C =
+  # def flip(f: A => B => C): B => A => C =
   #   fn(b, a) -> f(a)(b) end
 
   # Boolean operations
@@ -121,19 +121,19 @@ module Std.Core do
       Error(err) -> true
     end
 
-  def map_ok(result: Result(T, E), f: T -> U): Result(U, E) =
+  def map_ok(result: Result(T, E), f: T => U): Result(U, E) =
     match result do
       Ok(value) -> Ok(f(value))
       Error(err) -> Error(err)
     end
 
-  def map_error(result: Result(T, E), f: E -> F): Result(T, F) =
+  def map_error(result: Result(T, E), f: E => F): Result(T, F) =
     match result do
       Ok(value) -> Ok(value)
       Error(err) -> Error(f(err))
     end
 
-  def and_then(result: Result(T, E), f: T -> Result(U, E)): Result(U, E) =
+  def and_then(result: Result(T, E), f: T => Result(U, E)): Result(U, E) =
     match result do
       Ok(value) -> f(value)
       Error(err) -> Error(err)
@@ -155,13 +155,13 @@ module Std.Core do
       None -> true
     end
 
-  def map_option(option: Option(T), f: T -> U): Option(U) =
+  def map_option(option: Option(T), f: T => U): Option(U) =
     match option do
       Some(value) -> Some(f(value))
       None -> None
     end
 
-  def flat_map_option(option: Option(T), f: T -> Option(U)): Option(U) =
+  def flat_map_option(option: Option(T), f: T => Option(U)): Option(U) =
     match option do
       Some(value) -> f(value)
       None -> None
@@ -174,10 +174,10 @@ module Std.Core do
     end
 
   # Utility functions
-  def const(x: T): U -> T =
+  def const(x: T): U => T =
     fn(y) -> x end
 
-  def apply(f: T -> U, x: T): U = f(x)
+  def apply(f: T => U, x: T): U = f(x)
 
-  def pipe(x: T, f: T -> U): U = f(x)
+  def pipe(x: T, f: T => U): U = f(x)
 end

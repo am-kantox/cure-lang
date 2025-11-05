@@ -1,0 +1,156 @@
+# Show Instances for Built-in Types
+# Provides string conversion for standard Cure types
+
+module Std.Instances.Show do
+  export [Show]
+
+  import Std.Typeclass [Show]
+  import Std.String [int_to_string, float_to_string, concat, join]
+  import Std.List [map]
+
+  # ==============================================================================
+  # Primitive Types
+  # ==============================================================================
+
+  # Show instance for Int
+  instance Show(Int) do
+    def show(x: Int): String = int_to_string(x)
+  end
+
+  # Show instance for Float
+  instance Show(Float) do
+    def show(x: Float): String = float_to_string(x)
+  end
+
+  # Show instance for String (identity)
+  instance Show(String) do
+    def show(x: String): String = x
+  end
+
+  # Show instance for Bool
+  instance Show(Bool) do
+    def show(x: Bool): String =
+      match x do
+        true -> "true"
+        false -> "false"
+      end
+  end
+
+  # Show instance for Atom
+  instance Show(Atom) do
+    def show(x: Atom): String =
+      # Convert atom to string with colon prefix
+      concat(":", atom_to_string(x))
+  end
+
+  # Show instance for Unit
+  instance Show(Unit) do
+    def show(_: Unit): String = "()"
+  end
+
+  # ==============================================================================
+  # Container Types
+  # ==============================================================================
+
+  # Show instance for List (requires Show for element type)
+  instance Show(List(T)) when Show(T) do
+    def show(xs: List(T)): String =
+      match xs do
+        [] -> "[]"
+        _ ->
+          let parts = map(show, xs)
+          let joined = join(parts, ", ")
+          concat("[", concat(joined, "]"))
+      end
+  end
+
+  # Show instance for tuples (2-tuple)
+  instance Show({A, B}) when Show(A), Show(B) do
+    def show(pair: {A, B}): String =
+      match pair do
+        {a, b} ->
+          let a_str = show(a)
+          let b_str = show(b)
+          concat("{", concat(a_str, concat(", ", concat(b_str, "}"))))
+      end
+  end
+
+  # Show instance for tuples (3-tuple)
+  instance Show({A, B, C}) when Show(A), Show(B), Show(C) do
+    def show(triple: {A, B, C}): String =
+      match triple do
+        {a, b, c} ->
+          let a_str = show(a)
+          let b_str = show(b)
+          let c_str = show(c)
+          concat("{", concat(a_str, concat(", ", concat(b_str, concat(", ", concat(c_str, "}"))))))
+      end
+  end
+
+  # ==============================================================================
+  # Option/Maybe Type
+  # ==============================================================================
+
+  # Show instance for Option
+  instance Show(Option(T)) when Show(T) do
+    def show(opt: Option(T)): String =
+      match opt do
+        Some(x) -> concat("Some(", concat(show(x), ")"))
+        None -> "None"
+      end
+  end
+
+  # ==============================================================================
+  # Result Type
+  # ==============================================================================
+
+  # Show instance for Result
+  instance Show(Result(T, E)) when Show(T), Show(E) do
+    def show(result: Result(T, E)): String =
+      match result do
+        Ok(x) -> concat("Ok(", concat(show(x), ")"))
+        Error(e) -> concat("Error(", concat(show(e), ")"))
+      end
+  end
+
+  # ==============================================================================
+  # Helper Functions
+  # ==============================================================================
+
+  # Convert atom to string (native implementation)
+  def atom_to_string(a: Atom): String =
+    # This would be implemented as a native function
+    # For now, placeholder
+    "atom"
+
+  # Print a value to stdout (requires Show instance)
+  def print(x: T): Int where Show(T) =
+    let s = show(x)
+    Std.IO.println(s)
+
+  # Print with newline
+  def println(x: T): Int where Show(T) =
+    print(x)
+
+  # Debug print with label
+  def debug(label: String, x: T): T where Show(T) =
+    let value_str = show(x)
+    let output = concat(label, concat(": ", value_str))
+    Std.IO.println(output)
+    x
+
+  # Pretty print a list with custom separator
+  def show_list_with(sep: String, xs: List(T)): String where Show(T) =
+    match xs do
+      [] -> "[]"
+      _ ->
+        let parts = map(show, xs)
+        let joined = join(parts, sep)
+        concat("[", concat(joined, "]"))
+    end
+
+  # Show multiple values as tuple
+  def show_tuple(x: T, y: U): String where Show(T), Show(U) =
+    concat("{", concat(show(x), concat(", ", concat(show(y), "}"))))
+
+end

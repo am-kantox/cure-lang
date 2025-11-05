@@ -12,45 +12,45 @@ module Std.Result do
   # For now, we use a simplified implementation with tuples
   
   # Constructor functions that return Result type
+  # Create Ok result
   def ok(value: Int): Int =
-    "Create Ok result"
     value
 
+  # Create Error result
   def error(err: Int): Int =
-    "Create Error result"
     err
 
+  # Check if result is Ok
   def is_ok(result: Int): Bool =
-    "Check if result is Ok"
     result >= 0
 
+  # Check if result is Error
   def is_error(result: Int): Bool =
-    "Check if result is Error"
     result < 0
 
+  # Get Ok value (returns 0 if Error)
   def get_value(result: Int): Int =
-    "Get Ok value (returns 0 if Error)"
     match is_ok(result) do
       true -> result
       false -> 0
     end
 
+  # Get Error code (returns 0 if Ok)
   def get_error(result: Int): Int =
-    "Get Error code (returns 0 if Ok)"
     match is_error(result) do
       true -> -result
       false -> 0
     end
 
-  def map_result(result: Int, f: Int -> Int): Int =
-    "Map function over Ok value"
+  # Map function over Ok value
+  def map_result(result: Int, f: Int => Int): Int =
     match is_ok(result) do
       true -> ok(f(result))
       false -> result
     end
 
-  def map_error(result: Int, f: Int -> Int): Int =
-    "Map function over Error value"
+  # Map function over Error value
+  def map_error(result: Int, f: Int => Int): Int =
     match is_error(result) do
       true -> error(f(-result))
       false -> result

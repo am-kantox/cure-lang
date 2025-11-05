@@ -43,6 +43,7 @@
     return_type,     % Union of all clause return types (derived)
     constraint,      % DEPRECATED: kept for backward compatibility
     body,            % DEPRECATED: kept for backward compatibility
+    where_clause,    % Optional #where_clause{} for typeclass constraints on type parameters
     is_private,      % determined by export list, not by keyword
     location
 }).
@@ -604,4 +605,43 @@
     type_args,         % List of type expressions
     location           % Source location
 }).
+
+%% Typeclass info - runtime representation of a typeclass
+-record(typeclass_info, {
+    name :: atom(),
+    type_params = [] :: [atom()],
+    superclasses = [] :: [#typeclass_constraint{}],
+    methods = #{} :: #{atom() => term()},
+    default_impls = #{} :: #{atom() => #function_def{}},
+    kind :: term()  % Kind of the typeclass (e.g., * -> * for Functor)
+}).
+
+-type typeclass_info() :: #typeclass_info{}.
+-type typeclass_constraint() :: #typeclass_constraint{}.
+
+%% ============================================================================
+%% Higher-Kinded Types Support
+%% ============================================================================
+
+%% Kind - represents the "type of a type"
+-record(kind, {
+    constructor :: atom() | term(),  % Base kind or higher-order kind
+    args :: [term()],                % Kind arguments
+    result :: term() | atom(),       % Result kind
+    arity :: integer(),
+    location :: term()
+}).
+
+%% Type constructor - represents types that take type parameters
+-record(type_constructor, {
+    name :: atom(),
+    kind :: term(),
+    params :: [term()],
+    definition :: term() | undefined,
+    constraints :: [term()],
+    location :: term()
+}).
+
+-type kind() :: #kind{}.
+-type type_constructor() :: #type_constructor{}.
 

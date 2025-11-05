@@ -1,0 +1,7 @@
+module TestFunctorMinimal do
+
+typeclass Functor(F) do
+  def map(f: A => B, x: F(A)): F(B)
+end
+
+end

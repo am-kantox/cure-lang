@@ -198,6 +198,18 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     check_higher_kinded_well_formed/1,
     kind_arity/1,
     is_saturated_type/1,
+    result_kind/1,
+    partial_application_kind/2,
+
+    % Type constructor environment management
+    add_type_constructor/2,
+    lookup_type_constructor/2,
+    infer_constructor_kind/3,
+
+    % Typeclass kind checking
+    check_typeclass_def/2,
+    check_instance_kinds/3,
+    add_typeclass_info/2,
 
     % Type checking
     check_type/3, check_type/4,
@@ -270,7 +282,9 @@ concurrent environments. The module is otherwise stateless and thread-safe.
 -record(type_env, {
     bindings :: #{atom() => type_expr()},
     constraints :: [type_constraint()],
-    parent :: type_env() | undefined
+    parent :: type_env() | undefined,
+    type_constructors :: #{atom() => type_constructor()},
+    typeclasses :: #{atom() => typeclass_info()}
 }).
 
 %% Recursive call context tracking
@@ -367,25 +381,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.
 % -type cycle_detection() :: #cycle_detection{}.
 
 %% Higher-kinded types definitions
--record(kind, {
-    % Base kind or higher-order kind
-    constructor :: atom() | kind(),
-    % Kind arguments
-    args :: [kind()],
-    % Result kind
-    result :: kind() | atom(),
-    arity :: integer(),
-    location :: location()
-}).
-
--record(type_constructor, {
-    name :: atom(),
-    kind :: kind(),
-    params :: [type_param()],
-    definition :: type_expr() | undefined,
-    constraints :: [constraint()],
-    location :: location()
-}).
+%% Note: kind and type_constructor records are now defined in cure_ast.hrl
 
 -record(higher_kinded_type, {
     constructor :: type_constructor(),
@@ -415,8 +411,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.
     location :: location()
 }).
 
--type kind() :: #kind{}.
--type type_constructor() :: #type_constructor{}.
+% Note: kind() and type_constructor() types are now defined in cure_ast.hrl
 % COMMENTED OUT UNUSED TYPES
 % -type higher_kinded_type() :: #higher_kinded_type{}.
 % -type type_family() :: #type_family{}.
@@ -466,6 +461,13 @@ concurrent environments. The module is otherwise stateless and thread-safe.
 -define(TYPE_BINARY, {primitive_type, 'Binary'}).
 -define(TYPE_BOOL, {primitive_type, 'Bool'}).
 -define(TYPE_ATOM, {primitive_type, 'Atom'}).
+
+%% Kind constructors for higher-kinded types
+-define(KIND_TYPE, {kind, star, [], star, 0, undefined}).
+-define(KIND_TYPE_TO_TYPE, {kind, '->', [?KIND_TYPE], ?KIND_TYPE, 1, undefined}).
+-define(KIND_TYPE_TO_TYPE_TO_TYPE,
+    {kind, '->', [?KIND_TYPE, ?KIND_TYPE], ?KIND_TYPE, 2, undefined}
+).
 
 %% FSM primitive types
 -define(TYPE_PID, {primitive_type, 'Pid'}).
@@ -687,7 +689,9 @@ new_env() ->
     #type_env{
         bindings = #{},
         constraints = [],
-        parent = undefined
+        parent = undefined,
+        type_constructors = #{},
+        typeclasses = #{}
     }.
 
 -doc """
@@ -5846,6 +5850,15 @@ infer_kind(Type, KindEnv) ->
             {ok, #kind{
                 constructor = star, args = [], result = star, arity = 0, location = undefined
             }};
+        {type_constructor, Name} ->
+            % Type constructor without arguments - return its kind
+            case lookup_type_constructor(Name, KindEnv) of
+                {ok, #type_constructor{kind = Kind}} ->
+                    {ok, Kind};
+                not_found ->
+                    % Infer based on common type constructors
+                    infer_constructor_kind(Name, 1, KindEnv)
+            end;
         {function_type, Params, Return} ->
             % Function types: * -> * -> ... -> *
             case lists:all(fun(P) -> is_base_kind(infer_kind(P, KindEnv)) end, Params) of
@@ -5866,8 +5879,21 @@ infer_kind(Type, KindEnv) ->
                     {error, invalid_function_param_kinds}
             end;
         {dependent_type, Name, Params} ->
-            % Dependent types may have higher kinds
-            infer_dependent_type_kind(Name, Params, KindEnv);
+            % Dependent types - check if fully applied
+            case lookup_type_constructor(Name, KindEnv) of
+                {ok, #type_constructor{kind = Kind}} ->
+                    % Check if fully applied
+                    Expected = kind_arity(Kind),
+                    Actual = length(Params),
+                    if
+                        Actual =:= Expected -> {ok, result_kind(Kind)};
+                        Actual < Expected -> {ok, partial_application_kind(Kind, Actual)};
+                        true -> {error, {too_many_type_args, Name, Expected, Actual}}
+                    end;
+                not_found ->
+                    % Try to infer from known types
+                    infer_dependent_type_kind(Name, Params, KindEnv)
+            end;
         #higher_kinded_type{constructor = Constructor} ->
             {ok, Constructor#type_constructor.kind};
         _ ->
@@ -6262,6 +6288,286 @@ check_applied_args_valid(Constructor, Args) ->
         _ ->
             {error, invalid_constructor}
     end.
+
+%%=============================================================================
+%% KIND SYSTEM HELPER FUNCTIONS FOR TYPECLASSES
+%%=============================================================================
+
+%% Extract the result kind from a kind
+result_kind(Kind) ->
+    case Kind of
+        #kind{constructor = star, result = star} ->
+            % Kind is already * - return it as is
+            Kind;
+        #kind{result = Result} when is_record(Result, kind) ->
+            % Result is a kind record
+            Result;
+        #kind{result = star} ->
+            % Result is star atom - return full star kind
+            ?KIND_TYPE;
+        _ ->
+            ?KIND_TYPE
+    end.
+
+%% Create a partial application kind
+partial_application_kind(Kind, NumApplied) ->
+    case Kind of
+        #kind{args = Args, result = Result, arity = TotalArity} ->
+            RemainingArgs = lists:nthtail(NumApplied, Args),
+            #kind{
+                constructor = '->',
+                args = RemainingArgs,
+                result = Result,
+                arity = TotalArity - NumApplied,
+                location = undefined
+            };
+        _ ->
+            ?KIND_TYPE
+    end.
+
+%%=============================================================================
+%% TYPE CONSTRUCTOR ENVIRONMENT MANAGEMENT
+%%=============================================================================
+
+%% Add a type constructor to the environment
+add_type_constructor(Constructor, Env) ->
+    case Env of
+        #type_env{type_constructors = TCs} = E ->
+            Name = Constructor#type_constructor.name,
+            E#type_env{type_constructors = maps:put(Name, Constructor, TCs)};
+        _ ->
+            Env
+    end.
+
+%% Look up a type constructor in the environment
+lookup_type_constructor(Name, Env) ->
+    case Env of
+        #type_env{type_constructors = TCs} ->
+            case maps:get(Name, TCs, undefined) of
+                undefined -> not_found;
+                Constructor -> {ok, Constructor}
+            end;
+        _ ->
+            not_found
+    end.
+
+%% Infer the kind of a type constructor from its usage
+infer_constructor_kind(Name, NumParams, Env) ->
+    % Check if we have it registered
+    case lookup_type_constructor(Name, Env) of
+        {ok, #type_constructor{kind = Kind}} ->
+            {ok, Kind};
+        not_found ->
+            % Infer a default kind based on number of parameters
+            % Name(T1, T2, ..., TN) => * -> * -> ... -> *
+            case NumParams of
+                0 ->
+                    {ok, ?KIND_TYPE};
+                1 ->
+                    {ok, ?KIND_TYPE_TO_TYPE};
+                2 ->
+                    {ok, ?KIND_TYPE_TO_TYPE_TO_TYPE};
+                N when N > 2 ->
+                    % Build kind: * -> * -> ... -> * (N arrows)
+                    Args = lists:duplicate(N, ?KIND_TYPE),
+                    {ok, #kind{
+                        constructor = '->',
+                        args = Args,
+                        result = ?KIND_TYPE,
+                        arity = N,
+                        location = undefined
+                    }}
+            end
+    end.
+
+%%=============================================================================
+%% TYPECLASS KIND CHECKING
+%%=============================================================================
+
+%% Check a typeclass definition and infer its kind
+check_typeclass_def(TypeclassDef, Env) ->
+    #typeclass_def{
+        name = Name,
+        type_params = TypeParams,
+        methods = Methods
+    } = TypeclassDef,
+
+    % Infer kinds for type parameters from method signatures
+    TypeParamKinds = infer_typeclass_param_kinds(TypeParams, Methods, Env),
+
+    % Build the typeclass kind
+    TypeclassKind = build_typeclass_kind(TypeParamKinds),
+
+    % Create typeclass info record
+    TypeclassInfo = #typeclass_info{
+        name = Name,
+        type_params = TypeParams,
+        superclasses = TypeclassDef#typeclass_def.constraints,
+        methods = #{},
+        default_impls = #{},
+        kind = TypeclassKind
+    },
+
+    % Add to environment
+    NewEnv = add_typeclass_info(TypeclassInfo, Env),
+
+    {ok, TypeclassInfo, NewEnv}.
+
+%% Infer kinds for typeclass parameters from method usage
+infer_typeclass_param_kinds(TypeParams, Methods, _Env) ->
+    % For each type parameter, determine its kind from method signatures
+    lists:map(
+        fun(Param) ->
+            % Check how the parameter is used in methods
+            Kind = infer_param_kind_from_methods(Param, Methods),
+            {Param, Kind}
+        end,
+        TypeParams
+    ).
+
+%% Infer a single parameter's kind from method usage
+infer_param_kind_from_methods(Param, Methods) ->
+    % Look for uses of the parameter in method types
+    Uses = find_param_uses_in_methods(Param, Methods),
+
+    case Uses of
+        [] ->
+            % Not used, default to *
+            ?KIND_TYPE;
+        _ ->
+            % Analyze uses to determine if it's a type constructor
+            case is_used_as_constructor(Param, Uses) of
+                % F(A) means F :: * -> *
+                true -> ?KIND_TYPE_TO_TYPE;
+                % Just F means F :: *
+                false -> ?KIND_TYPE
+            end
+    end.
+
+%% Find how a parameter is used in method signatures
+find_param_uses_in_methods(Param, Methods) ->
+    lists:flatmap(
+        fun(Method) ->
+            #method_signature{params = Params, return_type = RetType} = Method,
+            ParamUses = lists:flatmap(
+                fun(P) -> find_param_in_type(Param, P#param.type) end, Params
+            ),
+            RetUses = find_param_in_type(Param, RetType),
+            ParamUses ++ RetUses
+        end,
+        Methods
+    ).
+
+%% Find how a parameter appears in a type expression
+find_param_in_type(Param, Type) ->
+    case Type of
+        {dependent_type, TypeCon, Args} ->
+            % Check if Param is the constructor: F(A)
+            case TypeCon of
+                Param ->
+                    [
+                        constructor
+                        | lists:flatmap(
+                            fun(A) -> find_param_in_type(Param, extract_type_param_value(A)) end,
+                            Args
+                        )
+                    ];
+                _ ->
+                    lists:flatmap(
+                        fun(A) -> find_param_in_type(Param, extract_type_param_value(A)) end, Args
+                    )
+            end;
+        {primitive_type, Param} ->
+            [direct];
+        {function_type, Params, Ret} ->
+            lists:flatmap(fun(P) -> find_param_in_type(Param, P) end, Params) ++
+                find_param_in_type(Param, Ret);
+        _ ->
+            []
+    end.
+
+%% Check if parameter is used as a type constructor
+is_used_as_constructor(_Param, Uses) ->
+    lists:member(constructor, Uses).
+
+%% Build the kind for a typeclass from its parameter kinds
+build_typeclass_kind(TypeParamKinds) ->
+    case TypeParamKinds of
+        [] ->
+            ?KIND_TYPE;
+        [{_Param, Kind}] ->
+            Kind;
+        Multiple ->
+            % Multiple parameters: build composite kind
+            Kinds = [K || {_P, K} <- Multiple],
+            #kind{
+                constructor = '->',
+                args = Kinds,
+                result = ?KIND_TYPE,
+                arity = length(Kinds),
+                location = undefined
+            }
+    end.
+
+%% Add typeclass info to environment
+add_typeclass_info(TypeclassInfo, Env) ->
+    case Env of
+        #type_env{typeclasses = TCs} = E ->
+            Name = TypeclassInfo#typeclass_info.name,
+            E#type_env{typeclasses = maps:put(Name, TypeclassInfo, TCs)};
+        _ ->
+            Env
+    end.
+
+%% Check instance kinds match typeclass requirements
+check_instance_kinds(InstanceDef, TypeclassInfo, Env) ->
+    #instance_def{typeclass = _TC, type_args = TypeArgs} = InstanceDef,
+    #typeclass_info{kind = TCKind} = TypeclassInfo,
+
+    % Infer kinds of type arguments
+    TypeArgKinds = lists:map(
+        fun(Arg) ->
+            case infer_kind(Arg, Env) of
+                {ok, Kind} -> Kind;
+                % Default to *
+                {error, _} -> ?KIND_TYPE
+            end
+        end,
+        TypeArgs
+    ),
+
+    % Check if kinds match typeclass requirements
+    ExpectedKinds = extract_expected_kinds(TCKind),
+
+    case check_kinds_match(TypeArgKinds, ExpectedKinds) of
+        ok -> ok;
+        {error, Reason} -> {error, {kind_mismatch, _TC, Reason}}
+    end.
+
+%% Extract expected kinds from typeclass kind
+%% For a typeclass like Functor :: * -> *, we expect its type parameter to have kind * -> *
+extract_expected_kinds(Kind) ->
+    case Kind of
+        % For arrow kinds like (* -> *), the typeclass expects a type constructor of that kind
+        % So we return the kind itself as what we expect
+        #kind{constructor = '->', arity = 1} -> [Kind];
+        #kind{constructor = '->', args = Args} when length(Args) > 1 -> Args;
+        % For star kinds, expect star
+        #kind{constructor = star} -> [Kind];
+        % Default
+        _ -> [?KIND_TYPE]
+    end.
+
+%% Check if provided kinds match expected kinds
+check_kinds_match([], []) ->
+    ok;
+check_kinds_match([ProvidedKind | RestProvided], [ExpectedKind | RestExpected]) ->
+    case unify_kinds(ProvidedKind, ExpectedKind) of
+        {ok, _} -> check_kinds_match(RestProvided, RestExpected);
+        {error, Reason} -> {error, Reason}
+    end;
+check_kinds_match(Provided, Expected) when length(Provided) =/= length(Expected) ->
+    {error, {arity_mismatch, length(Expected), length(Provided)}}.
 
 %% Helper functions for recursive types - using existing extract_type_param_value above
 

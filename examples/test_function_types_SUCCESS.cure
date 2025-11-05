@@ -1,0 +1,27 @@
+module FunctionTypeTest do
+export []
+
+# Test 1: Simple function type in typeclass method
+typeclass Functor(F) do
+  def map(f: A => B, x: F(A)): F(B)
+end
+
+# Test 2: Multiple function type parameters
+typeclass Applicative(F) do
+  def pure(x: A): F(A)
+  def ap(ff: F(A => B), x: F(A)): F(B)
+end
+
+# Test 3: Nested function types
+typeclass Monad(M) do
+  def bind(m: M(A), f: A => M(B)): M(B)
+  def compose(f: A => M(B), g: B => M(C)): A => M(C)
+end
+
+# Test 4: Function types with complex types  
+typeclass Foldable(F) do
+  def fold(combine: A => A => A, initial: A, container: F(A)): A
+  def foldMap(f: A => B, op: B => B => B, initial: B, container: F(A)): B
+end
+
+end

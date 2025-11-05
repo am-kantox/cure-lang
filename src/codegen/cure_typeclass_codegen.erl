@@ -5,7 +5,8 @@
     compile_typeclass/2,
     compile_instance/2,
     process_derive_clause/3,
-    generate_instance_function/4
+    generate_instance_function/4,
+    generate_instance_registration/4
 ]).
 
 -include("../parser/cure_ast.hrl").
@@ -33,9 +34,8 @@ Typeclasses compile to Erlang behaviour modules with:
 -spec compile_typeclass(#typeclass_def{}, term()) ->
     {ok, term(), term()} | {error, term()}.
 compile_typeclass(#typeclass_def{name = Name, methods = Methods}, State) ->
-    % Typeclass compiles to a behaviour module
-    % For now, we'll compile it as documentation/metadata
-    % Full implementation would generate a module with behaviour_info/1
+    % Typeclass compiles to a behaviour module with behaviour_info/1
+    % and optional default method implementations
 
     % Extract method signatures for behaviour_info
     MethodSpecs = [
@@ -43,26 +43,29 @@ compile_typeclass(#typeclass_def{name = Name, methods = Methods}, State) ->
      || Method <- Methods
     ],
 
-    % Generate behaviour_info function
-    BehaviourInfo = generate_behaviour_info(MethodSpecs),
+    % Generate behaviour_info function as Erlang abstract form
+    BehaviourInfoFunction = generate_behaviour_info_function(MethodSpecs),
 
-    % Generate default implementations if any
+    % Compile default implementations if any
     DefaultImpls = [
         Method
      || Method <- Methods, Method#function_def.body =/= undefined
     ],
 
-    CompiledDefaults = compile_default_methods(DefaultImpls, State),
-
-    % Return metadata about the typeclass
-    TypeclassMetadata = #{
-        name => Name,
-        methods => MethodSpecs,
-        behaviour_info => BehaviourInfo,
-        defaults => CompiledDefaults
-    },
-
-    {ok, {typeclass, TypeclassMetadata}, State}.
+    % Compile default methods to actual BEAM functions
+    case compile_default_methods(DefaultImpls, State) of
+        {ok, CompiledDefaults, NewState} ->
+            % Return typeclass as a compilable module structure
+            TypeclassModule = #{
+                name => Name,
+                methods => MethodSpecs,
+                behaviour_info_function => BehaviourInfoFunction,
+                default_functions => CompiledDefaults
+            },
+            {ok, {typeclass, TypeclassModule}, NewState};
+        {error, Reason} ->
+            {error, {typeclass_compilation_failed, Name, Reason}}
+    end.
 
 %% ============================================================================
 %% Instance Compilation
@@ -97,21 +100,35 @@ compile_instance(
     % Extract the primary type (first type argument)
     PrimaryType = extract_primary_type(TypeArgs),
 
-    % Compile each method with mangled name
-    CompiledMethods = lists:map(
-        fun(Method) ->
-            compile_instance_method(TypeclassName, PrimaryType, Method, State)
-        end,
-        Methods
-    ),
+    % Compile each method with mangled name, threading state through
+    case compile_instance_methods(TypeclassName, PrimaryType, Methods, State, []) of
+        {ok, CompiledMethods, NewState} ->
+            % Generate registration code for this instance
+            RegistrationCode = generate_instance_registration(
+                TypeclassName,
+                PrimaryType,
+                CompiledMethods,
+                NewState
+            ),
 
-    % Check for errors
-    case lists:partition(fun({Tag, _}) -> Tag =:= ok end, CompiledMethods) of
-        {OkResults, []} ->
-            Functions = [Func || {ok, Func} <- OkResults],
-            {ok, Functions, State};
-        {_, Errors} ->
-            {error, {instance_compilation_failed, Errors}}
+            % Return both compiled methods and registration code
+            {ok, CompiledMethods ++ [RegistrationCode], NewState};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Compile instance methods with proper state threading
+compile_instance_methods(_TypeclassName, _PrimaryType, [], State, Acc) ->
+    {ok, lists:reverse(Acc), State};
+compile_instance_methods(TypeclassName, PrimaryType, [Method | Rest], State, Acc) ->
+    case compile_instance_method(TypeclassName, PrimaryType, Method, State) of
+        {ok, CompiledFunc, NewState} ->
+            % Properly thread the updated state through
+            compile_instance_methods(TypeclassName, PrimaryType, Rest, NewState, [
+                CompiledFunc | Acc
+            ]);
+        {error, Reason} ->
+            {error, {instance_method_failed, Method#function_def.name, Reason}}
     end.
 
 %% ============================================================================
@@ -170,41 +187,61 @@ process_derive_clause(undefined, _RecordDef, State) ->
 %% Helper Functions
 %% ============================================================================
 
-%% Generate behaviour_info/1 callback for typeclass
-generate_behaviour_info(MethodSpecs) ->
-    % In Erlang, behaviour_info(callbacks) returns [{FunctionName, Arity}]
-    {function, behaviour_info, 1, [
-        {clause,
-            [
-                {atom, callbacks}
-            ],
-            [], [
-                {list, [
-                    {tuple, [{atom, Name}, {integer, Arity}]}
-                 || {Name, Arity} <- MethodSpecs
-                ]}
-            ]},
-        {clause,
-            [
-                {var, '_'}
-            ],
-            [], [
-                {atom, undefined}
-            ]}
+%% Generate behaviour_info/1 callback function
+generate_behaviour_info_function(MethodSpecs) ->
+    % Generate proper Erlang abstract form for behaviour_info/1
+    Line = 1,
+    MethodList = lists:map(
+        fun({Name, Arity}) ->
+            {tuple, Line, [{atom, Line, Name}, {integer, Line, Arity}]}
+        end,
+        MethodSpecs
+    ),
+
+    % Build the list of callbacks
+    CallbacksList = lists:foldr(
+        fun(Tuple, Acc) -> {cons, Line, Tuple, Acc} end,
+        {nil, Line},
+        MethodList
+    ),
+
+    {function, Line, behaviour_info, 1, [
+        {clause, Line, [{atom, Line, callbacks}], [], [CallbacksList]},
+        {clause, Line, [{var, Line, '_'}], [], [{atom, Line, undefined}]}
     ]}.
 
 %% Compile default method implementations
+compile_default_methods([], State) ->
+    {ok, [], State};
 compile_default_methods(Methods, State) ->
-    % Default methods need to be compiled as regular functions
-    % For now, return metadata
-    [
-        #{
-            name => Method#function_def.name,
-            params => Method#function_def.params,
-            has_default => true
-        }
-     || Method <- Methods
-    ].
+    % Compile each default method as a regular function
+    Results = lists:map(
+        fun(Method) ->
+            % Use the main codegen module to compile the function
+            case cure_codegen:compile_function_impl(Method, State) of
+                {ok, CompiledFunc, NewState} ->
+                    {ok, CompiledFunc, NewState};
+                {error, Reason} ->
+                    {error, {default_method_failed, Method#function_def.name, Reason}}
+            end
+        end,
+        Methods
+    ),
+
+    % Check for errors
+    case lists:partition(fun({Tag, _, _}) -> Tag =:= ok end, Results) of
+        {OkResults, []} ->
+            CompiledFuncs = [Func || {ok, Func, _} <- OkResults],
+            % Take the state from the last successful compilation
+            FinalState =
+                case OkResults of
+                    [] -> State;
+                    _ -> element(3, lists:last(OkResults))
+                end,
+            {ok, CompiledFuncs, FinalState};
+        {_, Errors} ->
+            {error, {default_methods_failed, Errors}}
+    end.
 
 %% Extract primary type from type arguments
 extract_primary_type([]) ->
@@ -226,16 +263,29 @@ compile_instance_method(TypeclassName, TypeName, Method, State) ->
     % Create a new function with the mangled name
     MangledMethod = Method#function_def{name = MangledName},
 
-    % For now, return function metadata
-    % Full implementation would call cure_codegen:compile_function_impl
-    {ok, #{
-        original_name => MethodName,
-        mangled_name => MangledName,
-        typeclass => TypeclassName,
-        type => TypeName,
-        arity => length(Method#function_def.params),
-        method => MangledMethod
-    }}.
+    % Compile the method to actual BEAM code
+    case cure_codegen:compile_function_impl(MangledMethod, State) of
+        {ok, CompiledFunc, NewState} ->
+            % Return the compiled function with metadata and new state
+            % CompiledFunc is typically {function, FuncMap}
+            InstanceFunction =
+                case CompiledFunc of
+                    {function, FuncMap} when is_map(FuncMap) ->
+                        {function,
+                            maps:merge(FuncMap, #{
+                                original_name => MethodName,
+                                mangled_name => MangledName,
+                                typeclass => TypeclassName,
+                                type => TypeName,
+                                is_instance_method => true
+                            })};
+                    Other ->
+                        Other
+                end,
+            {ok, InstanceFunction, NewState};
+        {error, Reason} ->
+            {error, {instance_method_compilation_failed, MangledName, Reason}}
+    end.
 
 %% Mangle instance method name for uniqueness
 mangle_instance_method_name(TypeclassName, TypeName, MethodName) ->
@@ -356,3 +406,133 @@ generate_var_list(N) ->
         {var, list_to_atom("X" ++ integer_to_list(I))}
      || I <- lists:seq(1, N)
     ].
+
+%% ============================================================================
+%% Instance Registration Code Generation
+%% ============================================================================
+
+-doc """
+Generates instance registration code for automatic registration on module load.
+
+This creates an -on_load attribute and registration function that automatically
+registers the instance with cure_instance_registry when the module is loaded.
+
+## Arguments
+- `TypeclassName` - Name of the typeclass (e.g., 'Show', 'Eq')
+- `TypeName` - Name of the type (e.g., 'Int', 'List')
+- `CompiledMethods` - List of compiled method functions
+- `State` - Codegen state
+
+## Returns
+- Registration code structure with on_load hook
+""".
+-spec generate_instance_registration(atom(), atom(), [term()], term()) -> term().
+generate_instance_registration(TypeclassName, TypeName, CompiledMethods, _State) ->
+    % Extract method names and arities from compiled methods
+    MethodMap = build_method_map(TypeclassName, TypeName, CompiledMethods),
+
+    % Generate the registration function
+    Line = 1,
+    ModuleName = get_current_module_name(),
+
+    % Build the method map as an Erlang term
+    MethodMapExpr = generate_method_map_expr(MethodMap, Line),
+
+    % Build the type expression
+    TypeExpr = generate_type_expr(TypeName, Line),
+
+    % Generate the registration function body:
+    % register_instance() ->
+    %     cure_instance_registry:register_instance(
+    %         'TypeclassName',
+    %         {primitive_type, 'TypeName'},
+    %         #{method1 => {module, function, arity}, ...}
+    %     ).
+    RegistrationBody = {
+        call,
+        {remote, Line, {atom, Line, cure_instance_registry}, {atom, Line, register_instance}},
+        [
+            {atom, Line, TypeclassName},
+            TypeExpr,
+            MethodMapExpr
+        ]
+    },
+
+    RegistrationFunction = {
+        function,
+        Line,
+        register_instance,
+        0,
+        [{clause, Line, [], [], [RegistrationBody]}]
+    },
+
+    % Generate -on_load attribute
+    OnLoadAttr = {
+        attribute,
+        Line,
+        on_load,
+        {register_instance, 0}
+    },
+
+    % Return structure with both on_load and function
+    #{
+        type => instance_registration,
+        on_load_attr => OnLoadAttr,
+        registration_function => RegistrationFunction,
+        typeclass => TypeclassName,
+        type_name => TypeName,
+        module => ModuleName
+    }.
+
+%% Build method map from compiled methods
+build_method_map(TypeclassName, TypeName, CompiledMethods) ->
+    lists:foldl(
+        fun(CompiledMethod, Acc) ->
+            case CompiledMethod of
+                {function, #{original_name := OrigName, mangled_name := MangledName}} ->
+                    % Get the arity from the mangled function
+                    % For now, assume arity 1 for most methods
+                    Arity = 1,
+                    ModuleName = get_current_module_name(),
+                    maps:put(OrigName, {ModuleName, MangledName, Arity}, Acc);
+                _ ->
+                    % Skip non-function entries
+                    Acc
+            end
+        end,
+        #{},
+        CompiledMethods
+    ).
+
+%% Generate method map expression as Erlang abstract form
+generate_method_map_expr(MethodMap, Line) ->
+    % Generate map literal: #{method1 => {module, func, arity}, ...}
+    Assocs = maps:fold(
+        fun(MethodName, {Module, Function, Arity}, Acc) ->
+            Key = {atom, Line, MethodName},
+            Value =
+                {tuple, Line, [
+                    {atom, Line, Module},
+                    {atom, Line, Function},
+                    {integer, Line, Arity}
+                ]},
+            [{map_field_assoc, Line, Key, Value} | Acc]
+        end,
+        [],
+        MethodMap
+    ),
+    {map, Line, Assocs}.
+
+%% Generate type expression as Erlang abstract form
+generate_type_expr(TypeName, Line) ->
+    % For now, generate simple primitive type: {primitive_type, 'TypeName'}
+    {tuple, Line, [
+        {atom, Line, primitive_type},
+        {atom, Line, TypeName}
+    ]}.
+
+%% Get current module name from state or use placeholder
+get_current_module_name() ->
+    % This should be extracted from the codegen state
+    % For now, use a placeholder that will be replaced during actual compilation
+    'cure_generated_module'.

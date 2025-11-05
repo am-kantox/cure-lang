@@ -1,35 +1,54 @@
 # Typeclass Specifications
 
-This directory contains **specification files** for Cure's typeclass system. These files define the structure and instances of typeclasses but are **not meant to be compiled** as regular Cure modules.
+This directory contains **specification files** for Cure's typeclass system using future syntax. These files use syntax extensions that are not yet supported by the current parser.
 
 ## Purpose
 
 These files serve as:
-1. **Documentation** - Showing how typeclasses are defined and used
-2. **Specifications** - Defining the standard library typeclass interface
-3. **Reference** - Examples for implementing custom typeclasses
+1. **Documentation** - Showing the intended syntax and structure of typeclasses
+2. **Specifications** - Defining the future standard library typeclass interface
+3. **Reference** - Examples for future typeclass implementations
+4. **Design Documents** - Guiding implementation of parser extensions
 
 ## Files
 
 - `typeclass.cure` - Core typeclass definitions (Show, Eq, Ord, Functor, Applicative, Monad)
-- `instances/show.cure` - Show instances for built-in types
-- `instances/eq.cure` - Eq instances for built-in types
-- `instances/functor.cure` - Functor instances for containers
+- `eq.cure` - Eq instances for built-in types  
+- `show.cure` - Show instances for built-in types
+- `functor.cure` - Functor instances for containers
 
 ## Why Not in lib/std?
 
-The standard library compilation process (`make stdlib`) attempts to compile all `.cure` files in `lib/std/` to BEAM bytecode. However, typeclass definitions and instances require special compiler support that is still being integrated. Moving these files here prevents compilation failures while preserving the specifications for future use.
+These files use syntax features not yet implemented:
+1. **Export list syntax** - `export [Typeclass1, Typeclass2]` (parser expects `do`)
+2. **Operator symbols** - Dollar sign operators like `<$`, `$>` (lexer doesn't support `$`)
+3. **Advanced where clauses** - Multiple constraints like `where Eq(T), Show(T)`
+4. **Higher-kinded types** - `Functor(F)` where F is a type constructor
 
-## Future Work
+The standard library compilation process (`make stdlib`) compiles all `.cure` files in `lib/std/` to BEAM bytecode. Until the parser is extended to support these features, keeping these files separate prevents build failures.
 
-Once the typeclass system is fully integrated with the BEAM code generator, these files can be moved back to `lib/std/` and will compile to proper BEAM modules that can be imported and used in Cure programs.
+## Implementation Status
 
-## Current Status
+### Completed ✅
+- **Parser support** - Basic typeclass/instance syntax parses correctly
+- **Type system** - Typeclass registration and resolution works 
+- **Derivation** - Automatic instance derivation implemented
+- **Codegen** - Full BEAM code generation implemented
+  - Typeclasses compile to behaviour modules with `behaviour_info/1`
+  - Instances compile to mangled Erlang functions  
+  - Default methods compile to actual BEAM code
+  - Proper state threading throughout compilation
 
-- ✅ **Parser support** - Typeclasses parse correctly
-- ✅ **Type system** - Typeclass registration and resolution works
-- ✅ **Derivation** - Automatic instance derivation implemented
-- ⏳ **Codegen** - Full BEAM code generation in progress
-- ⏳ **Runtime** - Instance dispatch and method calls being implemented
+### In Progress ⏳  
+- **Parser extensions** - Support for operator symbols and advanced syntax
+- **Runtime** - Instance dispatch and method calls
+- **Standard library** - Implementing Show, Eq, Ord using working syntax
 
-See `docs/TYPECLASS_IMPLEMENTATION_STATUS.md` for complete details.
+## Next Steps
+
+1. **Parser Extensions**: Add support for `$` in operators and export list syntax
+2. **Simplified Typeclasses**: Create working versions using current syntax
+3. **Runtime Integration**: Complete instance method dispatch
+4. **Migration**: Once syntax is supported, move files to `lib/std/`
+
+See `docs/TYPECLASS_IMPLEMENTATION_STATUS.md` for complete implementation details.

@@ -1,0 +1,14 @@
+module TestOpInstance do
+export [main/0]
+
+record Person do
+  name: String
+end
+
+instance Eq(Person) do
+  def (==)(p1: Person, p2: Person): Bool = true
+end
+
+def main(): Int = 0
+
+end

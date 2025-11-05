@@ -1,0 +1,11 @@
+module TestFunctor do
+export [main/0]
+
+# Test parsing of typeclass with function type parameter
+typeclass Functor(F) do
+  def map(f: A -> B, x: F(A)): F(B)
+end
+
+def main(): Int = 0
+
+end
