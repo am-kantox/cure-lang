@@ -2,42 +2,48 @@
 module AdvancedTypeclasses do
 export [main/0]
 
-# Functor: Maps over a structure preserving its shape
-typeclass Functor(F) do
-  def map(f: A => B, x: F(A)): F(B)
+import Std.Io [println]
+
+# Eq typeclass for equality comparison
+typeclass Eq(T) do
+  def eq(x: T, y: T): Bool
 end
 
-# Applicative: Allows applying functions wrapped in a structure
-typeclass Applicative(F) when Functor(F) do
-  def pure(x: A): F(A)
-  def ap(ff: F(A => B), x: F(A)): F(B)
+# Ord typeclass for ordering (depends on Eq)
+typeclass Ord(T) when Eq(T) do
+  def compare(x: T, y: T): Int
 end
 
-# Monad: Sequential composition of computations
-typeclass Monad(M) when Applicative(M) do
-  def bind(m: M(A), f: A => M(B)): M(B)
+# Eq instance for Int
+instance Eq(Int) do
+  def eq(x: Int, y: Int): Bool = x == y
 end
 
-# Functor instance for List
-instance Functor(List) do
-  def map(f: A => B, xs: List(A)): List(B) =
-    match xs do
-      [] -> []
-      [x | rest] -> [f(x) | map(f, rest)]
-    end
+# Ord instance for Int  
+instance Ord(Int) do
+  def compare(x: Int, y: Int): Int = 0
 end
 
-# Functor instance for Option
-instance Functor(Option) do
-  def map(f: A => B, opt: Option(A)): Option(B) =
-    match opt do
-      Some(x) -> Some(f(x))
-      None -> None
-    end
+# Show typeclass for string representation
+typeclass Show(T) do
+  def show(x: T): String
 end
+
+# Show instance for Int
+instance Show(Int) do
+  def show(x: Int): String = "Int"
+end
+
+# Generic function using multiple constraints
+def display_comparison(x: T, y: T): T where Show(T), Ord(T) =
+  println(show(x))
+  println(show(y))
+  compare(x, y)
+  x
 
 def main(): Int =
   println("Advanced Typeclasses Demo")
+  display_comparison(5, 3)
   0
 
 end
