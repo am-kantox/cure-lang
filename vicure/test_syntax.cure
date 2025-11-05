@@ -1,0 +1,156 @@
+# Test file for modern Cure syntax highlighting
+# This file demonstrates all the features supported by vicure
+
+module SyntaxTest do
+  export [main/0, show/1, debug_value/1]
+  
+  import Std.Io [println, print]
+  import Std.List [map, filter, fold]
+  
+  # Record definition with fields
+  record Person do
+    name: String
+    age: Int
+    email: String
+  end
+  
+  # Type alias
+  type UserId = Int
+  type Result(T) = Ok(T) | Error(String)
+  
+  # Typeclass definition (Haskell-style)
+  typeclass Show(T) do
+    def show(x: T): String
+  end
+  
+  # Trait definition (Rust-style)
+  trait Display(T) do
+    def display(x: T): String
+  end
+  
+  # Instance for typeclass
+  instance Show(Person) do
+    def show(p: Person): String =
+      "Person{name: #{p.name}, age: #{p.age}}"
+  end
+  
+  instance Show(Int) do
+    def show(x: Int): String =
+      "Int(#{x})"
+  end
+  
+  # Trait implementation
+  impl Display for Person do
+    def display(p: Person): String =
+      "#{p.name} (#{p.age} years old)"
+  end
+  
+  # Function with where clause (typeclass constraint)
+  def debug_value(x: T): T where Show(T) =
+    println(show(x))
+    x
+  
+  # Generic function
+  def map_list(xs: List(T), f: T -> U): List(U) =
+    match xs do
+      [] -> []
+      [head | tail] -> [f(head) | map_list(tail, f)]
+    end
+  
+  # Pattern matching with guards
+  def classify_age(age: Int): String =
+    match age do
+      n when n < 18 -> "minor"
+      n when n < 65 -> "adult"
+      _ -> "senior"
+    end
+  
+  # Result handling
+  def divide(a: Int, b: Int): Result(Float) =
+    match b do
+      0 -> Error("Division by zero")
+      _ -> Ok(a / b)
+    end
+  
+  # FSM definition
+  fsm TrafficLight do
+    states: [Red, Yellow, Green]
+    initial: Red
+    
+    state Red do
+      on timer -> Green
+      timeout 30 -> Yellow
+    end
+    
+    state Yellow do
+      on timer -> Red
+    end
+    
+    state Green do
+      on timer -> Yellow
+      on emergency -> Red
+    end
+  end
+  
+  # Curify Erlang function
+  curify format_output(fmt: String, args: List): Unit =
+    erlang io format/2
+  
+  # String interpolation
+  def greet(name: String): String =
+    "Hello, #{name}! Welcome to Cure."
+  
+  # Let bindings
+  def complex_calculation(x: Int): Int =
+    let doubled = x * 2 in
+    let squared = doubled * doubled in
+    squared + 10
+  
+  # List comprehension style
+  def list_example(): List(Int) =
+    let numbers = [1, 2, 3, 4, 5]
+    let doubled = map(numbers, fn(x) -> x * 2 end)
+    let evens = filter(doubled, fn(x) -> x % 2 == 0 end)
+    fold(evens, 0, fn(acc) -> fn(x) -> acc + x end end)
+  
+  # Boolean operators
+  def logic_test(a: Bool, b: Bool): Bool =
+    (a and b) or (not a and b)
+  
+  # Record construction and update
+  def create_person(name: String): Person =
+    Person{name: name, age: 0, email: ""}
+  
+  def update_email(person: Person, email: String): Person =
+    Person{person | email: email}
+  
+  # Atoms
+  def status_code(): Atom =
+    match :ok do
+      :ok -> :success
+      :error -> :failure
+      _ -> :unknown
+    end
+  
+  # Tuples
+  def coordinates(): (Float, Float, Float) =
+    (1.0, 2.5, 3.7)
+  
+  # Main entry point
+  def main(): Int =
+    println("=== Cure Syntax Test ===")
+    
+    let person = create_person("Alice")
+    println(show(person))
+    
+    let result = divide(10, 2)
+    match result do
+      Ok(value) -> println("Result: #{value}")
+      Error(msg) -> println("Error: #{msg}")
+    end
+    
+    let traffic = spawn(TrafficLight, :initial)
+    send(traffic, :timer)
+    
+    0
+end

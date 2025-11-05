@@ -68,7 +68,8 @@ Plug '/opt/Proyectos/Ammotion/cure'
 
 The plugin provides syntax highlighting for:
 
-- **Keywords**: `def`, `defp`, `def_erl`, `module`, `fsm`, `state`, `match`, `case`, `when`, etc.
+- **Keywords**: `def`, `def_erl`, `curify`, `module`, `fsm`, `state`, `match`, `case`, `when`, `where`, etc.
+- **Type System Keywords**: `typeclass`, `trait`, `instance`, `impl`, `derive`, `class`
 - **FSM Constructs**: `fsm`, `state`, `states`, `initial`, `event`, `timeout`, `transition`, etc.
 - **Operators**: `->`, `|>`, `::`, `++`, `--`, `==`, `!=`, etc.
 - **Types**: Type names (capitalized identifiers)
@@ -78,8 +79,10 @@ The plugin provides syntax highlighting for:
 - **Strings**: With escape sequences and `#{}` interpolation support
 - **Atoms**: `:atom` and `'quoted atoms'`
 - **Comments**: `# comment` with TODO/FIXME/NOTE/XXX highlighting
-- **Function definitions**: Highlighted function names
+- **Function definitions**: Highlighted function names (including `curify` wrappers)
 - **Module/FSM/Record names**: Highlighted structure names
+- **Typeclass/Trait names**: Highlighted interface names
+- **Instance/Implementation**: Highlighted instance declarations
 
 ### Indentation
 
@@ -88,8 +91,10 @@ Automatic indentation for:
 - `module...end` blocks
 - `fsm...end` blocks
 - `state...end` blocks
+- `typeclass...end` and `trait...end` blocks
+- `instance...end` and `impl...end` blocks
 - `match...end` and `case...of...end` expressions
-- Function definitions
+- Function definitions (including `curify`)
 - Bracket pairs `()`, `[]`, `{}`
 
 ### Filetype Detection
@@ -140,6 +145,24 @@ module TrafficLight do
   # Keywords: module, do, end
   # Structure name: TrafficLight
   
+  # Record definition
+  record Color do
+    red: Int
+    green: Int
+    blue: Int
+  end
+  
+  # Typeclass definition
+  typeclass Show(T) do
+    def show(x: T): String
+  end
+  
+  # Instance implementation
+  instance Show(Color) do
+    def show(c: Color): String =
+      "Color(#{c.red}, #{c.green}, #{c.blue})"
+  end
+  
   fsm SimpleFSM do
     # FSM-specific keywords
     states: [Red, Green, Yellow]
@@ -155,6 +178,11 @@ module TrafficLight do
     # Type annotations
     3.14159 * radius * radius
   
+  # Generic function with where clause
+  def debug_value(x: T): T where Show(T) =
+    println(show(x))
+    x
+  
   def interpolation_demo(name: String): String =
     # String interpolation
     "Hello #{name}!"
@@ -165,6 +193,10 @@ module TrafficLight do
       Ok(value) -> "Success: #{value}"
       Error(msg) -> "Failed: #{msg}"
     end
+    
+  # Curify Erlang function
+  curify io_format(format: String, args: List): Unit =
+    erlang io format/2
 end
 ```
 

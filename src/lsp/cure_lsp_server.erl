@@ -289,6 +289,33 @@ collect_completions(#fsm_def{name = Name, states = States}) ->
     % Add state names as completions too
     StateItems = [create_completion_item(StateName, state, <<"state">>) || StateName <- States],
     [Item | StateItems];
+collect_completions(#record_def{name = Name, fields = Fields}) ->
+    Detail = iolist_to_binary(["record with ", integer_to_binary(length(Fields)), " fields"]),
+    [create_completion_item(Name, record, Detail)];
+collect_completions(#typeclass_def{name = Name, methods = Methods}) ->
+    Detail = iolist_to_binary(["typeclass with ", integer_to_binary(length(Methods)), " methods"]),
+    Item = create_completion_item(Name, typeclass, Detail),
+    % Add method names as completions too
+    MethodItems = [
+        create_completion_item(MethodName, method, <<"method">>)
+     || #method_signature{name = MethodName} <- Methods
+    ],
+    [Item | MethodItems];
+collect_completions(#trait_def{name = Name, methods = Methods}) ->
+    Detail = iolist_to_binary(["trait with ", integer_to_binary(length(Methods)), " methods"]),
+    Item = create_completion_item(Name, trait, Detail),
+    % Add method names as completions too
+    MethodItems = [
+        create_completion_item(MethodName, method, <<"method">>)
+     || #method_signature{name = MethodName} <- Methods
+    ],
+    [Item | MethodItems];
+collect_completions(#instance_def{typeclass = Typeclass}) ->
+    Detail = iolist_to_binary(["instance ", atom_to_binary(Typeclass, utf8)]),
+    [create_completion_item(Typeclass, instance, Detail)];
+collect_completions(#trait_impl{trait_name = TraitName}) ->
+    Detail = iolist_to_binary(["impl ", atom_to_binary(TraitName, utf8)]),
+    [create_completion_item(TraitName, impl, Detail)];
 collect_completions(_) ->
     [].
 
@@ -310,6 +337,16 @@ completion_kind_to_int(type) -> 22;
 completion_kind_to_int(fsm) -> 5;
 % Constant (for FSM states)
 completion_kind_to_int(state) -> 13;
+% Struct (for records)
+completion_kind_to_int(record) -> 23;
+% Interface (for typeclasses and traits)
+completion_kind_to_int(typeclass) -> 11;
+completion_kind_to_int(trait) -> 11;
+% Method
+completion_kind_to_int(method) -> 2;
+% Class (for instances/impls)
+completion_kind_to_int(instance) -> 5;
+completion_kind_to_int(impl) -> 5;
 % Text
 completion_kind_to_int(_) -> 1.
 

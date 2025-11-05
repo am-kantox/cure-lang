@@ -79,8 +79,21 @@ extract_symbols_from_ast(_) ->
 extract_symbols_from_module(#module_def{name = ModName, items = Items}) ->
     Functions = [F || F <- Items, is_record(F, function_def)],
     FSMs = [F || F <- Items, is_record(F, fsm_def)],
+    Records = [R || R <- Items, is_record(R, record_def)],
+    Types = [T || T <- Items, is_record(T, type_def)],
+    Traits = [T || T <- Items, is_record(T, trait_def)],
+    TraitImpls = [I || I <- Items, is_record(I, trait_impl)],
+    Typeclasses = [TC || TC <- Items, is_record(TC, typeclass_def)],
+    Instances = [Inst || Inst <- Items, is_record(Inst, instance_def)],
+
     FunctionSymbols = lists:map(fun extract_function_symbol/1, Functions),
     FSMSymbols = lists:map(fun extract_fsm_symbol/1, FSMs),
+    RecordSymbols = lists:map(fun extract_record_symbol/1, Records),
+    TypeSymbols = lists:map(fun extract_type_symbol/1, Types),
+    TraitSymbols = lists:map(fun extract_trait_symbol/1, Traits),
+    TraitImplSymbols = lists:map(fun extract_trait_impl_symbol/1, TraitImpls),
+    TypeclassSymbols = lists:map(fun extract_typeclass_symbol/1, Typeclasses),
+    InstanceSymbols = lists:map(fun extract_instance_symbol/1, Instances),
 
     [
         #{
@@ -94,7 +107,8 @@ extract_symbols_from_module(#module_def{name = ModName, items = Items}) ->
                 start => #{line => 0, character => 0}, 'end' => #{line => 0, character => 10}
             }
         }
-    ] ++ FunctionSymbols ++ FSMSymbols.
+    ] ++ FunctionSymbols ++ FSMSymbols ++ RecordSymbols ++ TypeSymbols ++
+        TraitSymbols ++ TraitImplSymbols ++ TypeclassSymbols ++ InstanceSymbols.
 
 extract_function_symbol(#function_def{name = Name, params = Params, location = Location}) ->
     Arity = length(Params),
@@ -136,6 +150,158 @@ extract_fsm_symbol(#fsm_def{name = Name, location = Location}) ->
             'end' => #{line => max(0, Line - 1), character => 20}
         }
     }.
+
+%% Extract symbol for record definition
+extract_record_symbol(#record_def{name = Name, location = Location}) ->
+    Line =
+        case Location of
+            #location{line = L} -> L;
+            _ -> 0
+        end,
+    #{
+        name => atom_to_binary(Name, utf8),
+        % Struct (LSP kind 23)
+        kind => 23,
+        range => #{
+            start => #{line => max(0, Line - 1), character => 0},
+            'end' => #{line => Line + 5, character => 0}
+        },
+        selectionRange => #{
+            start => #{line => max(0, Line - 1), character => 0},
+            'end' => #{line => max(0, Line - 1), character => 20}
+        }
+    }.
+
+%% Extract symbol for type definition
+extract_type_symbol(#type_def{name = Name, location = Location}) ->
+    Line =
+        case Location of
+            #location{line = L} -> L;
+            _ -> 0
+        end,
+    #{
+        name => atom_to_binary(Name, utf8),
+        % TypeParameter (LSP kind 25)
+        kind => 25,
+        range => #{
+            start => #{line => max(0, Line - 1), character => 0},
+            'end' => #{line => Line + 3, character => 0}
+        },
+        selectionRange => #{
+            start => #{line => max(0, Line - 1), character => 0},
+            'end' => #{line => max(0, Line - 1), character => 20}
+        }
+    }.
+
+%% Extract symbol for trait definition
+extract_trait_symbol(#trait_def{name = Name, location = Location}) ->
+    Line =
+        case Location of
+            #location{line = L} -> L;
+            _ -> 0
+        end,
+    #{
+        name => atom_to_binary(Name, utf8),
+        % Interface (LSP kind 11)
+        kind => 11,
+        range => #{
+            start => #{line => max(0, Line - 1), character => 0},
+            'end' => #{line => Line + 10, character => 0}
+        },
+        selectionRange => #{
+            start => #{line => max(0, Line - 1), character => 0},
+            'end' => #{line => max(0, Line - 1), character => 20}
+        }
+    }.
+
+%% Extract symbol for trait implementation
+extract_trait_impl_symbol(#trait_impl{
+    trait_name = TraitName, for_type = ForType, location = Location
+}) ->
+    Line =
+        case Location of
+            #location{line = L} -> L;
+            _ -> 0
+        end,
+    TypeName = format_type_for_display(ForType),
+    Name = iolist_to_binary([atom_to_binary(TraitName, utf8), " for ", TypeName]),
+    #{
+        name => Name,
+        % Class (LSP kind 5)
+        kind => 5,
+        range => #{
+            start => #{line => max(0, Line - 1), character => 0},
+            'end' => #{line => Line + 10, character => 0}
+        },
+        selectionRange => #{
+            start => #{line => max(0, Line - 1), character => 0},
+            'end' => #{line => max(0, Line - 1), character => 30}
+        }
+    }.
+
+%% Extract symbol for typeclass definition
+extract_typeclass_symbol(#typeclass_def{name = Name, location = Location}) ->
+    Line =
+        case Location of
+            #location{line = L} -> L;
+            _ -> 0
+        end,
+    #{
+        name => atom_to_binary(Name, utf8),
+        % Interface (LSP kind 11)
+        kind => 11,
+        range => #{
+            start => #{line => max(0, Line - 1), character => 0},
+            'end' => #{line => Line + 10, character => 0}
+        },
+        selectionRange => #{
+            start => #{line => max(0, Line - 1), character => 0},
+            'end' => #{line => max(0, Line - 1), character => 20}
+        }
+    }.
+
+%% Extract symbol for instance definition
+extract_instance_symbol(#instance_def{
+    typeclass = Typeclass, type_args = TypeArgs, location = Location
+}) ->
+    Line =
+        case Location of
+            #location{line = L} -> L;
+            _ -> 0
+        end,
+    TypeArgsStr = format_type_args(TypeArgs),
+    Name = iolist_to_binary([atom_to_binary(Typeclass, utf8), "(", TypeArgsStr, ")"]),
+    #{
+        name => Name,
+        % Class (LSP kind 5)
+        kind => 5,
+        range => #{
+            start => #{line => max(0, Line - 1), character => 0},
+            'end' => #{line => Line + 10, character => 0}
+        },
+        selectionRange => #{
+            start => #{line => max(0, Line - 1), character => 0},
+            'end' => #{line => max(0, Line - 1), character => 30}
+        }
+    }.
+
+%% Helper to format type for display
+format_type_for_display(#primitive_type{name = Name}) ->
+    atom_to_binary(Name, utf8);
+format_type_for_display(#dependent_type{name = Name}) ->
+    atom_to_binary(Name, utf8);
+format_type_for_display(Name) when is_atom(Name) ->
+    atom_to_binary(Name, utf8);
+format_type_for_display(_) ->
+    <<"Type">>.
+
+%% Helper to format type arguments
+format_type_args([]) ->
+    <<"">>;
+format_type_args([Type]) ->
+    format_type_for_display(Type);
+format_type_args([Type | Rest]) ->
+    iolist_to_binary([format_type_for_display(Type), ", ", format_type_args(Rest)]).
 
 %% Get definition location for symbol at position
 get_definition(Text, Line, Character) ->
@@ -192,10 +358,22 @@ find_symbol_in_items_with_bounds([Item | Rest], Line, Character, _PrevEnd) ->
 %% Get the starting line of an item
 get_item_start_line(#function_def{location = #location{line = L}}) -> L;
 get_item_start_line(#fsm_def{location = #location{line = L}}) -> L;
+get_item_start_line(#record_def{location = #location{line = L}}) -> L;
+get_item_start_line(#type_def{location = #location{line = L}}) -> L;
+get_item_start_line(#trait_def{location = #location{line = L}}) -> L;
+get_item_start_line(#trait_impl{location = #location{line = L}}) -> L;
+get_item_start_line(#typeclass_def{location = #location{line = L}}) -> L;
+get_item_start_line(#instance_def{location = #location{line = L}}) -> L;
 get_item_start_line(_) -> undefined.
 
 get_item_end_line(#function_def{location = #location{line = L}}) -> L;
 get_item_end_line(#fsm_def{location = #location{line = L}}) -> L;
+get_item_end_line(#record_def{location = #location{line = L}}) -> L;
+get_item_end_line(#type_def{location = #location{line = L}}) -> L;
+get_item_end_line(#trait_def{location = #location{line = L}}) -> L;
+get_item_end_line(#trait_impl{location = #location{line = L}}) -> L;
+get_item_end_line(#typeclass_def{location = #location{line = L}}) -> L;
+get_item_end_line(#instance_def{location = #location{line = L}}) -> L;
 get_item_end_line(_) -> undefined.
 
 %% Check if cursor is within an item's bounds
@@ -243,6 +421,66 @@ find_symbol_in_item_with_end(
         _ ->
             {error, not_found}
     end;
+find_symbol_in_item_with_end(
+    #record_def{name = Name, location = Location}, Line, _Character, NextStartLine
+) ->
+    case Location of
+        #location{line = RecLine} ->
+            CursorLine = Line + 1,
+            RecEndLine =
+                case NextStartLine of
+                    undefined -> RecLine + 1000;
+                    NextLine -> NextLine - 1
+                end,
+            if
+                CursorLine >= RecLine andalso CursorLine =< RecEndLine ->
+                    {ok, Name, record};
+                true ->
+                    {error, not_found}
+            end;
+        _ ->
+            {error, not_found}
+    end;
+find_symbol_in_item_with_end(
+    #typeclass_def{name = Name, location = Location}, Line, _Character, NextStartLine
+) ->
+    case Location of
+        #location{line = TcLine} ->
+            CursorLine = Line + 1,
+            TcEndLine =
+                case NextStartLine of
+                    undefined -> TcLine + 1000;
+                    NextLine -> NextLine - 1
+                end,
+            if
+                CursorLine >= TcLine andalso CursorLine =< TcEndLine ->
+                    {ok, Name, typeclass};
+                true ->
+                    {error, not_found}
+            end;
+        _ ->
+            {error, not_found}
+    end;
+find_symbol_in_item_with_end(
+    #trait_def{name = Name, location = Location}, Line, _Character, NextStartLine
+) ->
+    case Location of
+        #location{line = TraitLine} ->
+            CursorLine = Line + 1,
+            TraitEndLine =
+                case NextStartLine of
+                    undefined -> TraitLine + 1000;
+                    NextLine -> NextLine - 1
+                end,
+            if
+                CursorLine >= TraitLine andalso CursorLine =< TraitEndLine ->
+                    {ok, Name, trait};
+                true ->
+                    {error, not_found}
+            end;
+        _ ->
+            {error, not_found}
+    end;
 find_symbol_in_item_with_end(_, _, _, _) ->
     {error, not_found}.
 
@@ -278,6 +516,66 @@ find_symbol_definition(Items, SymbolName, fsm) ->
         )
     of
         {value, #fsm_def{location = #location{line = L}}} ->
+            #{
+                range => #{
+                    start => #{line => max(0, L - 1), character => 0},
+                    'end' => #{line => max(0, L - 1), character => 100}
+                }
+            };
+        _ ->
+            null
+    end;
+find_symbol_definition(Items, SymbolName, record) ->
+    case
+        lists:search(
+            fun
+                (#record_def{name = N}) when N =:= SymbolName -> true;
+                (_) -> false
+            end,
+            Items
+        )
+    of
+        {value, #record_def{location = #location{line = L}}} ->
+            #{
+                range => #{
+                    start => #{line => max(0, L - 1), character => 0},
+                    'end' => #{line => max(0, L - 1), character => 100}
+                }
+            };
+        _ ->
+            null
+    end;
+find_symbol_definition(Items, SymbolName, typeclass) ->
+    case
+        lists:search(
+            fun
+                (#typeclass_def{name = N}) when N =:= SymbolName -> true;
+                (_) -> false
+            end,
+            Items
+        )
+    of
+        {value, #typeclass_def{location = #location{line = L}}} ->
+            #{
+                range => #{
+                    start => #{line => max(0, L - 1), character => 0},
+                    'end' => #{line => max(0, L - 1), character => 100}
+                }
+            };
+        _ ->
+            null
+    end;
+find_symbol_definition(Items, SymbolName, trait) ->
+    case
+        lists:search(
+            fun
+                (#trait_def{name = N}) when N =:= SymbolName -> true;
+                (_) -> false
+            end,
+            Items
+        )
+    of
+        {value, #trait_def{location = #location{line = L}}} ->
             #{
                 range => #{
                     start => #{line => max(0, L - 1), character => 0},
@@ -479,6 +777,102 @@ get_symbol_hover_info(Items, SymbolName, fsm) ->
         _ ->
             null
     end;
+get_symbol_hover_info(Items, SymbolName, record) ->
+    case
+        lists:search(
+            fun
+                (#record_def{name = N}) when N =:= SymbolName -> true;
+                (_) -> false
+            end,
+            Items
+        )
+    of
+        {value, #record_def{name = Name, fields = Fields}} ->
+            FieldStrs = [format_record_field(F) || F <- Fields],
+            FieldsStr = iolist_to_binary(lists:join(<<"\n  ">>, FieldStrs)),
+            Content = iolist_to_binary([
+                <<"```cure\n">>,
+                <<"record ">>,
+                atom_to_binary(Name, utf8),
+                <<" do\n  ">>,
+                FieldsStr,
+                <<"\nend\n```">>
+            ]),
+            #{
+                contents => #{
+                    kind => <<"markdown">>,
+                    value => Content
+                }
+            };
+        _ ->
+            null
+    end;
+get_symbol_hover_info(Items, SymbolName, typeclass) ->
+    case
+        lists:search(
+            fun
+                (#typeclass_def{name = N}) when N =:= SymbolName -> true;
+                (_) -> false
+            end,
+            Items
+        )
+    of
+        {value, #typeclass_def{name = Name, type_params = TypeParams, methods = Methods}} ->
+            TypeParamsStr = format_type_params(TypeParams),
+            MethodStrs = [format_method_signature(M) || M <- Methods],
+            MethodsStr = iolist_to_binary(lists:join(<<"\n  ">>, MethodStrs)),
+            Content = iolist_to_binary([
+                <<"```cure\n">>,
+                <<"typeclass ">>,
+                atom_to_binary(Name, utf8),
+                <<"(">>,
+                TypeParamsStr,
+                <<") do\n  ">>,
+                MethodsStr,
+                <<"\nend\n```">>
+            ]),
+            #{
+                contents => #{
+                    kind => <<"markdown">>,
+                    value => Content
+                }
+            };
+        _ ->
+            null
+    end;
+get_symbol_hover_info(Items, SymbolName, trait) ->
+    case
+        lists:search(
+            fun
+                (#trait_def{name = N}) when N =:= SymbolName -> true;
+                (_) -> false
+            end,
+            Items
+        )
+    of
+        {value, #trait_def{name = Name, type_params = TypeParams, methods = Methods}} ->
+            TypeParamsStr = format_type_params(TypeParams),
+            MethodStrs = [format_method_signature(M) || M <- Methods],
+            MethodsStr = iolist_to_binary(lists:join(<<"\n  ">>, MethodStrs)),
+            Content = iolist_to_binary([
+                <<"```cure\n">>,
+                <<"trait ">>,
+                atom_to_binary(Name, utf8),
+                <<"(">>,
+                TypeParamsStr,
+                <<") do\n  ">>,
+                MethodsStr,
+                <<"\nend\n```">>
+            ]),
+            #{
+                contents => #{
+                    kind => <<"markdown">>,
+                    value => Content
+                }
+            };
+        _ ->
+            null
+    end;
 get_symbol_hover_info(_, _, _) ->
     null.
 
@@ -571,3 +965,47 @@ format_message(Msg) when is_atom(Msg) ->
     atom_to_binary(Msg, utf8);
 format_message(Msg) ->
     iolist_to_binary(io_lib:format("~p", [Msg])).
+
+%% Format record field for display
+format_record_field(#record_field_def{name = Name, type = Type}) ->
+    TypeStr = format_type(Type),
+    case TypeStr of
+        <<>> -> atom_to_binary(Name, utf8);
+        _ -> iolist_to_binary([atom_to_binary(Name, utf8), <<": ">>, TypeStr])
+    end;
+format_record_field(_) ->
+    <<"field">>.
+
+%% Format method signature for display
+format_method_signature(#method_signature{name = Name, params = Params, return_type = RetType}) ->
+    ParamStr = format_params(Params),
+    RetStr = format_type(RetType),
+    iolist_to_binary([
+        <<"def ">>,
+        atom_to_binary(Name, utf8),
+        <<"(">>,
+        ParamStr,
+        <<")">>,
+        case RetStr of
+            <<>> -> <<>>;
+            _ -> [<<": ">>, RetStr]
+        end
+    ]);
+format_method_signature(_) ->
+    <<"method">>.
+
+%% Format type parameters
+format_type_params([]) ->
+    <<>>;
+format_type_params(TypeParams) when is_list(TypeParams) ->
+    ParamStrs = [format_type_param(TP) || TP <- TypeParams],
+    iolist_to_binary(lists:join(<<", ">>, ParamStrs));
+format_type_params(_) ->
+    <<>>.
+
+format_type_param(Param) when is_atom(Param) ->
+    atom_to_binary(Param, utf8);
+format_type_param(#type_param_decl{name = Name}) ->
+    atom_to_binary(Name, utf8);
+format_type_param(_) ->
+    <<"T">>.

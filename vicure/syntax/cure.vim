@@ -8,10 +8,11 @@ if exists("b:current_syntax")
 endif
 
 " Keywords
-syn keyword cureKeyword def end do match when let in as
+syn keyword cureKeyword def end do match when let in as where
 syn keyword cureKeyword module import export process fsm state states initial event timeout
 syn keyword cureKeyword receive send spawn transition guard action invariant eventually always until property
-syn keyword cureKeyword record type fn
+syn keyword cureKeyword record type fn typeclass trait instance impl derive class
+syn keyword cureKeyword curify for
 
 " Boolean literals
 syn keyword cureBoolean true false
@@ -76,7 +77,7 @@ syn match cureType "\v<[A-Z][a-zA-Z0-9_]*>"
 syn match cureIdentifier "\v<[a-z_][a-zA-Z0-9_?]*>"
 
 " Function definitions
-syn match cureFunctionDef "\v(def|def_erl)\s+\zs[a-z_][a-zA-Z0-9_?]*"
+syn match cureFunctionDef "\v(def|def_erl|curify)\s+\zs[a-z_][a-zA-Z0-9_?]*"
 
 " Module names
 syn match cureModule "\v(module|import)\s+\zs[A-Z][a-zA-Z0-9_]*"
@@ -86,6 +87,12 @@ syn match cureFsmName "\v(fsm)\s+\zs[A-Z][a-zA-Z0-9_]*"
 
 " Record names
 syn match cureRecordName "\v(record)\s+\zs[A-Z][a-zA-Z0-9_]*"
+
+" Typeclass/Trait names
+syn match cureTypeclassName "\v(typeclass|trait|class)\s+\zs[A-Z][a-zA-Z0-9_]*"
+
+" Instance/Implementation
+syn match cureInstanceKeyword "\v(instance|impl)\s+\zs[A-Z][a-zA-Z0-9_]*"
 
 " Type annotations
 syn match cureTypeAnnotation "\v\:\s*[A-Z][a-zA-Z0-9_]*"
@@ -116,6 +123,9 @@ hi def link cureFunctionDef Function
 hi def link cureModule PreProc
 hi def link cureFsmName PreProc
 hi def link cureRecordName PreProc
+" Use Structure for typeclasses/traits (similar to interfaces)
+hi def link cureTypeclassName Structure
+hi def link cureInstanceKeyword Special
 " Use TypeDef for type annotations to distinguish from type names
 hi def link cureTypeAnnotation TypeDef
 
