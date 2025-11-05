@@ -22,9 +22,9 @@ module PipeDemo do
     5 |> double |> increment
   end
 
-  def double(x: Int) -> Int = x * 2
+  def double(x: Int): Int = x * 2
 
-  def increment(x: Int) -> Int = x + 1
+  def increment(x: Int): Int = x + 1
 
   # Pipe chain with multiple operations
   def pipe_chain() do
@@ -35,9 +35,9 @@ module PipeDemo do
       |> square
   end
 
-  def add_five(x: Int) -> Int = x + 5
+  def add_five(x: Int): Int = x + 5
 
-  def square(x: Int) -> Int = x * x
+  def square(x: Int): Int = x * x
 
   # Error handling with pipe operator
   def error_handling() do
@@ -50,29 +50,29 @@ module PipeDemo do
       |> format_result
   end
 
-  def parse_data(input: String) -> Result(Map, String) do
+  def parse_data(input: String): Result(String, String) do
     match input do
-      "valid" -> Ok({data: "parsed"})
+      "valid" -> Ok("parsed")
       _ -> Error("Parse error: invalid input")
     end
   end
 
-  def validate_data(data: Map) -> Result(Map, String) do
+  def validate_data(data: String): Result(String, String) do
     # This is only called if parse succeeded
     Ok(data)
   end
 
-  def process_data(data: Map) -> Result(String, String) do
+  def process_data(data: String): Result(String, String) do
     # This is only called if validation succeeded
     Ok("processed")
   end
 
-  def format_result(result: String) -> Result(String, String) do
+  def format_result(result: String): Result(String, String) do
     Ok("Result: " <> result)
   end
 
   # Real-world example: data transformation pipeline
-  def real_world_example(user_input: String) -> Result(String, String) do
+  def real_world_example(user_input: String): Result(String, String) do
     user_input
       |> trim_whitespace
       |> to_lowercase
@@ -97,8 +97,8 @@ module PipeDemo do
     s
   end
 
-  def validate_length(s: String) -> Result(String, String) do
-    let len = length(s) in
+  def validate_length(s: String): Result(String, String) do
+    let len = length(s)
     match len do
       n when n > 3 and n < 50 -> Ok(s)
       _ -> Error("Invalid length: must be between 3 and 50 characters")
@@ -122,9 +122,9 @@ module PipeDemo do
       |> multiply(3) # multiply(15, 3)
   end
 
-  def add(x: Int, y: Int) -> Int = x + y
+  def add(x: Int, y: Int): Int = x + y
 
-  def multiply(x: Int, y: Int) -> Int = x * y
+  def multiply(x: Int, y: Int): Int = x * y
 
   # Combining pipe with other operators
   def combined_operations() do
@@ -136,25 +136,24 @@ module PipeDemo do
   end
 
   # Error recovery example
-  def error_recovery(input: String) -> String do
+  def error_recovery(input: String): String do
     let result = input
       |> risky_operation
       |> another_risky_op
-    in
     match result do
       Ok(value) -> "Success: " <> value
       Error(reason) -> "Failed: " <> reason
     end
   end
 
-  def risky_operation(s: String) -> Result(String, String) do
+  def risky_operation(s: String): Result(String, String) do
     match s do
       "fail" -> Error("Operation failed")
       _ -> Ok(s)
     end
   end
 
-  def another_risky_op(s: String) -> Result(String, String) do
+  def another_risky_op(s: String): Result(String, String) do
     Ok("processed-" <> s)
   end
 
