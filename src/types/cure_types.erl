@@ -3243,7 +3243,7 @@ infer_binary_op('|>', LeftType, RightType, Location, Constraints) ->
     % - Result is always wrapped in Result type
     %
     % Unwrap Result type from LeftType if present
-    {UnwrappedLeftType, IsResultType} =
+    {UnwrappedLeftType, _IsResultType} =
         case LeftType of
             {dependent_type, 'Result', [InnerType | _]} ->
                 {InnerType, true};

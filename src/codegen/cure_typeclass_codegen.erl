@@ -491,7 +491,7 @@ generate_instance_registration(TypeclassName, TypeName, CompiledMethods, _State)
     }.
 
 %% Build method map from compiled methods
-build_method_map(TypeclassName, TypeName, CompiledMethods) ->
+build_method_map(_TypeclassName, _TypeName, CompiledMethods) ->
     lists:foldl(
         fun(CompiledMethod, Acc) ->
             case CompiledMethod of

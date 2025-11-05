@@ -170,7 +170,7 @@ create_show_method_for_record(RecordName, Fields, Location) ->
     }.
 
 %% Generate the body of a show method for a record
-generate_show_record_body(RecordName, Fields, Location) ->
+generate_show_record_body(RecordName, _Fields, Location) ->
     % This would generate:
     % RecordName { field1: show(record.field1), field2: show(record.field2), ... }
     % For now, simplified implementation
@@ -313,7 +313,7 @@ Requires Eq instance (superclass).
 """.
 -spec derive_ord(term(), [term()], term()) ->
     {ok, #instance_def{}} | {error, term()}.
-derive_ord(#record_def{name = RecordName, fields = Fields}, Constraints, TypeEnv) ->
+derive_ord(#record_def{name = RecordName, fields = Fields}, Constraints, _TypeEnv) ->
     Location = #location{line = 0, column = 0, file = "derived"},
 
     % Ord requires Eq, so we need to ensure Eq constraint

@@ -1,7 +1,7 @@
 ## Typeclass Guide for Cure
 
 **Version**: 1.0  
-**Last Updated**: November 4, 2025
+**Last Updated**: November 5, 2025
 
 ---
 
@@ -587,6 +587,39 @@ derive Show
 % Test it
 show(Test{x: 42})  % Should work
 ```
+
+---
+
+## Known Limitations
+
+### Ord Typeclass Temporarily Disabled
+
+**Status**: Compiler bug prevents Ord typeclass from compiling
+
+**Issue**: Union type variants cannot be returned from typeclass instance methods due to a type unification bug:
+```
+Error: Type mismatch - unification failed between
+  {primitive_type,'Ordering'} and {union_type,'Ordering',...}
+```
+
+**Impact**:
+- The `Ord` typeclass and `Ordering` type are commented out in `lib/std/typeclasses.cure`
+- You cannot use `compare()` method or derive `Ord` instances
+- `Show`, `Eq`, and `Serializable` typeclasses work correctly
+
+**Workaround**:
+Use comparison operators (`<`, `>`, `<=`, `>=`) directly instead of the `compare()` method:
+```cure
+% ❌ Won't work until bug is fixed
+def sort(list: List(T)) where Ord(T) = ...
+
+% ✅ Use direct comparisons instead
+def sort_int(list: List(Int)): List(Int) =
+    % Use < and > operators directly
+    ...
+```
+
+**Expected Fix**: The compiler's typeclass instance type checker needs to properly handle union type constructors.
 
 ---
 

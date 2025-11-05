@@ -2878,7 +2878,7 @@ find_typeclass_for_method(_MethodName, [], _Args, _State) ->
 find_typeclass_for_method(MethodName, [Constraint | Rest], Args, State) ->
     % Extract typeclass and type from constraint
     case Constraint of
-        #typeclass_constraint{typeclass = TypeclassName, type_args = [TypeArg]} ->
+        #typeclass_constraint{typeclass = TypeclassName, type_args = [_TypeArg]} ->
             % Infer the concrete type from the argument
             case infer_type_from_arg(Args, State) of
                 {ok, ConcreteType} ->

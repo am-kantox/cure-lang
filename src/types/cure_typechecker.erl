@@ -2512,7 +2512,7 @@ register_typeclasses_helper([], Env) ->
 register_typeclasses_helper([Item | Rest], Env) ->
     UpdatedEnv =
         case Item of
-            #typeclass_def{name = Name} = TypeclassDef ->
+            #typeclass_def{name = _Name} = TypeclassDef ->
                 % Register the typeclass definition in the typeclass environment
                 TCEnv = get_typeclass_env(Env),
                 case cure_typeclass:register_typeclass(TypeclassDef, TCEnv) of
@@ -4697,7 +4697,7 @@ validate_typeclass_methods(Methods, Env, TypeParams, Location) ->
     end.
 
 validate_method_signature(
-    #method_signature{name = Name, params = Params, return_type = RetType},
+    #method_signature{name = _Name, params = Params, return_type = RetType},
     Env,
     TypeParams,
     Location
@@ -4864,7 +4864,7 @@ validate_instance_constraint(_, _TypeArgs, _TCEnv, _Location) ->
     ok.
 
 %% Validate instance methods
-validate_instance_methods(Methods, TypeclassInfo, TypeArgs, Env, Location) ->
+validate_instance_methods(Methods, TypeclassInfo, _TypeArgs, _Env, Location) ->
     RequiredMethods = maps:keys(TypeclassInfo#typeclass_info.methods),
     DefaultMethods = maps:keys(TypeclassInfo#typeclass_info.default_impls),
     ProvidedMethods = [M#function_def.name || M <- Methods],

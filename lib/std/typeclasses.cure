@@ -1,8 +1,6 @@
 # Standard Typeclasses for Cure
 module Std.Typeclasses do
 
-export [show, serialize, deserialize]
-
 # ==============================================================================
 # Show Typeclass - Convert values to strings
 # ==============================================================================
@@ -61,17 +59,27 @@ end
 # ==============================================================================
 # Ord Typeclass - Ordering comparison
 # ==============================================================================
-
-type Ordering = LT | EQ | GT
-
-typeclass Ord(T) when Eq(T) do
-  def compare(x: T, y: T): Ordering
-end
-
-# Ord instances for primitive types
-instance Ord(Int) do
-  def compare(x: Int, y: Int): Ordering = EQ
-end
+# NOTE: Ord typeclass temporarily commented out due to compiler issue
+# with union types in typeclass instances (type unification bug)
+#
+# type Ordering = Less | Equal | Greater
+#
+# typeclass Ord(T) when Eq(T) do
+#   def compare(x: T, y: T): Ordering
+# end
+#
+# # Ord instances for primitive types
+# instance Ord(Int) do
+#   def compare(x: Int, y: Int): Ordering =
+#     match x < y do
+#       true -> Less
+#       false ->
+#         match x > y do
+#           true -> Greater
+#           false -> Equal
+#         end
+#     end
+# end
 
 # ==============================================================================
 # Serializable Typeclass - Serialization
