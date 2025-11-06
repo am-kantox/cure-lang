@@ -1,0 +1,10 @@
+module ProfileWithImports do
+  export [test_function/0]
+  
+  import Std.List [map/2, filter/2, fold/3]
+  import Std.Core [identity/1, compose/2]
+  import Std.Io [print/1]
+  
+  def test_function(): Int =
+    0
+end

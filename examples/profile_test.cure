@@ -1,0 +1,6 @@
+module ProfileTest do
+  export [simple_function/1]
+  
+  def simple_function(x: Int): Int =
+    x + 1
+end

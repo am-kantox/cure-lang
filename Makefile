@@ -50,9 +50,9 @@ LSP_BEAM_FILES = $(patsubst $(LSP_DIR)/%.erl,$(LSP_EBIN_DIR)/%.beam,$(LSP_SRC))
 # Compiler options
 ERLC_OPTS = +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(EBIN_DIR)
 
-.PHONY: all clean clean-all test test-basic test-integration test-performance test-smt docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-deps lsp-scripts lsp-shell
+.PHONY: all clean clean-all test test-basic test-integration test-performance test-smt docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-deps lsp-scripts lsp-shell gen-signatures
 
-all: setup compiler stdlib
+all: setup gen-signatures compiler stdlib
 
 setup:
 	@mkdir -p $(BUILD_DIR)
@@ -67,6 +67,20 @@ setup:
 	@mkdir -p $(LIB_EBIN_DIR)
 	@mkdir -p $(LIB_EBIN_DIR)/std
 	@mkdir -p $(LSP_EBIN_DIR)
+
+# Generate stdlib type signatures (done before compiler to avoid circularity)
+gen-signatures: setup
+	@echo "Generating stdlib type signatures..."
+	@# First compile just the modules needed for signature generation
+	@$(ERLC) +debug_info -I src/parser -o $(EBIN_DIR) $(UTILS_SRC)
+	@$(ERLC) +debug_info -I src/parser -o $(EBIN_DIR) $(LEXER_SRC)
+	@$(ERLC) +debug_info -I src/parser -o $(EBIN_DIR) $(PARSER_SRC)
+	@$(ERLC) +debug_info -I src/parser -o $(EBIN_DIR) src/tools/cure_signature_generator.erl
+	@# Run signature generator
+	@$(ERL) -pa $(EBIN_DIR) -noshell -eval 'cure_signature_generator:generate(), halt().'
+	@# Compile the generated signatures module
+	@$(ERLC) +debug_info -o $(EBIN_DIR) src/types/cure_stdlib_signatures.erl
+	@echo "Stdlib signatures generated and compiled"
 
 compiler: $(BEAM_FILES)
 	@echo "Cure compiler built successfully"

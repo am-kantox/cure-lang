@@ -12,3 +12,5 @@ rebar.lock
 # Documentation
 /docs/_build/
 /doc/
+
+fprof.trace

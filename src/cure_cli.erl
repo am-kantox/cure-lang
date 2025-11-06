@@ -1099,16 +1099,18 @@ ensure_stdlib_available(Options) ->
 %% Check if standard library files are compiled
 check_stdlib_compiled(_StdlibPaths) ->
     % Get only the working .cure files in the standard library
-    StdlibSources = [
+    % Only check for files that actually exist to avoid unnecessary rebuilds
+    AllStdlibSources = [
         "lib/std.cure",
         "lib/std/core.cure",
         "lib/std/io.cure",
         "lib/std/list.cure",
         "lib/std/math.cure",
         "lib/std/result.cure",
-        "lib/std/show.cure",
         "lib/std/vector.cure"
     ],
+    % Filter to only check files that exist in the source tree
+    StdlibSources = lists:filter(fun(F) -> filelib:is_regular(F) end, AllStdlibSources),
 
     % Convert to expected BEAM file paths
     ExpectedBeamFiles = lists:map(

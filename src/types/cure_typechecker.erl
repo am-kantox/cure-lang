@@ -1598,27 +1598,12 @@ create_function_type_from_signature_records(Params, ReturnType) ->
             {function_type, ParamTypes, ReturnTuple}
     end.
 
-%% Cached standard library functions
+%% Cached standard library functions - now uses pre-compiled signatures
 -spec get_stdlib_function_type(atom(), atom(), integer()) -> {ok, term()} | not_found.
 get_stdlib_function_type(Module, Name, Arity) ->
-    % Lazy loading - load stdlib on first access
-    StdlibFunctions =
-        case get(stdlib_functions) of
-            undefined ->
-                Functions = load_stdlib_modules(),
-                put(stdlib_functions, Functions),
-                Functions;
-            Functions ->
-                Functions
-        end,
-
-    case maps:get({Module, Name, Arity}, StdlibFunctions, undefined) of
-        undefined ->
-            not_found;
-        FunctionType ->
-            % Return the function type as-is; instantiation happens at lookup time
-            {ok, FunctionType}
-    end.
+    % Use pre-compiled signatures from cure_stdlib_signatures module
+    % This eliminates the need to parse stdlib files at compilation time
+    cure_stdlib_signatures:get_function_type(Module, Name, Arity).
 
 %% Create function type for imported function with given arity
 create_imported_function_type(Module, Name, Arity) ->
