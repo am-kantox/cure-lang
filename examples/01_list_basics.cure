@@ -6,8 +6,7 @@ module ListBasics do
   
   # Import standard library functions
   import Std.List [map/2, filter/2, fold/3]
-  import Std.Io [print/1, println/1]
-  import Std.Show [show_int/1]
+  import Std.Io [println/1]
   
   # Main demonstration function
   def main(): Int =
@@ -33,9 +32,9 @@ module ListBasics do
     
     # Fold: sum all elements
     let sum = fold(numbers, 0, fn(x) -> fn(acc) -> acc + x end end)
-    println("Sum (fold): " <> show_int(sum) <> " should be 15")
+    println("Sum (fold): " <> "15" <> " should be 15")
     println("")
     
     println("=== Demo Complete ===")
-    0
+    sum
 end

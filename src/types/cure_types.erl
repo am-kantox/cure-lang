@@ -874,15 +874,38 @@ unify_impl(undefined, _Type, Subst) ->
 unify_impl(_Type, undefined, Subst) ->
     % any type can unify with undefined
     {ok, Subst};
-unify_impl(Var = #type_var{id = Id}, Type, Subst) ->
-    case occurs_check(Var, Type) of
+%% Handle tuple format type_var {type_var, Name} (from pre-generated signatures)
+unify_impl({type_var, Name}, Type, Subst) when is_atom(Name) ->
+    % Check if this is a wildcard type variable - wildcards unify with anything
+    case is_wildcard_name(Name) of
         true ->
-            {error, {occurs_check_failed, Var, Type}};
+            % Wildcard type variable - unification always succeeds without binding
+            {ok, Subst};
         false ->
-            % Additional check for dependent types containing the variable
-            case check_dependent_occurs(Var, Type) of
-                true -> {error, {occurs_check_failed, Var, Type}};
-                false -> {ok, maps:put(Id, Type, Subst)}
+            % Regular type variable tuple - create record and continue
+            TypeVarRecord = #type_var{id = Name, name = Name, constraints = []},
+            unify_impl(TypeVarRecord, Type, Subst)
+    end;
+unify_impl(Type, {type_var, Name}, Subst) when is_atom(Name) ->
+    unify_impl({type_var, Name}, Type, Subst);
+%% Handle record format type_var #type_var{}
+unify_impl(Var = #type_var{id = Id, name = Name}, Type, Subst) ->
+    % Check if this is a wildcard type variable - wildcards unify with anything
+    case is_wildcard_name(Name) of
+        true ->
+            % Wildcard type variable - unification always succeeds without binding
+            {ok, Subst};
+        false ->
+            % Regular type variable - perform normal unification
+            case occurs_check(Var, Type) of
+                true ->
+                    {error, {occurs_check_failed, Var, Type}};
+                false ->
+                    % Additional check for dependent types containing the variable
+                    case check_dependent_occurs(Var, Type) of
+                        true -> {error, {occurs_check_failed, Var, Type}};
+                        false -> {ok, maps:put(Id, Type, Subst)}
+                    end
             end
     end;
 unify_impl(Type, Var = #type_var{}, Subst) ->
@@ -3372,9 +3395,10 @@ infer_let_expr([{binding, Pattern, Value, _Location} | RestBindings], Body, Env,
                     case is_wildcard_name(VarName) of
                         true ->
                             % Wildcard binding - don't add to environment, don't constrain
-                            % Just continue with the rest, keeping only the value constraints
+                            % Discard the value's type constraints since the result is not used
+                            % Just continue with the rest, without adding value constraints
                             infer_let_expr(
-                                RestBindings, Body, Env, Constraints ++ ValueConstraints
+                                RestBindings, Body, Env, Constraints
                             );
                         false ->
                             % Regular binding - solve constraints for this binding
@@ -3537,9 +3561,16 @@ infer_pattern_type({list_pattern, Elements, Tail, _Location} = Pattern, MatchTyp
             Error
     end;
 infer_pattern_type({identifier_pattern, Name, _Location}, MatchType, Env) ->
-    % Add identifier to environment with the match type
-    NewEnv = extend_env(Env, Name, MatchType),
-    {ok, NewEnv, []};
+    % Check if this is a wildcard pattern - wildcards shouldn't be added to environment
+    case is_wildcard_name(Name) of
+        true ->
+            % Wildcard pattern - don't add to environment
+            {ok, Env, []};
+        false ->
+            % Regular identifier - add to environment with the match type
+            NewEnv = extend_env(Env, Name, MatchType),
+            {ok, NewEnv, []}
+    end;
 infer_pattern_type({wildcard_pattern, _Location}, _MatchType, Env) ->
     % Wildcard doesn't bind any variables
     {ok, Env, []};
@@ -5010,23 +5041,37 @@ propagate_single_constraint(#type_constraint{left = Left, op = '=', right = Righ
         {Same, Same} ->
             % Constraint is satisfied, remove it
             {ok, [], Subst};
-        {#type_var{id = Id}, Type} when not is_record(Type, type_var) ->
-            % Unify type variable with concrete type
-            case occurs_check(NewLeft, Type) of
-                false ->
-                    NewSubst = maps:put(Id, Type, Subst),
-                    {ok, [], NewSubst};
+        {#type_var{id = Id, name = Name}, Type} when not is_record(Type, type_var) ->
+            % Check if this is a wildcard type variable - wildcards don't need unification
+            case is_wildcard_name(Name) of
                 true ->
-                    {error, {occurs_check_in_propagation, NewLeft, Type}}
+                    % Wildcard type variable - constraint is satisfied, discard it
+                    {ok, [], Subst};
+                false ->
+                    % Regular type variable - unify with concrete type
+                    case occurs_check(NewLeft, Type) of
+                        false ->
+                            NewSubst = maps:put(Id, Type, Subst),
+                            {ok, [], NewSubst};
+                        true ->
+                            {error, {occurs_check_in_propagation, NewLeft, Type}}
+                    end
             end;
-        {Type, #type_var{id = Id}} when not is_record(Type, type_var) ->
-            % Symmetric case
-            case occurs_check(NewRight, Type) of
-                false ->
-                    NewSubst = maps:put(Id, Type, Subst),
-                    {ok, [], NewSubst};
+        {Type, #type_var{id = Id, name = Name}} when not is_record(Type, type_var) ->
+            % Symmetric case - check if wildcard type variable
+            case is_wildcard_name(Name) of
                 true ->
-                    {error, {occurs_check_in_propagation, NewRight, Type}}
+                    % Wildcard type variable - constraint is satisfied, discard it
+                    {ok, [], Subst};
+                false ->
+                    % Regular type variable - unify with concrete type
+                    case occurs_check(NewRight, Type) of
+                        false ->
+                            NewSubst = maps:put(Id, Type, Subst),
+                            {ok, [], NewSubst};
+                        true ->
+                            {error, {occurs_check_in_propagation, NewRight, Type}}
+                    end
             end;
         _ ->
             % Constraint cannot be simplified further
