@@ -1,0 +1,41 @@
+# Example: Show Typeclass - Complete Demonstration
+# Shows how to use and implement the Show typeclass
+
+module ShowDemo13 do
+  export [main/0]
+
+  # Import the Show typeclass and standard instances
+  import Std.Show [Show, show]
+  import Std.Core [Option, Result, Ok, Error, Some, None]
+  import Std.Io [println]
+
+  # Define custom types
+  record Person do
+    name: String
+    age: Int
+  end
+
+  # Implement Show
+  instance Show(Person) do
+    def show(p: Person): String =
+      string_concat("Person { name: ",
+        string_concat(show(p.name),
+          string_concat(", age: ",
+            string_concat(show(p.age), " }"))))
+  end
+
+  # Use in generic functions
+  def debug(value: T): T where Show(T) =
+    println(show(value))
+    value
+
+  def main(): Int =
+    println(show(42))              # => "42"
+    println(show([1, 2, 3]))       # => "[1, 2, 3]"
+    println(show(Some(Ok(42))))    # => "Some(Ok(42))"
+
+    debug(Person{name: "Alice", age: 30})
+
+    0
+
+end

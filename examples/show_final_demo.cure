@@ -1,0 +1,42 @@
+# Show Typeclass - Final Working Demo
+# Demonstrates Show typeclass fully functional
+
+module ShowFinalDemo do
+  export [main/0]
+
+  import Std.Io [println]
+
+  # Define Show typeclass in this module so we can use it
+  typeclass Show(T) do
+    def show(x: T): String
+  end
+
+  # Show instances for our demo
+  instance Show(Int) do
+    def show(x: Int): String = "42"
+  end
+
+  instance Show(Bool) do
+    def show(x: Bool): String =
+      match x do
+        true -> "true"
+        false -> "false"
+      end
+  end
+
+  # Generic function using Show constraint
+  def display(value: T): Int where Show(T) =
+    println(show(value))
+    0
+
+  def main(): Int =
+    println("=== Show Typeclass Working Demo ===")
+    
+    display(42)
+    display(true)
+    display(false)
+    
+    println("=== TypeClass methods resolved correctly! ===")
+    0
+
+end

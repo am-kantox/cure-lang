@@ -1,0 +1,225 @@
+# Example: Show Typeclass - Complete Demonstration
+# Shows how to use and implement the Show typeclass
+
+module ShowDemo do
+  export [main/0]
+
+  # Import the Show typeclass and standard instances
+  import Std.Show [Show, show, show_list, show_separated]
+  import Std.Core [Option, Result, Ok, Error, Some, None]
+  import Std.Io [println]
+
+  # ============================================================================
+  # Custom Record Types with Show Instances
+  # ============================================================================
+
+  # Define a Person record
+  record Person do
+    name: String
+    age: Int
+    email: String
+  end
+
+  # Implement Show for Person
+  instance Show(Person) do
+    def show(p: Person): String =
+      string_concat("Person { name: ",
+        string_concat(show(p.name),
+          string_concat(", age: ",
+            string_concat(show(p.age),
+              string_concat(", email: ",
+                string_concat(show(p.email), " }"))))))
+  end
+
+  # Define a Point record (generic)
+  record Point(T) do
+    x: T
+    y: T
+  end
+
+  # Implement Show for Point(T) where T is showable
+  instance Show(Point(T)) where Show(T) do
+    def show(p: Point(T)): String =
+      string_concat("Point(",
+        string_concat(show(p.x),
+          string_concat(", ",
+            string_concat(show(p.y), ")"))))
+  end
+
+  # Define a Color enum (using union types)
+  type Color = Red | Green | Blue | RGB(Int, Int, Int)
+
+  # Implement Show for Color
+  instance Show(Color) do
+    def show(c: Color): String =
+      match c do
+        Red -> "Red"
+        Green -> "Green"
+        Blue -> "Blue"
+        RGB(r, g, b) ->
+          string_concat("RGB(",
+            string_concat(show(r),
+              string_concat(", ",
+                string_concat(show(g),
+                  string_concat(", ",
+                    string_concat(show(b), ")"))))))
+      end
+  end
+
+  # Define a Tree data structure
+  type Tree(T) = Leaf | Node(T, Tree(T), Tree(T))
+
+  # Implement Show for Tree(T) where T is showable
+  instance Show(Tree(T)) where Show(T) do
+    def show(t: Tree(T)): String =
+      match t do
+        Leaf -> "Leaf"
+        Node(value, left, right) ->
+          string_concat("Node(",
+            string_concat(show(value),
+              string_concat(", ",
+                string_concat(show(left),
+                  string_concat(", ",
+                    string_concat(show(right), ")"))))))
+      end
+  end
+
+  # ============================================================================
+  # Generic Functions Using Show
+  # ============================================================================
+
+  # Debug printer - works with any type that implements Show
+  def debug(label: String, value: T): T where Show(T) =
+    println(string_concat(label, string_concat(": ", show(value))))
+    value
+
+  # Pretty print a list with a title
+  def print_list(title: String, items: List(T)): Int where Show(T) =
+    println(string_concat(title, ":"))
+    println(show_list(items))
+    0
+
+  # Print multiple values in a formatted way
+  def print_values(values: List(T)): Int where Show(T) =
+    println(show_separated(values, " | "))
+    0
+
+  # Compare and show two values
+  def compare_and_show(a: T, b: T): String where Show(T) =
+    string_concat(show(a), string_concat(" vs ", show(b)))
+
+  # ============================================================================
+  # Demonstration Functions
+  # ============================================================================
+
+  # Demonstrate primitive type instances
+  def demo_primitives(): Int =
+    println("=== Primitive Types ===")
+    debug("Int", 42)
+    debug("Float", 3.14)
+    debug("String", "Hello, World!")
+    debug("Bool", true)
+    debug("Atom", :example)
+    0
+
+  # Demonstrate container type instances
+  def demo_containers(): Int =
+    println("\n=== Container Types ===")
+    debug("List[Int]", [1, 2, 3, 4, 5])
+    debug("List[String]", ["foo", "bar", "baz"])
+    debug("Tuple", {42, "answer", true})
+    debug("Option[Int]", Some(42))
+    debug("Option[String]", None)
+    debug("Result[Int, String]", Ok(100))
+    debug("Result[Int, String]", Error("oops"))
+    0
+
+  # Demonstrate custom type instances
+  def demo_custom_types(): Int =
+    println("\n=== Custom Types ===")
+    
+    # Person example
+    let alice = Person{name: "Alice", age: 30, email: "alice@example.com"}
+    debug("Person", alice)
+    
+    # Generic Point examples
+    let int_point = Point{x: 10, y: 20}
+    let float_point = Point{x: 1.5, y: 2.5}
+    debug("Point[Int]", int_point)
+    debug("Point[Float]", float_point)
+    
+    # Color examples
+    debug("Color", Red)
+    debug("Color", RGB(255, 128, 0))
+    
+    # Tree examples
+    let small_tree = Node(5, Leaf, Leaf)
+    let bigger_tree = Node(10, Node(5, Leaf, Leaf), Node(15, Leaf, Leaf))
+    debug("Tree[Int]", small_tree)
+    debug("Tree[Int]", bigger_tree)
+    
+    0
+
+  # Demonstrate nested structures
+  def demo_nested(): Int =
+    println("\n=== Nested Structures ===")
+    
+    # List of Options
+    let opts = [Some(1), None, Some(3), Some(4)]
+    debug("List[Option[Int]]", opts)
+    
+    # Result containing a List
+    let result_list = Ok([1, 2, 3])
+    debug("Result[List[Int], String]", result_list)
+    
+    # List of Tuples
+    let pairs = [{1, "one"}, {2, "two"}, {3, "three"}]
+    debug("List[{Int, String}]", pairs)
+    
+    # Option of Result
+    let opt_result = Some(Ok(42))
+    debug("Option[Result[Int, String]]", opt_result)
+    
+    0
+
+  # Demonstrate utility functions
+  def demo_utilities(): Int =
+    println("\n=== Utility Functions ===")
+    
+    let numbers = [1, 2, 3, 4, 5]
+    print_list("Numbers", numbers)
+    
+    let colors = [Red, Green, Blue]
+    print_list("Colors", colors)
+    
+    print_values([1, 2, 3, 4, 5])
+    
+    println(compare_and_show(42, 100))
+    println(compare_and_show("hello", "world"))
+    
+    0
+
+  # ============================================================================
+  # Main Entry Point
+  # ============================================================================
+
+  def main(): Int =
+    println("Show Typeclass Demonstration")
+    println("=" * 40)
+    
+    demo_primitives()
+    demo_containers()
+    demo_custom_types()
+    demo_nested()
+    demo_utilities()
+    
+    println("\n=== Complete ===")
+    0
+
+  # ============================================================================
+  # Helper Functions (FFI)
+  # ============================================================================
+
+  curify string_concat(a: String, b: String): String = {string, concat, 2}
+
+end

@@ -1,0 +1,115 @@
+# Cure Standard Library - Show Module
+# Polymorphic typeclass for converting values to strings
+
+module Std.Show do
+  import Std.Core [Option, Result, Ok, Error, Some, None]
+
+  # ============================================================================
+  # Typeclass Definition
+  # ============================================================================
+
+  # Show typeclass - converts values to human-readable strings
+  # Every type implementing Show must provide a `show` method
+  typeclass Show(T) do
+    # Convert a value to its string representation
+    def show(x: T): String
+  end
+
+  # ============================================================================
+  # Primitive Type Instances
+  # ============================================================================
+
+  # Show instance for Int - simplified
+  instance Show(Int) do
+    def show(x: Int): String = 
+      "<int>"
+  end
+
+  # Show instance for Float - simplified
+  instance Show(Float) do
+    def show(x: Float): String = 
+      "<float>"
+  end
+
+  # Show instance for String
+  instance Show(String) do
+    def show(x: String): String = x
+  end
+
+  # Show instance for Bool
+  instance Show(Bool) do
+    def show(x: Bool): String = 
+      match x do
+        true -> "true"
+        false -> "false"
+      end
+  end
+
+  # Show instance for Atom
+  instance Show(Atom) do
+    def show(x: Atom): String = 
+      "<atom>"
+  end
+
+  # Show instance for Charlist
+  instance Show(Charlist) do
+    def show(x: Charlist): String = 
+      "<charlist>"
+  end
+
+  # ============================================================================
+  # Container Type Instances
+  # ============================================================================
+
+  # Show instance for List(T) - simplified to avoid recursive show calls
+  instance Show(List(Int)) do
+    def show(xs: List(Int)): String = 
+      "[...list...]"
+  end
+
+  # Show instance for Option(T) - simplified
+  instance Show(Option(Int)) do
+    def show(opt: Option(Int)): String = 
+      match opt do
+        Some(x) -> "Some(<int>)"
+        None -> "None"
+      end
+  end
+
+  # Show instance for Result - simplified
+  instance Show(Result(Int, String)) do
+    def show(result: Result(Int, String)): String = 
+      match result do
+        Ok(x) -> "Ok(<int>)"
+        Error(e) -> "Error(<string>)"
+      end
+  end
+
+  # # Show instance for 2-tuples (Pair)
+  # instance Show({T1, T2}) when Show(T1), Show(T2) do
+  #   def show(tuple: {T1, T2}): String = 
+  #     match tuple do
+  #       {x, y} -> 
+  #         concat("{",
+  #           concat(show(x),
+  #             concat(", ",
+  #               concat(show(y), "}"))))
+  #     end
+  # end
+
+  # # Show instance for 3-tuples
+  # instance Show({T1, T2, T3}) when Show(T1), Show(T2), Show(T3) do
+  #   def show(tuple: {T1, T2, T3}): String = 
+  #     match tuple do
+  #       {x, y, z} -> 
+  #         concat("{",
+  #           concat(show(x),
+  #             concat(", ",
+  #               concat(show(y),
+  #                 concat(", ",
+  #                   concat(show(z), "}"))))))
+  #     end
+  # end
+
+
+end

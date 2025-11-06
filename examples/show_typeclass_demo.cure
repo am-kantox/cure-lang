@@ -1,0 +1,37 @@
+# Show Typeclass Working Demo
+# Demonstrates actual typeclass method resolution
+
+module ShowTypeclassDemo do
+  export [main/0, show_int/1, show_bool/1, show_string/1]
+
+  import Std.Show [Show]
+  import Std.Io [println]
+
+  # Helper functions that use Show typeclass constraint
+  # These will properly resolve to instance methods
+
+  def show_int(x: Int): String where Show(Int) =
+    show(x)
+
+  def show_bool(b: Bool): String where Show(Bool) =
+    show(b)
+
+  def show_string(s: String): String where Show(String) =
+    show(s)
+
+  def main(): Int =
+    println("=== Show Typeclass Demo ===")
+    
+    # Call the helper functions which use typeclass constraints
+    let int_str = show_int(42)
+    let bool_str = show_bool(true)
+    let string_str = show_string("Hello")
+    
+    println(int_str)
+    println(bool_str)
+    println(string_str)
+    
+    println("=== Success! ===")
+    0
+
+end

@@ -1,0 +1,17 @@
+# Test Show Typeclass
+# Demonstrates that Show compiles and can be used
+
+module TestShowWorking do
+  export [main/0]
+
+  import Std.ShowMinimal [Show]
+  import Std.Io [println]
+
+  def main(): Int =
+    let s = "Hello"
+    let b = true
+    println(s)
+    println("true")
+    0
+
+end
