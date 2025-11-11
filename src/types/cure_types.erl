@@ -874,6 +874,16 @@ unify_impl(undefined, _Type, Subst) ->
 unify_impl(_Type, undefined, Subst) ->
     % any type can unify with undefined
     {ok, Subst};
+%% Handle #type_param{} records - extract value and unify
+unify_impl(#type_param{value = Value}, Type, Subst) ->
+    unify_impl(Value, Type, Subst);
+unify_impl(Type, #type_param{value = Value}, Subst) ->
+    unify_impl(Type, Value, Subst);
+%% Handle {type_param, _, Value} tuple format - extract value and unify
+unify_impl({type_param, _, Value}, Type, Subst) ->
+    unify_impl(Value, Type, Subst);
+unify_impl(Type, {type_param, _, Value}, Subst) ->
+    unify_impl(Type, Value, Subst);
 %% Handle tuple format type_var {type_var, Name} (from pre-generated signatures)
 unify_impl({type_var, Name}, Type, Subst) when is_atom(Name) ->
     % Check if this is a wildcard type variable - wildcards unify with anything
@@ -1955,6 +1965,28 @@ infer_expr({function_call_expr, Function, Args, Location}, Env) ->
 infer_expr({let_expr, Bindings, Body, _Location}, Env) ->
     infer_let_expr(Bindings, Body, Env, []);
 infer_expr({list_expr, Elements, Location}, Env) ->
+    case Elements of
+        [] ->
+            ElemType = new_type_var(),
+            LenExpr = {literal_expr, 0, Location},
+            {ok, {list_type, ElemType, LenExpr}, []};
+        [FirstElem | RestElems] ->
+            case infer_expr(FirstElem, Env) of
+                {ok, ElemType, FirstConstraints} ->
+                    case infer_list_elements(RestElems, ElemType, Env, FirstConstraints) of
+                        {ok, FinalConstraints} ->
+                            Length = length(Elements),
+                            LenExpr = {literal_expr, Length, Location},
+                            {ok, {list_type, ElemType, LenExpr}, FinalConstraints};
+                        Error ->
+                            Error
+                    end;
+                Error ->
+                    Error
+            end
+    end;
+infer_expr({vector_expr, Elements, Location}, Env) ->
+    % Vector expressions ‹elem1, elem2, ...› are similar to lists
     case Elements of
         [] ->
             ElemType = new_type_var(),
@@ -3792,8 +3824,21 @@ solve_type_constraints([Constraint | RestConstraints], Subst) ->
     end.
 
 solve_constraint(#type_constraint{left = Left, op = '=', right = Right}, Subst) ->
-    cure_utils:debug("Solving constraint ~p = ~p~n", [Left, Right]),
-    Result = unify(Left, Right, Subst),
+    % Extract values from #type_param{} records if present (both record and tuple format)
+    LeftExtracted =
+        case Left of
+            #type_param{value = V} -> V;
+            {type_param, _, V} -> V;
+            _ -> Left
+        end,
+    RightExtracted =
+        case Right of
+            #type_param{value = V2} -> V2;
+            {type_param, _, V2} -> V2;
+            _ -> Right
+        end,
+    cure_utils:debug("Solving constraint ~p = ~p~n", [LeftExtracted, RightExtracted]),
+    Result = unify(LeftExtracted, RightExtracted, Subst),
     cure_utils:debug("Constraint result: ~p~n", [Result]),
     Result;
 solve_constraint(#type_constraint{left = Left, op = 'length_eq', right = Right}, Subst) ->

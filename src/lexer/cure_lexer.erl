@@ -379,6 +379,14 @@ scan_tokens(<<226, 128, 152, Rest/binary>>, Line, Column, Acc) ->
         {error, Reason} ->
             throw({lexer_error, Reason, Line, Column})
     end;
+%% Vector open delimiter (Unicode single left-pointing angle quotation mark U+2039 ‹) - UTF-8: E2 80 B9
+scan_tokens(<<226, 128, 185, Rest/binary>>, Line, Column, Acc) ->
+    Token = #token{type = vector_open, value = vector_open, line = Line, column = Column},
+    scan_tokens(Rest, Line, Column + 1, [Token | Acc]);
+%% Vector close delimiter (Unicode single right-pointing angle quotation mark U+203A ›) - UTF-8: E2 80 BA
+scan_tokens(<<226, 128, 186, Rest/binary>>, Line, Column, Acc) ->
+    Token = #token{type = vector_close, value = vector_close, line = Line, column = Column},
+    scan_tokens(Rest, Line, Column + 1, [Token | Acc]);
 %% Single-quoted atoms (ASCII single quote) - kept for backward compatibility if needed
 scan_tokens(<<$', Rest/binary>>, Line, Column, Acc) ->
     {Atom, NewRest, NewColumn} = scan_quoted_atom(Rest, Column + 1, <<>>),

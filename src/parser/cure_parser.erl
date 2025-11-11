@@ -3514,6 +3514,8 @@ parse_primary_expression(State) ->
                     parse_let_expression(State);
                 '[' ->
                     parse_list_literal(State);
+                vector_open ->
+                    parse_vector_literal(State);
                 'fn' ->
                     parse_lambda_expression(State);
                 'match' ->
@@ -3818,6 +3820,36 @@ parse_list_literal(State) ->
                 location = Location
             },
             {ListExpr, State3}
+    end.
+
+%% Parse vector literal ‹elem1, elem2, ...›
+parse_vector_literal(State) ->
+    {_, State1} = expect(State, vector_open),
+    Location = get_token_location(current_token(State)),
+
+    {Elements, State2} = parse_vector_elements(State1, []),
+    {_, State3} = expect(State2, vector_close),
+
+    VectorExpr = #vector_expr{
+        elements = Elements,
+        location = Location
+    },
+    {VectorExpr, State3}.
+
+%% Parse comma-separated vector elements
+parse_vector_elements(State, Acc) ->
+    case match_token(State, vector_close) of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {Expr, State1} = parse_expression(State),
+            case match_token(State1, ',') of
+                true ->
+                    {_, State2} = expect(State1, ','),
+                    parse_vector_elements(State2, [Expr | Acc]);
+                false ->
+                    {lists:reverse([Expr | Acc]), State1}
+            end
     end.
 
 %% Parse comma-separated expression list (with support for cons syntax)

@@ -252,6 +252,12 @@
     location
 }).
 
+%% Vector expressions ‹elem1, elem2, ...›
+-record(vector_expr, {
+    elements,
+    location
+}).
+
 %% Cons expressions [head | tail]
 -record(cons_expr, {
     elements,  % List of head elements
@@ -454,6 +460,7 @@
                #binary_op_expr{} |
                #unary_op_expr{} |
                #list_expr{} |
+               #vector_expr{} |
                #tuple_expr{} |
                #record_expr{} |
                #field_access_expr{} |

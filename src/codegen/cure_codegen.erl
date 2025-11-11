@@ -1267,6 +1267,7 @@ compile_expression(Expr, State) ->
         #function_call_expr{} -> compile_function_call(Expr, State);
         #let_expr{} -> compile_let_expr(Expr, State);
         #list_expr{} -> compile_list_expr(Expr, State);
+        #vector_expr{} -> compile_vector_expr(Expr, State);
         #cons_expr{} -> compile_cons_expr(Expr, State);
         #tuple_expr{} -> compile_tuple_expr(Expr, State);
         #block_expr{} -> compile_block_expr(Expr, State);
@@ -1677,6 +1678,20 @@ compile_let_expr(#let_expr{bindings = Bindings, body = Body, location = _Locatio
 
 %% Compile list expressions
 compile_list_expr(#list_expr{elements = Elements, location = Location}, State) ->
+    {ElementInstructions, State1} = compile_expressions(Elements, State),
+
+    ListInstruction = #beam_instr{
+        op = make_list,
+        args = [length(Elements)],
+        location = Location
+    },
+
+    Instructions = ElementInstructions ++ [ListInstruction],
+    {Instructions, State1}.
+
+%% Compile vector expressions ‹elem1, elem2, ...›
+%% Vectors are compiled to lists at runtime
+compile_vector_expr(#vector_expr{elements = Elements, location = Location}, State) ->
     {ElementInstructions, State1} = compile_expressions(Elements, State),
 
     ListInstruction = #beam_instr{

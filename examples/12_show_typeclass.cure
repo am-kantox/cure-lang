@@ -10,6 +10,12 @@ module ShowDemo do
   import Std.Io [println]
 
   # ============================================================================
+  # Helper Functions (FFI)
+  # ============================================================================
+
+  curify string_concat(a: String, b: String): String = {string, concat, 2}
+
+  # ============================================================================
   # Custom Record Types with Show Instances
   # ============================================================================
 
@@ -38,7 +44,7 @@ module ShowDemo do
   end
 
   # Implement Show for Point(T) where T is showable
-  instance Show(Point(T)) where Show(T) do
+  instance Show(Point(T)) when Show(T) do
     def show(p: Point(T)): String =
       string_concat("Point(",
         string_concat(show(p.x),
@@ -70,7 +76,7 @@ module ShowDemo do
   type Tree(T) = Leaf | Node(T, Tree(T), Tree(T))
 
   # Implement Show for Tree(T) where T is showable
-  instance Show(Tree(T)) where Show(T) do
+  instance Show(Tree(T)) when Show(T) do
     def show(t: Tree(T)): String =
       match t do
         Leaf -> "Leaf"
@@ -215,11 +221,5 @@ module ShowDemo do
     
     println("\n=== Complete ===")
     0
-
-  # ============================================================================
-  # Helper Functions (FFI)
-  # ============================================================================
-
-  curify string_concat(a: String, b: String): String = {string, concat, 2}
 
 end

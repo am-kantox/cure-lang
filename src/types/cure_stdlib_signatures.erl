@@ -5,488 +5,879 @@
 -module(cure_stdlib_signatures).
 -export([get_function_type/3, all_signatures/0]).
 
+%% Include AST record definitions for type_var and type_param
+-include("../parser/cure_ast.hrl").
+
 %% Get function type signature for a stdlib function
 -spec get_function_type(atom(), atom(), integer()) -> {ok, term()} | not_found.
 get_function_type('Std.Core', 'and', 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Bool'}, {primitive_type, 'Bool'}],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', and_then, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Result', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {type_var, 'E', 'E', []}}
+                ]},
+                {function_type, [{primitive_type, 'T'}],
+                    {dependent_type, 'Result', [
+                        {type_param, undefined, {type_var, 'U', 'U', []}},
+                        {type_param, undefined, {type_var, 'E', 'E', []}}
+                    ]}}
+            ],
+            {dependent_type, 'Result', [
+                {type_param, undefined, {type_var, 'U', 'U', []}},
+                {type_param, undefined, {type_var, 'E', 'E', []}}
+            ]}}};
 get_function_type('Std.Core', apply, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {function_type, [{primitive_type, 'T'}], {primitive_type, 'U'}},
+                {primitive_type, 'T'}
+            ],
+            {primitive_type, 'U'}}};
 get_function_type('Std.Core', clamp, 3) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}, {primitive_type, 'T'}],
+            {primitive_type, 'T'}}};
 get_function_type('Std.Core', compare, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'Atom'}}};
 get_function_type('Std.Core', compose, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {function_type, [{primitive_type, 'B'}], {primitive_type, 'C'}},
+                {function_type, [{primitive_type, 'A'}], {primitive_type, 'B'}}
+            ],
+            {function_type, [{primitive_type, 'A'}], {primitive_type, 'C'}}}};
 get_function_type('Std.Core', const, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'T'}],
+            {function_type, [{primitive_type, 'U'}], {primitive_type, 'T'}}}};
 get_function_type('Std.Core', eq, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', error, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'E'}],
+            {dependent_type, 'Result', [
+                {type_param, undefined, {type_var, 'T', 'T', []}},
+                {type_param, undefined, {type_var, 'E', 'E', []}}
+            ]}}};
 get_function_type('Std.Core', flat_map_option, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Option', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {function_type, [{primitive_type, 'T'}],
+                    {dependent_type, 'Option', [{type_param, undefined, {type_var, 'U', 'U', []}}]}}
+            ],
+            {dependent_type, 'Option', [{type_param, undefined, {type_var, 'U', 'U', []}}]}}};
 get_function_type('Std.Core', ge, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', gt, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', identity, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'T'}], {primitive_type, 'T'}}};
 get_function_type('Std.Core', is_error, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Result', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {type_var, 'E', 'E', []}}
+                ]}
+            ],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', is_none, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [{dependent_type, 'Option', [{type_param, undefined, {type_var, 'T', 'T', []}}]}],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', is_ok, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Result', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {type_var, 'E', 'E', []}}
+                ]}
+            ],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', is_some, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [{dependent_type, 'Option', [{type_param, undefined, {type_var, 'T', 'T', []}}]}],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', le, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', lt, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', map_error, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Result', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {type_var, 'E', 'E', []}}
+                ]},
+                {function_type, [{primitive_type, 'E'}], {primitive_type, 'F'}}
+            ],
+            {dependent_type, 'Result', [
+                {type_param, undefined, {type_var, 'T', 'T', []}},
+                {type_param, undefined, {type_var, 'F', 'F', []}}
+            ]}}};
 get_function_type('Std.Core', map_ok, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Result', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {type_var, 'E', 'E', []}}
+                ]},
+                {function_type, [{primitive_type, 'T'}], {primitive_type, 'U'}}
+            ],
+            {dependent_type, 'Result', [
+                {type_param, undefined, {type_var, 'U', 'U', []}},
+                {type_param, undefined, {type_var, 'E', 'E', []}}
+            ]}}};
 get_function_type('Std.Core', map_option, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Option', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {function_type, [{primitive_type, 'T'}], {primitive_type, 'U'}}
+            ],
+            {dependent_type, 'Option', [{type_param, undefined, {type_var, 'U', 'U', []}}]}}};
 get_function_type('Std.Core', maximum, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'T'}}};
 get_function_type('Std.Core', minimum, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'T'}}};
 get_function_type('Std.Core', ne, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', none, 0) ->
-    {ok, {function_type, [], {type_var, '_'}}};
+    {ok,
+        {function_type, [],
+            {dependent_type, 'Option', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.Core', 'not', 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Bool'}], {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', ok, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'T'}],
+            {dependent_type, 'Result', [
+                {type_param, undefined, {type_var, 'T', 'T', []}},
+                {type_param, undefined, {type_var, 'E', 'E', []}}
+            ]}}};
 get_function_type('Std.Core', option_or, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Option', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {primitive_type, 'T'}
+            ],
+            {primitive_type, 'T'}}};
 get_function_type('Std.Core', 'or', 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Bool'}, {primitive_type, 'Bool'}],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.Core', pipe, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {primitive_type, 'T'},
+                {function_type, [{primitive_type, 'T'}], {primitive_type, 'U'}}
+            ],
+            {primitive_type, 'U'}}};
 get_function_type('Std.Core', some, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'T'}],
+            {dependent_type, 'Option', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.Core', 'xor', 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Bool'}, {primitive_type, 'Bool'}],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.Fsm', fsm_advertise, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Any'}, {primitive_type, 'Atom'}],
+            {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', fsm_cast, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Any'}, {primitive_type, 'Any'}],
+            {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', fsm_info, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Any'}], {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', fsm_is_alive, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Any'}], {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', fsm_send, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Any'}, {primitive_type, 'Any'}],
+            {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', fsm_spawn, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Atom'}, {primitive_type, 'Any'}],
+            {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', fsm_state, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Any'}], {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', fsm_stop, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Any'}], {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', start_fsm, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Atom'}], {primitive_type, 'Any'}}};
 get_function_type('Std.Io', debug, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'Int'}}};
 get_function_type('Std.Io', io_error, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'Int'}}};
 get_function_type('Std.Io', print, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'Unit'}}};
 get_function_type('Std.Io', print_raw, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {primitive_type, 'String'},
+                {dependent_type, 'List', [
+                    {type_param, undefined, {type_var, 'String', 'String', []}}
+                ]}
+            ],
+            {primitive_type, 'Unit'}}};
 get_function_type('Std.Io', println, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'Unit'}}};
 get_function_type('Std.List', append, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}
+            ],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.List', concat, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [
+                    {type_param, undefined,
+                        {dependent_type, 'List', [
+                            {type_param, undefined, {type_var, 'T', 'T', []}}
+                        ]}}
+                ]}
+            ],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.List', cons, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {primitive_type, 'T'},
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}
+            ],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.List', contains, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {primitive_type, 'T'}
+            ],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.List', filter, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {function_type, [{primitive_type, 'T'}], {primitive_type, 'Bool'}}
+            ],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.List', fold, 3) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {primitive_type, 'U'},
+                {function_type, [{primitive_type, 'T'}],
+                    {function_type, [{primitive_type, 'U'}], {primitive_type, 'U'}}}
+            ],
+            {primitive_type, 'U'}}};
 get_function_type('Std.List', head, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {primitive_type, 'T'}
+            ],
+            {primitive_type, 'T'}}};
 get_function_type('Std.List', is_empty, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [{dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.List', length, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [{dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}],
+            {primitive_type, 'Nat'}}};
 get_function_type('Std.List', map, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {function_type, [{primitive_type, 'T'}], {primitive_type, 'U'}}
+            ],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'U', 'U', []}}]}}};
 get_function_type('Std.List', reverse, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}
+            ],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.List', tail, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [{dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.List', zip_with, 3) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'U', 'U', []}}]},
+                {function_type, [{primitive_type, 'T'}],
+                    {function_type, [{primitive_type, 'U'}], {primitive_type, 'V'}}}
+            ],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'V', 'V', []}}]}}};
 get_function_type('Std.Math', abs, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Int'}}};
 get_function_type('Std.Math', add, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Int'}, {primitive_type, 'Int'}],
+            {primitive_type, 'Int'}}};
 get_function_type('Std.Math', clamp, 3) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Int'}, {primitive_type, 'Int'}, {primitive_type, 'Int'}],
+            {primitive_type, 'Int'}}};
 get_function_type('Std.Math', e, 0) ->
-    {ok, {function_type, [], {type_var, '_'}}};
+    {ok, {function_type, [], {primitive_type, 'Float'}}};
 get_function_type('Std.Math', max, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Int'}, {primitive_type, 'Int'}],
+            {primitive_type, 'Int'}}};
 get_function_type('Std.Math', min, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Int'}, {primitive_type, 'Int'}],
+            {primitive_type, 'Int'}}};
 get_function_type('Std.Math', multiply, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Int'}, {primitive_type, 'Int'}],
+            {primitive_type, 'Int'}}};
 get_function_type('Std.Math', negate, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Int'}}};
 get_function_type('Std.Math', pi, 0) ->
-    {ok, {function_type, [], {type_var, '_'}}};
+    {ok, {function_type, [], {primitive_type, 'Float'}}};
 get_function_type('Std.Math', power, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Int'}, {primitive_type, 'Int'}],
+            {primitive_type, 'Int'}}};
 get_function_type('Std.Math', sign, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Int'}}};
 get_function_type('Std.Math', subtract, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Int'}, {primitive_type, 'Int'}],
+            {primitive_type, 'Int'}}};
 get_function_type('Std.Pair', pair, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Any'}, {primitive_type, 'Any'}],
+            {primitive_type, 'Any'}}};
 get_function_type('Std.Rec', get, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Atom'}, {primitive_type, 'Any'}],
+            {primitive_type, 'Any'}}};
 get_function_type('Std.Rec', new, 0) ->
-    {ok, {function_type, [], {type_var, '_'}}};
+    {ok, {function_type, [], {primitive_type, 'Any'}}};
 get_function_type('Std.Rec', put, 3) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [{primitive_type, 'Atom'}, {primitive_type, 'Any'}, {primitive_type, 'Any'}],
+            {primitive_type, 'Any'}}};
 get_function_type('Std.Result', error, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Int'}}};
 get_function_type('Std.Result', get_error, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Int'}}};
 get_function_type('Std.Result', get_value, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Int'}}};
 get_function_type('Std.Result', is_error, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Bool'}}};
 get_function_type('Std.Result', is_ok, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Bool'}}};
 get_function_type('Std.Result', map_error, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {primitive_type, 'Int'},
+                {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Int'}}
+            ],
+            {primitive_type, 'Int'}}};
 get_function_type('Std.Result', map_result, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {primitive_type, 'Int'},
+                {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Int'}}
+            ],
+            {primitive_type, 'Int'}}};
 get_function_type('Std.Result', ok, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Int'}}};
 get_function_type('Std.String', all_of, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [
+                    {type_param, undefined, {type_var, 'String', 'String', []}}
+                ]},
+                {function_type, [{primitive_type, 'String'}], {primitive_type, 'Bool'}}
+            ],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.String', any_of, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [
+                    {type_param, undefined, {type_var, 'String', 'String', []}}
+                ]},
+                {function_type, [{primitive_type, 'String'}], {primitive_type, 'Bool'}}
+            ],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.String', at, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}, {primitive_type, 'Int'}],
+            {dependent_type, 'Result', [
+                {type_param, undefined, {type_var, 'String', 'String', []}},
+                {type_param, undefined, {type_var, 'Atom', 'Atom', []}}
+            ]}}};
 get_function_type('Std.String', byte_size, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'Int'}}};
 get_function_type('Std.String', capitalize, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'String'}}};
 get_function_type('Std.String', codepoints, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'Int', 'Int', []}}]}}};
 get_function_type('Std.String', concat, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}, {primitive_type, 'String'}],
+            {primitive_type, 'String'}}};
 get_function_type('Std.String', contains, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}, {primitive_type, 'String'}],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.String', downcase, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'String'}}};
 get_function_type('Std.String', duplicate, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}, {primitive_type, 'Int'}],
+            {primitive_type, 'String'}}};
 get_function_type('Std.String', ends_with, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}, {primitive_type, 'String'}],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.String', filter, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [
+                    {type_param, undefined, {type_var, 'String', 'String', []}}
+                ]},
+                {function_type, [{primitive_type, 'String'}], {primitive_type, 'Bool'}}
+            ],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'String', 'String', []}}]}}};
 get_function_type('Std.String', first, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}],
+            {dependent_type, 'Result', [
+                {type_param, undefined, {type_var, 'String', 'String', []}},
+                {type_param, undefined, {type_var, 'Atom', 'Atom', []}}
+            ]}}};
 get_function_type('Std.String', from_binary, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'Binary'}],
+            {dependent_type, 'Result', [
+                {type_param, undefined, {type_var, 'String', 'String', []}},
+                {type_param, undefined, {type_var, 'Atom', 'Atom', []}}
+            ]}}};
 get_function_type('Std.String', from_charlist, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Charlist'}], {primitive_type, 'String'}}};
 get_function_type('Std.String', graphemes, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'String', 'String', []}}]}}};
 get_function_type('Std.String', is_empty, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'Bool'}}};
 get_function_type('Std.String', join, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [
+                    {type_param, undefined, {type_var, 'String', 'String', []}}
+                ]},
+                {primitive_type, 'String'}
+            ],
+            {primitive_type, 'String'}}};
 get_function_type('Std.String', last, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}],
+            {dependent_type, 'Result', [
+                {type_param, undefined, {type_var, 'String', 'String', []}},
+                {type_param, undefined, {type_var, 'Atom', 'Atom', []}}
+            ]}}};
 get_function_type('Std.String', length, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'Int'}}};
 get_function_type('Std.String', lines, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'String', 'String', []}}]}}};
 get_function_type('Std.String', map, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [
+                    {type_param, undefined, {type_var, 'String', 'String', []}}
+                ]},
+                {function_type, [{primitive_type, 'String'}], {primitive_type, 'String'}}
+            ],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'String', 'String', []}}]}}};
 get_function_type('Std.String', pad_left, 3) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [{primitive_type, 'String'}, {primitive_type, 'Int'}, {primitive_type, 'String'}],
+            {primitive_type, 'String'}}};
 get_function_type('Std.String', pad_right, 3) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [{primitive_type, 'String'}, {primitive_type, 'Int'}, {primitive_type, 'String'}],
+            {primitive_type, 'String'}}};
 get_function_type('Std.String', replace, 3) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [{primitive_type, 'String'}, {primitive_type, 'String'}, {primitive_type, 'String'}],
+            {primitive_type, 'String'}}};
 get_function_type('Std.String', replace_all, 3) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [{primitive_type, 'String'}, {primitive_type, 'String'}, {primitive_type, 'String'}],
+            {primitive_type, 'String'}}};
 get_function_type('Std.String', reverse, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'String'}}};
 get_function_type('Std.String', slice, 3) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [{primitive_type, 'String'}, {primitive_type, 'Int'}, {primitive_type, 'Int'}],
+            {primitive_type, 'String'}}};
 get_function_type('Std.String', split, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}, {primitive_type, 'String'}],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'String', 'String', []}}]}}};
 get_function_type('Std.String', split_at, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}, {primitive_type, 'Int'}],
+            {dependent_type, 'Pair', [
+                {type_param, undefined, {type_var, 'String', 'String', []}},
+                {type_param, undefined, {type_var, 'String', 'String', []}}
+            ]}}};
 get_function_type('Std.String', starts_with, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}, {primitive_type, 'String'}],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.String', to_atom, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'Atom'}}};
 get_function_type('Std.String', to_binary, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'Binary'}}};
 get_function_type('Std.String', to_charlist, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'Charlist'}}};
 get_function_type('Std.String', trim, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'String'}}};
 get_function_type('Std.String', trim_left, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'String'}}};
 get_function_type('Std.String', trim_right, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'String'}}};
 get_function_type('Std.String', unlines, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [
+                    {type_param, undefined, {type_var, 'String', 'String', []}}
+                ]}
+            ],
+            {primitive_type, 'String'}}};
 get_function_type('Std.String', unwords, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [
+                    {type_param, undefined, {type_var, 'String', 'String', []}}
+                ]}
+            ],
+            {primitive_type, 'String'}}};
 get_function_type('Std.String', upcase, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'String'}], {primitive_type, 'String'}}};
 get_function_type('Std.String', valid_utf8, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Binary'}], {primitive_type, 'Bool'}}};
 get_function_type('Std.String', words, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type, [{primitive_type, 'String'}],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'String', 'String', []}}]}}};
 get_function_type('Std.System', monotonic_time, 0) ->
-    {ok, {function_type, [], {type_var, '_'}}};
+    {ok, {function_type, [], {primitive_type, 'Int'}}};
 get_function_type('Std.System', system_time, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok, {function_type, [{primitive_type, 'Atom'}], {primitive_type, 'Int'}}};
 get_function_type('Std.System', timestamp, 0) ->
-    {ok, {function_type, [], {type_var, '_'}}};
+    {ok, {function_type, [], {primitive_type, 'Any'}}};
 get_function_type('Std.Vector', contains, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]},
+                {primitive_type, 'T'}
+            ],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.Vector', filter, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]},
+                {function_type, [{primitive_type, 'T'}], {primitive_type, 'Bool'}}
+            ],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.Vector', fold, 3) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]},
+                {primitive_type, 'U'},
+                {function_type, [{primitive_type, 'T'}],
+                    {function_type, [{primitive_type, 'U'}], {primitive_type, 'U'}}}
+            ],
+            {primitive_type, 'U'}}};
 get_function_type('Std.Vector', is_empty, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]}
+            ],
+            {primitive_type, 'Bool'}}};
 get_function_type('Std.Vector', length, 1) ->
-    {ok, {function_type, [{type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]}
+            ],
+            {primitive_type, 'Nat'}}};
 get_function_type('Std.Vector', map, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]},
+                {function_type, [{primitive_type, 'T'}], {primitive_type, 'U'}}
+            ],
+            {dependent_type, 'Vector', [
+                {type_param, undefined, {type_var, 'U', 'U', []}},
+                {type_param, undefined, {identifier_expr, n, undefined}}
+            ]}}};
 get_function_type('Std.Vector', reverse, 2) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]},
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, m, undefined}}
+                ]}
+            ],
+            {dependent_type, 'Vector', [
+                {type_param, undefined, {type_var, 'T', 'T', []}},
+                {type_param, undefined, {type_var, '_'}}
+            ]}}};
 get_function_type('Std.Vector', zip_with, 3) ->
-    {ok, {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}};
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]},
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'U', 'U', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]},
+                {function_type, [{primitive_type, 'T'}],
+                    {function_type, [{primitive_type, 'U'}], {primitive_type, 'V'}}}
+            ],
+            {dependent_type, 'Vector', [
+                {type_param, undefined, {type_var, 'V', 'V', []}},
+                {type_param, undefined, {identifier_expr, n, undefined}}
+            ]}}};
 get_function_type(_, _, _) ->
     not_found.
 
 %% Return all signatures (for debugging)
 all_signatures() ->
-    #{
-        {'Std.Core', 'and', 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', and_then, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', apply, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', clamp, 3} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', compare, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', compose, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', const, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', eq, 2} => {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', error, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', flat_map_option, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', ge, 2} => {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', gt, 2} => {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', identity, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', is_error, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', is_none, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', is_ok, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', is_some, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', le, 2} => {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', lt, 2} => {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', map_error, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', map_ok, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', map_option, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', maximum, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', minimum, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', ne, 2} => {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', none, 0} => {function_type, [], {type_var, '_'}},
-        {'Std.Core', 'not', 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', ok, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', option_or, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', 'or', 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', pipe, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', some, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Core', 'xor', 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Fsm', fsm_advertise, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Fsm', fsm_cast, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Fsm', fsm_info, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Fsm', fsm_is_alive, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Fsm', fsm_send, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Fsm', fsm_spawn, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Fsm', fsm_state, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Fsm', fsm_stop, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Fsm', start_fsm, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Io', debug, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Io', io_error, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Io', print, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Io', print_raw, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Io', println, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.List', append, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.List', concat, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.List', cons, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.List', contains, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.List', filter, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.List', fold, 3} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.List', head, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.List', is_empty, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.List', length, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.List', map, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.List', reverse, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.List', tail, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.List', zip_with, 3} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Math', abs, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Math', add, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Math', clamp, 3} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Math', e, 0} => {function_type, [], {type_var, '_'}},
-        {'Std.Math', max, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Math', min, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Math', multiply, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Math', negate, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Math', pi, 0} => {function_type, [], {type_var, '_'}},
-        {'Std.Math', power, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Math', sign, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Math', subtract, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Pair', pair, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Rec', get, 2} => {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Rec', new, 0} => {function_type, [], {type_var, '_'}},
-        {'Std.Rec', put, 3} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Result', error, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Result', get_error, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Result', get_value, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Result', is_error, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Result', is_ok, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Result', map_error, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Result', map_result, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Result', ok, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', all_of, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', any_of, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', at, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', byte_size, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', capitalize, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', codepoints, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', concat, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', contains, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', downcase, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', duplicate, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', ends_with, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', filter, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', first, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', from_binary, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', from_charlist, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', graphemes, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', is_empty, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', join, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', last, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', length, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', lines, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', map, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', pad_left, 3} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', pad_right, 3} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', replace, 3} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', replace_all, 3} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', reverse, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', slice, 3} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', split, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', split_at, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', starts_with, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.String', to_atom, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', to_binary, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', to_charlist, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', trim, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', trim_left, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', trim_right, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', unlines, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', unwords, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', upcase, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', valid_utf8, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.String', words, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.System', monotonic_time, 0} => {function_type, [], {type_var, '_'}},
-        {'Std.System', system_time, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.System', timestamp, 0} => {function_type, [], {type_var, '_'}},
-        {'Std.Vector', contains, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Vector', filter, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Vector', fold, 3} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Vector', is_empty, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Vector', length, 1} => {function_type, [{type_var, '_'}], {type_var, '_'}},
-        {'Std.Vector', map, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Vector', reverse, 2} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}], {type_var, '_'}},
-        {'Std.Vector', zip_with, 3} =>
-            {function_type, [{type_var, '_'}, {type_var, '_'}, {type_var, '_'}], {type_var, '_'}}
-    }.
+    %% List of {Module, Function, Arity} tuples
+    [
+        {'Std.Core', 'and', 2},
+        {'Std.Core', and_then, 2},
+        {'Std.Core', apply, 2},
+        {'Std.Core', clamp, 3},
+        {'Std.Core', compare, 2},
+        {'Std.Core', compose, 2},
+        {'Std.Core', const, 1},
+        {'Std.Core', eq, 2},
+        {'Std.Core', error, 1},
+        {'Std.Core', flat_map_option, 2},
+        {'Std.Core', ge, 2},
+        {'Std.Core', gt, 2},
+        {'Std.Core', identity, 1},
+        {'Std.Core', is_error, 1},
+        {'Std.Core', is_none, 1},
+        {'Std.Core', is_ok, 1},
+        {'Std.Core', is_some, 1},
+        {'Std.Core', le, 2},
+        {'Std.Core', lt, 2},
+        {'Std.Core', map_error, 2},
+        {'Std.Core', map_ok, 2},
+        {'Std.Core', map_option, 2},
+        {'Std.Core', maximum, 2},
+        {'Std.Core', minimum, 2},
+        {'Std.Core', ne, 2},
+        {'Std.Core', none, 0},
+        {'Std.Core', 'not', 1},
+        {'Std.Core', ok, 1},
+        {'Std.Core', option_or, 2},
+        {'Std.Core', 'or', 2},
+        {'Std.Core', pipe, 2},
+        {'Std.Core', some, 1},
+        {'Std.Core', 'xor', 2},
+        {'Std.Fsm', fsm_advertise, 2},
+        {'Std.Fsm', fsm_cast, 2},
+        {'Std.Fsm', fsm_info, 1},
+        {'Std.Fsm', fsm_is_alive, 1},
+        {'Std.Fsm', fsm_send, 2},
+        {'Std.Fsm', fsm_spawn, 2},
+        {'Std.Fsm', fsm_state, 1},
+        {'Std.Fsm', fsm_stop, 1},
+        {'Std.Fsm', start_fsm, 1},
+        {'Std.Io', debug, 1},
+        {'Std.Io', io_error, 1},
+        {'Std.Io', print, 1},
+        {'Std.Io', print_raw, 2},
+        {'Std.Io', println, 1},
+        {'Std.List', append, 2},
+        {'Std.List', concat, 1},
+        {'Std.List', cons, 2},
+        {'Std.List', contains, 2},
+        {'Std.List', filter, 2},
+        {'Std.List', fold, 3},
+        {'Std.List', head, 2},
+        {'Std.List', is_empty, 1},
+        {'Std.List', length, 1},
+        {'Std.List', map, 2},
+        {'Std.List', reverse, 2},
+        {'Std.List', tail, 1},
+        {'Std.List', zip_with, 3},
+        {'Std.Math', abs, 1},
+        {'Std.Math', add, 2},
+        {'Std.Math', clamp, 3},
+        {'Std.Math', e, 0},
+        {'Std.Math', max, 2},
+        {'Std.Math', min, 2},
+        {'Std.Math', multiply, 2},
+        {'Std.Math', negate, 1},
+        {'Std.Math', pi, 0},
+        {'Std.Math', power, 2},
+        {'Std.Math', sign, 1},
+        {'Std.Math', subtract, 2},
+        {'Std.Pair', pair, 2},
+        {'Std.Rec', get, 2},
+        {'Std.Rec', new, 0},
+        {'Std.Rec', put, 3},
+        {'Std.Result', error, 1},
+        {'Std.Result', get_error, 1},
+        {'Std.Result', get_value, 1},
+        {'Std.Result', is_error, 1},
+        {'Std.Result', is_ok, 1},
+        {'Std.Result', map_error, 2},
+        {'Std.Result', map_result, 2},
+        {'Std.Result', ok, 1},
+        {'Std.String', all_of, 2},
+        {'Std.String', any_of, 2},
+        {'Std.String', at, 2},
+        {'Std.String', byte_size, 1},
+        {'Std.String', capitalize, 1},
+        {'Std.String', codepoints, 1},
+        {'Std.String', concat, 2},
+        {'Std.String', contains, 2},
+        {'Std.String', downcase, 1},
+        {'Std.String', duplicate, 2},
+        {'Std.String', ends_with, 2},
+        {'Std.String', filter, 2},
+        {'Std.String', first, 1},
+        {'Std.String', from_binary, 1},
+        {'Std.String', from_charlist, 1},
+        {'Std.String', graphemes, 1},
+        {'Std.String', is_empty, 1},
+        {'Std.String', join, 2},
+        {'Std.String', last, 1},
+        {'Std.String', length, 1},
+        {'Std.String', lines, 1},
+        {'Std.String', map, 2},
+        {'Std.String', pad_left, 3},
+        {'Std.String', pad_right, 3},
+        {'Std.String', replace, 3},
+        {'Std.String', replace_all, 3},
+        {'Std.String', reverse, 1},
+        {'Std.String', slice, 3},
+        {'Std.String', split, 2},
+        {'Std.String', split_at, 2},
+        {'Std.String', starts_with, 2},
+        {'Std.String', to_atom, 1},
+        {'Std.String', to_binary, 1},
+        {'Std.String', to_charlist, 1},
+        {'Std.String', trim, 1},
+        {'Std.String', trim_left, 1},
+        {'Std.String', trim_right, 1},
+        {'Std.String', unlines, 1},
+        {'Std.String', unwords, 1},
+        {'Std.String', upcase, 1},
+        {'Std.String', valid_utf8, 1},
+        {'Std.String', words, 1},
+        {'Std.System', monotonic_time, 0},
+        {'Std.System', system_time, 1},
+        {'Std.System', timestamp, 0},
+        {'Std.Vector', contains, 2},
+        {'Std.Vector', filter, 2},
+        {'Std.Vector', fold, 3},
+        {'Std.Vector', is_empty, 1},
+        {'Std.Vector', length, 1},
+        {'Std.Vector', map, 2},
+        {'Std.Vector', reverse, 2},
+        {'Std.Vector', zip_with, 3}
+    ].

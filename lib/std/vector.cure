@@ -51,7 +51,6 @@ module Std.Vector do
       [] -> []
       [h1 | t1] -> 
         match v2 do
-          [] -> []  # This should not happen with equal length vectors
           [h2 | t2] -> 
             let partial_func = func(h1)
             [partial_func(h2) | zip_with(t1, t2, func)]

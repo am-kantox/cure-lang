@@ -1,21 +1,22 @@
 # Example 1: Basic List Operations
 # Demonstrates fundamental list processing with map, filter, and fold
 
-module ListBasics do
+module VectorBasics do
   export [main/0]
   
   # Import standard library functions
-  import Std.List [map/2, filter/2, fold/3]
+  import Std.Vector [length/1, map/2, filter/2, zip_with/3, fold/3]
   import Std.Io [println/1]
   
   # Main demonstration function
-  def main(): Int =
+  def main(): Nat =
     println("=== List Operations Demo ===")
     println("")
     
     # Create a simple list
-    let numbers = [1, 2, 3, 4, 5]
-    println("Original list: [1, 2, 3, 4, 5]")
+    let numbers = ‹1, 2, 3, 4, 5›
+    println("Original vector: [1, 2, 3, 4, 5]")
+    let numbers2 = ‹1, 2, 3, 4, 5›
     println("")
     
     # Map: double each element
@@ -29,13 +30,16 @@ module ListBasics do
       end
     end)
     println("Evens (filter): depends on implementation")
+
+    let zipped = zip_with(numbers, numbers2, fn(x) -> fn(y) -> x + y end end)
+    println("")
     
     # Fold: sum all elements
-    let sum = fold(numbers, 0, fn(x) -> fn(acc) -> acc + x end end)
+    let sum = fold(zipped, 0, fn(x) -> fn(acc) -> acc + x end end)
     println("Sum (fold): " <> "15" <> " should be 15")
     println("")
     
     println("=== Demo Complete ===")
-    sum
+    zipped
 
 end

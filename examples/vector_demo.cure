@@ -1,0 +1,15 @@
+module VectorDemo do
+
+  def empty_vector() = ‹›
+
+  def singleton() = ‹42›
+
+  def triple() = ‹1, 2, 3›
+
+  def vector_of_sums(x: Int, y: Int, z: Int) = ‹x + 1, y + 2, z + 3›
+
+  def nested() = ‹1, ‹2, 3›, ‹4, 5, 6››
+
+  def typed_vector(): Int = 42
+
+end
