@@ -7,6 +7,11 @@ This directory contains the Language Server Protocol implementation for the Cure
 The Cure LSP server provides the following features:
 
 - **Diagnostics**: Real-time syntax and type error detection
+  - Lexical and syntax errors
+  - Dependent type checking
+  - SMT-based constraint verification
+  - Pattern exhaustiveness checking
+  - Refinement type validation
 - **Autocompletion**: Context-aware code completion for functions, FSMs, modules
 - **Hover Information**: Type information and documentation on hover
 - **Go to Definition**: Navigate to symbol definitions
@@ -18,8 +23,9 @@ The Cure LSP server provides the following features:
 
 ### Core Modules
 
-- **cure_lsp.erl**: Main LSP server with JSON-RPC protocol handling
+- **cure_lsp_server.erl** (in `src/lsp/`): Main LSP server with JSON-RPC protocol handling
 - **cure_lsp_analyzer.erl**: Integration with Cure compiler (lexer, parser, type checker)
+- **cure_lsp_smt.erl**: SMT solver integration for constraint verification
 - **cure_lsp_document.erl**: Document management and text synchronization
 - **cure_lsp_symbols.erl**: Symbol table and workspace indexing
 
@@ -28,11 +34,14 @@ The Cure LSP server provides the following features:
 ```
 Editor (NeoVim/VSCode/etc)
     ↕ (JSON-RPC over stdin/stdout)
-cure_lsp.erl (Protocol Handler)
+cure_lsp_server.erl (Protocol Handler)
     ↕
-cure_lsp_analyzer.erl (Analysis)
-    ↕
-Cure Compiler (Lexer, Parser, Type Checker)
+    ├→ cure_lsp_analyzer.erl (Lexer, Parser)
+    ├→ cure_typechecker (Type checking)
+    └→ cure_lsp_smt.erl (SMT verification)
+         ├→ Pattern exhaustiveness
+         ├→ Refinement types
+         └→ Constraint solving
 ```
 
 ## Building
@@ -179,14 +188,76 @@ To add a new LSP feature:
 3. Implement the analysis logic in `cure_lsp_analyzer.erl`
 4. Update the symbol table in `cure_lsp_symbols.erl` if needed
 
+## Advanced Features
+
+### Type Checking Integration
+
+The LSP runs the full Cure type checker on every document change, providing:
+
+- **Dependent type verification**: Validates constraints on type parameters
+- **Generic type resolution**: Ensures type parameters are correctly instantiated
+- **FSM handler checking**: Verifies FSM event handler signatures
+- **Function signature matching**: Checks parameter and return types
+
+See [LSP_SMT_INTEGRATION.md](./LSP_SMT_INTEGRATION.md) for details.
+
+### SMT Solver Integration
+
+The LSP integrates with Z3/CVC5 SMT solvers for advanced verification:
+
+- **Pattern exhaustiveness**: Detects missing pattern match cases
+- **Refinement types**: Validates type predicates (e.g., `n > 0`)
+- **Constraint solving**: Proves or disproves dependent type constraints
+- **Counter-examples**: Generates examples when constraints fail
+
+#### Example: Pattern Exhaustiveness
+
+```cure
+def describe(x: Option(Int)) -> String do
+    match x do
+        | Some(n) -> "Has value"
+        // Warning: Missing case for None
+    end
+end
+```
+
+#### Example: Refinement Types
+
+```cure
+type PositiveInt = Int when n > 0
+
+def safe_div(x: Int, y: PositiveInt) -> Int do
+    x / y  // OK: y is guaranteed > 0
+end
+
+safe_div(10, -5)  // Error: Refinement type violated
+```
+
 ## Dependencies
 
 The LSP server requires:
 
 - **Erlang/OTP 27+**: For native `json` module support
 - **Cure compiler**: Lexer, parser, and type checker
+- **cure_smt_solver**: SMT solver integration (Z3 or CVC5 recommended)
 
-No external dependencies are needed - the LSP uses Erlang's built-in `json` module for JSON encoding/decoding.
+No external Erlang dependencies are needed - the LSP uses Erlang's built-in `json` module for JSON encoding/decoding.
+
+### Optional: SMT Solver
+
+For enhanced verification features, install Z3 or CVC5:
+
+```bash
+# Ubuntu/Debian
+sudo apt install z3
+
+# macOS
+brew install z3
+
+# Or download from https://github.com/Z3Prover/z3/releases
+```
+
+The LSP will automatically detect available solvers and use them for advanced checks.
 
 ## Protocol Implementation Status
 

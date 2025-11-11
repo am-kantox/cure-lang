@@ -390,10 +390,10 @@ close_document(Uri, State) ->
         type_cache = TypeCache
     }.
 
-%% Analyze a document (parse + type check)
+%% Analyze a document (parse + type check + SMT verification)
 analyze_document(Uri, Version, Content) ->
     % Parse the document
-    {AST, Errors} =
+    {AST, ParseErrors} =
         case cure_lexer:tokenize(Content) of
             {ok, Tokens} ->
                 case cure_parser:parse(Tokens) of
@@ -414,12 +414,23 @@ analyze_document(Uri, Version, Content) ->
                 {undefined, [ErrorDiag]}
         end,
 
+    % Run type checker and SMT verification if parsing succeeded
+    AllErrors =
+        case AST of
+            undefined ->
+                ParseErrors;
+            _ ->
+                TypeErrors = run_type_checker(AST),
+                SmtErrors = run_smt_verification(AST),
+                ParseErrors ++ TypeErrors ++ SmtErrors
+        end,
+
     #document{
         uri = Uri,
         version = Version,
         content = Content,
         ast = AST,
-        errors = Errors
+        errors = AllErrors
     }.
 
 %% Format a diagnostic for LSP
@@ -442,6 +453,127 @@ severity_to_int(hint) -> 4.
 format_error_message(Error) when is_binary(Error) -> Error;
 format_error_message(Error) when is_list(Error) -> list_to_binary(Error);
 format_error_message(Error) -> iolist_to_binary(io_lib:format("~p", [Error])).
+
+%% Run type checker on AST and convert errors to diagnostics
+run_type_checker(AST) ->
+    try
+        Env = cure_typechecker:builtin_env(),
+        case cure_typechecker:check_module(AST, Env) of
+            {ok, _TypedAST, _NewEnv} ->
+                % Type checking succeeded
+                [];
+            {error, TypeErrors} when is_list(TypeErrors) ->
+                % Convert type errors to LSP diagnostics
+                lists:filtermap(fun convert_type_error_to_diagnostic/1, TypeErrors);
+            {error, TypeError} ->
+                % Single type error
+                case convert_type_error_to_diagnostic(TypeError) of
+                    {true, Diag} -> [Diag];
+                    false -> []
+                end
+        end
+    catch
+        _:_Reason ->
+            % Type checker not available or crashed - don't fail LSP
+            []
+    end.
+
+%% Convert type checker error to LSP diagnostic
+convert_type_error_to_diagnostic(#typecheck_error{message = Message, location = Location}) ->
+    {Line, Col} =
+        case Location of
+            #location{line = L, column = C} -> {L, C};
+            _ -> {1, 1}
+        end,
+    {true, format_diagnostic(error, Message, Line, Col)};
+convert_type_error_to_diagnostic({type_error, Message, Line, Col}) ->
+    {true, format_diagnostic(error, Message, Line, Col)};
+convert_type_error_to_diagnostic({type_error, Message, #location{line = Line, column = Col}}) ->
+    {true, format_diagnostic(error, Message, Line, Col)};
+convert_type_error_to_diagnostic(_) ->
+    false.
+
+%% Run SMT verification on AST and convert errors to diagnostics
+run_smt_verification(AST) ->
+    try
+        % Extract type constraints from AST
+        Constraints = cure_lsp_smt:extract_type_constraints(AST),
+
+        % Check exhaustiveness of pattern matches
+        ExhaustivenessErrors = check_pattern_exhaustiveness(AST),
+
+        % Verify refinement types
+        RefinementErrors = cure_lsp_smt:verify_refinement_types(AST),
+
+        % Convert all errors to diagnostics
+        AllSmtErrors = ExhaustivenessErrors ++ RefinementErrors,
+        lists:map(fun convert_smt_error_to_diagnostic/1, AllSmtErrors)
+    catch
+        _:_Reason ->
+            % SMT solver not available or crashed - don't fail LSP
+            []
+    end.
+
+%% Check pattern matching exhaustiveness
+check_pattern_exhaustiveness(AST) when is_list(AST) ->
+    lists:flatmap(fun check_pattern_exhaustiveness/1, AST);
+check_pattern_exhaustiveness(#module_def{items = Items}) ->
+    lists:flatmap(fun check_pattern_exhaustiveness/1, Items);
+check_pattern_exhaustiveness(#function_def{body = Body}) ->
+    check_expr_exhaustiveness(Body);
+check_pattern_exhaustiveness(_) ->
+    [].
+
+%% Check expressions for exhaustiveness
+check_expr_exhaustiveness(#match_expr{} = MatchExpr) ->
+    case cure_lsp_smt:check_exhaustiveness(MatchExpr) of
+        {not_exhaustive, CounterExample} ->
+            [
+                #{
+                    severity => warning,
+                    message => iolist_to_binary([
+                        <<"Pattern match not exhaustive. Missing case: ">>,
+                        format_counter_example(CounterExample)
+                    ]),
+                    location => extract_location(MatchExpr)
+                }
+            ];
+        exhaustive ->
+            [];
+        unknown ->
+            []
+    end;
+check_expr_exhaustiveness(#let_expr{body = Body}) ->
+    check_expr_exhaustiveness(Body);
+check_expr_exhaustiveness(#block_expr{expressions = Exprs}) ->
+    lists:flatmap(fun check_expr_exhaustiveness/1, Exprs);
+check_expr_exhaustiveness(_) ->
+    [].
+
+%% Convert SMT error to LSP diagnostic
+convert_smt_error_to_diagnostic(#{severity := Severity, message := Message, location := Location}) ->
+    {Line, Col} =
+        case Location of
+            #location{line = L, column = C} -> {L, C};
+            _ -> {1, 1}
+        end,
+    format_diagnostic(Severity, Message, Line, Col);
+convert_smt_error_to_diagnostic(_) ->
+    format_diagnostic(warning, <<"Unknown SMT verification issue">>, 1, 1).
+
+%% Format counter example for display
+format_counter_example(CounterExample) when is_map(CounterExample) ->
+    case maps:to_list(CounterExample) of
+        [] -> <<"<unknown>">>;
+        [{Var, Val} | _] -> iolist_to_binary(io_lib:format("~p = ~p", [Var, Val]))
+    end;
+format_counter_example(_) ->
+    <<"<unknown>">>.
+
+%% Extract location from AST node
+extract_location(#match_expr{location = Loc}) -> Loc;
+extract_location(#function_def{location = Loc}) -> Loc;
+extract_location(_) -> #location{line = 1, column = 1}.
 
 %% Get hover information at position
 get_hover_info(Uri, Line, Character, State) ->
