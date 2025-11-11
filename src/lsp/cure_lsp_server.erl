@@ -433,17 +433,41 @@ analyze_document(Uri, Version, Content) ->
         errors = AllErrors
     }.
 
-%% Format a diagnostic for LSP
+%% Format a diagnostic for LSP with proper range
 format_diagnostic(Severity, Reason, Line, Column) ->
+    format_diagnostic_with_range(Severity, Reason, Line, Column, Line, Column + 10).
+
+%% Format a diagnostic with explicit start and end positions
+format_diagnostic_with_range(Severity, Reason, StartLine, StartCol, EndLine, EndCol) ->
     #{
         <<"range">> => #{
-            <<"start">> => #{<<"line">> => Line - 1, <<"character">> => Column - 1},
-            <<"end">> => #{<<"line">> => Line - 1, <<"character">> => Column + 10}
+            <<"start">> => #{
+                <<"line">> => max(0, StartLine - 1), <<"character">> => max(0, StartCol - 1)
+            },
+            <<"end">> => #{<<"line">> => max(0, EndLine - 1), <<"character">> => max(0, EndCol)}
         },
         <<"severity">> => severity_to_int(Severity),
         <<"message">> => format_error_message(Reason),
-        <<"source">> => <<"cure">>
+        <<"source">> => source_for_severity(Severity),
+        <<"code">> => error_code_for_message(Reason)
     }.
+
+%% Get source tag based on severity
+source_for_severity(error) -> <<"cure-typecheck">>;
+source_for_severity(warning) -> <<"cure-smt">>;
+source_for_severity(_) -> <<"cure-lsp">>.
+
+%% Generate error code from message for better categorization
+error_code_for_message(Msg) when is_binary(Msg) ->
+    case Msg of
+        <<"Type mismatch", _/binary>> -> <<"type-mismatch">>;
+        <<"Undefined", _/binary>> -> <<"undefined-var">>;
+        <<"Pattern match not exhaustive", _/binary>> -> <<"non-exhaustive-pattern">>;
+        <<"Refinement", _/binary>> -> <<"refinement-violation">>;
+        _ -> <<"generic-error">>
+    end;
+error_code_for_message(_) ->
+    <<"generic-error">>.
 
 severity_to_int(error) -> 1;
 severity_to_int(warning) -> 2;
@@ -478,20 +502,97 @@ run_type_checker(AST) ->
             []
     end.
 
-%% Convert type checker error to LSP diagnostic
-convert_type_error_to_diagnostic(#typecheck_error{message = Message, location = Location}) ->
-    {Line, Col} =
-        case Location of
-            #location{line = L, column = C} -> {L, C};
-            _ -> {1, 1}
-        end,
-    {true, format_diagnostic(error, Message, Line, Col)};
+%% Convert type checker error to LSP diagnostic with detailed location
+convert_type_error_to_diagnostic(#typecheck_error{
+    message = Message, location = Location, details = Details
+}) ->
+    case extract_error_location(Location) of
+        {StartLine, StartCol, EndLine, EndCol} ->
+            EnhancedMessage = enhance_error_message(Message, Details),
+            {true,
+                format_diagnostic_with_range(
+                    error, EnhancedMessage, StartLine, StartCol, EndLine, EndCol
+                )};
+        {Line, Col} ->
+            EnhancedMessage = enhance_error_message(Message, Details),
+            {true, format_diagnostic(error, EnhancedMessage, Line, Col)}
+    end;
 convert_type_error_to_diagnostic({type_error, Message, Line, Col}) ->
     {true, format_diagnostic(error, Message, Line, Col)};
 convert_type_error_to_diagnostic({type_error, Message, #location{line = Line, column = Col}}) ->
     {true, format_diagnostic(error, Message, Line, Col)};
+convert_type_error_to_diagnostic({type_mismatch, Expected, Got, Location}) ->
+    Message = iolist_to_binary([
+        <<"Type mismatch: expected ">>,
+        format_type_for_error(Expected),
+        <<", but got ">>,
+        format_type_for_error(Got)
+    ]),
+    case extract_error_location(Location) of
+        {StartLine, StartCol, EndLine, EndCol} ->
+            {true,
+                format_diagnostic_with_range(error, Message, StartLine, StartCol, EndLine, EndCol)};
+        {Line, Col} ->
+            {true, format_diagnostic(error, Message, Line, Col)}
+    end;
+convert_type_error_to_diagnostic({undefined_variable, VarName, Location}) ->
+    Message = iolist_to_binary([<<"Undefined variable: ">>, atom_to_binary(VarName, utf8)]),
+    case extract_error_location(Location) of
+        {StartLine, StartCol, EndLine, EndCol} ->
+            {true,
+                format_diagnostic_with_range(error, Message, StartLine, StartCol, EndLine, EndCol)};
+        {Line, Col} ->
+            {true, format_diagnostic(error, Message, Line, Col)}
+    end;
 convert_type_error_to_diagnostic(_) ->
     false.
+
+%% Extract location with proper range from various formats
+extract_error_location(#location{line = L, column = C}) ->
+    {L, C};
+extract_error_location(
+    {range, #location{line = SL, column = SC}, #location{line = EL, column = EC}}
+) ->
+    {SL, SC, EL, EC};
+extract_error_location({Line, Col}) ->
+    {Line, Col};
+extract_error_location(_) ->
+    {1, 1}.
+
+%% Enhance error message with additional details
+enhance_error_message(Message, undefined) ->
+    Message;
+enhance_error_message(Message, Details) when is_binary(Details) ->
+    iolist_to_binary([Message, <<"\n\nDetails: ">>, Details]);
+enhance_error_message(Message, Details) when is_list(Details) ->
+    iolist_to_binary([Message, <<"\n\nDetails: ">>, list_to_binary(Details)]);
+enhance_error_message(Message, Details) ->
+    iolist_to_binary([Message, <<"\n\nDetails: ">>, io_lib:format("~p", [Details])]).
+
+%% Format type for error messages
+format_type_for_error({primitive_type, Name}) ->
+    atom_to_binary(Name, utf8);
+format_type_for_error({function_type, Params, RetType}) ->
+    ParamStrs = [format_type_for_error(P) || P <- Params],
+    iolist_to_binary([
+        <<"(">>,
+        lists:join(<<", ">>, ParamStrs),
+        <<") -> ">>,
+        format_type_for_error(RetType)
+    ]);
+format_type_for_error({list_type, ElemType}) ->
+    iolist_to_binary([<<"[">>, format_type_for_error(ElemType), <<"]">>]);
+format_type_for_error({tuple_type, ElemTypes}) ->
+    ElemStrs = [format_type_for_error(T) || T <- ElemTypes],
+    iolist_to_binary([<<"(">>, lists:join(<<", ">>, ElemStrs), <<")">>]);
+format_type_for_error({dependent_type, Name, _Params}) ->
+    atom_to_binary(Name, utf8);
+format_type_for_error(Type) when is_atom(Type) ->
+    atom_to_binary(Type, utf8);
+format_type_for_error(Type) when is_binary(Type) ->
+    Type;
+format_type_for_error(_) ->
+    <<"<unknown type>">>.
 
 %% Run SMT verification on AST and convert errors to diagnostics
 run_smt_verification(AST) ->
@@ -525,19 +626,25 @@ check_pattern_exhaustiveness(_) ->
     [].
 
 %% Check expressions for exhaustiveness
-check_expr_exhaustiveness(#match_expr{} = MatchExpr) ->
+check_expr_exhaustiveness(
+    #match_expr{expr = Expr, patterns = Patterns, location = Loc} = MatchExpr
+) ->
     case cure_lsp_smt:check_exhaustiveness(MatchExpr) of
         {not_exhaustive, CounterExample} ->
-            [
-                #{
-                    severity => warning,
-                    message => iolist_to_binary([
-                        <<"Pattern match not exhaustive. Missing case: ">>,
-                        format_counter_example(CounterExample)
-                    ]),
-                    location => extract_location(MatchExpr)
-                }
-            ];
+            Message = iolist_to_binary([
+                <<"Pattern match is not exhaustive.\n">>,
+                <<"Missing case for: ">>,
+                format_counter_example(CounterExample),
+                <<"\n\nCovered cases: ">>,
+                format_pattern_list(Patterns)
+            ]),
+            % Get precise location of the match expression
+            {Line, Col} =
+                case Loc of
+                    #location{line = L, column = C} -> {L, C};
+                    _ -> {1, 1}
+                end,
+            [format_diagnostic(warning, Message, Line, Col)];
         exhaustive ->
             [];
         unknown ->
@@ -550,25 +657,105 @@ check_expr_exhaustiveness(#block_expr{expressions = Exprs}) ->
 check_expr_exhaustiveness(_) ->
     [].
 
-%% Convert SMT error to LSP diagnostic
-convert_smt_error_to_diagnostic(#{severity := Severity, message := Message, location := Location}) ->
-    {Line, Col} =
-        case Location of
-            #location{line = L, column = C} -> {L, C};
-            _ -> {1, 1}
-        end,
-    format_diagnostic(Severity, Message, Line, Col);
+%% Format list of patterns for display
+format_pattern_list(Patterns) ->
+    PatternStrs = lists:map(fun format_pattern/1, Patterns),
+    iolist_to_binary(lists:join(<<", ">>, PatternStrs)).
+
+%% Format a single pattern
+format_pattern(#match_clause{pattern = Pattern}) ->
+    format_pattern_node(Pattern);
+format_pattern(Pattern) ->
+    format_pattern_node(Pattern).
+
+format_pattern_node(#literal_pattern{value = Val}) ->
+    io_lib:format("~p", [Val]);
+format_pattern_node(#constructor_pattern{name = Name, args = []}) ->
+    atom_to_binary(Name, utf8);
+format_pattern_node(#constructor_pattern{name = Name, args = _Args}) ->
+    iolist_to_binary([atom_to_binary(Name, utf8), <<"(...)">>]);
+format_pattern_node(#identifier_pattern{name = Name}) ->
+    atom_to_binary(Name, utf8);
+format_pattern_node(#list_pattern{elements = []}) ->
+    <<"[]">>;
+format_pattern_node(#list_pattern{}) ->
+    <<"[...]">>;
+format_pattern_node(#tuple_pattern{elements = Elems}) ->
+    iolist_to_binary([<<"(">>, integer_to_binary(length(Elems)), <<" elements)">>]);
+format_pattern_node(_) ->
+    <<"_">>.
+
+%% Convert SMT error to LSP diagnostic with proper location
+convert_smt_error_to_diagnostic(
+    #{severity := Severity, message := Message, location := Location} = Error
+) ->
+    case extract_error_location(Location) of
+        {StartLine, StartCol, EndLine, EndCol} ->
+            EnhancedMsg =
+                case maps:get(hint, Error, undefined) of
+                    undefined -> Message;
+                    Hint -> iolist_to_binary([Message, <<"\n\nHint: ">>, Hint])
+                end,
+            format_diagnostic_with_range(
+                Severity, EnhancedMsg, StartLine, StartCol, EndLine, EndCol
+            );
+        {Line, Col} ->
+            EnhancedMsg =
+                case maps:get(hint, Error, undefined) of
+                    undefined -> Message;
+                    Hint -> iolist_to_binary([Message, <<"\n\nHint: ">>, Hint])
+                end,
+            format_diagnostic(Severity, EnhancedMsg, Line, Col)
+    end;
+convert_smt_error_to_diagnostic(#{severity := Severity, message := Message}) ->
+    format_diagnostic(Severity, Message, 1, 1);
 convert_smt_error_to_diagnostic(_) ->
     format_diagnostic(warning, <<"Unknown SMT verification issue">>, 1, 1).
 
-%% Format counter example for display
+%% Format counter example for display with better formatting
 format_counter_example(CounterExample) when is_map(CounterExample) ->
     case maps:to_list(CounterExample) of
-        [] -> <<"<unknown>">>;
-        [{Var, Val} | _] -> iolist_to_binary(io_lib:format("~p = ~p", [Var, Val]))
+        [] ->
+            <<"<unknown value>">>;
+        Examples ->
+            Formatted = lists:map(
+                fun({Var, Val}) ->
+                    VarStr =
+                        case Var of
+                            V when is_atom(V) -> atom_to_binary(V, utf8);
+                            V when is_binary(V) -> V;
+                            V -> iolist_to_binary(io_lib:format("~p", [V]))
+                        end,
+                    ValStr = format_value_for_display(Val),
+                    iolist_to_binary([VarStr, <<" = ">>, ValStr])
+                end,
+                Examples
+            ),
+            iolist_to_binary(lists:join(<<", ">>, Formatted))
     end;
+format_counter_example(Pattern) when is_atom(Pattern) ->
+    atom_to_binary(Pattern, utf8);
+format_counter_example(Pattern) when is_binary(Pattern) ->
+    Pattern;
 format_counter_example(_) ->
-    <<"<unknown>">>.
+    <<"<unknown pattern>">>.
+
+%% Format a value for display in diagnostics
+format_value_for_display(Val) when is_integer(Val) ->
+    integer_to_binary(Val);
+format_value_for_display(Val) when is_float(Val) ->
+    float_to_binary(Val);
+format_value_for_display(Val) when is_atom(Val) ->
+    atom_to_binary(Val, utf8);
+format_value_for_display(Val) when is_binary(Val) ->
+    iolist_to_binary([<<"\"">>, Val, <<"\"">>]);
+format_value_for_display(Val) when is_list(Val) ->
+    case io_lib:printable_list(Val) of
+        true -> iolist_to_binary([<<"\"">>, Val, <<"\"">>]);
+        false -> iolist_to_binary(io_lib:format("~p", [Val]))
+    end;
+format_value_for_display(Val) ->
+    iolist_to_binary(io_lib:format("~p", [Val])).
 
 %% Extract location from AST node
 extract_location(#match_expr{location = Loc}) -> Loc;

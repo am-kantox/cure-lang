@@ -26,7 +26,7 @@ module VectorBasics do
     # Filter: keep only even numbers
     let evens = filter(numbers, fn(x) -> 
       match x do
-        _ -> false  # Simplified - checking divisibility needs modulo
+        _ -> true  # Simplified - checking divisibility needs modulo
       end
     end)
     println("Evens (filter): depends on implementation")
@@ -40,6 +40,6 @@ module VectorBasics do
     println("")
     
     println("=== Demo Complete ===")
-    zipped
+    length(zipped)
 
 end
