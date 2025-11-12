@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="dist/sidebar_items-28313B55.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -168,8 +168,8 @@ static type analysis including dependent type verification, constraint solving, 
   </a>
   <span class="text">1. Environment Setup</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">builtin_env</span><span class="p" data-group-id="5561094794-1">(</span><span class="p" data-group-id="5561094794-1">)</span><span class="p">,</span><span class="w">  </span><span class="c1">% Built-in types and functions</span><span class="w">
-</span><span class="n">R</span><span class="w"> </span><span class="ss">esult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_program</span><span class="p" data-group-id="5561094794-2">(</span><span class="n">AST</span><span class="p" data-group-id="5561094794-2">)</span><span class="p">.</span></code></pre><h3 id="module-2-module-processing" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">builtin_env</span><span class="p" data-group-id="7582033010-1">(</span><span class="p" data-group-id="7582033010-1">)</span><span class="p">,</span><span class="w">  </span><span class="c1">% Built-in types and functions</span><span class="w">
+</span><span class="n">R</span><span class="w"> </span><span class="ss">esult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_program</span><span class="p" data-group-id="7582033010-2">(</span><span class="n">AST</span><span class="p" data-group-id="7582033010-2">)</span><span class="p">.</span></code></pre><h3 id="module-2-module-processing" class="section-heading">
   <a href="#module-2-module-processing" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -193,29 +193,29 @@ static type analysis including dependent type verification, constraint solving, 
   </a>
   <span class="text">Program Type Checking</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="4131105912-1">(</span><span class="s">&quot;example.cure&quot;</span><span class="p" data-group-id="4131105912-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_program</span><span class="p" data-group-id="4131105912-2">(</span><span class="n">AST</span><span class="p" data-group-id="4131105912-2">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="7115247820-1">(</span><span class="s">&quot;example.cure&quot;</span><span class="p" data-group-id="7115247820-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_program</span><span class="p" data-group-id="7115247820-2">(</span><span class="n">AST</span><span class="p" data-group-id="7115247820-2">)</span><span class="p">,</span><span class="w">
 </span><span class="k">case</span><span class="w"> </span><span class="n">Result</span><span class="o">#</span><span class="ss">typecheck_result</span><span class="p">.</span><span class="ss">success</span><span class="w"> </span><span class="k">of</span><span class="w">
   </span><span class="ss">true</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
-    </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="4131105912-3">(</span><span class="s">&quot;Type checking successful</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="4131105912-3">)</span><span class="p">;</span><span class="w">
+    </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="7115247820-3">(</span><span class="s">&quot;Type checking successful</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="7115247820-3">)</span><span class="p">;</span><span class="w">
  
   </span><span class="ss">false</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
     </span><span class="n">Errors</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Result</span><span class="o">#</span><span class="ss">typecheck_result</span><span class="p">.</span><span class="ss">errors</span><span class="p">,</span><span class="w">
-    </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="4131105912-4">(</span><span class="s">&quot;Type errors: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4131105912-5">[</span><span class="n">Errors</span><span class="p" data-group-id="4131105912-5">]</span><span class="p" data-group-id="4131105912-4">)</span><span class="w">
+    </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="7115247820-4">(</span><span class="s">&quot;Type errors: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7115247820-5">[</span><span class="n">Errors</span><span class="p" data-group-id="7115247820-5">]</span><span class="p" data-group-id="7115247820-4">)</span><span class="w">
 </span><span class="k">end</span><span class="p">.</span></code></pre><h3 id="module-function-type-checking" class="section-heading">
   <a href="#module-function-type-checking" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Function Type Checking</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">FuncAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">function_def</span><span class="p" data-group-id="9811899484-1">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">add</span><span class="p">,</span><span class="w"> </span><span class="ss">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Params</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Body</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="9811899484-1">}</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="9811899484-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="9811899484-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_function</span><span class="p" data-group-id="9811899484-3">(</span><span class="n">FuncAST</span><span class="p" data-group-id="9811899484-3">)</span><span class="p">.</span></code></pre><h3 id="module-expression-type-inference" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">FuncAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">function_def</span><span class="p" data-group-id="4370140250-1">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">add</span><span class="p">,</span><span class="w"> </span><span class="ss">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Params</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Body</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="4370140250-1">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="4370140250-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="4370140250-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_function</span><span class="p" data-group-id="4370140250-3">(</span><span class="n">FuncAST</span><span class="p" data-group-id="4370140250-3">)</span><span class="p">.</span></code></pre><h3 id="module-expression-type-inference" class="section-heading">
   <a href="#module-expression-type-inference" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Expression Type Inference</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="7299670041-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Type</span><span class="p" data-group-id="7299670041-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_expression</span><span class="p" data-group-id="7299670041-2">(</span><span class="n">ExprAST</span><span class="p">,</span><span class="w"> </span><span class="n">Environment</span><span class="p" data-group-id="7299670041-2">)</span><span class="p">.</span></code></pre><h2 id="module-type-checking-results" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="2771844780-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Type</span><span class="p" data-group-id="2771844780-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_expression</span><span class="p" data-group-id="2771844780-2">(</span><span class="n">ExprAST</span><span class="p">,</span><span class="w"> </span><span class="n">Environment</span><span class="p" data-group-id="2771844780-2">)</span><span class="p">.</span></code></pre><h2 id="module-type-checking-results" class="section-heading">
   <a href="#module-type-checking-results" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -460,7 +460,7 @@ operations can run concurrently on different ASTs.</p>
     </a>
     <h1 class="signature" translate="no">builtin_env()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L1698" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L1683" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -480,7 +480,7 @@ operations can run concurrently on different ASTs.</p>
     </a>
     <h1 class="signature" translate="no">check_dependent_constraint(Constraint, Value, Type)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L2854" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L2839" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -500,7 +500,7 @@ operations can run concurrently on different ASTs.</p>
     </a>
     <h1 class="signature" translate="no">check_expression(Expr, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L1636" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L1621" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -520,7 +520,7 @@ operations can run concurrently on different ASTs.</p>
     </a>
     <h1 class="signature" translate="no">check_expression(Expr, Env, ExpectedType)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L1639" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L1624" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -628,16 +628,16 @@ including modules, functions, FSMs, and type definitions.</p><h2 id="check_progr
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="9675923939-1">(</span><span class="s">&quot;example.cure&quot;</span><span class="p" data-group-id="9675923939-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_program</span><span class="p" data-group-id="9675923939-2">(</span><span class="n">AST</span><span class="p" data-group-id="9675923939-2">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="4411632933-1">(</span><span class="s">&quot;example.cure&quot;</span><span class="p" data-group-id="4411632933-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_typechecker</span><span class="p">:</span><span class="nf">check_program</span><span class="p" data-group-id="4411632933-2">(</span><span class="n">AST</span><span class="p" data-group-id="4411632933-2">)</span><span class="p">,</span><span class="w">
 </span><span class="k">case</span><span class="w"> </span><span class="n">Result</span><span class="o">#</span><span class="ss">typecheck_result</span><span class="p">.</span><span class="ss">success</span><span class="w"> </span><span class="k">of</span><span class="w">
   </span><span class="ss">true</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-    </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="9675923939-3">(</span><span class="s">&quot;Program type checks successfully</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="9675923939-3">)</span><span class="p">;</span><span class="w">
+    </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="4411632933-3">(</span><span class="s">&quot;Program type checks successfully</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="4411632933-3">)</span><span class="p">;</span><span class="w">
  
   </span><span class="ss">false</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-    </span><span class="nc">lists</span><span class="p">:</span><span class="nf">foreach</span><span class="p" data-group-id="9675923939-4">(</span><span class="nf">fun</span><span class="p" data-group-id="9675923939-5">(</span><span class="n">Error</span><span class="p" data-group-id="9675923939-5">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
-      </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="9675923939-6">(</span><span class="s">&quot;Error: </span><span class="si">~s</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9675923939-7">[</span><span class="n">Error</span><span class="o">#</span><span class="ss">typecheck_error</span><span class="p">.</span><span class="ss">message</span><span class="p" data-group-id="9675923939-7">]</span><span class="p" data-group-id="9675923939-6">)</span><span class="w">
-    </span><span class="k">end</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="o">#</span><span class="ss">typecheck_result</span><span class="p">.</span><span class="ss">errors</span><span class="p" data-group-id="9675923939-4">)</span><span class="w">
+    </span><span class="nc">lists</span><span class="p">:</span><span class="nf">foreach</span><span class="p" data-group-id="4411632933-4">(</span><span class="nf">fun</span><span class="p" data-group-id="4411632933-5">(</span><span class="n">Error</span><span class="p" data-group-id="4411632933-5">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+      </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="4411632933-6">(</span><span class="s">&quot;Error: </span><span class="si">~s</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4411632933-7">[</span><span class="n">Error</span><span class="o">#</span><span class="ss">typecheck_error</span><span class="p">.</span><span class="ss">message</span><span class="p" data-group-id="4411632933-7">]</span><span class="p" data-group-id="4411632933-6">)</span><span class="w">
+    </span><span class="k">end</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="o">#</span><span class="ss">typecheck_result</span><span class="p">.</span><span class="ss">errors</span><span class="p" data-group-id="4411632933-4">)</span><span class="w">
 </span><span class="k">end</span><span class="p">.</span></code></pre><h2 id="check_program/1-features" class="section-heading">
   <a href="#check_program/1-features" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -655,7 +655,7 @@ including modules, functions, FSMs, and type definitions.</p><h2 id="check_progr
     </a>
     <h1 class="signature" translate="no">convert_and_resolve_record_field_tuple/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L3253" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L3238" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -675,7 +675,7 @@ including modules, functions, FSMs, and type definitions.</p><h2 id="check_progr
     </a>
     <h1 class="signature" translate="no">convert_record_field_def/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L3218" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L3203" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -695,7 +695,7 @@ including modules, functions, FSMs, and type definitions.</p><h2 id="check_progr
     </a>
     <h1 class="signature" translate="no">convert_type_to_tuple/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L2106" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L2091" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -755,7 +755,7 @@ including modules, functions, FSMs, and type definitions.</p><h2 id="check_progr
     </a>
     <h1 class="signature" translate="no">extract_and_add_type_params(TypeExpr, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L2616" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L2601" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -795,7 +795,7 @@ including modules, functions, FSMs, and type definitions.</p><h2 id="check_progr
     </a>
     <h1 class="signature" translate="no">extract_type_param_value/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L2795" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L2780" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -815,7 +815,7 @@ including modules, functions, FSMs, and type definitions.</p><h2 id="check_progr
     </a>
     <h1 class="signature" translate="no">extract_type_params_helper/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L2623" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L2608" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -861,7 +861,7 @@ including modules, functions, FSMs, and type definitions.</p><h2 id="check_progr
     </a>
     <h1 class="signature" translate="no">infer_dependent_type(Expr, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L2953" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L2938" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -881,7 +881,7 @@ including modules, functions, FSMs, and type definitions.</p><h2 id="check_progr
     </a>
     <h1 class="signature" translate="no">infer_type(Expr, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L1688" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_typechecker.erl#L1673" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 

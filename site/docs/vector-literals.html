@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Literals in Cure - Cure Documentation</title>
+    <meta name="description" content=" Overview">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="vector-literals-in-cure">Vector Literals in Cure</h1>
+<h2 id="overview">Overview</h2>
+<p>Cure now supports vector literals with a distinct syntax from list literals. This distinction is important for the type system, as vectors have compile-time known lengths while lists do not.</p>
+<h2 id="syntax">Syntax</h2>
+<p>Vector literals use Unicode angle quotation marks:<br />
+- <strong>Opening delimiter</strong>: <code>‹</code> (U+2039 SINGLE LEFT-POINTING ANGLE QUOTATION MARK)<br />
+- <strong>Closing delimiter</strong>: <code>›</code> (U+203A SINGLE RIGHT-POINTING ANGLE QUOTATION MARK)</p>
+<p>This contrasts with list literals which use square brackets <code>[]</code>.</p>
+<h3 id="examples">Examples</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Empty vector</span>
+‹›
+
+<span class="c1">// Single element</span>
+‹<span class="mi">42</span>›
+
+<span class="c1">// Multiple elements</span>
+‹<span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span>›
+
+<span class="c1">// Vectors with expressions</span>
+‹<span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">3</span>›
+
+<span class="c1">// Nested vectors</span>
+‹<span class="mi">1</span><span class="p">,</span><span class="w"> </span>‹<span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span>›<span class="p">,</span><span class="w"> </span>‹<span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span>››
+</code></pre></div>
+
+<h2 id="distinction-from-lists">Distinction from Lists</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Lists <code>[]</code></th>
+<th>Vectors <code>‹›</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Length</td>
+<td>Runtime-determined</td>
+<td>Compile-time known</td>
+</tr>
+<tr>
+<td>Type</td>
+<td><code>List(T)</code></td>
+<td><code>Vector(T, n: Nat)</code></td>
+</tr>
+<tr>
+<td>Pattern matching</td>
+<td>Cons patterns <code>[h\|t]</code></td>
+<td>Fixed-size patterns</td>
+</tr>
+<tr>
+<td>Use case</td>
+<td>Dynamic collections</td>
+<td>Fixed-size data</td>
+</tr>
+</tbody>
+</table>
+<h2 id="type-system-integration">Type System Integration</h2>
+<p>Vectors integrate with Cure's dependent type system:</p>
+<div class="codehilite"><pre><span></span><code><span class="o">//</span><span class="w"> </span><span class="n">Vector</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="k">parameter</span>
+<span class="n">def</span><span class="w"> </span><span class="n">safe_access</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="nl">v</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="nl">n</span><span class="p">:</span><span class="w"> </span><span class="n">Nat</span><span class="p">),</span><span class="w"> </span><span class="nl">i</span><span class="p">:</span><span class="w"> </span><span class="n">Nat</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="k">Option</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span>
+<span class="w">  </span><span class="k">when</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">Some</span><span class="p">(</span><span class="n">v</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">)</span>
+
+<span class="o">//</span><span class="w"> </span><span class="n">Type</span><span class="o">-</span><span class="k">level</span><span class="w"> </span><span class="n">guarantees</span>
+<span class="n">def</span><span class="w"> </span><span class="n">first_three</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="nl">v</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="nl">n</span><span class="p">:</span><span class="w"> </span><span class="n">Nat</span><span class="p">))</span><span class="err">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<span class="w">  </span><span class="k">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">‹</span><span class="n">v</span><span class="o">[</span><span class="n">0</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="o">[</span><span class="n">1</span><span class="o">]</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="o">[</span><span class="n">2</span><span class="o">]</span><span class="err">›</span>
+</code></pre></div>
+
+<h2 id="implementation-details">Implementation Details</h2>
+<h3 id="lexer">Lexer</h3>
+<p>The lexer recognizes vector delimiters as multi-byte UTF-8 sequences:<br />
+- <code>‹</code> is encoded as bytes <code>226, 128, 185</code> (E2 80 B9)<br />
+- <code>›</code> is encoded as bytes <code>226, 128, 186</code> (E2 80 BA)</p>
+<p>These are tokenized as <code>vector_open</code> and <code>vector_close</code> token types.</p>
+<h3 id="parser">Parser</h3>
+<p>The parser has a dedicated <code>parse_vector_literal/1</code> function that:<br />
+1. Expects a <code>vector_open</code> token<br />
+2. Parses comma-separated expressions<br />
+3. Expects a <code>vector_close</code> token<br />
+4. Returns a <code>#vector_expr{}</code> AST node</p>
+<h3 id="ast-representation">AST Representation</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">-</span><span class="ni">record</span><span class="p">(</span><span class="nl">vector_expr</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">elements</span><span class="p">,</span><span class="w">  </span><span class="c">% List of expression AST nodes</span>
+<span class="w">    </span><span class="n">location</span><span class="w">   </span><span class="c">% Source location</span>
+<span class="p">}).</span>
+</code></pre></div>
+
+<h2 id="entering-vector-delimiters">Entering Vector Delimiters</h2>
+<p>The angle quotation marks can be entered using:</p>
+<h3 id="macos">macOS</h3>
+<ul>
+<li><code>‹</code>: Option+Shift+3 or Option+\</li>
+<li><code>›</code>: Option+Shift+4 or Option+Shift+\</li>
+</ul>
+<h3 id="linux-compose-key">Linux (Compose key)</h3>
+<ul>
+<li><code>‹</code>: Compose + &lt; + &lt;</li>
+<li><code>›</code>: Compose + &gt; + &gt;</li>
+</ul>
+<h3 id="character-codes">Character codes</h3>
+<ul>
+<li><code>‹</code>: U+2039 or HTML entity <code>&amp;lsaquo;</code></li>
+<li><code>›</code>: U+203A or HTML entity <code>&amp;rsaquo;</code></li>
+</ul>
+<h3 id="copy-paste">Copy-paste</h3>
+<p>Simply copy these characters: ‹›</p>
+<h2 id="testing">Testing</h2>
+<p>Run the vector literal tests:</p>
+<div class="codehilite"><pre><span></span><code>make<span class="w"> </span><span class="nb">test</span>
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-s<span class="w"> </span>vector_literal_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+</code></pre></div>
+
+<p>See <code>test/vector_literal_test.erl</code> for comprehensive test cases.</p>
+<h2 id="example-code">Example Code</h2>
+<p>See <code>examples/vector_demo.cure</code> for a complete example demonstrating vector literals in various contexts.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

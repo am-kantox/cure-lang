@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Show Typeclass Implementation - Cure Documentation</title>
+    <meta name="description" content=" Overview">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="show-typeclass-implementation">Show Typeclass Implementation</h1>
+<h2 id="overview">Overview</h2>
+<p>This implementation provides a complete, polymorphic <code>Show</code> typeclass for the Cure programming language. The <code>Show</code> typeclass enables type-safe string conversion for any type that implements it, with automatic composition for container types.</p>
+<h2 id="whats-included">What's Included</h2>
+<h3 id="1-standard-library-module-libstdshowcure">1. Standard Library Module (<code>lib/std/show.cure</code>)</h3>
+<p>The core implementation includes:</p>
+<ul>
+<li><strong>Typeclass Definition</strong>: The <code>Show(T)</code> typeclass with a single method <code>show(x: T): String</code></li>
+<li><strong>Primitive Type Instances</strong>: Built-in instances for <code>Int</code>, <code>Float</code>, <code>String</code>, <code>Bool</code>, <code>Atom</code>, and <code>Charlist</code></li>
+<li><strong>Container Type Instances</strong>: Instances for <code>List(T)</code>, <code>Option(T)</code>, <code>Result(T, E)</code>, and tuples (2 and 3 elements)</li>
+<li><strong>Utility Functions</strong>: Helper functions like <code>show_list</code>, <code>show_separated</code>, <code>show_with_parens</code></li>
+<li><strong>FFI Bindings</strong>: Low-level Erlang interop for primitive conversions</li>
+</ul>
+<h3 id="2-complete-examples-examples12_show_typeclasscure">2. Complete Examples (<code>examples/12_show_typeclass.cure</code>)</h3>
+<p>A comprehensive demonstration showing:</p>
+<ul>
+<li>How to implement <code>Show</code> for custom record types</li>
+<li>How to implement <code>Show</code> for generic/polymorphic types</li>
+<li>How to implement <code>Show</code> for union types (enums)</li>
+<li>How to implement <code>Show</code> for recursive data structures</li>
+<li>How to use <code>Show</code> constraints in generic functions</li>
+<li>Real-world usage patterns (debug functions, logging, etc.)</li>
+</ul>
+<h3 id="3-documentation">3. Documentation</h3>
+<h4 id="full-guide-docsshow_typeclassmd">Full Guide (<code>docs/SHOW_TYPECLASS.md</code>)</h4>
+<ul>
+<li>Comprehensive tutorial covering all aspects of the <code>Show</code> typeclass</li>
+<li>Detailed explanations of typeclass concepts</li>
+<li>Step-by-step implementation guides</li>
+<li>Best practices and design patterns</li>
+<li>Integration examples with other systems</li>
+</ul>
+<h4 id="quick-reference-docsshow_quick_referencemd">Quick Reference (<code>docs/SHOW_QUICK_REFERENCE.md</code>)</h4>
+<ul>
+<li>Cheat sheet for common patterns</li>
+<li>Quick syntax reference</li>
+<li>Common mistakes and solutions</li>
+<li>Built-in instances table</li>
+</ul>
+<h2 id="key-features">Key Features</h2>
+<h3 id="1-polymorphic-string-conversion">1. <strong>Polymorphic String Conversion</strong></h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">def</span><span class="w"> </span><span class="nx">debug</span><span class="p">(</span><span class="nx">value</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="nx">println</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">value</span><span class="p">))</span>
+<span class="w">  </span><span class="nx">value</span>
+
+<span class="nx">debug</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span><span class="w">                    </span><span class="err">#</span><span class="w"> </span><span class="nx">Works</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">Int</span>
+<span class="nx">debug</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">)</span><span class="w">               </span><span class="err">#</span><span class="w"> </span><span class="nx">Works</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">String</span>
+<span class="nx">debug</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">])</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nx">Works</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">List</span>
+<span class="nx">debug</span><span class="p">(</span><span class="nx">Person</span><span class="p">{</span><span class="o">...</span><span class="p">})</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="nx">Works</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">custom</span><span class="w"> </span><span class="nx">types</span><span class="w"> </span><span class="nx">that</span><span class="w"> </span><span class="nx">implement</span><span class="w"> </span><span class="nx">Show</span>
+</code></pre></div>
+
+<h3 id="2-automatic-composition">2. <strong>Automatic Composition</strong></h3>
+<p>Container instances automatically work with any showable element type:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">show</span><span class="ss">(</span>[<span class="mi">1</span>,<span class="w"> </span><span class="mi">2</span>,<span class="w"> </span><span class="mi">3</span>]<span class="ss">)</span><span class="w">                      </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;[1, 2, 3]&quot;</span>
+<span class="k">show</span><span class="ss">(</span>[<span class="nv">Some</span><span class="ss">(</span><span class="mi">1</span><span class="ss">)</span>,<span class="w"> </span><span class="nv">None</span>,<span class="w"> </span><span class="nv">Some</span><span class="ss">(</span><span class="mi">3</span><span class="ss">)</span>]<span class="ss">)</span><span class="w">       </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;[Some(1), None, Some(3)]&quot;</span>
+<span class="k">show</span><span class="ss">(</span><span class="nv">Ok</span><span class="ss">(</span>[{<span class="mi">1</span>,<span class="w"> </span><span class="s2">&quot;one&quot;</span>},<span class="w"> </span>{<span class="mi">2</span>,<span class="w"> </span><span class="s2">&quot;two&quot;</span>}]<span class="ss">))</span><span class="w">   </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;Ok([{1, \&quot;</span><span class="nv">one</span>\<span class="s2">&quot;}, {2, \&quot;</span><span class="nv">two</span>\<span class="s2">&quot;}])&quot;</span>
+</code></pre></div>
+
+<h3 id="3-type-safety">3. <strong>Type Safety</strong></h3>
+<p>The compiler ensures that only types with <code>Show</code> instances can be converted to strings:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># This won&#39;t compile:</span>
+<span class="n">def</span><span class="w"> </span><span class="n">bad_function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">  </span><span class="c1"># ERROR: T needs Show constraint</span>
+
+<span class="c1"># This will compile:</span>
+<span class="n">def</span><span class="w"> </span><span class="n">good_function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="n">Show</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">  </span><span class="c1"># OK: constraint ensures T has Show instance</span>
+</code></pre></div>
+
+<h3 id="4-extensibility">4. <strong>Extensibility</strong></h3>
+<p>Users can easily add <code>Show</code> instances for their own types:</p>
+<div class="codehilite"><pre><span></span><code>record MyType do
+  field: Int
+end
+
+instance Show(MyType) do
+  def show(x: MyType): String =
+    string_concat(&quot;MyType(&quot;, string_concat(show(x.field), &quot;)&quot;))
+end
+
+<span class="gh">#</span> Now MyType works everywhere Show is expected
+debug(MyType{field: 42})  # Works!
+show([MyType{field: 1}, MyType{field: 2}])  # Works!
+</code></pre></div>
+
+<h2 id="usage">Usage</h2>
+<h3 id="import-the-module">Import the Module</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Show</span> <span class="p">[</span><span class="n">Show</span><span class="p">,</span> <span class="n">show</span><span class="p">]</span>
+</code></pre></div>
+
+<h3 id="using-built-in-instances">Using Built-in Instances</h3>
+<div class="codehilite"><pre><span></span><code>#<span class="w"> </span><span class="nv">All</span><span class="w"> </span><span class="nv">these</span><span class="w"> </span><span class="nv">work</span><span class="w"> </span><span class="nv">out</span><span class="w"> </span><span class="nv">of</span><span class="w"> </span><span class="nv">the</span><span class="w"> </span><span class="nv">box</span>:
+<span class="k">show</span><span class="ss">(</span><span class="mi">42</span><span class="ss">)</span><span class="w">                    </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;42&quot;</span>
+<span class="k">show</span><span class="ss">(</span><span class="mi">3</span>.<span class="mi">14</span><span class="ss">)</span><span class="w">                  </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;3.14&quot;</span>
+<span class="k">show</span><span class="ss">(</span><span class="s2">&quot;hello&quot;</span><span class="ss">)</span><span class="w">               </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;\&quot;</span><span class="nv">hello</span>\<span class="s2">&quot;&quot;</span>
+<span class="k">show</span><span class="ss">(</span><span class="nv">true</span><span class="ss">)</span><span class="w">                  </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;true&quot;</span>
+<span class="k">show</span><span class="ss">(</span>[<span class="mi">1</span>,<span class="w"> </span><span class="mi">2</span>,<span class="w"> </span><span class="mi">3</span>]<span class="ss">)</span><span class="w">            </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;[1, 2, 3]&quot;</span>
+<span class="k">show</span><span class="ss">(</span><span class="nv">Some</span><span class="ss">(</span><span class="mi">42</span><span class="ss">))</span><span class="w">             </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;Some(42)&quot;</span>
+<span class="k">show</span><span class="ss">(</span><span class="nv">Ok</span><span class="ss">(</span><span class="s2">&quot;success&quot;</span><span class="ss">))</span><span class="w">        </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;Ok(\&quot;</span><span class="nv">success</span>\<span class="s2">&quot;)&quot;</span>
+<span class="k">show</span><span class="ss">(</span>{<span class="mi">1</span>,<span class="w"> </span><span class="s2">&quot;x&quot;</span>,<span class="w"> </span><span class="nv">true</span>}<span class="ss">)</span><span class="w">       </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;{1, \&quot;</span><span class="nv">x</span>\<span class="s2">&quot;, true}&quot;</span>
+</code></pre></div>
+
+<h3 id="implementing-for-custom-types">Implementing for Custom Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="mi">1</span><span class="p">.</span><span class="w"> </span><span class="nx">Define</span><span class="w"> </span><span class="nx">your</span><span class="w"> </span><span class="k">type</span>
+<span class="nx">record</span><span class="w"> </span><span class="nx">Person</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span>
+<span class="w">  </span><span class="nx">age</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span>
+<span class="nx">end</span>
+
+<span class="err">#</span><span class="w"> </span><span class="mi">2</span><span class="p">.</span><span class="w"> </span><span class="nx">Implement</span><span class="w"> </span><span class="nx">Show</span>
+<span class="nx">instance</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">Person</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">p</span><span class="p">:</span><span class="w"> </span><span class="nx">Person</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="nx">string_concat</span><span class="p">(</span><span class="s">&quot;Person { name: &quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">string_concat</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">name</span><span class="p">),</span>
+<span class="w">        </span><span class="nx">string_concat</span><span class="p">(</span><span class="s">&quot;, age: &quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nx">string_concat</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">p</span><span class="p">.</span><span class="nx">age</span><span class="p">),</span><span class="w"> </span><span class="s">&quot; }&quot;</span><span class="p">))))</span>
+<span class="nx">end</span>
+
+<span class="err">#</span><span class="w"> </span><span class="mi">3</span><span class="p">.</span><span class="w"> </span><span class="nx">Use</span><span class="w"> </span><span class="nx">it</span><span class="p">!</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">alice</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Person</span><span class="p">{</span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">age</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">}</span>
+<span class="nx">println</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">alice</span><span class="p">))</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;Person { name: \&quot;Alice\&quot;, age: 30 }&quot;</span>
+</code></pre></div>
+
+<h3 id="writing-generic-functions">Writing Generic Functions</h3>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Any function can require Show with a where clause
+def print_values(values: List(T)): Int where Show(T) =
+  for value in values do
+    println(show(value))
+  end
+  0
+</code></pre></div>
+
+<h2 id="architecture">Architecture</h2>
+<h3 id="type-system-integration">Type System Integration</h3>
+<p>The implementation leverages Cure's typeclass system (<code>cure_typeclass.erl</code>):</p>
+<ol>
+<li><strong>Typeclass Registration</strong>: <code>Show</code> is registered as a typeclass with its method signature</li>
+<li><strong>Instance Registration</strong>: Each instance (e.g., <code>Show(Int)</code>) is registered with its implementation</li>
+<li><strong>Constraint Checking</strong>: The typechecker verifies that <code>where Show(T)</code> constraints are satisfied</li>
+<li><strong>Method Resolution</strong>: At compile time, the correct <code>show</code> implementation is selected based on type</li>
+</ol>
+<h3 id="standard-library-organization">Standard Library Organization</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">lib</span><span class="o">/</span><span class="nx">std</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">core</span><span class="p">.</span><span class="nx">cure</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="nx">Core</span><span class="w"> </span><span class="nx">types</span><span class="w"> </span><span class="p">(</span><span class="nx">Option</span><span class="p">,</span><span class="w"> </span><span class="nx">Result</span><span class="p">,</span><span class="w"> </span><span class="nx">etc</span><span class="p">.)</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">show</span><span class="p">.</span><span class="nx">cure</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="nx">Show</span><span class="w"> </span><span class="nx">typeclass</span><span class="w"> </span><span class="p">(</span><span class="nx">NEW</span><span class="p">)</span>
+<span class="err">└──</span><span class="w"> </span><span class="o">...</span>
+</code></pre></div>
+
+<p>The <code>Show</code> module follows the same patterns as other standard library modules, making it feel like a natural part of the language.</p>
+<h2 id="design-decisions">Design Decisions</h2>
+<h3 id="1-string-output-format">1. String Output Format</h3>
+<p>The implementation follows Haskell-style conventions:<br />
+- Strings are quoted: <code>"hello"</code> not <code>hello</code><br />
+- Constructors use parentheses: <code>Some(42)</code> not <code>Some 42</code><br />
+- Lists use brackets: <code>[1, 2, 3]</code> not <code>(1 2 3)</code><br />
+- Records show field names: <code>Person { name: "Alice" }</code> not <code>Person("Alice")</code></p>
+<h3 id="2-polymorphic-instances-with-constraints">2. Polymorphic Instances with Constraints</h3>
+<p>Container instances require their element types to have <code>Show</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">instance</span><span class="w"> </span><span class="k">Show</span><span class="ss">(</span><span class="nv">List</span><span class="ss">(</span><span class="nv">T</span><span class="ss">))</span><span class="w"> </span><span class="nv">where</span><span class="w"> </span><span class="k">Show</span><span class="ss">(</span><span class="nv">T</span><span class="ss">)</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span>...
+<span class="k">end</span>
+</code></pre></div>
+
+<p>This ensures that <code>show([1, 2, 3])</code> only works if <code>Int</code> has a <code>Show</code> instance, providing type safety.</p>
+<h3 id="3-ffi-for-primitives">3. FFI for Primitives</h3>
+<p>Primitive type conversions use Erlang's built-in functions via FFI:</p>
+<div class="codehilite"><pre><span></span><code>curify def int_to_string(x: Int): String = 
+  erlang:integer_to_list(x)
+</code></pre></div>
+
+<p>This provides efficient, well-tested conversions for built-in types.</p>
+<h3 id="4-helper-functions">4. Helper Functions</h3>
+<p>Utility functions like <code>show_separated</code> are provided to make common use cases more convenient:</p>
+<div class="codehilite"><pre><span></span><code>show_separated([1, 2, 3], &quot; | &quot;)  # =&gt; &quot;1 | 2 | 3&quot;
+</code></pre></div>
+
+<h2 id="testing">Testing</h2>
+<p>To test the implementation:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Compile the example</span>
+cure<span class="w"> </span>compile<span class="w"> </span>examples/12_show_typeclass.cure
+
+<span class="c1"># Run it</span>
+cure<span class="w"> </span>run<span class="w"> </span>examples/12_show_typeclass.cure
+</code></pre></div>
+
+<p>Expected output demonstrates:<br />
+- Primitive type instances<br />
+- Container type instances<br />
+- Custom type instances<br />
+- Nested structure handling<br />
+- Generic function usage</p>
+<h2 id="future-enhancements">Future Enhancements</h2>
+<h3 id="1-automatic-derivation">1. Automatic Derivation</h3>
+<p>Support <code>derive Show</code> for automatic instance generation:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">record</span><span class="w"> </span><span class="nv">Person</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="nv">name</span>:<span class="w"> </span><span class="nv">String</span>
+<span class="w">  </span><span class="nv">age</span>:<span class="w"> </span><span class="nv">Int</span>
+<span class="k">end</span><span class="w"> </span><span class="nv">derive</span><span class="w"> </span><span class="k">Show</span>
+</code></pre></div>
+
+<p>This would automatically generate the instance based on the record structure.</p>
+<h3 id="2-pretty-printing-support">2. Pretty Printing Support</h3>
+<p>Add a <code>Pretty</code> typeclass for multi-line, indented output:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Pretty</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">pretty</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">Doc</span>
+<span class="nx">end</span>
+</code></pre></div>
+
+<h3 id="3-custom-formatting">3. Custom Formatting</h3>
+<p>Support format specifiers:</p>
+<div class="codehilite"><pre><span></span><code>show_with_format(42, &quot;hexadecimal&quot;)  # =&gt; &quot;0x2a&quot;
+show_with_format(3.14159, &quot;%.2f&quot;)    # =&gt; &quot;3.14&quot;
+</code></pre></div>
+
+<h3 id="4-debug-vs-display">4. Debug vs Display</h3>
+<p>Separate debug output from user-facing display:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Debug</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">debug</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Developer</span><span class="o">-</span><span class="nx">focused</span><span class="p">,</span><span class="w"> </span><span class="nx">verbose</span>
+<span class="nx">end</span>
+
+<span class="nx">typeclass</span><span class="w"> </span><span class="nx">Display</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">display</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">User</span><span class="o">-</span><span class="nx">facing</span><span class="p">,</span><span class="w"> </span><span class="nx">concise</span>
+<span class="nx">end</span>
+</code></pre></div>
+
+<h2 id="related-work">Related Work</h2>
+<p>This implementation is inspired by:</p>
+<ul>
+<li><strong>Haskell's Show</strong>: The original typeclass design and naming conventions</li>
+<li><strong>Rust's Display/Debug</strong>: Separation of concerns between formats</li>
+<li><strong>Scala's toString</strong>: Universal string conversion</li>
+<li><strong>TypeScript's toString</strong>: Practical approach to string conversion</li>
+</ul>
+<h2 id="contributing">Contributing</h2>
+<p>When adding new types to the standard library, remember to:</p>
+<ol>
+<li>Implement <code>Show</code> if the type should be printable</li>
+<li>Use consistent formatting conventions</li>
+<li>Add examples to the documentation</li>
+<li>Test with nested structures</li>
+</ol>
+<h2 id="license">License</h2>
+<p>Part of the Cure programming language standard library.</p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><strong>Documentation</strong>: <code>docs/SHOW_TYPECLASS.md</code> - Full guide</li>
+<li><strong>Quick Reference</strong>: <code>docs/SHOW_QUICK_REFERENCE.md</code> - Cheat sheet</li>
+<li><strong>Examples</strong>: <code>examples/12_show_typeclass.cure</code> - Complete working code</li>
+<li><strong>Implementation</strong>: <code>lib/std/show.cure</code> - Source code</li>
+<li><strong>Typeclass System</strong>: <code>examples/08_typeclasses.cure</code> - Basic introduction</li>
+</ul>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

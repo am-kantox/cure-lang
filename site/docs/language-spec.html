@@ -38,20 +38,15 @@ Test Success Rate: 100% (8/">
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Cure Language Specification</h1>
-
-<strong>Version</strong>: 0.1.0  
-<strong>Last Updated</strong>: October 31, 2025  
-<strong>Status</strong>: Implementation Complete ✅ <strong>PRODUCTION READY</strong>  
-<strong>Test Success Rate</strong>: 100% (8/8 test suites passing)  
-<strong>Runtime Verification</strong>: ✅ Working examples with import system
-
-<h2>Overview</h2>
-
+        <h1 id="cure-language-specification">Cure Language Specification</h1>
+<p><strong>Version</strong>: 0.1.0<br />
+<strong>Last Updated</strong>: October 31, 2025<br />
+<strong>Status</strong>: Implementation Complete ✅ <strong>PRODUCTION READY</strong><br />
+<strong>Test Success Rate</strong>: 100% (8/8 test suites passing)<br />
+<strong>Runtime Verification</strong>: ✅ Working examples with import system</p>
+<h2 id="overview">Overview</h2>
 <p>Cure is a strongly-typed, dependently-typed functional programming language for the BEAM virtual machine. It uniquely combines advanced type system features with native finite state machine support and seamless BEAM ecosystem integration.</p>
-
-<h2>Language Principles</h2>
-
+<h2 id="language-principles">Language Principles</h2>
 <ol>
 <li><strong>Dependent Types</strong>: Advanced type system with SMT-based constraint solving</li>
 <li><strong>Native FSMs</strong>: Finite state machines as first-class constructs with compile-time verification</li>
@@ -61,578 +56,545 @@ Test Success Rate: 100% (8/">
 <li><strong>Performance</strong>: Type-directed optimizations (monomorphization, specialization, inlining)</li>
 <li><strong>Actor Model</strong>: Built-in support for concurrent, fault-tolerant programming</li>
 </ol>
+<h2 id="syntax-overview">Syntax Overview</h2>
+<h3 id="basic-types">Basic Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Primitive</span><span class="w"> </span><span class="nx">types</span>
+<span class="nx">Int</span><span class="w">                    </span><span class="err">#</span><span class="w"> </span><span class="nx">Arbitrary</span><span class="w"> </span><span class="nx">precision</span><span class="w"> </span><span class="nx">integers</span>
+<span class="nx">Float</span><span class="w">                  </span><span class="err">#</span><span class="w"> </span><span class="nx">Double</span><span class="w"> </span><span class="nx">precision</span><span class="w"> </span><span class="nx">floats</span>
+<span class="nx">Atom</span><span class="w">                   </span><span class="err">#</span><span class="w"> </span><span class="nx">Interned</span><span class="w"> </span><span class="nx">symbols</span><span class="w"> </span><span class="p">(</span><span class="k">like</span><span class="w"> </span><span class="nx">Elixir</span><span class="w"> </span><span class="nx">atoms</span><span class="p">)</span>
+<span class="nx">Bool</span><span class="w">                   </span><span class="err">#</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kc">false</span>
+<span class="nx">String</span><span class="w">                 </span><span class="err">#</span><span class="w"> </span><span class="nx">UTF</span><span class="o">-</span><span class="mi">8</span><span class="w"> </span><span class="nx">strings</span>
+<span class="nx">Binary</span><span class="w">                 </span><span class="err">#</span><span class="w"> </span><span class="nx">Byte</span><span class="w"> </span><span class="nx">sequences</span>
+<span class="nx">Unit</span><span class="w">                   </span><span class="err">#</span><span class="w"> </span><span class="nx">Unit</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">functions</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">no</span><span class="w"> </span><span class="nx">meaningful</span><span class="w"> </span><span class="k">return</span>
 
-<h2>Syntax Overview</h2>
+<span class="err">#</span><span class="w"> </span><span class="nx">Dependent</span><span class="w"> </span><span class="nx">types</span>
+<span class="nx">Nat</span><span class="w">                    </span><span class="err">#</span><span class="w"> </span><span class="nx">Natural</span><span class="w"> </span><span class="nx">numbers</span><span class="w"> </span><span class="p">(</span><span class="nx">Int</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="nx">Pos</span><span class="w">                    </span><span class="err">#</span><span class="w"> </span><span class="nx">Positive</span><span class="w"> </span><span class="nx">integers</span><span class="w"> </span><span class="p">(</span><span class="nx">Int</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">)</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="nx">Fixed</span><span class="o">-</span><span class="nx">length</span><span class="w"> </span><span class="nx">vector</span>
+<span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">)</span><span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="nx">List</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">known</span><span class="w"> </span><span class="nx">length</span>
+<span class="nx">Range</span><span class="p">(</span><span class="nx">min</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">max</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Integer</span><span class="w"> </span><span class="nx">range</span><span class="w"> </span><span class="k">type</span>
+</code></pre></div>
 
-<h3>Basic Types</h3>
+<h3 id="function-definitions">Function Definitions</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Simple</span><span class="w"> </span><span class="nx">function</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">add</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">y</span>
 
-<pre><code># Primitive types
-Int                    # Arbitrary precision integers
-Float                  # Double precision floats
-Atom                   # Interned symbols (like Elixir atoms)
-Bool                   # true | false
-String                 # UTF-8 strings
-Binary                 # Byte sequences
-Unit                   # Unit type for functions with no meaningful return
+<span class="err">#</span><span class="w"> </span><span class="nx">Function</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">dependent</span><span class="w"> </span><span class="nx">types</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">replicate</span><span class="p">(</span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span>
+<span class="w">  </span><span class="k">match</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="kc">true</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">    </span><span class="kc">false</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">[</span><span class="nx">x</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">replicate</span><span class="p">(</span><span class="nx">n</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="p">)]</span>
+<span class="w">  </span><span class="nx">end</span>
 
-# Dependent types
-Nat                    # Natural numbers (Int >= 0)
-Pos                    # Positive integers (Int > 0)
-Vector(T, n: Nat)      # Fixed-length vector
-List(T, n: Nat)        # List with known length
-Range(min: Int, max: Int)  # Integer range type
-</code></pre>
+<span class="err">#</span><span class="w"> </span><span class="nx">Pattern</span><span class="w"> </span><span class="nx">matching</span><span class="w"> </span><span class="nx">function</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">length</span><span class="p">(</span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)):</span><span class="w"> </span><span class="nx">Nat</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="k">match</span><span class="w"> </span><span class="nx">list</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="p">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">    </span><span class="p">[</span><span class="nx">_</span><span class="o">|</span><span class="nx">tail</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">length</span><span class="p">(</span><span class="nx">tail</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">end</span>
 
-<h3>Function Definitions</h3>
+<span class="err">#</span><span class="w"> </span><span class="nx">Function</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">constraints</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">safe_divide</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">y</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nx">y</span>
 
-<pre><code># Simple function
-def add(x: Int, y: Int): Int = x + y
+<span class="err">#</span><span class="w"> </span><span class="nx">Function</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">Unit</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">type</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">print_message</span><span class="p">(</span><span class="nx">msg</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span><span class="p">):</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="nx">println</span><span class="p">(</span><span class="s">&quot;Message: &quot;</span><span class="w"> </span><span class="p">&lt;&gt;</span><span class="w"> </span><span class="nx">msg</span><span class="p">)</span>
+<span class="w">  </span><span class="mi">0</span>
+</code></pre></div>
 
-# Function with dependent types
-def replicate(n: Nat, x: T): List(T, n) = 
-  match n == 0 do
-    true -> []
-    false -> [x | replicate(n-1, x)]
-  end
+<h3 id="process-definitions">Process Definitions</h3>
+<p><strong>Note</strong>: Process definitions with the <code>process</code> keyword are a planned feature. Currently, use Erlang's <code>spawn</code> via FFI or standard library functions for process management.</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Process</span><span class="w"> </span><span class="nx">spawning</span><span class="w"> </span><span class="p">(</span><span class="nx">current</span><span class="w"> </span><span class="nx">approach</span><span class="p">)</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Use</span><span class="w"> </span><span class="nx">Erlang</span><span class="w"> </span><span class="nx">spawn</span><span class="w"> </span><span class="nx">via</span><span class="w"> </span><span class="nx">curify</span><span class="w"> </span><span class="nx">FFI</span><span class="w"> </span><span class="nx">bindings</span>
+<span class="nx">curify</span><span class="w"> </span><span class="nx">spawn_process</span><span class="p">(</span><span class="nx">func</span><span class="p">:</span><span class="w"> </span><span class="nx">Atom</span><span class="p">,</span><span class="w"> </span><span class="nx">args</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">Any</span><span class="p">)):</span><span class="w"> </span><span class="nx">Pid</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span><span class="nx">erlang</span><span class="p">,</span><span class="w"> </span><span class="nx">spawn</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">}</span>
 
-# Pattern matching function
-def length(list: List(T)): Nat =
-  match list do
-    [] -> 0
-    [_|tail] -> 1 + length(tail)
-  end
+<span class="err">#</span><span class="w"> </span><span class="nx">Or</span><span class="w"> </span><span class="nx">use</span><span class="w"> </span><span class="nx">standard</span><span class="w"> </span><span class="kn">library</span><span class="w"> </span><span class="nx">FSM</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">state</span><span class="w"> </span><span class="nx">management</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">See</span><span class="w"> </span><span class="nx">FSM</span><span class="w"> </span><span class="nx">section</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">state</span><span class="w"> </span><span class="nx">machine</span><span class="o">-</span><span class="nx">based</span><span class="w"> </span><span class="nx">processes</span>
+</code></pre></div>
 
-# Function with constraints
-def safe_divide(x: Int, y: Int): Int when y != 0 = x / y
-
-# Function with Unit return type
-def print_message(msg: String): Int =
-  println("Message: " <> msg)
-  0
-</code></pre>
-
-<h3>Process Definitions</h3>
-
-<strong>Note</strong>: Process definitions with the <code>process</code> keyword are a planned feature. Currently, use Erlang's <code>spawn</code> via FFI or standard library functions for process management.
-
-<pre><code># Process spawning (current approach)
-# Use Erlang spawn via curify FFI bindings
-curify spawn_process(func: Atom, args: List(Any)): Pid = {erlang, spawn, 2}
-
-# Or use standard library FSM for state management
-# See FSM section for state machine-based processes
-</code></pre>
-
-<h3>Finite State Machines</h3>
-
+<h3 id="finite-state-machines">Finite State Machines</h3>
 <p>FSMs use arrow-based transition syntax with record-based payloads:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># FSM definition with payload record</span>
+<span class="n">record</span> <span class="n">TcpPayload</span> <span class="n">do</span>
+  <span class="n">buffer</span><span class="p">:</span> <span class="n">Binary</span>
+  <span class="n">seq_num</span><span class="p">:</span> <span class="n">Int</span>
+  <span class="n">ack_num</span><span class="p">:</span> <span class="n">Int</span>
+<span class="n">end</span>
 
-<pre><code># FSM definition with payload record
-record TcpPayload do
-  buffer: Binary
-  seq_num: Int
-  ack_num: Int
-end
+<span class="c1"># FSM with transitions</span>
+<span class="n">fsm</span> <span class="n">TcpPayload</span><span class="p">{</span><span class="n">buffer</span><span class="p">:</span> <span class="o">&lt;&lt;&gt;&gt;</span><span class="p">,</span> <span class="n">seq_num</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ack_num</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span> <span class="n">do</span>
+  <span class="c1"># Arrow-based transitions: State --&gt; |event| NextState</span>
+  <span class="n">Closed</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">listen</span><span class="o">|</span> <span class="n">Listen</span>
+  <span class="n">Closed</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">connect</span><span class="o">|</span> <span class="n">SynSent</span>
 
-# FSM with transitions
-fsm TcpPayload{buffer: <<>>, seq_num: 0, ack_num: 0} do
-  # Arrow-based transitions: State --> |event| NextState
-  Closed --> |listen| Listen
-  Closed --> |connect| SynSent
-  
-  Listen --> |syn_received| SynReceived
-  Listen --> |close| Closed
-  
-  SynSent --> |syn_ack_received| Established
-  SynSent --> |syn_received| SynReceived
-  SynSent --> |close| Closed
-  
-  Established --> |fin_received| CloseWait
-  Established --> |close| FinWait1
-  Established --> |data| Established  # Self-transition for data
-end
+  <span class="n">Listen</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">syn_received</span><span class="o">|</span> <span class="n">SynReceived</span>
+  <span class="n">Listen</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">close</span><span class="o">|</span> <span class="n">Closed</span>
 
-# Using FSM
-import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
-import Std.Pair [pair/2]
+  <span class="n">SynSent</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">syn_ack_received</span><span class="o">|</span> <span class="n">Established</span>
+  <span class="n">SynSent</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">syn_received</span><span class="o">|</span> <span class="n">SynReceived</span>
+  <span class="n">SynSent</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">close</span><span class="o">|</span> <span class="n">Closed</span>
 
-let initial_data = TcpPayload{buffer: <<>>, seq_num: 0, ack_num: 0}
-let conn = fsm_spawn(:TcpPayload, initial_data)
-let _ = fsm_advertise(conn, :tcp_conn)
+  <span class="n">Established</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">fin_received</span><span class="o">|</span> <span class="n">CloseWait</span>
+  <span class="n">Established</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">close</span><span class="o">|</span> <span class="n">FinWait1</span>
+  <span class="n">Established</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">data</span><span class="o">|</span> <span class="n">Established</span>  <span class="c1"># Self-transition for data</span>
+<span class="n">end</span>
 
-# Send events
-let event = pair(:listen, [])
-let _ = fsm_cast(:tcp_conn, event)
+<span class="c1"># Using FSM</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Fsm</span> <span class="p">[</span><span class="n">fsm_spawn</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_cast</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_advertise</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_state</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Pair</span> <span class="p">[</span><span class="n">pair</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
 
-# Query state
-let current_state = fsm_state(:tcp_conn)  # Returns :Listen
-</code></pre>
+<span class="n">let</span> <span class="n">initial_data</span> <span class="o">=</span> <span class="n">TcpPayload</span><span class="p">{</span><span class="n">buffer</span><span class="p">:</span> <span class="o">&lt;&lt;&gt;&gt;</span><span class="p">,</span> <span class="n">seq_num</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ack_num</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+<span class="n">let</span> <span class="n">conn</span> <span class="o">=</span> <span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">TcpPayload</span><span class="p">,</span> <span class="n">initial_data</span><span class="p">)</span>
+<span class="n">let</span> <span class="n">_</span> <span class="o">=</span> <span class="n">fsm_advertise</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="p">:</span><span class="n">tcp_conn</span><span class="p">)</span>
 
-<h3>Module System ✅ <strong>WORKING!</strong></h3>
+<span class="c1"># Send events</span>
+<span class="n">let</span> <span class="n">event</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(:</span><span class="n">listen</span><span class="p">,</span> <span class="p">[])</span>
+<span class="n">let</span> <span class="n">_</span> <span class="o">=</span> <span class="n">fsm_cast</span><span class="p">(:</span><span class="n">tcp_conn</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
 
-<pre><code># Module definition
-module Math do
-  # Export declarations
-  export [add/2, multiply/2, factorial/1]
-  
-  def add(x: Int, y: Int): Int = x + y
-  
-  def multiply(x: Int, y: Int): Int = x * y
-  
-def factorial(n: Nat): Pos =
-    match n == 0 do
-      true -> 1
-      false -> n * factorial(n - 1)
-    end
-    
-  # Helper function
-  def helper_func(x) = x * 2
-end
+<span class="c1"># Query state</span>
+<span class="n">let</span> <span class="n">current_state</span> <span class="o">=</span> <span class="n">fsm_state</span><span class="p">(:</span><span class="n">tcp_conn</span><span class="p">)</span>  <span class="c1"># Returns :Listen</span>
+</code></pre></div>
 
-# 🚀 WORKING Import System!
-import Math
-import Std [List, Result]         # Standard library import
-import List [map/2, filter/2]     # Selective imports with arity
+<h3 id="module-system-working">Module System ✅ <strong>WORKING!</strong></h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Module definition</span>
+<span class="n">module</span> <span class="n">Math</span> <span class="n">do</span>
+  <span class="c1"># Export declarations</span>
+  <span class="n">export</span> <span class="p">[</span><span class="n">add</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">multiply</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">factorial</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
 
-# Usage - all work correctly!
-let result = add(5, 3)            # Imported function
-let doubled = map([1,2,3], fn(x) -> x * 2 end)  # From Std
-println("Result: " <> show(result)) # println/1 and show/1 from Std
-</code></pre>
+  <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Int</span><span class="p">):</span> <span class="n">Int</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span>
 
-<h3>🚀 <strong>WORKING</strong> Standard Library with Import System</h3>
+  <span class="k">def</span><span class="w"> </span><span class="nf">multiply</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Int</span><span class="p">):</span> <span class="n">Int</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span>
 
+<span class="k">def</span><span class="w"> </span><span class="nf">factorial</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="n">Nat</span><span class="p">):</span> <span class="n">Pos</span> <span class="o">=</span>
+    <span class="k">match</span> <span class="n">n</span> <span class="o">==</span> <span class="mi">0</span> <span class="n">do</span>
+      <span class="n">true</span> <span class="o">-&gt;</span> <span class="mi">1</span>
+      <span class="n">false</span> <span class="o">-&gt;</span> <span class="n">n</span> <span class="o">*</span> <span class="n">factorial</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">end</span>
+
+  <span class="c1"># Helper function</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">helper_func</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span>
+<span class="n">end</span>
+
+<span class="c1"># 🚀 WORKING Import System!</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std</span> <span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">Result</span><span class="p">]</span>         <span class="c1"># Standard library import</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">List</span> <span class="p">[</span><span class="nb">map</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="nb">filter</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>     <span class="c1"># Selective imports with arity</span>
+
+<span class="c1"># Usage - all work correctly!</span>
+<span class="n">let</span> <span class="n">result</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>            <span class="c1"># Imported function</span>
+<span class="n">let</span> <span class="n">doubled</span> <span class="o">=</span> <span class="nb">map</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span> <span class="n">end</span><span class="p">)</span>  <span class="c1"># From Std</span>
+<span class="n">println</span><span class="p">(</span><span class="s2">&quot;Result: &quot;</span> <span class="o">&lt;&gt;</span> <span class="n">show</span><span class="p">(</span><span class="n">result</span><span class="p">))</span> <span class="c1"># println/1 and show/1 from Std</span>
+</code></pre></div>
+
+<h3 id="working-standard-library-with-import-system">🚀 <strong>WORKING</strong> Standard Library with Import System</h3>
 <p>Cure includes a <strong>complete, runtime-verified</strong> standard library with essential functions:</p>
-
-<pre><code># ✅ VERIFIED: The Std module provides working functions
-
-# ✅ Output functions (runtime verified)
-print/1      # Print values to console with proper formatting
-show/1       # Convert values to string representation (atoms, numbers, lists, tuples)
-
-# ✅ List operations (runtime verified in dependent_types_simple.cure)
-map/2        # Transform list elements: map([1,2,3], fn(x) -> x*2 end)
-fold/3       # Reduce list with accumulator: fold([1,2,3], 0, fn(x,acc) -> acc+x end)  
-zip_with/3   # Combine two lists: zip_with([1,2], [3,4], fn(x,y) -> x+y end)
-head/1       # Get first element of list
-tail/1       # Get list without first element
-cons/2       # Prepend element: cons(1, [2,3]) == [1,2,3]
-append/2     # Join two lists
-length/1     # Get list length
-
-# 🎆 WORKING Example (successfully compiles and runs):
-module DependentTypes do
-  export [demo_all/0]
-  import Std [List, Result]  # ✅ Working import system!
-  
-  def demo_all(): Int =
-    let numbers = [1, 2, 3, 4, 5]
-    let doubled = map(numbers, fn(x) -> x * 2 end)  # [2,4,6,8,10]
-    let sum = fold(doubled, 0, fn(x, acc) -> acc + x end)  # 30
-    println("Sum of doubled numbers: " <> show(sum))  # Output: "Sum: 30"
-    0
-end
-
-# ✅ VERIFIED: Successfully compiles and executes!
-# Console Output:
-# Sum of doubled numbers: 30
-</code></pre>
-
-<h3>Lambda Expressions and Pipe Operators</h3>
-
-<pre><code># Lambda expressions
-let double = fn(x) -> x * 2 end
-let add = fn(x, y) -> x + y end
-
-# Multi-line lambda
-let safe_divide = fn(x, y) ->
-  match y == 0 do
-    true -> error("Division by zero")
-    false -> ok(x / y)
-  end
-end
-
-# Pipe operator for function composition
-let result = input
-  |> validate_input()
-  |> process_data()
-  |> format_output()
-
-# Lambda with pipe
-let processed = numbers
-  |> filter(fn(x) -> x > 0 end)
-  |> map(fn(x) -> x * 2 end)
-</code></pre>
-
-<h3>Data Types and Records</h3>
-
-<pre><code># Record definition
-record Person do
-  name: String
-  age: Nat
-  email: String
-end
-
-# Creating records
-let person = Person{name: "Alice", age: 30, email: "alice@example.com"}
-
-# Pattern matching on records
-def greet(person: Person): String =
-  match person do
-    Person{name: name, age: age} when age >= 18 ->
-      "Hello, adult " <> name <> "!"
-    Person{name: name} ->
-      "Hello, young " <> name <> "!"
-  end
-
-# Union types
-type Result(T, E) = Ok(T) | Error(E)
-
-type Maybe(T) = Some(T) | None
-</code></pre>
-
-<h3>🎆 Dependent Types Examples ✅ <strong>PRODUCTION READY</strong></h3>
-
-<pre><code># 🎆 PRODUCTION READY: Length-indexed vectors with compile-time safety
-module DependentTypes do
-  export [demo_all/0, vector_operations/0]
-  import Std [List, Result]  # ✅ Complete import system integration
-  
-  # ✅ Vector type parameterized by length and element type
-  def make_vec3(x: Float, y: Float, z: Float): Vector(Float, 3) =
-    [x, y, z]  # Type system guarantees exactly 3 elements
-  
-  # ✅ Safe vector operations - length checked at compile time
-  def dot_product(v1: Vector(Float, n), v2: Vector(Float, n)): Float =
-    # Type system guarantees v1 and v2 have identical length
-    zip_with(v1, v2, fn(x, y) -> x * y end)
-    |> fold(0.0, fn(x, acc) -> acc + x end)
-  
-  def vector_add(v1: Vector(Float, n), v2: Vector(Float, n)): Vector(Float, n) =
-    # Type system ensures result has the same length as inputs
-    zip_with(v1, v2, fn(x, y) -> x + y end)
-    
-  def demo_all(): Int =
-    let v1 = make_vec3(1.0, 2.0, 3.0)
-    let v2 = make_vec3(4.0, 5.0, 6.0)
-    let dot_result = dot_product(v1, v2)  # 32.0
-    println("Dot product: " <> show(dot_result))
-    0
-end
-
-# 🚀 WORKING: Safe operations with dependent constraints
-def safe_head(list: List(T, n)) -> T when n > 0 =
-  # Type system guarantees list is non-empty
-  match list do
-    [x | _] -> x
-    # No need for empty case - type system prevents it
-  end
-
-def safe_tail(list: List(T, n)) -> List(T, n-1) when n > 0 =
-  match list do
-    [_ | tail] -> tail
-    # No need for empty case - type system prevents it
-  end
-
-# ✅ VERIFIED: Successfully compiles and runs!
-# Runtime Output from dependent_types_simple.cure:
-# === Dependent Types Demonstration ===
-# All operations below are compile-time verified for safety!
-# === Vector Operations ===
-# Dot product: 32.0
-# Vector sum: [5.0, 7.0, 9.0]
-# Scaled vector: [2.0, 4.0, 6.0]
-
-# Length-indexed lists
-def append(xs: List(T, n), ys: List(T, m)): List(T, n + m) =
-  match xs do
-    [] -> ys
-    [x|rest] -> x :: append(rest, ys)
-  end
-
-# Matrix operations with dimension checking
-record Matrix(rows: Nat, cols: Nat, T) do
-  data: Vector(Vector(T, cols), rows)
-end
-
-def matrix_multiply(
-  a: Matrix(m, n, T), 
-  b: Matrix(n, p, T)
-): Matrix(m, p, T) = 
-  # Implementation ensures dimensions match at compile time
-  ...
-
-# Refinement types
-type NonEmptyList(T) = List(T, n) when n > 0
-
-def head(list: NonEmptyList(T)): T =
-  match list do
-    [x|_] -> x
-    # No need for empty case - type system guarantees non-empty
-  end
-</code></pre>
-
-<h2>Grammar (EBNF-like)</h2>
-
-<pre><code># Top-level program structure
-program ::= module_def | item*
-
-module_def ::= 'module' IDENTIFIER 'do' export_list? item* 'end'
-
-export_list ::= 'export' '[' export_item (',' export_item)* ']'
-export_item ::= IDENTIFIER ('/' INTEGER)?
-
-# Top-level items
-item ::= function_def | def_erl_def | type_def | record_def | fsm_def 
-       | process_def | import_def | let_binding
-
-# Function definitions
-function_def ::= ('def') IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
-def_erl_def ::= 'def_erl' IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
-
-param_list ::= param (',' param)*
-param ::= IDENTIFIER ':' type
-
-type_annotation ::= '->' type | ':' type
-
-constraint ::= 'when' expr
-
-# Type definitions
-type_def ::= 'type' IDENTIFIER type_params? '=' type_expr
-record_def ::= 'record' IDENTIFIER type_params? 'do' field_list 'end'
-
-type_params ::= '(' type_param (',' type_param)* ')'
-type_param ::= IDENTIFIER | IDENTIFIER ':' type
-
-field_list ::= field*
-field ::= IDENTIFIER ':' type
-
-# FSM definitions (arrow-based transitions)
-fsm_def ::= 'fsm' IDENTIFIER '{' field_init (',' field_init)_ '}' 'do' fsm_transition_ 'end'
-field_init ::= IDENTIFIER ':' expr
-fsm_transition ::= IDENTIFIER '-->' '|' IDENTIFIER '|' IDENTIFIER  # FromState --> |event| ToState
-
-# Process definitions
-process_def ::= 'process' IDENTIFIER '(' param_list? ')' 'do' process_body 'end'
-process_body ::= item* expr
-
-# Import definitions ✅ WORKING!
-import_def ::= 'import' IDENTIFIER import_list?
-import_list ::= '[' import_item (',' import_item)* ']'
-import_item ::= IDENTIFIER ('/' INTEGER)? | IDENTIFIER 'as' IDENTIFIER  # Function name, arity, or alias
-
-# Let bindings
-let_binding ::= 'let' IDENTIFIER '=' expr
-
-# Types
-type ::= primitive_type | compound_type | dependent_type | function_type 
-       | union_type | refinement_type
-
-primitive_type ::= 'Int' | 'Float' | 'Atom' | 'Bool' | 'String' | 'Binary'
-                 | 'Nat' | 'Pos' | 'Pid' | 'Unit'
-
-compound_type ::= IDENTIFIER type_args?
-                | '[' type ']'  # List type
-                | '{' type (',' type)* '}'  # Tuple type
-
-dependent_type ::= IDENTIFIER '(' type_arg (',' type_arg)* ')'
-type_arg ::= type | expr
-
-function_type ::= '(' param_list ')' '->' type
-
-union_type ::= type ('|' type)+
-
-refinement_type ::= type 'when' expr
-                  | '{' IDENTIFIER ':' type '|' expr '}'
-
-# Expressions
-expr ::= literal | identifier | function_call | match_expr
-       | receive_expr | record_expr | list_expr | tuple_expr 
-       | binary_op | unary_op | lambda_expr | spawn_expr | send_expr | fsm_expr
-
-literal ::= INTEGER | FLOAT | STRING | ATOM | BOOLEAN | 'Ok' | 'Error' | 'Some' | 'None'
-
-identifier ::= IDENTIFIER | qualified_identifier
-qualified_identifier ::= IDENTIFIER '.' IDENTIFIER
-
-function_call ::= expr '(' arg_list? ')'
-arg_list ::= expr (',' expr)*
-
-# Pattern matching
-match_expr ::= 'match' expr 'do' match_clause* 'end'
-match_clause ::= pattern guard? '->' expr
-pattern ::= literal | identifier | constructor_pattern | list_pattern 
-          | tuple_pattern | record_pattern | wildcard
-constructor_pattern ::= IDENTIFIER pattern_args?
-pattern_args ::= '(' pattern (',' pattern)* ')'
-list_pattern ::= '[' ']' | '[' pattern (',' pattern)* ']' 
-               | '[' pattern '|' pattern ']'
-tuple_pattern ::= '{' pattern (',' pattern)* '}'
-record_pattern ::= IDENTIFIER '{' field_pattern (',' field_pattern)* '}'
-field_pattern ::= IDENTIFIER ':' pattern | IDENTIFIER
-wildcard ::= '_'
-guard ::= 'when' expr
-
-# Process communication
-receive_expr ::= 'receive' 'do' receive_clause* 'end'
-receive_clause ::= pattern guard? '->' expr
-
-spawn_expr ::= 'spawn' '(' IDENTIFIER ',' '[' arg_list? ']' ')'
-send_expr ::= 'send' '(' expr ',' expr ')'
-
-# FSM operations
-fsm_expr ::= 'fsm_spawn' '(' IDENTIFIER ')'
-           | 'fsm_send' '(' expr ',' expr ')'
-
-# Data structures
-record_expr ::= IDENTIFIER '{' field_assign (',' field_assign)* '}'
-field_assign ::= IDENTIFIER ':' expr
-
-list_expr ::= '[' ']' | '[' expr (',' expr)* ']'
-
-tuple_expr ::= '{' expr (',' expr)* '}'
-
-# Operators
-binary_op ::= expr binary_operator expr
-unary_op ::= unary_operator expr
-
-binary_operator ::= '+' | '-' | '*' | '/' | '==' | '!=' | '<' | '>' 
-                  | '<=' | '>=' | '&&' | '||' | '|' | '<>' | '|>'
-                  # Note: '|' is list cons operator, '<>' is string concatenation
-unary_operator ::= '-' | '!'
-
-# Lambda expressions
-lambda_expr ::= 'fn' '(' param_list? ')' '->' expr ('end')?
-              | 'fn' '(' param_list? ')' '->' expr_block 'end'
-
-expr_block ::= expr+
-
-# String interpolation
-string_interpolation ::= '"' string_part* '"'
-string_part ::= STRING_CHARS | '#{' expr '}'
-
-# Lexical tokens
-IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
-INTEGER ::= [0-9]+
-FLOAT ::= [0-9]+ '.' [0-9]+
-STRING ::= '"' ([^"\\] | '\\' .)* '"'
-ATOM ::= ':' IDENTIFIER | ':"' ([^"\\] | '\\' .)* '"'
-BOOLEAN ::= 'true' | 'false' 
-KEYWORD ::= 'def' | 'def_erl' | 'module' | 'import' | 'export' | 'fsm' 
-           | 'state' | 'states' | 'initial' | 'event' | 'timeout' | 'match' | 'when'
-           | 'if' | 'then' | 'else' | 'let' | 'in' | 'as' | 'do' | 'end' | 'fn'
-           | 'process' | 'receive' | 'send' | 'spawn' | 'record' | 'type'
-           | 'and' | 'or' | 'not' | 'ok' | 'error'
-COMMENT ::= '#' [^\n]*
-WHITESPACE ::= [ \t\n\r]+
-</code></pre>
-
-<h2>Type System Implementation</h2>
-
+<div class="codehilite"><pre><span></span><code><span class="c1"># ✅ VERIFIED: The Std module provides working functions</span>
+
+<span class="c1"># ✅ Output functions (runtime verified)</span>
+<span class="nb">print</span><span class="o">/</span><span class="mi">1</span>      <span class="c1"># Print values to console with proper formatting</span>
+<span class="n">show</span><span class="o">/</span><span class="mi">1</span>       <span class="c1"># Convert values to string representation (atoms, numbers, lists, tuples)</span>
+
+<span class="c1"># ✅ List operations (runtime verified in dependent_types_simple.cure)</span>
+<span class="nb">map</span><span class="o">/</span><span class="mi">2</span>        <span class="c1"># Transform list elements: map([1,2,3], fn(x) -&gt; x*2 end)</span>
+<span class="n">fold</span><span class="o">/</span><span class="mi">3</span>       <span class="c1"># Reduce list with accumulator: fold([1,2,3], 0, fn(x,acc) -&gt; acc+x end)  </span>
+<span class="n">zip_with</span><span class="o">/</span><span class="mi">3</span>   <span class="c1"># Combine two lists: zip_with([1,2], [3,4], fn(x,y) -&gt; x+y end)</span>
+<span class="n">head</span><span class="o">/</span><span class="mi">1</span>       <span class="c1"># Get first element of list</span>
+<span class="n">tail</span><span class="o">/</span><span class="mi">1</span>       <span class="c1"># Get list without first element</span>
+<span class="n">cons</span><span class="o">/</span><span class="mi">2</span>       <span class="c1"># Prepend element: cons(1, [2,3]) == [1,2,3]</span>
+<span class="n">append</span><span class="o">/</span><span class="mi">2</span>     <span class="c1"># Join two lists</span>
+<span class="n">length</span><span class="o">/</span><span class="mi">1</span>     <span class="c1"># Get list length</span>
+
+<span class="c1"># 🎆 WORKING Example (successfully compiles and runs):</span>
+<span class="n">module</span> <span class="n">DependentTypes</span> <span class="n">do</span>
+  <span class="n">export</span> <span class="p">[</span><span class="n">demo_all</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std</span> <span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">Result</span><span class="p">]</span>  <span class="c1"># ✅ Working import system!</span>
+
+  <span class="k">def</span><span class="w"> </span><span class="nf">demo_all</span><span class="p">():</span> <span class="n">Int</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">numbers</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
+    <span class="n">let</span> <span class="n">doubled</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">numbers</span><span class="p">,</span> <span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span> <span class="n">end</span><span class="p">)</span>  <span class="c1"># [2,4,6,8,10]</span>
+    <span class="n">let</span> <span class="nb">sum</span> <span class="o">=</span> <span class="n">fold</span><span class="p">(</span><span class="n">doubled</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">acc</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">acc</span> <span class="o">+</span> <span class="n">x</span> <span class="n">end</span><span class="p">)</span>  <span class="c1"># 30</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;Sum of doubled numbers: &quot;</span> <span class="o">&lt;&gt;</span> <span class="n">show</span><span class="p">(</span><span class="nb">sum</span><span class="p">))</span>  <span class="c1"># Output: &quot;Sum: 30&quot;</span>
+    <span class="mi">0</span>
+<span class="n">end</span>
+
+<span class="c1"># ✅ VERIFIED: Successfully compiles and executes!</span>
+<span class="c1"># Console Output:</span>
+<span class="c1"># Sum of doubled numbers: 30</span>
+</code></pre></div>
+
+<h3 id="lambda-expressions-and-pipe-operators">Lambda Expressions and Pipe Operators</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">#</span><span class="w"> </span><span class="n">Lambda</span><span class="w"> </span><span class="n">expressions</span>
+<span class="k">let</span><span class="w"> </span><span class="nv">double</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="o">(</span><span class="n">x</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span>
+<span class="k">let</span><span class="w"> </span><span class="nv">add</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="o">(</span><span class="n">x</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="k">end</span>
+
+<span class="o">#</span><span class="w"> </span><span class="n">Multi</span><span class="o">-</span><span class="n">line</span><span class="w"> </span><span class="n">lambda</span>
+<span class="k">let</span><span class="w"> </span><span class="nv">safe_divide</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="o">(</span><span class="n">x</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">  </span><span class="k">match</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="k">true</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">error</span><span class="o">(</span><span class="s">&quot;Division by zero&quot;</span><span class="o">)</span>
+<span class="w">    </span><span class="k">false</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="o">(</span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">y</span><span class="o">)</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="k">end</span>
+
+<span class="o">#</span><span class="w"> </span><span class="n">Pipe</span><span class="w"> </span><span class="n">operator</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">composition</span>
+<span class="k">let</span><span class="w"> </span><span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate_input</span><span class="bp">()</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">process_data</span><span class="bp">()</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">format_output</span><span class="bp">()</span>
+
+<span class="o">#</span><span class="w"> </span><span class="n">Lambda</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">pipe</span>
+<span class="k">let</span><span class="w"> </span><span class="nv">processed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">numbers</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">filter</span><span class="o">(</span><span class="n">fn</span><span class="o">(</span><span class="n">x</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">end</span><span class="o">)</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">map</span><span class="o">(</span><span class="n">fn</span><span class="o">(</span><span class="n">x</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="o">)</span>
+</code></pre></div>
+
+<h3 id="data-types-and-records">Data Types and Records</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Record</span><span class="w"> </span><span class="nx">definition</span>
+<span class="nx">record</span><span class="w"> </span><span class="nx">Person</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span>
+<span class="w">  </span><span class="nx">age</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span>
+<span class="w">  </span><span class="nx">email</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span>
+<span class="nx">end</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Creating</span><span class="w"> </span><span class="nx">records</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">person</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Person</span><span class="p">{</span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">age</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span><span class="w"> </span><span class="nx">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;alice@example.com&quot;</span><span class="p">}</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Pattern</span><span class="w"> </span><span class="nx">matching</span><span class="w"> </span><span class="nx">on</span><span class="w"> </span><span class="nx">records</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">greet</span><span class="p">(</span><span class="nx">person</span><span class="p">:</span><span class="w"> </span><span class="nx">Person</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="k">match</span><span class="w"> </span><span class="nx">person</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="nx">Person</span><span class="p">{</span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">age</span><span class="p">:</span><span class="w"> </span><span class="nx">age</span><span class="p">}</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">age</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">18</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">      </span><span class="s">&quot;Hello, adult &quot;</span><span class="w"> </span><span class="p">&lt;&gt;</span><span class="w"> </span><span class="nx">name</span><span class="w"> </span><span class="p">&lt;&gt;</span><span class="w"> </span><span class="s">&quot;!&quot;</span>
+<span class="w">    </span><span class="nx">Person</span><span class="p">{</span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="nx">name</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">      </span><span class="s">&quot;Hello, young &quot;</span><span class="w"> </span><span class="p">&lt;&gt;</span><span class="w"> </span><span class="nx">name</span><span class="w"> </span><span class="p">&lt;&gt;</span><span class="w"> </span><span class="s">&quot;!&quot;</span>
+<span class="w">  </span><span class="nx">end</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Union</span><span class="w"> </span><span class="nx">types</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">E</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Ok</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Error</span><span class="p">(</span><span class="nx">E</span><span class="p">)</span>
+
+<span class="k">type</span><span class="w"> </span><span class="nx">Maybe</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Some</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">None</span>
+</code></pre></div>
+
+<h3 id="dependent-types-examples-production-ready">🎆 Dependent Types Examples ✅ <strong>PRODUCTION READY</strong></h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 🎆 PRODUCTION READY: Length-indexed vectors with compile-time safety</span>
+<span class="n">module</span> <span class="n">DependentTypes</span> <span class="n">do</span>
+  <span class="n">export</span> <span class="p">[</span><span class="n">demo_all</span><span class="o">/</span><span class="mi">0</span><span class="p">,</span> <span class="n">vector_operations</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std</span> <span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">Result</span><span class="p">]</span>  <span class="c1"># ✅ Complete import system integration</span>
+
+  <span class="c1"># ✅ Vector type parameterized by length and element type</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">make_vec3</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Float</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Float</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">Float</span><span class="p">):</span> <span class="n">Vector</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="o">=</span>
+    <span class="p">[</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">]</span>  <span class="c1"># Type system guarantees exactly 3 elements</span>
+
+  <span class="c1"># ✅ Safe vector operations - length checked at compile time</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">dot_product</span><span class="p">(</span><span class="n">v1</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="n">v2</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">n</span><span class="p">)):</span> <span class="n">Float</span> <span class="o">=</span>
+    <span class="c1"># Type system guarantees v1 and v2 have identical length</span>
+    <span class="n">zip_with</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">,</span> <span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span> <span class="n">end</span><span class="p">)</span>
+    <span class="o">|&gt;</span> <span class="n">fold</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">acc</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">acc</span> <span class="o">+</span> <span class="n">x</span> <span class="n">end</span><span class="p">)</span>
+
+  <span class="k">def</span><span class="w"> </span><span class="nf">vector_add</span><span class="p">(</span><span class="n">v1</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="n">v2</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">n</span><span class="p">)):</span> <span class="n">Vector</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="o">=</span>
+    <span class="c1"># Type system ensures result has the same length as inputs</span>
+    <span class="n">zip_with</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">,</span> <span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span> <span class="n">end</span><span class="p">)</span>
+
+  <span class="k">def</span><span class="w"> </span><span class="nf">demo_all</span><span class="p">():</span> <span class="n">Int</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">v1</span> <span class="o">=</span> <span class="n">make_vec3</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">v2</span> <span class="o">=</span> <span class="n">make_vec3</span><span class="p">(</span><span class="mf">4.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">dot_result</span> <span class="o">=</span> <span class="n">dot_product</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">)</span>  <span class="c1"># 32.0</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;Dot product: &quot;</span> <span class="o">&lt;&gt;</span> <span class="n">show</span><span class="p">(</span><span class="n">dot_result</span><span class="p">))</span>
+    <span class="mi">0</span>
+<span class="n">end</span>
+
+<span class="c1"># 🚀 WORKING: Safe operations with dependent constraints</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">safe_head</span><span class="p">(</span><span class="nb">list</span><span class="p">:</span> <span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="n">T</span> <span class="n">when</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">=</span>
+  <span class="c1"># Type system guarantees list is non-empty</span>
+  <span class="k">match</span> <span class="nb">list</span> <span class="n">do</span>
+    <span class="p">[</span><span class="n">x</span> <span class="o">|</span> <span class="n">_</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="n">x</span>
+    <span class="c1"># No need for empty case - type system prevents it</span>
+  <span class="n">end</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">safe_tail</span><span class="p">(</span><span class="nb">list</span><span class="p">:</span> <span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="n">when</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">=</span>
+  <span class="k">match</span> <span class="nb">list</span> <span class="n">do</span>
+    <span class="p">[</span><span class="n">_</span> <span class="o">|</span> <span class="n">tail</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="n">tail</span>
+    <span class="c1"># No need for empty case - type system prevents it</span>
+  <span class="n">end</span>
+
+<span class="c1"># ✅ VERIFIED: Successfully compiles and runs!</span>
+<span class="c1"># Runtime Output from dependent_types_simple.cure:</span>
+<span class="c1"># === Dependent Types Demonstration ===</span>
+<span class="c1"># All operations below are compile-time verified for safety!</span>
+<span class="c1"># === Vector Operations ===</span>
+<span class="c1"># Dot product: 32.0</span>
+<span class="c1"># Vector sum: [5.0, 7.0, 9.0]</span>
+<span class="c1"># Scaled vector: [2.0, 4.0, 6.0]</span>
+
+<span class="c1"># Length-indexed lists</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">append</span><span class="p">(</span><span class="n">xs</span><span class="p">:</span> <span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="n">ys</span><span class="p">:</span> <span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">m</span><span class="p">)):</span> <span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">n</span> <span class="o">+</span> <span class="n">m</span><span class="p">)</span> <span class="o">=</span>
+  <span class="k">match</span> <span class="n">xs</span> <span class="n">do</span>
+    <span class="p">[]</span> <span class="o">-&gt;</span> <span class="n">ys</span>
+    <span class="p">[</span><span class="n">x</span><span class="o">|</span><span class="n">rest</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="p">::</span> <span class="n">append</span><span class="p">(</span><span class="n">rest</span><span class="p">,</span> <span class="n">ys</span><span class="p">)</span>
+  <span class="n">end</span>
+
+<span class="c1"># Matrix operations with dimension checking</span>
+<span class="n">record</span> <span class="n">Matrix</span><span class="p">(</span><span class="n">rows</span><span class="p">:</span> <span class="n">Nat</span><span class="p">,</span> <span class="n">cols</span><span class="p">:</span> <span class="n">Nat</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span> <span class="n">do</span>
+  <span class="n">data</span><span class="p">:</span> <span class="n">Vector</span><span class="p">(</span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">cols</span><span class="p">),</span> <span class="n">rows</span><span class="p">)</span>
+<span class="n">end</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">matrix_multiply</span><span class="p">(</span>
+  <span class="n">a</span><span class="p">:</span> <span class="n">Matrix</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">T</span><span class="p">),</span> 
+  <span class="n">b</span><span class="p">:</span> <span class="n">Matrix</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
+<span class="p">):</span> <span class="n">Matrix</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span> <span class="o">=</span> 
+  <span class="c1"># Implementation ensures dimensions match at compile time</span>
+  <span class="o">...</span>
+
+<span class="c1"># Refinement types</span>
+<span class="nb">type</span> <span class="n">NonEmptyList</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">=</span> <span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="n">when</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">head</span><span class="p">(</span><span class="nb">list</span><span class="p">:</span> <span class="n">NonEmptyList</span><span class="p">(</span><span class="n">T</span><span class="p">)):</span> <span class="n">T</span> <span class="o">=</span>
+  <span class="k">match</span> <span class="nb">list</span> <span class="n">do</span>
+    <span class="p">[</span><span class="n">x</span><span class="o">|</span><span class="n">_</span><span class="p">]</span> <span class="o">-&gt;</span> <span class="n">x</span>
+    <span class="c1"># No need for empty case - type system guarantees non-empty</span>
+  <span class="n">end</span>
+</code></pre></div>
+
+<h2 id="grammar-ebnf-like">Grammar (EBNF-like)</h2>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span> <span class="k">Top-level program structure</span>
+<span class="k">program </span><span class="err">::</span><span class="o">=</span> <span class="k">module_def </span><span class="p">|</span> <span class="k">item</span><span class="err">*</span>
+
+<span class="k">module_def </span><span class="err">::=</span> <span class="s1">&#39;module&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;do&#39;</span> <span class="k">export_list</span><span class="ni">? item* &#39;end&#39;</span>
+
+<span class="ni">export_list ::= &#39;export&#39; &#39;[&#39; export_item (&#39;,&#39; export_item)* &#39;]&#39;</span>
+<span class="ni">export_item ::= IDENTIFIER (&#39;/&#39; INTEGER)?</span>
+
+<span class="err">#</span> <span class="k">Top-level items</span>
+<span class="k">item </span><span class="err">::=</span> <span class="k">function_def </span><span class="p">|</span> <span class="k">def_erl_def </span><span class="p">|</span> <span class="k">type_def </span><span class="p">|</span> <span class="k">record_def </span><span class="p">|</span> <span class="k">fsm_def </span>
+       <span class="p">|</span> <span class="k">process_def </span><span class="p">|</span> <span class="k">import_def </span><span class="p">|</span> <span class="k">let_binding</span>
+
+<span class="err">#</span> <span class="k">Function definitions</span>
+<span class="k">function_def </span><span class="err">::=</span> <span class="p">(</span><span class="s1">&#39;def&#39;</span><span class="p">)</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;(&#39;</span> <span class="k">param_list</span><span class="ni">? &#39;)&#39; type_annotation?</span> <span class="k">constraint</span><span class="ni">? &#39;=&#39; expr</span>
+<span class="ni">def_erl_def ::= &#39;def_erl&#39; IDENTIFIER &#39;(&#39; param_list?</span> <span class="s1">&#39;)&#39;</span> <span class="k">type_annotation</span><span class="ni">? constraint?</span> <span class="s1">&#39;=&#39;</span> <span class="k">expr</span>
+
+<span class="k">param_list </span><span class="err">::=</span> <span class="k">param </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">param</span><span class="p">)</span><span class="err">*</span>
+<span class="k">param </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;:&#39;</span> <span class="k">type</span>
+
+<span class="k">type_annotation </span><span class="err">::=</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">type </span><span class="p">|</span> <span class="s1">&#39;:&#39;</span> <span class="k">type</span>
+
+<span class="k">constraint </span><span class="err">::=</span> <span class="s1">&#39;when&#39;</span> <span class="k">expr</span>
+
+<span class="err">#</span> <span class="k">Type definitions</span>
+<span class="k">type_def </span><span class="err">::=</span> <span class="s1">&#39;type&#39;</span> <span class="k">IDENTIFIER type_params</span><span class="ni">? &#39;=&#39; type_expr</span>
+<span class="ni">record_def ::= &#39;record&#39; IDENTIFIER type_params?</span> <span class="s1">&#39;do&#39;</span> <span class="k">field_list </span><span class="s1">&#39;end&#39;</span>
+
+<span class="k">type_params </span><span class="err">::=</span> <span class="s1">&#39;(&#39;</span> <span class="k">type_param </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">type_param</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;)&#39;</span>
+<span class="k">type_param </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="p">|</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;:&#39;</span> <span class="k">type</span>
+
+<span class="k">field_list </span><span class="err">::=</span> <span class="k">field</span><span class="err">*</span>
+<span class="k">field </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;:&#39;</span> <span class="k">type</span>
+
+<span class="err">#</span> <span class="k">FSM definitions </span><span class="p">(</span><span class="k">arrow-based transitions</span><span class="p">)</span>
+<span class="k">fsm_def </span><span class="err">::=</span> <span class="s1">&#39;fsm&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;{&#39;</span> <span class="k">field_init </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">field_init</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;}&#39;</span> <span class="s1">&#39;do&#39;</span> <span class="k">fsm_transition</span><span class="err">*</span> <span class="s1">&#39;end&#39;</span>
+<span class="k">field_init </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;:&#39;</span> <span class="k">expr</span>
+<span class="k">fsm_transition </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;--&gt;&#39;</span> <span class="s1">&#39;|&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;|&#39;</span> <span class="k">IDENTIFIER  </span><span class="err">#</span> <span class="k">FromState --</span><span class="err">&gt;</span> <span class="p">|</span><span class="k">event</span><span class="p">|</span> <span class="k">ToState</span>
+
+<span class="err">#</span> <span class="k">Process definitions</span>
+<span class="k">process_def </span><span class="err">::=</span> <span class="s1">&#39;process&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;(&#39;</span> <span class="k">param_list</span><span class="ni">? &#39;)&#39; &#39;do&#39; process_body &#39;end&#39;</span>
+<span class="ni">process_body ::= item* expr</span>
+
+<span class="ni"># Import definitions ✅ WORKING!</span>
+<span class="ni">import_def ::= &#39;import&#39; IDENTIFIER import_list?</span>
+<span class="k">import_list </span><span class="err">::=</span> <span class="s1">&#39;[&#39;</span> <span class="k">import_item </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">import_item</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;]&#39;</span>
+<span class="k">import_item </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="p">(</span><span class="s1">&#39;/&#39;</span> <span class="k">INTEGER</span><span class="p">)</span><span class="ni">? | IDENTIFIER &#39;as&#39; IDENTIFIER  # Function name, arity, or alias</span>
+
+<span class="ni"># Let bindings</span>
+<span class="ni">let_binding ::= &#39;let&#39; IDENTIFIER &#39;=&#39; expr</span>
+
+<span class="ni"># Types</span>
+<span class="ni">type ::= primitive_type | compound_type | dependent_type | function_type </span>
+<span class="ni">       | union_type | refinement_type</span>
+
+<span class="ni">primitive_type ::= &#39;Int&#39; | &#39;Float&#39; | &#39;Atom&#39; | &#39;Bool&#39; | &#39;String&#39; | &#39;Binary&#39;</span>
+<span class="ni">                 | &#39;Nat&#39; | &#39;Pos&#39; | &#39;Pid&#39; | &#39;Unit&#39;</span>
+
+<span class="ni">compound_type ::= IDENTIFIER type_args?</span>
+                <span class="p">|</span> <span class="s1">&#39;[&#39;</span> <span class="k">type </span><span class="s1">&#39;]&#39;</span>  <span class="err">#</span> <span class="k">List type</span>
+                <span class="p">|</span> <span class="s1">&#39;{&#39;</span> <span class="k">type </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">type</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;}&#39;</span>  <span class="err">#</span> <span class="k">Tuple type</span>
+
+<span class="k">dependent_type </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;(&#39;</span> <span class="k">type_arg </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">type_arg</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;)&#39;</span>
+<span class="k">type_arg </span><span class="err">::=</span> <span class="k">type </span><span class="p">|</span> <span class="k">expr</span>
+
+<span class="k">function_type </span><span class="err">::=</span> <span class="s1">&#39;(&#39;</span> <span class="k">param_list </span><span class="s1">&#39;)&#39;</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">type</span>
+
+<span class="k">union_type </span><span class="err">::=</span> <span class="k">type </span><span class="p">(</span><span class="s1">&#39;|&#39;</span> <span class="k">type</span><span class="p">)</span><span class="err">+</span>
+
+<span class="k">refinement_type </span><span class="err">::=</span> <span class="k">type </span><span class="s1">&#39;when&#39;</span> <span class="k">expr</span>
+                  <span class="p">|</span> <span class="s1">&#39;{&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;:&#39;</span> <span class="k">type </span><span class="s1">&#39;|&#39;</span> <span class="k">expr </span><span class="s1">&#39;}&#39;</span>
+
+<span class="err">#</span> <span class="k">Expressions</span>
+<span class="k">expr </span><span class="err">::=</span> <span class="k">literal </span><span class="p">|</span> <span class="k">identifier </span><span class="p">|</span> <span class="k">function_call </span><span class="p">|</span> <span class="k">match_expr</span>
+       <span class="p">|</span> <span class="k">receive_expr </span><span class="p">|</span> <span class="k">record_expr </span><span class="p">|</span> <span class="k">list_expr </span><span class="p">|</span> <span class="k">tuple_expr </span>
+       <span class="p">|</span> <span class="k">binary_op </span><span class="p">|</span> <span class="k">unary_op </span><span class="p">|</span> <span class="k">lambda_expr </span><span class="p">|</span> <span class="k">spawn_expr </span><span class="p">|</span> <span class="k">send_expr </span><span class="p">|</span> <span class="k">fsm_expr</span>
+
+<span class="k">literal </span><span class="err">::=</span> <span class="k">INTEGER </span><span class="p">|</span> <span class="k">FLOAT </span><span class="p">|</span> <span class="k">STRING </span><span class="p">|</span> <span class="k">ATOM </span><span class="p">|</span> <span class="k">BOOLEAN </span><span class="p">|</span> <span class="s1">&#39;Ok&#39;</span> <span class="p">|</span> <span class="s1">&#39;Error&#39;</span> <span class="p">|</span> <span class="s1">&#39;Some&#39;</span> <span class="p">|</span> <span class="s1">&#39;None&#39;</span>
+
+<span class="k">identifier </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="p">|</span> <span class="k">qualified_identifier</span>
+<span class="k">qualified_identifier </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;.&#39;</span> <span class="k">IDENTIFIER</span>
+
+<span class="k">function_call </span><span class="err">::=</span> <span class="k">expr </span><span class="s1">&#39;(&#39;</span> <span class="k">arg_list</span><span class="ni">? &#39;)&#39;</span>
+<span class="ni">arg_list ::= expr (&#39;,&#39; expr)*</span>
+
+<span class="ni"># Pattern matching</span>
+<span class="ni">match_expr ::= &#39;match&#39; expr &#39;do&#39; match_clause* &#39;end&#39;</span>
+<span class="ni">match_clause ::= pattern guard?</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">expr</span>
+<span class="k">pattern </span><span class="err">::=</span> <span class="k">literal </span><span class="p">|</span> <span class="k">identifier </span><span class="p">|</span> <span class="k">constructor_pattern </span><span class="p">|</span> <span class="k">list_pattern </span>
+          <span class="p">|</span> <span class="k">tuple_pattern </span><span class="p">|</span> <span class="k">record_pattern </span><span class="p">|</span> <span class="k">wildcard</span>
+<span class="k">constructor_pattern </span><span class="err">::=</span> <span class="k">IDENTIFIER pattern_args</span><span class="ni">?</span>
+<span class="ni">pattern_args ::= &#39;(&#39; pattern (&#39;,&#39; pattern)* &#39;)&#39;</span>
+<span class="ni">list_pattern ::= &#39;[&#39; &#39;]&#39; | &#39;[&#39; pattern (&#39;,&#39; pattern)* &#39;]&#39; </span>
+<span class="ni">               | &#39;[&#39; pattern &#39;|&#39; pattern &#39;]&#39;</span>
+<span class="ni">tuple_pattern ::= &#39;{&#39; pattern (&#39;,&#39; pattern)* &#39;}&#39;</span>
+<span class="ni">record_pattern ::= IDENTIFIER &#39;{&#39; field_pattern (&#39;,&#39; field_pattern)* &#39;}&#39;</span>
+<span class="ni">field_pattern ::= IDENTIFIER &#39;:&#39; pattern | IDENTIFIER</span>
+<span class="ni">wildcard ::= &#39;_&#39;</span>
+<span class="ni">guard ::= &#39;when&#39; expr</span>
+
+<span class="ni"># Process communication</span>
+<span class="ni">receive_expr ::= &#39;receive&#39; &#39;do&#39; receive_clause* &#39;end&#39;</span>
+<span class="ni">receive_clause ::= pattern guard?</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">expr</span>
+
+<span class="k">spawn_expr </span><span class="err">::=</span> <span class="s1">&#39;spawn&#39;</span> <span class="s1">&#39;(&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;,&#39;</span> <span class="s1">&#39;[&#39;</span> <span class="k">arg_list</span><span class="ni">? &#39;]&#39; &#39;)&#39;</span>
+<span class="ni">send_expr ::= &#39;send&#39; &#39;(&#39; expr &#39;,&#39; expr &#39;)&#39;</span>
+
+<span class="ni"># FSM operations</span>
+<span class="ni">fsm_expr ::= &#39;fsm_spawn&#39; &#39;(&#39; IDENTIFIER &#39;)&#39;</span>
+<span class="ni">           | &#39;fsm_send&#39; &#39;(&#39; expr &#39;,&#39; expr &#39;)&#39;</span>
+
+<span class="ni"># Data structures</span>
+<span class="ni">record_expr ::= IDENTIFIER &#39;{&#39; field_assign (&#39;,&#39; field_assign)* &#39;}&#39;</span>
+<span class="ni">field_assign ::= IDENTIFIER &#39;:&#39; expr</span>
+
+<span class="ni">list_expr ::= &#39;[&#39; &#39;]&#39; | &#39;[&#39; expr (&#39;,&#39; expr)* &#39;]&#39;</span>
+
+<span class="ni">tuple_expr ::= &#39;{&#39; expr (&#39;,&#39; expr)* &#39;}&#39;</span>
+
+<span class="ni"># Operators</span>
+<span class="ni">binary_op ::= expr binary_operator expr</span>
+<span class="ni">unary_op ::= unary_operator expr</span>
+
+<span class="ni">binary_operator ::= &#39;+&#39; | &#39;-&#39; | &#39;*&#39; | &#39;/&#39; | &#39;==&#39; | &#39;!=&#39; | &#39;&lt;&#39; | &#39;&gt;&#39; </span>
+<span class="ni">                  | &#39;&lt;=&#39; | &#39;&gt;=&#39; | &#39;&amp;&amp;&#39; | &#39;||&#39; | &#39;|&#39; | &#39;&lt;&gt;&#39; | &#39;|&gt;&#39;</span>
+<span class="ni">                  # Note: &#39;|&#39; is list cons operator, &#39;&lt;&gt;&#39; is string concatenation</span>
+<span class="ni">unary_operator ::= &#39;-&#39; | &#39;!&#39;</span>
+
+<span class="ni"># Lambda expressions</span>
+<span class="ni">lambda_expr ::= &#39;fn&#39; &#39;(&#39; param_list?</span> <span class="s1">&#39;)&#39;</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">expr </span><span class="p">(</span><span class="s1">&#39;end&#39;</span><span class="p">)</span><span class="ni">?</span>
+<span class="ni">              | &#39;fn&#39; &#39;(&#39; param_list?</span> <span class="s1">&#39;)&#39;</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">expr_block </span><span class="s1">&#39;end&#39;</span>
+
+<span class="k">expr_block </span><span class="err">::=</span> <span class="k">expr</span><span class="err">+</span>
+
+<span class="err">#</span> <span class="k">String interpolation</span>
+<span class="k">string_interpolation </span><span class="err">::=</span> <span class="s1">&#39;&quot;&#39;</span> <span class="k">string_part</span><span class="err">*</span> <span class="s1">&#39;&quot;&#39;</span>
+<span class="k">string_part </span><span class="err">::=</span> <span class="k">STRING_CHARS </span><span class="p">|</span> <span class="s1">&#39;#{&#39;</span> <span class="k">expr </span><span class="s1">&#39;}&#39;</span>
+
+<span class="err">#</span> <span class="k">Lexical tokens</span>
+<span class="k">IDENTIFIER </span><span class="err">::=</span> <span class="p">[</span><span class="k">a-zA-Z_</span><span class="p">][</span><span class="k">a-zA-Z0-9_</span><span class="p">]</span><span class="err">*</span>
+<span class="k">INTEGER </span><span class="err">::=</span> <span class="p">[</span><span class="err">0</span><span class="o">-</span><span class="err">9</span><span class="p">]</span><span class="err">+</span>
+<span class="k">FLOAT </span><span class="err">::=</span> <span class="p">[</span><span class="err">0</span><span class="o">-</span><span class="err">9</span><span class="p">]</span><span class="err">+</span> <span class="s1">&#39;.&#39;</span> <span class="p">[</span><span class="err">0</span><span class="o">-</span><span class="err">9</span><span class="p">]</span><span class="err">+</span>
+<span class="k">STRING </span><span class="err">::=</span> <span class="s1">&#39;&quot;&#39;</span> <span class="p">([</span><span class="err">^</span><span class="s2">&quot;\\] | &#39;\\&#39; .)* &#39;&quot;</span><span class="s1">&#39;</span>
+<span class="s1">ATOM ::= &#39;</span><span class="err">:</span><span class="s1">&#39; IDENTIFIER | &#39;</span><span class="err">:</span><span class="s2">&quot;&#39; ([^&quot;</span><span class="err">\\</span><span class="p">]</span> <span class="p">|</span> <span class="s1">&#39;\\&#39;</span> <span class="p">.</span><span class="err">)*</span> <span class="err">&#39;&quot;&#39;</span>
+<span class="k">BOOLEAN </span><span class="err">::</span><span class="o">=</span> <span class="s1">&#39;true&#39;</span> <span class="p">|</span> <span class="s1">&#39;false&#39;</span> 
+<span class="k">KEYWORD </span><span class="err">::=</span> <span class="s1">&#39;def&#39;</span> <span class="p">|</span> <span class="s1">&#39;def_erl&#39;</span> <span class="p">|</span> <span class="s1">&#39;module&#39;</span> <span class="p">|</span> <span class="s1">&#39;import&#39;</span> <span class="p">|</span> <span class="s1">&#39;export&#39;</span> <span class="p">|</span> <span class="s1">&#39;fsm&#39;</span> 
+           <span class="p">|</span> <span class="s1">&#39;state&#39;</span> <span class="p">|</span> <span class="s1">&#39;states&#39;</span> <span class="p">|</span> <span class="s1">&#39;initial&#39;</span> <span class="p">|</span> <span class="s1">&#39;event&#39;</span> <span class="p">|</span> <span class="s1">&#39;timeout&#39;</span> <span class="p">|</span> <span class="s1">&#39;match&#39;</span> <span class="p">|</span> <span class="s1">&#39;when&#39;</span>
+           <span class="p">|</span> <span class="s1">&#39;if&#39;</span> <span class="p">|</span> <span class="s1">&#39;then&#39;</span> <span class="p">|</span> <span class="s1">&#39;else&#39;</span> <span class="p">|</span> <span class="s1">&#39;let&#39;</span> <span class="p">|</span> <span class="s1">&#39;in&#39;</span> <span class="p">|</span> <span class="s1">&#39;as&#39;</span> <span class="p">|</span> <span class="s1">&#39;do&#39;</span> <span class="p">|</span> <span class="s1">&#39;end&#39;</span> <span class="p">|</span> <span class="s1">&#39;fn&#39;</span>
+           <span class="p">|</span> <span class="s1">&#39;process&#39;</span> <span class="p">|</span> <span class="s1">&#39;receive&#39;</span> <span class="p">|</span> <span class="s1">&#39;send&#39;</span> <span class="p">|</span> <span class="s1">&#39;spawn&#39;</span> <span class="p">|</span> <span class="s1">&#39;record&#39;</span> <span class="p">|</span> <span class="s1">&#39;type&#39;</span>
+           <span class="p">|</span> <span class="s1">&#39;and&#39;</span> <span class="p">|</span> <span class="s1">&#39;or&#39;</span> <span class="p">|</span> <span class="s1">&#39;not&#39;</span> <span class="p">|</span> <span class="s1">&#39;ok&#39;</span> <span class="p">|</span> <span class="s1">&#39;error&#39;</span>
+<span class="k">COMMENT </span><span class="err">::=</span> <span class="s1">&#39;#&#39;</span> <span class="p">[</span><span class="err">^\</span><span class="k">n</span><span class="p">]</span><span class="err">*</span>
+<span class="k">WHITESPACE </span><span class="err">::=</span> <span class="p">[</span> <span class="err">\</span><span class="k">t</span><span class="err">\</span><span class="k">n</span><span class="err">\</span><span class="k">r</span><span class="p">]</span><span class="err">+</span>
+</code></pre></div>
+
+<h2 id="type-system-implementation">Type System Implementation</h2>
 <p>Cure implements a sophisticated dependent type system with SMT-based constraint solving:</p>
-
-<h3>Core Type System Features</h3>
-
+<h3 id="core-type-system-features">Core Type System Features</h3>
 <ol>
-<li><strong>Dependent Types</strong>: Types parameterized by values with compile-time verification</li>
-</ol>
-   <pre><code>   Vector(T, n: Nat)        # Length-indexed vectors
+<li>
+<p><strong>Dependent Types</strong>: Types parameterized by values with compile-time verification<br />
+<code>cure
+   Vector(T, n: Nat)        # Length-indexed vectors
    List(T, n: Nat)          # Lists with compile-time known length
-   Matrix(rows, cols, T)    # Matrices with dimension checking
-   </code></pre>
-
-<ol>
-<li><strong>Refinement Types</strong>: Types with logical constraints</li>
+   Matrix(rows, cols, T)    # Matrices with dimension checking</code></p>
+</li>
+<li>
+<p><strong>Refinement Types</strong>: Types with logical constraints<br />
+<code>cure
+   {x: Int | x &gt; 0}         # Positive integers
+   {xs: List(T) | length(xs) &gt; 0}  # Non-empty lists</code></p>
+</li>
+<li>
+<p><strong>Pi Types</strong>: Dependent function types<br />
+<code>cure
+   def replicate(n: Nat, x: T): List(T, n)  # Return type depends on input</code></p>
+</li>
+<li>
+<p><strong>Type Classes</strong>: Ad-hoc polymorphism with automatic derivation<br />
+   ```cure<br />
+   typeclass Ord(T) where<br />
+     def compare(x: T, y: T): Ordering<br />
+   end</p>
+</li>
 </ol>
-   <pre><code>   {x: Int | x > 0}         # Positive integers
-   {xs: List(T) | length(xs) > 0}  # Non-empty lists
-   </code></pre>
-
-<ol>
-<li><strong>Pi Types</strong>: Dependent function types</li>
-</ol>
-   <pre><code>   def replicate(n: Nat, x: T): List(T, n)  # Return type depends on input
-   </code></pre>
-
-<ol>
-<li><strong>Type Classes</strong>: Ad-hoc polymorphism with automatic derivation</li>
-</ol>
-   <pre><code>   typeclass Ord(T) where
-     def compare(x: T, y: T): Ordering
-   end
-   
-   derive Ord for List(T) when Ord(T)
-   </code></pre>
-
-<ol>
-<li><strong>FSM Types</strong>: State machines with type-safe transitions</li>
-</ol>
-   <pre><code>   fsm Counter(max: Int) do
-     states: [Zero, Counting(n: Int) where 0 < n <= max]
+<p>derive Ord for List(T) when Ord(T)<br />
+   ```</p>
+<ol start="5">
+<li><strong>FSM Types</strong>: State machines with type-safe transitions<br />
+<code>cure
+   fsm Counter(max: Int) do
+     states: [Zero, Counting(n: Int) where 0 &lt; n &lt;= max]
      # Compiler verifies all transitions maintain constraints
-   end
-   </code></pre>
-
-<h3>SMT Integration</h3>
-
+   end</code></li>
+</ol>
+<h3 id="smt-integration">SMT Integration</h3>
 <p>The type checker integrates with SMT solvers for complex constraint verification:</p>
-
 <ul>
 <li><strong>Z3 Integration</strong>: For arithmetic and logic constraints</li>
 <li><strong>Proof Obligations</strong>: Automatically generated for dependent types</li>
 <li><strong>Constraint Simplification</strong>: Efficient constraint solving</li>
 <li><strong>Error Messages</strong>: SMT counterexamples converted to readable errors</li>
 </ul>
-
-<h2>Complete Compilation Pipeline ✅ <strong>PRODUCTION READY</strong></h2>
-
+<h2 id="complete-compilation-pipeline-production-ready">Complete Compilation Pipeline ✅ <strong>PRODUCTION READY</strong></h2>
 <p>The Cure compiler implements a complete 5-stage pipeline with <strong>100% functional implementation</strong>:</p>
-
-<h3>Stage 1: Lexical Analysis (<code>cure_lexer.erl</code>) ✅ <strong>WORKING</strong></h3>
+<h3 id="stage-1-lexical-analysis-cure_lexererl-working">Stage 1: Lexical Analysis (<code>cure_lexer.erl</code>) ✅ <strong>WORKING</strong></h3>
 <ul>
 <li>✅ Position-aware tokenization with comprehensive token support</li>
 <li>✅ Support for all language constructs including FSMs and dependent types</li>
 <li>✅ Unicode string support with proper encoding handling</li>
 <li>✅ Error recovery with precise location reporting (line/column)</li>
 </ul>
-
-<h3>Stage 2: Parsing (<code>cure_parser.erl</code>) ✅ <strong>WORKING</strong></h3>
+<h3 id="stage-2-parsing-cure_parsererl-working">Stage 2: Parsing (<code>cure_parser.erl</code>) ✅ <strong>WORKING</strong></h3>
 <ul>
 <li>✅ Recursive descent parser with robust error recovery</li>
-<li>✅ Comprehensive AST generation (<code>cure<em>ast.erl</code>, <code>cure</em>ast.hrl</code>) for all constructs</li>
+<li>✅ Comprehensive AST generation (<code>cure_ast.erl</code>, <code>cure_ast.hrl</code>) for all constructs</li>
 <li>✅ Support for all language features including dependent types, FSMs, and import system</li>
 </ul>
-
-<h3>Stage 3: Type Checking (<code>cure_typechecker.erl</code>) ✅ <strong>WORKING</strong></h3>
+<h3 id="stage-3-type-checking-cure_typecheckererl-working">Stage 3: Type Checking (<code>cure_typechecker.erl</code>) ✅ <strong>WORKING</strong></h3>
 <ul>
 <li>✅ Bidirectional type checking with complete dependent type support</li>
 <li>✅ Dependent type inference with constraint generation and solving</li>
-<li>✅ SMT-based constraint solving (<code>cure<em>smt</em>solver.erl</code>) with Z3 integration</li>
+<li>✅ SMT-based constraint solving (<code>cure_smt_solver.erl</code>) with Z3 integration</li>
 <li>✅ FSM state transition verification and safety guarantees</li>
 <li>✅ Type class instance resolution with automatic derivation</li>
 </ul>
-
-<h3>Stage 4: Type-Directed Optimization (<code>cure<em>type</em>optimizer.erl</code>) ✅ <strong>WORKING</strong></h3>
+<h3 id="stage-4-type-directed-optimization-cure_type_optimizererl-working">Stage 4: Type-Directed Optimization (<code>cure_type_optimizer.erl</code>) ✅ <strong>WORKING</strong></h3>
 <ul>
 <li>✅ <strong>Monomorphization</strong>: Specialize polymorphic functions (15-30% improvement)</li>
 <li>✅ <strong>Function Specialization</strong>: Create optimized versions for hot paths (20-50% improvement)</li>
 <li>✅ <strong>Inlining</strong>: Cost-benefit analysis for small functions (10-25% improvement)</li>
 <li>✅ <strong>Dead Code Elimination</strong>: Remove unreachable code using type constraints (5-15% size reduction)</li>
 </ul>
-
-<h3>Stage 5: Code Generation (<code>cure<em>codegen.erl</code>, <code>cure</em>beam_compiler.erl</code>) ✅ <strong>WORKING</strong></h3>
+<h3 id="stage-5-code-generation-cure_codegenerl-cure_beam_compilererl-working">Stage 5: Code Generation (<code>cure_codegen.erl</code>, <code>cure_beam_compiler.erl</code>) ✅ <strong>WORKING</strong></h3>
 <ul>
 <li>✅ BEAM bytecode generation with debugging information and OTP compatibility</li>
 <li>✅ FSM compilation to native BEAM <code>gen_statem</code> behaviors</li>
 <li>✅ Action and guard compilation for FSMs with state verification</li>
 <li>✅ Integration with Erlang/OTP supervision trees and hot code loading</li>
 </ul>
-
-<h2>Runtime Integration</h2>
-
+<h2 id="runtime-integration">Runtime Integration</h2>
 <p>Cure provides seamless BEAM ecosystem integration:</p>
-
-<h3>BEAM Platform Features</h3>
+<h3 id="beam-platform-features">BEAM Platform Features</h3>
 <ul>
 <li><strong>Native Processes</strong>: FSMs compile to BEAM processes with fault tolerance</li>
 <li><strong>OTP Behaviors</strong>: FSMs use <code>gen_statem</code> for supervision tree integration</li>
@@ -642,27 +604,24 @@ WHITESPACE ::= [ \t\n\r]+
 <li><strong>Distributed Computing</strong>: Transparent distribution across BEAM cluster nodes</li>
 <li><strong>Fault Tolerance</strong>: "Let it crash" philosophy with automatic process restart</li>
 </ul>
+<h3 id="standard-library-integration">Standard Library Integration</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Cure standard library provides BEAM-compatible modules</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std</span> <span class="p">[</span><span class="n">Result</span><span class="p">,</span> <span class="n">Option</span><span class="p">,</span> <span class="n">ok</span><span class="p">,</span> <span class="n">error</span><span class="p">]</span>       <span class="c1"># Error handling</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.List</span> <span class="p">[</span><span class="nb">map</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="nb">filter</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fold_left</span><span class="o">/</span><span class="mi">3</span><span class="p">]</span>  <span class="c1"># List operations</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Math</span> <span class="p">[</span><span class="nb">abs</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">sqrt</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">sin</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>      <span class="c1"># Mathematical functions</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.FSM</span> <span class="p">[</span><span class="n">spawn</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">send_event</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>      <span class="c1"># FSM utilities</span>
+</code></pre></div>
 
-<h3>Standard Library Integration</h3>
-<pre><code># Cure standard library provides BEAM-compatible modules
-import Std [Result, Option, ok, error]       # Error handling
-import Std.List [map/2, filter/2, fold_left/3]  # List operations
-import Std.Math [abs/1, sqrt/1, sin/1]      # Mathematical functions
-import Std.FSM [spawn/2, send_event/2]      # FSM utilities
-</code></pre>
-
-<h2>Performance Characteristics</h2>
-
-<h3>Compile-Time Performance</h3>
+<h2 id="performance-characteristics">Performance Characteristics</h2>
+<h3 id="compile-time-performance">Compile-Time Performance</h3>
 <ul>
-<li><strong>Small files</strong> (<100 lines): <1 second</li>
+<li><strong>Small files</strong> (&lt;100 lines): &lt;1 second</li>
 <li><strong>Medium projects</strong> (1K-10K lines): 5-30 seconds</li>
 <li><strong>Large projects</strong> (100K+ lines): 30-300 seconds with incremental compilation</li>
 <li><strong>Type checking</strong>: O(n²) complexity due to dependent types</li>
 <li><strong>SMT solving</strong>: Typically sub-second for realistic constraints</li>
 </ul>
-
-<h3>Runtime Performance</h3>
+<h3 id="runtime-performance">Runtime Performance</h3>
 <ul>
 <li><strong>Function calls</strong>: ~10ns overhead (after optimization)</li>
 <li><strong>FSM events</strong>: ~1μs including message passing</li>
@@ -670,10 +629,8 @@ import Std.FSM [spawn/2, send_event/2]      # FSM utilities
 <li><strong>Memory usage</strong>: Comparable to equivalent Erlang code</li>
 <li><strong>Optimizations</strong>: 25-60% performance improvement over unoptimized code</li>
 </ul>
-
-<h2>Implementation Status</h2>
-
-<h3>✅ <strong>Fully Implemented</strong> (Production Ready)</h3>
+<h2 id="implementation-status">Implementation Status</h2>
+<h3 id="fully-implemented-production-ready">✅ <strong>Fully Implemented</strong> (Production Ready)</h3>
 <ul>
 <li>✅ <strong>Complete lexer, parser, and type checker</strong> with 100% test coverage</li>
 <li>✅ <strong>Dependent type system</strong> with SMT solving and constraint verification</li>
@@ -685,8 +642,7 @@ import Std.FSM [spawn/2, send_event/2]      # FSM utilities
 <li>✅ <strong>Test suite</strong>: 8/8 test suites passing with performance benchmarking (up to 50K elements)</li>
 <li>✅ <strong>Runtime verification</strong>: Working examples demonstrating complete end-to-end functionality</li>
 </ul>
-
-<h3>🚧 <strong>Advanced Features</strong></h3>
+<h3 id="advanced-features">🚧 <strong>Advanced Features</strong></h3>
 <ul>
 <li>Complex type class hierarchies</li>
 <li>Linear types for resource management</li>
@@ -694,15 +650,9 @@ import Std.FSM [spawn/2, send_event/2]      # FSM utilities
 <li>Gradual typing for Erlang/Elixir interop</li>
 <li>Macro system for compile-time code generation</li>
 </ul>
-
-<p>---</p>
-
-<em>This specification describes the current implementation of Cure version 0.1.0, representing a complete, functional dependently-typed programming language for the BEAM virtual machine.</em>
-
+<hr />
+<p><em>This specification describes the current implementation of Cure version 0.1.0, representing a complete, functional dependently-typed programming language for the BEAM virtual machine.</em></p>
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

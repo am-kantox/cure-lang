@@ -35,12 +35,9 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Pipe Operator (<code>|></code>)</h1>
-
-<p>The pipe operator (<code>|></code>) is a fundamental feature of Cure that provides elegant error handling and function composition through monadic semantics with automatic Result type management.</p>
-
-<h2>Table of Contents</h2>
-
+        <h1 id="pipe-operator">Pipe Operator (<code>|&gt;</code>)</h1>
+<p>The pipe operator (<code>|&gt;</code>) is a fundamental feature of Cure that provides elegant error handling and function composition through monadic semantics with automatic Result type management.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
 <ul>
 <li><a href="#overview">Overview</a></li>
 <li><a href="#syntax">Syntax</a></li>
@@ -51,363 +48,270 @@
 <li><a href="#best-practices">Best Practices</a></li>
 <li><a href="#comparison-with-other-languages">Comparison with Other Languages</a></li>
 </ul>
-
-<h2>Overview</h2>
-
+<h2 id="overview">Overview</h2>
 <p>The pipe operator enables you to write data transformation pipelines in a readable, left-to-right flow while automatically handling error propagation. It combines the ergonomics of Elixir's pipe operator with the safety of Rust's <code>?</code> operator.</p>
-
-<h3>Key Features</h3>
-
+<h3 id="key-features">Key Features</h3>
 <ul>
 <li><strong>Automatic Error Propagation</strong>: Errors short-circuit the pipeline without requiring explicit checks</li>
 <li><strong>Result Type Wrapping</strong>: Non-monadic values are automatically wrapped in <code>Ok()</code></li>
 <li><strong>Exception Safety</strong>: Runtime exceptions are caught and converted to <code>Error()</code> values</li>
 <li><strong>Clean Syntax</strong>: Write sequential transformations without nesting or intermediate variables</li>
 </ul>
-
-<h2>Syntax</h2>
-
-<pre><code>expression |> function
-<p>expression |> function(arg1, arg2)</p>
-</code></pre>
+<h2 id="syntax">Syntax</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">expression</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">function</span>
+<span class="n">expression</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">function</span><span class="o">(</span><span class="n">arg1</span><span class="o">,</span><span class="w"> </span><span class="n">arg2</span><span class="o">)</span>
+</code></pre></div>
 
 <p>The pipe operator has the lowest precedence (1) and left associativity, meaning:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">a</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">c</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Parsed</span><span class="w"> </span><span class="k">as</span><span class="o">:</span><span class="w"> </span><span class="o">(</span><span class="n">a</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">b</span><span class="o">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">c</span>
+<span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">f</span><span class="w">   </span><span class="o">#</span><span class="w"> </span><span class="n">Parsed</span><span class="w"> </span><span class="k">as</span><span class="o">:</span><span class="w"> </span><span class="o">(</span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">f</span>
+</code></pre></div>
 
-<pre><code>a |> b |> c  # Parsed as: (a |> b) |> c
-<p>1 + 2 |> f   # Parsed as: (1 + 2) |> f</p>
-</code></pre>
-
-<h2>Semantics</h2>
-
+<h2 id="semantics">Semantics</h2>
 <p>The pipe operator implements three fundamental rules:</p>
-
-<h3>Rule 1: Error Propagation</h3>
-
-<pre><code>Error(reason) |> function
-<h1>=> Error(reason)  # function is NOT called</h1>
-</code></pre>
+<h3 id="rule-1-error-propagation">Rule 1: Error Propagation</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">(</span><span class="n">reason</span><span class="o">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">function</span>
+<span class="o">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Error</span><span class="o">(</span><span class="n">reason</span><span class="o">)</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">NOT</span><span class="w"> </span><span class="n">called</span>
+</code></pre></div>
 
 <p>If the left-hand side is an <code>Error</code>, the entire pipeline stops and the error is propagated without calling the function.</p>
-
-<h3>Rule 2: Ok Unwrapping</h3>
-
-<pre><code>Ok(value) |> function
-<h1>=> Ok(function(value))  # value is unwrapped before calling function</h1>
-</code></pre>
+<h3 id="rule-2-ok-unwrapping">Rule 2: Ok Unwrapping</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Ok</span><span class="o">(</span><span class="n">value</span><span class="o">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">function</span>
+<span class="o">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="k">function</span><span class="o">(</span><span class="n">value</span><span class="o">))</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">unwrapped</span><span class="w"> </span><span class="n">before</span><span class="w"> </span><span class="n">calling</span><span class="w"> </span><span class="k">function</span>
+</code></pre></div>
 
 <p>If the left-hand side is <code>Ok(value)</code>, the value is extracted, passed to the function, and the result is wrapped in <code>Ok()</code> (unless the function already returns a Result type).</p>
-
-<h3>Rule 3: Value Passing</h3>
-
-<pre><code>value |> function
-<h1>=> Ok(function(value))  # value is passed directly, result is wrapped</h1>
-</code></pre>
+<h3 id="rule-3-value-passing">Rule 3: Value Passing</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">value</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">function</span>
+<span class="o">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="k">function</span><span class="o">(</span><span class="n">value</span><span class="o">))</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">passed</span><span class="w"> </span><span class="n">directly</span><span class="o">,</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">wrapped</span>
+</code></pre></div>
 
 <p>If the left-hand side is a plain value (not a Result type), it's passed to the function and the result is wrapped in <code>Ok()</code>.</p>
-
-<h3>Exception Handling</h3>
-
+<h3 id="exception-handling">Exception Handling</h3>
 <p>If a function in the pipeline throws an exception, it's automatically caught and converted to an Error:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Ok</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="o">(</span><span class="k">fun</span><span class="o">(</span><span class="n">x</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">x</span><span class="o">)</span>
+<span class="o">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Error</span><span class="o">({</span><span class="n">pipe_runtime_error</span><span class="o">,</span><span class="w"> </span><span class="n">error</span><span class="o">,</span><span class="w"> </span><span class="n">badarith</span><span class="o">})</span>
+</code></pre></div>
 
-<pre><code>Ok(0) |> (fun(x) -> 1 / x)
-<h1>=> Error({pipe<em>runtime</em>error, error, badarith})</h1>
-</code></pre>
-
-<h2>Type System Integration</h2>
-
+<h2 id="type-system-integration">Type System Integration</h2>
 <p>The type checker understands the pipe operator and performs proper type inference:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">process_data</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="n">input</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">parse_int</span><span class="w">       </span><span class="o">#</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate_range</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="kt">double</span><span class="w">          </span><span class="o">#</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">(</span><span class="n">automatically</span><span class="w"> </span><span class="n">wrapped</span><span class="o">)</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>def process_data(input: String) -> Result(Int, String) do
-<p>  input</p>
-<p>    |> parse_int       # String -> Result(Int, String)</p>
-<p>    |> validate_range  # Int -> Result(Int, String) </p>
-<p>    |> double          # Int -> Int (automatically wrapped)</p>
-<p>end</p>
-</code></pre>
+<p>Type inference ensures:<br />
+- The piped value's type matches the function's first parameter<br />
+- Result types are properly propagated through the chain<br />
+- Non-monadic return values are wrapped in Result<T></p>
+<h2 id="examples">Examples</h2>
+<h3 id="basic-piping">Basic Piping</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">example1</span><span class="bp">()</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="mi">5</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="kt">double</span><span class="w">      </span><span class="o">#</span><span class="w"> </span><span class="mi">10</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">increment</span><span class="w">   </span><span class="o">#</span><span class="w"> </span><span class="mi">11</span>
+<span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Result</span><span class="o">:</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="mi">11</span><span class="o">)</span>
+<span class="k">end</span>
 
-<p>Type inference ensures:</p>
-<ul>
-<li>The piped value's type matches the function's first parameter</li>
-<li>Result types are properly propagated through the chain</li>
-<li>Non-monadic return values are wrapped in Result<T></li>
-</ul>
+<span class="n">def</span><span class="w"> </span><span class="kt">double</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span>
+<span class="n">def</span><span class="w"> </span><span class="n">increment</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+</code></pre></div>
 
-<h2>Examples</h2>
+<h3 id="error-handling">Error Handling</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">parse_and_process</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">String</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="n">input</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">parse_data</span><span class="w">        </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">invalid</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate</span><span class="w">          </span><span class="o">#</span><span class="w"> </span><span class="n">Only</span><span class="w"> </span><span class="n">runs</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">parse</span><span class="w"> </span><span class="n">succeeded</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">transform</span><span class="w">         </span><span class="o">#</span><span class="w"> </span><span class="n">Only</span><span class="w"> </span><span class="n">runs</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">validate</span><span class="w"> </span><span class="n">succeeded</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">format_output</span><span class="w">     </span><span class="o">#</span><span class="w"> </span><span class="n">Only</span><span class="w"> </span><span class="n">runs</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">transform</span><span class="w"> </span><span class="n">succeeded</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h3>Basic Piping</h3>
-
-<pre><code>def example1() do
-<p>  5</p>
-<p>    |> double      # 10</p>
-<p>    |> increment   # 11</p>
-<p>  # Result: Ok(11)</p>
-<p>end</p>
-
-<p>def double(x: Int) -> Int = x * 2</p>
-<p>def increment(x: Int) -> Int = x + 1</p>
-</code></pre>
-
-<h3>Error Handling</h3>
-
-<pre><code>def parse<em>and</em>process(input: String) -> Result(String, String) do
-<p>  input</p>
-<p>    |> parse_data        # Returns Error if invalid</p>
-<p>    |> validate          # Only runs if parse succeeded</p>
-<p>    |> transform         # Only runs if validate succeeded</p>
-<p>    |> format_output     # Only runs if transform succeeded</p>
-<p>end</p>
-</code></pre>
-
-<h3>Piping with Arguments</h3>
-
+<h3 id="piping-with-arguments">Piping with Arguments</h3>
 <p>The piped value becomes the first argument:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">example2</span><span class="bp">()</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="mi">10</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">add</span><span class="o">(</span><span class="mi">5</span><span class="o">)</span><span class="w">       </span><span class="o">#</span><span class="w"> </span><span class="n">add</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span><span class="w"> </span><span class="mi">5</span><span class="o">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">15</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">multiply</span><span class="o">(</span><span class="mi">3</span><span class="o">)</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">multiply</span><span class="o">(</span><span class="mi">15</span><span class="o">,</span><span class="w"> </span><span class="mi">3</span><span class="o">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">45</span>
+<span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Result</span><span class="o">:</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="mi">45</span><span class="o">)</span>
+<span class="k">end</span>
 
-<pre><code>def example2() do
-<p>  10</p>
-<p>    |> add(5)       # add(10, 5) => 15</p>
-<p>    |> multiply(3)  # multiply(15, 3) => 45</p>
-<p>  # Result: Ok(45)</p>
-<p>end</p>
+<span class="n">def</span><span class="w"> </span><span class="n">add</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span>
+<span class="n">def</span><span class="w"> </span><span class="n">multiply</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">y</span>
+</code></pre></div>
 
-<p>def add(x: Int, y: Int) -> Int = x + y</p>
-<p>def multiply(x: Int, y: Int) -> Int = x * y</p>
-</code></pre>
+<h3 id="real-world-example">Real-World Example</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">process_user_input</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">User</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="n">input</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">trim_whitespace</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate_email</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">normalize_email</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">check_not_taken</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">create_user</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h3>Real-World Example</h3>
+<h3 id="error-recovery">Error Recovery</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">safe_divide</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="k">let</span><span class="w"> </span><span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">divide_by</span><span class="o">(</span><span class="n">y</span><span class="o">)</span><span class="w"> </span><span class="k">in</span>
+<span class="w">  </span><span class="k">match</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="n">Ok</span><span class="o">(</span><span class="n">value</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Result: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">show</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
+<span class="w">    </span><span class="n">Error</span><span class="o">(</span><span class="n">reason</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Error: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">reason</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>def process<em>user</em>input(input: String) -> Result(User, String) do
-<p>  input</p>
-<p>    |> trim_whitespace</p>
-<p>    |> validate_email</p>
-<p>    |> normalize_email</p>
-<p>    |> check<em>not</em>taken</p>
-<p>    |> create_user</p>
-<p>end</p>
-</code></pre>
+<h3 id="combining-operators">Combining Operators</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">complex_computation</span><span class="bp">()</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="o">(</span><span class="n">calculate_base</span><span class="bp">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">10</span><span class="o">)</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">apply_discount</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">format_price</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h3>Error Recovery</h3>
-
-<pre><code>def safe_divide(x: Int, y: Int) -> String do
-<p>  let result = x |> divide_by(y) in</p>
-<p>  match result do</p>
-<p>    Ok(value) -> "Result: " <> show(value)</p>
-<p>    Error(reason) -> "Error: " <> reason</p>
-<p>  end</p>
-<p>end</p>
-</code></pre>
-
-<h3>Combining Operators</h3>
-
-<pre><code>def complex_computation() do
-<p>  (calculate_base() + 10)</p>
-<p>    |> apply_discount</p>
-<p>    |> format_price</p>
-<p>end</p>
-</code></pre>
-
-<h2>Implementation Details</h2>
-
-<h3>Lexer</h3>
-
+<h2 id="implementation-details">Implementation Details</h2>
+<h3 id="lexer">Lexer</h3>
 <p>The pipe operator is tokenized as a two-character operator:</p>
+<div class="codehilite"><pre><span></span><code><span class="o">&lt;&lt;</span><span class="s">&quot;|&gt;&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;|&gt;&#39;</span>
+</code></pre></div>
 
-<pre><code><<"|>">> => '|>'
-</code></pre>
-
-<h3>Parser</h3>
-
-<p>The operator is parsed with:</p>
-<ul>
-<li><strong>Precedence</strong>: 1 (lowest)</li>
-<li><strong>Associativity</strong>: left</li>
-</ul>
-
+<h3 id="parser">Parser</h3>
+<p>The operator is parsed with:<br />
+- <strong>Precedence</strong>: 1 (lowest)<br />
+- <strong>Associativity</strong>: left</p>
 <p>This ensures pipes are evaluated left-to-right and have lower precedence than all other operations.</p>
+<h3 id="code-generation">Code Generation</h3>
+<p>The compiler generates a <code>monadic_pipe_call</code> instruction that is translated to BEAM bytecode as a call to <code>cure_std:pipe/2</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">generate_monadic_pipe_form</span><span class="p">(</span><span class="nv">Function</span><span class="p">,</span><span class="w"> </span><span class="nv">PipedValue</span><span class="p">,</span><span class="w"> </span><span class="nv">RestArgs</span><span class="p">,</span><span class="w"> </span><span class="nv">Line</span><span class="p">)</span>
+</code></pre></div>
 
-<h3>Code Generation</h3>
-
-<p>The compiler generates a <code>monadic<em>pipe</em>call</code> instruction that is translated to BEAM bytecode as a call to <code>cure_std:pipe/2</code>:</p>
-
-<pre><code>generate<em>monadic</em>pipe_form(Function, PipedValue, RestArgs, Line)
-</code></pre>
-
-<p>This creates Erlang code that:</p>
-<ol>
-<li>Wraps the piped value with <code>ok()</code> if not already a Result</li>
-<li>Checks if it's <code>Ok(value)</code> or <code>Error(reason)</code></li>
-<li>If Ok, unwraps and calls the function</li>
-<li>If Error, propagates without calling the function</li>
-<li>Wraps non-monadic results in <code>Ok()</code></li>
-</ol>
-
-<h3>Runtime</h3>
-
+<p>This creates Erlang code that:<br />
+1. Wraps the piped value with <code>ok()</code> if not already a Result<br />
+2. Checks if it's <code>Ok(value)</code> or <code>Error(reason)</code><br />
+3. If Ok, unwraps and calls the function<br />
+4. If Error, propagates without calling the function<br />
+5. Wraps non-monadic results in <code>Ok()</code></p>
+<h3 id="runtime">Runtime</h3>
 <p>The runtime function <code>cure_std:pipe/2</code> implements the three semantic rules:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">pipe</span><span class="p">({</span><span class="n">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">_}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Err</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="nv">RHO</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Err</span><span class="p">;</span><span class="w">  </span><span class="c">% Rule 1</span>
+<span class="nf">pipe</span><span class="p">({</span><span class="n">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">V</span><span class="p">},</span><span class="w"> </span><span class="nv">RHO</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">wrap_result</span><span class="p">(</span><span class="nv">RHO</span><span class="p">(</span><span class="nv">V</span><span class="p">));</span><span class="w">  </span><span class="c">% Rule 2</span>
+<span class="nf">pipe</span><span class="p">(</span><span class="nv">LHO</span><span class="p">,</span><span class="w"> </span><span class="nv">RHO</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">wrap_result</span><span class="p">(</span><span class="nv">RHO</span><span class="p">(</span><span class="nv">LHO</span><span class="p">)).</span><span class="w">  </span><span class="c">% Rule 3</span>
+</code></pre></div>
 
-<pre><code>pipe({'Error', <em>} = Err, </em>RHO) -> Err;  % Rule 1
-<p>pipe({'Ok', V}, RHO) -> wrap_result(RHO(V));  % Rule 2</p>
-<p>pipe(LHO, RHO) -> wrap_result(RHO(LHO)).  % Rule 3</p>
-</code></pre>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="do-use-for-sequential-transformations">Do: Use for Sequential Transformations</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">#</span><span class="w"> </span><span class="n">Good</span><span class="o">:</span><span class="w"> </span><span class="n">Clear</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="n">flow</span>
+<span class="n">input</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">step1</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">step2</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">step3</span>
+</code></pre></div>
 
-<h2>Best Practices</h2>
+<h3 id="dont-overuse-in-simple-cases">Don't: Overuse in Simple Cases</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">#</span><span class="w"> </span><span class="n">Bad</span><span class="o">:</span><span class="w"> </span><span class="n">Overkill</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="kt">single</span><span class="w"> </span><span class="n">operation</span>
+<span class="n">value</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">function</span>
 
-<h3>Do: Use for Sequential Transformations</h3>
+<span class="o">#</span><span class="w"> </span><span class="n">Better</span><span class="o">:</span><span class="w"> </span><span class="n">Direct</span><span class="w"> </span><span class="n">call</span>
+<span class="k">function</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
+</code></pre></div>
 
-<pre><code># Good: Clear data flow
-<p>input</p>
-<p>  |> step1</p>
-<p>  |> step2</p>
-<p>  |> step3</p>
-</code></pre>
+<h3 id="do-handle-errors-at-pipeline-end">Do: Handle Errors at Pipeline End</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">#</span><span class="w"> </span><span class="n">Good</span><span class="o">:</span><span class="w"> </span><span class="n">Single</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="n">handling</span><span class="w"> </span><span class="n">point</span>
+<span class="k">let</span><span class="w"> </span><span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">pipeline</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">operations</span><span class="w"> </span><span class="k">in</span>
+<span class="k">match</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="n">Ok</span><span class="o">(</span><span class="n">value</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_success</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
+<span class="w">  </span><span class="n">Error</span><span class="o">(</span><span class="n">e</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_error</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h3>Don't: Overuse in Simple Cases</h3>
+<h3 id="do-use-with-result-returning-functions">Do: Use with Result-Returning Functions</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">#</span><span class="w"> </span><span class="n">Good</span><span class="o">:</span><span class="w"> </span><span class="n">Natural</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="n">propagation</span>
+<span class="n">def</span><span class="w"> </span><span class="k">process</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Output</span><span class="o">,</span><span class="w"> </span><span class="n">Error</span><span class="o">)</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="n">input</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">parse</span><span class="w">         </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="w"> </span><span class="n">Result</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate</span><span class="w">      </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="w"> </span><span class="n">Result</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">transform</span><span class="w">     </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="w"> </span><span class="n">Result</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code># Bad: Overkill for single operation
-<p>value |> function</p>
+<h3 id="dont-mix-with-non-result-returns-unnecessarily">Don't: Mix with Non-Result Returns Unnecessarily</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Inconsistent</span><span class="p">:</span><span class="w"> </span><span class="nx">mix</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">Result</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">non</span><span class="o">-</span><span class="nx">Result</span>
+<span class="nx">input</span>
+<span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">operation1</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="nx">Int</span>
+<span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">operation2</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Error</span><span class="p">)</span>
+<span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">operation3</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="nx">Int</span>
 
-<h1>Better: Direct call</h1>
-<p>function(value)</p>
-</code></pre>
+<span class="err">#</span><span class="w"> </span><span class="nx">Better</span><span class="p">:</span><span class="w"> </span><span class="nx">Consistent</span><span class="w"> </span><span class="nx">Result</span><span class="w"> </span><span class="nx">types</span>
+<span class="nx">input</span>
+<span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">operation1_safe</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Error</span><span class="p">)</span>
+<span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">operation2</span><span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Error</span><span class="p">)</span>
+<span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">operation3_safe</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Error</span><span class="p">)</span>
+</code></pre></div>
 
-<h3>Do: Handle Errors at Pipeline End</h3>
-
-<pre><code># Good: Single error handling point
-<p>let result = data |> pipeline |> of |> operations in</p>
-<p>match result do</p>
-<p>  Ok(value) -> handle_success(value)</p>
-<p>  Error(e) -> handle_error(e)</p>
-<p>end</p>
-</code></pre>
-
-<h3>Do: Use with Result-Returning Functions</h3>
-
-<pre><code># Good: Natural error propagation
-<p>def process(input: String) -> Result(Output, Error) do</p>
-<p>  input</p>
-<p>    |> parse         # Returns Result</p>
-<p>    |> validate      # Returns Result</p>
-<p>    |> transform     # Returns Result</p>
-<p>end</p>
-</code></pre>
-
-<h3>Don't: Mix with Non-Result Returns Unnecessarily</h3>
-
-<pre><code># Inconsistent: mix of Result and non-Result
-<p>input</p>
-<p>  |> operation1    # Returns Int</p>
-<p>  |> operation2    # Returns Result(Int, Error)</p>
-<p>  |> operation3    # Returns Int</p>
-
-<h1>Better: Consistent Result types</h1>
-<p>input</p>
-<p>  |> operation1_safe   # Returns Result(Int, Error)</p>
-<p>  |> operation2        # Returns Result(Int, Error)</p>
-<p>  |> operation3_safe   # Returns Result(Int, Error)</p>
-</code></pre>
-
-<h2>Performance Considerations</h2>
-
+<h2 id="performance-considerations">Performance Considerations</h2>
 <p>The pipe operator has minimal overhead:</p>
-
 <ol>
 <li><strong>Compile-time</strong>: Parser precedence handling and AST construction</li>
 <li><strong>Runtime</strong>: One function call to <code>cure_std:pipe/2</code> per pipe operation</li>
 <li><strong>Optimization</strong>: The type optimizer can inline simple pipes in monomorphic code</li>
 </ol>
-
 <p>For performance-critical paths where you know errors won't occur, consider direct function calls instead of piping.</p>
-
-<h2>Comparison with Other Languages</h2>
-
-<h3>vs. Elixir <code>|></code></h3>
-
-<strong>Similarities</strong>:
-<ul>
-<li>Left-to-right data flow</li>
-<li>Lowest precedence</li>
-<li>Natural transformation pipelines</li>
-</ul>
-
-<strong>Differences</strong>:
-<ul>
-<li>Cure's pipe has monadic semantics (automatic error handling)</li>
-<li>Elixir's pipe is purely syntactic (no error propagation)</li>
-</ul>
-
-<h3>vs. Rust <code>?</code> Operator</h3>
-
-<strong>Similarities</strong>:
-<ul>
-<li>Automatic error propagation</li>
-<li>Short-circuit on error</li>
-<li>Result/Option type integration</li>
-</ul>
-
-<strong>Differences</strong>:
-<ul>
-<li>Cure's pipe is an infix operator (readable left-to-right)</li>
-<li>Rust's <code>?</code> is a postfix operator (early return semantics)</li>
-</ul>
-
-<h3>vs. Haskell <code>>>=</code> (Bind)</h3>
-
-<strong>Similarities</strong>:
-<ul>
-<li>Monadic composition</li>
-<li>Error propagation through Maybe/Either</li>
-</ul>
-
-<strong>Differences</strong>:
-<ul>
-<li>Cure's pipe is operator-based (more accessible syntax)</li>
-<li>Haskell's bind is more general (works with any Monad)</li>
-</ul>
-
-<h2>Advanced Topics</h2>
-
-<h3>Custom Monadic Types</h3>
-
-<p>The pipe operator currently works with Result types (<code>Ok</code>/<code>Error</code>). Future versions may support:</p>
-<ul>
-<li>Option types (<code>Some</code>/<code>None</code>)</li>
-<li>Custom monadic types through traits</li>
-<li>Async/await integration</li>
-</ul>
-
-<h3>Type-Level Optimizations</h3>
-
-<p>The type checker and optimizer can:</p>
-<ul>
-<li>Eliminate redundant wrapping/unwrapping</li>
-<li>Inline monomorphic pipe chains</li>
-<li>Prove error-free pipelines and generate direct calls</li>
-</ul>
-
-<h3>Debugging Pipelines</h3>
-
+<h2 id="comparison-with-other-languages">Comparison with Other Languages</h2>
+<h3 id="vs-elixir">vs. Elixir <code>|&gt;</code></h3>
+<p><strong>Similarities</strong>:<br />
+- Left-to-right data flow<br />
+- Lowest precedence<br />
+- Natural transformation pipelines</p>
+<p><strong>Differences</strong>:<br />
+- Cure's pipe has monadic semantics (automatic error handling)<br />
+- Elixir's pipe is purely syntactic (no error propagation)</p>
+<h3 id="vs-rust-operator">vs. Rust <code>?</code> Operator</h3>
+<p><strong>Similarities</strong>:<br />
+- Automatic error propagation<br />
+- Short-circuit on error<br />
+- Result/Option type integration</p>
+<p><strong>Differences</strong>:<br />
+- Cure's pipe is an infix operator (readable left-to-right)<br />
+- Rust's <code>?</code> is a postfix operator (early return semantics)</p>
+<h3 id="vs-haskell-bind">vs. Haskell <code>&gt;&gt;=</code> (Bind)</h3>
+<p><strong>Similarities</strong>:<br />
+- Monadic composition<br />
+- Error propagation through Maybe/Either</p>
+<p><strong>Differences</strong>:<br />
+- Cure's pipe is operator-based (more accessible syntax)<br />
+- Haskell's bind is more general (works with any Monad)</p>
+<h2 id="advanced-topics">Advanced Topics</h2>
+<h3 id="custom-monadic-types">Custom Monadic Types</h3>
+<p>The pipe operator currently works with Result types (<code>Ok</code>/<code>Error</code>). Future versions may support:<br />
+- Option types (<code>Some</code>/<code>None</code>)<br />
+- Custom monadic types through traits<br />
+- Async/await integration</p>
+<h3 id="type-level-optimizations">Type-Level Optimizations</h3>
+<p>The type checker and optimizer can:<br />
+- Eliminate redundant wrapping/unwrapping<br />
+- Inline monomorphic pipe chains<br />
+- Prove error-free pipelines and generate direct calls</p>
+<h3 id="debugging-pipelines">Debugging Pipelines</h3>
 <p>Use <code>let</code> bindings to inspect intermediate values:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">debug_pipeline</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="k">let</span><span class="w"> </span><span class="nv">step1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">parse</span><span class="w"> </span><span class="k">in</span>
+<span class="w">  </span><span class="k">let</span><span class="w"> </span><span class="nv">step2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">step1</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate</span><span class="w"> </span><span class="k">in</span>
+<span class="w">  </span><span class="k">let</span><span class="w"> </span><span class="nv">step3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">step2</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">process</span><span class="w"> </span><span class="k">in</span>
+<span class="w">  </span><span class="n">step3</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>def debug_pipeline(input: String) do
-<p>  let step1 = input |> parse in</p>
-<p>  let step2 = step1 |> validate in</p>
-<p>  let step3 = step2 |> process in</p>
-<p>  step3</p>
-<p>end</p>
-</code></pre>
-
-<h2>See Also</h2>
-
+<h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="result_type.md">Result Type Documentation</a></li>
 <li><a href="error_handling.md">Error Handling Guide</a></li>
 <li><a href="composition.md">Function Composition</a></li>
 <li><a href="type_system.md">Type System Overview</a></li>
 </ul>
-
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

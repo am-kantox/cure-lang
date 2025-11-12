@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Show Typeclass - Complete Guide - Cure Documentation</title>
+    <meta name="description" content=" Overview">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="show-typeclass-complete-guide">Show Typeclass - Complete Guide</h1>
+<h2 id="overview">Overview</h2>
+<p>The <code>Show</code> typeclass provides a polymorphic interface for converting values to human-readable string representations. It's one of the fundamental typeclasses in Cure's standard library, enabling generic string conversion for any type that implements it.</p>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#basic-concepts">Basic Concepts</a></li>
+<li><a href="#using-show">Using Show</a></li>
+<li><a href="#built-in-instances">Built-in Instances</a></li>
+<li><a href="#implementing-show-for-custom-types">Implementing Show for Custom Types</a></li>
+<li><a href="#polymorphic-instances">Polymorphic Instances</a></li>
+<li><a href="#utility-functions">Utility Functions</a></li>
+<li><a href="#advanced-patterns">Advanced Patterns</a></li>
+</ol>
+<h2 id="basic-concepts">Basic Concepts</h2>
+<h3 id="what-is-a-typeclass">What is a Typeclass?</h3>
+<p>A typeclass is a language feature that provides ad-hoc polymorphism. It defines a set of functions that can have different implementations depending on the type they operate on. The <code>Show</code> typeclass specifically defines how to convert values to strings.</p>
+<h3 id="the-show-typeclass-definition">The Show Typeclass Definition</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span>
+<span class="nx">end</span>
+</code></pre></div>
+
+<p>This declares that any type <code>T</code> implementing <code>Show</code> must provide a <code>show</code> function that converts values of type <code>T</code> to <code>String</code>.</p>
+<h2 id="using-show">Using Show</h2>
+<h3 id="importing-the-show-module">Importing the Show Module</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Show</span> <span class="p">[</span><span class="n">Show</span><span class="p">,</span> <span class="n">show</span><span class="p">]</span>
+</code></pre></div>
+
+<p>This imports:<br />
+- The <code>Show</code> typeclass definition<br />
+- The <code>show</code> function (which dispatches to the appropriate instance)</p>
+<h3 id="basic-usage">Basic Usage</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">With</span><span class="w"> </span><span class="nx">primitive</span><span class="w"> </span><span class="nx">types</span><span class="w"> </span><span class="p">(</span><span class="nx">instances</span><span class="w"> </span><span class="nx">are</span><span class="w"> </span><span class="nx">already</span><span class="w"> </span><span class="nx">defined</span><span class="p">)</span>
+<span class="nx">show</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span><span class="w">              </span><span class="err">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;42&quot;</span>
+<span class="nx">show</span><span class="p">(</span><span class="m m-Double">3.14</span><span class="p">)</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;3.14&quot;</span>
+<span class="nx">show</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">)</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;\&quot;hello\&quot;&quot;</span>
+<span class="nx">show</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">With</span><span class="w"> </span><span class="nx">containers</span>
+<span class="nx">show</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">])</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;[1, 2, 3]&quot;</span>
+<span class="nx">show</span><span class="p">(</span><span class="nx">Some</span><span class="p">(</span><span class="mi">42</span><span class="p">))</span><span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;Some(42)&quot;</span>
+<span class="nx">show</span><span class="p">(</span><span class="nx">Ok</span><span class="p">(</span><span class="s">&quot;success&quot;</span><span class="p">))</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;Ok(\&quot;success\&quot;)&quot;</span>
+</code></pre></div>
+
+<h3 id="using-show-in-generic-functions">Using Show in Generic Functions</h3>
+<p>The power of <code>Show</code> is evident in generic functions:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="nx">debug</span><span class="w"> </span><span class="nx">function</span><span class="w"> </span><span class="nx">that</span><span class="w"> </span><span class="nx">works</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">any</span><span class="w"> </span><span class="nx">showable</span><span class="w"> </span><span class="k">type</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">debug</span><span class="p">(</span><span class="nx">label</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span><span class="p">,</span><span class="w"> </span><span class="nx">value</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="nx">println</span><span class="p">(</span><span class="nx">string_concat</span><span class="p">(</span><span class="nx">label</span><span class="p">,</span><span class="w"> </span><span class="nx">string_concat</span><span class="p">(</span><span class="s">&quot;: &quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">value</span><span class="p">))))</span>
+<span class="w">  </span><span class="nx">value</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Usage</span><span class="p">:</span>
+<span class="nx">debug</span><span class="p">(</span><span class="s">&quot;Number&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p">)</span><span class="w">              </span><span class="err">#</span><span class="w"> </span><span class="nx">Works</span><span class="p">!</span>
+<span class="nx">debug</span><span class="p">(</span><span class="s">&quot;List&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">])</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="nx">Works</span><span class="p">!</span>
+<span class="nx">debug</span><span class="p">(</span><span class="s">&quot;Custom&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">MyRecord</span><span class="p">{</span><span class="o">...</span><span class="p">})</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="nx">Works</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nx">MyRecord</span><span class="w"> </span><span class="nx">has</span><span class="w"> </span><span class="nx">Show</span><span class="w"> </span><span class="nx">instance</span><span class="p">!</span>
+</code></pre></div>
+
+<p>The <code>where Show(T)</code> constraint means "this function works for any type <code>T</code> that implements <code>Show</code>."</p>
+<h2 id="built-in-instances">Built-in Instances</h2>
+<p>The <code>Std.Show</code> module provides instances for all primitive and common container types:</p>
+<h3 id="primitive-types">Primitive Types</h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Example</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Int</code></td>
+<td><code>show(42)</code></td>
+<td><code>"42"</code></td>
+</tr>
+<tr>
+<td><code>Float</code></td>
+<td><code>show(3.14)</code></td>
+<td><code>"3.14"</code></td>
+</tr>
+<tr>
+<td><code>String</code></td>
+<td><code>show("hello")</code></td>
+<td><code>"\"hello\""</code></td>
+</tr>
+<tr>
+<td><code>Bool</code></td>
+<td><code>show(true)</code></td>
+<td><code>"true"</code></td>
+</tr>
+<tr>
+<td><code>Atom</code></td>
+<td><code>show(:example)</code></td>
+<td><code>"example"</code></td>
+</tr>
+<tr>
+<td><code>Charlist</code></td>
+<td><code>show('hello')</code></td>
+<td><code>"hello"</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="container-types">Container Types</h3>
+<h4 id="listt-where-showt">List(T) - where Show(T)</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">show</span><span class="ss">(</span>[<span class="mi">1</span>,<span class="w"> </span><span class="mi">2</span>,<span class="w"> </span><span class="mi">3</span>]<span class="ss">)</span><span class="w">           </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;[1, 2, 3]&quot;</span>
+<span class="k">show</span><span class="ss">(</span>[<span class="s2">&quot;a&quot;</span>,<span class="w"> </span><span class="s2">&quot;b&quot;</span>,<span class="w"> </span><span class="s2">&quot;c&quot;</span>]<span class="ss">)</span><span class="w">     </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;[\&quot;</span><span class="nv">a</span>\<span class="s2">&quot;, \&quot;</span><span class="nv">b</span>\<span class="s2">&quot;, \&quot;</span><span class="nv">c</span>\<span class="s2">&quot;]&quot;</span>
+<span class="k">show</span><span class="ss">(</span>[]<span class="ss">)</span><span class="w">                  </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;[]&quot;</span>
+</code></pre></div>
+
+<h4 id="optiont-where-showt">Option(T) - where Show(T)</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">show</span><span class="ss">(</span><span class="nv">Some</span><span class="ss">(</span><span class="mi">42</span><span class="ss">))</span><span class="w">            </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;Some(42)&quot;</span>
+<span class="k">show</span><span class="ss">(</span><span class="nv">None</span><span class="ss">)</span><span class="w">                </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;None&quot;</span>
+</code></pre></div>
+
+<h4 id="resultt-e-where-showt-showe">Result(T, E) - where Show(T), Show(E)</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">show</span><span class="ss">(</span><span class="nv">Ok</span><span class="ss">(</span><span class="mi">100</span><span class="ss">))</span><span class="w">             </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;Ok(100)&quot;</span>
+<span class="k">show</span><span class="ss">(</span><span class="nv">Error</span><span class="ss">(</span><span class="s2">&quot;failed&quot;</span><span class="ss">))</span><span class="w">     </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;Error(\&quot;</span><span class="nv">failed</span>\<span class="s2">&quot;)&quot;</span>
+</code></pre></div>
+
+<h4 id="tuples-where-all-elements-are-showable">Tuples - where all elements are showable</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">show</span><span class="ss">(</span>{<span class="mi">1</span>,<span class="w"> </span><span class="mi">2</span>}<span class="ss">)</span><span class="w">              </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;{1, 2}&quot;</span>
+<span class="k">show</span><span class="ss">(</span>{<span class="mi">1</span>,<span class="w"> </span><span class="s2">&quot;hello&quot;</span>,<span class="w"> </span><span class="nv">true</span>}<span class="ss">)</span><span class="w">  </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;{1, \&quot;</span><span class="nv">hello</span>\<span class="s2">&quot;, true}&quot;</span>
+</code></pre></div>
+
+<h3 id="nested-structures">Nested Structures</h3>
+<p>Instances compose automatically:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">show</span><span class="ss">(</span>[<span class="nv">Some</span><span class="ss">(</span><span class="mi">1</span><span class="ss">)</span>,<span class="w"> </span><span class="nv">None</span>,<span class="w"> </span><span class="nv">Some</span><span class="ss">(</span><span class="mi">3</span><span class="ss">)</span>]<span class="ss">)</span><span class="w">              </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;[Some(1), None, Some(3)]&quot;</span>
+<span class="k">show</span><span class="ss">(</span><span class="nv">Ok</span><span class="ss">(</span>[<span class="mi">1</span>,<span class="w"> </span><span class="mi">2</span>,<span class="w"> </span><span class="mi">3</span>]<span class="ss">))</span><span class="w">                         </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;Ok([1, 2, 3])&quot;</span>
+<span class="k">show</span><span class="ss">(</span>[{<span class="mi">1</span>,<span class="w"> </span><span class="s2">&quot;one&quot;</span>},<span class="w"> </span>{<span class="mi">2</span>,<span class="w"> </span><span class="s2">&quot;two&quot;</span>}]<span class="ss">)</span><span class="w">              </span>#<span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s2">&quot;[{1, \&quot;</span><span class="nv">one</span>\<span class="s2">&quot;}, {2, \&quot;</span><span class="nv">two</span>\<span class="s2">&quot;}]&quot;</span>
+</code></pre></div>
+
+<h2 id="implementing-show-for-custom-types">Implementing Show for Custom Types</h2>
+<h3 id="simple-record-type">Simple Record Type</h3>
+<div class="codehilite"><pre><span></span><code>record Person do
+  name: String
+  age: Int
+end
+
+instance Show(Person) do
+  def show(p: Person): String =
+    string_concat(&quot;Person { name: &quot;,
+      string_concat(show(p.name),
+        string_concat(&quot;, age: &quot;,
+          string_concat(show(p.age), &quot; }&quot;))))
+end
+
+<span class="gh">#</span> Usage:
+let alice = Person{name: &quot;Alice&quot;, age: 30}
+show(alice)  # =&gt; &quot;Person { name: \&quot;Alice\&quot;, age: 30 }&quot;
+</code></pre></div>
+
+<h3 id="union-type-enum">Union Type (Enum)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Color</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Red</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Green</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Blue</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">RGB</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Int</span><span class="p">)</span>
+
+<span class="nx">instance</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">Color</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">c</span><span class="p">:</span><span class="w"> </span><span class="nx">Color</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="nx">c</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">      </span><span class="nx">Red</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Red&quot;</span>
+<span class="w">      </span><span class="nx">Green</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Green&quot;</span>
+<span class="w">      </span><span class="nx">Blue</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Blue&quot;</span>
+<span class="w">      </span><span class="nx">RGB</span><span class="p">(</span><span class="nx">r</span><span class="p">,</span><span class="w"> </span><span class="nx">g</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">        </span><span class="nx">string_concat</span><span class="p">(</span><span class="s">&quot;RGB(&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nx">string_concat</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">r</span><span class="p">),</span>
+<span class="w">            </span><span class="nx">string_concat</span><span class="p">(</span><span class="s">&quot;, &quot;</span><span class="p">,</span>
+<span class="w">              </span><span class="nx">string_concat</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">g</span><span class="p">),</span>
+<span class="w">                </span><span class="nx">string_concat</span><span class="p">(</span><span class="s">&quot;, &quot;</span><span class="p">,</span>
+<span class="w">                  </span><span class="nx">string_concat</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">b</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;)&quot;</span><span class="p">))))))</span>
+<span class="w">    </span><span class="nx">end</span>
+<span class="nx">end</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Usage</span><span class="p">:</span>
+<span class="nx">show</span><span class="p">(</span><span class="nx">Red</span><span class="p">)</span><span class="w">           </span><span class="err">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;Red&quot;</span>
+<span class="nx">show</span><span class="p">(</span><span class="nx">RGB</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;RGB(255, 0, 0)&quot;</span>
+</code></pre></div>
+
+<h2 id="polymorphic-instances">Polymorphic Instances</h2>
+<h3 id="generic-record-types">Generic Record Types</h3>
+<p>For types that are themselves polymorphic, you can create instances with constraints:</p>
+<div class="codehilite"><pre><span></span><code>record Point(T) do
+  x: T
+  y: T
+end
+
+<span class="gh">#</span> Show instance for Point(T) requires Show(T)
+instance Show(Point(T)) where Show(T) do
+  def show(p: Point(T)): String =
+    string_concat(&quot;Point(&quot;,
+      string_concat(show(p.x),
+        string_concat(&quot;, &quot;,
+          string_concat(show(p.y), &quot;)&quot;))))
+end
+
+<span class="gh">#</span> Usage - works for any T that has Show:
+show(Point{x: 1, y: 2})         # =&gt; &quot;Point(1, 2)&quot;
+show(Point{x: 1.5, y: 2.5})     # =&gt; &quot;Point(1.5, 2.5)&quot;
+show(Point{x: &quot;a&quot;, y: &quot;b&quot;})     # =&gt; &quot;Point(\&quot;a\&quot;, \&quot;b\&quot;)&quot;
+</code></pre></div>
+
+<h3 id="recursive-data-structures">Recursive Data Structures</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Tree</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Leaf</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Node</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">Tree</span><span class="p">(</span><span class="nx">T</span><span class="p">),</span><span class="w"> </span><span class="nx">Tree</span><span class="p">(</span><span class="nx">T</span><span class="p">))</span>
+
+<span class="nx">instance</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">Tree</span><span class="p">(</span><span class="nx">T</span><span class="p">))</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">t</span><span class="p">:</span><span class="w"> </span><span class="nx">Tree</span><span class="p">(</span><span class="nx">T</span><span class="p">)):</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="nx">t</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">      </span><span class="nx">Leaf</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Leaf&quot;</span>
+<span class="w">      </span><span class="nx">Node</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span><span class="w"> </span><span class="nx">left</span><span class="p">,</span><span class="w"> </span><span class="nx">right</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">        </span><span class="nx">string_concat</span><span class="p">(</span><span class="s">&quot;Node(&quot;</span><span class="p">,</span>
+<span class="w">          </span><span class="nx">string_concat</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">value</span><span class="p">),</span>
+<span class="w">            </span><span class="nx">string_concat</span><span class="p">(</span><span class="s">&quot;, &quot;</span><span class="p">,</span>
+<span class="w">              </span><span class="nx">string_concat</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">left</span><span class="p">),</span>
+<span class="w">                </span><span class="nx">string_concat</span><span class="p">(</span><span class="s">&quot;, &quot;</span><span class="p">,</span>
+<span class="w">                  </span><span class="nx">string_concat</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">right</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;)&quot;</span><span class="p">))))))</span>
+<span class="w">    </span><span class="nx">end</span>
+<span class="nx">end</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Usage</span><span class="p">:</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">tree</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Node</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nx">Node</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="nx">Leaf</span><span class="p">,</span><span class="w"> </span><span class="nx">Leaf</span><span class="p">),</span><span class="w"> </span><span class="nx">Node</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="nx">Leaf</span><span class="p">,</span><span class="w"> </span><span class="nx">Leaf</span><span class="p">))</span>
+<span class="nx">show</span><span class="p">(</span><span class="nx">tree</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;Node(5, Node(3, Leaf, Leaf), Node(7, Leaf, Leaf))&quot;</span>
+</code></pre></div>
+
+<h2 id="utility-functions">Utility Functions</h2>
+<p>The <code>Std.Show</code> module provides several utility functions:</p>
+<h3 id="show_list">show_list</h3>
+<p>Specialized list formatting:</p>
+<div class="codehilite"><pre><span></span><code>show_list([1, 2, 3])  # =&gt; &quot;[1, 2, 3]&quot;
+</code></pre></div>
+
+<h3 id="show_separated">show_separated</h3>
+<p>Show list elements with custom separator:</p>
+<div class="codehilite"><pre><span></span><code>show_separated([1, 2, 3, 4], &quot; | &quot;)  # =&gt; &quot;1 | 2 | 3 | 4&quot;
+show_separated([&quot;a&quot;, &quot;b&quot;, &quot;c&quot;], &quot;, &quot;) # =&gt; &quot;a, b, c&quot;
+</code></pre></div>
+
+<h3 id="show_with_parens">show_with_parens</h3>
+<p>Wrap string representation in parentheses:</p>
+<div class="codehilite"><pre><span></span><code>show_with_parens(42)  # =&gt; &quot;(42)&quot;
+</code></pre></div>
+
+<h3 id="show_option-show_result-show_tuple">show_option, show_result, show_tuple</h3>
+<p>Convenient wrappers for specific types:</p>
+<div class="codehilite"><pre><span></span><code>show_option(Some(42))    # =&gt; &quot;Some(42)&quot;
+show_result(Ok(100))     # =&gt; &quot;Ok(100)&quot;
+show_tuple({1, 2, 3})    # =&gt; &quot;{1, 2, 3}&quot;
+</code></pre></div>
+
+<h2 id="advanced-patterns">Advanced Patterns</h2>
+<h3 id="deriving-show-automatically">Deriving Show Automatically</h3>
+<p>In the future, Cure will support automatic derivation:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">record</span><span class="w"> </span><span class="nv">Person</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="nv">name</span>:<span class="w"> </span><span class="nv">String</span>
+<span class="w">  </span><span class="nv">age</span>:<span class="w"> </span><span class="nv">Int</span>
+<span class="k">end</span><span class="w"> </span><span class="nv">derive</span><span class="w"> </span><span class="k">Show</span>
+
+#<span class="w"> </span><span class="nv">This</span><span class="w"> </span><span class="nv">will</span><span class="w"> </span><span class="nv">automatically</span><span class="w"> </span><span class="nv">generate</span><span class="w"> </span><span class="nv">the</span><span class="w"> </span><span class="k">Show</span><span class="w"> </span><span class="nv">instance</span>
+</code></pre></div>
+
+<h3 id="multiple-constraints">Multiple Constraints</h3>
+<p>Functions can require multiple typeclass constraints:</p>
+<div class="codehilite"><pre><span></span><code>def debug_compare(a: T, b: T): String where Show(T), Eq(T) =
+  let equal_str = if eq(a, b) then &quot;equal&quot; else &quot;not equal&quot;
+  string_concat(show(a),
+    string_concat(&quot; and &quot;,
+      string_concat(show(b),
+        string_concat(&quot; are &quot;, equal_str))))
+</code></pre></div>
+
+<h3 id="show-for-wrapper-types">Show for Wrapper Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">UserId</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">UserId</span><span class="p">(</span><span class="nx">Int</span><span class="p">)</span>
+
+<span class="nx">instance</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">UserId</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">uid</span><span class="p">:</span><span class="w"> </span><span class="nx">UserId</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="nx">uid</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">      </span><span class="nx">UserId</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">string_concat</span><span class="p">(</span><span class="s">&quot;UserId(&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">string_concat</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">id</span><span class="p">),</span><span class="w"> </span><span class="s">&quot;)&quot;</span><span class="p">))</span>
+<span class="w">    </span><span class="nx">end</span>
+<span class="nx">end</span>
+</code></pre></div>
+
+<h3 id="performance-considerations">Performance Considerations</h3>
+<p>The <code>string_concat</code> function is used extensively. For complex types with many fields, consider:</p>
+<ol>
+<li>Building intermediate strings and concatenating them</li>
+<li>Using accumulator patterns for recursive structures</li>
+<li>Caching string representations for immutable data</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> More efficient for large structures:
+def show_complex(x: ComplexType): String =
+  let parts = [
+    &quot;ComplexType { &quot;,
+    &quot;field1: &quot;, show(x.field1), &quot;, &quot;,
+    &quot;field2: &quot;, show(x.field2), &quot;, &quot;,
+    # ... more fields
+    &quot;}&quot;
+  ]
+  concat_all(parts)  # Single concatenation call
+</code></pre></div>
+
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li>
+<p><strong>Consistency</strong>: Follow Haskell-style conventions:<br />
+   - Constructors with capital letters: <code>Some(42)</code>, <code>Ok(value)</code><br />
+   - Use parentheses for constructor arguments<br />
+   - Use brackets for lists: <code>[1, 2, 3]</code><br />
+   - Use braces for records: <code>Person { name: "Alice" }</code></p>
+</li>
+<li>
+<p><strong>Completeness</strong>: Ensure all cases in sum types are handled:<br />
+<code>cure
+   instance Show(Result(T, E)) where Show(T), Show(E) do
+     def show(result: Result(T, E)): String =
+       match result do
+         Ok(x) -&gt; ...    # Handle both cases
+         Error(e) -&gt; ...
+       end
+   end</code></p>
+</li>
+<li>
+<p><strong>Polymorphism</strong>: Add constraints only when needed:<br />
+<code>cure
+   # Good: Only requires Show for the element type
+   instance Show(List(T)) where Show(T) do
+     ...
+   end</code></p>
+</li>
+<li>
+<p><strong>Readability</strong>: Format complex outputs for human consumption:<br />
+<code>cure
+   # Instead of: "Person(Alice,30,alice@example.com)"
+   # Use: "Person { name: \"Alice\", age: 30, email: \"alice@example.com\" }"</code></p>
+</li>
+</ol>
+<h2 id="integration-with-other-systems">Integration with Other Systems</h2>
+<h3 id="with-io-operations">With IO Operations</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Show</span> <span class="p">[</span><span class="n">show</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Io</span> <span class="p">[</span><span class="n">println</span><span class="p">]</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">display</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">T</span><span class="p">):</span> <span class="n">Int</span> <span class="n">where</span> <span class="n">Show</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">=</span>
+  <span class="n">println</span><span class="p">(</span><span class="n">show</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+  <span class="mi">0</span>
+</code></pre></div>
+
+<h3 id="with-logging">With Logging</h3>
+<div class="codehilite"><pre><span></span><code>def log_debug(value: T): T where Show(T) =
+  Logger.debug(show(value))
+  value
+</code></pre></div>
+
+<h3 id="with-testing">With Testing</h3>
+<div class="codehilite"><pre><span></span><code>def assert_eq(actual: T, expected: T): Result((), String) where Show(T), Eq(T) =
+  if eq(actual, expected) then
+    Ok(())
+  else
+    Error(string_concat(&quot;Expected &quot;,
+      string_concat(show(expected),
+        string_concat(&quot; but got &quot;, show(actual)))))
+</code></pre></div>
+
+<h2 id="summary">Summary</h2>
+<p>The <code>Show</code> typeclass is a foundational abstraction that:</p>
+<ol>
+<li><strong>Provides polymorphic string conversion</strong> - one interface, many implementations</li>
+<li><strong>Composes automatically</strong> - container instances work for any showable element type</li>
+<li><strong>Enables generic programming</strong> - write functions that work with any showable type</li>
+<li><strong>Integrates seamlessly</strong> - works with IO, logging, debugging, testing, and more</li>
+</ol>
+<p>By implementing <code>Show</code> for your custom types and using the constraint <code>where Show(T)</code> in your functions, you get powerful, type-safe string formatting that works across your entire codebase.</p>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><code>examples/12_show_typeclass.cure</code> - Complete working examples</li>
+<li><code>lib/std/show.cure</code> - Standard library implementation</li>
+<li><code>examples/08_typeclasses.cure</code> - Basic typeclass introduction</li>
+<li><code>examples/11_advanced_typeclasses.cure</code> - Advanced typeclass patterns</li>
+</ul>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -35,449 +35,424 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Cure Programming Language - Command Line Interface</h1>
-
-<p>✅ <strong>COMPLETE & WORKING</strong>: The Cure compiler provides a <strong>production-ready</strong> command-line interface for compiling <code>.cure</code> source files to BEAM bytecode with <strong>100% functional implementation</strong>.</p>
-
-<p>🎆 <strong>Status</strong>: All CLI features tested and verified working  </p>
-<p>✅ <strong>Test Success Rate</strong>: 100% (8/8 test suites passing)  </p>
-<p>✅ <strong>Working Examples</strong>: <code>dependent<em>types</em>simple.cure</code> with full import system</p>
-
-<h2>Installation and Setup</h2>
-
-<h3>Prerequisites</h3>
+        <h1 id="cure-programming-language-command-line-interface">Cure Programming Language - Command Line Interface</h1>
+<p>✅ <strong>COMPLETE &amp; WORKING</strong>: The Cure compiler provides a <strong>production-ready</strong> command-line interface for compiling <code>.cure</code> source files to BEAM bytecode with <strong>100% functional implementation</strong>.</p>
+<p>🎆 <strong>Status</strong>: All CLI features tested and verified working<br />
+✅ <strong>Test Success Rate</strong>: 100% (8/8 test suites passing)<br />
+✅ <strong>Working Examples</strong>: <code>dependent_types_simple.cure</code> with full import system</p>
+<h2 id="installation-and-setup">Installation and Setup</h2>
+<h3 id="prerequisites">Prerequisites</h3>
 <ul>
 <li>Erlang/OTP 21 or later</li>
 <li>Make (for building)</li>
 <li>rebar3 (for code formatting)</li>
 <li>A Unix-like environment (Linux, macOS, WSL)</li>
 </ul>
+<h3 id="building-the-compiler">Building the Compiler</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Build the complete compiler and standard library</span>
+make<span class="w"> </span>all
 
-<h3>Building the Compiler</h3>
-<pre><code># Build the complete compiler and standard library
-make all
+<span class="c1"># Build only the compiler components</span>
+make<span class="w"> </span>compiler
 
-# Build only the compiler components
-make compiler
+<span class="c1"># Build and run the test suite</span>
+make<span class="w"> </span>all<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span><span class="nb">test</span>
 
-# Build and run the test suite
-make all && make test
+<span class="c1"># Build with formatting</span>
+make<span class="w"> </span>all<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>format
+</code></pre></div>
 
-# Build with formatting
-make all && make format
-</code></pre>
+<h3 id="verifying-installation">Verifying Installation</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Check CLI is working</span>
+./cure<span class="w"> </span>--version
 
-<h3>Verifying Installation</h3>
-<pre><code># Check CLI is working
-./cure --version
+<span class="c1"># Should output:</span>
+<span class="c1"># Cure Programming Language Compiler v0.1.0</span>
+<span class="c1"># Built with Erlang/OTP XX</span>
+<span class="c1"># Cure is a dependently-typed functional programming language</span>
+<span class="c1"># for the BEAM virtual machine with built-in finite state machines.</span>
 
-# Should output:
-# Cure Programming Language Compiler v0.1.0
-# Built with Erlang/OTP XX
-# Cure is a dependently-typed functional programming language
-# for the BEAM virtual machine with built-in finite state machines.
+<span class="c1"># Check wrapper script functionality</span>
+./cure<span class="w"> </span>build<span class="w">                    </span><span class="c1"># Should execute &#39;make all&#39;</span>
+./cure<span class="w"> </span><span class="nb">test</span><span class="w">                     </span><span class="c1"># Should execute &#39;make test&#39;</span>
+./cure<span class="w"> </span>shell<span class="w">                    </span><span class="c1"># Should start development shell</span>
 
-# Check wrapper script functionality
-./cure build                    # Should execute 'make all'
-./cure test                     # Should execute 'make test'
-./cure shell                    # Should start development shell
+<span class="c1"># Verify compiler modules are loaded</span>
+make<span class="w"> </span>shell
+<span class="c1"># In Erlang shell:</span>
+<span class="c1"># 1&gt; cure_lexer:tokenize(&lt;&lt;&quot;def test() = 42&quot;&gt;&gt;).</span>
+<span class="c1"># 2&gt; cure_parser:parse([...]).</span>
+</code></pre></div>
 
-# Verify compiler modules are loaded
-make shell
-# In Erlang shell:
-# 1> cure_lexer:tokenize(<<"def test() = 42">>).
-# 2> cure_parser:parse([...]).
-</code></pre>
+<h2 id="command-line-usage">Command Line Usage</h2>
+<h3 id="basic-syntax">Basic Syntax</h3>
+<div class="codehilite"><pre><span></span><code>cure<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>&lt;input-file.cure&gt;
 
-<h2>Command Line Usage</h2>
+<span class="c1"># Or special wrapper commands:</span>
+cure<span class="w"> </span>build<span class="w">      </span><span class="c1"># Execute &#39;make all&#39; to build compiler</span>
+cure<span class="w"> </span><span class="nb">test</span><span class="w">       </span><span class="c1"># Execute &#39;make test&#39; to run test suite</span>
+cure<span class="w"> </span>clean<span class="w">      </span><span class="c1"># Execute &#39;make clean&#39; to clean build artifacts</span>
+cure<span class="w"> </span>shell<span class="w">      </span><span class="c1"># Start Erlang development shell with modules loaded</span>
+</code></pre></div>
 
-<h3>Basic Syntax</h3>
-<pre><code>cure [OPTIONS] <input-file.cure>
+<h3 id="examples">Examples</h3>
+<h4 id="basic-compilation">Basic Compilation</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Compile a single file</span>
+./cure<span class="w"> </span>examples/01_list_basics.cure
 
-# Or special wrapper commands:
-cure build      # Execute 'make all' to build compiler
-cure test       # Execute 'make test' to run test suite
-cure clean      # Execute 'make clean' to clean build artifacts
-cure shell      # Start Erlang development shell with modules loaded
-</code></pre>
+<span class="c1"># Compile with verbose output</span>
+./cure<span class="w"> </span>examples/04_pattern_guards.cure<span class="w"> </span>--verbose
 
-<h3>Examples</h3>
+<span class="c1"># Specify output file</span>
+./cure<span class="w"> </span>examples/05_recursion.cure<span class="w"> </span>-o<span class="w"> </span>my_module.beam
 
-<h4>Basic Compilation</h4>
-<pre><code># Compile a single file
-./cure examples/01_list_basics.cure
+<span class="c1"># Specify output directory  </span>
+./cure<span class="w"> </span>examples/06_fsm_traffic_light.cure<span class="w"> </span>-d<span class="w"> </span>_build/ebin/
 
-# Compile with verbose output
-./cure examples/04_pattern_guards.cure --verbose
+<span class="c1"># Compile standard library module</span>
+./cure<span class="w"> </span>lib/std/core.cure<span class="w"> </span>--verbose
+./cure<span class="w"> </span>lib/std/list.cure<span class="w"> </span>--verbose
+</code></pre></div>
 
-# Specify output file
-./cure examples/05_recursion.cure -o my_module.beam
+<h4 id="advanced-options">Advanced Options</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Disable optimizations for debugging</span>
+./cure<span class="w"> </span>examples/complex.cure<span class="w"> </span>--no-optimize<span class="w"> </span>--verbose
 
-# Specify output directory  
-./cure examples/06_fsm_traffic_light.cure -d _build/ebin/
+<span class="c1"># Skip type checking (for testing parser)</span>
+./cure<span class="w"> </span>examples/test.cure<span class="w"> </span>--no-type-check
 
-# Compile standard library module
-./cure lib/std/core.cure --verbose
-./cure lib/std/list.cure --verbose
-</code></pre>
+<span class="c1"># Disable debug information for smaller files</span>
+./cure<span class="w"> </span>examples/production.cure<span class="w"> </span>--no-debug
+</code></pre></div>
 
-<h4>Advanced Options</h4>
-<pre><code># Disable optimizations for debugging
-./cure examples/complex.cure --no-optimize --verbose
-
-# Skip type checking (for testing parser)
-./cure examples/test.cure --no-type-check
-
-# Disable debug information for smaller files
-./cure examples/production.cure --no-debug
-</code></pre>
-
-<h3>Command Line Options</h3>
-
-<p>| Option | Description | Default |</p>
-<p>|--------|-------------|---------|</p>
-<p>| <code>-h, --help</code> | Show help message | - |</p>
-<p>| <code>-v, --version</code> | Show version information | - |</p>
-<p>| <code>-o, --output <file></code> | Output .beam file path | <code><input-basename>.beam</code> |</p>
-<p>| <code>-d, --output-dir <dir></code> | Output directory | <code>_build/ebin</code> |</p>
-<p>| <code>--verbose</code> | Enable verbose output | <code>false</code> |</p>
-<p>| <code>--no-debug</code> | Disable debug information | <code>false</code> |</p>
-<p>| <code>--no-warnings</code> | Disable warnings | <code>false</code> |</p>
-<p>| <code>--no-type-check</code> | Skip type checking | <code>false</code> |</p>
-<p>| <code>--no-optimize</code> | Disable optimizations | <code>false</code> |</p>
-
-<h3>Environment Variables</h3>
-
-<p>| Variable | Description | Default |</p>
-<p>|----------|-------------|---------|</p>
-<p>| <code>CURE_DEBUG=1</code> | Enable debug stack traces | <code>0</code> |</p>
-
-<h2>Compilation Pipeline</h2>
-
+<h3 id="command-line-options">Command Line Options</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-h, --help</code></td>
+<td>Show help message</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>-v, --version</code></td>
+<td>Show version information</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>-o, --output &lt;file&gt;</code></td>
+<td>Output .beam file path</td>
+<td><code>&lt;input-basename&gt;.beam</code></td>
+</tr>
+<tr>
+<td><code>-d, --output-dir &lt;dir&gt;</code></td>
+<td>Output directory</td>
+<td><code>_build/ebin</code></td>
+</tr>
+<tr>
+<td><code>--verbose</code></td>
+<td>Enable verbose output</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>--no-debug</code></td>
+<td>Disable debug information</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>--no-warnings</code></td>
+<td>Disable warnings</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>--no-type-check</code></td>
+<td>Skip type checking</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>--no-optimize</code></td>
+<td>Disable optimizations</td>
+<td><code>false</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="environment-variables">Environment Variables</h3>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CURE_DEBUG=1</code></td>
+<td>Enable debug stack traces</td>
+<td><code>0</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="compilation-pipeline">Compilation Pipeline</h2>
 <p>The Cure compiler processes files through a multi-stage pipeline:</p>
-
-<h3>1. Lexical Analysis</h3>
-<p>Tokenizes Cure source code, recognizing:</p>
-<ul>
-<li>Keywords (<code>def</code>, <code>module</code>, <code>fsm</code>, <code>if</code>, <code>then</code>, <code>else</code>, etc.)</li>
-<li>Operators (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>==</code>, <code>-></code>, etc.) </li>
-<li>Literals (numbers, strings, atoms)</li>
-<li>Identifiers and type annotations</li>
-<li>Comments and whitespace</li>
-</ul>
-
-<h3>2. Parsing</h3>
-<p>Builds an Abstract Syntax Tree (AST) from tokens, supporting:</p>
-<ul>
-<li>Module definitions with exports</li>
-<li>Function definitions with dependent types</li>
-<li>Multi-clause functions (Erlang-style pattern matching)</li>
-<li>Record definitions with named fields</li>
-<li>FSM definitions with states and transitions</li>
-<li>Complex expressions (let bindings, conditionals, pattern matching)</li>
-<li>Pattern guards with <code>when</code> keyword</li>
-<li>Type specifications and constraints</li>
-</ul>
-
-<h3>3. Type Checking</h3>
-<p>Validates type correctness including:</p>
-<ul>
-<li>Dependent type constraints and refinement types</li>
-<li>Function signature matching with polymorphism</li>
-<li>Multi-clause function union type derivation</li>
-<li>Record type field validation and pattern matching</li>
-<li>FSM state type consistency and transition safety</li>
-<li>Type class instance resolution</li>
-<li>Constraint solving with SMT integration</li>
-<li>Pattern guard type checking</li>
-<li>Automatic standard library imports for source files without explicit imports</li>
-</ul>
-
-<h3>4. Type Optimization</h3>
-<p>Applies type-directed optimizations:</p>
-<ul>
-<li>Monomorphization of polymorphic functions</li>
-<li>Function specialization for hot paths</li>
-<li>Inlining based on cost/benefit analysis  </li>
-<li>Dead code elimination using type constraints</li>
-</ul>
-
-<h3>5. Code Generation</h3>
-<p>Generates BEAM bytecode optimized for:</p>
-<ul>
-<li>Function calls and local variables</li>
-<li>FSM runtime integration with cure<em>fsm</em>runtime</li>
-<li>Error handling and debugging with position info</li>
-<li>BEAM virtual machine compatibility</li>
-<li>Integration with Erlang/OTP supervision trees</li>
-</ul>
-
-<h2>Make Integration</h2>
-
+<h3 id="1-lexical-analysis">1. Lexical Analysis</h3>
+<p>Tokenizes Cure source code, recognizing:<br />
+- Keywords (<code>def</code>, <code>module</code>, <code>fsm</code>, <code>if</code>, <code>then</code>, <code>else</code>, etc.)<br />
+- Operators (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>==</code>, <code>-&gt;</code>, etc.) <br />
+- Literals (numbers, strings, atoms)<br />
+- Identifiers and type annotations<br />
+- Comments and whitespace</p>
+<h3 id="2-parsing">2. Parsing</h3>
+<p>Builds an Abstract Syntax Tree (AST) from tokens, supporting:<br />
+- Module definitions with exports<br />
+- Function definitions with dependent types<br />
+- Multi-clause functions (Erlang-style pattern matching)<br />
+- Record definitions with named fields<br />
+- FSM definitions with states and transitions<br />
+- Complex expressions (let bindings, conditionals, pattern matching)<br />
+- Pattern guards with <code>when</code> keyword<br />
+- Type specifications and constraints</p>
+<h3 id="3-type-checking">3. Type Checking</h3>
+<p>Validates type correctness including:<br />
+- Dependent type constraints and refinement types<br />
+- Function signature matching with polymorphism<br />
+- Multi-clause function union type derivation<br />
+- Record type field validation and pattern matching<br />
+- FSM state type consistency and transition safety<br />
+- Type class instance resolution<br />
+- Constraint solving with SMT integration<br />
+- Pattern guard type checking<br />
+- Automatic standard library imports for source files without explicit imports</p>
+<h3 id="4-type-optimization">4. Type Optimization</h3>
+<p>Applies type-directed optimizations:<br />
+- Monomorphization of polymorphic functions<br />
+- Function specialization for hot paths<br />
+- Inlining based on cost/benefit analysis<br />
+- Dead code elimination using type constraints</p>
+<h3 id="5-code-generation">5. Code Generation</h3>
+<p>Generates BEAM bytecode optimized for:<br />
+- Function calls and local variables<br />
+- FSM runtime integration with cure_fsm_runtime<br />
+- Error handling and debugging with position info<br />
+- BEAM virtual machine compatibility<br />
+- Integration with Erlang/OTP supervision trees</p>
+<h2 id="make-integration">Make Integration</h2>
 <p>The build system provides comprehensive targets for development:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Build targets</span>
+make<span class="w"> </span>all<span class="w">                    </span><span class="c1"># Build complete compiler and stdlib</span>
+make<span class="w"> </span>compiler<span class="w">               </span><span class="c1"># Build compiler only</span>
+make<span class="w"> </span>stdlib<span class="w">                 </span><span class="c1"># Build standard library</span>
+make<span class="w"> </span>tests<span class="w">                  </span><span class="c1"># Build test files</span>
 
-<pre><code># Build targets
-make all                    # Build complete compiler and stdlib
-make compiler               # Build compiler only
-make stdlib                 # Build standard library
-make tests                  # Build test files
+<span class="c1"># Testing targets</span>
+make<span class="w"> </span><span class="nb">test</span><span class="w">                   </span><span class="c1"># Run complete test suite</span>
+make<span class="w"> </span>test-basic<span class="w">             </span><span class="c1"># Run basic unit tests</span>
+make<span class="w"> </span>test-integration<span class="w">       </span><span class="c1"># Run integration tests</span>
+make<span class="w"> </span>test-performance<span class="w">       </span><span class="c1"># Run performance benchmarks</span>
 
-# Testing targets
-make test                   # Run complete test suite
-make test-basic             # Run basic unit tests
-make test-integration       # Run integration tests
-make test-performance       # Run performance benchmarks
+<span class="c1"># File compilation</span>
+make<span class="w"> </span>compile-file<span class="w"> </span><span class="nv">CURE_FILE</span><span class="o">=</span>examples/simple.cure
+make<span class="w"> </span>compile-file<span class="w"> </span><span class="nv">CURE_FILE</span><span class="o">=</span>lib/std.cure<span class="w"> </span><span class="nv">OUTPUT</span><span class="o">=</span>custom.beam
 
-# File compilation
-make compile-file CURE_FILE=examples/simple.cure
-make compile-file CURE_FILE=lib/std.cure OUTPUT=custom.beam
+<span class="c1"># Development utilities</span>
+make<span class="w"> </span>shell<span class="w">                  </span><span class="c1"># Start Erlang shell with modules loaded</span>
+make<span class="w"> </span>clean<span class="w">                  </span><span class="c1"># Clean build artifacts</span>
+make<span class="w"> </span>format<span class="w">                 </span><span class="c1"># Format code with rebar3 fmt</span>
+make<span class="w"> </span><span class="nb">help</span><span class="w">                   </span><span class="c1"># Show available targets</span>
+</code></pre></div>
 
-# Development utilities
-make shell                  # Start Erlang shell with modules loaded
-make clean                  # Clean build artifacts
-make format                 # Format code with rebar3 fmt
-make help                   # Show available targets
-</code></pre>
-
-<h2>Development Commands</h2>
-
+<h2 id="development-commands">Development Commands</h2>
 <p>The build system integrates with standard development workflows:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Development cycle</span>
+make<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>all<span class="w">      </span><span class="c1"># Full rebuild</span>
+make<span class="w"> </span>format<span class="w">                 </span><span class="c1"># Format Erlang source code</span>
+make<span class="w"> </span><span class="nb">test</span><span class="w">                   </span><span class="c1"># Verify functionality</span>
 
-<pre><code># Development cycle
-make clean && make all      # Full rebuild
-make format                 # Format Erlang source code
-make test                   # Verify functionality
+<span class="c1"># Interactive development</span>
+make<span class="w"> </span>shell<span class="w">                  </span><span class="c1"># Start Erlang shell</span>
+<span class="c1"># 1&gt; cure_lexer:tokenize(&lt;&lt;&quot;def test() = 42&quot;&gt;&gt;).</span>
+<span class="c1"># 2&gt; cure_parser:parse(Tokens).</span>
+<span class="c1"># 3&gt; cure_typechecker:check_program(AST).</span>
 
-# Interactive development
-make shell                  # Start Erlang shell
-# 1> cure_lexer:tokenize(<<"def test() = 42">>).
-# 2> cure_parser:parse(Tokens).
-# 3> cure_typechecker:check_program(AST).
+<span class="c1"># Performance testing</span>
+make<span class="w"> </span>test-performance<span class="w">       </span><span class="c1"># Run benchmarks</span>
+<span class="nv">CURE_DEBUG</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>make<span class="w"> </span><span class="nb">test</span><span class="w">      </span><span class="c1"># Debug test failures</span>
+</code></pre></div>
 
-# Performance testing
-make test-performance       # Run benchmarks
-CURE_DEBUG=1 make test      # Debug test failures
-</code></pre>
-
-<h2>File Structure and Output</h2>
-
-<h3>Input Files</h3>
+<h2 id="file-structure-and-output">File Structure and Output</h2>
+<h3 id="input-files">Input Files</h3>
 <ul>
 <li><strong>Extension</strong>: <code>.cure</code></li>
 <li><strong>Encoding</strong>: UTF-8 text</li>
 <li><strong>Comments</strong>: Lines starting with <code>#</code></li>
 </ul>
-
-<h3>Output Files</h3>
+<h3 id="output-files">Output Files</h3>
 <ul>
 <li><strong>Extension</strong>: <code>.beam</code></li>
 <li><strong>Format</strong>: BEAM bytecode (Erlang Virtual Machine)</li>
 <li><strong>Location</strong>: <code>_build/ebin/</code> by default</li>
 <li><strong>Size</strong>: Varies (currently mock files for testing)</li>
 </ul>
-
-<h2>Language Support</h2>
-
+<h2 id="language-support">Language Support</h2>
 <p>Cure provides comprehensive support for a dependently-typed functional programming language:</p>
-
-<p>✅ <strong>Fully Supported</strong></p>
-<ul>
-<li>Function definitions with dependent types and constraints</li>
-<li><strong>Multi-clause functions</strong> with automatic union type derivation (Erlang-style pattern matching)</li>
-<li>Module definitions with exports and imports</li>
-<li><strong>Record types</strong> with named fields and type parameters</li>
-<li>FSM definitions with states, transitions, and data constraints</li>
-<li>Dependent types with refinement and constraint solving</li>
-<li>Type classes and instances with automatic derivation</li>
-<li>Pattern matching including dependent patterns</li>
-<li><strong>Pattern guards</strong> with <code>when</code> keyword and logical operators (and, or)</li>
-<li>Let bindings and where clauses</li>
-<li>Conditional expressions and guards</li>
-<li>Higher-order functions and closures</li>
-<li>Standard library (Result, Option, List, Math, String, Pair, Show, Fsm)</li>
-</ul>
-
-<p>✅ <strong>Advanced Features</strong></p>
-<ul>
-<li>SMT-based constraint solving</li>
-<li>Type-directed optimizations (monomorphization, specialization)</li>
-<li>FSM runtime with supervision tree integration</li>
-<li>Compile-time dependent type checking</li>
-<li>Length-indexed lists and safe array operations</li>
-<li>Error handling with Result types</li>
-</ul>
-
-<p>⚠️ <strong>Experimental</strong></p>
-<ul>
-<li>Complex type class hierarchies</li>
-<li>Advanced dependent type features (Pi types)</li>
-<li>Linear types for resource management</li>
-<li>Proof obligations and theorem proving integration</li>
-</ul>
-
-<p>🎯 <strong>Platform Integration</strong></p>
-<ul>
-<li>BEAM bytecode generation</li>
-<li>Erlang/OTP interoperability</li>
-<li>Elixir module calling</li>
-<li>Hot code reloading support</li>
-</ul>
-
-<h2>Error Handling</h2>
-
+<p>✅ <strong>Fully Supported</strong><br />
+- Function definitions with dependent types and constraints<br />
+- <strong>Multi-clause functions</strong> with automatic union type derivation (Erlang-style pattern matching)<br />
+- Module definitions with exports and imports<br />
+- <strong>Record types</strong> with named fields and type parameters<br />
+- FSM definitions with states, transitions, and data constraints<br />
+- Dependent types with refinement and constraint solving<br />
+- Type classes and instances with automatic derivation<br />
+- Pattern matching including dependent patterns<br />
+- <strong>Pattern guards</strong> with <code>when</code> keyword and logical operators (and, or)<br />
+- Let bindings and where clauses<br />
+- Conditional expressions and guards<br />
+- Higher-order functions and closures<br />
+- Standard library (Result, Option, List, Math, String, Pair, Show, Fsm)</p>
+<p>✅ <strong>Advanced Features</strong><br />
+- SMT-based constraint solving<br />
+- Type-directed optimizations (monomorphization, specialization)<br />
+- FSM runtime with supervision tree integration<br />
+- Compile-time dependent type checking<br />
+- Length-indexed lists and safe array operations<br />
+- Error handling with Result types</p>
+<p>⚠️ <strong>Experimental</strong><br />
+- Complex type class hierarchies<br />
+- Advanced dependent type features (Pi types)<br />
+- Linear types for resource management<br />
+- Proof obligations and theorem proving integration</p>
+<p>🎯 <strong>Platform Integration</strong><br />
+- BEAM bytecode generation<br />
+- Erlang/OTP interoperability<br />
+- Elixir module calling<br />
+- Hot code reloading support</p>
+<h2 id="error-handling">Error Handling</h2>
 <p>The compiler provides detailed error messages with:</p>
+<h3 id="wrapper-script-errors">Wrapper Script Errors</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Missing</span><span class="w"> </span><span class="n">required</span><span class="w"> </span><span class="n">compiler</span><span class="w"> </span><span class="n">modules</span><span class="o">:</span>
+<span class="w">  </span><span class="n">cure_cli</span><span class="o">.</span><span class="na">beam</span>
+<span class="w">  </span><span class="n">cure_lexer</span><span class="o">.</span><span class="na">beam</span>
+<span class="n">Run</span><span class="w"> </span><span class="s1">&#39;make all&#39;</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">build</span><span class="w"> </span><span class="n">all</span><span class="w"> </span><span class="n">required</span><span class="w"> </span><span class="n">components</span><span class="o">.</span>
+</code></pre></div>
 
-<h3>Wrapper Script Errors</h3>
-<pre><code>Error: Missing required compiler modules:
-  cure_cli.beam
-  cure_lexer.beam
-Run 'make all' to build all required components.
-</code></pre>
+<h3 id="lexical-errors">Lexical Errors</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Lexical</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="mi">5</span><span class="o">:</span><span class="w"> </span><span class="n">unexpected</span><span class="w"> </span><span class="n">character</span><span class="w"> </span><span class="s1">&#39;$&#39;</span>
+</code></pre></div>
 
-<h3>Lexical Errors</h3>
-<pre><code>Error: Lexical error at line 5: unexpected character '$'
-</code></pre>
+<h3 id="parse-errors">Parse Errors</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Parse</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="mi">10</span><span class="o">:</span><span class="w"> </span><span class="n">expected</span><span class="w"> </span><span class="s1">&#39;end&#39;</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="n">definition</span>
+</code></pre></div>
 
-<h3>Parse Errors</h3>
-<pre><code>Error: Parse error at line 10: expected 'end' after function definition
-</code></pre>
+<h3 id="type-errors">Type Errors</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Type</span><span class="w"> </span><span class="n">error</span><span class="o">:</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">unify</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="n">add</span><span class="o">/</span><span class="mi">2</span>
+</code></pre></div>
 
-<h3>Type Errors</h3>
-<pre><code>Error: Type error: Cannot unify Int with String in function add/2
-</code></pre>
+<h3 id="file-errors">File Errors</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">File</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">found</span><span class="o">:</span><span class="w"> </span><span class="n">examples</span><span class="o">/</span><span class="n">nonexistent</span><span class="o">.</span><span class="na">cure</span>
+<span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Could</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">write</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="n">_build</span><span class="sr">/ebin/</span><span class="n">test</span><span class="o">.</span><span class="na">beam</span><span class="o">:</span><span class="w"> </span><span class="n">permission</span><span class="w"> </span><span class="n">denied</span>
+</code></pre></div>
 
-<h3>File Errors</h3>
-<pre><code>Error: File not found: examples/nonexistent.cure
-Error: Could not write file _build/ebin/test.beam: permission denied
-</code></pre>
+<h3 id="standard-library-compilation-errors">Standard Library Compilation Errors</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Partial</span><span class="w"> </span><span class="n">standard</span><span class="w"> </span><span class="n">library</span><span class="w"> </span><span class="n">compilation</span><span class="w"> </span><span class="n">failed</span><span class="o">:</span><span class="w"> </span>
+<span class="n">Individual</span><span class="w"> </span><span class="n">compilation</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">lib</span><span class="sr">/std/</span><span class="n">broken</span><span class="o">.</span><span class="na">cure</span><span class="w"> </span><span class="n">failed</span><span class="o">:</span><span class="w"> </span><span class="n">Parse</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="mi">5</span>
+</code></pre></div>
 
-<h3>Standard Library Compilation Errors</h3>
-<pre><code>Error: Partial standard library compilation failed: 
-Individual compilation of lib/std/broken.cure failed: Parse error at line 5
-</code></pre>
-
-<h2>Performance Considerations</h2>
-
-<h3>Compilation Speed</h3>
+<h2 id="performance-considerations">Performance Considerations</h2>
+<h3 id="compilation-speed">Compilation Speed</h3>
 <ul>
-<li>Small files (< 100 lines): < 1 second</li>
+<li>Small files (&lt; 100 lines): &lt; 1 second</li>
 <li>Medium files (100-1000 lines): 1-5 seconds  </li>
 <li>Large files (1000+ lines): 5-30 seconds</li>
 </ul>
-
-<h3>Memory Usage</h3>
+<h3 id="memory-usage">Memory Usage</h3>
 <ul>
 <li>Typical compilation: 10-50 MB RAM</li>
 <li>Large ASTs: up to 200 MB RAM</li>
 <li>Output files: varies by complexity</li>
 </ul>
-
-<h3>Debug Mode</h3>
+<h3 id="debug-mode">Debug Mode</h3>
 <p>Enabling <code>CURE_DEBUG=1</code> may significantly slow compilation due to detailed tracing.</p>
-
-<h2>Troubleshooting</h2>
-
-<h3>Common Issues</h3>
-
-<h4>"cure_lexer:scan/1 is not exported"</h4>
-<strong>Solution</strong>: The CLI was updated to use <code>cure_lexer:tokenize/1</code>. Rebuild with <code>make clean && make all</code>.
-
-<h4>"Error: File not found"</h4>
-<strong>Solution</strong>: Check file path and permissions. Use absolute paths if needed.
-
-<h4>"Internal error: error:undef"</h4>
-<strong>Solution</strong>: Missing compiler modules. Run <code>make all</code> to build complete compiler.
-
-<h4>"Missing required compiler modules"</h4>
-<strong>Solution</strong>: The wrapper script detected missing BEAM files. Run <code>make all</code> to build all required components.
-
-<h4>"Standard library not available"</h4>
-<strong>Solution</strong>: Standard library modules are missing. The CLI will automatically attempt to compile them. If compilation fails, check for syntax errors in lib/ directory.
-
-<h4>"Compilation failed at Code Generation"</h4>
-<strong>Solution</strong>: Current limitation. Code generation is in development. Pipeline works for AST validation.
-
-<h3>Debug Information</h3>
-
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<h4 id="cure_lexerscan1-is-not-exported">"cure_lexer:scan/1 is not exported"</h4>
+<p><strong>Solution</strong>: The CLI was updated to use <code>cure_lexer:tokenize/1</code>. Rebuild with <code>make clean &amp;&amp; make all</code>.</p>
+<h4 id="error-file-not-found">"Error: File not found"</h4>
+<p><strong>Solution</strong>: Check file path and permissions. Use absolute paths if needed.</p>
+<h4 id="internal-error-errorundef">"Internal error: error:undef"</h4>
+<p><strong>Solution</strong>: Missing compiler modules. Run <code>make all</code> to build complete compiler.</p>
+<h4 id="missing-required-compiler-modules">"Missing required compiler modules"</h4>
+<p><strong>Solution</strong>: The wrapper script detected missing BEAM files. Run <code>make all</code> to build all required components.</p>
+<h4 id="standard-library-not-available">"Standard library not available"</h4>
+<p><strong>Solution</strong>: Standard library modules are missing. The CLI will automatically attempt to compile them. If compilation fails, check for syntax errors in lib/ directory.</p>
+<h4 id="compilation-failed-at-code-generation">"Compilation failed at Code Generation"</h4>
+<p><strong>Solution</strong>: Current limitation. Code generation is in development. Pipeline works for AST validation.</p>
+<h3 id="debug-information">Debug Information</h3>
 <p>Enable debugging for detailed compilation tracing:</p>
-<pre><code>CURE_DEBUG=1 ./cure examples/simple.cure --verbose
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="nv">CURE_DEBUG</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>./cure<span class="w"> </span>examples/simple.cure<span class="w"> </span>--verbose
+</code></pre></div>
 
-<p>This will show:</p>
-<ul>
-<li>Cure installation paths</li>
-<li>Command line arguments</li>
-<li>Compilation stage details</li>
-<li>Stack traces on errors</li>
-</ul>
-
-<h3>Getting Help</h3>
-
-<p>For issues, bug reports, or feature requests:</p>
-<ol>
-<li>Check this documentation</li>
-<li>Run with <code>--verbose</code> and <code>CURE_DEBUG=1</code></li>
-<li>Verify installation with <code>./cure --version</code></li>
-<li>Check compiler build with <code>make test</code></li>
-</ol>
-
-<h2>Available Examples</h2>
-
+<p>This will show:<br />
+- Cure installation paths<br />
+- Command line arguments<br />
+- Compilation stage details<br />
+- Stack traces on errors</p>
+<h3 id="getting-help">Getting Help</h3>
+<p>For issues, bug reports, or feature requests:<br />
+1. Check this documentation<br />
+2. Run with <code>--verbose</code> and <code>CURE_DEBUG=1</code><br />
+3. Verify installation with <code>./cure --version</code><br />
+4. Check compiler build with <code>make test</code></p>
+<h2 id="available-examples">Available Examples</h2>
 <p>The <code>examples/</code> directory contains working Cure programs demonstrating key features:</p>
-
-<h3>Basic Examples</h3>
+<h3 id="basic-examples">Basic Examples</h3>
 <ul>
-<li><strong>01<em>list</em>basics.cure</strong> - List construction, pattern matching, and recursive operations</li>
-<li><strong>02<em>result</em>handling.cure</strong> - Error handling with Result type (Ok/Error)</li>
-<li><strong>03<em>option</em>type.cure</strong> - Optional value handling with Option type (Some/None)</li>
+<li><strong>01_list_basics.cure</strong> - List construction, pattern matching, and recursive operations</li>
+<li><strong>02_result_handling.cure</strong> - Error handling with Result type (Ok/Error)</li>
+<li><strong>03_option_type.cure</strong> - Optional value handling with Option type (Some/None)</li>
 <li><strong>05_recursion.cure</strong> - Recursive functions and tail call patterns</li>
 </ul>
-
-<h3>Advanced Features</h3>
+<h3 id="advanced-features">Advanced Features</h3>
 <ul>
-<li><strong>04<em>pattern</em>guards.cure</strong> - Pattern matching with <code>when</code> guards</li>
+<li><strong>04_pattern_guards.cure</strong> - Pattern matching with <code>when</code> guards</li>
 <li>Numeric comparisons in guards</li>
 <li>Logical operators (and, or)</li>
 <li>Guards with record patterns</li>
-<li>Complex multi-condition guards</li>
-</ul>
-
-<ul>
-<li><strong>06<em>fsm</em>traffic_light.cure</strong> - Finite State Machine implementation</li>
+<li>
+<p>Complex multi-condition guards</p>
+</li>
+<li>
+<p><strong>06_fsm_traffic_light.cure</strong> - Finite State Machine implementation</p>
+</li>
 <li>FSM definition with record payload</li>
 <li>State transitions and event handling</li>
 <li>FSM runtime operations (spawn, cast, advertise, state queries)</li>
 </ul>
+<h3 id="running-examples">Running Examples</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Compile and examine an example</span>
+./cure<span class="w"> </span>examples/04_pattern_guards.cure<span class="w"> </span>--verbose
 
-<h3>Running Examples</h3>
-<pre><code># Compile and examine an example
-./cure examples/04_pattern_guards.cure --verbose
+<span class="c1"># Run FSM example (requires runtime support)</span>
+./cure<span class="w"> </span>examples/06_fsm_traffic_light.cure
 
-# Run FSM example (requires runtime support)
-./cure examples/06_fsm_traffic_light.cure
+<span class="c1"># See examples/README.md for detailed documentation</span>
+</code></pre></div>
 
-# See examples/README.md for detailed documentation
-</code></pre>
-
-<h2>Future Enhancements</h2>
-
-<p>Planned improvements include:</p>
-<ul>
-<li><strong>Interactive Mode</strong>: REPL for testing expressions</li>
-<li><strong>Package Management</strong>: Import external Cure libraries</li>
-<li><strong>IDE Integration</strong>: Language server protocol support</li>
-<li><strong>Performance Profiling</strong>: Compilation and runtime metrics</li>
-<li><strong>Cross Compilation</strong>: Target different BEAM platforms</li>
-</ul>
-
-<p>---</p>
-
-<em>For detailed language documentation, see the main project README, examples directory, and docs/CURE<em>SYNTAX</em>GUIDE.md</em>
-
+<h2 id="future-enhancements">Future Enhancements</h2>
+<p>Planned improvements include:<br />
+- <strong>Interactive Mode</strong>: REPL for testing expressions<br />
+- <strong>Package Management</strong>: Import external Cure libraries<br />
+- <strong>IDE Integration</strong>: Language server protocol support<br />
+- <strong>Performance Profiling</strong>: Compilation and runtime metrics<br />
+- <strong>Cross Compilation</strong>: Target different BEAM platforms</p>
+<hr />
+<p><em>For detailed language documentation, see the main project README, examples directory, and docs/CURE_SYNTAX_GUIDE.md</em></p>
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

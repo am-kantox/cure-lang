@@ -35,292 +35,225 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>The <code>$</code> Operator Issue and Fix</h1>
-
-<h2>Summary</h2>
-
+        <h1 id="the-operator-issue-and-fix">The <code>$</code> Operator Issue and Fix</h1>
+<h2 id="summary">Summary</h2>
 <p>Cure's typeclass specifications use operators containing <code>$</code> (dollar sign), which were causing lexer errors. This document explains the issue, why we need these operators, and how we fixed it.</p>
+<h2 id="the-problem">The Problem</h2>
+<h3 id="error-message">Error Message</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Lexical</span><span class="w"> </span><span class="n">Analysis</span><span class="w"> </span><span class="n">failed</span><span class="o">:</span><span class="w"> </span><span class="o">{{</span><span class="n">unexpected_character</span><span class="o">,</span><span class="mi">36</span><span class="o">},</span><span class="mi">82</span><span class="o">,</span><span class="mi">9</span><span class="o">}</span>
+</code></pre></div>
 
-<h2>The Problem</h2>
-
-<h3>Error Message</h3>
-<pre><code>Error: Lexical Analysis failed: {{unexpected_character,36},82,9}
-</code></pre>
 <ul>
 <li>Character 36 is ASCII for <code>$</code></li>
 <li>Occurred when parsing typeclass specification files</li>
 </ul>
-
-<h3>Root Cause</h3>
-<p>The lexer (<code>src/lexer/cure<em>lexer.erl</code>) only recognized characters in the <code>operators()</code> map. When it encountered <code>$</code>, it threw <code>{lexer</em>error, {unexpected_character, 36}, Line, Column}</code>.</p>
-
-<p>This happened at two locations:</p>
-<ul>
-<li><strong>Line 448</strong>: <code>scan<em>single</em>char/4</code> - handles single-character operators</li>
-<li><strong>Line 630</strong>: <code>scan<em>one</em>token/3</code> - used during string interpolation</li>
-</ul>
-
-<h2>Why We Need <code>$</code> Operators</h2>
-
+<h3 id="root-cause">Root Cause</h3>
+<p>The lexer (<code>src/lexer/cure_lexer.erl</code>) only recognized characters in the <code>operators()</code> map. When it encountered <code>$</code>, it threw <code>{lexer_error, {unexpected_character, 36}, Line, Column}</code>.</p>
+<p>This happened at two locations:<br />
+- <strong>Line 448</strong>: <code>scan_single_char/4</code> - handles single-character operators<br />
+- <strong>Line 630</strong>: <code>scan_one_token/3</code> - used during string interpolation</p>
+<h2 id="why-we-need-operators">Why We Need <code>$</code> Operators</h2>
 <p>These operators come from <strong>Haskell's Functor and Applicative typeclasses</strong> and are standard in functional programming languages.</p>
-
-<h3>The Operators</h3>
-
-<h4>Functor Operators</h4>
-
+<h3 id="the-operators">The Operators</h3>
+<h4 id="functor-operators">Functor Operators</h4>
 <ol>
-<li><strong><code><$</code> (replace-left)</strong> - Replace all values in a container with a constant</li>
+<li><strong><code>&lt;$</code> (replace-left)</strong> - Replace all values in a container with a constant<br />
+<code>cure
+   def (&lt;$)(value: A, fb: F(B)): F(A) =
+     map(fn(_) -&gt; value end, fb)</code></li>
 </ol>
-   <pre><code>   def (<$)(value: A, fb: F(B)): F(A) =
-<p>     map(fn(_) -> value end, fb)</p>
-   </code></pre>
-   
-<p>   Example usage:</p>
-   <pre><code>   5 <$ Some(10)     # Result: Some(5)
-<p>   "x" <$ [1,2,3]    # Result: ["x", "x", "x"]</p>
-   </code></pre>
-
+<p>Example usage:<br />
+<code>cure
+   5 &lt;$ Some(10)     # Result: Some(5)
+   "x" &lt;$ [1,2,3]    # Result: ["x", "x", "x"]</code></p>
+<ol start="2">
+<li><strong><code>$&gt;</code> (replace-right)</strong> - Same as <code>&lt;$</code> but with flipped arguments<br />
+<code>cure
+   def ($&gt;)(fa: F(A), value: B): F(B) =
+     map(fn(_) -&gt; value end, fa)</code></li>
+</ol>
+<p>Example usage:<br />
+<code>cure
+   Some(10) $&gt; 5     # Result: Some(5)
+   [1,2,3] $&gt; "x"    # Result: ["x", "x", "x"]</code></p>
+<h4 id="applicative-operators">Applicative Operators</h4>
+<ol start="3">
+<li>
+<p><strong><code>&lt;*&gt;</code> (apply)</strong> - Apply a function in a context to a value in a context<br />
+<code>cure
+   def (&lt;*&gt;)(ff: F(A -&gt; B), fa: F(A)): F(B)</code></p>
+</li>
+<li>
+<p><strong><code>*&gt;</code> (sequence-right)</strong> - Sequence two actions, keeping only the second result<br />
+<code>cure
+   def (*&gt;)(fa: F(A), fb: F(B)): F(B)</code></p>
+</li>
+<li>
+<p><strong><code>&lt;*</code> (sequence-left)</strong> - Sequence two actions, keeping only the first result<br />
+<code>cure
+   def (&lt;*)(fa: F(A), fb: F(B)): F(A)</code></p>
+</li>
+</ol>
+<h4 id="monad-operators">Monad Operators</h4>
+<ol start="6">
+<li>
+<p><strong><code>&gt;&gt;=</code> (bind)</strong> - Monadic bind operator<br />
+<code>cure
+   def (&gt;&gt;=)(ma: M(A), f: A -&gt; M(B)): M(B) = bind(ma, f)</code></p>
+</li>
+<li>
+<p><strong><code>&gt;&gt;</code> (then)</strong> - Sequence two monadic actions, discarding the first result<br />
+<code>cure
+   def (&gt;&gt;)(ma: M(A), mb: M(B)): M(B) =
+     ma &gt;&gt;= fn(_) -&gt; mb end</code></p>
+</li>
+</ol>
+<h3 id="why-use-specifically">Why Use <code>$</code> Specifically?</h3>
 <ol>
-<li><strong><code>$></code> (replace-right)</strong> - Same as <code><$</code> but with flipped arguments</li>
+<li>
+<p><strong>Historical Convention</strong>: Established by Haskell decades ago<br />
+   - <code>&lt;$&gt;</code> is the infix operator for <code>fmap</code> (our <code>map</code>)<br />
+   - <code>&lt;$</code> and <code>$&gt;</code> are natural variants</p>
+</li>
+<li>
+<p><strong>Visual Distinction</strong>: The <code>$</code> clearly indicates:<br />
+   - Function application<br />
+   - Value replacement<br />
+   - "Lifting" operations into contexts</p>
+</li>
+<li>
+<p><strong>Ecosystem Compatibility</strong>: Anyone familiar with Functor/Applicative expects these names<br />
+   - Haskell programmers<br />
+   - Scala programmers (similar operators)<br />
+   - PureScript programmers<br />
+   - Elm programmers (adapted versions)</p>
+</li>
+<li>
+<p><strong>Semantic Clarity</strong>: The operators form a visual pattern:<br />
+   - <code>&lt;</code> points to what's kept<br />
+   - <code>$</code> indicates the operation<br />
+   - <code>&gt;</code> shows direction</p>
+</li>
 </ol>
-   <pre><code>   def ($>)(fa: F(A), value: B): F(B) =
-<p>     map(fn(_) -> value end, fa)</p>
-   </code></pre>
-   
-<p>   Example usage:</p>
-   <pre><code>   Some(10) $> 5     # Result: Some(5)
-<p>   [1,2,3] $> "x"    # Result: ["x", "x", "x"]</p>
-   </code></pre>
-
-<h4>Applicative Operators</h4>
-
-<ol>
-<li><strong><code><*></code> (apply)</strong> - Apply a function in a context to a value in a context</li>
-</ol>
-   <pre><code>   def (<*>)(ff: F(A -> B), fa: F(A)): F(B)
-   </code></pre>
-
-<ol>
-<li><strong><code>*></code> (sequence-right)</strong> - Sequence two actions, keeping only the second result</li>
-</ol>
-   <pre><code>   def (*>)(fa: F(A), fb: F(B)): F(B)
-   </code></pre>
-
-<ol>
-<li><strong><code><*</code> (sequence-left)</strong> - Sequence two actions, keeping only the first result</li>
-</ol>
-   <pre><code>   def (<*)(fa: F(A), fb: F(B)): F(A)
-   </code></pre>
-
-<h4>Monad Operators</h4>
-
-<ol>
-<li><strong><code>>>=</code> (bind)</strong> - Monadic bind operator</li>
-</ol>
-   <pre><code>   def (>>=)(ma: M(A), f: A -> M(B)): M(B) = bind(ma, f)
-   </code></pre>
-
-<ol>
-<li><strong><code>>></code> (then)</strong> - Sequence two monadic actions, discarding the first result</li>
-</ol>
-   <pre><code>   def (>>)(ma: M(A), mb: M(B)): M(B) =
-<p>     ma >>= fn(_) -> mb end</p>
-   </code></pre>
-
-<h3>Why Use <code>$</code> Specifically?</h3>
-
-<ol>
-<li><strong>Historical Convention</strong>: Established by Haskell decades ago</li>
-</ol>
-<ul>
-<li><code><$></code> is the infix operator for <code>fmap</code> (our <code>map</code>)</li>
-<li><code><$</code> and <code>$></code> are natural variants</li>
-</ul>
-
-<ol>
-<li><strong>Visual Distinction</strong>: The <code>$</code> clearly indicates:</li>
-</ol>
-<ul>
-<li>Function application</li>
-<li>Value replacement</li>
-<li>"Lifting" operations into contexts</li>
-</ul>
-
-<ol>
-<li><strong>Ecosystem Compatibility</strong>: Anyone familiar with Functor/Applicative expects these names</li>
-</ol>
-<ul>
-<li>Haskell programmers</li>
-<li>Scala programmers (similar operators)</li>
-<li>PureScript programmers</li>
-<li>Elm programmers (adapted versions)</li>
-</ul>
-
-<ol>
-<li><strong>Semantic Clarity</strong>: The operators form a visual pattern:</li>
-</ol>
-<ul>
-<li><code><</code> points to what's kept</li>
-<li><code>$</code> indicates the operation</li>
-<li><code>></code> shows direction</li>
-</ul>
-
-<h2>The Fix</h2>
-
-<h3>What We Changed</h3>
-
+<h2 id="the-fix">The Fix</h2>
+<h3 id="what-we-changed">What We Changed</h3>
 <p>Added the new operators to the <code>operators()</code> map in <code>src/lexer/cure_lexer.erl</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">operators</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">#{</span>
+<span class="w">        </span><span class="c">% ... existing operators ...</span>
+<span class="w">        </span><span class="o">&lt;&lt;</span><span class="s">&quot;|&gt;&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;|&gt;&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="o">&lt;&lt;</span><span class="s">&quot;#{&quot;</span><span class="o">&gt;&gt;=&gt;&gt;</span><span class="w">  </span><span class="n">&#39;interpolation_start&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="c">% Functor/Applicative operators</span>
+<span class="w">        </span><span class="o">&lt;&lt;</span><span class="s">&quot;&lt;$&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;&lt;$&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="o">&lt;&lt;</span><span class="s">&quot;$&gt;&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;$&gt;&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="o">&lt;&lt;</span><span class="s">&quot;&lt;*&gt;&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;&lt;*&gt;&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="o">&lt;&lt;</span><span class="s">&quot;*&gt;&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;*&gt;&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="o">&lt;&lt;</span><span class="s">&quot;&lt;*&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;&lt;*&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="c">% Monad operators</span>
+<span class="w">        </span><span class="o">&lt;&lt;</span><span class="s">&quot;&gt;&gt;=&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;&gt;&gt;=&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="o">&lt;&lt;</span><span class="s">&quot;&gt;&gt;&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;&gt;&gt;&#39;</span>
+<span class="w">    </span><span class="p">}.</span>
+</code></pre></div>
 
-<pre><code>operators() ->
-<p>    #{</p>
-<p>        % ... existing operators ...</p>
-        <<"|>">> => '|>',
-        <<"#{">>=>>  'interpolation_start',
-<p>        % Functor/Applicative operators</p>
-        <<"<$">> => '<$',
-        <<"$>">> => '$>',
-        <<"<<em>>">> => '<</em>>',
-        <<"<em>>">> => '</em>>',
-        <<"<<em>">> => '<</em>',
-<p>        % Monad operators</p>
-        <<">>=">> => '>>=',
-        <<">>">> => '>>'
-<p>    }.</p>
-</code></pre>
-
-<h3>How It Works</h3>
-
+<h3 id="how-it-works">How It Works</h3>
 <p>The lexer now follows this process:</p>
-
 <ol>
-<li><strong>Three-character check</strong>: Tries <code><*></code> and <code>>>=</code> first (lines 412-421)</li>
-<li><strong>Two-character check</strong>: Tries <code><$</code>, <code>$></code>, <code><em>></code>, <code><</em></code>, <code>>></code> (lines 429-441)</li>
+<li><strong>Three-character check</strong>: Tries <code>&lt;*&gt;</code> and <code>&gt;&gt;=</code> first (lines 412-421)</li>
+<li><strong>Two-character check</strong>: Tries <code>&lt;$</code>, <code>$&gt;</code>, <code>*&gt;</code>, <code>&lt;*</code>, <code>&gt;&gt;</code> (lines 429-441)</li>
 <li><strong>Single-character check</strong>: Only if no multi-char match (lines 444-454)</li>
 </ol>
-
-<p>The order matters because:</p>
-<ul>
-<li><code><<em>></code> must be checked before <code><</em></code> and <code>*></code></li>
-<li><code>>>=</code> must be checked before <code>>></code></li>
-<li>Longer operators take precedence</li>
-</ul>
-
-<h3>Testing</h3>
-
+<p>The order matters because:<br />
+- <code>&lt;*&gt;</code> must be checked before <code>&lt;*</code> and <code>*&gt;</code><br />
+- <code>&gt;&gt;=</code> must be checked before <code>&gt;&gt;</code><br />
+- Longer operators take precedence</p>
+<h3 id="testing">Testing</h3>
 <p>Verified the fix works:</p>
-<pre><code>$ erl -pa _build/ebin -noshell -eval \
-<p>  "case cure<em>lexer:tokenize</em>file(\"lib/typeclass_spec/typeclass.cure\") of \</p>
-<p>     {ok, Tokens} -> io:format(\"Success! Tokenized ~p tokens~n\", [length(Tokens)]); \</p>
-<p>     {error, E} -> io:format(\"Error: ~p~n\", [E]) \</p>
-<p>   end, halt(0)."</p>
-   
-<p>Success! Tokenized 1026 tokens</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-noshell<span class="w"> </span>-eval<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;case cure_lexer:tokenize_file(\&quot;lib/typeclass_spec/typeclass.cure\&quot;) of \</span>
+<span class="s2">     {ok, Tokens} -&gt; io:format(\&quot;Success! Tokenized ~p tokens~n\&quot;, [length(Tokens)]); \</span>
+<span class="s2">     {error, E} -&gt; io:format(\&quot;Error: ~p~n\&quot;, [E]) \</span>
+<span class="s2">   end, halt(0).&quot;</span>
 
-<h2>Alternative Approaches (Not Chosen)</h2>
+Success!<span class="w"> </span>Tokenized<span class="w"> </span><span class="m">1026</span><span class="w"> </span>tokens
+</code></pre></div>
 
-<h3>Option 2: Use Different Operator Names</h3>
-
+<h2 id="alternative-approaches-not-chosen">Alternative Approaches (Not Chosen)</h2>
+<h3 id="option-2-use-different-operator-names">Option 2: Use Different Operator Names</h3>
 <p>We could have avoided <code>$</code> by using different names:</p>
+<div class="codehilite"><pre><span></span><code>def replace_left(value: A, fb: F(B)): F(A)
+def replace_right(fa: F(A), value: B): F(B)
+</code></pre></div>
 
-<pre><code>def replace_left(value: A, fb: F(B)): F(A)
-<p>def replace_right(fa: F(A), value: B): F(B)</p>
-</code></pre>
-
-<strong>Rejected because</strong>:
-<ul>
-<li>Loses the elegant infix notation</li>
-<li>Breaks compatibility with functional programming conventions</li>
-<li>Makes code more verbose</li>
-<li>Reduces readability for experienced functional programmers</li>
-</ul>
-
-<h3>Option 3: Use Unicode Operators</h3>
-
+<p><strong>Rejected because</strong>:<br />
+- Loses the elegant infix notation<br />
+- Breaks compatibility with functional programming conventions<br />
+- Makes code more verbose<br />
+- Reduces readability for experienced functional programmers</p>
+<h3 id="option-3-use-unicode-operators">Option 3: Use Unicode Operators</h3>
 <p>We could have used Unicode symbols:</p>
+<div class="codehilite"><pre><span></span><code>def (⊳)(value: A, fb: F(B)): F(A)  # U+22B3 CONTAINS AS NORMAL SUBGROUP
+def (⊲)(fa: F(A), value: B): F(B)  # U+22B2 NORMAL SUBGROUP OF
+</code></pre></div>
 
-<pre><code>def (⊳)(value: A, fb: F(B)): F(A)  # U+22B3 CONTAINS AS NORMAL SUBGROUP
-<p>def (⊲)(fa: F(A), value: B): F(B)  # U+22B2 NORMAL SUBGROUP OF</p>
-</code></pre>
-
-<strong>Rejected because</strong>:
-<ul>
-<li>Harder to type on standard keyboards</li>
-<li>Not widely recognized in the functional programming community</li>
-<li>Adds unnecessary complexity</li>
-<li>Poor tool support</li>
-</ul>
-
-<h2>Impact on Existing Code</h2>
-
-<h3>No Breaking Changes</h3>
-
-<p>Adding these operators is <strong>backward compatible</strong>:</p>
-<ul>
-<li>Existing code continues to work</li>
-<li><code>$</code> was previously an error, so no code used it</li>
-<li>Parser needs updates to handle operator definitions</li>
-</ul>
-
-<h3>What's Still Needed</h3>
-
+<p><strong>Rejected because</strong>:<br />
+- Harder to type on standard keyboards<br />
+- Not widely recognized in the functional programming community<br />
+- Adds unnecessary complexity<br />
+- Poor tool support</p>
+<h2 id="impact-on-existing-code">Impact on Existing Code</h2>
+<h3 id="no-breaking-changes">No Breaking Changes</h3>
+<p>Adding these operators is <strong>backward compatible</strong>:<br />
+- Existing code continues to work<br />
+- <code>$</code> was previously an error, so no code used it<br />
+- Parser needs updates to handle operator definitions</p>
+<h3 id="whats-still-needed">What's Still Needed</h3>
 <ol>
-<li><strong>Parser Updates</strong>: Add grammar rules for operator function definitions</li>
+<li>
+<p><strong>Parser Updates</strong>: Add grammar rules for operator function definitions<br />
+<code>cure
+   def (&lt;$)(value: A, fb: F(B)): F(A) = ...</code></p>
+</li>
+<li>
+<p><strong>Operator Precedence</strong>: Define precedence and associativity<br />
+   - <code>&lt;$</code> and <code>$&gt;</code>: Same as <code>map</code> (high precedence)<br />
+   - <code>&lt;*&gt;</code>: Lower than <code>&lt;$</code> (function application)<br />
+   - <code>*&gt;</code> and <code>&lt;*</code>: Same as <code>&lt;*&gt;</code><br />
+   - <code>&gt;&gt;=</code> and <code>&gt;&gt;</code>: Lowest (sequencing)</p>
+</li>
+<li>
+<p><strong>Type System</strong>: Already supports these through typeclass definitions</p>
+</li>
 </ol>
-   <pre><code>   def (<$)(value: A, fb: F(B)): F(A) = ...
-   </code></pre>
-
-<ol>
-<li><strong>Operator Precedence</strong>: Define precedence and associativity</li>
-</ol>
-<ul>
-<li><code><$</code> and <code>$></code>: Same as <code>map</code> (high precedence)</li>
-<li><code><*></code>: Lower than <code><$</code> (function application)</li>
-<li><code><em>></code> and <code><</em></code>: Same as <code><*></code></li>
-<li><code>>>=</code> and <code>>></code>: Lowest (sequencing)</li>
-</ul>
-
-<ol>
-<li><strong>Type System</strong>: Already supports these through typeclass definitions</li>
-</ol>
-
-<h2>References</h2>
-
+<h2 id="references">References</h2>
 <ul>
 <li><strong>Haskell Functor</strong>: https://hackage.haskell.org/package/base/docs/Data-Functor.html</li>
 <li><strong>Haskell Applicative</strong>: https://hackage.haskell.org/package/base/docs/Control-Applicative.html</li>
 <li><strong>Haskell Monad</strong>: https://hackage.haskell.org/package/base/docs/Control-Monad.html</li>
 <li><strong>Learn You a Haskell</strong>: http://learnyouahaskell.com/functors-applicative-functors-and-monoids</li>
 </ul>
-
-<h2>Summary of Changes</h2>
-
-<h3>Files Modified</h3>
+<h2 id="summary-of-changes">Summary of Changes</h2>
+<h3 id="files-modified">Files Modified</h3>
 <ul>
 <li><code>src/lexer/cure_lexer.erl</code> - Added 7 new operators to <code>operators()</code> map</li>
 </ul>
-
-<h3>Operators Added</h3>
+<h3 id="operators-added">Operators Added</h3>
 <ul>
-<li><code><$</code> - Functor replace-left</li>
-<li><code>$></code> - Functor replace-right  </li>
-<li><code><*></code> - Applicative apply</li>
-<li><code>*></code> - Applicative sequence-right</li>
-<li><code><*</code> - Applicative sequence-left</li>
-<li><code>>>=</code> - Monad bind</li>
-<li><code>>></code> - Monad then</li>
+<li><code>&lt;$</code> - Functor replace-left</li>
+<li><code>$&gt;</code> - Functor replace-right  </li>
+<li><code>&lt;*&gt;</code> - Applicative apply</li>
+<li><code>*&gt;</code> - Applicative sequence-right</li>
+<li><code>&lt;*</code> - Applicative sequence-left</li>
+<li><code>&gt;&gt;=</code> - Monad bind</li>
+<li><code>&gt;&gt;</code> - Monad then</li>
 </ul>
-
-<h3>Testing Status</h3>
+<h3 id="testing-status">Testing Status</h3>
 <ul>
 <li>✅ Lexer successfully tokenizes typeclass specifications</li>
 <li>⏳ Parser grammar rules needed for operator definitions</li>
 <li>⏳ Operator precedence rules needed</li>
 <li>✅ Type system already supports typeclasses</li>
 </ul>
-
-<h2>Next Steps</h2>
-
+<h2 id="next-steps">Next Steps</h2>
 <ol>
 <li><strong>Update Parser</strong>: Add grammar rules for operator function definitions</li>
 <li><strong>Define Precedence</strong>: Establish operator precedence table</li>
@@ -328,11 +261,7 @@
 <li><strong>Documentation</strong>: Add operator documentation to language guide</li>
 <li><strong>Examples</strong>: Create example programs using these operators</li>
 </ol>
-
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

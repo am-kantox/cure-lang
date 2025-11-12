@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="dist/sidebar_items-28313B55.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -112,7 +112,7 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/smt/cure_smt_solver.erl#L1" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
@@ -124,209 +124,54 @@ Pages
 
 
     <section id="moduledoc">
-<h1>Cure Programming Language - SMT Solver and Proof Assistant</h1><p>The SMT (Satisfiability Modulo Theories) solver provides constraint solving
-capabilities for Cure's dependent type system. It handles arithmetic constraints,
-logical reasoning, and proof generation for dependent type verification.</p><h2 id="module-features" class="section-heading">
+<h1>SMT Solver Integration for Cure</h1><p>This module provides integration with SMT (Satisfiability Modulo Theories) solvers
+for dependent type constraint verification and optimization. It supports multiple
+backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" class="section-heading">
   <a href="#module-features" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Features</span>
 </h2>
-<h3 id="module-constraint-solving" class="section-heading">
-  <a href="#module-constraint-solving" class="hover-link">
+<ul><li><strong>Constraint Verification</strong>: Prove or disprove type constraints at compile time</li><li><strong>Guard Optimization</strong>: Eliminate redundant runtime checks</li><li><strong>Counterexample Generation</strong>: Provide examples when constraints fail</li><li><strong>Multiple Backends</strong>: Support for Z3, CVC5, and fallback to symbolic evaluation</li></ul><h2 id="module-usage" class="section-heading">
+  <a href="#module-usage" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
-  <span class="text">Constraint Solving</span>
-</h3>
-<ul><li><strong>Arithmetic Constraints</strong>: Linear and non-linear arithmetic over integers/reals</li><li><strong>Equality Reasoning</strong>: Equality and disequality constraints</li><li><strong>Boolean Logic</strong>: Propositional logic with AND, OR, NOT, IMPLIES</li><li><strong>Quantified Formulas</strong>: Existential and universal quantification</li></ul><h3 id="module-pattern-matching-support" class="section-heading">
-  <a href="#module-pattern-matching-support" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Pattern Matching Support</span>
-</h3>
-<ul><li><strong>Length Inference</strong>: Infers list length constraints from pattern matching</li><li><strong>Structural Constraints</strong>: Handles tuple/record structure constraints</li><li><strong>Exhaustiveness Checking</strong>: Verifies pattern match completeness</li><li><strong>Reachability Analysis</strong>: Determines unreachable pattern branches</li></ul><h3 id="module-proof-generation" class="section-heading">
-  <a href="#module-proof-generation" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Proof Generation</span>
-</h3>
-<ul><li><strong>Constructive Proofs</strong>: Generates proof terms for valid constraints</li><li><strong>Counter-examples</strong>: Provides counter-examples for invalid constraints</li><li><strong>Proof Verification</strong>: Checks independently generated proofs</li><li><strong>Automated Reasoning</strong>: Combines multiple proof strategies</li></ul><h3 id="module-dependent-type-integration" class="section-heading">
-  <a href="#module-dependent-type-integration" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Dependent Type Integration</span>
-</h3>
-<ul><li><strong>Type-level Arithmetic</strong>: Solves constraints involving type-level values</li><li><strong>Refinement Types</strong>: Verifies refinement type predicates</li><li><strong>Constraint Propagation</strong>: Propagates constraints through type inference</li><li><strong>Vector Types</strong>: Handles length-indexed vectors and arrays</li></ul><h2 id="module-core-operations" class="section-heading">
-  <a href="#module-core-operations" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Core Operations</span>
+  <span class="text">Usage</span>
 </h2>
-<h3 id="module-constraint-solving-1" class="section-heading">
-  <a href="#module-constraint-solving-1" class="hover-link">
+<h3 id="module-basic-constraint-checking" class="section-heading">
+  <a href="#module-basic-constraint-checking" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
-  <span class="text">Constraint Solving</span>
+  <span class="text">Basic Constraint Checking</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="c1">%% Create arithmetic constraints</span><span class="w">
-</span><span class="n">Constraint1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">arithmetic_constraint</span><span class="p" data-group-id="3650753715-1">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p" data-group-id="3650753715-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Constraint2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">equality_constraint</span><span class="p" data-group-id="3650753715-2">(</span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="n">Z</span><span class="p" data-group-id="3650753715-2">)</span><span class="p">,</span><span class="w">
-
-</span><span class="c1">%% Solve constraints</span><span class="w">
-</span><span class="k">case</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">solve_constraints</span><span class="p" data-group-id="3650753715-3">(</span><span class="p" data-group-id="3650753715-4">[</span><span class="n">Constraint1</span><span class="p">,</span><span class="w"> </span><span class="n">Constraint2</span><span class="p" data-group-id="3650753715-4">]</span><span class="p" data-group-id="3650753715-3">)</span><span class="w"> </span><span class="k">of</span><span class="w">
-    </span><span class="p" data-group-id="3650753715-5">{</span><span class="ss">sat</span><span class="p">,</span><span class="w"> </span><span class="n">Solution</span><span class="p" data-group-id="3650753715-5">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="3650753715-6">(</span><span class="s">&quot;Solution: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3650753715-7">[</span><span class="n">Solution</span><span class="p" data-group-id="3650753715-7">]</span><span class="p" data-group-id="3650753715-6">)</span><span class="p">;</span><span class="w">
-    </span><span class="ss">unsat</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="3650753715-8">(</span><span class="s">&quot;No solution exists</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="3650753715-8">)</span><span class="p">;</span><span class="w">
-    </span><span class="ss">unknown</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="3650753715-9">(</span><span class="s">&quot;Cannot determine satisfiability</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="3650753715-9">)</span><span class="w">
-</span><span class="k">end</span><span class="p">.</span></code></pre><h3 id="module-pattern-length-inference" class="section-heading">
-  <a href="#module-pattern-length-inference" class="hover-link">
+<pre><code class="makeup erlang" translate="no"><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="7938471821-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VarN</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Zero</span><span class="p" data-group-id="7938471821-1">}</span><span class="p">,</span><span class="w">
+</span><span class="k">case</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">check_constraint</span><span class="p" data-group-id="7938471821-2">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="7938471821-2">)</span><span class="w"> </span><span class="k">of</span><span class="w">
+    </span><span class="p" data-group-id="7938471821-3">{</span><span class="ss">sat</span><span class="p">,</span><span class="w"> </span><span class="n">Model</span><span class="p" data-group-id="7938471821-3">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="c1">% Constraint is satisfiable</span><span class="w">
+        </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="7938471821-4">(</span><span class="s">&quot;Satisfiable with model: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7938471821-5">[</span><span class="n">Model</span><span class="p" data-group-id="7938471821-5">]</span><span class="p" data-group-id="7938471821-4">)</span><span class="p">;</span><span class="w">
+    </span><span class="ss">unsat</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="c1">% Constraint is unsatisfiable</span><span class="w">
+        </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="7938471821-6">(</span><span class="s">&quot;Constraint cannot be satisfied</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="7938471821-6">)</span><span class="p">;</span><span class="w">
+    </span><span class="ss">unknown</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="c1">% Solver couldn&#39;t determine</span><span class="w">
+        </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="7938471821-7">(</span><span class="s">&quot;Unknown, need runtime check</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="7938471821-7">)</span><span class="w">
+</span><span class="k">end</span><span class="p">.</span></code></pre><h3 id="module-proving-constraints" class="section-heading">
+  <a href="#module-proving-constraints" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
-  <span class="text">Pattern Length Inference</span>
+  <span class="text">Proving Constraints</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="c1">%% Infer length constraints from list patterns</span><span class="w">
-</span><span class="n">Pattern</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="0465551499-1">{</span><span class="ss">list_pattern</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0465551499-2">[</span><span class="ss">a</span><span class="p">,</span><span class="w"> </span><span class="ss">b</span><span class="p" data-group-id="0465551499-2">]</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0465551499-3">{</span><span class="ss">identifier_pattern</span><span class="p">,</span><span class="w"> </span><span class="ss">tail</span><span class="p" data-group-id="0465551499-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="0465551499-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">LengthVar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">variable_term</span><span class="p" data-group-id="0465551499-4">(</span><span class="ss">list_length</span><span class="p" data-group-id="0465551499-4">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Constraints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">infer_pattern_length</span><span class="p" data-group-id="0465551499-5">(</span><span class="n">Pattern</span><span class="p">,</span><span class="w"> </span><span class="n">LengthVar</span><span class="p" data-group-id="0465551499-5">)</span><span class="p">.</span><span class="w">
-</span><span class="c1">%% Generates: list_length = 2 + tail_length</span></code></pre><h3 id="module-proof-generation-1" class="section-heading">
-  <a href="#module-proof-generation-1" class="hover-link">
+<pre><code class="makeup erlang" translate="no"><span class="c1">% Prove that n &gt; 0 implies length(list) &gt; 0</span><span class="w">
+</span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_implication</span><span class="p" data-group-id="0038644681-1">(</span><span class="n">Antecedent</span><span class="p">,</span><span class="w"> </span><span class="n">Consequent</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="0038644681-1">)</span><span class="p">.</span></code></pre><h2 id="module-smt-backend-selection" class="section-heading">
+  <a href="#module-smt-backend-selection" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
-  <span class="text">Proof Generation</span>
-</h3>
-<pre><code class="makeup erlang" translate="no"><span class="c1">%% Prove that a constraint follows from assumptions</span><span class="w">
-</span><span class="n">Assumptions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="8426798279-1">[</span><span class="n">X_greater_than_zero</span><span class="p">,</span><span class="w"> </span><span class="n">Y_positive</span><span class="p" data-group-id="8426798279-1">]</span><span class="p">,</span><span class="w">
-</span><span class="n">Goal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">arithmetic_constraint</span><span class="p" data-group-id="8426798279-2">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">zero</span><span class="p" data-group-id="8426798279-2">)</span><span class="p">,</span><span class="w">
-
-</span><span class="k">case</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_constraint</span><span class="p" data-group-id="8426798279-3">(</span><span class="n">Assumptions</span><span class="p">,</span><span class="w"> </span><span class="n">Goal</span><span class="p" data-group-id="8426798279-3">)</span><span class="w"> </span><span class="k">of</span><span class="w">
-    </span><span class="p" data-group-id="8426798279-4">{</span><span class="ss">proved</span><span class="p">,</span><span class="w"> </span><span class="n">Proof</span><span class="p" data-group-id="8426798279-4">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="8426798279-5">(</span><span class="s">&quot;Proof: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8426798279-6">[</span><span class="n">Proof</span><span class="p" data-group-id="8426798279-6">]</span><span class="p" data-group-id="8426798279-5">)</span><span class="p">;</span><span class="w">
-    </span><span class="p" data-group-id="8426798279-7">{</span><span class="ss">disproved</span><span class="p">,</span><span class="w"> </span><span class="n">CounterExample</span><span class="p" data-group-id="8426798279-7">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="8426798279-8">(</span><span class="s">&quot;Counter-example: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8426798279-9">[</span><span class="n">CounterExample</span><span class="p" data-group-id="8426798279-9">]</span><span class="p" data-group-id="8426798279-8">)</span><span class="p">;</span><span class="w">
-    </span><span class="ss">unknown</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="8426798279-10">(</span><span class="s">&quot;Cannot prove or disprove</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="8426798279-10">)</span><span class="w">
-</span><span class="k">end</span><span class="p">.</span></code></pre><h2 id="module-constraint-types" class="section-heading">
-  <a href="#module-constraint-types" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Constraint Types</span>
+  <span class="text">SMT Backend Selection</span>
 </h2>
-<h3 id="module-arithmetic-constraints" class="section-heading">
-  <a href="#module-arithmetic-constraints" class="hover-link">
+<p>The module automatically selects available SMT solvers in order of preference:</p><ol><li>Z3 (if available)</li><li>CVC5 (if available)</li><li>Symbolic evaluation fallback</li></ol><h2 id="module-constraint-translation" class="section-heading">
+  <a href="#module-constraint-translation" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
-  <span class="text">Arithmetic Constraints</span>
-</h3>
-<ul><li><strong>Linear</strong>: <code class="inline">ax + by = c</code>, <code class="inline">ax + by ≤ c</code></li><li><strong>Non-linear</strong>: <code class="inline">xy = z</code>, <code class="inline">x² + y² ≤ r²</code></li><li><strong>Modular</strong>: <code class="inline">x ≡ y (mod m)</code></li><li><strong>Divisibility</strong>: <code class="inline">x divides y</code></li></ul><h3 id="module-logical-constraints" class="section-heading">
-  <a href="#module-logical-constraints" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Logical Constraints</span>
-</h3>
-<ul><li><strong>Propositional</strong>: <code class="inline">P ∧ Q</code>, <code class="inline">P ∨ Q</code>, <code class="inline">¬P</code></li><li><strong>Implications</strong>: <code class="inline">P → Q</code>, <code class="inline">P ↔ Q</code></li><li><strong>Quantified</strong>: <code class="inline">∀x. P(x)</code>, <code class="inline">∃x. P(x)</code></li></ul><h3 id="module-type-level-constraints" class="section-heading">
-  <a href="#module-type-level-constraints" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Type-level Constraints</span>
-</h3>
-<ul><li><strong>Length Constraints</strong>: <code class="inline">length(xs) = n</code></li><li><strong>Range Constraints</strong>: <code class="inline">0 ≤ index &lt; length</code></li><li><strong>Dimension Constraints</strong>: <code class="inline">Matrix(m, n) @ Matrix(n, p) = Matrix(m, p)</code></li></ul><h2 id="module-smt-solver-interface" class="section-heading">
-  <a href="#module-smt-solver-interface" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">SMT Solver Interface</span>
+  <span class="text">Constraint Translation</span>
 </h2>
-<h3 id="module-constraint-representation" class="section-heading">
-  <a href="#module-constraint-representation" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Constraint Representation</span>
-</h3>
-<pre><code class="makeup erlang" translate="no"><span class="p">-</span><span class="na">record</span><span class="p" data-group-id="7686257774-1">(</span><span class="ss">smt_constraint</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7686257774-2">{</span><span class="w">
-    </span><span class="ss">type</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="ss">equality</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">inequality</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">arithmetic</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">logical</span><span class="p">,</span><span class="w">
-    </span><span class="ss">left</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">smt_term</span><span class="p" data-group-id="7686257774-3">(</span><span class="p" data-group-id="7686257774-3">)</span><span class="p">,</span><span class="w">
-    </span><span class="ss">op</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="ss">&#39;=&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;&lt;&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;&lt;=&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;&gt;=&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;/=&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;-&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;*&#39;</span><span class="p">,</span><span class="w">
-    </span><span class="ss">right</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">smt_term</span><span class="p" data-group-id="7686257774-4">(</span><span class="p" data-group-id="7686257774-4">)</span><span class="p">,</span><span class="w">
-    </span><span class="ss">location</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">location</span><span class="p" data-group-id="7686257774-5">(</span><span class="p" data-group-id="7686257774-5">)</span><span class="w">
-</span><span class="p" data-group-id="7686257774-2">}</span><span class="p" data-group-id="7686257774-1">)</span><span class="p">.</span></code></pre><h3 id="module-term-representation" class="section-heading">
-  <a href="#module-term-representation" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Term Representation</span>
-</h3>
-<pre><code class="makeup erlang" translate="no"><span class="p">-</span><span class="na">record</span><span class="p" data-group-id="5817807268-1">(</span><span class="ss">smt_term</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5817807268-2">{</span><span class="w">
-    </span><span class="ss">type</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="ss">variable</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">constant</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">expression</span><span class="p">,</span><span class="w">
-    </span><span class="ss">value</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">atom</span><span class="p" data-group-id="5817807268-3">(</span><span class="p" data-group-id="5817807268-3">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nf">integer</span><span class="p" data-group-id="5817807268-4">(</span><span class="p" data-group-id="5817807268-4">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nf">float</span><span class="p" data-group-id="5817807268-5">(</span><span class="p" data-group-id="5817807268-5">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nf">smt_expression</span><span class="p" data-group-id="5817807268-6">(</span><span class="p" data-group-id="5817807268-6">)</span><span class="p">,</span><span class="w">
-    </span><span class="ss">location</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">location</span><span class="p" data-group-id="5817807268-7">(</span><span class="p" data-group-id="5817807268-7">)</span><span class="w">
-</span><span class="p" data-group-id="5817807268-2">}</span><span class="p" data-group-id="5817807268-1">)</span><span class="p">.</span></code></pre><h2 id="module-solving-strategies" class="section-heading">
-  <a href="#module-solving-strategies" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Solving Strategies</span>
-</h2>
-<h3 id="module-decision-procedures" class="section-heading">
-  <a href="#module-decision-procedures" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Decision Procedures</span>
-</h3>
-<ol><li><strong>Linear Arithmetic</strong>: Simplex algorithm for linear constraints</li><li><strong>Congruence Closure</strong>: Equality reasoning with uninterpreted functions</li><li><strong>Bit-vectors</strong>: Precise reasoning about fixed-width integers</li><li><strong>Arrays</strong>: Theory of arrays with select/store operations</li></ol><h3 id="module-proof-search" class="section-heading">
-  <a href="#module-proof-search" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Proof Search</span>
-</h3>
-<ol><li><strong>Resolution</strong>: Propositional resolution with conflict analysis</li><li><strong>DPLL(T)</strong>: Integration of propositional and theory reasoning</li><li><strong>Instantiation</strong>: Quantifier instantiation with triggers</li><li><strong>Model Construction</strong>: Building satisfying assignments</li></ol><h2 id="module-performance-characteristics" class="section-heading">
-  <a href="#module-performance-characteristics" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Performance Characteristics</span>
-</h2>
-<ul><li><strong>Linear Arithmetic</strong>: Polynomial time in most practical cases</li><li><strong>General Arithmetic</strong>: May be exponential (semi-decidable)</li><li><strong>Propositional Logic</strong>: NP-complete but efficient SAT solvers</li><li><strong>Quantified Formulas</strong>: Undecidable in general, heuristic-based</li></ul><h2 id="module-integration-with-type-system" class="section-heading">
-  <a href="#module-integration-with-type-system" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Integration with Type System</span>
-</h2>
-<h3 id="module-dependent-types" class="section-heading">
-  <a href="#module-dependent-types" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Dependent Types</span>
-</h3>
-<pre><code class="cure">type Vector(T, n: Nat) where n &gt; 0
-%% SMT solver verifies: n &gt; 0
-
-def safe_index(v: Vector(T, n), i: Int) -&gt; T where 0 &lt;= i &lt; n
-%% SMT solver verifies: 0 &lt;= i &lt; n</code></pre><h3 id="module-refinement-types" class="section-heading">
-  <a href="#module-refinement-types" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Refinement Types</span>
-</h3>
-<pre><code class="cure">type Positive = Int where x &gt; 0
-type Even = Int where x % 2 == 0
-%% SMT solver verifies refinement predicates</code></pre><h2 id="module-error-handling" class="section-heading">
-  <a href="#module-error-handling" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Error Handling</span>
-</h2>
-<p>The SMT solver provides structured error information:</p><ul><li><strong>Unsatisfiable Core</strong>: Minimal unsatisfiable subset of constraints</li><li><strong>Model Generation</strong>: Concrete counter-examples for failed proofs</li><li><strong>Timeout Handling</strong>: Graceful degradation for complex problems</li><li><strong>Resource Limits</strong>: Configurable limits on solving time/memory</li></ul><h2 id="module-external-solver-integration" class="section-heading">
-  <a href="#module-external-solver-integration" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">External Solver Integration</span>
-</h2>
-<p>Supports integration with external SMT solvers:</p><ul><li><strong>Z3</strong>: Microsoft Research SMT solver</li><li><strong>CVC4</strong>: Stanford/NYU SMT solver  </li><li><strong>Yices</strong>: SRI SMT solver</li><li><strong>MathSAT</strong>: FBKIRST SMT solver</li></ul><h2 id="module-thread-safety" class="section-heading">
-  <a href="#module-thread-safety" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Thread Safety</span>
-</h2>
-<p>The SMT solver is stateless and thread-safe. Multiple constraint solving
-operations can run concurrently without interference.</p>
+<p>Cure constraints are translated to SMT-LIB format:</p><ul><li>Arithmetic: +, -, *, div, rem</li><li>Comparisons: &lt;, &gt;, =&lt;, &gt;=, ==, /=</li><li>Boolean: and, or, not</li><li>Quantifiers: forall, exists (for dependent types)</li></ul>
     </section>
 
 </div>
@@ -345,39 +190,7 @@ operations can run concurrently without interference.</p>
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#t:location/0" data-no-tooltip translate="no">location()</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#t:proof_term/0" data-no-tooltip translate="no">proof_term()</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#t:smt_constraint/0" data-no-tooltip translate="no">smt_constraint()</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#t:smt_expression/0" data-no-tooltip translate="no">smt_expression()</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#t:smt_term/0" data-no-tooltip translate="no">smt_term()</a>
+        <a href="#t:expr/0" data-no-tooltip translate="no">expr()</a>
 
       </div>
 
@@ -391,7 +204,7 @@ operations can run concurrently without interference.</p>
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#addition_expression/1" data-no-tooltip translate="no">addition_expression(Terms)</a>
+        <a href="#available_solvers/0" data-no-tooltip translate="no">available_solvers()</a>
 
       </div>
 
@@ -399,7 +212,7 @@ operations can run concurrently without interference.</p>
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#arithmetic_constraint/3" data-no-tooltip translate="no">arithmetic_constraint(Left, Op, Right)</a>
+        <a href="#check_constraint/2" data-no-tooltip translate="no">check_constraint(Constraint, Env)</a>
 
       </div>
 
@@ -407,7 +220,7 @@ operations can run concurrently without interference.</p>
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#check_proof/2" data-no-tooltip translate="no">check_proof/2</a>
+        <a href="#check_constraint/3" data-no-tooltip translate="no">check_constraint(Constraint, Env, Opts)</a>
 
       </div>
 
@@ -415,7 +228,7 @@ operations can run concurrently without interference.</p>
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#check_satisfiable/1" data-no-tooltip translate="no">check_satisfiable(Constraint)</a>
+        <a href="#find_counterexample/2" data-no-tooltip translate="no">find_counterexample(Constraint, Env)</a>
 
       </div>
 
@@ -423,7 +236,7 @@ operations can run concurrently without interference.</p>
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#constant_term/1" data-no-tooltip translate="no">constant_term(Value)</a>
+        <a href="#prove_constraint/2" data-no-tooltip translate="no">prove_constraint(Constraint, Env)</a>
 
       </div>
 
@@ -431,7 +244,7 @@ operations can run concurrently without interference.</p>
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#constraint_to_string/1" data-no-tooltip translate="no">constraint_to_string/1</a>
+        <a href="#prove_implication/3" data-no-tooltip translate="no">prove_implication(Antecedent, Consequent, Env)</a>
 
       </div>
 
@@ -439,7 +252,7 @@ operations can run concurrently without interference.</p>
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#division_expression/1" data-no-tooltip translate="no">division_expression(Terms)</a>
+        <a href="#set_solver/1" data-no-tooltip translate="no">set_solver(Solver)</a>
 
       </div>
 
@@ -447,135 +260,7 @@ operations can run concurrently without interference.</p>
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#equality_constraint/2" data-no-tooltip translate="no">equality_constraint(Left, Right)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#generate_proof/2" data-no-tooltip translate="no">generate_proof(Assumptions, Goal)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#implication_constraint/2" data-no-tooltip translate="no">implication_constraint(Premise, Conclusion)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#inequality_constraint/3" data-no-tooltip translate="no">inequality_constraint(Left, Op, Right)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#infer_pattern_length/2" data-no-tooltip translate="no">infer_pattern_length/2</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#infer_pattern_length_constraint/2" data-no-tooltip translate="no">infer_pattern_length_constraint(Pattern, OriginalLengthVar)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#infer_tail_length_constraint/3" data-no-tooltip translate="no">infer_tail_length_constraint/3</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#list_pattern_length_constraint/2" data-no-tooltip translate="no">list_pattern_length_constraint(Pattern, LengthVar)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#modulo_expression/1" data-no-tooltip translate="no">modulo_expression(Terms)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#multiplication_expression/1" data-no-tooltip translate="no">multiplication_expression(Terms)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#negate_constraint/1" data-no-tooltip translate="no">negate_constraint(Constraint)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#new_constraint/3" data-no-tooltip translate="no">new_constraint(Type, Op, Right)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#prove_constraint/2" data-no-tooltip translate="no">prove_constraint(Assumptions, Goal)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#solve_constraints/1" data-no-tooltip translate="no">solve_constraints(Constraints)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#solve_constraints/2" data-no-tooltip translate="no">solve_constraints(Constraints, InitialAssignment)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#subtraction_expression/1" data-no-tooltip translate="no">subtraction_expression(Terms)</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#variable_term/1" data-no-tooltip translate="no">variable_term(Name)</a>
+        <a href="#simplify_constraint/2" data-no-tooltip translate="no">simplify_constraint(Constraint, Env)</a>
 
       </div>
 
@@ -594,15 +279,15 @@ operations can run concurrently without interference.</p>
       <span class="text">Types</span>
     </h1>
     <div class="types-list">
-<section class="detail" id="t:location/0">
+<section class="detail" id="t:expr/0">
 
   <div class="detail-header">
-    <a href="#t:location/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+    <a href="#t:expr/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">location()</h1>
+    <h1 class="signature" translate="no">expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/parser/cure_ast.hrl#L448" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/parser/cure_ast.hrl#L455" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -613,128 +298,34 @@ operations can run concurrently without interference.</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-type</span> location() :: #location{line :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), column :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), file :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
-
-      </div>
-
-
-  </section>
-</section>
-<section class="detail" id="t:proof_term/0">
-
-  <div class="detail-header">
-    <a href="#t:proof_term/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">proof_term()</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L258" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">-type</span> proof_term() ::
-          #proof_term{conclusion :: <a href="#t:smt_constraint/0">smt_constraint</a>(),
-                      premises :: [<a href="#t:smt_constraint/0">smt_constraint</a>()],
-                      rule :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
-                      subproofs :: [<a href="#t:proof_term/0">proof_term</a>()]}.</pre>
-
-      </div>
-
-
-  </section>
-</section>
-<section class="detail" id="t:smt_constraint/0">
-
-  <div class="detail-header">
-    <a href="#t:smt_constraint/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">smt_constraint()</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L254" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">-type</span> smt_constraint() ::
-          #smt_constraint{type :: equality | inequality | arithmetic | logical,
-                          left :: <a href="#t:smt_term/0">smt_term</a>(),
-                          op ::
-                              '=' | '<' | '>' | '<=' | '>=' | '/=' | '+' | '-' | '*' | 'and' | 'or' |
-                              implies,
-                          right :: <a href="#t:smt_term/0">smt_term</a>(),
-                          location :: <a href="#t:location/0">location</a>()}.</pre>
-
-      </div>
-
-
-  </section>
-</section>
-<section class="detail" id="t:smt_expression/0">
-
-  <div class="detail-header">
-    <a href="#t:smt_expression/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">smt_expression()</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L256" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">-type</span> smt_expression() ::
-          #smt_expression{op :: '+' | '-' | '*' | '/' | mod,
-                          args :: [<a href="#t:smt_term/0">smt_term</a>()],
-                          location :: <a href="#t:location/0">location</a>()}.</pre>
-
-      </div>
-
-
-  </section>
-</section>
-<section class="detail" id="t:smt_term/0">
-
-  <div class="detail-header">
-    <a href="#t:smt_term/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">smt_term()</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L255" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">-type</span> smt_term() ::
-          #smt_term{type :: variable | constant | expression,
-                    value :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>() | <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>() | <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:float/0">float</a>() | <a href="#t:smt_expression/0">smt_expression</a>(),
-                    location :: <a href="#t:location/0">location</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-type</span> expr() ::
+          #literal_expr{value :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #identifier_expr{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #function_call_expr{function :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #match_expr{expr :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), patterns :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #let_expr{bindings :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #binary_op_expr{op :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), left :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), right :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #unary_op_expr{op :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), operand :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #list_expr{elements :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #vector_expr{elements :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #tuple_expr{elements :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #record_expr{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), fields :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #field_access_expr{record :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), field :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #record_update_expr{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), base :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), fields :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #lambda_expr{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_spawn_expr{fsm_name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                          init_args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                          init_state :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                          location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_send_expr{target :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), message :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_receive_expr{patterns :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), timeout :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_state_expr{location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #qualified_call_expr{trait_name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               type_args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               method_name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               receiver :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
 
       </div>
 
@@ -753,35 +344,15 @@ operations can run concurrently without interference.</p>
       <span class="text">Functions</span>
     </h1>
     <div class="functions-list">
-<section class="detail" id="addition_expression/1">
+<section class="detail" id="available_solvers/0">
 
   <div class="detail-header">
-    <a href="#addition_expression/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#available_solvers/0" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">addition_expression(Terms)</h1>
+    <h1 class="signature" translate="no">available_solvers()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L699" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-
-  </section>
-</section>
-<section class="detail" id="arithmetic_constraint/3">
-
-  <div class="detail-header">
-    <a href="#arithmetic_constraint/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">arithmetic_constraint(Left, Op, Right)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L319" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/smt/cure_smt_solver.erl#L144" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -792,42 +363,22 @@ operations can run concurrently without interference.</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> arithmetic_constraint(<a href="#t:smt_term/0">smt_term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="#t:smt_term/0">smt_term</a>()) -> <a href="#t:smt_constraint/0">smt_constraint</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> available_solvers() -> [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()].</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="check_proof/2">
+<section class="detail" id="check_constraint/2">
 
   <div class="detail-header">
-    <a href="#check_proof/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#check_constraint/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">check_proof/2</h1>
+    <h1 class="signature" translate="no">check_constraint(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L1158" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-
-  </section>
-</section>
-<section class="detail" id="check_satisfiable/1">
-
-  <div class="detail-header">
-    <a href="#check_satisfiable/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">check_satisfiable(Constraint)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L281" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/smt/cure_smt_solver.erl#L77" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -838,82 +389,22 @@ operations can run concurrently without interference.</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> check_satisfiable(<a href="#t:smt_constraint/0">smt_constraint</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> check_constraint(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> sat | unsat | unknown | {sat, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()}.</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="constant_term/1">
+<section class="detail" id="check_constraint/3">
 
   <div class="detail-header">
-    <a href="#constant_term/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#check_constraint/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">constant_term(Value)</h1>
+    <h1 class="signature" translate="no">check_constraint(Constraint, Env, Opts)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L696" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-
-  </section>
-</section>
-<section class="detail" id="constraint_to_string/1">
-
-  <div class="detail-header">
-    <a href="#constraint_to_string/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">constraint_to_string/1</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L1023" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-
-  </section>
-</section>
-<section class="detail" id="division_expression/1">
-
-  <div class="detail-header">
-    <a href="#division_expression/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">division_expression(Terms)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L720" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-
-  </section>
-</section>
-<section class="detail" id="equality_constraint/2">
-
-  <div class="detail-header">
-    <a href="#equality_constraint/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">equality_constraint(Left, Right)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L330" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/smt/cure_smt_solver.erl#L82" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -924,42 +415,22 @@ operations can run concurrently without interference.</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> equality_constraint(<a href="#t:smt_term/0">smt_term</a>(), <a href="#t:smt_term/0">smt_term</a>()) -> <a href="#t:smt_constraint/0">smt_constraint</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> check_constraint(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> sat | unsat | unknown | {sat, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()}.</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="generate_proof/2">
+<section class="detail" id="find_counterexample/2">
 
   <div class="detail-header">
-    <a href="#generate_proof/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#find_counterexample/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">generate_proof(Assumptions, Goal)</h1>
+    <h1 class="signature" translate="no">find_counterexample(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L1150" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-
-  </section>
-</section>
-<section class="detail" id="implication_constraint/2">
-
-  <div class="detail-header">
-    <a href="#implication_constraint/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">implication_constraint(Premise, Conclusion)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L341" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/smt/cure_smt_solver.erl#L125" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -970,217 +441,7 @@ operations can run concurrently without interference.</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> implication_constraint(<a href="#t:smt_constraint/0">smt_constraint</a>(), <a href="#t:smt_constraint/0">smt_constraint</a>()) -> <a href="#t:smt_constraint/0">smt_constraint</a>().</pre>
-
-      </div>
-
-
-  </section>
-</section>
-<section class="detail" id="inequality_constraint/3">
-
-  <div class="detail-header">
-    <a href="#inequality_constraint/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">inequality_constraint(Left, Op, Right)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L734" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-
-  </section>
-</section>
-<section class="detail" id="infer_pattern_length/2">
-
-  <div class="detail-header">
-    <a href="#infer_pattern_length/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">infer_pattern_length/2</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L356" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">-spec</span> infer_pattern_length(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="#t:smt_term/0">smt_term</a>()) -> [<a href="#t:smt_constraint/0">smt_constraint</a>()].</pre>
-
-      </div>
-
-
-  </section>
-</section>
-<section class="detail" id="infer_pattern_length_constraint/2">
-
-  <div class="detail-header">
-    <a href="#infer_pattern_length_constraint/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">infer_pattern_length_constraint(Pattern, OriginalLengthVar)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L450" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">-spec</span> infer_pattern_length_constraint(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()) -> [<a href="#t:smt_constraint/0">smt_constraint</a>()].</pre>
-
-      </div>
-
-
-  </section>
-</section>
-<section class="detail" id="infer_tail_length_constraint/3">
-
-  <div class="detail-header">
-    <a href="#infer_tail_length_constraint/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">infer_tail_length_constraint/3</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L410" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">-spec</span> infer_tail_length_constraint(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()) -> [<a href="#t:smt_constraint/0">smt_constraint</a>()].</pre>
-
-      </div>
-
-
-  </section>
-</section>
-<section class="detail" id="list_pattern_length_constraint/2">
-
-  <div class="detail-header">
-    <a href="#list_pattern_length_constraint/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">list_pattern_length_constraint(Pattern, LengthVar)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L403" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">-spec</span> list_pattern_length_constraint(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()) -> <a href="#t:smt_constraint/0">smt_constraint</a>().</pre>
-
-      </div>
-
-
-  </section>
-</section>
-<section class="detail" id="modulo_expression/1">
-
-  <div class="detail-header">
-    <a href="#modulo_expression/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">modulo_expression(Terms)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L727" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-
-  </section>
-</section>
-<section class="detail" id="multiplication_expression/1">
-
-  <div class="detail-header">
-    <a href="#multiplication_expression/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">multiplication_expression(Terms)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L713" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-
-  </section>
-</section>
-<section class="detail" id="negate_constraint/1">
-
-  <div class="detail-header">
-    <a href="#negate_constraint/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">negate_constraint(Constraint)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L842" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-
-  </section>
-</section>
-<section class="detail" id="new_constraint/3">
-
-  <div class="detail-header">
-    <a href="#new_constraint/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">new_constraint(Type, Op, Right)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L305" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">-spec</span> new_constraint(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="#t:smt_term/0">smt_term</a>()) -> <a href="#t:smt_constraint/0">smt_constraint</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> find_counterexample(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()} | none | unknown.</pre>
 
       </div>
 
@@ -1193,9 +454,9 @@ operations can run concurrently without interference.</p>
     <a href="#prove_constraint/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">prove_constraint(Assumptions, Goal)</h1>
+    <h1 class="signature" translate="no">prove_constraint(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L290" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/smt/cure_smt_solver.erl#L110" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1206,23 +467,22 @@ operations can run concurrently without interference.</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> prove_constraint([<a href="#t:smt_constraint/0">smt_constraint</a>()], <a href="#t:smt_constraint/0">smt_constraint</a>()) ->
-                          {proved, <a href="#t:proof_term/0">proof_term</a>()} | {disproved, <a href="#t:proof_term/0">proof_term</a>()} | unknown.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> prove_constraint(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> true | false | unknown.</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="solve_constraints/1">
+<section class="detail" id="prove_implication/3">
 
   <div class="detail-header">
-    <a href="#solve_constraints/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#prove_implication/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">solve_constraints(Constraints)</h1>
+    <h1 class="signature" translate="no">prove_implication(Antecedent, Consequent, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L266" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/smt/cure_smt_solver.erl#L94" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1233,22 +493,22 @@ operations can run concurrently without interference.</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> solve_constraints([<a href="#t:smt_constraint/0">smt_constraint</a>()]) -> {sat, #{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>() => <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}} | unsat | unknown.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> prove_implication(<a href="#t:expr/0">expr</a>(), <a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> true | false | unknown.</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="solve_constraints/2">
+<section class="detail" id="set_solver/1">
 
   <div class="detail-header">
-    <a href="#solve_constraints/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#set_solver/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">solve_constraints(Constraints, InitialAssignment)</h1>
+    <h1 class="signature" translate="no">set_solver(Solver)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L271" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/smt/cure_smt_solver.erl#L155" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1259,23 +519,22 @@ operations can run concurrently without interference.</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> solve_constraints([<a href="#t:smt_constraint/0">smt_constraint</a>()], #{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>() => <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}) ->
-                           {sat, #{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>() => <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}} | unsat | unknown.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> set_solver(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()) -> ok | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="subtraction_expression/1">
+<section class="detail" id="simplify_constraint/2">
 
   <div class="detail-header">
-    <a href="#subtraction_expression/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#simplify_constraint/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">subtraction_expression(Terms)</h1>
+    <h1 class="signature" translate="no">simplify_constraint(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L706" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/smt/cure_smt_solver.erl#L137" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1284,25 +543,11 @@ operations can run concurrently without interference.</p>
 
   <section class="docstring">
 
+      <div class="specs">
 
-  </section>
-</section>
-<section class="detail" id="variable_term/1">
+          <pre translate="no"><span class="attribute">-spec</span> simplify_constraint(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> <a href="#t:expr/0">expr</a>().</pre>
 
-  <div class="detail-header">
-    <a href="#variable_term/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">variable_term(Name)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/src/types/cure_smt_solver.erl#L693" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
+      </div>
 
 
   </section>

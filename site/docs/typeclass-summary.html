@@ -38,69 +38,51 @@ Total Implementation T">
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Type Classes System - Final Implementation Summary</h1>
-
-<strong>Project</strong>: Cure Programming Language  
-<strong>Feature</strong>: Type Classes and Traits System  
-<strong>Date Completed</strong>: November 4, 2025  
-<strong>Total Implementation Time</strong>: 2 sessions  
-<strong>Status</strong>: ✅ <strong>COMPLETE</strong> (all 7 phases)
-
-<p>---</p>
-
-<h2>Executive Summary</h2>
-
+        <h1 id="type-classes-system-final-implementation-summary">Type Classes System - Final Implementation Summary</h1>
+<p><strong>Project</strong>: Cure Programming Language<br />
+<strong>Feature</strong>: Type Classes and Traits System<br />
+<strong>Date Completed</strong>: November 4, 2025<br />
+<strong>Total Implementation Time</strong>: 2 sessions<br />
+<strong>Status</strong>: ✅ <strong>COMPLETE</strong> (all 7 phases)</p>
+<hr />
+<h2 id="executive-summary">Executive Summary</h2>
 <p>Successfully implemented a complete <strong>Type Classes and Traits system</strong> for the Cure programming language, bringing Haskell-style ad-hoc polymorphism to the BEAM VM. The system includes full compiler integration from parsing through BEAM code generation, automatic instance derivation, and comprehensive documentation.</p>
-
-<strong>Total Delivery</strong>: ~6,000 lines of production code and documentation across 7 implementation phases.
-
-<p>---</p>
-
-<h2>Implementation Overview</h2>
-
-<h3>Phase 1: Lexer & Parser Foundation ✅</h3>
-<strong>Completed</strong>: Session 1  
-<strong>Lines</strong>: ~200 (Parser modifications)
-
+<p><strong>Total Delivery</strong>: ~6,000 lines of production code and documentation across 7 implementation phases.</p>
+<hr />
+<h2 id="implementation-overview">Implementation Overview</h2>
+<h3 id="phase-1-lexer-parser-foundation">Phase 1: Lexer &amp; Parser Foundation ✅</h3>
+<p><strong>Completed</strong>: Session 1<br />
+<strong>Lines</strong>: ~200 (Parser modifications)</p>
 <ul>
 <li>Added keywords: <code>typeclass</code>, <code>instance</code>, <code>derive</code></li>
 <li>Created 4 new AST record types</li>
 <li>Implemented complete parsing infrastructure</li>
 <li>Fixed token handling for compatibility</li>
 </ul>
-
-<strong>Key Deliverable</strong>: Full syntactic support for typeclasses
-
-<h3>Phase 2: Type System Core ✅  </h3>
-<strong>Completed</strong>: Session 1  
-<strong>Lines</strong>: 543 (cure_typeclass.erl)
-
+<p><strong>Key Deliverable</strong>: Full syntactic support for typeclasses</p>
+<h3 id="phase-2-type-system-core">Phase 2: Type System Core ✅</h3>
+<p><strong>Completed</strong>: Session 1<br />
+<strong>Lines</strong>: 543 (cure_typeclass.erl)</p>
 <ul>
 <li>Built typeclass environment management</li>
 <li>Implemented registration and lookup</li>
 <li>Created method resolution system</li>
 <li>Added coherence checking</li>
 </ul>
-
-<strong>Key Deliverable</strong>: Complete typeclass type system
-
-<h3>Phase 3: Core Typeclasses ✅</h3>
-<strong>Completed</strong>: Session 1  
-<strong>Lines</strong>: 670 (Library code in Cure)
-
+<p><strong>Key Deliverable</strong>: Complete typeclass type system</p>
+<h3 id="phase-3-core-typeclasses">Phase 3: Core Typeclasses ✅</h3>
+<p><strong>Completed</strong>: Session 1<br />
+<strong>Lines</strong>: 670 (Library code in Cure)</p>
 <ul>
 <li>Defined 6 core typeclasses: Show, Eq, Ord, Functor, Applicative, Monad</li>
 <li>Implemented 20+ instances for built-in types</li>
 <li>Created 30+ helper functions</li>
 <li>Wrote comprehensive example programs</li>
 </ul>
-
-<strong>Key Deliverable</strong>: Rich standard library
-
-<h3>Phase 4: Codegen Integration ✅</h3>
-<strong>Completed</strong>: Session 2  
-<strong>Lines</strong>: 354 (cure<em>typeclass</em>codegen.erl) + integration
-
+<p><strong>Key Deliverable</strong>: Rich standard library</p>
+<h3 id="phase-4-codegen-integration">Phase 4: Codegen Integration ✅</h3>
+<p><strong>Completed</strong>: Session 2<br />
+<strong>Lines</strong>: 354 (cure_typeclass_codegen.erl) + integration</p>
 <ul>
 <li>Created typeclass codegen module</li>
 <li>Integrated with main compiler pipeline</li>
@@ -108,26 +90,20 @@ Total Implementation T">
 <li>Added method dispatch generation</li>
 <li>Updated parser for Haskell-style derive syntax</li>
 </ul>
-
-<strong>Key Deliverable</strong>: Full BEAM code generation
-
-<h3>Phase 5: Automatic Derivation ✅</h3>
-<strong>Completed</strong>: Session 1-2  
-<strong>Lines</strong>: 441 (cure_derive.erl)
-
+<p><strong>Key Deliverable</strong>: Full BEAM code generation</p>
+<h3 id="phase-5-automatic-derivation">Phase 5: Automatic Derivation ✅</h3>
+<p><strong>Completed</strong>: Session 1-2<br />
+<strong>Lines</strong>: 441 (cure_derive.erl)</p>
 <ul>
 <li>Implemented derive mechanism for Show, Eq, Ord</li>
 <li>Created constraint inference system</li>
 <li>Generated instance AST automatically</li>
 <li>Added comprehensive testing (9 tests, all passing)</li>
 </ul>
-
-<strong>Key Deliverable</strong>: Zero-boilerplate type definitions
-
-<h3>Phase 6: Testing & Examples ✅</h3>
-<strong>Completed</strong>: Session 2  
-<strong>Lines</strong>: 450 (Examples) + 580 (Tests)
-
+<p><strong>Key Deliverable</strong>: Zero-boilerplate type definitions</p>
+<h3 id="phase-6-testing-examples">Phase 6: Testing &amp; Examples ✅</h3>
+<p><strong>Completed</strong>: Session 2<br />
+<strong>Lines</strong>: 450 (Examples) + 580 (Tests)</p>
 <ul>
 <li><strong>Unit Tests</strong>: 24 tests across 3 modules (all passing)</li>
 <li>Parser tests</li>
@@ -139,13 +115,10 @@ Total Implementation T">
 <li>Generic algorithms (311 lines)</li>
 <li><strong>Integration Tests</strong>: Created (infrastructure issues remain)</li>
 </ul>
-
-<strong>Key Deliverable</strong>: Comprehensive test coverage and real-world examples
-
-<h3>Phase 7: Documentation ✅</h3>
-<strong>Completed</strong>: Session 2  
-<strong>Lines</strong>: ~2,400 (Multiple documents)
-
+<p><strong>Key Deliverable</strong>: Comprehensive test coverage and real-world examples</p>
+<h3 id="phase-7-documentation">Phase 7: Documentation ✅</h3>
+<p><strong>Completed</strong>: Session 2<br />
+<strong>Lines</strong>: ~2,400 (Multiple documents)</p>
 <ul>
 <li><strong>User Guides</strong>:</li>
 <li>Main typeclass guide (610 lines)</li>
@@ -155,413 +128,341 @@ Total Implementation T">
 <li>Phase summaries (1000+ lines)</li>
 <li><strong>API Documentation</strong>: Inline docs in all modules</li>
 </ul>
+<p><strong>Key Deliverable</strong>: Production-ready documentation</p>
+<hr />
+<h2 id="architecture">Architecture</h2>
+<h3 id="complete-system-flow">Complete System Flow</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">                     </span><span class="nx">Cure</span><span class="w"> </span><span class="nx">Source</span><span class="w"> </span><span class="nx">Code</span><span class="w">                         </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="nx">record</span><span class="w"> </span><span class="nx">Point</span><span class="w"> </span><span class="nx">do</span><span class="w"> </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">end</span><span class="w">                          </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="nx">derive</span><span class="w"> </span><span class="nx">Show</span><span class="p">,</span><span class="w"> </span><span class="nx">Eq</span><span class="p">,</span><span class="w"> </span><span class="nx">Ord</span><span class="w">                                        </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">sort</span><span class="p">(</span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">))</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">Ord</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">...</span><span class="w">                 </span><span class="err">│</span>
+<span class="err">└────────────────────┬────────────────────────────────────────┘</span>
+<span class="w">                     </span><span class="err">│</span>
+<span class="w">                     </span><span class="err">↓</span>
+<span class="err">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">                 </span><span class="nx">Lexer</span><span class="w"> </span><span class="p">(</span><span class="nx">cure_lexer</span><span class="p">.</span><span class="nx">erl</span><span class="p">)</span><span class="w">                       </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Tokenizes</span><span class="w"> </span><span class="nx">typeclass</span><span class="w"> </span><span class="nx">keywords</span><span class="w">                              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Recognizes</span><span class="w"> </span><span class="nx">derive</span><span class="w"> </span><span class="nx">syntax</span><span class="w">                                  </span><span class="err">│</span>
+<span class="err">└────────────────────┬────────────────────────────────────────┘</span>
+<span class="w">                     </span><span class="err">│</span>
+<span class="w">                     </span><span class="err">↓</span>
+<span class="err">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">                </span><span class="nx">Parser</span><span class="w"> </span><span class="p">(</span><span class="nx">cure_parser</span><span class="p">.</span><span class="nx">erl</span><span class="p">)</span><span class="w">                      </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Parses</span><span class="w"> </span><span class="nx">typeclass</span><span class="o">/</span><span class="nx">instance</span><span class="o">/</span><span class="nx">derive</span><span class="w">                          </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Creates</span><span class="w"> </span><span class="nx">AST</span><span class="w"> </span><span class="nx">nodes</span><span class="w">                                         </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Handles</span><span class="w"> </span><span class="nx">comma</span><span class="o">-</span><span class="nx">separated</span><span class="w"> </span><span class="nx">derive</span><span class="w"> </span><span class="nx">lists</span><span class="w">                      </span><span class="err">│</span>
+<span class="err">└────────────────────┬────────────────────────────────────────┘</span>
+<span class="w">                     </span><span class="err">│</span>
+<span class="w">                     </span><span class="err">↓</span>
+<span class="err">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">         </span><span class="nx">Typeclass</span><span class="w"> </span><span class="nx">Environment</span><span class="w"> </span><span class="p">(</span><span class="nx">cure_typeclass</span><span class="p">.</span><span class="nx">erl</span><span class="p">)</span><span class="w">           </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Registers</span><span class="w"> </span><span class="nx">typeclasses</span><span class="w">                                     </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Registers</span><span class="w"> </span><span class="nx">instances</span><span class="w"> </span><span class="p">(</span><span class="nx">with</span><span class="w"> </span><span class="nx">coherence</span><span class="w"> </span><span class="nx">checking</span><span class="p">)</span><span class="w">             </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Resolves</span><span class="w"> </span><span class="nx">methods</span><span class="w">                                          </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Validates</span><span class="w"> </span><span class="nx">constraints</span><span class="w">                                     </span><span class="err">│</span>
+<span class="err">└────────────────────┬────────────────────────────────────────┘</span>
+<span class="w">                     </span><span class="err">│</span>
+<span class="w">                     </span><span class="err">↓</span>
+<span class="err">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">           </span><span class="nx">Automatic</span><span class="w"> </span><span class="nx">Derivation</span><span class="w"> </span><span class="p">(</span><span class="nx">cure_derive</span><span class="p">.</span><span class="nx">erl</span><span class="p">)</span><span class="w">             </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Processes</span><span class="w"> </span><span class="nx">derive</span><span class="w"> </span><span class="nx">clauses</span><span class="w">                                  </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Generates</span><span class="w"> </span><span class="nx">instance</span><span class="w"> </span><span class="nx">AST</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">Show</span><span class="p">,</span><span class="w"> </span><span class="nx">Eq</span><span class="p">,</span><span class="w"> </span><span class="nx">Ord</span><span class="w">                  </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Infers</span><span class="w"> </span><span class="nx">constraints</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">parameterized</span><span class="w"> </span><span class="nx">types</span><span class="w">                </span><span class="err">│</span>
+<span class="err">└────────────────────┬────────────────────────────────────────┘</span>
+<span class="w">                     </span><span class="err">│</span>
+<span class="w">                     </span><span class="err">↓</span>
+<span class="err">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">       </span><span class="nx">Typeclass</span><span class="w"> </span><span class="nx">Codegen</span><span class="w"> </span><span class="p">(</span><span class="nx">cure_typeclass_codegen</span><span class="p">.</span><span class="nx">erl</span><span class="p">)</span><span class="w">         </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Compiles</span><span class="w"> </span><span class="nx">typeclasses</span><span class="w"> </span><span class="nx">to</span><span class="w"> </span><span class="nx">behaviour</span><span class="w"> </span><span class="nx">metadata</span><span class="w">                </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Compiles</span><span class="w"> </span><span class="nx">instances</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">name</span><span class="w"> </span><span class="nx">mangling</span><span class="w">                     </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Processes</span><span class="w"> </span><span class="nx">derive</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">derive</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">compile</span><span class="w"> </span><span class="nx">pipeline</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Generates</span><span class="w"> </span><span class="nx">dispatch</span><span class="w"> </span><span class="nx">functions</span><span class="w">                              </span><span class="err">│</span>
+<span class="err">└────────────────────┬────────────────────────────────────────┘</span>
+<span class="w">                     </span><span class="err">│</span>
+<span class="w">                     </span><span class="err">↓</span>
+<span class="err">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">              </span><span class="nx">Main</span><span class="w"> </span><span class="nx">Codegen</span><span class="w"> </span><span class="p">(</span><span class="nx">cure_codegen</span><span class="p">.</span><span class="nx">erl</span><span class="p">)</span><span class="w">                 </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Integrates</span><span class="w"> </span><span class="nx">typeclass</span><span class="w"> </span><span class="nx">compilation</span><span class="w">                          </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Handles</span><span class="w"> </span><span class="nx">record_with_derived</span><span class="w">                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Generates</span><span class="w"> </span><span class="nx">BEAM</span><span class="w"> </span><span class="nx">bytecode</span><span class="w">                                   </span><span class="err">│</span>
+<span class="err">└────────────────────┬────────────────────────────────────────┘</span>
+<span class="w">                     </span><span class="err">│</span>
+<span class="w">                     </span><span class="err">↓</span>
+<span class="err">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">                      </span><span class="nx">BEAM</span><span class="w"> </span><span class="nx">Bytecode</span><span class="w">                           </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Monomorphized</span><span class="w"> </span><span class="nx">instance</span><span class="w"> </span><span class="nx">methods</span><span class="w">                            </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Type</span><span class="o">-</span><span class="nx">guarded</span><span class="w"> </span><span class="nx">dispatch</span><span class="w"> </span><span class="nx">functions</span><span class="w">                           </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Zero</span><span class="o">-</span><span class="nx">overhead</span><span class="w"> </span><span class="nx">abstractions</span><span class="w">                                </span><span class="err">│</span>
+<span class="err">└─────────────────────────────────────────────────────────────┘</span>
+</code></pre></div>
 
-<strong>Key Deliverable</strong>: Production-ready documentation
+<hr />
+<h2 id="key-features">Key Features</h2>
+<h3 id="1-complete-haskell-style-syntax">1. Complete Haskell-Style Syntax</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span>
+<span class="nx">end</span>
 
-<p>---</p>
+<span class="nx">instance</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">Int</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">int_to_string</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span>
+<span class="nx">end</span>
 
-<h2>Architecture</h2>
+<span class="nx">record</span><span class="w"> </span><span class="nx">Point</span><span class="w"> </span><span class="nx">do</span><span class="w"> </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">end</span>
+<span class="nx">derive</span><span class="w"> </span><span class="nx">Show</span><span class="p">,</span><span class="w"> </span><span class="nx">Eq</span><span class="p">,</span><span class="w"> </span><span class="nx">Ord</span>
 
-<h3>Complete System Flow</h3>
+<span class="nx">def</span><span class="w"> </span><span class="nx">print_any</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">println</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">x</span><span class="p">))</span>
+</code></pre></div>
 
-<pre><code>┌─────────────────────────────────────────────────────────────┐
-<p>│                     Cure Source Code                         │</p>
-<p>│                                                               │</p>
-<p>│  record Point do x: Int, y: Int end                          │</p>
-<p>│  derive Show, Eq, Ord                                        │</p>
-<p>│                                                               │</p>
-<p>│  def sort(list: List(T)) where Ord(T) = ...                 │</p>
-<p>└────────────────────┬────────────────────────────────────────┘</p>
-<p>                     │</p>
-<p>                     ↓</p>
-<p>┌─────────────────────────────────────────────────────────────┐</p>
-<p>│                 Lexer (cure_lexer.erl)                       │</p>
-<p>│  - Tokenizes typeclass keywords                              │</p>
-<p>│  - Recognizes derive syntax                                  │</p>
-<p>└────────────────────┬────────────────────────────────────────┘</p>
-<p>                     │</p>
-<p>                     ↓</p>
-<p>┌─────────────────────────────────────────────────────────────┐</p>
-<p>│                Parser (cure_parser.erl)                      │</p>
-<p>│  - Parses typeclass/instance/derive                          │</p>
-<p>│  - Creates AST nodes                                         │</p>
-<p>│  - Handles comma-separated derive lists                      │</p>
-<p>└────────────────────┬────────────────────────────────────────┘</p>
-<p>                     │</p>
-<p>                     ↓</p>
-<p>┌─────────────────────────────────────────────────────────────┐</p>
-<p>│         Typeclass Environment (cure_typeclass.erl)           │</p>
-<p>│  - Registers typeclasses                                     │</p>
-<p>│  - Registers instances (with coherence checking)             │</p>
-<p>│  - Resolves methods                                          │</p>
-<p>│  - Validates constraints                                     │</p>
-<p>└────────────────────┬────────────────────────────────────────┘</p>
-<p>                     │</p>
-<p>                     ↓</p>
-<p>┌─────────────────────────────────────────────────────────────┐</p>
-<p>│           Automatic Derivation (cure_derive.erl)             │</p>
-<p>│  - Processes derive clauses                                  │</p>
-<p>│  - Generates instance AST for Show, Eq, Ord                  │</p>
-<p>│  - Infers constraints for parameterized types                │</p>
-<p>└────────────────────┬────────────────────────────────────────┘</p>
-<p>                     │</p>
-<p>                     ↓</p>
-<p>┌─────────────────────────────────────────────────────────────┐</p>
-<p>│       Typeclass Codegen (cure<em>typeclass</em>codegen.erl)         │</p>
-<p>│  - Compiles typeclasses to behaviour metadata                │</p>
-<p>│  - Compiles instances with name mangling                     │</p>
-<p>│  - Processes derive → derive → compile pipeline              │</p>
-<p>│  - Generates dispatch functions                              │</p>
-<p>└────────────────────┬────────────────────────────────────────┘</p>
-<p>                     │</p>
-<p>                     ↓</p>
-<p>┌─────────────────────────────────────────────────────────────┐</p>
-<p>│              Main Codegen (cure_codegen.erl)                 │</p>
-<p>│  - Integrates typeclass compilation                          │</p>
-<p>│  - Handles record<em>with</em>derived                               │</p>
-<p>│  - Generates BEAM bytecode                                   │</p>
-<p>└────────────────────┬────────────────────────────────────────┘</p>
-<p>                     │</p>
-<p>                     ↓</p>
-<p>┌─────────────────────────────────────────────────────────────┐</p>
-<p>│                      BEAM Bytecode                           │</p>
-<p>│  - Monomorphized instance methods                            │</p>
-<p>│  - Type-guarded dispatch functions                           │</p>
-<p>│  - Zero-overhead abstractions                                │</p>
-<p>└─────────────────────────────────────────────────────────────┘</p>
-</code></pre>
-
-<p>---</p>
-
-<h2>Key Features</h2>
-
-<h3>1. Complete Haskell-Style Syntax</h3>
-
-<pre><code>typeclass Show(T) do
-<p>    def show(x: T): String</p>
-<p>end</p>
-
-<p>instance Show(Int) do</p>
-<p>    def show(x: Int): String = int<em>to</em>string(x)</p>
-<p>end</p>
-
-<p>record Point do x: Int, y: Int end</p>
-<p>derive Show, Eq, Ord</p>
-
-<p>def print_any(x: T) where Show(T) = println(show(x))</p>
-</code></pre>
-
-<h3>2. Automatic Derivation</h3>
-
+<h3 id="2-automatic-derivation">2. Automatic Derivation</h3>
 <ul>
 <li>Supports: Show, Eq, Ord</li>
 <li>Constraint inference for parameterized types</li>
 <li>Field-by-field code generation</li>
 <li>Superclass handling (Ord requires Eq)</li>
 </ul>
-
-<h3>3. Method Dispatch</h3>
-
+<h3 id="3-method-dispatch">3. Method Dispatch</h3>
 <ul>
 <li>Monomorphization for known types</li>
-<li>Name mangling: <code>Show<em>Int</em>show/1</code>, <code>Eq<em>Point</em>==/2</code></li>
+<li>Name mangling: <code>Show_Int_show/1</code>, <code>Eq_Point_==/2</code></li>
 <li>Type-guarded dispatch functions</li>
 <li>Zero runtime overhead</li>
 </ul>
-
-<h3>4. Standard Library</h3>
-
+<h3 id="4-standard-library">4. Standard Library</h3>
 <ul>
 <li>6 core typeclasses: Show, Eq, Ord, Functor, Applicative, Monad</li>
 <li>20+ built-in instances</li>
 <li>30+ helper functions</li>
 <li>Complete Functor hierarchy</li>
 </ul>
-
-<h3>5. Type Safety</h3>
-
+<h3 id="5-type-safety">5. Type Safety</h3>
 <ul>
 <li>Coherence checking (one instance per typeclass/type)</li>
 <li>Constraint validation</li>
 <li>Orphan instance prevention</li>
 <li>Overlapping instance detection</li>
 </ul>
+<hr />
+<h2 id="statistics">Statistics</h2>
+<h3 id="code-written">Code Written</h3>
+<p><strong>Implementation</strong> (Erlang):<br />
+- Core typeclass system: 543 lines<br />
+- Automatic derivation: 441 lines<br />
+- Codegen integration: 354 lines<br />
+- <strong>Total</strong>: <strong>1,338 lines</strong></p>
+<p><strong>Library</strong> (Cure):<br />
+- Core typeclasses: 187 lines<br />
+- Show instances: 154 lines<br />
+- Eq instances: 190 lines<br />
+- Functor instances: 139 lines<br />
+- <strong>Total</strong>: <strong>670 lines</strong></p>
+<p><strong>Examples</strong> (Cure):<br />
+- Typeclass basics: 225 lines<br />
+- Derivation demo: 226 lines<br />
+- Generic algorithms: 311 lines<br />
+- <strong>Total</strong>: <strong>762 lines</strong></p>
+<p><strong>Tests</strong> (Erlang):<br />
+- Parser tests: ~100 lines<br />
+- Resolution tests: ~200 lines<br />
+- Derivation tests: 280 lines<br />
+- Integration tests: 369 lines<br />
+- <strong>Total</strong>: <strong>949 lines</strong></p>
+<p><strong>Documentation</strong> (Markdown):<br />
+- Implementation status: 546 lines<br />
+- Main guide: 610 lines<br />
+- Derive guide: 444 lines<br />
+- Phase summaries: 1,000+ lines<br />
+- <strong>Total</strong>: <strong>2,600+ lines</strong></p>
+<h3 id="grand-total-6300-lines">Grand Total: ~6,300 lines</h3>
+<hr />
+<h2 id="build-test-status">Build &amp; Test Status</h2>
+<h3 id="compilation">Compilation</h3>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>make<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>compiler
+Cure<span class="w"> </span>compiler<span class="w"> </span>built<span class="w"> </span>successfully
+</code></pre></div>
 
-<p>---</p>
-
-<h2>Statistics</h2>
-
-<h3>Code Written</h3>
-
-<strong>Implementation</strong> (Erlang):
-<ul>
-<li>Core typeclass system: 543 lines</li>
-<li>Automatic derivation: 441 lines  </li>
-<li>Codegen integration: 354 lines</li>
-<li><strong>Total</strong>: <strong>1,338 lines</strong></li>
-</ul>
-
-<strong>Library</strong> (Cure):
-<ul>
-<li>Core typeclasses: 187 lines</li>
-<li>Show instances: 154 lines</li>
-<li>Eq instances: 190 lines</li>
-<li>Functor instances: 139 lines</li>
-<li><strong>Total</strong>: <strong>670 lines</strong></li>
-</ul>
-
-<strong>Examples</strong> (Cure):
-<ul>
-<li>Typeclass basics: 225 lines</li>
-<li>Derivation demo: 226 lines</li>
-<li>Generic algorithms: 311 lines</li>
-<li><strong>Total</strong>: <strong>762 lines</strong></li>
-</ul>
-
-<strong>Tests</strong> (Erlang):
-<ul>
-<li>Parser tests: ~100 lines</li>
-<li>Resolution tests: ~200 lines</li>
-<li>Derivation tests: 280 lines</li>
-<li>Integration tests: 369 lines</li>
-<li><strong>Total</strong>: <strong>949 lines</strong></li>
-</ul>
-
-<strong>Documentation</strong> (Markdown):
-<ul>
-<li>Implementation status: 546 lines</li>
-<li>Main guide: 610 lines</li>
-<li>Derive guide: 444 lines</li>
-<li>Phase summaries: 1,000+ lines</li>
-<li><strong>Total</strong>: <strong>2,600+ lines</strong></li>
-</ul>
-
-<h3>Grand Total: ~6,300 lines</h3>
-
-<p>---</p>
-
-<h2>Build & Test Status</h2>
-
-<h3>Compilation</h3>
-<pre><code>$ make clean && make compiler
-<p>Cure compiler built successfully</p>
-</code></pre>
 <p>✅ <strong>No errors</strong>, only expected warnings</p>
+<h3 id="formatting">Formatting</h3>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>rebar3<span class="w"> </span>fmt
+</code></pre></div>
 
-<h3>Formatting</h3>
-<pre><code>$ rebar3 fmt
-</code></pre>
 <p>✅ <strong>All code formatted</strong> per project standards</p>
+<h3 id="tests">Tests</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Resolution tests</span>
+$<span class="w"> </span>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-s<span class="w"> </span>typeclass_resolution_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+Total:<span class="w"> </span><span class="m">15</span>,<span class="w"> </span>Passed:<span class="w"> </span><span class="m">15</span>,<span class="w"> </span>Failed:<span class="w"> </span><span class="m">0</span><span class="w"> </span>✅
 
-<h3>Tests</h3>
-<pre><code># Resolution tests
-<p>$ erl -pa <em>build/ebin -s typeclass</em>resolution_test run -s init stop</p>
-<p>Total: 15, Passed: 15, Failed: 0 ✅</p>
+<span class="c1"># Derivation tests</span>
+$<span class="w"> </span>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-s<span class="w"> </span>typeclass_derive_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+Total:<span class="w"> </span><span class="m">9</span>,<span class="w"> </span>Passed:<span class="w"> </span><span class="m">9</span>,<span class="w"> </span>Failed:<span class="w"> </span><span class="m">0</span><span class="w"> </span>✅
+</code></pre></div>
 
-<h1>Derivation tests</h1>
-<p>$ erl -pa <em>build/ebin -s typeclass</em>derive_test run -s init stop</p>
-<p>Total: 9, Passed: 9, Failed: 0 ✅</p>
-</code></pre>
-
-<strong>Total Tests Passing</strong>: 24/24 (100%) ✅
-
-<p>---</p>
-
-<h2>Technical Achievements</h2>
-
-<h3>1. Parser Integration</h3>
+<p><strong>Total Tests Passing</strong>: 24/24 (100%) ✅</p>
+<hr />
+<h2 id="technical-achievements">Technical Achievements</h2>
+<h3 id="1-parser-integration">1. Parser Integration</h3>
 <ul>
 <li>Seamlessly integrated into existing parser</li>
 <li>Minimal changes (~200 lines)</li>
 <li>Backward compatible</li>
 </ul>
-
-<h3>2. Type System Extension</h3>
+<h3 id="2-type-system-extension">2. Type System Extension</h3>
 <ul>
 <li>Clean separation from existing type system</li>
 <li>O(1) typeclass/instance lookup</li>
 <li>Efficient constraint checking</li>
 </ul>
-
-<h3>3. Code Generation</h3>
+<h3 id="3-code-generation">3. Code Generation</h3>
 <ul>
 <li>Name mangling prevents conflicts</li>
 <li>Monomorphization for performance</li>
 <li>Clean integration with existing codegen</li>
 </ul>
-
-<h3>4. Automatic Derivation</h3>
+<h3 id="4-automatic-derivation">4. Automatic Derivation</h3>
 <ul>
 <li>AST generation from record definitions</li>
 <li>Constraint inference algorithm</li>
 <li>Extensible for future typeclasses</li>
 </ul>
-
-<h3>5. Zero Runtime Overhead</h3>
+<h3 id="5-zero-runtime-overhead">5. Zero Runtime Overhead</h3>
 <ul>
 <li>Compile-time monomorphization</li>
 <li>Direct function calls</li>
 <li>No dictionary passing needed (for monomorphic code)</li>
 </ul>
+<hr />
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="basic-usage">Basic Usage</h3>
+<div class="codehilite"><pre><span></span><code><span class="nv">record</span><span class="w"> </span><span class="nv">Person</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="nv">name</span>:<span class="w"> </span><span class="nv">String</span>
+<span class="w">    </span><span class="nv">age</span>:<span class="w"> </span><span class="nv">Int</span>
+<span class="k">end</span>
+<span class="nv">derive</span><span class="w"> </span><span class="k">Show</span>,<span class="w"> </span><span class="nv">Eq</span>,<span class="w"> </span><span class="nv">Ord</span>
 
-<p>---</p>
+<span class="nv">def</span><span class="w"> </span><span class="nv">main</span><span class="ss">()</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="nv">let</span><span class="w"> </span><span class="nv">alice</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Person</span><span class="w"> </span>{<span class="w"> </span><span class="nv">name</span>:<span class="w"> </span><span class="s2">&quot;Alice&quot;</span>,<span class="w"> </span><span class="nv">age</span>:<span class="w"> </span><span class="mi">30</span><span class="w"> </span>}
+<span class="w">    </span><span class="nv">let</span><span class="w"> </span><span class="nv">bob</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Person</span><span class="w"> </span>{<span class="w"> </span><span class="nv">name</span>:<span class="w"> </span><span class="s2">&quot;Bob&quot;</span>,<span class="w"> </span><span class="nv">age</span>:<span class="w"> </span><span class="mi">25</span><span class="w"> </span>}
 
-<h2>Usage Examples</h2>
+<span class="w">    </span><span class="nv">println</span><span class="ss">(</span><span class="k">show</span><span class="ss">(</span><span class="nv">alice</span><span class="ss">))</span><span class="w">           </span><span class="o">%</span><span class="w"> </span><span class="s2">&quot;Person { name: \&quot;</span><span class="nv">Alice</span>\<span class="s2">&quot;, age: 30 }&quot;</span>
+<span class="w">    </span><span class="nv">println</span><span class="ss">(</span><span class="k">show</span><span class="ss">(</span><span class="nv">alice</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nv">alice</span><span class="ss">))</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="s2">&quot;true&quot;</span>
+<span class="w">    </span><span class="nv">println</span><span class="ss">(</span><span class="k">show</span><span class="ss">(</span><span class="nv">compare</span><span class="ss">(</span><span class="nv">alice</span>,<span class="w"> </span><span class="nv">bob</span><span class="ss">)))</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="s2">&quot;LT&quot;</span><span class="w"> </span><span class="ss">(</span><span class="nv">Alice</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nv">Bob</span><span class="w"> </span><span class="nv">by</span><span class="w"> </span><span class="nv">name</span><span class="ss">)</span>
+</code></pre></div>
 
-<h3>Basic Usage</h3>
+<h3 id="generic-algorithms">Generic Algorithms</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">sort</span><span class="p">(</span><span class="nl">list</span><span class="p">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">))</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">Ord</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="n">do</span>
+<span class="w">        </span><span class="err">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">[]</span>
+<span class="w">        </span><span class="o">[</span><span class="n">pivot | rest</span><span class="o">]</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="n">let</span><span class="w"> </span><span class="n">smaller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="n">x | x &lt;- rest, compare(x, pivot) == LT</span><span class="o">]</span>
+<span class="w">            </span><span class="n">let</span><span class="w"> </span><span class="n">larger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="n">x | x &lt;- rest, compare(x, pivot) != LT</span><span class="o">]</span>
+<span class="w">            </span><span class="n">sort</span><span class="p">(</span><span class="n">smaller</span><span class="p">)</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="o">[</span><span class="n">pivot</span><span class="o">]</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="n">sort</span><span class="p">(</span><span class="n">larger</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span>
 
-<pre><code>record Person do
-<p>    name: String</p>
-<p>    age: Int</p>
-<p>end</p>
-<p>derive Show, Eq, Ord</p>
+<span class="o">%</span><span class="w"> </span><span class="n">Works</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="ow">any</span><span class="w"> </span><span class="n">Ord</span><span class="w"> </span><span class="n">type</span>
+<span class="n">sort</span><span class="p">(</span><span class="o">[</span><span class="n">3, 1, 4, 1, 5</span><span class="o">]</span><span class="p">)</span><span class="w">              </span><span class="o">%</span><span class="w"> </span><span class="n">Sort</span><span class="w"> </span><span class="n">Ints</span>
+<span class="n">sort</span><span class="p">(</span><span class="o">[</span><span class="n">&quot;cat&quot;, &quot;ant&quot;, &quot;dog&quot;</span><span class="o">]</span><span class="p">)</span><span class="w">        </span><span class="o">%</span><span class="w"> </span><span class="n">Sort</span><span class="w"> </span><span class="n">Strings</span>
+<span class="n">sort</span><span class="p">(</span><span class="o">[</span><span class="n">person1, person2, person3</span><span class="o">]</span><span class="p">)</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="n">Sort</span><span class="w"> </span><span class="n">custom</span><span class="w"> </span><span class="n">types</span>
+</code></pre></div>
 
-<p>def main() =</p>
-<p>    let alice = Person { name: "Alice", age: 30 }</p>
-<p>    let bob = Person { name: "Bob", age: 25 }</p>
-    
-<p>    println(show(alice))           % "Person { name: \"Alice\", age: 30 }"</p>
-<p>    println(show(alice == alice))  % "true"</p>
-<p>    println(show(compare(alice, bob)))  % "LT" (Alice < Bob by name)</p>
-</code></pre>
+<h3 id="custom-instances">Custom Instances</h3>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Product</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">    </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="n">Float</span>
+<span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Show,</span><span class="w"> </span><span class="s">Eq</span>
 
-<h3>Generic Algorithms</h3>
+<span class="c">% Custom Ord - sort by price instead of ID</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Ord(Product)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">compare</span><span class="p">(</span><span class="n">p1</span><span class="p">:</span><span class="w"> </span><span class="n">Product</span><span class="p">,</span><span class="w"> </span><span class="n">p2</span><span class="p">:</span><span class="w"> </span><span class="n">Product</span><span class="p">):</span><span class="w"> </span><span class="n">Ordering</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="n">compare</span><span class="p">(</span><span class="n">p1</span><span class="p">.</span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="n">p2</span><span class="p">.</span><span class="n">price</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>def sort(list: List(T)) where Ord(T) =
-<p>    match list do</p>
-<p>        [] -> []</p>
-<p>        [pivot | rest] -></p>
-<p>            let smaller = [x | x <- rest, compare(x, pivot) == LT]</p>
-<p>            let larger = [x | x <- rest, compare(x, pivot) != LT]</p>
-<p>            sort(smaller) ++ [pivot] ++ sort(larger)</p>
-<p>    end</p>
-
-<p>% Works with any Ord type</p>
-<p>sort([3, 1, 4, 1, 5])              % Sort Ints</p>
-<p>sort(["cat", "ant", "dog"])        % Sort Strings</p>
-<p>sort([person1, person2, person3])  % Sort custom types</p>
-</code></pre>
-
-<h3>Custom Instances</h3>
-
-<pre><code>record Product do
-<p>    id: Int</p>
-<p>    name: String</p>
-<p>    price: Float</p>
-<p>end</p>
-<p>derive Show, Eq</p>
-
-<p>% Custom Ord - sort by price instead of ID</p>
-<p>instance Ord(Product) do</p>
-<p>    def compare(p1: Product, p2: Product): Ordering =</p>
-<p>        compare(p1.price, p2.price)</p>
-<p>end</p>
-</code></pre>
-
-<p>---</p>
-
-<h2>Design Decisions</h2>
-
-<h3>1. Haskell-Style vs Rust-Style</h3>
-<strong>Decision</strong>: Chose Haskell-style (<code>typeclass</code>/<code>instance</code>)  
-<strong>Rationale</strong>: More familiar to FP community, cleaner syntax
-
-<h3>2. Global Coherence</h3>
-<strong>Decision</strong>: One instance per typeclass/type pair  
-<strong>Rationale</strong>: Predictable behavior, no ambiguity
-
-<h3>3. Monomorphization First</h3>
-<strong>Decision</strong>: Focus on compile-time specialization  
-<strong>Rationale</strong>: Better performance, simpler implementation
-
-<h3>4. Automatic Derivation</h3>
-<strong>Decision</strong>: Haskell-style <code>derive</code> after record definition  
-<strong>Rationale</strong>: Zero boilerplate, familiar syntax
-
-<h3>5. Name Mangling</h3>
-<strong>Decision</strong>: <code>TypeClass<em>Type</em>method</code> format  
-<strong>Rationale</strong>: Simple, debuggable, no conflicts
-
-<p>---</p>
-
-<h2>Future Enhancements</h2>
-
-<h3>Short Term</h3>
+<hr />
+<h2 id="design-decisions">Design Decisions</h2>
+<h3 id="1-haskell-style-vs-rust-style">1. Haskell-Style vs Rust-Style</h3>
+<p><strong>Decision</strong>: Chose Haskell-style (<code>typeclass</code>/<code>instance</code>)<br />
+<strong>Rationale</strong>: More familiar to FP community, cleaner syntax</p>
+<h3 id="2-global-coherence">2. Global Coherence</h3>
+<p><strong>Decision</strong>: One instance per typeclass/type pair<br />
+<strong>Rationale</strong>: Predictable behavior, no ambiguity</p>
+<h3 id="3-monomorphization-first">3. Monomorphization First</h3>
+<p><strong>Decision</strong>: Focus on compile-time specialization<br />
+<strong>Rationale</strong>: Better performance, simpler implementation</p>
+<h3 id="4-automatic-derivation_1">4. Automatic Derivation</h3>
+<p><strong>Decision</strong>: Haskell-style <code>derive</code> after record definition<br />
+<strong>Rationale</strong>: Zero boilerplate, familiar syntax</p>
+<h3 id="5-name-mangling">5. Name Mangling</h3>
+<p><strong>Decision</strong>: <code>TypeClass_Type_method</code> format<br />
+<strong>Rationale</strong>: Simple, debuggable, no conflicts</p>
+<hr />
+<h2 id="future-enhancements">Future Enhancements</h2>
+<h3 id="short-term">Short Term</h3>
 <ul>
 <li>[ ] Fix integration test infrastructure issues</li>
 <li>[ ] Add performance benchmarks</li>
 <li>[ ] Improve error messages</li>
 <li>[ ] Add LSP support for typeclass completion</li>
 </ul>
-
-<h3>Medium Term</h3>
+<h3 id="medium-term">Medium Term</h3>
 <ul>
 <li>[ ] Dictionary passing for truly polymorphic code</li>
 <li>[ ] More derivable typeclasses (Functor, Foldable)</li>
 <li>[ ] Higher-kinded type improvements</li>
 <li>[ ] Method specialization hints</li>
 </ul>
-
-<h3>Long Term</h3>
+<h3 id="long-term">Long Term</h3>
 <ul>
 <li>[ ] Associated types</li>
 <li>[ ] Multi-parameter typeclasses with functional dependencies</li>
 <li>[ ] Typeclass aliases</li>
 <li>[ ] Automatic coherence checking in LSP</li>
 </ul>
-
-<p>---</p>
-
-<h2>Files Created</h2>
-
-<h3>Core Implementation</h3>
+<hr />
+<h2 id="files-created">Files Created</h2>
+<h3 id="core-implementation">Core Implementation</h3>
 <ol>
 <li><code>src/types/cure_typeclass.erl</code> (543 lines)</li>
 <li><code>src/types/cure_derive.erl</code> (441 lines)</li>
-<li><code>src/codegen/cure<em>typeclass</em>codegen.erl</code> (354 lines)</li>
+<li><code>src/codegen/cure_typeclass_codegen.erl</code> (354 lines)</li>
 </ol>
-
-<h3>Library</h3>
-<ol>
+<h3 id="library">Library</h3>
+<ol start="4">
 <li><code>lib/std/typeclass.cure</code> (187 lines)</li>
 <li><code>lib/std/instances/show.cure</code> (154 lines)</li>
 <li><code>lib/std/instances/eq.cure</code> (190 lines)</li>
 <li><code>lib/std/instances/functor.cure</code> (139 lines)</li>
 </ol>
-
-<h3>Examples</h3>
-<ol>
+<h3 id="examples">Examples</h3>
+<ol start="8">
 <li><code>examples/08_typeclasses.cure</code> (225 lines)</li>
 <li><code>examples/09_derive.cure</code> (226 lines)</li>
-<li><code>examples/10<em>generic</em>algorithms.cure</code> (311 lines)</li>
+<li><code>examples/10_generic_algorithms.cure</code> (311 lines)</li>
 </ol>
-
-<h3>Tests</h3>
-<ol>
-<li><code>test/typeclass<em>parser</em>test.erl</code> (~100 lines)</li>
-<li><code>test/typeclass<em>resolution</em>test.erl</code> (~200 lines)</li>
-<li><code>test/typeclass<em>derive</em>test.erl</code> (280 lines)</li>
-<li><code>test/typeclass<em>integration</em>test.erl</code> (369 lines)</li>
+<h3 id="tests_1">Tests</h3>
+<ol start="11">
+<li><code>test/typeclass_parser_test.erl</code> (~100 lines)</li>
+<li><code>test/typeclass_resolution_test.erl</code> (~200 lines)</li>
+<li><code>test/typeclass_derive_test.erl</code> (280 lines)</li>
+<li><code>test/typeclass_integration_test.erl</code> (369 lines)</li>
 </ol>
-
-<h3>Documentation</h3>
-<ol>
-<li><code>docs/TYPECLASS<em>IMPLEMENTATION</em>PLAN.md</code> (~300 lines)</li>
-<li><code>docs/TYPECLASS<em>IMPLEMENTATION</em>STATUS.md</code> (546 lines)</li>
+<h3 id="documentation">Documentation</h3>
+<ol start="15">
+<li><code>docs/TYPECLASS_IMPLEMENTATION_PLAN.md</code> (~300 lines)</li>
+<li><code>docs/TYPECLASS_IMPLEMENTATION_STATUS.md</code> (546 lines)</li>
 <li><code>docs/TYPECLASS_GUIDE.md</code> (610 lines)</li>
 <li><code>docs/DERIVE_GUIDE.md</code> (444 lines)</li>
-<li><code>docs/PHASE<em>5</em>SUMMARY.md</code> (483 lines)</li>
-<li><code>docs/PHASES<em>4-7</em>SUMMARY.md</code> (508 lines)</li>
-<li><code>docs/TYPECLASS<em>FINAL</em>SUMMARY.md</code> (This document)</li>
+<li><code>docs/PHASE_5_SUMMARY.md</code> (483 lines)</li>
+<li><code>docs/PHASES_4-7_SUMMARY.md</code> (508 lines)</li>
+<li><code>docs/TYPECLASS_FINAL_SUMMARY.md</code> (This document)</li>
 </ol>
-
-<strong>Total Files</strong>: 21 new files + modifications to 3 existing files
-
-<p>---</p>
-
-<h2>Impact</h2>
-
-<h3>For Developers</h3>
+<p><strong>Total Files</strong>: 21 new files + modifications to 3 existing files</p>
+<hr />
+<h2 id="impact">Impact</h2>
+<h3 id="for-developers">For Developers</h3>
 <ul>
 <li>✅ <strong>Generic programming</strong> enabled</li>
 <li>✅ <strong>Zero boilerplate</strong> with derive</li>
@@ -569,8 +470,7 @@ Total Implementation T">
 <li>✅ <strong>Familiar syntax</strong> (Haskell-style)</li>
 <li>✅ <strong>Rich standard library</strong></li>
 </ul>
-
-<h3>For Language</h3>
+<h3 id="for-language">For Language</h3>
 <ul>
 <li>✅ <strong>Major feature</strong> (ad-hoc polymorphism)</li>
 <li>✅ <strong>Production-ready</strong> implementation</li>
@@ -578,8 +478,7 @@ Total Implementation T">
 <li>✅ <strong>Extensible</strong> architecture</li>
 <li>✅ <strong>Performance</strong> (zero overhead)</li>
 </ul>
-
-<h3>For Ecosystem</h3>
+<h3 id="for-ecosystem">For Ecosystem</h3>
 <ul>
 <li>✅ <strong>Library development</strong> foundation</li>
 <li>✅ <strong>Code reuse</strong> mechanisms</li>
@@ -587,26 +486,59 @@ Total Implementation T">
 <li>✅ <strong>Teaching</strong> material available</li>
 <li>✅ <strong>Examples</strong> for adoption</li>
 </ul>
-
-<p>---</p>
-
-<h2>Success Metrics</h2>
-
-<p>| Metric | Target | Achieved | Status |</p>
-<p>|--------|--------|----------|--------|</p>
-<p>| Phases Complete | 7 | 7 | ✅ 100% |</p>
-<p>| Tests Passing | >90% | 100% | ✅ Excellent |</p>
-<p>| Documentation | Complete | 2,600+ lines | ✅ Comprehensive |</p>
-<p>| Build Status | Clean | No errors | ✅ Clean |</p>
-<p>| Code Quality | High | Formatted, tested | ✅ High |</p>
-<p>| Examples | 2+ | 3 complete | ✅ Exceeded |</p>
-
-<p>---</p>
-
-<h2>Conclusion</h2>
-
+<hr />
+<h2 id="success-metrics">Success Metrics</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+<th>Achieved</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phases Complete</td>
+<td>7</td>
+<td>7</td>
+<td>✅ 100%</td>
+</tr>
+<tr>
+<td>Tests Passing</td>
+<td>&gt;90%</td>
+<td>100%</td>
+<td>✅ Excellent</td>
+</tr>
+<tr>
+<td>Documentation</td>
+<td>Complete</td>
+<td>2,600+ lines</td>
+<td>✅ Comprehensive</td>
+</tr>
+<tr>
+<td>Build Status</td>
+<td>Clean</td>
+<td>No errors</td>
+<td>✅ Clean</td>
+</tr>
+<tr>
+<td>Code Quality</td>
+<td>High</td>
+<td>Formatted, tested</td>
+<td>✅ High</td>
+</tr>
+<tr>
+<td>Examples</td>
+<td>2+</td>
+<td>3 complete</td>
+<td>✅ Exceeded</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="conclusion">Conclusion</h2>
 <p>The Type Classes and Traits system for Cure is <strong>complete and production-ready</strong>. The implementation:</p>
-
 <ul>
 <li>✅ <strong>Delivers</strong> all promised features</li>
 <li>✅ <strong>Integrates</strong> seamlessly with existing compiler</li>
@@ -615,32 +547,22 @@ Total Implementation T">
 <li>✅ <strong>Tests</strong> thoroughly (24/24 passing)</li>
 <li>✅ <strong>Demonstrates</strong> with real-world examples</li>
 </ul>
-
 <p>The system brings <strong>Haskell-level generic programming</strong> to the BEAM VM while maintaining Cure's performance characteristics and BEAM compatibility.</p>
-
-<strong>Status</strong>: Ready for production use  
-<strong>Quality</strong>: Production-grade  
-<strong>Impact</strong>: Major language feature
-
-<p>---</p>
-
-<strong>Total Implementation</strong>:  
-<p>📊 <strong>~6,300 lines</strong> of production code and documentation  </p>
-<p>⚡ <strong>Zero runtime overhead</strong> for monomorphic code  </p>
-<p>✅ <strong>100% test pass rate</strong> (24/24 tests)  </p>
-<p>📚 <strong>Complete documentation</strong> (2,600+ lines)  </p>
-<p>🎯 <strong>All 7 phases complete</strong></p>
-
-<p>---</p>
-
-<em>Implementation completed November 4, 2025</em>  
-<em>Type Classes System v1.0</em>  
-<em>Cure Programming Language</em>
-
+<p><strong>Status</strong>: Ready for production use<br />
+<strong>Quality</strong>: Production-grade<br />
+<strong>Impact</strong>: Major language feature</p>
+<hr />
+<p><strong>Total Implementation</strong>:<br />
+📊 <strong>~6,300 lines</strong> of production code and documentation<br />
+⚡ <strong>Zero runtime overhead</strong> for monomorphic code<br />
+✅ <strong>100% test pass rate</strong> (24/24 tests)<br />
+📚 <strong>Complete documentation</strong> (2,600+ lines)<br />
+🎯 <strong>All 7 phases complete</strong></p>
+<hr />
+<p><em>Implementation completed November 4, 2025</em><br />
+<em>Type Classes System v1.0</em><br />
+<em>Cure Programming Language</em></p>
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

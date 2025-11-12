@@ -5,12 +5,17 @@ module VectorBasics do
   export [main/0]
   
   # Import standard library functions
-  import Std.Vector [length/1, map/2, filter/2, zip_with/3, fold/3]
+  import Std.Vector [length/1, map/2, filter/2, fold/3]
+  import Std.List [zip_with/3]
   import Std.Io [println/1]
-  
+
+  def mult_by_2(x: Int) -> Int = x * 2
+  def zip(v1: List(Int), v2: List(Float), f: Int => Float => Float): List(Float) =
+    zip_with(v1, v2, f)
+
   # Main demonstration function
-  def main(): Nat =
-    println("=== List Operations Demo ===")
+  def main(): Int =
+    println("=== Vector Operations Demo ===")
     println("")
     
     # Create a simple list
@@ -20,26 +25,26 @@ module VectorBasics do
     println("")
     
     # Map: double each element
-    let doubled = map(numbers, fn(x) -> x * 2 end)
+    let doubled = map(numbers, mult_by_2)
     println("Doubled (map): [2, 4, 6, 8, 10]")
     
     # Filter: keep only even numbers
-    let evens = filter(numbers, fn(x) -> 
-      match x do
-        _ -> true  # Simplified - checking divisibility needs modulo
-      end
-    end)
-    println("Evens (filter): depends on implementation")
+    # let evens = filter(numbers, fn(x) -> 
+    #   match x do
+    #     _ -> true  # Simplified - checking divisibility needs modulo
+    #   end
+    # end)
+    # println("Evens (filter): depends on implementation")
 
-    let zipped = zip_with(numbers, numbers2, fn(x) -> fn(y) -> x + y end end)
-    println("")
+    # let zipped = zip_with(numbers, numbers2, fn(x) -> fn(y) -> x + y end end)
+    # println("")
     
     # Fold: sum all elements
-    let sum = fold(zipped, 0, fn(x) -> fn(acc) -> acc + x end end)
+    let sum = fold(doubled, 0, fn(x) -> fn(acc) -> acc + x end end)
     println("Sum (fold): " <> "15" <> " should be 15")
     println("")
     
     println("=== Demo Complete ===")
-    length(zipped)
+    sum
 
 end

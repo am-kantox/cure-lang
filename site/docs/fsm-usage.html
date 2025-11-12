@@ -35,16 +35,11 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Cure FSM Usage Guide</h1>
-
-<strong>Last Updated</strong>: October 31, 2025
-
+        <h1 id="cure-fsm-usage-guide">Cure FSM Usage Guide</h1>
+<p><strong>Last Updated</strong>: October 31, 2025</p>
 <p>This document provides comprehensive guidance on using Finite State Machines (FSMs) in the Cure programming language.</p>
-
-<h2>Introduction</h2>
-
+<h2 id="introduction">Introduction</h2>
 <p>Cure provides first-class support for Finite State Machines (FSMs) as a core language feature. FSMs in Cure compile directly to BEAM <code>gen_statem</code> processes and provide:</p>
-
 <ul>
 <li><strong>Declarative Syntax</strong>: Simple arrow-based transition definitions</li>
 <li><strong>Type-safe</strong>: FSM definitions are checked at compile time  </li>
@@ -52,305 +47,252 @@
 <li><strong>Process-based</strong>: Each FSM instance runs as a separate BEAM process</li>
 <li><strong>Named References</strong>: FSMs can be registered with atoms for easy access</li>
 </ul>
-
-<h2>Quick Start</h2>
-
+<h2 id="quick-start">Quick Start</h2>
 <p>Here's a minimal FSM example:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span> <span class="n">SimpleFSM</span> <span class="n">do</span>
+  <span class="n">export</span> <span class="p">[</span><span class="n">main</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
 
-<pre><code>module SimpleFSM do
-<p>  export [main/0]</p>
-  
-<p>  import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]</p>
-<p>  import Std.Pair [pair/2]</p>
-  
-<p>  # Define payload record</p>
-<p>  record SimplePayload do</p>
-<p>    counter: Int</p>
-<p>  end</p>
-  
-<p>  # Define FSM with transitions</p>
-<p>  fsm SimplePayload{counter: 0} do</p>
-<p>    Idle --> |start| Running</p>
-<p>    Running --> |stop| Idle</p>
-<p>  end</p>
-  
-<p>  def main(): Int =</p>
-<p>    # Spawn FSM</p>
-<p>    let initial_data = SimplePayload{counter: 0}</p>
-<p>    let fsm<em>pid = fsm</em>spawn(:SimplePayload, initial_data)</p>
-    
-<p>    # Name it</p>
-<p>    let <em> = fsm</em>advertise(fsm<em>pid, :simple</em>fsm)</p>
-    
-<p>    # Send event</p>
-<p>    let event = pair(:start, [])</p>
-<p>    let <em> = fsm</em>cast(:simple_fsm, event)</p>
-    
-<p>    # Query state</p>
-<p>    let current<em>state = fsm</em>state(:simple_fsm)  # Returns :Running</p>
-    
-<p>    0</p>
-<p>end</p>
-</code></pre>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Fsm</span> <span class="p">[</span><span class="n">fsm_spawn</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_cast</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_advertise</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_state</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Pair</span> <span class="p">[</span><span class="n">pair</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
 
-<h2>Defining FSMs in Cure</h2>
+  <span class="c1"># Define payload record</span>
+  <span class="n">record</span> <span class="n">SimplePayload</span> <span class="n">do</span>
+    <span class="n">counter</span><span class="p">:</span> <span class="n">Int</span>
+  <span class="n">end</span>
 
-<h3>Basic Structure</h3>
+  <span class="c1"># Define FSM with transitions</span>
+  <span class="n">fsm</span> <span class="n">SimplePayload</span><span class="p">{</span><span class="n">counter</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span> <span class="n">do</span>
+    <span class="n">Idle</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">start</span><span class="o">|</span> <span class="n">Running</span>
+    <span class="n">Running</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">stop</span><span class="o">|</span> <span class="n">Idle</span>
+  <span class="n">end</span>
 
-<p>Every FSM definition requires:</p>
-<ol>
-<li>A payload record</li>
-<li>An <code>fsm</code> block with initial payload values</li>
-<li>Transition definitions using arrow syntax</li>
-</ol>
+  <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span> <span class="n">Int</span> <span class="o">=</span>
+    <span class="c1"># Spawn FSM</span>
+    <span class="n">let</span> <span class="n">initial_data</span> <span class="o">=</span> <span class="n">SimplePayload</span><span class="p">{</span><span class="n">counter</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+    <span class="n">let</span> <span class="n">fsm_pid</span> <span class="o">=</span> <span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">SimplePayload</span><span class="p">,</span> <span class="n">initial_data</span><span class="p">)</span>
 
-<pre><code># 1. Define payload record
-<p>record MyPayload do</p>
-<p>  field1: Type1</p>
-<p>  field2: Type2</p>
-<p>end</p>
+    <span class="c1"># Name it</span>
+    <span class="n">let</span> <span class="n">_</span> <span class="o">=</span> <span class="n">fsm_advertise</span><span class="p">(</span><span class="n">fsm_pid</span><span class="p">,</span> <span class="p">:</span><span class="n">simple_fsm</span><span class="p">)</span>
 
-<h1>2. Define FSM</h1>
-<p>fsm MyPayload{field1: value1, field2: value2} do</p>
-<p>  StateA --> |event1| StateB</p>
-<p>  StateB --> |event2| StateC</p>
-<p>  StateC --> |event3| StateA</p>
-<p>end</p>
-</code></pre>
+    <span class="c1"># Send event</span>
+    <span class="n">let</span> <span class="n">event</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(:</span><span class="n">start</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="n">let</span> <span class="n">_</span> <span class="o">=</span> <span class="n">fsm_cast</span><span class="p">(:</span><span class="n">simple_fsm</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
 
-<h3>Transition Syntax</h3>
+    <span class="c1"># Query state</span>
+    <span class="n">let</span> <span class="n">current_state</span> <span class="o">=</span> <span class="n">fsm_state</span><span class="p">(:</span><span class="n">simple_fsm</span><span class="p">)</span>  <span class="c1"># Returns :Running</span>
 
-<p>Transitions use the format: <code>FromState --> |event| ToState</code></p>
+    <span class="mi">0</span>
+<span class="n">end</span>
+</code></pre></div>
 
+<h2 id="defining-fsms-in-cure">Defining FSMs in Cure</h2>
+<h3 id="basic-structure">Basic Structure</h3>
+<p>Every FSM definition requires:<br />
+1. A payload record<br />
+2. An <code>fsm</code> block with initial payload values<br />
+3. Transition definitions using arrow syntax</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. Define payload record</span>
+<span class="n">record</span><span class="w"> </span><span class="n">MyPayload</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">field1</span><span class="p">:</span><span class="w"> </span><span class="n">Type1</span>
+<span class="w">  </span><span class="n">field2</span><span class="p">:</span><span class="w"> </span><span class="n">Type2</span>
+<span class="n">end</span>
+
+<span class="c1"># 2. Define FSM</span>
+<span class="n">fsm</span><span class="w"> </span><span class="n">MyPayload</span><span class="p">{</span><span class="n">field1</span><span class="p">:</span><span class="w"> </span><span class="n">value1</span><span class="p">,</span><span class="w"> </span><span class="n">field2</span><span class="p">:</span><span class="w"> </span><span class="n">value2</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">StateA</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">event1</span><span class="o">|</span><span class="w"> </span><span class="n">StateB</span>
+<span class="w">  </span><span class="n">StateB</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">event2</span><span class="o">|</span><span class="w"> </span><span class="n">StateC</span>
+<span class="w">  </span><span class="n">StateC</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">event3</span><span class="o">|</span><span class="w"> </span><span class="n">StateA</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<h3 id="transition-syntax">Transition Syntax</h3>
+<p>Transitions use the format: <code>FromState --&gt; |event| ToState</code></p>
 <ul>
 <li><strong>States</strong>: Capitalized identifiers (become atoms at runtime)</li>
 <li><strong>Events</strong>: Lowercase identifiers in <code>|event|</code> notation</li>
 <li><strong>Initial State</strong>: The first state mentioned is the initial state</li>
 </ul>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">fsm</span><span class="w"> </span><span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Red</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Green</span><span class="w">      </span><span class="c1"># Red is initial state</span>
+<span class="w">  </span><span class="n">Green</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Yellow</span>
+<span class="w">  </span><span class="n">Yellow</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+<span class="n">end</span>
+</code></pre></div>
 
-<strong>Example:</strong>
-<pre><code>fsm TrafficPayload{cycles: 0} do
-<p>  Red --> |timer| Green      # Red is initial state</p>
-<p>  Green --> |timer| Yellow</p>
-<p>  Yellow --> |timer| Red</p>
-<p>end</p>
-</code></pre>
-
-<h3>Self-Transitions</h3>
-
+<h3 id="self-transitions">Self-Transitions</h3>
 <p>A state can transition to itself:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">fsm</span><span class="w"> </span><span class="n">DoorPayload</span><span class="p">{</span><span class="n">locked</span><span class="p">:</span><span class="w"> </span><span class="bp">true</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Locked</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">unlock</span><span class="o">|</span><span class="w"> </span><span class="n">Unlocked</span>
+<span class="w">  </span><span class="n">Locked</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">knock</span><span class="o">|</span><span class="w"> </span><span class="n">Locked</span><span class="w">    </span><span class="c1"># Self-transition</span>
+<span class="w">  </span><span class="n">Unlocked</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">lock</span><span class="o">|</span><span class="w"> </span><span class="n">Locked</span>
+<span class="n">end</span>
+</code></pre></div>
 
-<pre><code>fsm DoorPayload{locked: true} do
-<p>  Locked --> |unlock| Unlocked</p>
-<p>  Locked --> |knock| Locked    # Self-transition</p>
-<p>  Unlocked --> |lock| Locked</p>
-<p>end</p>
-</code></pre>
-
-<h2>Working with Payloads</h2>
-
+<h2 id="working-with-payloads">Working with Payloads</h2>
 <p>Payloads are records that carry data through FSM transitions. They must be defined before the FSM.</p>
+<h3 id="payload-record-definition">Payload Record Definition</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">record</span><span class="w"> </span><span class="n">TrafficPayload</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">cycles_completed</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">  </span><span class="n">timer_events</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">  </span><span class="n">emergency_stops</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="n">end</span>
+</code></pre></div>
 
-<h3>Payload Record Definition</h3>
-
-<pre><code>record TrafficPayload do
-<p>  cycles_completed: Int</p>
-<p>  timer_events: Int</p>
-<p>  emergency_stops: Int</p>
-<p>end</p>
-</code></pre>
-
-<h3>Initializing Payload</h3>
-
+<h3 id="initializing-payload">Initializing Payload</h3>
 <p>Provide initial values in the FSM declaration:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">fsm</span><span class="w"> </span><span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">timer_events</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">emergency_stops</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="c1"># transitions...</span>
+<span class="n">end</span>
+</code></pre></div>
 
-<pre><code>fsm TrafficPayload{cycles<em>completed: 0, timer</em>events: 0, emergency_stops: 0} do
-<p>  # transitions...</p>
-<p>end</p>
-</code></pre>
+<h3 id="payload-purpose">Payload Purpose</h3>
+<p>Payloads are useful for:<br />
+- Tracking statistics (counters, timestamps)<br />
+- Storing configuration<br />
+- Maintaining state-specific data<br />
+- Debugging information</p>
+<h2 id="using-fsms-from-cure-code">Using FSMs from Cure Code</h2>
+<h3 id="required-imports">Required Imports</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Fsm</span> <span class="p">[</span><span class="n">fsm_spawn</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_cast</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_advertise</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_state</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Pair</span> <span class="p">[</span><span class="n">pair</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+</code></pre></div>
 
-<h3>Payload Purpose</h3>
-
-<p>Payloads are useful for:</p>
-<ul>
-<li>Tracking statistics (counters, timestamps)</li>
-<li>Storing configuration</li>
-<li>Maintaining state-specific data</li>
-<li>Debugging information</li>
-</ul>
-
-<h2>Using FSMs from Cure Code</h2>
-
-<h3>Required Imports</h3>
-
-<pre><code>import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]
-<p>import Std.Pair [pair/2]</p>
-</code></pre>
-
-<h3>Spawning an FSM</h3>
-
+<h3 id="spawning-an-fsm">Spawning an FSM</h3>
 <p>Use <code>fsm_spawn/2</code> with the payload type and initial data:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">let</span><span class="w"> </span><span class="n">initial_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">timer_events</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">emergency_stops</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span>
+<span class="n">let</span><span class="w"> </span><span class="n">fsm_pid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">TrafficPayload</span><span class="p">,</span><span class="w"> </span><span class="n">initial_data</span><span class="p">)</span>
+</code></pre></div>
 
-<pre><code>let initial<em>data = TrafficPayload{cycles</em>completed: 0, timer<em>events: 0, emergency</em>stops: 0}
-<p>let fsm<em>pid = fsm</em>spawn(:TrafficPayload, initial_data)</p>
-</code></pre>
-
-<h3>Registering a Name</h3>
-
+<h3 id="registering-a-name">Registering a Name</h3>
 <p>Make the FSM accessible by name:</p>
+<div class="codehilite"><pre><span></span><code>let _ = fsm_advertise(fsm_pid, :traffic_light)
+<span class="gh">#</span> Now you can use :traffic_light instead of fsm_pid
+</code></pre></div>
 
-<pre><code>let <em> = fsm</em>advertise(fsm<em>pid, :traffic</em>light)
-<h1>Now you can use :traffic<em>light instead of fsm</em>pid</h1>
-</code></pre>
-
-<h3>Sending Events</h3>
-
+<h3 id="sending-events">Sending Events</h3>
 <p>Events are sent using pairs (tuples):</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Create event with empty data list
+let empty_list = []
+let event = pair(:timer, empty_list)
 
-<pre><code># Create event with empty data list
-<p>let empty_list = []</p>
-<p>let event = pair(:timer, empty_list)</p>
+<span class="gh">#</span> Send to FSM
+let _ = fsm_cast(:traffic_light, event)
+</code></pre></div>
 
-<h1>Send to FSM</h1>
-<p>let <em> = fsm</em>cast(:traffic_light, event)</p>
-</code></pre>
-
-<h3>Querying State</h3>
-
+<h3 id="querying-state">Querying State</h3>
 <p>Get the current state:</p>
+<div class="codehilite"><pre><span></span><code>let current_state = fsm_state(:traffic_light)
+<span class="gh">#</span> Returns atom like :Red, :Green, or :Yellow
+</code></pre></div>
 
-<pre><code>let current<em>state = fsm</em>state(:traffic_light)
-<h1>Returns atom like :Red, :Green, or :Yellow</h1>
-</code></pre>
+<h2 id="complete-working-example">Complete Working Example</h2>
+<p>Here's the traffic light example from <code>examples/06_fsm_traffic_light.cure</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span> <span class="n">TrafficLightFSM</span> <span class="n">do</span>
+  <span class="n">export</span> <span class="p">[</span><span class="n">main</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
 
-<h2>Complete Working Example</h2>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Fsm</span> <span class="p">[</span><span class="n">fsm_spawn</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_cast</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_advertise</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_state</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Io</span> <span class="p">[</span><span class="n">println</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Pair</span> <span class="p">[</span><span class="n">pair</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
 
-<p>Here's the traffic light example from <code>examples/06<em>fsm</em>traffic_light.cure</code>:</p>
+  <span class="c1"># Payload record - tracks traffic light statistics</span>
+  <span class="n">record</span> <span class="n">TrafficPayload</span> <span class="n">do</span>
+    <span class="n">cycles_completed</span><span class="p">:</span> <span class="n">Int</span>
+    <span class="n">timer_events</span><span class="p">:</span> <span class="n">Int</span>
+    <span class="n">emergency_stops</span><span class="p">:</span> <span class="n">Int</span>
+  <span class="n">end</span>
 
-<pre><code>module TrafficLightFSM do
-<p>  export [main/0]</p>
-  
-<p>  import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]</p>
-<p>  import Std.Io [println/1]</p>
-<p>  import Std.Pair [pair/2]</p>
-  
-<p>  # Payload record - tracks traffic light statistics</p>
-<p>  record TrafficPayload do</p>
-<p>    cycles_completed: Int</p>
-<p>    timer_events: Int</p>
-<p>    emergency_stops: Int</p>
-<p>  end</p>
-  
-<p>  # Define the TrafficLight FSM</p>
-<p>  # Initial state is Red (first state in transitions)</p>
-<p>  # Events: :timer (normal progression), :emergency (immediate red)</p>
-<p>  fsm TrafficPayload{cycles<em>completed: 0, timer</em>events: 0, emergency_stops: 0} do</p>
-<p>    Red --> |timer| Green</p>
-<p>    Red --> |emergency| Red</p>
-<p>    Green --> |timer| Yellow</p>
-<p>    Green --> |emergency| Red</p>
-<p>    Yellow --> |timer| Red</p>
-<p>    Yellow --> |emergency| Red</p>
-<p>  end</p>
-  
-<p>  # Main demonstration</p>
-<p>  def main(): Int =</p>
-<p>    println("=== Traffic Light FSM Demo ===")</p>
-<p>    println("")</p>
-    
-<p>    # Initialize FSM with starting data</p>
-<p>    let initial<em>data = TrafficPayload{cycles</em>completed: 0, timer<em>events: 0, emergency</em>stops: 0}</p>
-<p>    let fsm<em>pid = fsm</em>spawn(:TrafficPayload, initial_data)</p>
-    
-<p>    # Give the FSM a friendly name</p>
-<p>    let adv<em>result = fsm</em>advertise(fsm<em>pid, :traffic</em>light)</p>
-    
-<p>    # Check initial state (should be Red - first in transition list)</p>
-<p>    println("Initial state:")</p>
-<p>    let state0 = fsm<em>state(:traffic</em>light)</p>
-<p>    println("State: Red (expected)")</p>
-<p>    println("")</p>
-    
-<p>    # Scenario 1: Normal timer progression Red -> Green</p>
-<p>    println("Scenario 1: Timer event from Red")</p>
-<p>    let empty1 = []</p>
-<p>    let event1 = pair(:timer, empty1)</p>
-<p>    let cast1 = fsm<em>cast(:traffic</em>light, event1)</p>
-<p>    let state1 = fsm<em>state(:traffic</em>light)</p>
-<p>    println("State: Green (expected)")</p>
-<p>    println("")</p>
-    
-<p>    # Scenario 2: Normal timer progression Green -> Yellow</p>
-<p>    println("Scenario 2: Timer event from Green")</p>
-<p>    let empty2 = []</p>
-<p>    let event2 = pair(:timer, empty2)</p>
-<p>    let cast2 = fsm<em>cast(:traffic</em>light, event2)</p>
-<p>    let state2 = fsm<em>state(:traffic</em>light)</p>
-<p>    println("State: Yellow (expected)")</p>
-<p>    println("")</p>
-    
-<p>    # Scenario 3: Emergency from Yellow -> Red</p>
-<p>    println("Scenario 3: Emergency stop from Yellow")</p>
-<p>    let empty3 = []</p>
-<p>    let event3 = pair(:emergency, empty3)</p>
-<p>    let cast3 = fsm<em>cast(:traffic</em>light, event3)</p>
-<p>    let state3 = fsm<em>state(:traffic</em>light)</p>
-<p>    println("State: Red (expected - emergency stop)")</p>
-<p>    println("")</p>
-    
-<p>    println("=== Demo Complete ===")</p>
-<p>    0</p>
-<p>end</p>
-</code></pre>
+  <span class="c1"># Define the TrafficLight FSM</span>
+  <span class="c1"># Initial state is Red (first state in transitions)</span>
+  <span class="c1"># Events: :timer (normal progression), :emergency (immediate red)</span>
+  <span class="n">fsm</span> <span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">timer_events</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">emergency_stops</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span> <span class="n">do</span>
+    <span class="n">Red</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">timer</span><span class="o">|</span> <span class="n">Green</span>
+    <span class="n">Red</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">emergency</span><span class="o">|</span> <span class="n">Red</span>
+    <span class="n">Green</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">timer</span><span class="o">|</span> <span class="n">Yellow</span>
+    <span class="n">Green</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">emergency</span><span class="o">|</span> <span class="n">Red</span>
+    <span class="n">Yellow</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">timer</span><span class="o">|</span> <span class="n">Red</span>
+    <span class="n">Yellow</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">emergency</span><span class="o">|</span> <span class="n">Red</span>
+  <span class="n">end</span>
 
-<h2>API Reference</h2>
+  <span class="c1"># Main demonstration</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span> <span class="n">Int</span> <span class="o">=</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;=== Traffic Light FSM Demo ===&quot;</span><span class="p">)</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
-<h3>Core Functions</h3>
+    <span class="c1"># Initialize FSM with starting data</span>
+    <span class="n">let</span> <span class="n">initial_data</span> <span class="o">=</span> <span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">timer_events</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">emergency_stops</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+    <span class="n">let</span> <span class="n">fsm_pid</span> <span class="o">=</span> <span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">TrafficPayload</span><span class="p">,</span> <span class="n">initial_data</span><span class="p">)</span>
 
-<h4><code>fsm<em>spawn(fsm</em>type: Atom, initial_data: Any): Pid</code></h4>
-<p>Spawn a new FSM instance.</p>
-<ul>
-<li><code>fsm_type</code>: Payload record type name (e.g., <code>:TrafficPayload</code>)</li>
-<li><code>initial_data</code>: Initial payload record instance</li>
-<li>Returns: Process ID</li>
-</ul>
+    <span class="c1"># Give the FSM a friendly name</span>
+    <span class="n">let</span> <span class="n">adv_result</span> <span class="o">=</span> <span class="n">fsm_advertise</span><span class="p">(</span><span class="n">fsm_pid</span><span class="p">,</span> <span class="p">:</span><span class="n">traffic_light</span><span class="p">)</span>
 
-<h4><code>fsm_cast(target: Pid | Atom, event: Pair): Any</code></h4>
-<p>Send an event to an FSM (asynchronous).</p>
-<ul>
-<li><code>target</code>: FSM Pid or registered name</li>
-<li><code>event</code>: Pair of <code>(event<em>name, event</em>data)</code> created with <code>pair/2</code></li>
-<li>Returns: Cast result</li>
-</ul>
+    <span class="c1"># Check initial state (should be Red - first in transition list)</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;Initial state:&quot;</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">state0</span> <span class="o">=</span> <span class="n">fsm_state</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">)</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;State: Red (expected)&quot;</span><span class="p">)</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
-<h4><code>fsm_advertise(pid: Pid, name: Atom): Any</code></h4>
-<p>Register a name for an FSM process.</p>
-<ul>
-<li><code>pid</code>: FSM process ID</li>
-<li><code>name</code>: Atom to register (e.g., <code>:my_fsm</code>)</li>
-<li>Returns: Advertisement result</li>
-</ul>
+    <span class="c1"># Scenario 1: Normal timer progression Red -&gt; Green</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;Scenario 1: Timer event from Red&quot;</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">empty1</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">let</span> <span class="n">event1</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(:</span><span class="n">timer</span><span class="p">,</span> <span class="n">empty1</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">cast1</span> <span class="o">=</span> <span class="n">fsm_cast</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">,</span> <span class="n">event1</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">state1</span> <span class="o">=</span> <span class="n">fsm_state</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">)</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;State: Green (expected)&quot;</span><span class="p">)</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
-<h4><code>fsm_state(target: Pid | Atom): Atom</code></h4>
-<p>Query current FSM state.</p>
-<ul>
-<li><code>target</code>: FSM Pid or registered name</li>
-<li>Returns: Current state atom</li>
-</ul>
+    <span class="c1"># Scenario 2: Normal timer progression Green -&gt; Yellow</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;Scenario 2: Timer event from Green&quot;</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">empty2</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">let</span> <span class="n">event2</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(:</span><span class="n">timer</span><span class="p">,</span> <span class="n">empty2</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">cast2</span> <span class="o">=</span> <span class="n">fsm_cast</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">,</span> <span class="n">event2</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">state2</span> <span class="o">=</span> <span class="n">fsm_state</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">)</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;State: Yellow (expected)&quot;</span><span class="p">)</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
-<h3>Additional Functions</h3>
+    <span class="c1"># Scenario 3: Emergency from Yellow -&gt; Red</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;Scenario 3: Emergency stop from Yellow&quot;</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">empty3</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">let</span> <span class="n">event3</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(:</span><span class="n">emergency</span><span class="p">,</span> <span class="n">empty3</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">cast3</span> <span class="o">=</span> <span class="n">fsm_cast</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">,</span> <span class="n">event3</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">state3</span> <span class="o">=</span> <span class="n">fsm_state</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">)</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;State: Red (expected - emergency stop)&quot;</span><span class="p">)</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
-<h4><code>fsm_stop(pid: Pid): Any</code></h4>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;=== Demo Complete ===&quot;</span><span class="p">)</span>
+    <span class="mi">0</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<h2 id="api-reference">API Reference</h2>
+<h3 id="core-functions">Core Functions</h3>
+<h4 id="fsm_spawnfsm_type-atom-initial_data-any-pid"><code>fsm_spawn(fsm_type: Atom, initial_data: Any): Pid</code></h4>
+<p>Spawn a new FSM instance.<br />
+- <code>fsm_type</code>: Payload record type name (e.g., <code>:TrafficPayload</code>)<br />
+- <code>initial_data</code>: Initial payload record instance<br />
+- Returns: Process ID</p>
+<h4 id="fsm_casttarget-pid-atom-event-pair-any"><code>fsm_cast(target: Pid | Atom, event: Pair): Any</code></h4>
+<p>Send an event to an FSM (asynchronous).<br />
+- <code>target</code>: FSM Pid or registered name<br />
+- <code>event</code>: Pair of <code>(event_name, event_data)</code> created with <code>pair/2</code><br />
+- Returns: Cast result</p>
+<h4 id="fsm_advertisepid-pid-name-atom-any"><code>fsm_advertise(pid: Pid, name: Atom): Any</code></h4>
+<p>Register a name for an FSM process.<br />
+- <code>pid</code>: FSM process ID<br />
+- <code>name</code>: Atom to register (e.g., <code>:my_fsm</code>)<br />
+- Returns: Advertisement result</p>
+<h4 id="fsm_statetarget-pid-atom-atom"><code>fsm_state(target: Pid | Atom): Atom</code></h4>
+<p>Query current FSM state.<br />
+- <code>target</code>: FSM Pid or registered name<br />
+- Returns: Current state atom</p>
+<h3 id="additional-functions">Additional Functions</h3>
+<h4 id="fsm_stoppid-pid-any"><code>fsm_stop(pid: Pid): Any</code></h4>
 <p>Stop an FSM instance gracefully.</p>
-
-<h4><code>fsm_info(pid: Pid): Any</code></h4>
+<h4 id="fsm_infopid-pid-any"><code>fsm_info(pid: Pid): Any</code></h4>
 <p>Get detailed FSM information (state, data, history).</p>
-
-<h4><code>fsm<em>is</em>alive(pid: Pid): Bool</code></h4>
+<h4 id="fsm_is_alivepid-pid-bool"><code>fsm_is_alive(pid: Pid): Bool</code></h4>
 <p>Check if FSM process is running.</p>
-
-<h2>Best Practices</h2>
-
+<h2 id="best-practices">Best Practices</h2>
 <ol>
 <li><strong>Keep States Simple</strong>: Each state should represent a clear mode of operation</li>
 <li><strong>Use Descriptive Names</strong>: State and event names should be self-documenting</li>
@@ -360,53 +302,40 @@
 <li><strong>Use Self-Transitions</strong>: For events that don't change state but need to be acknowledged</li>
 <li><strong>Track Statistics</strong>: Use payload fields to track FSM behavior (counters, timestamps)</li>
 </ol>
-
-<h2>Troubleshooting</h2>
-
-<h3>FSM Not Responding</h3>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="fsm-not-responding">FSM Not Responding</h3>
 <ul>
-<li>Verify FSM process is alive with <code>fsm<em>is</em>alive/1</code></li>
+<li>Verify FSM process is alive with <code>fsm_is_alive/1</code></li>
 <li>Check that you're using the correct registered name or Pid</li>
 <li>Ensure events are created correctly with <code>pair/2</code></li>
 </ul>
-
-<h3>Wrong Initial State</h3>
+<h3 id="wrong-initial-state">Wrong Initial State</h3>
 <ul>
 <li>Remember: the first state in the transition list is the initial state</li>
 <li>Check the order of your transitions in the <code>fsm</code> block</li>
 </ul>
-
-<h3>Event Not Causing Transition</h3>
+<h3 id="event-not-causing-transition">Event Not Causing Transition</h3>
 <ul>
 <li>Verify the event name matches exactly (case-sensitive)</li>
 <li>Check that a transition exists for that event from the current state</li>
 <li>Use <code>fsm_state/1</code> to confirm the current state before sending events</li>
 </ul>
-
-<h3>Import Errors</h3>
+<h3 id="import-errors">Import Errors</h3>
 <ul>
 <li>Make sure to import <code>Std.Fsm</code> functions</li>
 <li>Don't forget to import <code>Std.Pair [pair/2]</code> for creating events</li>
 <li>Import <code>Std.Io [println/1]</code> if you need to print output</li>
 </ul>
-
-<h2>See Also</h2>
-
+<h2 id="see-also">See Also</h2>
 <ul>
-<li><a href="FSM<em>API</em>DESIGN.md">FSM<em>API</em>DESIGN.md</a> - Detailed API design documentation</li>
-<li><a href="FSM<em>IMPLEMENTATION</em>SUMMARY.md">FSM<em>IMPLEMENTATION</em>SUMMARY.md</a> - Implementation details</li>
-<li><a href="../examples/06</em>fsm<em>traffic</em>light.cure">examples/06<em>fsm</em>traffic<em>light.cure</a> - Complete working example</li>
+<li><a href="FSM_API_DESIGN.md">FSM_API_DESIGN.md</a> - Detailed API design documentation</li>
+<li><a href="FSM_IMPLEMENTATION_SUMMARY.md">FSM_IMPLEMENTATION_SUMMARY.md</a> - Implementation details</li>
+<li><a href="../examples/06_fsm_traffic_light.cure">examples/06_fsm_traffic_light.cure</a> - Complete working example</li>
 <li><a href="../lib/std/fsm.cure">lib/std/fsm.cure</a> - Standard library FSM module</li>
 </ul>
-
-<p>---</p>
-
+<hr />
 <p>For questions or issues, consult the main Cure documentation or examine the FSM runtime source code in <code>src/fsm/</code>.</p>
-
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

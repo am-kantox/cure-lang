@@ -35,413 +35,354 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Automatic Typeclass Derivation in Cure</h1>
-
-<h2>Overview</h2>
-
+        <h1 id="automatic-typeclass-derivation-in-cure">Automatic Typeclass Derivation in Cure</h1>
+<h2 id="overview">Overview</h2>
 <p>Cure supports automatic derivation of typeclass instances for user-defined types using the <code>derive</code> clause. This feature eliminates boilerplate code and ensures consistency across your codebase.</p>
-
-<h2>Syntax</h2>
-
-<h3>Basic Derivation</h3>
-
-<pre><code>record Point do
-<p>    x: Int</p>
-<p>    y: Int</p>
-<p>end</p>
-<p>derive Show, Eq, Ord</p>
-</code></pre>
+<h2 id="syntax">Syntax</h2>
+<h3 id="basic-derivation">Basic Derivation</h3>
+<div class="codehilite"><pre><span></span><code><span class="nv">record</span><span class="w"> </span><span class="nv">Point</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="nv">x</span>:<span class="w"> </span><span class="nv">Int</span>
+<span class="w">    </span><span class="nv">y</span>:<span class="w"> </span><span class="nv">Int</span>
+<span class="k">end</span>
+<span class="nv">derive</span><span class="w"> </span><span class="k">Show</span>,<span class="w"> </span><span class="nv">Eq</span>,<span class="w"> </span><span class="nv">Ord</span>
+</code></pre></div>
 
 <p>This automatically generates instances for <code>Show(Point)</code>, <code>Eq(Point)</code>, and <code>Ord(Point)</code>.</p>
-
-<h3>Derivation with Type Parameters</h3>
-
-<pre><code>record Container(T) do
-<p>    value: T</p>
-<p>    name: String</p>
-<p>end</p>
-<p>derive Show, Eq</p>
-</code></pre>
+<h3 id="derivation-with-type-parameters">Derivation with Type Parameters</h3>
+<div class="codehilite"><pre><span></span><code><span class="nv">record</span><span class="w"> </span><span class="nv">Container</span><span class="ss">(</span><span class="nv">T</span><span class="ss">)</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="nv">value</span>:<span class="w"> </span><span class="nv">T</span>
+<span class="w">    </span><span class="nv">name</span>:<span class="w"> </span><span class="nv">String</span>
+<span class="k">end</span>
+<span class="nv">derive</span><span class="w"> </span><span class="k">Show</span>,<span class="w"> </span><span class="nv">Eq</span>
+</code></pre></div>
 
 <p>When deriving for parameterized types, the compiler automatically adds constraints:</p>
-<pre><code>% Generated instances:
-<p>instance Show(Container(T)) where Show(T) do</p>
-<p>    def show(c: Container(T)): String = ...</p>
-<p>end</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Generated instances:</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Show(Container(T))</span><span class="w"> </span><span class="s">where</span><span class="w"> </span><span class="s">Show(T)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">c</span><span class="p">:</span><span class="w"> </span><span class="n">Container</span><span class="p">(</span><span class="n">T</span><span class="p">)):</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="k">...</span>
+<span class="k">end</span>
 
-<p>instance Eq(Container(T)) where Eq(T) do</p>
-<p>    def ==(c1: Container(T), c2: Container(T)): Bool = ...</p>
-<p>end</p>
-</code></pre>
+<span class="n">instance</span><span class="w"> </span><span class="s">Eq(Container(T))</span><span class="w"> </span><span class="s">where</span><span class="w"> </span><span class="s">Eq(T)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="o">==</span><span class="p">(</span><span class="n">c1</span><span class="p">:</span><span class="w"> </span><span class="n">Container</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="w"> </span><span class="n">c2</span><span class="p">:</span><span class="w"> </span><span class="n">Container</span><span class="p">(</span><span class="n">T</span><span class="p">)):</span><span class="w"> </span><span class="n">Bool</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="k">...</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h2>Supported Typeclasses</h2>
-
-<h3>Show</h3>
-
+<h2 id="supported-typeclasses">Supported Typeclasses</h2>
+<h3 id="show">Show</h3>
 <p>Derives a string representation of the type:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Person</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">    </span><span class="n">age</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Show</span>
 
-<pre><code>record Person do
-<p>    name: String</p>
-<p>    age: Int</p>
-<p>end</p>
-<p>derive Show</p>
+<span class="c">% Usage:</span>
+<span class="n">let</span><span class="w"> </span><span class="s">p</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Person</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="w"> </span><span class="p">}</span>
+<span class="n">show</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="w">  </span><span class="c">% &quot;Person { name: \&quot;Alice\&quot;, age: 30 }&quot;</span>
+</code></pre></div>
 
-<p>% Usage:</p>
-<p>let p = Person { name: "Alice", age: 30 }</p>
-<p>show(p)  % "Person { name: \"Alice\", age: 30 }"</p>
-</code></pre>
-
-<strong>Generated Implementation:</strong>
-<ul>
-<li>Records: <code>TypeName { field1: show(value1), field2: show(value2), ... }</code></li>
-<li>Shows all fields in declaration order</li>
-</ul>
-
-<h3>Eq</h3>
-
+<p><strong>Generated Implementation:</strong><br />
+- Records: <code>TypeName { field1: show(value1), field2: show(value2), ... }</code><br />
+- Shows all fields in declaration order</p>
+<h3 id="eq">Eq</h3>
 <p>Derives structural equality checking:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Point</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">    </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Eq</span>
 
-<pre><code>record Point do
-<p>    x: Int</p>
-<p>    y: Int</p>
-<p>end</p>
-<p>derive Eq</p>
+<span class="c">% Usage:</span>
+<span class="n">let</span><span class="w"> </span><span class="s">p1</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Point</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="p">}</span>
+<span class="n">let</span><span class="w"> </span><span class="s">p2</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Point</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="p">}</span>
+<span class="n">p1</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">p2</span><span class="w">  </span><span class="c">% true</span>
+</code></pre></div>
 
-<p>% Usage:</p>
-<p>let p1 = Point { x: 10, y: 20 }</p>
-<p>let p2 = Point { x: 10, y: 20 }</p>
-<p>p1 == p2  % true</p>
-</code></pre>
-
-<strong>Generated Implementation:</strong>
-<ul>
-<li>Implements <code>==</code> operator</li>
-<li>Default <code>!=</code> provided by typeclass</li>
-<li>Compares all fields for equality</li>
-</ul>
-
-<h3>Ord</h3>
-
+<p><strong>Generated Implementation:</strong><br />
+- Implements <code>==</code> operator<br />
+- Default <code>!=</code> provided by typeclass<br />
+- Compares all fields for equality</p>
+<h3 id="ord">Ord</h3>
 <p>Derives lexicographic ordering:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Person</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">    </span><span class="n">age</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Ord</span><span class="w">  </span><span class="s">%</span><span class="w"> </span><span class="s">Requires</span><span class="w"> </span><span class="s">Eq</span><span class="w"> </span><span class="s">as</span><span class="w"> </span><span class="s">superclass</span>
 
-<pre><code>record Person do
-<p>    name: String</p>
-<p>    age: Int</p>
-<p>end</p>
-<p>derive Ord  % Requires Eq as superclass</p>
+<span class="c">% Usage:</span>
+<span class="n">let</span><span class="w"> </span><span class="s">alice</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Person</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="w"> </span><span class="p">}</span>
+<span class="n">let</span><span class="w"> </span><span class="s">bob</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Person</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Bob&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">:</span><span class="w"> </span><span class="mi">25</span><span class="w"> </span><span class="p">}</span>
 
-<p>% Usage:</p>
-<p>let alice = Person { name: "Alice", age: 30 }</p>
-<p>let bob = Person { name: "Bob", age: 25 }</p>
+<span class="n">match</span><span class="w"> </span><span class="s">compare(alice,</span><span class="w"> </span><span class="s">bob)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">LT</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Alice comes before Bob&quot;</span>
+<span class="w">    </span><span class="n">EQ</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Equal&quot;</span>
+<span class="w">    </span><span class="n">GT</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Alice comes after Bob&quot;</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<p>match compare(alice, bob) do</p>
-<p>    LT -> "Alice comes before Bob"</p>
-<p>    EQ -> "Equal"</p>
-<p>    GT -> "Alice comes after Bob"</p>
-<p>end</p>
-</code></pre>
-
-<strong>Generated Implementation:</strong>
-<ul>
-<li>Implements <code>compare</code> method returning <code>Ordering</code> (LT, EQ, or GT)</li>
-<li>Compares fields in declaration order (lexicographic)</li>
-<li>Automatically adds <code>Eq</code> constraint</li>
-</ul>
-
-<h2>Constraint Inference</h2>
-
+<p><strong>Generated Implementation:</strong><br />
+- Implements <code>compare</code> method returning <code>Ordering</code> (LT, EQ, or GT)<br />
+- Compares fields in declaration order (lexicographic)<br />
+- Automatically adds <code>Eq</code> constraint</p>
+<h2 id="constraint-inference">Constraint Inference</h2>
 <p>The derive mechanism automatically infers required constraints for parameterized types:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Pair</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">first</span><span class="p">:</span><span class="w"> </span><span class="n">A</span>
+<span class="w">    </span><span class="nb">second</span><span class="p">:</span><span class="w"> </span><span class="n">B</span>
+<span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Show,</span><span class="w"> </span><span class="s">Eq</span>
 
-<pre><code>record Pair(A, B) do
-<p>    first: A</p>
-<p>    second: B</p>
-<p>end</p>
-<p>derive Show, Eq</p>
+<span class="c">% Compiler generates:</span>
+<span class="c">% instance Show(Pair(A, B)) where Show(A), Show(B) do ... end</span>
+<span class="c">% instance Eq(Pair(A, B)) where Eq(A), Eq(B) do ... end</span>
+</code></pre></div>
 
-<p>% Compiler generates:</p>
-<p>% instance Show(Pair(A, B)) where Show(A), Show(B) do ... end</p>
-<p>% instance Eq(Pair(A, B)) where Eq(A), Eq(B) do ... end</p>
-</code></pre>
-
-<strong>Rules:</strong>
-<ol>
-<li>For each type variable in fields, add corresponding constraint</li>
-<li>Primitive types (Int, String, etc.) don't require constraints</li>
-<li>Nested parameterized types require constraints for their parameters</li>
-</ol>
-
-<h2>When to Use Manual Instances</h2>
-
+<p><strong>Rules:</strong><br />
+1. For each type variable in fields, add corresponding constraint<br />
+2. Primitive types (Int, String, etc.) don't require constraints<br />
+3. Nested parameterized types require constraints for their parameters</p>
+<h2 id="when-to-use-manual-instances">When to Use Manual Instances</h2>
 <p>While derivation is convenient, sometimes you need custom behavior:</p>
+<h3 id="custom-show-format">Custom Show Format</h3>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Temperature</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">celsius</span><span class="p">:</span><span class="w"> </span><span class="n">Float</span>
+<span class="k">end</span>
 
-<h3>Custom Show Format</h3>
+<span class="c">% Manual instance for custom formatting</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Show(Temperature)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="w"> </span><span class="n">Temperature</span><span class="p">):</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="n">float_to_string</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">celsius</span><span class="p">)</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="s">&quot;°C&quot;</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>record Temperature do
-<p>    celsius: Float</p>
-<p>end</p>
+<h3 id="custom-equality">Custom Equality</h3>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Person</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">    </span><span class="n">metadata</span><span class="p">:</span><span class="w"> </span><span class="n">Map</span><span class="p">(</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="p">)</span>
+<span class="k">end</span>
 
-<p>% Manual instance for custom formatting</p>
-<p>instance Show(Temperature) do</p>
-<p>    def show(t: Temperature): String =</p>
-<p>        float<em>to</em>string(t.celsius) ++ "°C"</p>
-<p>end</p>
-</code></pre>
+<span class="c">% Derive Show but manually implement Eq (compare only by ID)</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Show</span>
 
-<h3>Custom Equality</h3>
+<span class="n">instance</span><span class="w"> </span><span class="s">Eq(Person)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="o">==</span><span class="p">(</span><span class="n">p1</span><span class="p">:</span><span class="w"> </span><span class="n">Person</span><span class="p">,</span><span class="w"> </span><span class="n">p2</span><span class="p">:</span><span class="w"> </span><span class="n">Person</span><span class="p">):</span><span class="w"> </span><span class="n">Bool</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="n">p1</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">p2</span><span class="p">.</span><span class="n">id</span><span class="w">  </span><span class="c">% Ignore name and metadata</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>record Person do
-<p>    id: Int</p>
-<p>    name: String</p>
-<p>    metadata: Map(String, String)</p>
-<p>end</p>
+<h3 id="custom-ordering">Custom Ordering</h3>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">priority</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">    </span><span class="n">deadline</span><span class="p">:</span><span class="w"> </span><span class="n">Timestamp</span>
+<span class="k">end</span>
 
-<p>% Derive Show but manually implement Eq (compare only by ID)</p>
-<p>derive Show</p>
+<span class="n">derive</span><span class="w"> </span><span class="s">Show,</span><span class="w"> </span><span class="s">Eq</span>
 
-<p>instance Eq(Person) do</p>
-<p>    def ==(p1: Person, p2: Person): Bool =</p>
-<p>        p1.id == p2.id  % Ignore name and metadata</p>
-<p>end</p>
-</code></pre>
+<span class="c">% Custom ordering by priority, then deadline</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Ord(Task)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">compare</span><span class="p">(</span><span class="n">t1</span><span class="p">:</span><span class="w"> </span><span class="n">Task</span><span class="p">,</span><span class="w"> </span><span class="n">t2</span><span class="p">:</span><span class="w"> </span><span class="n">Task</span><span class="p">):</span><span class="w"> </span><span class="n">Ordering</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="n">match</span><span class="w"> </span><span class="n">compare</span><span class="p">(</span><span class="n">t1</span><span class="p">.</span><span class="n">priority</span><span class="p">,</span><span class="w"> </span><span class="n">t2</span><span class="p">.</span><span class="n">priority</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">            </span><span class="n">EQ</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">compare</span><span class="p">(</span><span class="n">t1</span><span class="p">.</span><span class="n">deadline</span><span class="p">,</span><span class="w"> </span><span class="n">t2</span><span class="p">.</span><span class="n">deadline</span><span class="p">)</span>
+<span class="w">            </span><span class="n">result</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">result</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h3>Custom Ordering</h3>
-
-<pre><code>record Task do
-<p>    priority: Int</p>
-<p>    name: String</p>
-<p>    deadline: Timestamp</p>
-<p>end</p>
-
-<p>derive Show, Eq</p>
-
-<p>% Custom ordering by priority, then deadline</p>
-<p>instance Ord(Task) do</p>
-<p>    def compare(t1: Task, t2: Task): Ordering =</p>
-<p>        match compare(t1.priority, t2.priority) do</p>
-<p>            EQ -> compare(t1.deadline, t2.deadline)</p>
-<p>            result -> result</p>
-<p>        end</p>
-<p>end</p>
-</code></pre>
-
-<h2>Limitations and Constraints</h2>
-
-<h3>What Can Be Derived</h3>
-
+<h2 id="limitations-and-constraints">Limitations and Constraints</h2>
+<h3 id="what-can-be-derived">What Can Be Derived</h3>
 <ul>
 <li>✅ Records with concrete field types</li>
 <li>✅ Records with type parameters</li>
 <li>✅ Nested records</li>
 <li>✅ Empty records (unit types)</li>
 </ul>
-
-<h3>What Cannot Be Derived</h3>
-
+<h3 id="what-cannot-be-derived">What Cannot Be Derived</h3>
 <ul>
 <li>❌ Function types</li>
 <li>❌ FSM types</li>
 <li>❌ Recursive types (requires manual implementation)</li>
 <li>❌ Types with existential quantification</li>
 </ul>
+<h3 id="typeclass-support">Typeclass Support</h3>
+<p>Currently supported:<br />
+- <code>Show</code> - String representation<br />
+- <code>Eq</code> - Equality testing<br />
+- <code>Ord</code> - Ordering/comparison</p>
+<p>Not yet supported:<br />
+- <code>Functor</code> - Requires higher-kinded types<br />
+- <code>Monad</code> - Requires higher-kinded types<br />
+- <code>Semigroup</code> / <code>Monoid</code> - Requires domain knowledge</p>
+<h2 id="complete-examples">Complete Examples</h2>
+<h3 id="basic-usage">Basic Usage</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">module</span> <span class="n">geometry</span>
 
-<h3>Typeclass Support</h3>
+<span class="n">record</span> <span class="n">Point</span> <span class="nb">do</span>
+    <span class="o">x</span>: <span class="n">Float</span>
+    <span class="n">y:</span> <span class="n">Float</span>
+<span class="nb">end</span>
+<span class="n">derive</span> <span class="n">Show</span>, <span class="n">Eq</span>
 
-<p>Currently supported:</p>
-<ul>
-<li><code>Show</code> - String representation</li>
-<li><code>Eq</code> - Equality testing</li>
-<li><code>Ord</code> - Ordering/comparison</li>
-</ul>
+<span class="n">def</span> <span class="n">distance</span>(<span class="n">p1:</span> <span class="n">Point</span>, <span class="n">p2:</span> <span class="n">Point</span>): <span class="n">Float</span> =
+    <span class="k">let</span> <span class="n">dx</span> = <span class="n">p1</span>.<span class="nb">x</span> - <span class="n">p2</span>.<span class="nb">x</span>
+    <span class="k">let</span> <span class="n">dy</span> = <span class="n">p1</span>.<span class="n">y</span> - <span class="n">p2</span>.<span class="n">y</span>
+    <span class="nb">sqrt</span>(<span class="n">dx</span> * <span class="n">dx</span> + <span class="n">dy</span> * <span class="n">dy</span>)
 
-<p>Not yet supported:</p>
-<ul>
-<li><code>Functor</code> - Requires higher-kinded types</li>
-<li><code>Monad</code> - Requires higher-kinded types</li>
-<li><code>Semigroup</code> / <code>Monoid</code> - Requires domain knowledge</li>
-</ul>
+<span class="n">def</span> <span class="n">main</span>(): <span class="n">Unit</span> =
+    <span class="k">let</span> <span class="n">origin</span> = <span class="n">Point</span> { <span class="o">x</span>: <span class="mf">0.0</span>, <span class="n">y:</span> <span class="mf">0.0</span> }
+    <span class="k">let</span> <span class="n">p</span> = <span class="n">Point</span> { <span class="o">x</span>: <span class="mf">3.0</span>, <span class="n">y:</span> <span class="mf">4.0</span> }
 
-<h2>Complete Examples</h2>
+    <span class="n">println</span>(<span class="n">show</span>(<span class="n">origin</span>))  % <span class="s">&quot;Point { x: 0.0, y: 0.0 }&quot;</span>
+    <span class="n">println</span>(<span class="n">show</span>(<span class="n">p</span>))       % <span class="s">&quot;Point { x: 3.0, y: 4.0 }&quot;</span>
 
-<h3>Basic Usage</h3>
+    <span class="k">if</span> <span class="n">origin</span> == <span class="n">p</span> <span class="nb">then</span>
+        <span class="n">println</span>(<span class="s">&quot;Points are equal&quot;</span>)
+    <span class="k">else</span>
+        <span class="k">let</span> <span class="n">dist</span> = <span class="n">distance</span>(<span class="n">origin</span>, <span class="n">p</span>)
+        <span class="n">println</span>(<span class="s">&quot;Distance: &quot;</span> ++ <span class="n">show</span>(<span class="n">dist</span>))
+    <span class="nb">end</span>
+</code></pre></div>
 
-<pre><code>module geometry
+<h3 id="parameterized-types">Parameterized Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">module</span> <span class="n">collections</span>
 
-<p>record Point do</p>
-<p>    x: Float</p>
-<p>    y: Float</p>
-<p>end</p>
-<p>derive Show, Eq</p>
+<span class="n">record</span> <span class="n">Box</span>(<span class="n">T</span>) <span class="nb">do</span>
+    <span class="n">value:</span> <span class="n">T</span>
+<span class="nb">end</span>
+<span class="n">derive</span> <span class="n">Show</span>, <span class="n">Eq</span>
 
-<p>def distance(p1: Point, p2: Point): Float =</p>
-<p>    let dx = p1.x - p2.x</p>
-<p>    let dy = p1.y - p2.y</p>
-<p>    sqrt(dx <em> dx + dy </em> dy)</p>
+<span class="n">def</span> <span class="n">map_box</span>(<span class="n">f:</span> <span class="n">T</span> -&gt; <span class="n">U</span>, <span class="n">box:</span> <span class="n">Box</span>(<span class="n">T</span>)): <span class="n">Box</span>(<span class="n">U</span>) =
+    <span class="n">Box</span> { <span class="n">value:</span> <span class="nb">f</span>(<span class="n">box</span>.<span class="nb">value</span>) }
 
-<p>def main(): Unit =</p>
-<p>    let origin = Point { x: 0.0, y: 0.0 }</p>
-<p>    let p = Point { x: 3.0, y: 4.0 }</p>
-    
-<p>    println(show(origin))  % "Point { x: 0.0, y: 0.0 }"</p>
-<p>    println(show(p))       % "Point { x: 3.0, y: 4.0 }"</p>
-    
-<p>    if origin == p then</p>
-<p>        println("Points are equal")</p>
-<p>    else</p>
-<p>        let dist = distance(origin, p)</p>
-<p>        println("Distance: " ++ show(dist))</p>
-<p>    end</p>
-</code></pre>
+<span class="n">def</span> <span class="n">main</span>(): <span class="n">Unit</span> <span class="n">where</span> <span class="n">Show</span>(<span class="nb">Int</span>), <span class="n">Show</span>(<span class="n">String</span>) =
+    <span class="k">let</span> <span class="n">int_box</span> = <span class="n">Box</span> { <span class="n">value:</span> <span class="mi">42</span> }
+    <span class="k">let</span> <span class="n">str_box</span> = <span class="n">map_box</span>(<span class="n">int_to_string</span>, <span class="n">int_box</span>)
 
-<h3>Parameterized Types</h3>
+    <span class="n">println</span>(<span class="n">show</span>(<span class="n">int_box</span>))  % <span class="s">&quot;Box { value: 42 }&quot;</span>
+    <span class="n">println</span>(<span class="n">show</span>(<span class="n">str_box</span>))  % <span class="s">&quot;Box { value: \&quot;42\&quot; }&quot;</span>
+</code></pre></div>
 
-<pre><code>module collections
+<h3 id="hierarchical-data">Hierarchical Data</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">module</span><span class="w"> </span><span class="nx">organization</span>
 
-<p>record Box(T) do</p>
-<p>    value: T</p>
-<p>end</p>
-<p>derive Show, Eq</p>
+<span class="nx">record</span><span class="w"> </span><span class="nx">Address</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="nx">street</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span>
+<span class="w">    </span><span class="nx">city</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span>
+<span class="w">    </span><span class="nx">country</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span>
+<span class="nx">end</span>
+<span class="nx">derive</span><span class="w"> </span><span class="nx">Show</span><span class="p">,</span><span class="w"> </span><span class="nx">Eq</span>
 
-<p>def map_box(f: T -> U, box: Box(T)): Box(U) =</p>
-<p>    Box { value: f(box.value) }</p>
+<span class="nx">record</span><span class="w"> </span><span class="nx">Person</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span>
+<span class="w">    </span><span class="nx">age</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span>
+<span class="w">    </span><span class="nx">address</span><span class="p">:</span><span class="w"> </span><span class="nx">Address</span>
+<span class="nx">end</span>
+<span class="nx">derive</span><span class="w"> </span><span class="nx">Show</span><span class="p">,</span><span class="w"> </span><span class="nx">Eq</span><span class="p">,</span><span class="w"> </span><span class="nx">Ord</span>
 
-<p>def main(): Unit where Show(Int), Show(String) =</p>
-<p>    let int_box = Box { value: 42 }</p>
-<p>    let str<em>box = map</em>box(int<em>to</em>string, int_box)</p>
-    
-<p>    println(show(int_box))  % "Box { value: 42 }"</p>
-<p>    println(show(str_box))  % "Box { value: \"42\" }"</p>
-</code></pre>
+<span class="nx">record</span><span class="w"> </span><span class="nx">Department</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span>
+<span class="w">    </span><span class="nx">manager</span><span class="p">:</span><span class="w"> </span><span class="nx">Person</span>
+<span class="w">    </span><span class="nx">employees</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">Person</span><span class="p">)</span>
+<span class="nx">end</span>
+<span class="nx">derive</span><span class="w"> </span><span class="nx">Show</span><span class="p">,</span><span class="w"> </span><span class="nx">Eq</span>
 
-<h3>Hierarchical Data</h3>
+<span class="nx">def</span><span class="w"> </span><span class="nx">main</span><span class="p">():</span><span class="w"> </span><span class="nx">Unit</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="kd">addr</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Address</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">street</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123 Main St&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">city</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Springfield&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">country</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;USA&quot;</span>
+<span class="w">    </span><span class="p">}</span>
 
-<pre><code>module organization
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="nx">manager</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Person</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">age</span><span class="p">:</span><span class="w"> </span><span class="mi">35</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">address</span><span class="p">:</span><span class="w"> </span><span class="kd">addr</span>
+<span class="w">    </span><span class="p">}</span>
 
-<p>record Address do</p>
-<p>    street: String</p>
-<p>    city: String</p>
-<p>    country: String</p>
-<p>end</p>
-<p>derive Show, Eq</p>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="nx">dept</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Department</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Engineering&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">manager</span><span class="p">:</span><span class="w"> </span><span class="nx">manager</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">employees</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">    </span><span class="p">}</span>
 
-<p>record Person do</p>
-<p>    name: String</p>
-<p>    age: Int</p>
-<p>    address: Address</p>
-<p>end</p>
-<p>derive Show, Eq, Ord</p>
+<span class="w">    </span><span class="nx">println</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">dept</span><span class="p">))</span>
+</code></pre></div>
 
-<p>record Department do</p>
-<p>    name: String</p>
-<p>    manager: Person</p>
-<p>    employees: List(Person)</p>
-<p>end</p>
-<p>derive Show, Eq</p>
-
-<p>def main(): Unit =</p>
-<p>    let addr = Address {</p>
-<p>        street: "123 Main St",</p>
-<p>        city: "Springfield",</p>
-<p>        country: "USA"</p>
-<p>    }</p>
-    
-<p>    let manager = Person {</p>
-<p>        name: "Alice",</p>
-<p>        age: 35,</p>
-<p>        address: addr</p>
-<p>    }</p>
-    
-<p>    let dept = Department {</p>
-<p>        name: "Engineering",</p>
-<p>        manager: manager,</p>
-<p>        employees: []</p>
-<p>    }</p>
-    
-<p>    println(show(dept))</p>
-</code></pre>
-
-<h2>Best Practices</h2>
-
-<h3>1. Derive by Default</h3>
-
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="1-derive-by-default">1. Derive by Default</h3>
 <p>Start with derivation for standard typeclasses:</p>
-<pre><code>record MyType do
-<p>    field1: T1</p>
-<p>    field2: T2</p>
-<p>end</p>
-<p>derive Show, Eq</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="nv">record</span><span class="w"> </span><span class="nv">MyType</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="nv">field1</span>:<span class="w"> </span><span class="nv">T1</span>
+<span class="w">    </span><span class="nv">field2</span>:<span class="w"> </span><span class="nv">T2</span>
+<span class="k">end</span>
+<span class="nv">derive</span><span class="w"> </span><span class="k">Show</span>,<span class="w"> </span><span class="nv">Eq</span>
+</code></pre></div>
 
-<h3>2. Custom When Needed</h3>
-
+<h3 id="2-custom-when-needed">2. Custom When Needed</h3>
 <p>Override with manual instances only when necessary:</p>
-<pre><code>% Derive most instances
-<p>derive Show, Ord</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Derive most instances</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Show,</span><span class="w"> </span><span class="s">Ord</span>
 
-<p>% But custom Eq for special logic</p>
-<p>instance Eq(MyType) do</p>
-<p>    def ==(a: MyType, b: MyType): Bool = ...</p>
-<p>end</p>
-</code></pre>
+<span class="c">% But custom Eq for special logic</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Eq(MyType)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="o">==</span><span class="p">(</span><span class="n">a</span><span class="p">:</span><span class="w"> </span><span class="n">MyType</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">:</span><span class="w"> </span><span class="n">MyType</span><span class="p">):</span><span class="w"> </span><span class="n">Bool</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="k">...</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h3>3. Document Custom Instances</h3>
-
+<h3 id="3-document-custom-instances">3. Document Custom Instances</h3>
 <p>When manually implementing, explain why:</p>
-<pre><code>% Custom equality compares only the ID field
-<p>% because other fields are metadata that should be ignored</p>
-<p>instance Eq(User) do</p>
-<p>    def ==(u1: User, u2: User): Bool =</p>
-<p>        u1.id == u2.id</p>
-<p>end</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="c">% Custom equality compares only the ID field</span>
+<span class="c">% because other fields are metadata that should be ignored</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Eq(User)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="o">==</span><span class="p">(</span><span class="n">u1</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="p">,</span><span class="w"> </span><span class="n">u2</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="p">):</span><span class="w"> </span><span class="n">Bool</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="n">u1</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">u2</span><span class="p">.</span><span class="n">id</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h3>4. Order Fields Intentionally</h3>
-
+<h3 id="4-order-fields-intentionally">4. Order Fields Intentionally</h3>
 <p>For derived <code>Ord</code>, field order matters:</p>
-<pre><code>% First name, then age for ordering
-<p>record Person do</p>
-<p>    name: String    % Primary sort key</p>
-<p>    age: Int        % Secondary sort key</p>
-<p>    email: String   % Tertiary sort key</p>
-<p>end</p>
-<p>derive Ord</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="c">% First name, then age for ordering</span>
+<span class="nb">record</span><span class="w"> </span><span class="n">Person</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="w">    </span><span class="c">% Primary sort key</span>
+<span class="w">    </span><span class="n">age</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="w">        </span><span class="c">% Secondary sort key</span>
+<span class="w">    </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="w">   </span><span class="c">% Tertiary sort key</span>
+<span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Ord</span>
+</code></pre></div>
 
-<h3>5. Consider Performance</h3>
-
+<h3 id="5-consider-performance">5. Consider Performance</h3>
 <p>Derived instances are straightforward but not always optimal:</p>
-<pre><code>% Many fields - derived Eq checks all
-<p>record LargeRecord do</p>
-<p>    id: Int</p>
-<p>    field1: String</p>
-<p>    field2: String</p>
-<p>    % ... 50 more fields</p>
-<p>end</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Many fields - derived Eq checks all</span>
+<span class="nb">record</span><span class="w"> </span><span class="n">LargeRecord</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">    </span><span class="n">field1</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">    </span><span class="n">field2</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">    </span><span class="c">% ... 50 more fields</span>
+<span class="k">end</span>
 
-<p>% Better: manual Eq that checks ID first</p>
-<p>instance Eq(LargeRecord) do</p>
-<p>    def ==(r1: LargeRecord, r2: LargeRecord): Bool =</p>
-<p>        r1.id == r2.id  % Fast path</p>
-<p>end</p>
-</code></pre>
+<span class="c">% Better: manual Eq that checks ID first</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Eq(LargeRecord)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="o">==</span><span class="p">(</span><span class="n">r1</span><span class="p">:</span><span class="w"> </span><span class="n">LargeRecord</span><span class="p">,</span><span class="w"> </span><span class="n">r2</span><span class="p">:</span><span class="w"> </span><span class="n">LargeRecord</span><span class="p">):</span><span class="w"> </span><span class="n">Bool</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="n">r1</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">r2</span><span class="p">.</span><span class="n">id</span><span class="w">  </span><span class="c">% Fast path</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h2>Implementation Details</h2>
-
-<h3>Code Generation</h3>
-
+<h2 id="implementation-details">Implementation Details</h2>
+<h3 id="code-generation">Code Generation</h3>
 <p>Derived instances generate AST nodes equivalent to hand-written code:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Point</span><span class="w"> </span><span class="n">do</span><span class="w"> </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Show</span>
 
-<pre><code>record Point do x: Int, y: Int end
-<p>derive Show</p>
+<span class="c">% Equivalent to:</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Show(Point)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">p</span><span class="p">:</span><span class="w"> </span><span class="n">Point</span><span class="p">):</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="s">&quot;Point { x: &quot;</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="s">&quot;, y: &quot;</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="s">&quot; }&quot;</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<p>% Equivalent to:</p>
-<p>instance Show(Point) do</p>
-<p>    def show(p: Point): String =</p>
-<p>        "Point { x: " ++ show(p.x) ++ ", y: " ++ show(p.y) ++ " }"</p>
-<p>end</p>
-</code></pre>
-
-<h3>Compilation Phases</h3>
-
+<h3 id="compilation-phases">Compilation Phases</h3>
 <ol>
 <li><strong>Parse</strong>: Recognize <code>derive</code> clause in AST</li>
 <li><strong>Validate</strong>: Check typeclass is derivable for type</li>
@@ -449,44 +390,30 @@
 <li><strong>Typecheck</strong>: Verify generated instance is well-typed</li>
 <li><strong>Codegen</strong>: Compile instance to BEAM bytecode</li>
 </ol>
-
-<h3>Performance Characteristics</h3>
-
+<h3 id="performance-characteristics">Performance Characteristics</h3>
 <ul>
 <li><strong>Compile-time</strong>: Zero runtime overhead</li>
 <li><strong>Generated code</strong>: Equivalent to hand-written instances</li>
 <li><strong>Binary size</strong>: No difference from manual implementations</li>
 </ul>
-
-<h2>FAQ</h2>
-
-<strong>Q: Can I derive instances for existing types?</strong>  
-<p>A: No, derive clauses must appear in the same module as the type definition.</p>
-
-<strong>Q: Can I derive partial instances?</strong>  
-<p>A: No, you either derive the complete instance or write it manually.</p>
-
-<strong>Q: What if I derive and manually define the same instance?</strong>  
-<p>A: Compiler error - instance coherence violation.</p>
-
-<strong>Q: Can I derive instances conditionally?</strong>  
-<p>A: Not directly, but you can use different type definitions in different modules.</p>
-
-<strong>Q: How do I debug derived instances?</strong>  
-<p>A: Use compiler flags to emit generated code for inspection.</p>
-
-<h2>See Also</h2>
-
+<h2 id="faq">FAQ</h2>
+<p><strong>Q: Can I derive instances for existing types?</strong><br />
+A: No, derive clauses must appear in the same module as the type definition.</p>
+<p><strong>Q: Can I derive partial instances?</strong><br />
+A: No, you either derive the complete instance or write it manually.</p>
+<p><strong>Q: What if I derive and manually define the same instance?</strong><br />
+A: Compiler error - instance coherence violation.</p>
+<p><strong>Q: Can I derive instances conditionally?</strong><br />
+A: Not directly, but you can use different type definitions in different modules.</p>
+<p><strong>Q: How do I debug derived instances?</strong><br />
+A: Use compiler flags to emit generated code for inspection.</p>
+<h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="./TYPECLASS_GUIDE.md">Typeclass Guide</a> - Complete typeclass system documentation</li>
 <li><a href="./TYPE_SYSTEM.md">Type System</a> - Cure's type system overview</li>
 <li><a href="./STDLIB.md">Standard Library</a> - Built-in typeclass instances</li>
 </ul>
-
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

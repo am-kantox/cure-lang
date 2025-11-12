@@ -36,15 +36,11 @@ Last Updated: October 31, 2025">
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Cure Language Features Reference</h1>
-
-<strong>Version</strong>: Current Implementation Status  
-<strong>Last Updated</strong>: October 31, 2025
-
+        <h1 id="cure-language-features-reference">Cure Language Features Reference</h1>
+<p><strong>Version</strong>: Current Implementation Status<br />
+<strong>Last Updated</strong>: October 31, 2025</p>
 <p>This document provides a comprehensive reference for all Cure language features, including current implementation status, syntax examples, and usage patterns.</p>
-
-<h2>Table of Contents</h2>
-
+<h2 id="table-of-contents">Table of Contents</h2>
 <ol>
 <li><a href="#core-language-syntax">Core Language Syntax</a></li>
 <li><a href="#data-types-and-type-system">Data Types and Type System</a></li>
@@ -57,107 +53,101 @@ Last Updated: October 31, 2025">
 <li><a href="#testing-infrastructure">Testing Infrastructure</a></li>
 <li><a href="#performance-and-optimization">Performance and Optimization</a></li>
 </ol>
+<h2 id="core-language-syntax">Core Language Syntax</h2>
+<h3 id="module-system">Module System</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span> <span class="n">ModuleName</span> <span class="n">do</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std</span> <span class="p">[</span><span class="nb">abs</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">sqrt</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">Option</span><span class="p">,</span> <span class="n">Result</span><span class="p">]</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Math</span> <span class="p">[</span><span class="n">sin</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">cos</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
 
-<h2>Core Language Syntax</h2>
+  <span class="n">export</span> <span class="p">[</span><span class="n">main</span><span class="o">/</span><span class="mi">0</span><span class="p">,</span> <span class="n">demo_function</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
 
-<h3>Module System</h3>
-<pre><code>module ModuleName do
-  import Std [abs/1, sqrt/1, Option, Result]
-  import Std.Math [sin/1, cos/1]
-  
-  export [main/0, demo_function/1]
-  
-  # Module contents...
-end
-</code></pre>
+  <span class="c1"># Module contents...</span>
+<span class="n">end</span>
+</code></pre></div>
 
-<h3>Function Definitions</h3>
-<pre><code># Simple function
-def add(x: Int, y: Int): Int = x + y
+<h3 id="function-definitions">Function Definitions</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Simple</span><span class="w"> </span><span class="nx">function</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">add</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">y</span>
 
-# Function with complex body
-def demo(): Unit =
-  let result = calculate_something()
-  println("Result: " <> show(result))
-  0
+<span class="err">#</span><span class="w"> </span><span class="nx">Function</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">complex</span><span class="w"> </span><span class="nx">body</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">demo</span><span class="p">():</span><span class="w"> </span><span class="nx">Unit</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="nx">result</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">calculate_something</span><span class="p">()</span>
+<span class="w">  </span><span class="nx">println</span><span class="p">(</span><span class="s">&quot;Result: &quot;</span><span class="w"> </span><span class="p">&lt;&gt;</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">result</span><span class="p">))</span>
+<span class="w">  </span><span class="mi">0</span>
 
-# Helper function
-def helper(x: Int): String = int_to_string(x)
-</code></pre>
+<span class="err">#</span><span class="w"> </span><span class="nx">Helper</span><span class="w"> </span><span class="nx">function</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">helper</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">int_to_string</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span>
+</code></pre></div>
 
-<h3>Lambda Expressions</h3>
-<pre><code># Simple lambda
-let double = fn(x) -> x * 2 end
+<h3 id="lambda-expressions">Lambda Expressions</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Simple</span><span class="w"> </span><span class="nx">lambda</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">double</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kd">fn</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="nx">end</span>
 
-# Lambda with pattern matching instead of if-then-else
-let safe_div = fn(x, y) ->
-  match y == 0 do
-    true -> error("Division by zero")
-    false -> ok(x / y)
-  end
-end
+<span class="err">#</span><span class="w"> </span><span class="nx">Lambda</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">pattern</span><span class="w"> </span><span class="nx">matching</span><span class="w"> </span><span class="nx">instead</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="k">if</span><span class="o">-</span><span class="k">then</span><span class="o">-</span><span class="k">else</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">safe_div</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kd">fn</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">  </span><span class="k">match</span><span class="w"> </span><span class="nx">y</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="kc">true</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">error</span><span class="p">(</span><span class="s">&quot;Division by zero&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kc">false</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">ok</span><span class="p">(</span><span class="nx">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nx">y</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">end</span>
+<span class="nx">end</span>
 
-# Lambda with multiple parameters
-let fold_sum = fold(numbers, 0, fn(x, acc) -> x + acc end)
-</code></pre>
+<span class="err">#</span><span class="w"> </span><span class="nx">Lambda</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">multiple</span><span class="w"> </span><span class="nx">parameters</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">fold_sum</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">fold</span><span class="p">(</span><span class="nx">numbers</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="kd">fn</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span><span class="w"> </span><span class="nx">acc</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">acc</span><span class="w"> </span><span class="nx">end</span><span class="p">)</span>
+</code></pre></div>
 
-<h3>Pattern Matching</h3>
-<pre><code>match expression do
-  Ok(value) -> handle_success(value)
-  Error(msg) -> handle_error(msg)
-end
+<h3 id="pattern-matching">Pattern Matching</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">match</span><span class="w"> </span><span class="n">expression</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Ok</span><span class="p">(</span><span class="k">value</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_success</span><span class="p">(</span><span class="k">value</span><span class="p">)</span>
+<span class="w">  </span><span class="n">Error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<span class="k">end</span>
 
-match list do
-  [] -> "empty"
-  [x] -> "single: " <> show(x)
-  [x | rest] -> "head: " <> show(x) <> ", rest: " <> show(rest)
-end
+<span class="k">match</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="err">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="ss">&quot;empty&quot;</span>
+<span class="w">  </span><span class="o">[</span><span class="n">x</span><span class="o">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="ss">&quot;single: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">  </span><span class="o">[</span><span class="n">x | rest</span><span class="o">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="ss">&quot;head: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="ss">&quot;, rest: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">rest</span><span class="p">)</span>
+<span class="k">end</span>
 
-match option do
-  Some(found) -> "Found: " <> show(found)
-  None -> "Not found"
-end
-</code></pre>
+<span class="k">match</span><span class="w"> </span><span class="k">option</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="ow">Some</span><span class="p">(</span><span class="k">found</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="ss">&quot;Found: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="k">found</span><span class="p">)</span>
+<span class="w">  </span><span class="k">None</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="ss">&quot;Not found&quot;</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h3>Case Expressions</h3>
-
+<h3 id="case-expressions">Case Expressions</h3>
 <p>Cure supports <code>case</code> expressions as an alternative to <code>match</code> (they are semantically identical):</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Case with &#39;of&#39; keyword</span>
+<span class="kr">case</span><span class="w"> </span><span class="n">expression</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">  </span><span class="n">Ok</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_success</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+<span class="w">  </span><span class="nf">Error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<span class="kd">end</span>
 
-<pre><code># Case with 'of' keyword
-case expression of
-  Ok(value) -> handle_success(value)
-  Error(msg) -> handle_error(msg)
-end
+<span class="cp"># Functionally equivalent to match</span>
+<span class="n">match</span><span class="w"> </span><span class="n">expression</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Ok</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_success</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+<span class="w">  </span><span class="nf">Error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-# Functionally equivalent to match
-match expression do
-  Ok(value) -> handle_success(value)
-  Error(msg) -> handle_error(msg)
-end
-</code></pre>
+<p><strong>Note</strong>: Cure does not have <code>if-then-else</code> expressions. Use <code>match</code> or <code>case</code> for conditional logic.</p>
+<h3 id="let-bindings">Let Bindings</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Simple</span><span class="w"> </span><span class="kd">let</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">42</span>
 
-<strong>Note</strong>: Cure does not have <code>if-then-else</code> expressions. Use <code>match</code> or <code>case</code> for conditional logic.
+<span class="err">#</span><span class="w"> </span><span class="nx">Let</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">complex</span><span class="w"> </span><span class="nx">expression</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">result</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">calculate</span><span class="p">()</span>
+<span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">map</span><span class="p">(</span><span class="kd">fn</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="nx">end</span><span class="p">)</span>
+<span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">filter</span><span class="p">(</span><span class="kd">fn</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="nx">end</span><span class="p">)</span>
+</code></pre></div>
 
-<h3>Let Bindings</h3>
-<pre><code># Simple let
-let x = 42
+<h3 id="pipe-operations">Pipe Operations</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">transform1</span><span class="bp">()</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">transform2</span><span class="o">(</span><span class="n">argument</span><span class="o">)</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">final_transform</span><span class="bp">()</span>
+</code></pre></div>
 
-# Let with complex expression
-let result = calculate()
-  |> map(fn(x) -> x * 2 end)
-  |> filter(fn(x) -> x > 10 end)
-</code></pre>
-
-<h3>Pipe Operations</h3>
-<pre><code>result = input
-  |> transform1()
-  |> transform2(argument)
-  |> final_transform()
-</code></pre>
-
-<h2>Data Types and Type System</h2>
-
-<h3>Primitive Types</h3>
+<h2 id="data-types-and-type-system">Data Types and Type System</h2>
+<h3 id="primitive-types">Primitive Types</h3>
 <ul>
 <li><code>Int</code>: 64-bit signed integers</li>
 <li><code>Float</code>: 64-bit IEEE floating-point numbers  </li>
@@ -166,523 +156,475 @@ let result = calculate()
 <li><code>Atom</code>: Symbolic constants (<code>:atom_name</code>)</li>
 <li><code>Binary</code>: Byte sequences</li>
 <li><code>Unit</code>: Unit type for functions with no return value</li>
-<li><code>Nat</code>: Natural numbers (Int >= 0) - refinement type</li>
-<li><code>Pos</code>: Positive integers (Int > 0) - refinement type</li>
+<li><code>Nat</code>: Natural numbers (Int &gt;= 0) - refinement type</li>
+<li><code>Pos</code>: Positive integers (Int &gt; 0) - refinement type</li>
 <li><code>Pid</code>: BEAM process identifier</li>
 </ul>
+<h3 id="composite-types">Composite Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w">                    </span><span class="err">#</span><span class="w"> </span><span class="nx">Homogeneous</span><span class="w"> </span><span class="nx">lists</span>
+<span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span><span class="w">                 </span><span class="err">#</span><span class="w"> </span><span class="nx">Length</span><span class="o">-</span><span class="nx">indexed</span><span class="w"> </span><span class="nx">lists</span><span class="w"> </span><span class="p">(</span><span class="nx">dependent</span><span class="w"> </span><span class="k">type</span><span class="p">)</span>
+<span class="nx">Tuple</span><span class="p">(</span><span class="nx">T1</span><span class="p">,</span><span class="w"> </span><span class="nx">T2</span><span class="p">,</span><span class="w"> </span><span class="o">...</span><span class="p">)</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="nx">Fixed</span><span class="o">-</span><span class="nx">size</span><span class="w"> </span><span class="nx">tuples</span>
+<span class="nx">Result</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">E</span><span class="p">)</span><span class="w">               </span><span class="err">#</span><span class="w"> </span><span class="nx">Error</span><span class="w"> </span><span class="nx">handling</span><span class="w"> </span><span class="nx">without</span><span class="w"> </span><span class="nx">exceptions</span>
+<span class="nx">Option</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w">                  </span><span class="err">#</span><span class="w"> </span><span class="nx">Nullable</span><span class="w"> </span><span class="nx">values</span>
+</code></pre></div>
 
-<h3>Composite Types</h3>
-<pre><code>List(T)                    # Homogeneous lists
-List(T, n)                 # Length-indexed lists (dependent type)
-Tuple(T1, T2, ...)         # Fixed-size tuples
-Result(T, E)               # Error handling without exceptions
-Option(T)                  # Nullable values
-</code></pre>
-
-<h3>Constructor Types</h3>
-<pre><code>Ok(value)                  # Success result
+<h3 id="constructor-types">Constructor Types</h3>
+<div class="codehilite"><pre><span></span><code>Ok(value)                  # Success result
 Error(message)             # Error result
 Some(value)                # Present optional value
 None                       # Absent optional value
-</code></pre>
+</code></pre></div>
 
-<h3>Dependent Types</h3>
-<pre><code># Length-indexed types
-Vector(T, n: Nat)          # Fixed-length vector
-List(T, n: Nat)            # List with compile-time known length
-Matrix(rows: Nat, cols: Nat, T)  # 2D matrix with dimensions
+<h3 id="dependent-types">Dependent Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Length</span><span class="o">-</span><span class="nx">indexed</span><span class="w"> </span><span class="nx">types</span>
+<span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">)</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="nx">Fixed</span><span class="o">-</span><span class="nx">length</span><span class="w"> </span><span class="nx">vector</span>
+<span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">)</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nx">List</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">compile</span><span class="o">-</span><span class="nx">time</span><span class="w"> </span><span class="nx">known</span><span class="w"> </span><span class="nx">length</span>
+<span class="nx">Matrix</span><span class="p">(</span><span class="nx">rows</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">cols</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">T</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="mi">2</span><span class="nx">D</span><span class="w"> </span><span class="nx">matrix</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">dimensions</span>
 
-# Constraint-based types
-{x: Int | x > 0}           # Positive integers
-{x: Float | x >= 0.0}      # Non-negative floats
-{xs: List(T) | length(xs) > 0}  # Non-empty lists
+<span class="err">#</span><span class="w"> </span><span class="nx">Constraint</span><span class="o">-</span><span class="nx">based</span><span class="w"> </span><span class="nx">types</span>
+<span class="p">{</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w">           </span><span class="err">#</span><span class="w"> </span><span class="nx">Positive</span><span class="w"> </span><span class="nx">integers</span>
+<span class="p">{</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Float</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="m m-Double">0.0</span><span class="p">}</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="nx">Non</span><span class="o">-</span><span class="nx">negative</span><span class="w"> </span><span class="nx">floats</span>
+<span class="p">{</span><span class="nx">xs</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">length</span><span class="p">(</span><span class="nx">xs</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Non</span><span class="o">-</span><span class="nx">empty</span><span class="w"> </span><span class="nx">lists</span>
 
-# Function-dependent types
-def replicate(n: Nat, x: T): List(T, n)  # Return type depends on argument
-def safe_head(xs: List(T, n)): T when n > 0  # Precondition constraint
-</code></pre>
+<span class="err">#</span><span class="w"> </span><span class="nx">Function</span><span class="o">-</span><span class="nx">dependent</span><span class="w"> </span><span class="nx">types</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">replicate</span><span class="p">(</span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Return</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">depends</span><span class="w"> </span><span class="nx">on</span><span class="w"> </span><span class="nx">argument</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">safe_head</span><span class="p">(</span><span class="nx">xs</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)):</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Precondition</span><span class="w"> </span><span class="kd">constraint</span>
+</code></pre></div>
 
-<h2>Operators</h2>
-
-<h3>Binary Operators</h3>
+<h2 id="operators">Operators</h2>
+<h3 id="binary-operators">Binary Operators</h3>
 <ul>
 <li>Arithmetic: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code></li>
-<li>Comparison: <code>==</code>, <code>!=</code>, <code><</code>, <code>></code>, <code><=</code>, <code>>=</code></li>
-<li>String: <code><></code> (concatenation)</li>
+<li>Comparison: <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code></li>
+<li>String: <code>&lt;&gt;</code> (concatenation)</li>
 <li>List: <code>|</code> (cons operator, used in <code>[h | t]</code> syntax)</li>
-<li>Pipe: <code>|></code> (function composition)</li>
+<li>Pipe: <code>|&gt;</code> (function composition)</li>
 </ul>
-
-<h3>Unary Operators</h3>
+<h3 id="unary-operators">Unary Operators</h3>
 <ul>
 <li>Arithmetic: <code>+x</code>, <code>-x</code></li>
 <li>Logical: <code>not(expr)</code></li>
 </ul>
+<h2 id="literals">Literals</h2>
+<h3 id="numbers">Numbers</h3>
+<div class="codehilite"><pre><span></span><code><span class="mf">42</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="nb">Int</span><span class="n">eger</span>
+<span class="mf">3.14</span><span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="n">Float</span>
+<span class="o">-</span><span class="mf">5</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="n">Negative</span><span class="w"> </span><span class="nb">int</span><span class="n">eger</span>
+</code></pre></div>
 
-<h2>Literals</h2>
+<h3 id="strings">Strings</h3>
+<div class="codehilite"><pre><span></span><code><span class="s">&quot;Hello, World!&quot;</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="nx">Simple</span><span class="w"> </span><span class="kt">string</span>
+<span class="s">&quot;Line 1\nLine 2&quot;</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">escape</span><span class="w"> </span><span class="nx">sequences</span>
+<span class="s">&quot;Quote: \&quot;text\&quot;&quot;</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">escaped</span><span class="w"> </span><span class="nx">quotes</span>
+</code></pre></div>
 
-<h3>Numbers</h3>
-<pre><code>42          # Integer
-3.14        # Float
--5          # Negative integer
-</code></pre>
-
-<h3>Strings</h3>
-<pre><code>"Hello, World!"       # Simple string
-"Line 1\nLine 2"      # String with escape sequences
-"Quote: \"text\""     # String with escaped quotes
-</code></pre>
-
-<h3>Lists</h3>
-<pre><code>[]                    # Empty list
+<h3 id="lists">Lists</h3>
+<div class="codehilite"><pre><span></span><code>[]                    # Empty list
 [1, 2, 3]            # List of integers
-["a", "b", "c"]      # List of strings
-</code></pre>
+[&quot;a&quot;, &quot;b&quot;, &quot;c&quot;]      # List of strings
+</code></pre></div>
 
-<h3>Tuples</h3>
-
+<h3 id="tuples">Tuples</h3>
 <p>Tuples use curly brace <code>{}</code> syntax:</p>
-
-<pre><code>{}                    # Empty tuple (Unit)
+<div class="codehilite"><pre><span></span><code>{}                    # Empty tuple (Unit)
 {42}                  # Single element tuple
-{1, "hello", true}    # Multi-element tuple
-{:ok, "success"}      # Tagged tuple (atom + value)
-{:error, "failed"}    # Error tuple (atom + value)
-</code></pre>
+{1, &quot;hello&quot;, true}    # Multi-element tuple
+{:ok, &quot;success&quot;}      # Tagged tuple (atom + value)
+{:error, &quot;failed&quot;}    # Error tuple (atom + value)
+</code></pre></div>
 
-<strong>Note</strong>: Tuple pattern matching is fully supported:
-<pre><code>match point do
-  {x, y} when x > 0.0 and y > 0.0 -> "First quadrant"
-  {x, y} when x == 0.0 and y == 0.0 -> "Origin"
-  _ -> "Other quadrant"
-end
-</code></pre>
+<p><strong>Note</strong>: Tuple pattern matching is fully supported:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">match</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;First quadrant&quot;</span>
+<span class="w">  </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Origin&quot;</span>
+<span class="w">  </span><span class="n">_</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Other quadrant&quot;</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-<h3>Atoms</h3>
-<pre><code>:atom_name
+<h3 id="atoms">Atoms</h3>
+<div class="codehilite"><pre><span></span><code>:atom_name
 :increment
 :ok
-</code></pre>
+</code></pre></div>
 
-<h2>Finite State Machines</h2>
-
+<h2 id="finite-state-machines">Finite State Machines</h2>
 <p>Cure provides first-class support for finite state machines with compile-time verification, state-dependent data, and integration with the BEAM actor model.</p>
-
-<h3>Basic FSM Definition</h3>
-
+<h3 id="basic-fsm-definition">Basic FSM Definition</h3>
 <p>Cure FSMs use a record-based payload system with arrow transition syntax:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Define a payload record to track FSM data</span>
+<span class="n">record</span><span class="w"> </span><span class="n">TrafficPayload</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">cycles_completed</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">  </span><span class="n">timer_events</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">  </span><span class="n">emergency_stops</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="n">end</span>
 
-<pre><code># Define a payload record to track FSM data
-record TrafficPayload do
-  cycles_completed: Int
-  timer_events: Int
-  emergency_stops: Int
-end
+<span class="c1"># FSM with initial payload values</span>
+<span class="n">fsm</span><span class="w"> </span><span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">timer_events</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">emergency_stops</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Red</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Green</span>
+<span class="w">  </span><span class="n">Red</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">emergency</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span><span class="w">      </span><span class="c1"># Self-transition</span>
+<span class="w">  </span><span class="n">Green</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Yellow</span>
+<span class="w">  </span><span class="n">Green</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">emergency</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+<span class="w">  </span><span class="n">Yellow</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+<span class="w">  </span><span class="n">Yellow</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">emergency</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+<span class="n">end</span>
+</code></pre></div>
 
-# FSM with initial payload values
-fsm TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0} do
-  Red --> |timer| Green
-  Red --> |emergency| Red      # Self-transition
-  Green --> |timer| Yellow
-  Green --> |emergency| Red
-  Yellow --> |timer| Red
-  Yellow --> |emergency| Red
-end
-</code></pre>
-
-<strong>Key Points</strong>:
-<ul>
-<li>First state in transitions is the initial state (Red in this example)</li>
-<li>Transitions use <code>--></code> arrow with <code>|event|</code> syntax</li>
-<li>Must define a payload record even if fields are unused</li>
-</ul>
-
-<h3>FSM Runtime Operations</h3>
-
+<p><strong>Key Points</strong>:<br />
+- First state in transitions is the initial state (Red in this example)<br />
+- Transitions use <code>--&gt;</code> arrow with <code>|event|</code> syntax<br />
+- Must define a payload record even if fields are unused</p>
+<h3 id="fsm-runtime-operations">FSM Runtime Operations</h3>
 <p>FSMs compile to BEAM <code>gen_statem</code> processes:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Fsm</span> <span class="p">[</span><span class="n">fsm_spawn</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_cast</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_advertise</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_state</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Pair</span> <span class="p">[</span><span class="n">pair</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
 
-<pre><code>import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
-import Std.Pair [pair/2]
+<span class="c1"># Spawn an FSM instance with initial data</span>
+<span class="n">let</span> <span class="n">initial_data</span> <span class="o">=</span> <span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">timer_events</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">emergency_stops</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+<span class="n">let</span> <span class="n">fsm_pid</span> <span class="o">=</span> <span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">TrafficPayload</span><span class="p">,</span> <span class="n">initial_data</span><span class="p">)</span>
 
-# Spawn an FSM instance with initial data
-let initial_data = TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0}
-let fsm_pid = fsm_spawn(:TrafficPayload, initial_data)
+<span class="c1"># Give the FSM a name for easy reference</span>
+<span class="n">let</span> <span class="n">adv_result</span> <span class="o">=</span> <span class="n">fsm_advertise</span><span class="p">(</span><span class="n">fsm_pid</span><span class="p">,</span> <span class="p">:</span><span class="n">traffic_light</span><span class="p">)</span>
 
-# Give the FSM a name for easy reference
-let adv_result = fsm_advertise(fsm_pid, :traffic_light)
+<span class="c1"># Send events to the FSM</span>
+<span class="n">let</span> <span class="n">empty_list</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">let</span> <span class="n">event</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(:</span><span class="n">timer</span><span class="p">,</span> <span class="n">empty_list</span><span class="p">)</span>
+<span class="n">let</span> <span class="n">cast_result</span> <span class="o">=</span> <span class="n">fsm_cast</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
 
-# Send events to the FSM
-let empty_list = []
-let event = pair(:timer, empty_list)
-let cast_result = fsm_cast(:traffic_light, event)
+<span class="c1"># Query current state</span>
+<span class="n">let</span> <span class="n">current_state</span> <span class="o">=</span> <span class="n">fsm_state</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">)</span>  <span class="c1"># Returns current state atom</span>
+</code></pre></div>
 
-# Query current state
-let current_state = fsm_state(:traffic_light)  # Returns current state atom
-</code></pre>
-
-<h3>FSM Implementation Notes</h3>
-
+<h3 id="fsm-implementation-notes">FSM Implementation Notes</h3>
 <p>Cure FSMs compile to Erlang <code>gen_statem</code> behaviors with the following features:</p>
+<p><strong>Compile-Time Verification</strong>:<br />
+- State machine structure validated at compile time<br />
+- Transition completeness checked<br />
+- Event type checking</p>
+<p><strong>Runtime Integration</strong>:<br />
+- Native BEAM process integration<br />
+- Mailbox-based event handling<br />
+- OTP supervision tree compatible<br />
+- Hot code reloading support</p>
+<p><strong>Current Implementation</strong>:<br />
+- Simple arrow-based transition syntax (<code>State1 --&gt; |event| State2</code>)<br />
+- Record-based payload data tracking<br />
+- Event casting with atom-based event names<br />
+- State querying via FSM references</p>
+<h2 id="records-and-dependent-types">Records and Dependent Types</h2>
+<h3 id="record-definitions">Record Definitions</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">record</span><span class="w"> </span><span class="n">Person</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="nl">age</span><span class="p">:</span><span class="w"> </span><span class="n">Nat</span>
+<span class="w">  </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="k">end</span>
 
-<strong>Compile-Time Verification</strong>:
-<ul>
-<li>State machine structure validated at compile time</li>
-<li>Transition completeness checked</li>
-<li>Event type checking</li>
-</ul>
+<span class="err">#</span><span class="w"> </span><span class="n">Creating</span><span class="w"> </span><span class="n">records</span>
+<span class="n">let</span><span class="w"> </span><span class="n">person</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Person</span><span class="err">{</span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;Alice&quot;</span><span class="p">,</span><span class="w"> </span><span class="nl">age</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span><span class="w"> </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;alice@example.com&quot;</span><span class="err">}</span>
 
-<strong>Runtime Integration</strong>:
-<ul>
-<li>Native BEAM process integration</li>
-<li>Mailbox-based event handling</li>
-<li>OTP supervision tree compatible</li>
-<li>Hot code reloading support</li>
-</ul>
+<span class="err">#</span><span class="w"> </span><span class="n">Pattern</span><span class="w"> </span><span class="n">matching</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="n">records</span>
+<span class="k">match</span><span class="w"> </span><span class="n">person</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Person</span><span class="err">{</span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="nl">age</span><span class="p">:</span><span class="w"> </span><span class="n">age</span><span class="err">}</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">18</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="ss">&quot;Hello, adult &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="ss">&quot;!&quot;</span>
+<span class="w">  </span><span class="n">Person</span><span class="err">{</span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">name</span><span class="err">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="ss">&quot;Hello, young &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="ss">&quot;!&quot;</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<strong>Current Implementation</strong>:
-<ul>
-<li>Simple arrow-based transition syntax (<code>State1 --> |event| State2</code>)</li>
-<li>Record-based payload data tracking</li>
-<li>Event casting with atom-based event names</li>
-<li>State querying via FSM references</li>
-</ul>
+<h3 id="dependent-types_1">Dependent Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Length</span><span class="o">-</span><span class="nx">indexed</span><span class="w"> </span><span class="nx">types</span>
+<span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">)</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="nx">Fixed</span><span class="o">-</span><span class="nx">length</span><span class="w"> </span><span class="nx">vector</span>
+<span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">)</span><span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="nx">List</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">known</span><span class="w"> </span><span class="nx">length</span>
+<span class="nx">Range</span><span class="p">(</span><span class="nx">min</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">max</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Integer</span><span class="w"> </span><span class="nx">range</span><span class="w"> </span><span class="k">type</span>
 
+<span class="err">#</span><span class="w"> </span><span class="nx">Matrix</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">dimension</span><span class="w"> </span><span class="nx">checking</span>
+<span class="nx">record</span><span class="w"> </span><span class="nx">Matrix</span><span class="p">(</span><span class="nx">rows</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">cols</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">data</span><span class="p">:</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">cols</span><span class="p">),</span><span class="w"> </span><span class="nx">rows</span><span class="p">)</span>
+<span class="nx">end</span>
 
-<h2>Records and Dependent Types</h2>
+<span class="err">#</span><span class="w"> </span><span class="nx">Refinement</span><span class="w"> </span><span class="nx">types</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">NonEmptyList</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span>
 
-<h3>Record Definitions</h3>
-<pre><code>record Person do
-  name: String
-  age: Nat
-  email: String
-end
+<span class="nx">def</span><span class="w"> </span><span class="nx">head</span><span class="p">(</span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">NonEmptyList</span><span class="p">(</span><span class="nx">T</span><span class="p">)):</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="k">match</span><span class="w"> </span><span class="nx">list</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="p">[</span><span class="nx">x</span><span class="o">|</span><span class="nx">_</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">x</span>
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="nx">No</span><span class="w"> </span><span class="nx">need</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">empty</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">system</span><span class="w"> </span><span class="nx">guarantees</span><span class="w"> </span><span class="nx">non</span><span class="o">-</span><span class="nx">empty</span>
+<span class="w">  </span><span class="nx">end</span>
+</code></pre></div>
 
-# Creating records
-let person = Person{name: "Alice", age: 30, email: "alice@example.com"}
+<h2 id="advanced-features">Advanced Features</h2>
+<h3 id="function-imports-with-arity">Function Imports with Arity</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">ModuleName</span> <span class="p">[</span>
+  <span class="n">function1</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span>    <span class="c1"># Function with 1 parameter</span>
+  <span class="n">function2</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span>    <span class="c1"># Function with 2 parameters</span>
+  <span class="n">TypeName</span><span class="p">,</span>       <span class="c1"># Type import</span>
+  <span class="n">constructor</span>     <span class="c1"># Constructor import</span>
+<span class="p">]</span>
+</code></pre></div>
 
-# Pattern matching on records
-match person do
-  Person{name: name, age: age} when age >= 18 ->
-    "Hello, adult " <> name <> "!"
-  Person{name: name} ->
-    "Hello, young " <> name <> "!"
-end
-</code></pre>
+<h3 id="complex-nested-expressions">Complex Nested Expressions</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">#</span><span class="w"> </span><span class="n">Nested</span><span class="w"> </span><span class="n">lambdas</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">higher</span><span class="o">-</span><span class="n">order</span><span class="w"> </span><span class="n">functions</span>
+<span class="n">processed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">filter</span><span class="o">(</span><span class="n">fn</span><span class="o">(</span><span class="n">item</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="ow">not</span><span class="o">(</span><span class="n">is_empty</span><span class="o">(</span><span class="n">item</span><span class="o">))</span><span class="w"> </span><span class="k">end</span><span class="o">)</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">map</span><span class="o">(</span><span class="n">fn</span><span class="o">(</span><span class="n">item</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span>
+<span class="w">      </span><span class="n">process_item</span><span class="o">(</span><span class="n">item</span><span class="o">)</span>
+<span class="w">        </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate</span><span class="bp">()</span>
+<span class="w">        </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">transform</span><span class="bp">()</span>
+<span class="w">     </span><span class="k">end</span><span class="o">)</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">collect_results</span><span class="bp">()</span>
+</code></pre></div>
 
-<h3>Dependent Types</h3>
-<pre><code># Length-indexed types
-Vector(T, n: Nat)      # Fixed-length vector
-List(T, n: Nat)        # List with known length
-Range(min: Int, max: Int)  # Integer range type
-
-# Matrix with dimension checking
-record Matrix(rows: Nat, cols: Nat, T) do
-  data: Vector(Vector(T, cols), rows)
-end
-
-# Refinement types
-type NonEmptyList(T) = List(T, n) when n > 0
-
-def head(list: NonEmptyList(T)): T =
-  match list do
-    [x|_] -> x
-    # No need for empty case - type system guarantees non-empty
-  end
-</code></pre>
-
-<h2>Advanced Features</h2>
-
-<h3>Function Imports with Arity</h3>
-<pre><code>import ModuleName [
-  function1/1,    # Function with 1 parameter
-  function2/2,    # Function with 2 parameters
-  TypeName,       # Type import
-  constructor     # Constructor import
-]
-</code></pre>
-
-<h3>Complex Nested Expressions</h3>
-<pre><code># Nested lambdas in higher-order functions
-processed = data
-  |> filter(fn(item) -> not(is_empty(item)) end)
-  |> map(fn(item) -> 
-      process_item(item)
-        |> validate()
-        |> transform()
-     end)
-  |> collect_results()
-</code></pre>
-
-<h3>Match vs Case</h3>
-
+<h3 id="match-vs-case">Match vs Case</h3>
 <p>Both <code>match</code> and <code>case</code> are supported and functionally equivalent:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="k">Case</span><span class="w"> </span><span class="n">expression</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="s1">&#39;of&#39;</span><span class="w"> </span><span class="n">keyword</span><span class="w"> </span><span class="p">(</span><span class="n">alternative</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="k">match</span><span class="p">)</span>
+<span class="k">case</span><span class="w"> </span><span class="n">expression</span><span class="w"> </span><span class="k">of</span>
+<span class="w">  </span><span class="n">Ok</span><span class="p">(</span><span class="k">value</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_success</span><span class="p">(</span><span class="k">value</span><span class="p">)</span>
+<span class="w">  </span><span class="n">Error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<span class="k">end</span>
 
-<pre><code># Case expression with 'of' keyword (alternative to match)
-case expression of
-  Ok(value) -> handle_success(value)
-  Error(msg) -> handle_error(msg)
-end
+<span class="k">case</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="k">of</span>
+<span class="w">  </span><span class="err">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="ss">&quot;empty&quot;</span>
+<span class="w">  </span><span class="o">[</span><span class="n">x</span><span class="o">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="ss">&quot;single: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="w">  </span><span class="o">[</span><span class="n">x | rest</span><span class="o">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="ss">&quot;head: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
 
-case list of
-  [] -> "empty"
-  [x] -> "single: " <> show(x)
-  [x | rest] -> "head: " <> show(x)
-end
-</code></pre>
+<h3 id="pattern-matching-with-guards">Pattern Matching with Guards</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">match</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;positive&quot;</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;negative&quot;</span>
+<span class="w">  </span><span class="n">_</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;zero&quot;</span>
+<span class="kd">end</span>
 
-<h3>Pattern Matching with Guards</h3>
-<pre><code>match value do
-  x when x > 0 -> "positive"
-  x when x < 0 -> "negative"
-  _ -> "zero"
-end
+<span class="cp"># Guards in case expressions</span>
+<span class="kr">case</span><span class="w"> </span><span class="n">number</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">n</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;large&quot;</span>
+<span class="w">  </span><span class="n">n</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;medium&quot;</span><span class="w"> </span>
+<span class="w">  </span><span class="n">_</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;small&quot;</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-# Guards in case expressions
-case number do
-  n when n > 100 -> "large"
-  n when n > 10 -> "medium" 
-  _ -> "small"
-end
-</code></pre>
-
-<h2>Error Handling Patterns</h2>
-
-<h3>Result Types</h3>
-<pre><code>def safe_operation(input: Int): Result(Int, String) =
-  match input < 0 do
-    true -> error("Negative input not allowed")
-    false -> ok(input * 2)
+<h2 id="error-handling-patterns">Error Handling Patterns</h2>
+<h3 id="result-types">Result Types</h3>
+<div class="codehilite"><pre><span></span><code>def safe_operation(input: Int): Result(Int, String) =
+  match input &lt; 0 do
+    true -&gt; error(&quot;Negative input not allowed&quot;)
+    false -&gt; ok(input * 2)
   end
-</code></pre>
+</code></pre></div>
 
-<h3>Option Types</h3>
-<pre><code>def find_item(list: List(String), target: String): Option(String) =
-  match search(list, target) do
-    found when found != "" -> Some(found)
-    _ -> None
-  end
-</code></pre>
+<h3 id="option-types">Option Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">find_item</span><span class="p">(</span><span class="n">list</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">String</span><span class="p">),</span><span class="w"> </span><span class="n">target</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">Option</span><span class="p">(</span><span class="n">String</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">match</span><span class="w"> </span><span class="n">search</span><span class="p">(</span><span class="n">list</span><span class="p">,</span><span class="w"> </span><span class="n">target</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">found</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">found</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Some</span><span class="p">(</span><span class="n">found</span><span class="p">)</span>
+<span class="w">    </span><span class="n">_</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">None</span>
+<span class="w">  </span><span class="kd">end</span>
+</code></pre></div>
 
-<h2>Best Practices</h2>
-
-<h3>Function Composition</h3>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="function-composition">Function Composition</h3>
 <p>Use pipe operators for readable data transformations:</p>
-<pre><code>result = input
-  |> validate_input()
-  |> process_data()
-  |> format_output()
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate_input</span><span class="bp">()</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">process_data</span><span class="bp">()</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">format_output</span><span class="bp">()</span>
+</code></pre></div>
 
-<h3>Error Handling</h3>
+<h3 id="error-handling">Error Handling</h3>
 <p>Use Result types for operations that can fail:</p>
-<pre><code>def divide(x: Float, y: Float): Result(Float, String) =
-  match y == 0.0 do
-    true -> error("Division by zero")
-    false -> ok(x / y)
-  end
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">divide</span><span class="p">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Float</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">Float</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">Result</span><span class="p">(</span><span class="n">Float</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">match</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="kr">true</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nf">error</span><span class="p">(</span><span class="s">&quot;Division by zero&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">false</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+<span class="w">  </span><span class="kd">end</span>
+</code></pre></div>
 
-<h3>Pattern Matching</h3>
+<h3 id="pattern-matching_1">Pattern Matching</h3>
 <p>Prefer pattern matching for control flow:</p>
-<pre><code># Good - using pattern matching
-match result do
-  Ok(value) -> use_value(value)
-  Error(msg) -> handle_error(msg)
-end
+<div class="codehilite"><pre><span></span><code><span class="cp"># Good - using pattern matching</span>
+<span class="n">match</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Ok</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">use_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+<span class="w">  </span><span class="nf">Error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<span class="kd">end</span>
 
-# Also good - using case
-case result of
-  Ok(value) -> use_value(value)
-  Error(msg) -> handle_error(msg)
-end
-</code></pre>
+<span class="cp"># Also good - using case</span>
+<span class="kr">case</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">  </span><span class="n">Ok</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">use_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+<span class="w">  </span><span class="nf">Error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-<h2>Type Classes and Constraints</h2>
-
+<h2 id="type-classes-and-constraints">Type Classes and Constraints</h2>
 <p>Cure supports type classes for ad-hoc polymorphism and constraint-based programming.</p>
+<h3 id="type-class-definition">Type Class Definition</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Ord</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">compare</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">Ordering</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="p">(&lt;)(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">Bool</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">compare</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">LT</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="p">(</span><span class="o">&lt;=</span><span class="p">)(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">Bool</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">compare</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">)</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nx">GT</span>
+<span class="nx">end</span>
 
-<h3>Type Class Definition</h3>
-<pre><code>typeclass Ord(T) where
-  def compare(x: T, y: T): Ordering
-  def (<)(x: T, y: T): Bool = compare(x, y) == LT
-  def (<=)(x: T, y: T): Bool = compare(x, y) != GT
-end
+<span class="nx">typeclass</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span>
+<span class="nx">end</span>
 
-typeclass Show(T) where
-  def show(x: T): String
-end
+<span class="nx">typeclass</span><span class="w"> </span><span class="nx">Functor</span><span class="p">(</span><span class="nx">F</span><span class="p">)</span><span class="w"> </span><span class="k">where</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">map</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">B</span><span class="p">,</span><span class="w"> </span><span class="nx">fa</span><span class="p">:</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">A</span><span class="p">)):</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">B</span><span class="p">)</span>
+<span class="nx">end</span>
+</code></pre></div>
 
-typeclass Functor(F) where
-  def map(f: A -> B, fa: F(A)): F(B)
-end
-</code></pre>
+<h3 id="type-class-instances">Type Class Instances</h3>
+<div class="codehilite"><pre><span></span><code>#<span class="w"> </span><span class="nv">Manual</span><span class="w"> </span><span class="nv">instances</span>
+<span class="nv">instance</span><span class="w"> </span><span class="nv">Ord</span><span class="ss">(</span><span class="nv">Int</span><span class="ss">)</span><span class="w"> </span><span class="nv">where</span>
+<span class="w">  </span><span class="nv">def</span><span class="w"> </span><span class="nv">compare</span><span class="ss">(</span><span class="nv">x</span>,<span class="w"> </span><span class="nv">y</span><span class="ss">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nv">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nv">y</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nv">LT</span>
+<span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nv">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="nv">y</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nv">GT</span>
+<span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="nv">EQ</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="k">end</span>
 
-<h3>Type Class Instances</h3>
-<pre><code># Manual instances
-instance Ord(Int) where
-  def compare(x, y) =
-    if x < y then LT
-    else if x > y then GT
-    else EQ
-    end
-end
+#<span class="w"> </span><span class="nv">Automatic</span><span class="w"> </span><span class="nv">derivation</span>
+<span class="nv">derive</span><span class="w"> </span><span class="nv">Ord</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">List</span><span class="ss">(</span><span class="nv">T</span><span class="ss">)</span><span class="w"> </span><span class="nv">when</span><span class="w"> </span><span class="nv">Ord</span><span class="ss">(</span><span class="nv">T</span><span class="ss">)</span>
+<span class="nv">derive</span><span class="w"> </span><span class="k">Show</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">Option</span><span class="ss">(</span><span class="nv">T</span><span class="ss">)</span><span class="w"> </span><span class="nv">when</span><span class="w"> </span><span class="k">Show</span><span class="ss">(</span><span class="nv">T</span><span class="ss">)</span>
+<span class="nv">derive</span><span class="w"> </span><span class="nv">Functor</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">List</span>
+<span class="nv">derive</span><span class="w"> </span><span class="nv">Functor</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">Option</span>
+</code></pre></div>
 
-# Automatic derivation
-derive Ord for List(T) when Ord(T)
-derive Show for Option(T) when Show(T)
-derive Functor for List
-derive Functor for Option
-</code></pre>
+<h3 id="constraint-based-programming">Constraint-Based Programming</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Generic</span><span class="w"> </span><span class="nx">sorting</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">constraints</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">sort</span><span class="p">(</span><span class="nx">xs</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">Ord</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="nx">quicksort_impl</span><span class="p">(</span><span class="nx">xs</span><span class="p">)</span>
 
-<h3>Constraint-Based Programming</h3>
-<pre><code># Generic sorting with constraints
-def sort(xs: List(T)): List(T) where Ord(T) =
-  quicksort_impl(xs)
+<span class="err">#</span><span class="w"> </span><span class="nx">Pretty</span><span class="w"> </span><span class="nx">printing</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">constraints</span><span class="w">  </span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">debug_print</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">Unit</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="nx">print</span><span class="p">(</span><span class="nx">show</span><span class="p">(</span><span class="nx">x</span><span class="p">))</span>
 
-# Pretty printing with constraints  
-def debug_print(x: T): Unit where Show(T) =
-  print(show(x))
+<span class="err">#</span><span class="w"> </span><span class="nx">Functor</span><span class="w"> </span><span class="nx">mapping</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">transform</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">B</span><span class="p">,</span><span class="w"> </span><span class="nx">container</span><span class="p">:</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">A</span><span class="p">)):</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">B</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">Functor</span><span class="p">(</span><span class="nx">F</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="nx">map</span><span class="p">(</span><span class="nx">f</span><span class="p">,</span><span class="w"> </span><span class="nx">container</span><span class="p">)</span>
+</code></pre></div>
 
-# Functor mapping
-def transform(f: A -> B, container: F(A)): F(B) where Functor(F) =
-  map(f, container)
-</code></pre>
+<h2 id="advanced-features_1">Advanced Features</h2>
+<h3 id="pi-types-dependent-functions">Pi Types (Dependent Functions)</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Function</span><span class="w"> </span><span class="nx">types</span><span class="w"> </span><span class="nx">that</span><span class="w"> </span><span class="nx">depend</span><span class="w"> </span><span class="nx">on</span><span class="w"> </span><span class="nx">their</span><span class="w"> </span><span class="nx">arguments</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">replicate</span><span class="p">(</span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="p">[]</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">::</span><span class="w"> </span><span class="nx">replicate</span><span class="p">(</span><span class="nx">n</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="p">)</span>
+</code></pre></div>
 
-<h2>Advanced Features</h2>
+<h3 id="sigma-types-dependent-pairs">Sigma Types (Dependent Pairs)</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Pairs</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">second</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">depends</span><span class="w"> </span><span class="nx">on</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">first</span><span class="w"> </span><span class="nx">value</span>
+<span class="p">{</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="p">)}</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Pair</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">number</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">vector</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">that</span><span class="w"> </span><span class="nx">length</span>
+</code></pre></div>
 
-<h3>Pi Types (Dependent Functions)</h3>
-<pre><code># Function types that depend on their arguments
-def replicate(n: Nat, x: T): List(T, n) = 
-  if n == 0 then [] else x :: replicate(n-1, x)
-</code></pre>
+<h3 id="refinement-types">Refinement Types</h3>
+<div class="codehilite"><pre><span></span><code># Types with predicates
+{x: Int | x &gt; 0}          # Positive integers
+{x: List(T) | length(x) &gt; 0}  # Non-empty lists
+</code></pre></div>
 
-<h3>Sigma Types (Dependent Pairs)</h3>
-<pre><code># Pairs where the second type depends on the first value
-{x: Nat, Vector(Int, x)}  # Pair of number and vector of that length
-</code></pre>
+<h3 id="indexed-types">Indexed Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Types</span><span class="w"> </span><span class="nx">parameterized</span><span class="w"> </span><span class="nx">by</span><span class="w"> </span><span class="nx">values</span>
+<span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">)</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="nx">Vector</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">length</span><span class="w"> </span><span class="nx">n</span>
+<span class="nx">Matrix</span><span class="p">(</span><span class="nx">rows</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">cols</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">T</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Matrix</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">compile</span><span class="o">-</span><span class="nx">time</span><span class="w"> </span><span class="nx">dimensions</span>
+</code></pre></div>
 
-<h3>Refinement Types</h3>
-<pre><code># Types with predicates
-{x: Int | x > 0}          # Positive integers
-{x: List(T) | length(x) > 0}  # Non-empty lists
-</code></pre>
-
-<h3>Indexed Types</h3>
-<pre><code># Types parameterized by values
-Vector(T, n: Nat)         # Vector of type T with length n
-Matrix(rows: Nat, cols: Nat, T)  # Matrix with compile-time dimensions
-</code></pre>
-
-<h2>CLI and Build System</h2>
-
+<h2 id="cli-and-build-system">CLI and Build System</h2>
 <p>Cure provides a sophisticated command-line interface with wrapper script automation and intelligent build management.</p>
+<h3 id="wrapper-script-commands">Wrapper Script Commands</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Special wrapper script commands</span>
+cure<span class="w"> </span>build<span class="w">      </span><span class="c1"># Execute &#39;make all&#39; to build compiler</span>
+cure<span class="w"> </span><span class="nb">test</span><span class="w">       </span><span class="c1"># Execute &#39;make test&#39; to run test suite</span>
+cure<span class="w"> </span>clean<span class="w">      </span><span class="c1"># Execute &#39;make clean&#39; to clean build artifacts</span>
+cure<span class="w"> </span>shell<span class="w">      </span><span class="c1"># Start Erlang development shell with modules loaded</span>
+</code></pre></div>
 
-<h3>Wrapper Script Commands</h3>
-<pre><code># Special wrapper script commands
-cure build      # Execute 'make all' to build compiler
-cure test       # Execute 'make test' to run test suite
-cure clean      # Execute 'make clean' to clean build artifacts
-cure shell      # Start Erlang development shell with modules loaded
-</code></pre>
+<h3 id="file-compilation">File Compilation</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Basic compilation</span>
+cure<span class="w"> </span>input.cure<span class="w">                    </span><span class="c1"># Compile with defaults</span>
+cure<span class="w"> </span>input.cure<span class="w"> </span>-o<span class="w"> </span>output.beam<span class="w">     </span><span class="c1"># Specify output file</span>
+cure<span class="w"> </span>input.cure<span class="w"> </span>--verbose<span class="w">          </span><span class="c1"># Verbose compilation</span>
+cure<span class="w"> </span>input.cure<span class="w"> </span>--no-optimize<span class="w">      </span><span class="c1"># Disable optimizations</span>
+</code></pre></div>
 
-<h3>File Compilation</h3>
-<pre><code># Basic compilation
-cure input.cure                    # Compile with defaults
-cure input.cure -o output.beam     # Specify output file
-cure input.cure --verbose          # Verbose compilation
-cure input.cure --no-optimize      # Disable optimizations
-</code></pre>
-
-<h3>Automatic Standard Library Management</h3>
+<h3 id="automatic-standard-library-management">Automatic Standard Library Management</h3>
 <ul>
 <li><strong>Import Detection</strong>: Automatically detects if source files need stdlib imports</li>
 <li><strong>Smart Imports</strong>: Adds common stdlib imports to files without explicit module/import declarations</li>
 <li><strong>Conflict Avoidance</strong>: Skips automatic imports for files with explicit module definitions or imports</li>
 <li><strong>Partial Failure Handling</strong>: Reports detailed errors when stdlib compilation partially fails</li>
 </ul>
-
-<h3>Module Detection and Validation</h3>
+<h3 id="module-detection-and-validation">Module Detection and Validation</h3>
 <ul>
 <li><strong>Required Modules Check</strong>: Validates presence of all required BEAM compiler modules</li>
 <li><strong>Missing Module Reporting</strong>: Provides detailed error messages for missing components</li>
 <li><strong>Build Automation</strong>: Automatically triggers 'make all' when modules are missing</li>
 <li><strong>Error Recovery</strong>: Graceful error handling with instructions for resolution</li>
 </ul>
-
-<h3>Standard Library Compilation</h3>
+<h3 id="standard-library-compilation">Standard Library Compilation</h3>
 <ul>
 <li><strong>Automatic Compilation</strong>: Compiles stdlib modules as needed during user file compilation</li>
 <li><strong>Dependency Resolution</strong>: Handles stdlib dependencies and compilation order</li>
 <li><strong>Partial Failure Recovery</strong>: Attempts individual file compilation when batch compilation fails</li>
 <li><strong>Path Conversion</strong>: Converts BEAM paths to source paths for error reporting</li>
 </ul>
-
-<h2>Standard Library Integration</h2>
-
+<h2 id="standard-library-integration">Standard Library Integration</h2>
 <p>Cure includes a comprehensive standard library implemented in Cure itself with Erlang runtime support.</p>
+<h3 id="core-standard-library-modules">Core Standard Library Modules</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Import common types and functions</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std</span> <span class="p">[</span><span class="n">Result</span><span class="p">,</span> <span class="n">Option</span><span class="p">,</span> <span class="n">ok</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="n">some</span><span class="p">,</span> <span class="n">none</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std</span> <span class="p">[</span><span class="nb">map</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="nb">filter</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fold_left</span><span class="o">/</span><span class="mi">3</span><span class="p">,</span> <span class="n">fold_right</span><span class="o">/</span><span class="mi">3</span><span class="p">]</span>
 
-<h3>Core Standard Library Modules</h3>
-<pre><code># Import common types and functions
-import Std [Result, Option, ok, error, some, none]
-import Std [map/2, filter/2, fold_left/3, fold_right/3]
+<span class="c1"># Mathematical operations</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Math</span> <span class="p">[</span><span class="nb">abs</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">sqrt</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">sin</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">cos</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">e</span><span class="p">]</span>
 
-# Mathematical operations
-import Std.Math [abs/1, sqrt/1, sin/1, cos/1, pi, e]
+<span class="c1"># String operations</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.String</span> <span class="p">[</span><span class="n">length</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">concat</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">split</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">trim</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
 
-# String operations
-import Std.String [length/1, concat/2, split/2, trim/1]
+<span class="c1"># FSM utilities</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.FSM</span> <span class="p">[</span><span class="n">create</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">send_event</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">get_state</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+</code></pre></div>
 
-# FSM utilities
-import Std.FSM [create/2, send_event/2, get_state/1]
-</code></pre>
+<h3 id="result-and-option-types">Result and Option Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">#</span><span class="w"> </span><span class="n">Chainable</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="n">handling</span>
+<span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">safe_divide</span><span class="o">(</span><span class="n">x</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="o">)</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">map_ok</span><span class="o">(</span><span class="n">fn</span><span class="o">(</span><span class="k">val</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">val</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="o">)</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">and_then</span><span class="o">(</span><span class="n">fn</span><span class="o">(</span><span class="n">doubled</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">safe_sqrt</span><span class="o">(</span><span class="n">doubled</span><span class="o">)</span><span class="w"> </span><span class="k">end</span><span class="o">)</span>
 
-<h3>Result and Option Types</h3>
-<pre><code># Chainable error handling
-result = safe_divide(x, y)
-  |> map_ok(fn(val) -> val * 2 end)
-  |> and_then(fn(doubled) -> safe_sqrt(doubled) end)
+<span class="k">match</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="n">Ok</span><span class="o">(</span><span class="n">final_value</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">println</span><span class="o">(</span><span class="s">&quot;Success: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">show</span><span class="o">(</span><span class="n">final_value</span><span class="o">))</span>
+<span class="w">  </span><span class="n">Error</span><span class="o">(</span><span class="n">msg</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">println</span><span class="o">(</span><span class="s">&quot;Error: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">msg</span><span class="o">)</span>
+<span class="k">end</span>
 
-match result do
-  Ok(final_value) -> println("Success: " <> show(final_value))
-  Error(msg) -> println("Error: " <> msg)
-end
+<span class="o">#</span><span class="w"> </span><span class="n">Optional</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="n">handling</span>
+<span class="n">opt_value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">find_in_list</span><span class="o">(</span><span class="n">items</span><span class="o">,</span><span class="w"> </span><span class="n">predicate</span><span class="o">)</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">map</span><span class="o">(</span><span class="n">fn</span><span class="o">(</span><span class="n">item</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">process</span><span class="o">(</span><span class="n">item</span><span class="o">)</span><span class="w"> </span><span class="k">end</span><span class="o">)</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">filter</span><span class="o">(</span><span class="n">fn</span><span class="o">(</span><span class="n">processed</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">is_valid</span><span class="o">(</span><span class="n">processed</span><span class="o">)</span><span class="w"> </span><span class="k">end</span><span class="o">)</span>
+</code></pre></div>
 
-# Optional value handling
-opt_value = find_in_list(items, predicate)
-  |> map(fn(item) -> process(item) end)
-  |> filter(fn(processed) -> is_valid(processed) end)
-</code></pre>
-
-<h2>Testing Infrastructure</h2>
-
+<h2 id="testing-infrastructure">Testing Infrastructure</h2>
 <p>Cure includes comprehensive testing infrastructure covering all aspects of the compiler and standard library.</p>
+<h3 id="comprehensive-test-suites">Comprehensive Test Suites</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Master test runner for all new CLI and stdlib tests</span>
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-pa<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-s<span class="w"> </span>run_all_new_tests<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
 
-<h3>Comprehensive Test Suites</h3>
-<pre><code># Master test runner for all new CLI and stdlib tests
-erl -pa _build/ebin -pa test -s run_all_new_tests run -s init stop
+<span class="c1"># Individual comprehensive test suites</span>
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-pa<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-s<span class="w"> </span>cli_wrapper_comprehensive_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-pa<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-s<span class="w"> </span>cure_wrapper_script_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+</code></pre></div>
 
-# Individual comprehensive test suites
-erl -pa _build/ebin -pa test -s cli_wrapper_comprehensive_test run -s init stop
-erl -pa _build/ebin -pa test -s cure_wrapper_script_test run -s init stop
-</code></pre>
-
-<h3>CLI and Wrapper Testing</h3>
+<h3 id="cli-and-wrapper-testing">CLI and Wrapper Testing</h3>
 <ul>
 <li><strong>Build Command Testing</strong>: Verifies wrapper script correctly executes 'make all' for build command</li>
 <li><strong>Missing Module Detection</strong>: Tests wrapper script detection and reporting of missing BEAM modules</li>
 <li><strong>Error Message Validation</strong>: Ensures proper error reporting with helpful instructions</li>
 <li><strong>Script Logic Verification</strong>: Tests all wrapper script conditional logic and edge cases</li>
 </ul>
-
-<h3>Standard Library Testing</h3>
+<h3 id="standard-library-testing">Standard Library Testing</h3>
 <ul>
 <li><strong>Automatic Import Testing</strong>: Validates CLI automatic stdlib import addition and detection</li>
 <li><strong>Import Conflict Detection</strong>: Tests detection of explicit modules/imports to prevent conflicts</li>
 <li><strong>Compilation Failure Testing</strong>: Tests stdlib compilation partial failure reporting</li>
 <li><strong>Performance Testing</strong>: Benchmarks Std.List.length function with large datasets (up to 50k elements)</li>
 </ul>
-
-<h3>Test Coverage Areas</h3>
+<h3 id="test-coverage-areas">Test Coverage Areas</h3>
 <ul>
 <li><strong>Lexical Analysis</strong>: Token recognition and error handling</li>
 <li><strong>Parsing</strong>: AST construction and syntax validation</li>
@@ -692,8 +634,7 @@ erl -pa _build/ebin -pa test -s cure_wrapper_script_test run -s init stop
 <li><strong>CLI Functionality</strong>: Complete wrapper script and CLI module coverage</li>
 <li><strong>Error Handling</strong>: Comprehensive error message formatting and reporting</li>
 </ul>
-
-<h3>Testing Features</h3>
+<h3 id="testing-features">Testing Features</h3>
 <ul>
 <li><strong>EUnit Integration</strong>: All tests use EUnit assertions for reliable verification</li>
 <li><strong>Performance Benchmarks</strong>: Tests include timing validation for large datasets</li>
@@ -701,52 +642,42 @@ erl -pa _build/ebin -pa test -s cure_wrapper_script_test run -s init stop
 <li><strong>Master Test Runner</strong>: Orchestrated execution of all test suites with detailed reporting</li>
 <li><strong>Component Isolation</strong>: Both comprehensive and focused component-specific test suites</li>
 </ul>
-
-<h2>Compilation and Runtime</h2>
-
-<h3>Current Compilation Pipeline</h3>
+<h2 id="compilation-and-runtime">Compilation and Runtime</h2>
+<h3 id="current-compilation-pipeline">Current Compilation Pipeline</h3>
 <ol>
 <li><strong>Source (.cure)</strong> → <strong>Tokens</strong> (<code>cure_lexer.erl</code>)</li>
 <li><strong>Tokens</strong> → <strong>AST</strong> (<code>cure_parser.erl</code>)</li>
 <li><strong>AST</strong> → <strong>Typed AST</strong> (<code>cure_typechecker.erl</code>)</li>
-<li><strong>Type Optimization</strong> (<code>cure<em>type</em>optimizer.erl</code>)</li>
+<li><strong>Type Optimization</strong> (<code>cure_type_optimizer.erl</code>)<br />
+   - Monomorphization<br />
+   - Function specialization<br />
+   - Inlining analysis<br />
+   - Dead code elimination</li>
+<li><strong>BEAM Bytecode</strong> (<code>cure_codegen.erl</code>, <code>cure_beam_compiler.erl</code>)</li>
 </ol>
-<ul>
-<li>Monomorphization</li>
-<li>Function specialization  </li>
-<li>Inlining analysis</li>
-<li>Dead code elimination</li>
-</ul>
-<ol>
-<li><strong>BEAM Bytecode</strong> (<code>cure<em>codegen.erl</code>, <code>cure</em>beam_compiler.erl</code>)</li>
-</ol>
-
-<h3>BEAM Integration Features</h3>
+<h3 id="beam-integration-features">BEAM Integration Features</h3>
 <ul>
 <li><strong>Native Processes</strong>: FSMs compile to BEAM processes with supervision</li>
-<li><strong>gen<em>statem Integration</strong>: FSMs use OTP gen</em>statem behavior</li>
+<li><strong>gen_statem Integration</strong>: FSMs use OTP gen_statem behavior</li>
 <li><strong>Pattern Matching</strong>: Leverages BEAM's efficient pattern matching</li>
 <li><strong>Tail Call Optimization</strong>: Preserves BEAM's tail recursion optimization</li>
 <li><strong>Hot Code Loading</strong>: Supports BEAM's live code upgrade</li>
 <li><strong>Distributed Computing</strong>: Transparent distribution across BEAM nodes</li>
 <li><strong>OTP Compatibility</strong>: Seamless integration with Erlang/Elixir ecosystems</li>
 </ul>
-
-<h2>Performance and Optimization</h2>
-
-<h3>Type-Directed Optimizations</h3>
+<h2 id="performance-and-optimization">Performance and Optimization</h2>
+<h3 id="type-directed-optimizations">Type-Directed Optimizations</h3>
 <p>Cure's type system enables aggressive optimizations:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Before</span><span class="w"> </span><span class="nx">optimization</span><span class="w"> </span><span class="p">(</span><span class="nx">polymorphic</span><span class="p">)</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">map</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">U</span><span class="p">,</span><span class="w"> </span><span class="nx">xs</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">U</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">...</span>
 
-<pre><code># Before optimization (polymorphic)
-def map(f: T -> U, xs: List(T)): List(U) = ...
+<span class="err">#</span><span class="w"> </span><span class="nx">After</span><span class="w"> </span><span class="nx">monomorphization</span><span class="w"> </span><span class="p">(</span><span class="nx">specialized</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">String</span><span class="p">)</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">map_Int_String</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">String</span><span class="p">,</span><span class="w"> </span><span class="nx">xs</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">Int</span><span class="p">)):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">String</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span>
+<span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Optimized</span><span class="w"> </span><span class="nx">implementation</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">specific</span><span class="w"> </span><span class="nx">types</span>
+<span class="w">  </span><span class="nx">specialized_map_impl</span><span class="p">(</span><span class="nx">f</span><span class="p">,</span><span class="w"> </span><span class="nx">xs</span><span class="p">)</span>
+</code></pre></div>
 
-# After monomorphization (specialized for Int -> String)
-def map_Int_String(f: Int -> String, xs: List(Int)): List(String) = 
-  # Optimized implementation for specific types
-  specialized_map_impl(f, xs)
-</code></pre>
-
-<h3>Performance Characteristics</h3>
+<h3 id="performance-characteristics">Performance Characteristics</h3>
 <ul>
 <li><strong>Function calls</strong>: ~10ns overhead (optimized)</li>
 <li><strong>FSM events</strong>: ~1μs including message passing</li>
@@ -755,21 +686,17 @@ def map_Int_String(f: Int -> String, xs: List(Int)): List(String) =
 <li><strong>Memory usage</strong>: Comparable to equivalent Erlang code</li>
 <li><strong>Optimizations</strong>: 25-60% performance improvement over unoptimized code</li>
 </ul>
-
-<h3>Compiler Performance</h3>
+<h3 id="compiler-performance">Compiler Performance</h3>
 <ul>
-<li>Small files (<100 lines): <1 second compilation</li>
+<li>Small files (&lt;100 lines): &lt;1 second compilation</li>
 <li>Medium projects (1K-10K lines): 5-30 seconds</li>
 <li>Large projects (100K+ lines): 30-300 seconds with incremental compilation</li>
 <li>Type checking scales O(n²) due to dependent types</li>
 <li>SMT constraint solving typically sub-second for realistic programs</li>
 </ul>
-
-<p>---</p>
-
-<h2>Implementation Status</h2>
-
-<h3>✅ <strong>Fully Implemented</strong></h3>
+<hr />
+<h2 id="implementation-status">Implementation Status</h2>
+<h3 id="fully-implemented">✅ <strong>Fully Implemented</strong></h3>
 <ul>
 <li>Core syntax and semantics</li>
 <li>Dependent type system with SMT solving</li>
@@ -783,21 +710,15 @@ def map_Int_String(f: Int -> String, xs: List(Int)): List(String) =
 <li>CLI wrapper functionality with missing module detection</li>
 <li>Partial compilation failure handling and recovery</li>
 </ul>
-
-<h3>🚧 <strong>Advanced Features</strong> </h3>
+<h3 id="advanced-features_2">🚧 <strong>Advanced Features</strong></h3>
 <ul>
 <li>Complex type class hierarchies</li>
 <li>Advanced dependent type features (proof obligations)</li>
 <li>Linear types for resource management</li>
 <li>Distributed FSM coordination</li>
 </ul>
-
 <p>This reference covers all currently implemented language features and provides insight into Cure's unique combination of dependent types, native FSM support, and BEAM integration.</p>
-
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

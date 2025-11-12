@@ -35,36 +35,30 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Pipe Operator Implementation - COMPLETED ✅</h1>
-
-<h2>Summary</h2>
-
-<p>The pipe operator (<code>|></code>) for the Cure programming language is now <strong>fully functional</strong> and ready for use. The operator was already partially implemented but had critical runtime gaps that have now been fixed.</p>
-
-<h2>What Was Fixed</h2>
-
-<h3>1. Added <code>wrap<em>ok/1</code> to cure</em>std Runtime (src/runtime/cure_std.erl)</h3>
+        <h1 id="pipe-operator-implementation-completed">Pipe Operator Implementation - COMPLETED ✅</h1>
+<h2 id="summary">Summary</h2>
+<p>The pipe operator (<code>|&gt;</code>) for the Cure programming language is now <strong>fully functional</strong> and ready for use. The operator was already partially implemented but had critical runtime gaps that have now been fixed.</p>
+<h2 id="what-was-fixed">What Was Fixed</h2>
+<h3 id="1-added-wrap_ok1-to-cure_std-runtime-srcruntimecure_stderl">1. Added <code>wrap_ok/1</code> to cure_std Runtime (src/runtime/cure_std.erl)</h3>
 <ul>
 <li><strong>Function</strong>: <code>wrap_ok/1</code></li>
 <li><strong>Purpose</strong>: Wraps values in <code>{'Ok', Value}</code> Result constructor</li>
 <li><strong>Usage</strong>: Called by BEAM compiler's pipe operator code generation</li>
 <li><strong>Location</strong>: Lines 157-160</li>
 </ul>
-
-<h3>2. Added <code>and<em>then/2</code> to cure</em>std Runtime (src/runtime/cure_std.erl)</h3>
+<h3 id="2-added-and_then2-to-cure_std-runtime-srcruntimecure_stderl">2. Added <code>and_then/2</code> to cure_std Runtime (src/runtime/cure_std.erl)</h3>
 <ul>
 <li><strong>Function</strong>: <code>and_then/2</code></li>
 <li><strong>Purpose</strong>: Monadic bind operation for Result types</li>
-<li><strong>Signature</strong>: <code>and_then(Fun, Result)</code> where <code>Fun :: (A -> Result(B, E))</code></li>
+<li><strong>Signature</strong>: <code>and_then(Fun, Result)</code> where <code>Fun :: (A -&gt; Result(B, E))</code></li>
 <li><strong>Behavior</strong>:</li>
 <li><code>and_then(Fun, {'Ok', Value})</code> → calls <code>Fun(Value)</code></li>
-<li><code>and<em>then(</em>, {'Error', Reason})</code> → propagates error</li>
+<li><code>and_then(_, {'Error', Reason})</code> → propagates error</li>
 <li><strong>Location</strong>: Lines 163-174</li>
 </ul>
-
-<h3>3. Simplified Pipe Code Generation (src/codegen/cure<em>beam</em>compiler.erl)</h3>
+<h3 id="3-simplified-pipe-code-generation-srccodegencure_beam_compilererl">3. Simplified Pipe Code Generation (src/codegen/cure_beam_compiler.erl)</h3>
 <ul>
-<li><strong>Function</strong>: <code>generate<em>monadic</em>pipe_form/4</code></li>
+<li><strong>Function</strong>: <code>generate_monadic_pipe_form/4</code></li>
 <li><strong>Changes</strong>: Simplified to use <code>cure_std:pipe/2</code> directly instead of complex wrapping</li>
 <li><strong>Benefits</strong>: </li>
 <li>Cleaner generated code</li>
@@ -72,117 +66,90 @@
 <li>Leverages existing <code>pipe/2</code> monadic semantics</li>
 <li><strong>Location</strong>: Lines 1804-1829</li>
 </ul>
+<h2 id="verification">Verification</h2>
+<h3 id="working-example-examplessimple_pipecure">Working Example: <code>examples/simple_pipe.cure</code></h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Simple</span><span class="w"> </span><span class="nx">Pipe</span><span class="w"> </span><span class="nx">Operator</span><span class="w"> </span><span class="nx">Example</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Demonstrates</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">pipe</span><span class="w"> </span><span class="nx">operator</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">Result</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">wrapping</span>
 
-<h2>Verification</h2>
+<span class="nx">module</span><span class="w"> </span><span class="nx">simple_pipe</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">export</span><span class="w"> </span><span class="p">[</span><span class="nx">main</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
 
-<h3>Working Example: <code>examples/simple_pipe.cure</code></h3>
+<span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Helper</span><span class="w"> </span><span class="nx">functions</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">double</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span>
 
-<pre><code># Simple Pipe Operator Example
-<h1>Demonstrates the pipe operator with Result type wrapping</h1>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">increment</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
 
-<p>module simple_pipe do</p>
-<p>  export [main/0]</p>
-  
-<p>  # Helper functions</p>
-<p>  def double(x: Int) -> Int = x * 2</p>
-  
-<p>  def increment(x: Int) -> Int = x + 1</p>
-  
-<p>  # Main entry point - demonstrates pipe operator</p>
-<p>  # The pipe operator automatically wraps results in Result type</p>
-<p>  def main() -> Result(Int, String) = 5 |> double |> increment</p>
-<p>end</p>
-</code></pre>
+<span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Main</span><span class="w"> </span><span class="nx">entry</span><span class="w"> </span><span class="nx">point</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">demonstrates</span><span class="w"> </span><span class="nx">pipe</span><span class="w"> </span><span class="nx">operator</span>
+<span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">The</span><span class="w"> </span><span class="nx">pipe</span><span class="w"> </span><span class="nx">operator</span><span class="w"> </span><span class="nx">automatically</span><span class="w"> </span><span class="nx">wraps</span><span class="w"> </span><span class="nx">results</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">Result</span><span class="w"> </span><span class="k">type</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">main</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">String</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">double</span><span class="w"> </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">increment</span>
+<span class="nx">end</span>
+</code></pre></div>
 
-<h3>Compilation and Execution</h3>
+<h3 id="compilation-and-execution">Compilation and Execution</h3>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>bash<span class="w"> </span>compile_pipe_example.sh
+🚀<span class="w"> </span>Compiling<span class="w"> </span>simple_pipe.cure<span class="w"> </span><span class="nv">example</span>
+<span class="o">========================================</span>
+<span class="m">1</span>.<span class="w"> </span>Parsing...
+<span class="w">   </span>✓<span class="w"> </span>Parsed<span class="w"> </span>successfully
+<span class="m">2</span>.<span class="w"> </span>Type<span class="w"> </span>checking...
+<span class="w">   </span>✓<span class="w"> </span>Type<span class="w"> </span>check<span class="w"> </span>passed
+<span class="m">3</span>.<span class="w"> </span>Generating<span class="w"> </span>BEAM<span class="w"> </span>code...
+<span class="w">   </span>✓<span class="w"> </span>Generated<span class="w"> </span>_build/ebin/simple_pipe.beam
+<span class="m">4</span>.<span class="w"> </span>Running...
 
-<pre><code>$ bash compile<em>pipe</em>example.sh
-<p>🚀 Compiling simple_pipe.cure example</p>
-<p>========================================</p>
-<ol>
-<li>Parsing...</li>
-</ol>
-<p>   ✓ Parsed successfully</p>
-<ol>
-<li>Type checking...</li>
-</ol>
-<p>   ✓ Type check passed</p>
-<ol>
-<li>Generating BEAM code...</li>
-</ol>
-<p>   ✓ Generated <em>build/ebin/simple</em>pipe.beam</p>
-<ol>
-<li>Running...</li>
-</ol>
+📊<span class="w"> </span>Result:<span class="w"> </span><span class="o">{</span><span class="s1">&#39;Ok&#39;</span>,11<span class="o">}</span>
 
-<p>📊 Result: {'Ok',11}</p>
+✅<span class="w"> </span>Success!<span class="w"> </span>The<span class="w"> </span>pipe<span class="w"> </span>operator<span class="w"> </span>works<span class="w"> </span>correctly.
+<span class="w">   </span><span class="m">5</span><span class="w"> </span><span class="p">|</span>&gt;<span class="w"> </span>double<span class="w"> </span><span class="p">|</span>&gt;<span class="w"> </span><span class="nv">increment</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">5</span><span class="w"> </span>-&gt;<span class="w"> </span><span class="m">10</span><span class="w"> </span>-&gt;<span class="w"> </span><span class="m">11</span>
 
-<p>✅ Success! The pipe operator works correctly.</p>
-<p>   5 |> double |> increment = 5 -> 10 -> 11</p>
+✨<span class="w"> </span>Pipe<span class="w"> </span>operator<span class="w"> </span>example<span class="w"> </span>completed!
+</code></pre></div>
 
-<p>✨ Pipe operator example completed!</p>
-</code></pre>
-
-<h2>How It Works</h2>
-
-<h3>Pipe Operator Semantics</h3>
-
+<h2 id="how-it-works">How It Works</h2>
+<h3 id="pipe-operator-semantics">Pipe Operator Semantics</h3>
 <p>The pipe operator implements monadic composition with these semantics:</p>
-
 <ol>
-<li><strong>Value Piping</strong>: <code>x |> f</code> passes <code>x</code> to function <code>f</code></li>
+<li><strong>Value Piping</strong>: <code>x |&gt; f</code> passes <code>x</code> to function <code>f</code></li>
 <li><strong>Result Wrapping</strong>: Non-Result values are automatically wrapped in <code>{'Ok', Value}</code></li>
-<li><strong>Error Propagation</strong>: <code>{'Error', Reason} |> f</code> returns the error without calling <code>f</code></li>
+<li><strong>Error Propagation</strong>: <code>{'Error', Reason} |&gt; f</code> returns the error without calling <code>f</code></li>
 <li><strong>Monadic Chaining</strong>: Multiple pipes compose monadically</li>
 </ol>
-
-<h3>Example Flow</h3>
-
-<pre><code>5 |> double |> increment
-</code></pre>
+<h3 id="example-flow">Example Flow</h3>
+<div class="codehilite"><pre><span></span><code><span class="mf">5</span><span class="w"> </span><span class="err">|</span><span class="o">&gt;</span><span class="w"> </span><span class="n">double</span><span class="w"> </span><span class="err">|</span><span class="o">&gt;</span><span class="w"> </span><span class="n">increment</span>
+</code></pre></div>
 
 <p>Compiles to (conceptually):</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p">(</span>
+<span class="w">    </span><span class="nn">cure_std</span><span class="p">:</span><span class="nf">pipe</span><span class="p">(</span>
+<span class="w">        </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">        </span><span class="k">fun</span><span class="p">(</span><span class="nv">X</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">double</span><span class="p">(</span><span class="nv">X</span><span class="p">)</span><span class="w"> </span><span class="k">end</span>
+<span class="w">    </span><span class="p">),</span>
+<span class="w">    </span><span class="k">fun</span><span class="p">(</span><span class="nv">Y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">increment</span><span class="p">(</span><span class="nv">Y</span><span class="p">)</span><span class="w"> </span><span class="k">end</span>
+<span class="p">)</span>
+</code></pre></div>
 
-<pre><code>cure_std:pipe(
-<p>    cure_std:pipe(</p>
-<p>        5,</p>
-<p>        fun(X) -> double(X) end</p>
-<p>    ),</p>
-<p>    fun(Y) -> increment(Y) end</p>
-<p>)</p>
-</code></pre>
-
-<p>Execution trace:</p>
+<p>Execution trace:<br />
+1. <code>5</code> → wrapped to <code>{'Ok', 5}</code><br />
+2. Piped to <code>double</code> → unwraps to <code>5</code>, calls <code>double(5)</code> → <code>10</code>, wraps to <code>{'Ok', 10}</code><br />
+3. Piped to <code>increment</code> → unwraps to <code>10</code>, calls <code>increment(10)</code> → <code>11</code>, wraps to <code>{'Ok', 11}</code><br />
+4. Final result: <code>{'Ok', 11}</code></p>
+<h2 id="files-modified">Files Modified</h2>
 <ol>
-<li><code>5</code> → wrapped to <code>{'Ok', 5}</code></li>
-<li>Piped to <code>double</code> → unwraps to <code>5</code>, calls <code>double(5)</code> → <code>10</code>, wraps to <code>{'Ok', 10}</code></li>
-<li>Piped to <code>increment</code> → unwraps to <code>10</code>, calls <code>increment(10)</code> → <code>11</code>, wraps to <code>{'Ok', 11}</code></li>
-<li>Final result: <code>{'Ok', 11}</code></li>
+<li>
+<p><strong>src/runtime/cure_std.erl</strong> (Runtime support)<br />
+   - Added <code>wrap_ok/1</code> export and implementation<br />
+   - Added <code>and_then/2</code> export and implementation</p>
+</li>
+<li>
+<p><strong>src/codegen/cure_beam_compiler.erl</strong> (Code generation)<br />
+   - Simplified <code>generate_monadic_pipe_form/4</code> to use <code>pipe/2</code><br />
+   - Removed complex wrapping logic in favor of simpler approach</p>
+</li>
 </ol>
-
-<h2>Files Modified</h2>
-
-<ol>
-<li><strong>src/runtime/cure_std.erl</strong> (Runtime support)</li>
-</ol>
+<h2 id="testing">Testing</h2>
+<h3 id="test-suite">Test Suite</h3>
 <ul>
-<li>Added <code>wrap_ok/1</code> export and implementation</li>
-<li>Added <code>and_then/2</code> export and implementation</li>
-</ul>
-
-<ol>
-<li><strong>src/codegen/cure<em>beam</em>compiler.erl</strong> (Code generation)</li>
-</ol>
-<ul>
-<li>Simplified <code>generate<em>monadic</em>pipe_form/4</code> to use <code>pipe/2</code></li>
-<li>Removed complex wrapping logic in favor of simpler approach</li>
-</ul>
-
-<h2>Testing</h2>
-
-<h3>Test Suite</h3>
-<ul>
-<li><strong>File</strong>: <code>test/pipe<em>operator</em>test.erl</code></li>
+<li><strong>File</strong>: <code>test/pipe_operator_test.erl</code></li>
 <li><strong>Tests</strong>: 16 comprehensive test cases</li>
 <li><strong>Coverage</strong>:</li>
 <li>Basic pipe operations</li>
@@ -191,68 +158,52 @@
 <li>Monadic composition</li>
 <li>Complex expressions</li>
 </ul>
-
-<h3>Examples</h3>
+<h3 id="examples">Examples</h3>
 <ul>
 <li><strong>Simple Demo</strong>: <code>examples/simple_pipe.cure</code> ✅ Working</li>
 <li><strong>Full Demo</strong>: <code>examples/pipe_demo.cure</code> (181 lines of examples)</li>
 </ul>
-
-<h3>Documentation</h3>
+<h3 id="documentation">Documentation</h3>
 <ul>
 <li><strong>User Guide</strong>: <code>docs/pipe_operator.md</code> (360 lines)</li>
-<li><strong>Implementation Notes</strong>: <code>PIPE<em>OPERATOR</em>IMPLEMENTATION.md</code> (309 lines)</li>
+<li><strong>Implementation Notes</strong>: <code>PIPE_OPERATOR_IMPLEMENTATION.md</code> (309 lines)</li>
 </ul>
-
-<h2>Known Limitations</h2>
-
+<h2 id="known-limitations">Known Limitations</h2>
 <ol>
-<li><strong>Standard Library</strong>: The main <code>run<em>cure.sh</code> script still has issues with stdlib parsing (pre-existing issue). Use <code>compile</em>pipe_example.sh</code> for direct compilation.</li>
+<li>
+<p><strong>Standard Library</strong>: The main <code>run_cure.sh</code> script still has issues with stdlib parsing (pre-existing issue). Use <code>compile_pipe_example.sh</code> for direct compilation.</p>
+</li>
+<li>
+<p><strong>Optimizer</strong>: The pipe optimizer module (<code>src/types/cure_pipe_optimizer.erl</code>) is implemented but not yet integrated into the compilation pipeline.</p>
+</li>
 </ol>
-
+<h2 id="future-enhancements">Future Enhancements</h2>
 <ol>
-<li><strong>Optimizer</strong>: The pipe optimizer module (<code>src/types/cure<em>pipe</em>optimizer.erl</code>) is implemented but not yet integrated into the compilation pipeline.</li>
+<li>
+<p><strong>Integrate Optimizer</strong>: Enable pipe-specific optimizations<br />
+   - Chain fusion<br />
+   - Redundant wrapping elimination<br />
+   - Inline small functions in pipe chains</p>
+</li>
+<li>
+<p><strong>Additional Operators</strong>: Consider adding:<br />
+   - Reverse pipe operator (<code>&lt;|</code>)<br />
+   - Bind operator (<code>&gt;&gt;=</code>)<br />
+   - Applicative operators (<code>&lt;*&gt;</code>)</p>
+</li>
+<li>
+<p><strong>Enhanced Error Messages</strong>: Add pipe-specific error reporting</p>
+</li>
 </ol>
-
-<h2>Future Enhancements</h2>
-
-<ol>
-<li><strong>Integrate Optimizer</strong>: Enable pipe-specific optimizations</li>
-</ol>
-<ul>
-<li>Chain fusion</li>
-<li>Redundant wrapping elimination</li>
-<li>Inline small functions in pipe chains</li>
-</ul>
-
-<ol>
-<li><strong>Additional Operators</strong>: Consider adding:</li>
-</ol>
-<ul>
-<li>Reverse pipe operator (<code><|</code>)</li>
-<li>Bind operator (<code>>>=</code>)</li>
-<li>Applicative operators (<code><*></code>)</li>
-</ul>
-
-<ol>
-<li><strong>Enhanced Error Messages</strong>: Add pipe-specific error reporting</li>
-</ol>
-
-<h2>Conclusion</h2>
-
+<h2 id="conclusion">Conclusion</h2>
 <p>The pipe operator is <strong>production-ready</strong> and can be used in Cure programs. The implementation is clean, efficient, and follows proper monadic semantics for Result types.</p>
-
-<strong>Status</strong>: ✅ <strong>COMPLETE AND VERIFIED</strong>
-<strong>Date</strong>: 2025
-<strong>Files Changed</strong>: 2
-<strong>Lines Added</strong>: ~40
-<strong>Tests</strong>: 16 passing
-<strong>Examples</strong>: 2 working
-
+<p><strong>Status</strong>: ✅ <strong>COMPLETE AND VERIFIED</strong><br />
+<strong>Date</strong>: 2025<br />
+<strong>Files Changed</strong>: 2<br />
+<strong>Lines Added</strong>: ~40<br />
+<strong>Tests</strong>: 16 passing<br />
+<strong>Examples</strong>: 2 working</p>
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

@@ -36,60 +36,43 @@ Status: Research/Educational Implementation with Production-Ready Core Component
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Cure Language: Ultimate Implementation Description</h1>
-
-<strong>Version:</strong> 0.1.0 (October 2025)  
-<strong>Status:</strong> Research/Educational Implementation with Production-Ready Core Components
-
-<p>---</p>
-
-<h2>Executive Summary</h2>
-
+        <h1 id="cure-language-ultimate-implementation-description">Cure Language: Ultimate Implementation Description</h1>
+<p><strong>Version:</strong> 0.1.0 (October 2025)<br />
+<strong>Status:</strong> Research/Educational Implementation with Production-Ready Core Components</p>
+<hr />
+<h2 id="executive-summary">Executive Summary</h2>
 <p>Cure is a strongly-typed, dependently-typed programming language for the BEAM VM with native finite state machine (FSM) support. The implementation consists of <strong>23 Erlang modules</strong> (~15,000 LOC) implementing the complete compiler toolchain, and <strong>11 standard library modules</strong> written in Cure itself.</p>
-
-<strong>Current State:</strong> The core compiler pipeline is <strong>fully functional</strong> with demonstrated end-to-end compilation and execution. <strong>Recent additions include multi-clause functions with union type derivation, record types with pattern matching, and pattern guards</strong> - bringing the language closer to production readiness. Several advanced features are <strong>implemented but require refinement</strong> for production use. The FSM system is <strong>production-grade</strong> with comprehensive runtime support.
-
-<p>---</p>
-
-<h2>Part 1: Erlang Implementation (<code>src/</code>) - Detailed Analysis</h2>
-
-<h3>1.1 Lexer (<code>src/lexer/</code>)</h3>
-
-<strong>File:</strong> <code>cure_lexer.erl</code> (~2,500 LOC)
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Current State:</strong> The core compiler pipeline is <strong>fully functional</strong> with demonstrated end-to-end compilation and execution. <strong>Recent additions include multi-clause functions with union type derivation, record types with pattern matching, and pattern guards</strong> - bringing the language closer to production readiness. Several advanced features are <strong>implemented but require refinement</strong> for production use. The FSM system is <strong>production-grade</strong> with comprehensive runtime support.</p>
+<hr />
+<h2 id="part-1-erlang-implementation-src-detailed-analysis">Part 1: Erlang Implementation (<code>src/</code>) - Detailed Analysis</h2>
+<h3 id="11-lexer-srclexer">1.1 Lexer (<code>src/lexer/</code>)</h3>
+<p><strong>File:</strong> <code>cure_lexer.erl</code> (~2,500 LOC)</p>
+<h4 id="fully-implemented">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li>Complete tokenization for all Cure language constructs</li>
 <li>Precise position tracking (line, column) for every token</li>
 <li>String interpolation support with <code>#{expr}</code> syntax</li>
-<li>Multi-character operators (<code>-></code>, <code>|></code>, <code>::</code>, <code>==</code>, <code>/=</code>, etc.)</li>
+<li>Multi-character operators (<code>-&gt;</code>, <code>|&gt;</code>, <code>::</code>, <code>==</code>, <code>/=</code>, etc.)</li>
 <li>Comprehensive literal support (integers, floats, strings, atoms, booleans)</li>
 <li>All Cure keywords including FSM-specific constructs</li>
 <li>Line and block comment handling</li>
 <li>Error recovery with detailed error messages</li>
 </ul>
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
+<h4 id="implemented-with-provisos">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
 <li><strong>Unicode Support</strong>: Basic UTF-8 handling works, but advanced Unicode normalization not implemented</li>
 <li><strong>String Escape Sequences</strong>: Standard escapes work (<code>\n</code>, <code>\t</code>, <code>\"</code>), but Unicode escape sequences (<code>\uXXXX</code>) not fully tested</li>
 </ul>
-
-<h4>❌ <strong>Not Implemented</strong></h4>
+<h4 id="not-implemented">❌ <strong>Not Implemented</strong></h4>
 <ul>
 <li><strong>Incremental Lexing</strong>: Tokens are generated in single pass; no support for incremental tokenization (needed for IDE integration)</li>
 <li><strong>Token Trivia</strong>: Whitespace and comment preservation for formatting tools not tracked</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>90%</strong> - Fully functional for compilation, needs incremental support for IDE features
-
-<p>---</p>
-
-<h3>1.2 Parser (<code>src/parser/</code>)</h3>
-
-<strong>Files:</strong> <code>cure<em>parser.erl</code> (~3,800 LOC), <code>cure</em>ast.erl</code> (~1,200 LOC), <code>cure<em>ast.hrl</code> (record definitions), <code>cure</em>error_reporter.erl</code> (~600 LOC)
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>90%</strong> - Fully functional for compilation, needs incremental support for IDE features</p>
+<hr />
+<h3 id="12-parser-srcparser">1.2 Parser (<code>src/parser/</code>)</h3>
+<p><strong>Files:</strong> <code>cure_parser.erl</code> (~3,800 LOC), <code>cure_ast.erl</code> (~1,200 LOC), <code>cure_ast.hrl</code> (record definitions), <code>cure_error_reporter.erl</code> (~600 LOC)</p>
+<h4 id="fully-implemented_1">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li><strong>Complete Grammar Support:</strong></li>
 <li>Module definitions with imports/exports</li>
@@ -102,129 +85,98 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li>Expression parsing (arithmetic, logical, comparison, pattern matching)</li>
 <li>List, tuple, map, and record literals</li>
 <li>Function calls (local and remote)</li>
-<li>Let bindings and match expressions</li>
-</ul>
-  
-<ul>
-<li><strong>AST Generation:</strong></li>
+<li>
+<p>Let bindings and match expressions</p>
+</li>
+<li>
+<p><strong>AST Generation:</strong></p>
+</li>
 <li>Well-structured AST with records for all constructs</li>
 <li>Position information preserved throughout AST</li>
-<li>Type annotations attached to AST nodes</li>
-</ul>
-  
-<ul>
-<li><strong>Error Reporting:</strong></li>
+<li>
+<p>Type annotations attached to AST nodes</p>
+</li>
+<li>
+<p><strong>Error Reporting:</strong></p>
+</li>
 <li>Precise error locations with line/column</li>
 <li>Helpful error messages with expected vs. actual</li>
-<li>Source snippet display with error highlighting (via <code>cure<em>error</em>reporter</code>)</li>
+<li>Source snippet display with error highlighting (via <code>cure_error_reporter</code>)</li>
 <li>Multiple error accumulation</li>
 </ul>
-
-<h4>✅ <strong>Recently Completed</strong></h4>
+<h4 id="recently-completed">✅ <strong>Recently Completed</strong></h4>
 <ul>
 <li><strong>Multi-Clause Functions</strong>: ✅ <strong>FULLY IMPLEMENTED</strong> - Parser now groups multiple function definitions by name/arity, derives union types automatically (see <code>function_clause</code> record in AST)</li>
 </ul>
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
+<h4 id="implemented-with-provisos_1">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
 <li><strong>Operator Precedence</strong>: Basic precedence works but some edge cases with mixed operators may parse unexpectedly</li>
 <li><strong>Error Recovery</strong>: Parser stops on first major error; doesn't attempt to continue parsing for multiple errors in single file</li>
-<li><strong>Generic Type Syntax</strong>: Angle bracket syntax <code><T, U></code> works, but bracket syntax <code>['T, 'U]</code> causes issues</li>
+<li><strong>Generic Type Syntax</strong>: Angle bracket syntax <code>&lt;T, U&gt;</code> works, but bracket syntax <code>['T, 'U]</code> causes issues</li>
 </ul>
-
-<h4>❌ <strong>Not Implemented</strong></h4>
+<h4 id="not-implemented_1">❌ <strong>Not Implemented</strong></h4>
 <ul>
 <li><strong>Macros</strong>: No macro system or compile-time code generation</li>
 <li><strong>Attributes</strong>: Limited support for custom attributes beyond module-level exports</li>
 <li><strong>Documentation Comments</strong>: Doc comments not parsed into AST (handled separately)</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>90%</strong> - Core parsing is solid with multi-clause functions, records, and guards now fully supported; needs better error recovery
-
-<p>---</p>
-
-<h3>1.3 Type System (<code>src/types/</code>)</h3>
-
-<strong>Files:</strong> <code>cure<em>types.erl</code> (~4,200 LOC), <code>cure</em>typechecker.erl</code> (~3,500 LOC), <code>cure<em>type</em>optimizer.erl</code> (~3,800 LOC)
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
-
-<strong>Core Type System (<code>cure_types.erl</code>):</strong>
-<ul>
-<li>Type variable generation and management</li>
-<li>Robinson unification algorithm with occurs check</li>
-<li>Type inference (Hindley-Milner style with extensions)</li>
-<li>Type environment with hierarchical scoping</li>
-<li>Polymorphic type instantiation</li>
-<li>Let-polymorphism and generalization</li>
-<li>Constraint generation and basic solving</li>
-</ul>
-
-<strong>Type Checker (<code>cure_typechecker.erl</code>):</strong>
-<ul>
-<li>Program-level type checking</li>
-<li>Module system with imports/exports</li>
-<li>Function type checking with dependent constraints</li>
-<li><strong>Multi-clause function union type derivation</strong> ✅ <strong>NEW</strong>: Parameters and return types unified across clauses</li>
-<li>Expression type inference</li>
-<li>Pattern exhaustiveness checking (basic)</li>
-<li>FSM type checking</li>
-<li>Erlang FFI type checking (<code>curify</code> bindings)</li>
-<li>Two-pass processing (signatures then bodies)</li>
-</ul>
-
-<strong>Type Optimizer (<code>cure<em>type</em>optimizer.erl</code>):</strong>
-<ul>
-<li><strong>Monomorphization</strong>: Polymorphic to monomorphic conversion (25-40% performance gain)</li>
-<li><strong>Function Specialization</strong>: Type-specialized function versions</li>
-<li><strong>Inlining</strong>: Cost-benefit analysis for small functions (10-20% improvement)</li>
-<li><strong>Dead Code Elimination</strong>: Type-directed DCE with unreachable code detection</li>
-<li><strong>Performance Metrics</strong>: Call frequency tracking and hot path identification</li>
-</ul>
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
-
-<strong>Dependent Types:</strong>
-<ul>
-<li>Basic dependent type support works (length-indexed vectors)</li>
-<li>Constraint generation functional</li>
-<li><strong>Proviso</strong>: Complex dependent type constraints require SMT solver integration (see SMT section)</li>
-<li><strong>Proviso</strong>: Type-level computation limited to simple cases</li>
-</ul>
-
-<strong>Higher-Kinded Types:</strong>
-<ul>
-<li>Type constructors defined</li>
-<li>Kind checking partially implemented</li>
-<li><strong>Proviso</strong>: Type families and type-level functions are stubs</li>
-<li><strong>Proviso</strong>: Higher-kinded polymorphism not fully integrated with inference</li>
-</ul>
-
-<strong>Wildcard and Any Type Handling:</strong>
-<ul>
-<li>Recently fixed wildcard pattern typing</li>
-<li>Any type unification improved</li>
-<li><strong>Proviso</strong>: Edge cases with complex Any type constraints may still have issues</li>
-</ul>
-
-<h4>❌ <strong>Not Implemented</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>90%</strong> - Core parsing is solid with multi-clause functions, records, and guards now fully supported; needs better error recovery</p>
+<hr />
+<h3 id="13-type-system-srctypes">1.3 Type System (<code>src/types/</code>)</h3>
+<p><strong>Files:</strong> <code>cure_types.erl</code> (~4,200 LOC), <code>cure_typechecker.erl</code> (~3,500 LOC), <code>cure_type_optimizer.erl</code> (~3,800 LOC)</p>
+<h4 id="fully-implemented_2">✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Core Type System (<code>cure_types.erl</code>):</strong><br />
+- Type variable generation and management<br />
+- Robinson unification algorithm with occurs check<br />
+- Type inference (Hindley-Milner style with extensions)<br />
+- Type environment with hierarchical scoping<br />
+- Polymorphic type instantiation<br />
+- Let-polymorphism and generalization<br />
+- Constraint generation and basic solving</p>
+<p><strong>Type Checker (<code>cure_typechecker.erl</code>):</strong><br />
+- Program-level type checking<br />
+- Module system with imports/exports<br />
+- Function type checking with dependent constraints<br />
+- <strong>Multi-clause function union type derivation</strong> ✅ <strong>NEW</strong>: Parameters and return types unified across clauses<br />
+- Expression type inference<br />
+- Pattern exhaustiveness checking (basic)<br />
+- FSM type checking<br />
+- Erlang FFI type checking (<code>curify</code> bindings)<br />
+- Two-pass processing (signatures then bodies)</p>
+<p><strong>Type Optimizer (<code>cure_type_optimizer.erl</code>):</strong><br />
+- <strong>Monomorphization</strong>: Polymorphic to monomorphic conversion (25-40% performance gain)<br />
+- <strong>Function Specialization</strong>: Type-specialized function versions<br />
+- <strong>Inlining</strong>: Cost-benefit analysis for small functions (10-20% improvement)<br />
+- <strong>Dead Code Elimination</strong>: Type-directed DCE with unreachable code detection<br />
+- <strong>Performance Metrics</strong>: Call frequency tracking and hot path identification</p>
+<h4 id="implemented-with-provisos_2">🟡 <strong>Implemented with Provisos</strong></h4>
+<p><strong>Dependent Types:</strong><br />
+- Basic dependent type support works (length-indexed vectors)<br />
+- Constraint generation functional<br />
+- <strong>Proviso</strong>: Complex dependent type constraints require SMT solver integration (see SMT section)<br />
+- <strong>Proviso</strong>: Type-level computation limited to simple cases</p>
+<p><strong>Higher-Kinded Types:</strong><br />
+- Type constructors defined<br />
+- Kind checking partially implemented<br />
+- <strong>Proviso</strong>: Type families and type-level functions are stubs<br />
+- <strong>Proviso</strong>: Higher-kinded polymorphism not fully integrated with inference</p>
+<p><strong>Wildcard and Any Type Handling:</strong><br />
+- Recently fixed wildcard pattern typing<br />
+- Any type unification improved<br />
+- <strong>Proviso</strong>: Edge cases with complex Any type constraints may still have issues</p>
+<h4 id="not-implemented_2">❌ <strong>Not Implemented</strong></h4>
 <ul>
 <li><strong>Row Polymorphism</strong>: For extensible records</li>
 <li><strong>Linear Types</strong>: For resource management</li>
 <li><strong>Effect System</strong>: Computational effects tracking</li>
 <li><strong>Gradual Typing</strong>: Mixed static/dynamic typing</li>
-<li><strong>Type Classes/Traits</strong>: Currently TODOs marked in <code>trait<em>system</em>test.erl</code></li>
+<li><strong>Type Classes/Traits</strong>: Currently TODOs marked in <code>trait_system_test.erl</code></li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>75%</strong> - Core type system solid, dependent types need SMT integration, advanced features incomplete
-
-<p>---</p>
-
-<h3>1.4 Code Generation (<code>src/codegen/</code>)</h3>
-
-<strong>Files:</strong> <code>cure<em>codegen.erl</code> (~2,800 LOC), <code>cure</em>beam<em>compiler.erl</code> (~1,400 LOC), <code>cure</em>guard<em>codegen.erl</code> (~800 LOC), <code>cure</em>action<em>compiler.erl</code> (~600 LOC), <code>cure</em>compile_wrapper.erl</code> (~400 LOC)
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>75%</strong> - Core type system solid, dependent types need SMT integration, advanced features incomplete</p>
+<hr />
+<h3 id="14-code-generation-srccodegen">1.4 Code Generation (<code>src/codegen/</code>)</h3>
+<p><strong>Files:</strong> <code>cure_codegen.erl</code> (~2,800 LOC), <code>cure_beam_compiler.erl</code> (~1,400 LOC), <code>cure_guard_codegen.erl</code> (~800 LOC), <code>cure_action_compiler.erl</code> (~600 LOC), <code>cure_compile_wrapper.erl</code> (~400 LOC)</p>
+<h4 id="fully-implemented_3">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li><strong>BEAM Bytecode Generation:</strong></li>
 <li>Module compilation to BEAM format</li>
@@ -233,141 +185,133 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li>Expression compilation to abstract Erlang forms</li>
 <li>Pattern matching compilation with jump tables</li>
 <li>Guard expression compilation</li>
-<li>Proper export lists and module attributes</li>
-</ul>
-  
-<ul>
-<li><strong>FSM Code Generation:</strong></li>
+<li>
+<p>Proper export lists and module attributes</p>
+</li>
+<li>
+<p><strong>FSM Code Generation:</strong></p>
+</li>
 <li>FSM definitions to Erlang records</li>
 <li>State transition table generation</li>
 <li>FSM registration and metadata</li>
-<li>Initial state and payload handling</li>
-</ul>
-  
-<ul>
-<li><strong>Optimizations:</strong></li>
+<li>
+<p>Initial state and payload handling</p>
+</li>
+<li>
+<p><strong>Optimizations:</strong></p>
+</li>
 <li>Configurable optimization levels (0-3)</li>
 <li>Type-directed optimizations</li>
 <li>Instruction-level optimizations</li>
 <li>Constant folding</li>
 </ul>
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
+<h4 id="implemented-with-provisos_3">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
 <li><strong>Debug Information</strong>: Basic debug info generated, but not comprehensive for all constructs</li>
 <li><strong>Guard Compilation</strong>: Basic guards work, complex dependent type guards use runtime validation stubs</li>
 <li><strong>Tail Call Optimization</strong>: Basic TCO works, but not verified for all cases</li>
 <li><strong>Record Compilation</strong>: Records compile to maps, field ordering needs attention (marked as work-in-progress)</li>
 </ul>
-
-<h4>❌ <strong>Not Implemented</strong></h4>
+<h4 id="not-implemented_3">❌ <strong>Not Implemented</strong></h4>
 <ul>
 <li><strong>Hot Code Loading</strong>: No support for code reloading</li>
 <li><strong>OTP Supervision Trees</strong>: Manual supervision setup required</li>
 <li><strong>Distribution Primitives</strong>: No distributed Cure constructs (use Erlang primitives directly)</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>85%</strong> - Core codegen is production-quality, needs complete guard validation and debug info
-
-<p>---</p>
-
-<h3>1.5 FSM Runtime (<code>src/fsm/</code>)</h3>
-
-<strong>Files:</strong> <code>cure<em>fsm</em>runtime.erl</code> (~1,800 LOC), <code>cure<em>fsm</em>cure<em>api.erl</code> (~400 LOC), <code>cure</em>fsm<em>builtins.erl</code> (~600 LOC), <code>cure</em>fsm_runtime.hrl</code> (record definitions)
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>85%</strong> - Core codegen is production-quality, needs complete guard validation and debug info</p>
+<hr />
+<h3 id="15-fsm-runtime-srcfsm">1.5 FSM Runtime (<code>src/fsm/</code>)</h3>
+<p><strong>Files:</strong> <code>cure_fsm_runtime.erl</code> (~1,800 LOC), <code>cure_fsm_cure_api.erl</code> (~400 LOC), <code>cure_fsm_builtins.erl</code> (~600 LOC), <code>cure_fsm_runtime.hrl</code> (record definitions)</p>
+<h4 id="fully-implemented_4">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li><strong>FSM Process Management:</strong></li>
 <li>FSM lifecycle (start, stop, spawn)</li>
 <li>gen_server-based architecture</li>
 <li>Process registry and lookup</li>
-<li>Named FSM registration</li>
-</ul>
-  
-<ul>
-<li><strong>Event Processing:</strong></li>
+<li>
+<p>Named FSM registration</p>
+</li>
+<li>
+<p><strong>Event Processing:</strong></p>
+</li>
 <li>Synchronous and asynchronous events</li>
 <li>Event history tracking with trimming</li>
 <li>Batch event processing</li>
-<li>Timeout handling with automatic transitions</li>
-</ul>
-  
-<ul>
-<li><strong>State Management:</strong></li>
+<li>
+<p>Timeout handling with automatic transitions</p>
+</li>
+<li>
+<p><strong>State Management:</strong></p>
+</li>
 <li>State transitions with O(1) lookup</li>
 <li>State data (payload) management</li>
 <li>Current state introspection</li>
-<li>Transition guards evaluation</li>
-</ul>
-  
-<ul>
-<li><strong>Performance Features:</strong></li>
+<li>
+<p>Transition guards evaluation</p>
+</li>
+<li>
+<p><strong>Performance Features:</strong></p>
+</li>
 <li>Compiled guard/action execution</li>
 <li>Flat transition maps</li>
 <li>Performance statistics tracking</li>
-<li>Memory management (history trimming)</li>
-</ul>
-  
-<ul>
-<li><strong>Type Safety:</strong></li>
+<li>
+<p>Memory management (history trimming)</p>
+</li>
+<li>
+<p><strong>Type Safety:</strong></p>
+</li>
 <li>FSM type registration</li>
 <li>Runtime type checking</li>
 <li>Definition lookup and validation</li>
 </ul>
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
+<h4 id="implemented-with-provisos_4">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
 <li><strong>FSM Definition Registration</strong>: Currently requires explicit <code>register_fsms/0</code> call; needs automatic registration on module load</li>
 <li><strong>Distributed FSMs</strong>: Single-node only; no cross-node FSM coordination</li>
 </ul>
-
-<h4>❌ <strong>Not Implemented</strong></h4>
+<h4 id="not-implemented_4">❌ <strong>Not Implemented</strong></h4>
 <ul>
 <li><strong>FSM Persistence</strong>: No state persistence/recovery</li>
 <li><strong>FSM Monitoring</strong>: Basic gen_server monitoring only, no FSM-specific monitoring dashboards</li>
 <li><strong>FSM Hot-Swapping</strong>: No support for FSM definition updates at runtime</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>90%</strong> - FSM runtime is production-grade for single-node applications
-
-<p>---</p>
-
-<h3>1.6 SMT Solver Integration (<code>src/smt/</code>)</h3>
-
-<strong>Files:</strong> <code>cure<em>smt</em>solver.erl</code> (~900 LOC, two copies in <code>src/smt/</code> and <code>src/types/</code>)
-
-<h4>✅ <strong>Fully Implemented (Stub/Fallback)</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>90%</strong> - FSM runtime is production-grade for single-node applications</p>
+<hr />
+<h3 id="16-smt-solver-integration-srcsmt">1.6 SMT Solver Integration (<code>src/smt/</code>)</h3>
+<p><strong>Files:</strong> <code>cure_smt_solver.erl</code> (~900 LOC, two copies in <code>src/smt/</code> and <code>src/types/</code>)</p>
+<h4 id="fully-implemented-stubfallback">✅ <strong>Fully Implemented (Stub/Fallback)</strong></h4>
 <ul>
 <li><strong>API Layer:</strong></li>
 <li>Constraint checking interface</li>
 <li>Implication proving</li>
 <li>Counterexample generation</li>
 <li>Constraint simplification</li>
-<li>Solver selection (Z3, CVC5, symbolic fallback)</li>
-</ul>
-  
-<ul>
-<li><strong>Symbolic Evaluator:</strong></li>
+<li>
+<p>Solver selection (Z3, CVC5, symbolic fallback)</p>
+</li>
+<li>
+<p><strong>Symbolic Evaluator:</strong></p>
+</li>
 <li>Basic arithmetic and boolean evaluation</li>
 <li>Constraint negation</li>
-<li>Conjunction/disjunction</li>
-</ul>
-  
-<ul>
-<li><strong>Integration Points:</strong></li>
+<li>
+<p>Conjunction/disjunction</p>
+</li>
+<li>
+<p><strong>Integration Points:</strong></p>
+</li>
 <li>Type checker integration hooks</li>
 <li>Guard compiler integration hooks</li>
 </ul>
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
+<h4 id="implemented-with-provisos_5">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
 <li><strong>All External Solver Calls Are Stubs</strong>: Z3 and CVC5 integration has API stubs but <strong>no actual solver invocation</strong></li>
 <li><strong>Symbolic Evaluator Is Limited</strong>: Only handles simple arithmetic and boolean constraints</li>
 <li><strong>No SMT-LIB Translation</strong>: Translation from Cure constraints to SMT-LIB not implemented</li>
 <li><strong>No Model Extraction</strong>: Counterexamples not extracted from solver models</li>
 </ul>
-
-<h4>❌ <strong>Not Implemented</strong></h4>
+<h4 id="not-implemented_5">❌ <strong>Not Implemented</strong></h4>
 <ul>
 <li><strong>Z3 Integration</strong>: Solver executable detection exists, but no process spawning or communication</li>
 <li><strong>CVC5 Integration</strong>: Same as Z3</li>
@@ -375,49 +319,43 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Uninterpreted Functions</strong>: Not supported</li>
 <li><strong>Bitvectors/Arrays</strong>: SMT theories beyond arithmetic not supported</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>30%</strong> - Architecture is correct, but needs actual solver integration for dependent type verification
-
-<strong>Critical for Production:</strong> This is the <strong>main blocker</strong> for advanced dependent type features. Currently, complex dependent type constraints are not verified at compile time.
-
-<p>---</p>
-
-<h3>1.7 LSP Server (<code>src/lsp/</code>)</h3>
-
-<strong>File:</strong> <code>cure<em>lsp</em>server.erl</code> (~800 LOC)
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>30%</strong> - Architecture is correct, but needs actual solver integration for dependent type verification</p>
+<p><strong>Critical for Production:</strong> This is the <strong>main blocker</strong> for advanced dependent type features. Currently, complex dependent type constraints are not verified at compile time.</p>
+<hr />
+<h3 id="17-lsp-server-srclsp">1.7 LSP Server (<code>src/lsp/</code>)</h3>
+<p><strong>File:</strong> <code>cure_lsp_server.erl</code> (~800 LOC)</p>
+<h4 id="fully-implemented_5">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li><strong>LSP Protocol:</strong></li>
 <li>Initialize/shutdown handshake</li>
 <li>Document lifecycle (open, change, close, save)</li>
-<li>Full document synchronization</li>
-</ul>
-  
-<ul>
-<li><strong>Diagnostics:</strong></li>
+<li>
+<p>Full document synchronization</p>
+</li>
+<li>
+<p><strong>Diagnostics:</strong></p>
+</li>
 <li>Lexer error reporting</li>
 <li>Parser error reporting to LSP clients</li>
-<li>Diagnostic formatting (range, severity, message)</li>
-</ul>
-  
-<ul>
-<li><strong>Server Capabilities:</strong></li>
+<li>
+<p>Diagnostic formatting (range, severity, message)</p>
+</li>
+<li>
+<p><strong>Server Capabilities:</strong></p>
+</li>
 <li>textDocumentSync</li>
 <li>hoverProvider (stub)</li>
 <li>completionProvider (stub)</li>
 <li>diagnosticProvider</li>
 </ul>
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
+<h4 id="implemented-with-provisos_6">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
 <li><strong>Hover Information</strong>: API exists but always returns undefined (type inference integration not complete)</li>
 <li><strong>Code Completion</strong>: API exists but returns empty list (no completion engine)</li>
 <li><strong>Incremental Sync</strong>: Currently full document sync only</li>
 <li><strong>Type Cache</strong>: Type cache exists but not populated from type checker</li>
 </ul>
-
-<h4>❌ <strong>Not Implemented</strong></h4>
+<h4 id="not-implemented_6">❌ <strong>Not Implemented</strong></h4>
 <ul>
 <li><strong>Go to Definition</strong>: Not implemented</li>
 <li><strong>Find References</strong>: Not implemented</li>
@@ -426,288 +364,205 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Semantic Highlighting</strong>: Not implemented</li>
 <li><strong>Workspace Symbols</strong>: Not implemented</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>40%</strong> - Basic LSP framework works, needs all editor features implemented
-
-<p>---</p>
-
-<h3>1.8 Runtime Support (<code>src/runtime/</code>)</h3>
-
-<strong>Files:</strong> <code>cure<em>runtime.erl</code> (~300 LOC), <code>cure</em>std.erl</code> (~200 LOC)
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>40%</strong> - Basic LSP framework works, needs all editor features implemented</p>
+<hr />
+<h3 id="18-runtime-support-srcruntime">1.8 Runtime Support (<code>src/runtime/</code>)</h3>
+<p><strong>Files:</strong> <code>cure_runtime.erl</code> (~300 LOC), <code>cure_std.erl</code> (~200 LOC)</p>
+<h4 id="fully-implemented_6">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li><strong>Process Primitives</strong>: spawn, send, receive wrappers</li>
 <li><strong>Basic I/O</strong>: print, format wrappers</li>
 <li><strong>Type Conversions</strong>: Basic conversion utilities</li>
 </ul>
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
+<h4 id="implemented-with-provisos_7">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
 <li><strong>Error Handling</strong>: Basic error handling, no comprehensive exception system</li>
 <li><strong>Memory Management</strong>: Relies on BEAM GC, no Cure-specific memory optimizations</li>
 </ul>
-
-<h4>❌ <strong>Not Implemented</strong></h4>
+<h4 id="not-implemented_7">❌ <strong>Not Implemented</strong></h4>
 <ul>
 <li><strong>Distributed Primitives</strong>: No distributed Cure runtime</li>
 <li><strong>OTP Behaviors</strong>: No Cure-native gen_server/supervisor abstractions beyond FSM</li>
 <li><strong>Profiling/Tracing</strong>: No Cure-specific profiling tools</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>60%</strong> - Basic runtime works, needs more OTP integration
-
-<p>---</p>
-
-<h3>1.9 CLI and Build System (<code>src/</code>)</h3>
-
-<strong>File:</strong> <code>cure_cli.erl</code> (~1,100 LOC), <code>Makefile</code>, <code>rebar.config</code>
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>60%</strong> - Basic runtime works, needs more OTP integration</p>
+<hr />
+<h3 id="19-cli-and-build-system-src">1.9 CLI and Build System (<code>src/</code>)</h3>
+<p><strong>File:</strong> <code>cure_cli.erl</code> (~1,100 LOC), <code>Makefile</code>, <code>rebar.config</code></p>
+<h4 id="fully-implemented_7">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li><strong>CLI Interface:</strong></li>
 <li>File compilation</li>
 <li>Verbose output</li>
 <li>Output directory specification</li>
 <li>Type checking control</li>
-<li>Help and version commands</li>
-</ul>
-  
-<ul>
-<li><strong>Build System:</strong></li>
+<li>
+<p>Help and version commands</p>
+</li>
+<li>
+<p><strong>Build System:</strong></p>
+</li>
 <li>Makefile-based build</li>
 <li>Rebar3 integration</li>
 <li>Test runner</li>
-<li>Documentation generation (<code>rebar3<em>ex</em>doc</code>)</li>
+<li>Documentation generation (<code>rebar3_ex_doc</code>)</li>
 <li>Code formatting (<code>rebar3 fmt</code>)</li>
 </ul>
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
+<h4 id="implemented-with-provisos_8">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
 <li><strong>Build Caching</strong>: No incremental compilation, always rebuilds</li>
 <li><strong>Dependency Management</strong>: No package manager</li>
 </ul>
-
-<h4>❌ <strong>Not Implemented</strong></h4>
+<h4 id="not-implemented_8">❌ <strong>Not Implemented</strong></h4>
 <ul>
 <li><strong>Project Management</strong>: No <code>cure new</code>, <code>cure init</code> project scaffolding</li>
 <li><strong>Package Manager</strong>: No dependency resolution or package repository</li>
 <li><strong>Build Scripts</strong>: No build.cure or similar</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>70%</strong> - CLI and build work, needs package management
-
-<p>---</p>
-
-<h2>Part 2: Cure Standard Library (<code>lib/std/</code>) - Detailed Analysis</h2>
-
+<p><strong>Production Readiness:</strong> <strong>70%</strong> - CLI and build work, needs package management</p>
+<hr />
+<h2 id="part-2-cure-standard-library-libstd-detailed-analysis">Part 2: Cure Standard Library (<code>lib/std/</code>) - Detailed Analysis</h2>
 <p>The standard library consists of 11 modules written in Cure, totaling ~800 LOC.</p>
-
-<h3>2.1 Core Module (<code>lib/std/core.cure</code>)</h3>
-
-<strong>Exports:</strong> 25 functions
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<h3 id="21-core-module-libstdcorecure">2.1 Core Module (<code>lib/std/core.cure</code>)</h3>
+<p><strong>Exports:</strong> 25 functions</p>
+<h4 id="fully-implemented_8">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li><strong>Function Composition</strong>: <code>identity/1</code>, <code>compose/2</code>, <code>flip/1</code></li>
 <li><strong>Boolean Operations</strong>: <code>not/1</code>, <code>and/2</code>, <code>or/2</code>, <code>xor/2</code></li>
 <li><strong>Comparison</strong>: <code>eq/2</code>, <code>ne/2</code>, <code>lt/2</code>, <code>le/2</code>, <code>gt/2</code>, <code>ge/2</code>, <code>compare/2</code>, <code>minimum/2</code>, <code>maximum/2</code>, <code>clamp/3</code></li>
-<li><strong>Result Type</strong>: <code>ok/1</code>, <code>error/1</code>, <code>is<em>ok/1</code>, <code>is</em>error/1</code>, <code>map<em>ok/2</code>, <code>map</em>error/2</code>, <code>and_then/2</code></li>
-<li><strong>Option Type</strong>: <code>some/1</code>, <code>none/0</code>, <code>is<em>some/1</code>, <code>is</em>none/1</code>, <code>map<em>option/2</code>, <code>flat</em>map<em>option/2</code>, <code>option</em>or/2</code></li>
+<li><strong>Result Type</strong>: <code>ok/1</code>, <code>error/1</code>, <code>is_ok/1</code>, <code>is_error/1</code>, <code>map_ok/2</code>, <code>map_error/2</code>, <code>and_then/2</code></li>
+<li><strong>Option Type</strong>: <code>some/1</code>, <code>none/0</code>, <code>is_some/1</code>, <code>is_none/1</code>, <code>map_option/2</code>, <code>flat_map_option/2</code>, <code>option_or/2</code></li>
 <li><strong>Utilities</strong>: <code>const/1</code>, <code>apply/2</code>, <code>pipe/2</code></li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>95%</strong> - Comprehensive core utilities, well-tested
-
-<p>---</p>
-
-<h3>2.2 List Module (<code>lib/std/list.cure</code>)</h3>
-
-<strong>Exports:</strong> 10 functions
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>95%</strong> - Comprehensive core utilities, well-tested</p>
+<hr />
+<h3 id="22-list-module-libstdlistcure">2.2 List Module (<code>lib/std/list.cure</code>)</h3>
+<p><strong>Exports:</strong> 10 functions</p>
+<h4 id="fully-implemented_9">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li><strong>Basic Operations</strong>: <code>length/1</code>, <code>is_empty/1</code>, <code>reverse/2</code>, <code>head/2</code>, <code>tail/1</code></li>
 <li><strong>Construction</strong>: <code>cons/2</code>, <code>append/2</code>, <code>concat/1</code></li>
 <li><strong>Transformations</strong>: <code>map/2</code>, <code>filter/2</code>, <code>fold/3</code>, <code>zip_with/3</code></li>
 <li><strong>Predicates</strong>: <code>contains/2</code></li>
 </ul>
-
-<h4>❌ <strong>Not Implemented</strong> (Commented Out)</h4>
+<h4 id="not-implemented-commented-out">❌ <strong>Not Implemented</strong> (Commented Out)</h4>
 <ul>
 <li><strong>Indexing</strong>: <code>nth/3</code>, <code>take/2</code>, <code>drop/2</code> (commented out, likely due to issues with numeric type handling)</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>80%</strong> - Core list operations work, needs indexing functions
-
-<p>---</p>
-
-<h3>2.3 Vector Module (<code>lib/std/vector.cure</code>)</h3>
-
-<strong>Exports:</strong> 6 functions
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>80%</strong> - Core list operations work, needs indexing functions</p>
+<hr />
+<h3 id="23-vector-module-libstdvectorcure">2.3 Vector Module (<code>lib/std/vector.cure</code>)</h3>
+<p><strong>Exports:</strong> 6 functions</p>
+<h4 id="fully-implemented_10">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li><strong>Dependent Types</strong>: <code>length/1</code> returns compile-time known length <code>n</code></li>
-<li><strong>Operations</strong>: <code>is<em>empty/1</code>, <code>reverse/2</code>, <code>map/2</code>, <code>filter/2</code>, <code>fold/3</code>, <code>zip</em>with/3</code></li>
+<li><strong>Operations</strong>: <code>is_empty/1</code>, <code>reverse/2</code>, <code>map/2</code>, <code>filter/2</code>, <code>fold/3</code>, <code>zip_with/3</code></li>
 <li><strong>Type Safety</strong>: <code>contains/2</code></li>
 </ul>
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
+<h4 id="implemented-with-provisos_9">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
 <li><strong>Length Preservation</strong>: <code>map/2</code> and <code>zip_with/3</code> preserve length in types, but runtime verification limited</li>
 <li><strong>Filter Returns List</strong>: <code>filter/2</code> returns <code>List(T)</code> not <code>Vector</code> because length unknown at compile time</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>85%</strong> - Dependent vector types work, needs runtime length validation
-
-<p>---</p>
-
-<h3>2.4 FSM Module (<code>lib/std/fsm.cure</code>)</h3>
-
-<strong>Exports:</strong> 9 functions
-
-<h4>✅ <strong>Fully Implemented</strong> (via <code>curify</code> FFI)</h4>
+<p><strong>Production Readiness:</strong> <strong>85%</strong> - Dependent vector types work, needs runtime length validation</p>
+<hr />
+<h3 id="24-fsm-module-libstdfsmcure">2.4 FSM Module (<code>lib/std/fsm.cure</code>)</h3>
+<p><strong>Exports:</strong> 9 functions</p>
+<h4 id="fully-implemented-via-curify-ffi">✅ <strong>Fully Implemented</strong> (via <code>curify</code> FFI)</h4>
 <ul>
-<li><strong>Lifecycle</strong>: <code>start<em>fsm/1</code>, <code>fsm</em>spawn/2</code>, <code>fsm_stop/1</code></li>
-<li><strong>Events</strong>: <code>fsm<em>cast/2</code>, <code>fsm</em>send/2</code></li>
-<li><strong>Queries</strong>: <code>fsm<em>state/1</code>, <code>fsm</em>info/1</code>, <code>fsm<em>is</em>alive/1</code></li>
+<li><strong>Lifecycle</strong>: <code>start_fsm/1</code>, <code>fsm_spawn/2</code>, <code>fsm_stop/1</code></li>
+<li><strong>Events</strong>: <code>fsm_cast/2</code>, <code>fsm_send/2</code></li>
+<li><strong>Queries</strong>: <code>fsm_state/1</code>, <code>fsm_info/1</code>, <code>fsm_is_alive/1</code></li>
 <li><strong>Registry</strong>: <code>fsm_advertise/2</code></li>
 </ul>
-
 <p>All functions properly delegate to Erlang FSM runtime via type-safe <code>curify</code> bindings.</p>
-
-<strong>Production Readiness:</strong> <strong>95%</strong> - FSM API is production-ready
-
-<p>---</p>
-
-<h3>2.5 I/O Module (<code>lib/std/io.cure</code>)</h3>
-
-<strong>Exports:</strong> 5 functions
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>95%</strong> - FSM API is production-ready</p>
+<hr />
+<h3 id="25-io-module-libstdiocure">2.5 I/O Module (<code>lib/std/io.cure</code>)</h3>
+<p><strong>Exports:</strong> 5 functions</p>
+<h4 id="fully-implemented_11">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li><strong>Output</strong>: <code>print/1</code>, <code>println/1</code>, <code>print_raw/2</code> (via <code>curify</code> to <code>io:format/2</code>)</li>
 </ul>
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
+<h4 id="implemented-with-provisos_10">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
 <li><strong>Debug/Error</strong>: <code>debug/1</code> and <code>io_error/1</code> are stubs returning 0</li>
 <li><strong>Input</strong>: No input functions (<code>read_line/0</code>, etc.)</li>
 </ul>
-
-<h4>❌ <strong>Not Implemented</strong></h4>
+<h4 id="not-implemented_9">❌ <strong>Not Implemented</strong></h4>
 <ul>
 <li><strong>File I/O</strong>: No file reading/writing</li>
 <li><strong>Formatting</strong>: No printf-style formatting beyond <code>io:format</code></li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>60%</strong> - Basic output works, needs input and file I/O
-
-<p>---</p>
-
-<h3>2.6 Math Module (<code>lib/std/math.cure</code>)</h3>
-
-<strong>Exports:</strong> 10 functions
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>60%</strong> - Basic output works, needs input and file I/O</p>
+<hr />
+<h3 id="26-math-module-libstdmathcure">2.6 Math Module (<code>lib/std/math.cure</code>)</h3>
+<p><strong>Exports:</strong> 10 functions</p>
+<h4 id="fully-implemented_12">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li><strong>Constants</strong>: <code>pi/0</code>, <code>e/0</code></li>
 <li><strong>Basic Operations</strong>: <code>abs/1</code>, <code>sign/1</code>, <code>negate/1</code>, <code>add/2</code>, <code>subtract/2</code>, <code>multiply/2</code></li>
 <li><strong>Comparisons</strong>: <code>min/2</code>, <code>max/2</code>, <code>clamp/3</code></li>
 <li><strong>Exponentiation</strong>: <code>power/2</code> (recursive implementation)</li>
 </ul>
-
-<h4>❌ <strong>Not Implemented</strong></h4>
+<h4 id="not-implemented_10">❌ <strong>Not Implemented</strong></h4>
 <ul>
 <li><strong>Floating Point Math</strong>: No <code>sqrt</code>, <code>sin</code>, <code>cos</code>, <code>log</code>, etc.</li>
-<li><strong>Float Operations</strong>: Most operations are <code>Int -> Int</code>, no <code>Float</code> versions</li>
+<li><strong>Float Operations</strong>: Most operations are <code>Int -&gt; Int</code>, no <code>Float</code> versions</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>50%</strong> - Basic integer math works, needs floating point functions
-
-<p>---</p>
-
-<h3>2.7 Result Module (<code>lib/std/result.cure</code>)</h3>
-
-<strong>Exports:</strong> 7 functions
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>50%</strong> - Basic integer math works, needs floating point functions</p>
+<hr />
+<h3 id="27-result-module-libstdresultcure">2.7 Result Module (<code>lib/std/result.cure</code>)</h3>
+<p><strong>Exports:</strong> 7 functions</p>
+<h4 id="implemented-with-provisos_11">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
-<li><strong>Constructor/Predicates</strong>: <code>ok/1</code>, <code>error/1</code>, <code>is<em>ok/1</code>, <code>is</em>error/1</code> implemented</li>
-<li><strong>Access</strong>: <code>get<em>value/1</code>, <code>get</em>error/1</code> implemented</li>
-<li><strong>Transformations</strong>: <code>map<em>result/2</code>, <code>map</em>error/2</code> implemented</li>
+<li><strong>Constructor/Predicates</strong>: <code>ok/1</code>, <code>error/1</code>, <code>is_ok/1</code>, <code>is_error/1</code> implemented</li>
+<li><strong>Access</strong>: <code>get_value/1</code>, <code>get_error/1</code> implemented</li>
+<li><strong>Transformations</strong>: <code>map_result/2</code>, <code>map_error/2</code> implemented</li>
 </ul>
-
-<strong>Proviso:</strong> Uses simplified <code>Int</code> representation instead of proper <code>Result(T, E)</code> ADT. This is a <strong>temporary workaround</strong> until variant types are fully supported in the compiler.
-
-<strong>Production Readiness:</strong> <strong>60%</strong> - Works but needs proper ADT support
-
-<p>---</p>
-
-<h3>2.8 Show Module (<code>lib/std/show.cure</code>)</h3>
-
-<strong>Exports:</strong> 1 function
-
-<h4>🟡 <strong>Implemented with Provisos</strong></h4>
+<p><strong>Proviso:</strong> Uses simplified <code>Int</code> representation instead of proper <code>Result(T, E)</code> ADT. This is a <strong>temporary workaround</strong> until variant types are fully supported in the compiler.</p>
+<p><strong>Production Readiness:</strong> <strong>60%</strong> - Works but needs proper ADT support</p>
+<hr />
+<h3 id="28-show-module-libstdshowcure">2.8 Show Module (<code>lib/std/show.cure</code>)</h3>
+<p><strong>Exports:</strong> 1 function</p>
+<h4 id="implemented-with-provisos_12">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
 <li><strong>Basic Show</strong>: <code>show/1</code> implemented but returns placeholder <code>"[value]"</code> string</li>
 </ul>
-
-<h4>❌ <strong>Not Implemented</strong></h4>
+<h4 id="not-implemented_11">❌ <strong>Not Implemented</strong></h4>
 <ul>
 <li><strong>Type-Based Show</strong>: No runtime type inspection to format values properly</li>
 <li><strong>Custom Show</strong>: No mechanism for user-defined show instances</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>20%</strong> - Stub implementation only
-
-<p>---</p>
-
-<h3>2.9 System Module (<code>lib/std/system.cure</code>)</h3>
-
-<strong>Exports:</strong> 3 functions
-
-<h4>✅ <strong>Fully Implemented</strong> (via <code>curify</code> FFI)</h4>
+<p><strong>Production Readiness:</strong> <strong>20%</strong> - Stub implementation only</p>
+<hr />
+<h3 id="29-system-module-libstdsystemcure">2.9 System Module (<code>lib/std/system.cure</code>)</h3>
+<p><strong>Exports:</strong> 3 functions</p>
+<h4 id="fully-implemented-via-curify-ffi_1">✅ <strong>Fully Implemented</strong> (via <code>curify</code> FFI)</h4>
 <ul>
-<li><strong>Time</strong>: <code>system<em>time/1</code>, <code>monotonic</em>time/0</code>, <code>timestamp/0</code> all delegate to <code>erlang</code> module</li>
+<li><strong>Time</strong>: <code>system_time/1</code>, <code>monotonic_time/0</code>, <code>timestamp/0</code> all delegate to <code>erlang</code> module</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>95%</strong> - Complete time functionality via Erlang
-
-<p>---</p>
-
-<h3>2.10 Pair Module (<code>lib/std/pair.cure</code>)</h3>
-
-<strong>Exports:</strong> 1 function
-
-<h4>✅ <strong>Fully Implemented</strong></h4>
+<p><strong>Production Readiness:</strong> <strong>95%</strong> - Complete time functionality via Erlang</p>
+<hr />
+<h3 id="210-pair-module-libstdpaircure">2.10 Pair Module (<code>lib/std/pair.cure</code>)</h3>
+<p><strong>Exports:</strong> 1 function</p>
+<h4 id="fully-implemented_13">✅ <strong>Fully Implemented</strong></h4>
 <ul>
 <li><strong>Constructor</strong>: <code>pair/2</code> creates tuples bridged with Erlang <code>{X, Y}</code> representation</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>95%</strong> - Simple and effective Erlang tuple bridge
-
-<p>---</p>
-
-<h3>2.11 Rec Module (<code>lib/std/rec.cure</code>)</h3>
-
-<strong>Exports:</strong> 3 functions
-
-<h4>✅ <strong>Fully Implemented</strong> (via <code>curify</code> FFI)</h4>
+<p><strong>Production Readiness:</strong> <strong>95%</strong> - Simple and effective Erlang tuple bridge</p>
+<hr />
+<h3 id="211-rec-module-libstdreccure">2.11 Rec Module (<code>lib/std/rec.cure</code>)</h3>
+<p><strong>Exports:</strong> 3 functions</p>
+<h4 id="fully-implemented-via-curify-ffi_2">✅ <strong>Fully Implemented</strong> (via <code>curify</code> FFI)</h4>
 <ul>
 <li><strong>Map Operations</strong>: <code>get/2</code>, <code>put/3</code>, <code>new/0</code> all delegate to <code>maps</code> module</li>
 </ul>
-
-<strong>Production Readiness:</strong> <strong>95%</strong> - Complete record/map functionality via Erlang
-
-<p>---</p>
-
-<h2>Part 3: What's Needed for Full Production Readiness</h2>
-
-<h3>3.1 Critical Blockers (Must-Have for Production)</h3>
-
-<h4><strong>1. SMT Solver Integration</strong> (Priority: <strong>CRITICAL</strong>)</h4>
+<p><strong>Production Readiness:</strong> <strong>95%</strong> - Complete record/map functionality via Erlang</p>
+<hr />
+<h2 id="part-3-whats-needed-for-full-production-readiness">Part 3: What's Needed for Full Production Readiness</h2>
+<h3 id="31-critical-blockers-must-have-for-production">3.1 Critical Blockers (Must-Have for Production)</h3>
+<h4 id="1-smt-solver-integration-priority-critical"><strong>1. SMT Solver Integration</strong> (Priority: <strong>CRITICAL</strong>)</h4>
 <ul>
 <li><strong>Current State</strong>: Stub implementation with symbolic fallback</li>
 <li><strong>Required Work</strong>:</li>
@@ -719,8 +574,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 2-3 weeks</li>
 <li><strong>Impact</strong>: Enables full dependent type verification</li>
 </ul>
-
-<h4><strong>2. FSM Registration Automation</strong> (Priority: <strong>HIGH</strong>)</h4>
+<h4 id="2-fsm-registration-automation-priority-high"><strong>2. FSM Registration Automation</strong> (Priority: <strong>HIGH</strong>)</h4>
 <ul>
 <li><strong>Current State</strong>: Requires explicit <code>register_fsms/0</code> call</li>
 <li><strong>Required Work</strong>:</li>
@@ -730,8 +584,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 3-5 days</li>
 <li><strong>Impact</strong>: Makes FSMs work seamlessly without boilerplate</li>
 </ul>
-
-<h4><strong>3. Standard Library Completion</strong> (Priority: <strong>HIGH</strong>)</h4>
+<h4 id="3-standard-library-completion-priority-high"><strong>3. Standard Library Completion</strong> (Priority: <strong>HIGH</strong>)</h4>
 <ul>
 <li><strong>Current State</strong>: Core functionality present, many gaps</li>
 <li><strong>Required Work</strong>:</li>
@@ -743,8 +596,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 1-2 weeks</li>
 <li><strong>Impact</strong>: Makes stdlib actually useful for real programs</li>
 </ul>
-
-<h4><strong>4. Error Recovery in Parser</strong> (Priority: <strong>MEDIUM-HIGH</strong>)</h4>
+<h4 id="4-error-recovery-in-parser-priority-medium-high"><strong>4. Error Recovery in Parser</strong> (Priority: <strong>MEDIUM-HIGH</strong>)</h4>
 <ul>
 <li><strong>Current State</strong>: Stops on first error</li>
 <li><strong>Required Work</strong>:</li>
@@ -755,8 +607,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 1 week</li>
 <li><strong>Impact</strong>: Greatly improves developer experience</li>
 </ul>
-
-<h4><strong>5. Package Manager</strong> (Priority: <strong>MEDIUM</strong>)</h4>
+<h4 id="5-package-manager-priority-medium"><strong>5. Package Manager</strong> (Priority: <strong>MEDIUM</strong>)</h4>
 <ul>
 <li><strong>Current State</strong>: No dependency management</li>
 <li><strong>Required Work</strong>:</li>
@@ -767,12 +618,9 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 3-4 weeks</li>
 <li><strong>Impact</strong>: Essential for ecosystem growth</li>
 </ul>
-
-<p>---</p>
-
-<h3>3.2 Important Enhancements (Should-Have)</h3>
-
-<h4><strong>6. LSP Feature Completion</strong> (Priority: <strong>MEDIUM</strong>)</h4>
+<hr />
+<h3 id="32-important-enhancements-should-have">3.2 Important Enhancements (Should-Have)</h3>
+<h4 id="6-lsp-feature-completion-priority-medium"><strong>6. LSP Feature Completion</strong> (Priority: <strong>MEDIUM</strong>)</h4>
 <ul>
 <li><strong>Required Work</strong>:</li>
 <li>Implement hover with type inference integration</li>
@@ -783,8 +631,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 2-3 weeks</li>
 <li><strong>Impact</strong>: First-class IDE experience</li>
 </ul>
-
-<h4><strong>7. Comprehensive Test Coverage</strong> (Priority: <strong>MEDIUM</strong>)</h4>
+<h4 id="7-comprehensive-test-coverage-priority-medium"><strong>7. Comprehensive Test Coverage</strong> (Priority: <strong>MEDIUM</strong>)</h4>
 <ul>
 <li><strong>Current State</strong>: ~95% test pass rate, but coverage gaps</li>
 <li><strong>Required Work</strong>:</li>
@@ -796,8 +643,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 2 weeks</li>
 <li><strong>Impact</strong>: Confidence in correctness and refactoring safety</li>
 </ul>
-
-<h4><strong>8. Documentation Generation</strong> (Priority: <strong>MEDIUM</strong>)</h4>
+<h4 id="8-documentation-generation-priority-medium"><strong>8. Documentation Generation</strong> (Priority: <strong>MEDIUM</strong>)</h4>
 <ul>
 <li><strong>Current State</strong>: ExDoc integration exists but needs content</li>
 <li><strong>Required Work</strong>:</li>
@@ -808,8 +654,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 1-2 weeks</li>
 <li><strong>Impact</strong>: Essential for adoption</li>
 </ul>
-
-<h4><strong>9. Incremental Compilation</strong> (Priority: <strong>MEDIUM</strong>)</h4>
+<h4 id="9-incremental-compilation-priority-medium"><strong>9. Incremental Compilation</strong> (Priority: <strong>MEDIUM</strong>)</h4>
 <ul>
 <li><strong>Current State</strong>: Full rebuild every time</li>
 <li><strong>Required Work</strong>:</li>
@@ -820,12 +665,9 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 2-3 weeks</li>
 <li><strong>Impact</strong>: Development speed for large projects</li>
 </ul>
-
-<p>---</p>
-
-<h3>3.3 Advanced Features (Nice-to-Have)</h3>
-
-<h4><strong>10. Hot Code Loading</strong> (Priority: <strong>LOW-MEDIUM</strong>)</h4>
+<hr />
+<h3 id="33-advanced-features-nice-to-have">3.3 Advanced Features (Nice-to-Have)</h3>
+<h4 id="10-hot-code-loading-priority-low-medium"><strong>10. Hot Code Loading</strong> (Priority: <strong>LOW-MEDIUM</strong>)</h4>
 <ul>
 <li><strong>Required Work</strong>:</li>
 <li>Code reloading support in codegen</li>
@@ -834,8 +676,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 2-3 weeks</li>
 <li><strong>Impact</strong>: Enables zero-downtime updates</li>
 </ul>
-
-<h4><strong>11. Distributed FSMs</strong> (Priority: <strong>LOW-MEDIUM</strong>)</h4>
+<h4 id="11-distributed-fsms-priority-low-medium"><strong>11. Distributed FSMs</strong> (Priority: <strong>LOW-MEDIUM</strong>)</h4>
 <ul>
 <li><strong>Required Work</strong>:</li>
 <li>Cross-node FSM discovery</li>
@@ -844,8 +685,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 3-4 weeks</li>
 <li><strong>Impact</strong>: Enables distributed applications</li>
 </ul>
-
-<h4><strong>12. Type Classes/Traits</strong> (Priority: <strong>LOW</strong>)</h4>
+<h4 id="12-type-classestraits-priority-low"><strong>12. Type Classes/Traits</strong> (Priority: <strong>LOW</strong>)</h4>
 <ul>
 <li><strong>Current State</strong>: Marked as TODO in test suite</li>
 <li><strong>Required Work</strong>:</li>
@@ -856,8 +696,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 4-6 weeks</li>
 <li><strong>Impact</strong>: More expressive type system</li>
 </ul>
-
-<h4><strong>13. Effect System</strong> (Priority: <strong>LOW</strong>)</h4>
+<h4 id="13-effect-system-priority-low"><strong>13. Effect System</strong> (Priority: <strong>LOW</strong>)</h4>
 <ul>
 <li><strong>Required Work</strong>:</li>
 <li>Effect type syntax</li>
@@ -867,132 +706,152 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Estimated Effort</strong>: 6-8 weeks</li>
 <li><strong>Impact</strong>: Better reasoning about side effects</li>
 </ul>
-
-<p>---</p>
-
-<h2>Part 4: Current Production Readiness Assessment</h2>
-
-<h3>By Component</h3>
-
-<p>| Component | Readiness | Status | Blockers |</p>
-<p>|-----------|-----------|--------|----------|</p>
-<p>| <strong>Lexer</strong> | 90% | ✅ Production | Incremental lexing for IDE |</p>
-<p>|| <strong>Parser</strong> | 90% | ✅ Production | Error recovery |</p>
-<p>| <strong>Type System</strong> | 75% | 🟡 Functional | SMT integration, advanced features |</p>
-<p>| <strong>Code Generation</strong> | 85% | ✅ Production | Complete guard validation, debug info |</p>
-<p>| <strong>FSM Runtime</strong> | 90% | ✅ Production | Auto-registration, persistence |</p>
-<p>| <strong>SMT Solver</strong> | 30% | ❌ Stub | Actual solver integration |</p>
-<p>| <strong>LSP Server</strong> | 40% | 🟡 Basic | All editor features |</p>
-<p>| <strong>Runtime</strong> | 60% | 🟡 Basic | OTP integration, profiling |</p>
-<p>| <strong>CLI/Build</strong> | 70% | 🟡 Functional | Package management |</p>
-<p>| <strong>Standard Library</strong> | 65% | 🟡 Functional | Complete implementations, ADTs |</p>
-
-<h3>Overall Assessment</h3>
-
-<strong>Current Status:</strong> <strong>70% Production-Ready</strong>
-
-<strong>Strengths:</strong>
-<ul>
-<li>✅ <strong>Solid Core Compiler Pipeline</strong>: Lexer → Parser → Type Checker → Codegen fully functional</li>
-<li>✅ <strong>Multi-Clause Functions</strong>: Erlang-style pattern matching with automatic union type derivation</li>
-<li>✅ <strong>Record Types & Guards</strong>: Full support for records with pattern matching and <code>when</code> guards</li>
-<li>✅ <strong>Production-Grade FSM System</strong>: Best-in-class finite state machine support</li>
-<li>✅ <strong>Working Dependent Types</strong>: Basic dependent types compile and run correctly</li>
-<li>✅ <strong>BEAM Integration</strong>: Generates correct, efficient BEAM bytecode</li>
-<li>✅ <strong>Comprehensive Testing</strong>: 95%+ test pass rate with good coverage</li>
-</ul>
-
-<strong>Weaknesses:</strong>
-<ul>
-<li>❌ <strong>SMT Integration Missing</strong>: Dependent types not fully verified</li>
-<li>❌ <strong>Incomplete Standard Library</strong>: Many essential functions missing</li>
-<li>❌ <strong>No Package Management</strong>: Can't manage dependencies</li>
-<li>❌ <strong>Basic IDE Support</strong>: LSP server needs major work</li>
-<li>❌ <strong>Limited Error Recovery</strong>: Parser stops on first error</li>
-</ul>
-
-<p>---</p>
-
-<h2>Part 5: Recommended Roadmap to Production</h2>
-
-<h3>Phase 1: Core Stability (4-6 weeks)</h3>
+<hr />
+<h2 id="part-4-current-production-readiness-assessment">Part 4: Current Production Readiness Assessment</h2>
+<h3 id="by-component">By Component</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Readiness</th>
+<th>Status</th>
+<th>Blockers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Lexer</strong></td>
+<td>90%</td>
+<td>✅ Production</td>
+<td>Incremental lexing for IDE</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Parser</strong></td>
+<td>90%</td>
+<td>✅ Production</td>
+</tr>
+<tr>
+<td><strong>Type System</strong></td>
+<td>75%</td>
+<td>🟡 Functional</td>
+<td>SMT integration, advanced features</td>
+</tr>
+<tr>
+<td><strong>Code Generation</strong></td>
+<td>85%</td>
+<td>✅ Production</td>
+<td>Complete guard validation, debug info</td>
+</tr>
+<tr>
+<td><strong>FSM Runtime</strong></td>
+<td>90%</td>
+<td>✅ Production</td>
+<td>Auto-registration, persistence</td>
+</tr>
+<tr>
+<td><strong>SMT Solver</strong></td>
+<td>30%</td>
+<td>❌ Stub</td>
+<td>Actual solver integration</td>
+</tr>
+<tr>
+<td><strong>LSP Server</strong></td>
+<td>40%</td>
+<td>🟡 Basic</td>
+<td>All editor features</td>
+</tr>
+<tr>
+<td><strong>Runtime</strong></td>
+<td>60%</td>
+<td>🟡 Basic</td>
+<td>OTP integration, profiling</td>
+</tr>
+<tr>
+<td><strong>CLI/Build</strong></td>
+<td>70%</td>
+<td>🟡 Functional</td>
+<td>Package management</td>
+</tr>
+<tr>
+<td><strong>Standard Library</strong></td>
+<td>65%</td>
+<td>🟡 Functional</td>
+<td>Complete implementations, ADTs</td>
+</tr>
+</tbody>
+</table>
+<h3 id="overall-assessment">Overall Assessment</h3>
+<p><strong>Current Status:</strong> <strong>70% Production-Ready</strong></p>
+<p><strong>Strengths:</strong><br />
+- ✅ <strong>Solid Core Compiler Pipeline</strong>: Lexer → Parser → Type Checker → Codegen fully functional<br />
+- ✅ <strong>Multi-Clause Functions</strong>: Erlang-style pattern matching with automatic union type derivation<br />
+- ✅ <strong>Record Types &amp; Guards</strong>: Full support for records with pattern matching and <code>when</code> guards<br />
+- ✅ <strong>Production-Grade FSM System</strong>: Best-in-class finite state machine support<br />
+- ✅ <strong>Working Dependent Types</strong>: Basic dependent types compile and run correctly<br />
+- ✅ <strong>BEAM Integration</strong>: Generates correct, efficient BEAM bytecode<br />
+- ✅ <strong>Comprehensive Testing</strong>: 95%+ test pass rate with good coverage</p>
+<p><strong>Weaknesses:</strong><br />
+- ❌ <strong>SMT Integration Missing</strong>: Dependent types not fully verified<br />
+- ❌ <strong>Incomplete Standard Library</strong>: Many essential functions missing<br />
+- ❌ <strong>No Package Management</strong>: Can't manage dependencies<br />
+- ❌ <strong>Basic IDE Support</strong>: LSP server needs major work<br />
+- ❌ <strong>Limited Error Recovery</strong>: Parser stops on first error</p>
+<hr />
+<h2 id="part-5-recommended-roadmap-to-production">Part 5: Recommended Roadmap to Production</h2>
+<h3 id="phase-1-core-stability-4-6-weeks">Phase 1: Core Stability (4-6 weeks)</h3>
 <ol>
 <li><strong>SMT Solver Integration</strong> (2-3 weeks)</li>
 <li><strong>FSM Registration Automation</strong> (3-5 days)</li>
 <li><strong>Parser Error Recovery</strong> (1 week)</li>
 <li><strong>Standard Library Essentials</strong> (1-2 weeks)</li>
 </ol>
-
-<strong>Deliverable:</strong> Cure 0.2.0 - Stable core with verified dependent types
-
-<p>---</p>
-
-<h3>Phase 2: Developer Experience (4-6 weeks)</h3>
+<p><strong>Deliverable:</strong> Cure 0.2.0 - Stable core with verified dependent types</p>
+<hr />
+<h3 id="phase-2-developer-experience-4-6-weeks">Phase 2: Developer Experience (4-6 weeks)</h3>
 <ol>
 <li><strong>LSP Feature Completion</strong> (2-3 weeks)</li>
 <li><strong>Comprehensive Documentation</strong> (1-2 weeks)</li>
 <li><strong>Package Manager MVP</strong> (3-4 weeks)</li>
 <li><strong>Incremental Compilation</strong> (2-3 weeks)</li>
 </ol>
-
-<strong>Deliverable:</strong> Cure 0.3.0 - Production-ready developer tooling
-
-<p>---</p>
-
-<h3>Phase 3: Ecosystem Growth (8-12 weeks)</h3>
+<p><strong>Deliverable:</strong> Cure 0.3.0 - Production-ready developer tooling</p>
+<hr />
+<h3 id="phase-3-ecosystem-growth-8-12-weeks">Phase 3: Ecosystem Growth (8-12 weeks)</h3>
 <ol>
 <li><strong>Standard Library Expansion</strong> (3-4 weeks)</li>
 <li><strong>Community Packages Support</strong> (2-3 weeks)</li>
 <li><strong>Hot Code Loading</strong> (2-3 weeks)</li>
 <li><strong>Distributed FSMs</strong> (3-4 weeks)</li>
 </ol>
-
-<strong>Deliverable:</strong> Cure 1.0.0 - Full-featured production language
-
-<p>---</p>
-
-<h3>Phase 4: Advanced Features (Future)</h3>
+<p><strong>Deliverable:</strong> Cure 1.0.0 - Full-featured production language</p>
+<hr />
+<h3 id="phase-4-advanced-features-future">Phase 4: Advanced Features (Future)</h3>
 <ol>
 <li><strong>Type Classes/Traits</strong> (4-6 weeks)</li>
 <li><strong>Effect System</strong> (6-8 weeks)</li>
 <li><strong>Linear Types</strong> (8-12 weeks)</li>
 <li><strong>Macro System</strong> (6-8 weeks)</li>
 </ol>
-
-<strong>Deliverable:</strong> Cure 2.0.0 - Research-grade advanced type system
-
-<p>---</p>
-
-<h2>Part 6: Conclusion</h2>
-
+<p><strong>Deliverable:</strong> Cure 2.0.0 - Research-grade advanced type system</p>
+<hr />
+<h2 id="part-6-conclusion">Part 6: Conclusion</h2>
 <p>Cure is a <strong>remarkably complete implementation</strong> of a dependently-typed functional programming language for the BEAM. The core compiler pipeline is production-ready, and the FSM system is best-in-class. </p>
-
-<strong>The primary gap is SMT solver integration</strong> - without it, dependent type verification is limited to symbolic evaluation. Once this is addressed, along with standard library completion and basic tooling improvements, Cure will be ready for serious production use.
-
-<strong>Timeline to Production:</strong> With focused development, Cure could be production-ready in <strong>8-12 weeks</strong> (Phase 1 + Phase 2).
-
-<strong>Current Best Use Cases:</strong>
-<ul>
-<li>✅ Educational projects demonstrating advanced type systems</li>
-<li>✅ Research into dependent types on BEAM</li>
-<li>✅ FSM-heavy applications (already production-ready)</li>
-<li>✅ Small to medium projects where dependencies aren't critical</li>
-<li>🟡 Production applications willing to work around stdlib gaps and SMT limitations</li>
-</ul>
-
-<strong>Future Potential:</strong>
-<p>With completion of the roadmap, Cure could become the <strong>premier choice for type-safe, formally-verified BEAM applications</strong>, especially in domains requiring strong correctness guarantees (financial systems, safety-critical systems, complex state machines).</p>
-
-<p>---</p>
-
-<strong>Document Version:</strong> 1.0  
-<strong>Last Updated:</strong> October 2025  
-<strong>Authors:</strong> Cure Development Team
-
+<p><strong>The primary gap is SMT solver integration</strong> - without it, dependent type verification is limited to symbolic evaluation. Once this is addressed, along with standard library completion and basic tooling improvements, Cure will be ready for serious production use.</p>
+<p><strong>Timeline to Production:</strong> With focused development, Cure could be production-ready in <strong>8-12 weeks</strong> (Phase 1 + Phase 2).</p>
+<p><strong>Current Best Use Cases:</strong><br />
+- ✅ Educational projects demonstrating advanced type systems<br />
+- ✅ Research into dependent types on BEAM<br />
+- ✅ FSM-heavy applications (already production-ready)<br />
+- ✅ Small to medium projects where dependencies aren't critical<br />
+- 🟡 Production applications willing to work around stdlib gaps and SMT limitations</p>
+<p><strong>Future Potential:</strong><br />
+With completion of the roadmap, Cure could become the <strong>premier choice for type-safe, formally-verified BEAM applications</strong>, especially in domains requiring strong correctness guarantees (financial systems, safety-critical systems, complex state machines).</p>
+<hr />
+<p><strong>Document Version:</strong> 1.0<br />
+<strong>Last Updated:</strong> October 2025<br />
+<strong>Authors:</strong> Cure Development Team</p>
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

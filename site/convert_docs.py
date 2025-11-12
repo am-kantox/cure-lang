@@ -6,6 +6,11 @@ Convert Markdown documentation files to HTML for the Cure website
 import os
 import re
 from pathlib import Path
+import markdown
+from markdown.extensions.codehilite import CodeHiliteExtension
+from markdown.extensions.fenced_code import FencedCodeExtension
+from markdown.extensions.tables import TableExtension
+from markdown.extensions.toc import TocExtension
 
 # HTML template for documentation pages
 DOC_TEMPLATE = """<!DOCTYPE html>
@@ -47,9 +52,6 @@ DOC_TEMPLATE = """<!DOCTYPE html>
         
         {content}
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">
@@ -93,84 +95,23 @@ DOC_TEMPLATE = """<!DOCTYPE html>
 """
 
 def markdown_to_html(markdown_text):
-    """Convert basic Markdown to HTML"""
-    html = markdown_text
-    
-    # Code blocks
-    html = re.sub(r'```(\w+)?\n(.*?)```', r'<pre><code>\2</code></pre>', html, flags=re.DOTALL)
-    
-    # Headers
-    html = re.sub(r'^######\s+(.*?)$', r'<h6>\1</h6>', html, flags=re.MULTILINE)
-    html = re.sub(r'^#####\s+(.*?)$', r'<h5>\1</h5>', html, flags=re.MULTILINE)
-    html = re.sub(r'^####\s+(.*?)$', r'<h4>\1</h4>', html, flags=re.MULTILINE)
-    html = re.sub(r'^###\s+(.*?)$', r'<h3>\1</h3>', html, flags=re.MULTILINE)
-    html = re.sub(r'^##\s+(.*?)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
-    html = re.sub(r'^#\s+(.*?)$', r'<h1>\1</h1>', html, flags=re.MULTILINE)
-    
-    # Bold and italic
-    html = re.sub(r'\*\*\*(.+?)\*\*\*', r'<strong><em>\1</em></strong>', html)
-    html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
-    html = re.sub(r'\*(.+?)\*', r'<em>\1</em>', html)
-    html = re.sub(r'___(.+?)___', r'<strong><em>\1</em></strong>', html)
-    html = re.sub(r'__(.+?)__', r'<strong>\1</strong>', html)
-    html = re.sub(r'_(.+?)_', r'<em>\1</em>', html)
-    
-    # Inline code
-    html = re.sub(r'`([^`]+)`', r'<code>\1</code>', html)
-    
-    # Links
-    html = re.sub(r'\[([^\]]+)\]\(([^\)]+)\)', r'<a href="\2">\1</a>', html)
-    
-    # Unordered lists
-    lines = html.split('\n')
-    in_ul = False
-    result = []
-    for line in lines:
-        if re.match(r'^\s*[-*+]\s+', line):
-            if not in_ul:
-                result.append('<ul>')
-                in_ul = True
-            item = re.sub(r'^\s*[-*+]\s+', '', line)
-            result.append(f'<li>{item}</li>')
-        else:
-            if in_ul:
-                result.append('</ul>')
-                in_ul = False
-            result.append(line)
-    if in_ul:
-        result.append('</ul>')
-    html = '\n'.join(result)
-    
-    # Ordered lists
-    lines = html.split('\n')
-    in_ol = False
-    result = []
-    for line in lines:
-        if re.match(r'^\s*\d+\.\s+', line):
-            if not in_ol:
-                result.append('<ol>')
-                in_ol = True
-            item = re.sub(r'^\s*\d+\.\s+', '', line)
-            result.append(f'<li>{item}</li>')
-        else:
-            if in_ol:
-                result.append('</ol>')
-                in_ol = False
-            result.append(line)
-    if in_ol:
-        result.append('</ol>')
-    html = '\n'.join(result)
-    
-    # Paragraphs
-    lines = html.split('\n')
-    result = []
-    for line in lines:
-        if line.strip() and not line.strip().startswith('<'):
-            result.append(f'<p>{line}</p>')
-        else:
-            result.append(line)
-    
-    return '\n'.join(result)
+    """Convert Markdown to HTML using python-markdown"""
+    md = markdown.Markdown(
+        extensions=[
+            'extra',  # Includes tables, fenced code, etc.
+            'codehilite',  # Syntax highlighting for code blocks
+            'toc',  # Table of contents
+            'nl2br',  # Newline to <br>
+            'sane_lists',  # Better list handling
+        ],
+        extension_configs={
+            'codehilite': {
+                'linenums': False,
+                'guess_lang': True,
+            },
+        }
+    )
+    return md.convert(markdown_text)
 
 def slugify(text):
     """Convert text to URL-friendly slug"""

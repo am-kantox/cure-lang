@@ -35,146 +35,123 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Function Types in Cure</h1>
-
-<h2>Overview</h2>
-
-<p>Cure uses the <code>=></code> operator to denote function types, distinct from the <code>-></code> operator used in pattern matching, lambdas, and FSM transitions.</p>
-
-<h2>Syntax</h2>
-
-<h3>Function Type Arrow: <code>=></code></h3>
+        <h1 id="function-types-in-cure">Function Types in Cure</h1>
+<h2 id="overview">Overview</h2>
+<p>Cure uses the <code>=&gt;</code> operator to denote function types, distinct from the <code>-&gt;</code> operator used in pattern matching, lambdas, and FSM transitions.</p>
+<h2 id="syntax">Syntax</h2>
+<h3 id="function-type-arrow">Function Type Arrow: <code>=&gt;</code></h3>
 <p>Used to specify function types in type annotations:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Simple</span><span class="w"> </span><span class="nx">function</span><span class="w"> </span><span class="k">type</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">map</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">B</span><span class="p">,</span><span class="w"> </span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">A</span><span class="p">)):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">B</span><span class="p">)</span>
 
-<pre><code># Simple function type
-<p>def map(f: A => B, list: List(A)): List(B)</p>
+<span class="err">#</span><span class="w"> </span><span class="nx">Curried</span><span class="w"> </span><span class="nx">function</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="p">(</span><span class="nx">right</span><span class="o">-</span><span class="nx">associative</span><span class="p">)</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">compose</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">B</span><span class="p">,</span><span class="w"> </span><span class="nx">g</span><span class="p">:</span><span class="w"> </span><span class="nx">B</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">C</span><span class="p">):</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">C</span>
 
-<h1>Curried function type (right-associative)</h1>
-<p>def compose(f: A => B, g: B => C): A => C</p>
+<span class="err">#</span><span class="w"> </span><span class="nx">Function</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">nested</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">constructor</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">ap</span><span class="p">(</span><span class="nx">ff</span><span class="p">:</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">B</span><span class="p">),</span><span class="w"> </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">A</span><span class="p">)):</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">B</span><span class="p">)</span>
 
-<h1>Function type nested in type constructor</h1>
-<p>def ap(ff: F(A => B), x: F(A)): F(B)</p>
+<span class="err">#</span><span class="w"> </span><span class="nx">Function</span><span class="w"> </span><span class="nx">returning</span><span class="w"> </span><span class="nx">function</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">curry</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="nx">A</span><span class="p">,</span><span class="w"> </span><span class="nx">B</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">C</span><span class="p">):</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">B</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">C</span>
+</code></pre></div>
 
-<h1>Function returning function</h1>
-<p>def curry(f: (A, B) => C): A => B => C</p>
-</code></pre>
-
-<h3>Match/Lambda Arrow: <code>-></code></h3>
+<h3 id="matchlambda-arrow-">Match/Lambda Arrow: <code>-&gt;</code></h3>
 <p>Used for pattern matching and lambda expressions:</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Match arms</span>
+<span class="n">match</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="p">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">  </span><span class="p">[</span><span class="n">x</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">xs</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nf">sum</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span>
+<span class="kd">end</span>
 
-<pre><code># Match arms
-<p>match list do</p>
-<p>  [] -> 0</p>
-<p>  [x | xs] -> x + sum(xs)</p>
-<p>end</p>
+<span class="cp"># Lambda expressions</span>
+<span class="nf">map</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="kd">end,</span><span class="w"> </span><span class="n">numbers</span><span class="p">)</span>
 
-<h1>Lambda expressions</h1>
-<p>map(fn(x) -> x * 2 end, numbers)</p>
+<span class="cp"># FSM transitions</span>
+<span class="n">state</span><span class="w"> </span><span class="n">Ready</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="nf">event</span><span class="p">(</span><span class="n">start</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Running</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-<h1>FSM transitions</h1>
-<p>state Ready do</p>
-<p>  event(start) -> Running</p>
-<p>end</p>
-</code></pre>
-
-<h2>Rationale</h2>
-
+<h2 id="rationale">Rationale</h2>
 <p>The separation eliminates parsing ambiguity:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Without</span><span class="w"> </span><span class="nx">separation</span><span class="p">,</span><span class="w"> </span><span class="nx">this</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="nx">ambiguous</span><span class="p">:</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">func</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">B</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">A</span><span class="p">):</span><span class="w"> </span><span class="nx">B</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Is</span><span class="w"> </span><span class="s">&quot;A -&gt; B&quot;</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="nx">part</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="k">match</span><span class="p">?</span>
 
-<pre><code># Without separation, this is ambiguous:
-<p>def func(f: A -> B, x: A): B  # Is "A -> B" a type or part of a match?</p>
+<span class="err">#</span><span class="w"> </span><span class="nx">With</span><span class="w"> </span><span class="o">=&gt;</span><span class="p">,</span><span class="w"> </span><span class="nx">it</span><span class="err">&#39;</span><span class="nx">s</span><span class="w"> </span><span class="nx">clear</span><span class="p">:</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">func</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">B</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">A</span><span class="p">):</span><span class="w"> </span><span class="nx">B</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">B</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="nx">clearly</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="nx">function</span><span class="w"> </span><span class="k">type</span>
+</code></pre></div>
 
-<h1>With =>, it's clear:</h1>
-<p>def func(f: A => B, x: A): B  # A => B is clearly a function type</p>
-</code></pre>
+<h2 id="type-system-integration">Type System Integration</h2>
+<h3 id="in-typeclasses">In Typeclasses</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Functor</span><span class="p">(</span><span class="nx">F</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">map</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">B</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">A</span><span class="p">)):</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">B</span><span class="p">)</span>
+<span class="nx">end</span>
 
-<h2>Type System Integration</h2>
+<span class="nx">typeclass</span><span class="w"> </span><span class="nx">Monad</span><span class="p">(</span><span class="nx">M</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">bind</span><span class="p">(</span><span class="nx">m</span><span class="p">:</span><span class="w"> </span><span class="nx">M</span><span class="p">(</span><span class="nx">A</span><span class="p">),</span><span class="w"> </span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">M</span><span class="p">(</span><span class="nx">B</span><span class="p">)):</span><span class="w"> </span><span class="nx">M</span><span class="p">(</span><span class="nx">B</span><span class="p">)</span>
+<span class="nx">end</span>
+</code></pre></div>
 
-<h3>In Typeclasses</h3>
+<h3 id="in-type-definitions">In Type Definitions</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Handler</span><span class="p">(</span><span class="nx">A</span><span class="p">,</span><span class="w"> </span><span class="nx">B</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">B</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Predicate</span><span class="p">(</span><span class="nx">A</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">Bool</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Callback</span><span class="p">(</span><span class="nx">A</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">Unit</span>
+</code></pre></div>
 
-<pre><code>typeclass Functor(F) do
-<p>  def map(f: A => B, x: F(A)): F(B)</p>
-<p>end</p>
+<h3 id="in-function-signatures">In Function Signatures</h3>
+<div class="codehilite"><pre><span></span><code># Higher-order function
+def filter(pred: A =&gt; Bool, list: List(A)): List(A)
 
-<p>typeclass Monad(M) do</p>
-<p>  def bind(m: M(A), f: A => M(B)): M(B)</p>
-<p>end</p>
-</code></pre>
+# Function taking function returning function
+def compose(f: B =&gt; C, g: A =&gt; B): A =&gt; C
 
-<h3>In Type Definitions</h3>
+# Multiple function parameters
+def foldMap(f: A =&gt; B, op: B =&gt; B =&gt; B, init: B, list: List(A)): B
+</code></pre></div>
 
-<pre><code>type Handler(A, B) = A => B
-<p>type Predicate(A) = A => Bool</p>
-<p>type Callback(A) = A => Unit</p>
-</code></pre>
-
-<h3>In Function Signatures</h3>
-
-<pre><code># Higher-order function
-<p>def filter(pred: A => Bool, list: List(A)): List(A)</p>
-
-<h1>Function taking function returning function</h1>
-<p>def compose(f: B => C, g: A => B): A => C</p>
-
-<h1>Multiple function parameters</h1>
-<p>def foldMap(f: A => B, op: B => B => B, init: B, list: List(A)): B</p>
-</code></pre>
-
-<h2>Implementation Details</h2>
-
+<h2 id="implementation-details">Implementation Details</h2>
 <ul>
-<li><strong>Lexer</strong>: <code>=></code> is tokenized as a two-character operator</li>
-<li><strong>Parser</strong>: <code>parse<em>type</em>with_arrows</code> handles <code>=></code> for function types</li>
-<li><strong>Operator Precedence</strong>: <code>=></code> is NOT an expression operator (not in <code>get<em>operator</em>info</code>)</li>
-<li><strong>Type Parameters</strong>: <code>parse<em>type</em>parameter</code> calls <code>parse_type</code> to properly handle function types in contexts like <code>F(A => B)</code></li>
+<li><strong>Lexer</strong>: <code>=&gt;</code> is tokenized as a two-character operator</li>
+<li><strong>Parser</strong>: <code>parse_type_with_arrows</code> handles <code>=&gt;</code> for function types</li>
+<li><strong>Operator Precedence</strong>: <code>=&gt;</code> is NOT an expression operator (not in <code>get_operator_info</code>)</li>
+<li><strong>Type Parameters</strong>: <code>parse_type_parameter</code> calls <code>parse_type</code> to properly handle function types in contexts like <code>F(A =&gt; B)</code></li>
 </ul>
+<h2 id="examples">Examples</h2>
+<h3 id="simple-function-type">Simple Function Type</h3>
+<div class="codehilite"><pre><span></span><code>def apply(f: A =&gt; B, x: A): B = f(x)
+</code></pre></div>
 
-<h2>Examples</h2>
+<h3 id="nested-function-type">Nested Function Type</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Applicative</span><span class="p">(</span><span class="nx">F</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">ap</span><span class="p">(</span><span class="nx">ff</span><span class="p">:</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">B</span><span class="p">),</span><span class="w"> </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">A</span><span class="p">)):</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">B</span><span class="p">)</span>
+<span class="nx">end</span>
+</code></pre></div>
 
-<h3>Simple Function Type</h3>
-<pre><code>def apply(f: A => B, x: A): B = f(x)
-</code></pre>
+<h3 id="curried-function-type">Curried Function Type</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">add</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="kd">end end</span>
+</code></pre></div>
 
-<h3>Nested Function Type</h3>
-<pre><code>typeclass Applicative(F) do
-<p>  def ap(ff: F(A => B), x: F(A)): F(B)</p>
-<p>end</p>
-</code></pre>
+<h3 id="function-composition">Function Composition</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">compose</span><span class="p">(</span><span class="n">f</span><span class="o">:</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">g</span><span class="o">:</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">B</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">C</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">g</span><span class="p">(</span><span class="n">x</span><span class="p">))</span><span class="w"> </span><span class="kd">end</span>
+</code></pre></div>
 
-<h3>Curried Function Type</h3>
-<pre><code>def add: Int => Int => Int = fn(x) -> fn(y) -> x + y end end
-</code></pre>
+<h2 id="migration-guide">Migration Guide</h2>
+<p>If you have existing code using <code>-&gt;</code> for function types, replace with <code>=&gt;</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Before</span>
+<span class="n">def</span><span class="w"> </span><span class="nf">map</span><span class="p">(</span><span class="n">f</span><span class="o">:</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">A</span><span class="p">))</span><span class="o">:</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
 
-<h3>Function Composition</h3>
-<pre><code>def compose(f: B => C, g: A => B): A => C =
-<p>  fn(x) -> f(g(x)) end</p>
-</code></pre>
+<span class="cp"># After  </span>
+<span class="n">def</span><span class="w"> </span><span class="nf">map</span><span class="p">(</span><span class="n">f</span><span class="o">:</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">A</span><span class="p">))</span><span class="o">:</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+</code></pre></div>
 
-<h2>Migration Guide</h2>
-
-<p>If you have existing code using <code>-></code> for function types, replace with <code>=></code>:</p>
-
-<pre><code># Before
-<p>def map(f: A -> B, x: F(A)): F(B)</p>
-
-<h1>After  </h1>
-<p>def map(f: A => B, x: F(A)): F(B)</p>
-</code></pre>
-
-<p>Note: Do NOT change <code>-></code> in match arms, lambdas, or FSM transitions!</p>
-
-<h2>See Also</h2>
-
+<p>Note: Do NOT change <code>-&gt;</code> in match arms, lambdas, or FSM transitions!</p>
+<h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="TYPECLASSES.md">Typeclass System</a></li>
 <li><a href="PATTERN_MATCHING.md">Pattern Matching</a></li>
 <li><a href="LAMBDAS.md">Lambda Expressions</a></li>
 </ul>
-
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

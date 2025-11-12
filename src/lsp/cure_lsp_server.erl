@@ -59,6 +59,10 @@ The server communicates over JSON-RPC 2.0 using stdio or TCP socket.
 
 -include("../parser/cure_ast.hrl").
 
+%% Type checking result records (matching cure_typechecker.erl)
+-record(typecheck_error, {message :: string(), location :: term(), details :: term()}).
+-record(typecheck_warning, {message :: string(), location :: term(), details :: term()}).
+
 -record(state, {
     initialized = false :: boolean(),
     capabilities = #{} :: map(),
@@ -504,17 +508,17 @@ run_type_checker(AST) ->
 
 %% Convert type checker error to LSP diagnostic with detailed location
 convert_type_error_to_diagnostic(#typecheck_error{
-    message = Message, location = Location, details = Details
+    message = Msg, location = Loc, details = Det
 }) ->
-    case extract_error_location(Location) of
+    case extract_error_location(Loc) of
         {StartLine, StartCol, EndLine, EndCol} ->
-            EnhancedMessage = enhance_error_message(Message, Details),
+            EnhancedMessage = enhance_error_message(Msg, Det),
             {true,
                 format_diagnostic_with_range(
                     error, EnhancedMessage, StartLine, StartCol, EndLine, EndCol
                 )};
         {Line, Col} ->
-            EnhancedMessage = enhance_error_message(Message, Details),
+            EnhancedMessage = enhance_error_message(Msg, Det),
             {true, format_diagnostic(error, EnhancedMessage, Line, Col)}
     end;
 convert_type_error_to_diagnostic({type_error, Message, Line, Col}) ->

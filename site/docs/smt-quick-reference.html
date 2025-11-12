@@ -37,341 +37,299 @@ Test Coverage: 100% (12/12 tests passing)">
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>SMT Solver Quick Reference</h1>
+        <h1 id="smt-solver-quick-reference">SMT Solver Quick Reference</h1>
+<p><strong>Status:</strong> ✅ Production Ready<br />
+<strong>Solver:</strong> Z3 4.13.3<br />
+<strong>Test Coverage:</strong> 100% (12/12 tests passing)</p>
+<hr />
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="1-verify-z3-is-installed">1. Verify Z3 is Installed</h3>
+<div class="codehilite"><pre><span></span><code>z3<span class="w"> </span>--version
+<span class="c1"># Z3 version 4.13.3 - 64 bit</span>
+</code></pre></div>
 
-<strong>Status:</strong> ✅ Production Ready  
-<strong>Solver:</strong> Z3 4.13.3  
-<strong>Test Coverage:</strong> 100% (12/12 tests passing)
+<h3 id="2-run-smt-tests">2. Run SMT Tests</h3>
+<div class="codehilite"><pre><span></span><code>make<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>all
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-s<span class="w"> </span>smt_process_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>smt_parser_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+<span class="c1"># All 12 tests should pass</span>
+</code></pre></div>
 
-<p>---</p>
+<hr />
+<h2 id="api-reference">API Reference</h2>
+<h3 id="high-level-api-cure_smt_solvererl">High-Level API (<code>cure_smt_solver.erl</code>)</h3>
+<h4 id="check-if-constraint-is-satisfiable">Check if Constraint is Satisfiable</h4>
+<div class="codehilite"><pre><span></span><code><span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">check_constraint</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">).</span>
+<span class="c">% Returns: sat | unsat | unknown</span>
+</code></pre></div>
 
-<h2>Quick Start</h2>
+<h4 id="prove-constraint-always-holds">Prove Constraint Always Holds</h4>
+<div class="codehilite"><pre><span></span><code><span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_constraint</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">).</span>
+<span class="c">% Returns: true | false | unknown</span>
+</code></pre></div>
 
-<h3>1. Verify Z3 is Installed</h3>
-<pre><code>z3 --version
-<h1>Z3 version 4.13.3 - 64 bit</h1>
-</code></pre>
+<h4 id="find-counterexample">Find Counterexample</h4>
+<div class="codehilite"><pre><span></span><code><span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">find_counterexample</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">).</span>
+<span class="c">% Returns: {ok, Model} | none | unknown</span>
+</code></pre></div>
 
-<h3>2. Run SMT Tests</h3>
-<pre><code>make clean && make all
-<p>erl -pa <em>build/ebin -s smt</em>process<em>test run -s smt</em>parser_test run -s init stop</p>
-<h1>All 12 tests should pass</h1>
-</code></pre>
+<h3 id="mid-level-api-direct-solver-access">Mid-Level API (Direct Solver Access)</h3>
+<h4 id="start-solver">Start Solver</h4>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Pid</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_smt_process</span><span class="p">:</span><span class="nf">start_solver</span><span class="p">(</span><span class="n">z3</span><span class="p">,</span><span class="w"> </span><span class="mi">5000</span><span class="p">).</span>
+<span class="c">% Solver: z3 | cvc5</span>
+<span class="c">% Timeout: milliseconds</span>
+</code></pre></div>
 
-<p>---</p>
+<h4 id="execute-query">Execute Query</h4>
+<div class="codehilite"><pre><span></span><code><span class="nv">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_smt_translator</span><span class="p">:</span><span class="nf">generate_query</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">),</span>
+<span class="nv">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_smt_process</span><span class="p">:</span><span class="nf">execute_query</span><span class="p">(</span><span class="nv">Pid</span><span class="p">,</span><span class="w"> </span><span class="nv">Query</span><span class="p">).</span>
+<span class="c">% Returns: sat | unsat | {sat, Lines} | {error, Reason}</span>
+</code></pre></div>
 
-<h2>API Reference</h2>
+<h4 id="parse-model">Parse Model</h4>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Model</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_smt_parser</span><span class="p">:</span><span class="nf">parse_model</span><span class="p">(</span><span class="nv">Lines</span><span class="p">).</span>
+<span class="c">% Returns: {ok, #{var =&gt; value}} | {error, Reason}</span>
+</code></pre></div>
 
-<h3>High-Level API (<code>cure<em>smt</em>solver.erl</code>)</h3>
+<h4 id="stop-solver">Stop Solver</h4>
+<div class="codehilite"><pre><span></span><code><span class="nn">cure_smt_process</span><span class="p">:</span><span class="nf">stop_solver</span><span class="p">(</span><span class="nv">Pid</span><span class="p">).</span>
+</code></pre></div>
 
-<h4>Check if Constraint is Satisfiable</h4>
-<pre><code>cure<em>smt</em>solver:check_constraint(Constraint, Env).
-<p>% Returns: sat | unsat | unknown</p>
-</code></pre>
+<hr />
+<h2 id="examples">Examples</h2>
+<h3 id="example-1-verify-positive-number">Example 1: Verify Positive Number</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Constraint: x &gt; 0</span>
+<span class="nv">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span>
+<span class="w">    </span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;&gt;&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#identifier_expr</span><span class="p">{</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">},</span>
+<span class="w">    </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#literal_expr</span><span class="p">{</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span>
+<span class="p">},</span>
 
-<h4>Prove Constraint Always Holds</h4>
-<pre><code>cure<em>smt</em>solver:prove_constraint(Constraint, Env).
-<p>% Returns: true | false | unknown</p>
-</code></pre>
+<span class="nv">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">#{</span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">int</span><span class="p">}},</span>
 
-<h4>Find Counterexample</h4>
-<pre><code>cure<em>smt</em>solver:find_counterexample(Constraint, Env).
-<p>% Returns: {ok, Model} | none | unknown</p>
-</code></pre>
+<span class="c">% Check if satisfiable</span>
+<span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">check_constraint</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">).</span>
+<span class="c">% =&gt; sat (there exists x &gt; 0)</span>
 
-<h3>Mid-Level API (Direct Solver Access)</h3>
+<span class="c">% Find example</span>
+<span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">find_counterexample</span><span class="p">(</span>
+<span class="w">    </span><span class="nl">#unary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;not&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">operand</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Constraint</span><span class="p">},</span>
+<span class="w">    </span><span class="nv">Env</span>
+<span class="p">).</span>
+<span class="c">% =&gt; {ok, #{x =&gt; 0}} (x=0 is counterexample to x &gt; 0)</span>
+</code></pre></div>
 
-<h4>Start Solver</h4>
-<pre><code>{ok, Pid} = cure<em>smt</em>process:start_solver(z3, 5000).
-<p>% Solver: z3 | cvc5</p>
-<p>% Timeout: milliseconds</p>
-</code></pre>
+<h3 id="example-2-verify-division-safety">Example 2: Verify Division Safety</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Constraint: y /= 0</span>
+<span class="nv">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span>
+<span class="w">    </span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;/=&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#identifier_expr</span><span class="p">{</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">},</span>
+<span class="w">    </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#literal_expr</span><span class="p">{</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span>
+<span class="p">},</span>
 
-<h4>Execute Query</h4>
-<pre><code>Query = cure<em>smt</em>translator:generate_query(Constraint, Env),
-<p>Result = cure<em>smt</em>process:execute_query(Pid, Query).</p>
-<p>% Returns: sat | unsat | {sat, Lines} | {error, Reason}</p>
-</code></pre>
+<span class="nv">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">#{</span><span class="n">y</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">int</span><span class="p">}},</span>
 
-<h4>Parse Model</h4>
-<pre><code>{ok, Model} = cure<em>smt</em>parser:parse_model(Lines).
-<p>% Returns: {ok, #{var => value}} | {error, Reason}</p>
-</code></pre>
+<span class="c">% This is satisfiable (y can be non-zero)</span>
+<span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">check_constraint</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">).</span>
+<span class="c">% =&gt; sat</span>
 
-<h4>Stop Solver</h4>
-<pre><code>cure<em>smt</em>process:stop_solver(Pid).
-</code></pre>
+<span class="c">% But can we find y = 0? (violates constraint)</span>
+<span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">find_counterexample</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">).</span>
+<span class="c">% =&gt; {ok, #{y =&gt; 0}} (counterexample exists)</span>
+</code></pre></div>
 
-<p>---</p>
+<h3 id="example-3-prove-arithmetic-property">Example 3: Prove Arithmetic Property</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Constraint: x + y == y + x (commutativity)</span>
+<span class="nv">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span>
+<span class="w">    </span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;==&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span>
+<span class="w">        </span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;+&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#identifier_expr</span><span class="p">{</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">},</span>
+<span class="w">        </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#identifier_expr</span><span class="p">{</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span>
+<span class="w">        </span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;+&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#identifier_expr</span><span class="p">{</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">y</span><span class="p">},</span>
+<span class="w">        </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#identifier_expr</span><span class="p">{</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">},</span>
 
-<h2>Examples</h2>
+<span class="nv">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">#{</span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">int</span><span class="p">},</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">int</span><span class="p">}},</span>
 
-<h3>Example 1: Verify Positive Number</h3>
-<pre><code>% Constraint: x > 0
-<p>Constraint = #binary<em>op</em>expr{</p>
-<p>    op = '>',</p>
-<p>    left = #identifier_expr{name = x},</p>
-<p>    right = #literal_expr{value = 0}</p>
-<p>},</p>
+<span class="c">% This should be proven true</span>
+<span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_constraint</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">).</span>
+<span class="c">% =&gt; true (no counterexample exists)</span>
+</code></pre></div>
 
-<p>Env = #{x => {type, int}},</p>
+<h3 id="example-4-complex-constraint">Example 4: Complex Constraint</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Constraint: (x &gt; 0) and (y &gt; 0) =&gt; (x + y &gt; 0)</span>
+<span class="nv">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span>
+<span class="w">    </span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;=&gt;&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span>
+<span class="w">        </span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;and&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lit</span><span class="p">(</span><span class="mi">0</span><span class="p">)},</span>
+<span class="w">        </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var</span><span class="p">(</span><span class="n">y</span><span class="p">),</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lit</span><span class="p">(</span><span class="mi">0</span><span class="p">)}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span>
+<span class="w">        </span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;&gt;&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var</span><span class="p">(</span><span class="n">y</span><span class="p">)},</span>
+<span class="w">        </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">},</span>
 
-<p>% Check if satisfiable</p>
-<p>cure<em>smt</em>solver:check_constraint(Constraint, Env).</p>
-<p>% => sat (there exists x > 0)</p>
+<span class="nv">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">#{</span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">int</span><span class="p">},</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">int</span><span class="p">}},</span>
 
-<p>% Find example</p>
-<p>cure<em>smt</em>solver:find_counterexample(</p>
-<p>    #unary<em>op</em>expr{op = 'not', operand = Constraint},</p>
-<p>    Env</p>
-<p>).</p>
-<p>% => {ok, #{x => 0}} (x=0 is counterexample to x > 0)</p>
-</code></pre>
+<span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_constraint</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">).</span>
+<span class="c">% =&gt; true (proven!)</span>
+</code></pre></div>
 
-<h3>Example 2: Verify Division Safety</h3>
-<pre><code>% Constraint: y /= 0
-<p>Constraint = #binary<em>op</em>expr{</p>
-<p>    op = '/=',</p>
-<p>    left = #identifier_expr{name = y},</p>
-<p>    right = #literal_expr{value = 0}</p>
-<p>},</p>
-
-<p>Env = #{y => {type, int}},</p>
-
-<p>% This is satisfiable (y can be non-zero)</p>
-<p>cure<em>smt</em>solver:check_constraint(Constraint, Env).</p>
-<p>% => sat</p>
-
-<p>% But can we find y = 0? (violates constraint)</p>
-<p>cure<em>smt</em>solver:find_counterexample(Constraint, Env).</p>
-<p>% => {ok, #{y => 0}} (counterexample exists)</p>
-</code></pre>
-
-<h3>Example 3: Prove Arithmetic Property</h3>
-<pre><code>% Constraint: x + y == y + x (commutativity)
-<p>Constraint = #binary<em>op</em>expr{</p>
-<p>    op = '==',</p>
-<p>    left = #binary<em>op</em>expr{</p>
-<p>        op = '+',</p>
-<p>        left = #identifier_expr{name = x},</p>
-<p>        right = #identifier_expr{name = y}</p>
-<p>    },</p>
-<p>    right = #binary<em>op</em>expr{</p>
-<p>        op = '+',</p>
-<p>        left = #identifier_expr{name = y},</p>
-<p>        right = #identifier_expr{name = x}</p>
-<p>    }</p>
-<p>},</p>
-
-<p>Env = #{x => {type, int}, y => {type, int}},</p>
-
-<p>% This should be proven true</p>
-<p>cure<em>smt</em>solver:prove_constraint(Constraint, Env).</p>
-<p>% => true (no counterexample exists)</p>
-</code></pre>
-
-<h3>Example 4: Complex Constraint</h3>
-<pre><code>% Constraint: (x > 0) and (y > 0) => (x + y > 0)
-<p>Constraint = #binary<em>op</em>expr{</p>
-<p>    op = '=>',</p>
-<p>    left = #binary<em>op</em>expr{</p>
-<p>        op = 'and',</p>
-<p>        left = #binary<em>op</em>expr{op = '>', left = var(x), right = lit(0)},</p>
-<p>        right = #binary<em>op</em>expr{op = '>', left = var(y), right = lit(0)}</p>
-<p>    },</p>
-<p>    right = #binary<em>op</em>expr{</p>
-<p>        op = '>',</p>
-<p>        left = #binary<em>op</em>expr{op = '+', left = var(x), right = var(y)},</p>
-<p>        right = lit(0)</p>
-<p>    }</p>
-<p>},</p>
-
-<p>Env = #{x => {type, int}, y => {type, int}},</p>
-
-<p>cure<em>smt</em>solver:prove_constraint(Constraint, Env).</p>
-<p>% => true (proven!)</p>
-</code></pre>
-
-<p>---</p>
-
-<h2>Constraint Translation</h2>
-
-<h3>Supported Operators</h3>
-
-<h4>Arithmetic</h4>
+<hr />
+<h2 id="constraint-translation">Constraint Translation</h2>
+<h3 id="supported-operators">Supported Operators</h3>
+<h4 id="arithmetic">Arithmetic</h4>
 <ul>
-<li><code>+</code>, <code>-</code>, <code><em></code> → <code>(+ x y)</code>, <code>(- x y)</code>, <code>(</em> x y)</code></li>
+<li><code>+</code>, <code>-</code>, <code>*</code> → <code>(+ x y)</code>, <code>(- x y)</code>, <code>(* x y)</code></li>
 <li><code>/</code> → <code>(/ x y)</code> (real division)</li>
 <li><code>div</code> → <code>(div x y)</code> (integer division)</li>
 <li><code>rem</code> → <code>(mod x y)</code> (remainder)</li>
 </ul>
-
-<h4>Comparison</h4>
+<h4 id="comparison">Comparison</h4>
 <ul>
 <li><code>==</code>, <code>/=</code> → <code>(= x y)</code>, <code>(not (= x y))</code></li>
-<li><code><</code>, <code>></code> → <code>(< x y)</code>, <code>(> x y)</code></li>
-<li><code>=<</code>, <code>>=</code> → <code>(<= x y)</code>, <code>(>= x y)</code></li>
+<li><code>&lt;</code>, <code>&gt;</code> → <code>(&lt; x y)</code>, <code>(&gt; x y)</code></li>
+<li><code>=&lt;</code>, <code>&gt;=</code> → <code>(&lt;= x y)</code>, <code>(&gt;= x y)</code></li>
 </ul>
-
-<h4>Boolean</h4>
+<h4 id="boolean">Boolean</h4>
 <ul>
 <li><code>and</code>, <code>or</code>, <code>not</code> → <code>(and x y)</code>, <code>(or x y)</code>, <code>(not x)</code></li>
 <li><code>andalso</code>, <code>orelse</code> → same as <code>and</code>, <code>or</code></li>
-<li><code>=></code> → <code>(=> x y)</code> (implication)</li>
+<li><code>=&gt;</code> → <code>(=&gt; x y)</code> (implication)</li>
 </ul>
-
-<h4>Unary</h4>
+<h4 id="unary">Unary</h4>
 <ul>
 <li><code>-</code> (negation) → <code>(- x)</code></li>
 <li><code>not</code> (boolean) → <code>(not x)</code></li>
 </ul>
-
-<h3>Type Mapping</h3>
+<h3 id="type-mapping">Type Mapping</h3>
 <ul>
 <li><code>Int</code>, <code>Nat</code> → <code>Int</code> (SMT integer)</li>
 <li><code>Bool</code> → <code>Bool</code> (SMT boolean)</li>
 <li><code>Float</code>, <code>Real</code> → <code>Real</code> (SMT real)</li>
 </ul>
-
-<h3>Logic Inference</h3>
-<p>The translator automatically infers the SMT logic:</p>
-<ul>
-<li><code>QF_LIA</code> - Linear Integer Arithmetic (Int only)</li>
-<li><code>QF_LRA</code> - Linear Real Arithmetic (Real only)</li>
-<li><code>QF_LIRA</code> - Linear Mixed Integer/Real Arithmetic</li>
-<li><code>QF_NIA</code> - Nonlinear Integer Arithmetic (with *, /)</li>
-</ul>
-
-<p>---</p>
-
-<h2>Timeout Configuration</h2>
-
+<h3 id="logic-inference">Logic Inference</h3>
+<p>The translator automatically infers the SMT logic:<br />
+- <code>QF_LIA</code> - Linear Integer Arithmetic (Int only)<br />
+- <code>QF_LRA</code> - Linear Real Arithmetic (Real only)<br />
+- <code>QF_LIRA</code> - Linear Mixed Integer/Real Arithmetic<br />
+- <code>QF_NIA</code> - Nonlinear Integer Arithmetic (with *, /)</p>
+<hr />
+<h2 id="timeout-configuration">Timeout Configuration</h2>
 <p>Default timeout is 5000ms. Configure per-solver:</p>
-
-<pre><code>{ok, Pid} = cure<em>smt</em>process:start_solver(z3, 10000). % 10 seconds
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Pid</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_smt_process</span><span class="p">:</span><span class="nf">start_solver</span><span class="p">(</span><span class="n">z3</span><span class="p">,</span><span class="w"> </span><span class="mi">10000</span><span class="p">).</span><span class="w"> </span><span class="c">% 10 seconds</span>
+</code></pre></div>
 
 <p>Or use default:</p>
-<pre><code>{ok, Pid} = cure<em>smt</em>process:start_solver(z3, 5000).
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Pid</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_smt_process</span><span class="p">:</span><span class="nf">start_solver</span><span class="p">(</span><span class="n">z3</span><span class="p">,</span><span class="w"> </span><span class="mi">5000</span><span class="p">).</span>
+</code></pre></div>
 
-<p>---</p>
-
-<h2>Error Handling</h2>
-
+<hr />
+<h2 id="error-handling">Error Handling</h2>
 <p>All functions have graceful error handling:</p>
-
-<pre><code>case cure<em>smt</em>solver:check_constraint(Constraint, Env) of
-<p>    sat -> io:format("Satisfiable~n");</p>
-<p>    unsat -> io:format("Unsatisfiable~n");</p>
-<p>    unknown -> io:format("Solver could not determine~n");</p>
-<p>    {error, Reason} -> io:format("Error: ~p~n", [Reason])</p>
-<p>end.</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="k">case</span><span class="w"> </span><span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">check_constraint</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">    </span><span class="n">sat</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nn">io</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="s">&quot;Satisfiable</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">unsat</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nn">io</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="s">&quot;Unsatisfiable</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">unknown</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nn">io</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="s">&quot;Solver could not determine</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nn">io</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="s">&quot;Error: </span><span class="si">~p~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nv">Reason</span><span class="p">])</span>
+<span class="k">end</span><span class="p">.</span>
+</code></pre></div>
 
 <p>If SMT solver fails, the system falls back to symbolic evaluation.</p>
+<hr />
+<h2 id="testing">Testing</h2>
+<h3 id="run-all-tests">Run All Tests</h3>
+<div class="codehilite"><pre><span></span><code>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-s<span class="w"> </span>smt_process_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>smt_parser_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+</code></pre></div>
 
-<p>---</p>
+<h3 id="run-process-tests-only">Run Process Tests Only</h3>
+<div class="codehilite"><pre><span></span><code>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-s<span class="w"> </span>smt_process_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+</code></pre></div>
 
-<h2>Testing</h2>
+<h3 id="run-parser-tests-only">Run Parser Tests Only</h3>
+<div class="codehilite"><pre><span></span><code>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-s<span class="w"> </span>smt_parser_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+</code></pre></div>
 
-<h3>Run All Tests</h3>
-<pre><code>erl -pa <em>build/ebin -s smt</em>process<em>test run -s smt</em>parser_test run -s init stop
-</code></pre>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="z3-not-found">Z3 Not Found</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Z3</span><span class="w"> </span><span class="n">solver</span><span class="w"> </span><span class="n">not</span><span class="w"> </span><span class="n">found</span>
+</code></pre></div>
 
-<h3>Run Process Tests Only</h3>
-<pre><code>erl -pa <em>build/ebin -s smt</em>process_test run -s init stop
-</code></pre>
+<p><strong>Solution:</strong> Install Z3</p>
+<div class="codehilite"><pre><span></span><code>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>z3<span class="w">  </span><span class="c1"># Ubuntu/Debian</span>
+brew<span class="w"> </span>install<span class="w"> </span>z3<span class="w">      </span><span class="c1"># macOS</span>
+</code></pre></div>
 
-<h3>Run Parser Tests Only</h3>
-<pre><code>erl -pa <em>build/ebin -s smt</em>parser_test run -s init stop
-</code></pre>
+<h3 id="timeout-errors">Timeout Errors</h3>
+<div class="codehilite"><pre><span></span><code>{error, timeout}
+</code></pre></div>
 
-<p>---</p>
+<p><strong>Solution:</strong> Increase timeout</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Pid</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_smt_process</span><span class="p">:</span><span class="nf">start_solver</span><span class="p">(</span><span class="n">z3</span><span class="p">,</span><span class="w"> </span><span class="mi">30000</span><span class="p">).</span><span class="w"> </span><span class="c">% 30 seconds</span>
+</code></pre></div>
 
-<h2>Troubleshooting</h2>
+<h3 id="parse-errors">Parse Errors</h3>
+<div class="codehilite"><pre><span></span><code>{error, {parse_error, Reason}}
+</code></pre></div>
 
-<h3>Z3 Not Found</h3>
-<pre><code>Error: Z3 solver not found
-</code></pre>
-<strong>Solution:</strong> Install Z3
-<pre><code>sudo apt install z3  # Ubuntu/Debian
-<p>brew install z3      # macOS</p>
-</code></pre>
-
-<h3>Timeout Errors</h3>
-<pre><code>{error, timeout}
-</code></pre>
-<strong>Solution:</strong> Increase timeout
-<pre><code>{ok, Pid} = cure<em>smt</em>process:start_solver(z3, 30000). % 30 seconds
-</code></pre>
-
-<h3>Parse Errors</h3>
-<pre><code>{error, {parse_error, Reason}}
-</code></pre>
-<strong>Solution:</strong> Check constraint syntax and types in environment.
-
-<p>---</p>
-
-<h2>Performance Tips</h2>
-
+<p><strong>Solution:</strong> Check constraint syntax and types in environment.</p>
+<hr />
+<h2 id="performance-tips">Performance Tips</h2>
 <ol>
 <li><strong>Reuse solver processes</strong> - Starting solver has ~50ms overhead</li>
-<li><strong>Use appropriate timeout</strong> - Complex constraints may need >5s</li>
+<li><strong>Use appropriate timeout</strong> - Complex constraints may need &gt;5s</li>
 <li><strong>Simplify constraints</strong> - Break complex constraints into parts</li>
 <li><strong>Cache results</strong> - Identical constraints return same result</li>
 </ol>
+<hr />
+<h2 id="architecture">Architecture</h2>
+<div class="codehilite"><pre><span></span><code>User Code
+    ↓
+cure_smt_solver (High-level API)
+    ↓
+cure_smt_translator (AST → SMT-LIB)
+    ↓
+cure_smt_process (Solver management)
+    ↓
+Z3 Solver (via Erlang port)
+    ↓
+cure_smt_parser (Model extraction)
+    ↓
+Result
+</code></pre></div>
 
-<p>---</p>
-
-<h2>Architecture</h2>
-
-<pre><code>User Code
-<p>    ↓</p>
-<p>cure<em>smt</em>solver (High-level API)</p>
-<p>    ↓</p>
-<p>cure<em>smt</em>translator (AST → SMT-LIB)</p>
-<p>    ↓</p>
-<p>cure<em>smt</em>process (Solver management)</p>
-<p>    ↓</p>
-<p>Z3 Solver (via Erlang port)</p>
-<p>    ↓</p>
-<p>cure<em>smt</em>parser (Model extraction)</p>
-<p>    ↓</p>
-<p>Result</p>
-</code></pre>
-
-<p>---</p>
-
-<h2>Files</h2>
-
-<h3>Core Implementation</h3>
+<hr />
+<h2 id="files">Files</h2>
+<h3 id="core-implementation">Core Implementation</h3>
 <ul>
-<li><code>src/smt/cure<em>smt</em>solver.erl</code> - High-level API</li>
-<li><code>src/smt/cure<em>smt</em>translator.erl</code> - Constraint translation</li>
-<li><code>src/smt/cure<em>smt</em>process.erl</code> - Solver process management</li>
-<li><code>src/smt/cure<em>smt</em>parser.erl</code> - Model parser</li>
+<li><code>src/smt/cure_smt_solver.erl</code> - High-level API</li>
+<li><code>src/smt/cure_smt_translator.erl</code> - Constraint translation</li>
+<li><code>src/smt/cure_smt_process.erl</code> - Solver process management</li>
+<li><code>src/smt/cure_smt_parser.erl</code> - Model parser</li>
 </ul>
-
-<h3>Tests</h3>
+<h3 id="tests">Tests</h3>
 <ul>
-<li><code>test/smt<em>process</em>test.erl</code> - Process management tests (7 tests)</li>
-<li><code>test/smt<em>parser</em>test.erl</code> - Parser tests (5 tests)</li>
+<li><code>test/smt_process_test.erl</code> - Process management tests (7 tests)</li>
+<li><code>test/smt_parser_test.erl</code> - Parser tests (5 tests)</li>
 </ul>
-
-<h3>Documentation</h3>
+<h3 id="documentation">Documentation</h3>
 <ul>
-<li><code>docs/SMT<em>INTEGRATION</em>COMPLETE.md</code> - Complete overview</li>
-<li><code>docs/SMT<em>INTEGRATION</em>PLAN.md</code> - Original plan</li>
-<li><code>docs/SMT<em>COMPLETION</em>PLAN.md</code> - 4-step completion plan</li>
-<li><code>docs/SMT<em>SOLVER</em>INSTALLATION.md</code> - Installation guide</li>
+<li><code>docs/SMT_INTEGRATION_COMPLETE.md</code> - Complete overview</li>
+<li><code>docs/SMT_INTEGRATION_PLAN.md</code> - Original plan</li>
+<li><code>docs/SMT_COMPLETION_PLAN.md</code> - 4-step completion plan</li>
+<li><code>docs/SMT_SOLVER_INSTALLATION.md</code> - Installation guide</li>
 </ul>
-
-<p>---</p>
-
-<h2>Integration Status</h2>
-
-<h3>✅ Completed</h3>
+<hr />
+<h2 id="integration-status">Integration Status</h2>
+<h3 id="completed">✅ Completed</h3>
 <ul>
 <li>Core SMT solver implementation</li>
 <li>Z3 solver support with process management</li>
@@ -380,35 +338,23 @@ Test Coverage: 100% (12/12 tests passing)">
 <li>Comprehensive test suite (12/12 tests passing)</li>
 <li>High-level API for constraint checking</li>
 </ul>
-
-<h3>📋 Planned</h3>
+<h3 id="planned">📋 Planned</h3>
 <ol>
-<li><strong>CLI Integration</strong>: Add command-line flags for SMT solver control</li>
-</ol>
-<ul>
-<li><code>--smt-solver [z3|cvc5]</code></li>
-<li><code>--smt-timeout <ms></code></li>
-<li><code>--no-smt</code></li>
-</ul>
-<ol>
+<li><strong>CLI Integration</strong>: Add command-line flags for SMT solver control<br />
+   - <code>--smt-solver [z3|cvc5]</code><br />
+   - <code>--smt-timeout &lt;ms&gt;</code><br />
+   - <code>--no-smt</code></li>
 <li><strong>Type Checker Integration</strong>: Automatic verification during type checking</li>
 <li><strong>CVC5 Support</strong>: Complete CVC5 solver implementation (stub exists)</li>
 <li><strong>Result Caching</strong>: Cache constraint checking results for performance</li>
 <li><strong>Distributed Solver Pool</strong>: Parallel constraint solving</li>
 </ol>
-
-<p>---</p>
-
-<strong>Version:</strong> 1.0  
-<strong>Last Updated:</strong> October 31, 2025  
-<strong>Status:</strong> Production Ready ✅
-
-<strong>Note</strong>: SMT solver integration is available at the Erlang API level. CLI integration is not yet implemented.
-
+<hr />
+<p><strong>Version:</strong> 1.0<br />
+<strong>Last Updated:</strong> October 31, 2025<br />
+<strong>Status:</strong> Production Ready ✅</p>
+<p><strong>Note</strong>: SMT solver integration is available at the Erlang API level. CLI integration is not yet implemented.</p>
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

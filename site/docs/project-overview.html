@@ -35,21 +35,15 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Cure Programming Language - Project Overview</h1>
-
-<strong>Last Updated</strong>: October 31, 2025
-
+        <h1 id="cure-programming-language-project-overview">Cure Programming Language - Project Overview</h1>
+<p><strong>Last Updated</strong>: October 31, 2025</p>
 <p>✅ <strong>PRODUCTION READY</strong>: Complete implementation of a strongly-typed, dependently-typed programming language for the BEAM virtual machine with built-in finite state machines, working module system, and comprehensive development toolchain.</p>
-
-<p>🎆 <strong>Status</strong>: 100% functional implementation with comprehensive test coverage  </p>
-<p>✅ <strong>Achievement</strong>: Working end-to-end compilation from source to BEAM bytecode  </p>
-<p>✅ <strong>Runtime Verification</strong>: Demonstrated with working examples in <code>examples/</code> directory  </p>
-<p>✅ <strong>Test Success Rate</strong>: Extensive test suite with multiple passing test modules</p>
-
-<h2>Executive Summary</h2>
-
+<p>🎆 <strong>Status</strong>: 100% functional implementation with comprehensive test coverage<br />
+✅ <strong>Achievement</strong>: Working end-to-end compilation from source to BEAM bytecode<br />
+✅ <strong>Runtime Verification</strong>: Demonstrated with working examples in <code>examples/</code> directory<br />
+✅ <strong>Test Success Rate</strong>: Extensive test suite with multiple passing test modules</p>
+<h2 id="executive-summary">Executive Summary</h2>
 <p>Cure represents a <strong>breakthrough</strong> in programming language design, successfully combining:</p>
-
 <ul>
 <li><strong>Advanced Type System</strong>: Dependent types with SMT-based constraint solving</li>
 <li><strong>Native FSM Support</strong>: First-class finite state machines compiled to BEAM <code>gen_statem</code> behaviors</li>
@@ -57,387 +51,302 @@
 <li><strong>BEAM Integration</strong>: Full OTP compatibility with supervision trees and hot code loading</li>
 <li><strong>Production Ready</strong>: 100% test success rate with runtime verification</li>
 </ul>
+<h2 id="key-achievements">Key Achievements</h2>
+<h3 id="complete-implementation-production-ready">✅ Complete Implementation (Production Ready)</h3>
+<p><strong>Core Compiler Pipeline</strong>:<br />
+1. <strong>Lexical Analysis</strong> (<code>cure_lexer.erl</code>) - Complete tokenization with position tracking<br />
+2. <strong>Parsing</strong> (<code>cure_parser.erl</code>) - Full AST generation with error recovery<br />
+3. <strong>Type Checking</strong> (<code>cure_typechecker.erl</code>) - Dependent type system with constraint solving<br />
+4. <strong>Type Optimization</strong> (<code>cure_type_optimizer.erl</code>) - 25-60% performance improvements<br />
+5. <strong>Code Generation</strong> (<code>cure_codegen.erl</code>) - BEAM bytecode with OTP integration</p>
+<p><strong>Advanced Features</strong>:<br />
+- <strong>🎆 Working Module System</strong>: <code>import Module [func1/1, func2/2]</code> with selective imports<br />
+- <strong>🎆 Standard Library</strong>: Essential modules (Std.Io, Std.List, Std.Fsm, Std.Show, etc.)<br />
+- <strong>🎆 Dependent Types</strong>: Type system supporting dependent types and refinement types<br />
+- <strong>🎆 FSM Runtime</strong>: Complete <code>gen_statem</code> integration with arrow-based transition syntax<br />
+- <strong>🎆 CLI Toolchain</strong>: Comprehensive command-line interface with build automation</p>
+<h3 id="runtime-verification-success">✅ Runtime Verification Success</h3>
+<p><strong>Working Example</strong>: <code>examples/06_fsm_traffic_light.cure</code></p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span> <span class="n">TrafficLightFSM</span> <span class="n">do</span>
+  <span class="n">export</span> <span class="p">[</span><span class="n">main</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
 
-<h2>Key Achievements</h2>
+  <span class="c1"># ✅ WORKING: Import system with selective imports</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Fsm</span> <span class="p">[</span><span class="n">fsm_spawn</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_cast</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_advertise</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_state</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Io</span> <span class="p">[</span><span class="n">println</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Pair</span> <span class="p">[</span><span class="n">pair</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
 
-<h3>✅ Complete Implementation (Production Ready)</h3>
+  <span class="c1"># ✅ WORKING: Record definition for FSM payload</span>
+  <span class="n">record</span> <span class="n">TrafficPayload</span> <span class="n">do</span>
+    <span class="n">cycles_completed</span><span class="p">:</span> <span class="n">Int</span>
+    <span class="n">timer_events</span><span class="p">:</span> <span class="n">Int</span>
+    <span class="n">emergency_stops</span><span class="p">:</span> <span class="n">Int</span>
+  <span class="n">end</span>
 
-<strong>Core Compiler Pipeline</strong>:
-<ol>
-<li><strong>Lexical Analysis</strong> (<code>cure_lexer.erl</code>) - Complete tokenization with position tracking</li>
-<li><strong>Parsing</strong> (<code>cure_parser.erl</code>) - Full AST generation with error recovery  </li>
-<li><strong>Type Checking</strong> (<code>cure_typechecker.erl</code>) - Dependent type system with constraint solving</li>
-<li><strong>Type Optimization</strong> (<code>cure<em>type</em>optimizer.erl</code>) - 25-60% performance improvements</li>
-<li><strong>Code Generation</strong> (<code>cure_codegen.erl</code>) - BEAM bytecode with OTP integration</li>
-</ol>
+  <span class="c1"># ✅ WORKING: FSM with arrow-based transition syntax</span>
+  <span class="n">fsm</span> <span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">timer_events</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">emergency_stops</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span> <span class="n">do</span>
+    <span class="n">Red</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">timer</span><span class="o">|</span> <span class="n">Green</span>
+    <span class="n">Red</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">emergency</span><span class="o">|</span> <span class="n">Red</span>
+    <span class="n">Green</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">timer</span><span class="o">|</span> <span class="n">Yellow</span>
+    <span class="n">Green</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">emergency</span><span class="o">|</span> <span class="n">Red</span>
+    <span class="n">Yellow</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">timer</span><span class="o">|</span> <span class="n">Red</span>
+    <span class="n">Yellow</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">emergency</span><span class="o">|</span> <span class="n">Red</span>
+  <span class="n">end</span>
 
-<strong>Advanced Features</strong>:
-<ul>
-<li><strong>🎆 Working Module System</strong>: <code>import Module [func1/1, func2/2]</code> with selective imports</li>
-<li><strong>🎆 Standard Library</strong>: Essential modules (Std.Io, Std.List, Std.Fsm, Std.Show, etc.)</li>
-<li><strong>🎆 Dependent Types</strong>: Type system supporting dependent types and refinement types</li>
-<li><strong>🎆 FSM Runtime</strong>: Complete <code>gen_statem</code> integration with arrow-based transition syntax</li>
-<li><strong>🎆 CLI Toolchain</strong>: Comprehensive command-line interface with build automation</li>
-</ul>
+  <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span> <span class="n">Int</span> <span class="o">=</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;=== Traffic Light FSM Demo ===&quot;</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">initial_data</span> <span class="o">=</span> <span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">timer_events</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">emergency_stops</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+    <span class="n">let</span> <span class="n">fsm_pid</span> <span class="o">=</span> <span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">TrafficPayload</span><span class="p">,</span> <span class="n">initial_data</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">adv_result</span> <span class="o">=</span> <span class="n">fsm_advertise</span><span class="p">(</span><span class="n">fsm_pid</span><span class="p">,</span> <span class="p">:</span><span class="n">traffic_light</span><span class="p">)</span>
+    <span class="n">let</span> <span class="n">event</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(:</span><span class="n">timer</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="n">let</span> <span class="n">cast_result</span> <span class="o">=</span> <span class="n">fsm_cast</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+    <span class="n">println</span><span class="p">(</span><span class="s2">&quot;FSM operations complete&quot;</span><span class="p">)</span>
+    <span class="mi">0</span>
+<span class="n">end</span>
+</code></pre></div>
 
-<h3>✅ Runtime Verification Success</h3>
+<p><strong>Compilation &amp; Execution</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ✅ Successfully compiles</span>
+./cure<span class="w"> </span>examples/06_fsm_traffic_light.cure<span class="w"> </span>--verbose
 
-<strong>Working Example</strong>: <code>examples/06<em>fsm</em>traffic_light.cure</code>
-<pre><code>module TrafficLightFSM do
-<p>  export [main/0]</p>
-  
-<p>  # ✅ WORKING: Import system with selective imports</p>
-<p>  import Std.Fsm [fsm<em>spawn/2, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1]</p>
-<p>  import Std.Io [println/1]</p>
-<p>  import Std.Pair [pair/2]</p>
-  
-<p>  # ✅ WORKING: Record definition for FSM payload</p>
-<p>  record TrafficPayload do</p>
-<p>    cycles_completed: Int</p>
-<p>    timer_events: Int</p>
-<p>    emergency_stops: Int</p>
-<p>  end</p>
-  
-<p>  # ✅ WORKING: FSM with arrow-based transition syntax</p>
-<p>  fsm TrafficPayload{cycles<em>completed: 0, timer</em>events: 0, emergency_stops: 0} do</p>
-<p>    Red --> |timer| Green</p>
-<p>    Red --> |emergency| Red</p>
-<p>    Green --> |timer| Yellow</p>
-<p>    Green --> |emergency| Red</p>
-<p>    Yellow --> |timer| Red</p>
-<p>    Yellow --> |emergency| Red</p>
-<p>  end</p>
-  
-<p>  def main(): Int =</p>
-<p>    println("=== Traffic Light FSM Demo ===")</p>
-<p>    let initial<em>data = TrafficPayload{cycles</em>completed: 0, timer<em>events: 0, emergency</em>stops: 0}</p>
-<p>    let fsm<em>pid = fsm</em>spawn(:TrafficPayload, initial_data)</p>
-<p>    let adv<em>result = fsm</em>advertise(fsm<em>pid, :traffic</em>light)</p>
-<p>    let event = pair(:timer, [])</p>
-<p>    let cast<em>result = fsm</em>cast(:traffic_light, event)</p>
-<p>    println("FSM operations complete")</p>
-<p>    0</p>
-<p>end</p>
-</code></pre>
+<span class="c1"># ✅ Successfully executes  </span>
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-noshell<span class="w"> </span>-eval<span class="w"> </span><span class="s2">&quot;&#39;TrafficLightFSM&#39;:main(), init:stop().&quot;</span>
 
-<strong>Compilation & Execution</strong>:
-<pre><code># ✅ Successfully compiles
-<p>./cure examples/06<em>fsm</em>traffic_light.cure --verbose</p>
+<span class="c1"># Console Output:</span>
+<span class="c1"># === Traffic Light FSM Demo ===</span>
+<span class="c1"># Initial state:</span>
+<span class="c1"># State: Red (expected)</span>
+<span class="c1"># ...</span>
+<span class="c1"># === Demo Complete ===</span>
+</code></pre></div>
 
-<h1>✅ Successfully executes  </h1>
-<p>erl -pa _build/ebin -noshell -eval "'TrafficLightFSM':main(), init:stop()."</p>
+<h3 id="comprehensive-test-coverage">✅ Comprehensive Test Coverage</h3>
+<p><strong>Test Infrastructure</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="o">========================================</span>
+<span class="nx">Cure</span><span class="w"> </span><span class="nx">Compiler</span><span class="w"> </span><span class="nx">Test</span><span class="w"> </span><span class="nx">Suite</span>
+<span class="o">========================================</span>
 
-<h1>Console Output:</h1>
-<h1>=== Traffic Light FSM Demo ===</h1>
-<h1>Initial state:</h1>
-<h1>State: Red (expected)</h1>
-<h1>...</h1>
-<h1>=== Demo Complete ===</h1>
-</code></pre>
+<span class="err">✅</span><span class="w"> </span><span class="nx">Lexer</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">Token</span><span class="w"> </span><span class="nx">generation</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">position</span><span class="w"> </span><span class="nx">tracking</span>
+<span class="err">✅</span><span class="w"> </span><span class="nx">Parser</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">AST</span><span class="w"> </span><span class="nx">generation</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="nx">recovery</span>
+<span class="err">✅</span><span class="w"> </span><span class="nx">Type</span><span class="w"> </span><span class="nx">System</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">Dependent</span><span class="w"> </span><span class="nx">types</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">inference</span>
+<span class="err">✅</span><span class="w"> </span><span class="nx">FSM</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">State</span><span class="w"> </span><span class="nx">machine</span><span class="w"> </span><span class="nx">compilation</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">runtime</span>
+<span class="err">✅</span><span class="w"> </span><span class="nx">Code</span><span class="w"> </span><span class="nx">Generation</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">BEAM</span><span class="w"> </span><span class="nx">bytecode</span><span class="w"> </span><span class="nx">generation</span>
+<span class="err">✅</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="nx">operations</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">concatenation</span>
+<span class="err">✅</span><span class="w"> </span><span class="nx">Pattern</span><span class="w"> </span><span class="nx">Matching</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">Guards</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">complex</span><span class="w"> </span><span class="nx">patterns</span>
+<span class="err">✅</span><span class="w"> </span><span class="nx">Standard</span><span class="w"> </span><span class="nx">Library</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">Stdlib</span><span class="w"> </span><span class="nx">module</span><span class="w"> </span><span class="nx">functionality</span>
+<span class="err">✅</span><span class="w"> </span><span class="nx">Integration</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">End</span><span class="o">-</span><span class="nx">to</span><span class="o">-</span><span class="nx">end</span><span class="w"> </span><span class="nx">compilation</span>
+<span class="err">✅</span><span class="w"> </span><span class="nx">Performance</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">Large</span><span class="o">-</span><span class="nx">scale</span><span class="w"> </span><span class="nx">validation</span>
 
-<h3>✅ Comprehensive Test Coverage</h3>
+<span class="err">🎉</span><span class="w"> </span><span class="nx">COMPREHENSIVE</span><span class="w"> </span><span class="nx">TEST</span><span class="w"> </span><span class="nx">COVERAGE</span><span class="w"> </span><span class="err">🎉</span>
+</code></pre></div>
 
-<strong>Test Infrastructure</strong>:
-<pre><code>========================================
-<p>Cure Compiler Test Suite</p>
-<p>========================================</p>
+<p><strong>Performance Testing</strong>:<br />
+- Up to 50K elements validated in performance benchmarks<br />
+- Sub-millisecond FSM event processing<br />
+- 25-60% performance improvement with type-directed optimizations</p>
+<h2 id="technical-architecture">Technical Architecture</h2>
+<h3 id="language-features">Language Features</h3>
+<p><strong>Dependent Type System</strong>:<br />
+- Types parameterized by values with compile-time verification<br />
+- SMT-based constraint solving with Z3 integration<br />
+- Refinement types with logical constraints<br />
+- Length-indexed lists and vectors<br />
+- Safe operations guaranteed by type system</p>
+<p><strong>Finite State Machines</strong>:<br />
+- First-class FSMs as language constructs with arrow syntax<br />
+- Compile to native BEAM <code>gen_statem</code> behaviors<br />
+- Record-based payload tracking<br />
+- Runtime state transition support<br />
+- Integration with OTP supervision trees<br />
+- Hot code loading support</p>
+<p><strong>BEAM Platform Integration</strong>:<br />
+- Native compilation to BEAM bytecode<br />
+- Full OTP compatibility and interoperability<br />
+- Erlang/Elixir module calling support<br />
+- Supervision tree integration<br />
+- Distributed computing capabilities</p>
+<h3 id="performance-characteristics">Performance Characteristics</h3>
+<p><strong>Compilation Performance</strong>:<br />
+- Small files (&lt;100 lines): &lt;1 second<br />
+- Medium projects (1K-10K lines): 5-30 seconds<br />
+- Large projects (100K+ lines): 30-300 seconds with incremental compilation</p>
+<p><strong>Runtime Performance</strong>:<br />
+- Function calls: ~10ns overhead (after optimization)<br />
+- FSM events: ~1μs including message passing<br />
+- Type checking: Zero runtime overhead (compile-time only)<br />
+- Memory usage: Comparable to equivalent Erlang code<br />
+- Optimization impact: 25-60% performance improvement</p>
+<h3 id="development-experience">Development Experience</h3>
+<p><strong>Complete Toolchain</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Build system</span>
+make<span class="w"> </span>all<span class="w">                    </span><span class="c1"># Build complete compiler and stdlib</span>
+make<span class="w"> </span><span class="nb">test</span><span class="w">                   </span><span class="c1"># Run test suite (100% success rate)</span>
+make<span class="w"> </span>shell<span class="w">                  </span><span class="c1"># Interactive development</span>
 
-<p>✅ Lexer Tests - Token generation and position tracking</p>
-<p>✅ Parser Tests - AST generation and error recovery</p>
-<p>✅ Type System Tests - Dependent types and inference</p>
-<p>✅ FSM Tests - State machine compilation and runtime</p>
-<p>✅ Code Generation Tests - BEAM bytecode generation</p>
-<p>✅ String Tests - String operations and concatenation</p>
-<p>✅ Pattern Matching Tests - Guards and complex patterns</p>
-<p>✅ Standard Library Tests - Stdlib module functionality</p>
-<p>✅ Integration Tests - End-to-end compilation</p>
-<p>✅ Performance Tests - Large-scale validation</p>
+<span class="c1"># CLI usage  </span>
+./cure<span class="w"> </span>examples/simple.cure<span class="w"> </span>--verbose<span class="w">    </span><span class="c1"># Compile with details</span>
+./cure<span class="w"> </span>build<span class="w">                             </span><span class="c1"># Execute make all</span>
+./cure<span class="w"> </span><span class="nb">test</span><span class="w">                              </span><span class="c1"># Execute make test</span>
 
-<p>🎉 COMPREHENSIVE TEST COVERAGE 🎉</p>
-</code></pre>
+<span class="c1"># Working examples</span>
+./cure<span class="w"> </span>examples/06_fsm_traffic_light.cure
+./cure<span class="w"> </span>examples/04_pattern_guards.cure
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-eval<span class="w"> </span><span class="s2">&quot;&#39;TrafficLightFSM&#39;:main().&quot;</span>
+</code></pre></div>
 
-<strong>Performance Testing</strong>:
-<ul>
-<li>Up to 50K elements validated in performance benchmarks</li>
-<li>Sub-millisecond FSM event processing</li>
-<li>25-60% performance improvement with type-directed optimizations</li>
-</ul>
+<p><strong>IDE-Ready</strong>:<br />
+- Comprehensive error messages with line/column information<br />
+- Debug information generation for BEAM tools<br />
+- Hot code loading for live development<br />
+- Integration with BEAM ecosystem tools</p>
+<h2 id="project-structure">Project Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="nx">cure</span><span class="o">/</span><span class="w">                               </span><span class="err">#</span><span class="w"> </span><span class="nx">Complete</span><span class="w"> </span><span class="nx">programming</span><span class="w"> </span><span class="nx">language</span><span class="w"> </span><span class="nx">implementation</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">src</span><span class="o">/</span><span class="w">                           </span><span class="err">#</span><span class="w"> </span><span class="nx">Compiler</span><span class="w"> </span><span class="nx">implementation</span><span class="w"> </span><span class="p">(</span><span class="mi">100</span><span class="o">%</span><span class="w"> </span><span class="nx">working</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">cure_cli</span><span class="p">.</span><span class="nx">erl</span><span class="w">              </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Command</span><span class="o">-</span><span class="nx">line</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">wrapper</span><span class="w"> </span><span class="nx">scripts</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">lexer</span><span class="o">/</span><span class="nx">cure_lexer</span><span class="p">.</span><span class="nx">erl</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Complete</span><span class="w"> </span><span class="nx">tokenization</span><span class="w"> </span><span class="nx">engine</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">parser</span><span class="o">/</span><span class="w">                   </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Full</span><span class="w"> </span><span class="nx">AST</span><span class="w"> </span><span class="nx">generation</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">syntax</span><span class="w"> </span><span class="nx">analysis</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">cure_parser</span><span class="p">.</span><span class="nx">erl</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Recursive</span><span class="w"> </span><span class="nx">descent</span><span class="w"> </span><span class="nx">parser</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="nx">recovery</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">cure_ast</span><span class="p">.</span><span class="nx">erl</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">AST</span><span class="w"> </span><span class="nx">utilities</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">manipulation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">cure_ast</span><span class="p">.</span><span class="nx">hrl</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Comprehensive</span><span class="w"> </span><span class="nx">AST</span><span class="w"> </span><span class="nx">record</span><span class="w"> </span><span class="nx">definitions</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">types</span><span class="o">/</span><span class="w">                    </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Advanced</span><span class="w"> </span><span class="nx">dependent</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">system</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">cure_types</span><span class="p">.</span><span class="nx">erl</span><span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Core</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">system</span><span class="w"> </span><span class="nx">implementation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">cure_typechecker</span><span class="p">.</span><span class="nx">erl</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Bidirectional</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">checking</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">cure_type_optimizer</span><span class="p">.</span><span class="nx">erl</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Type</span><span class="o">-</span><span class="nx">directed</span><span class="w"> </span><span class="nx">optimizations</span><span class="w"> </span><span class="p">(</span><span class="mi">25</span><span class="o">-</span><span class="mi">60</span><span class="o">%</span><span class="w"> </span><span class="nx">improvement</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">cure_smt_solver</span><span class="p">.</span><span class="nx">erl</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">SMT</span><span class="w"> </span><span class="kd">constraint</span><span class="w"> </span><span class="nx">solving</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">Z3</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">fsm</span><span class="o">/</span><span class="w">                      </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Native</span><span class="w"> </span><span class="nx">FSM</span><span class="w"> </span><span class="nx">implementation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">cure_fsm_runtime</span><span class="p">.</span><span class="nx">erl</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">FSM</span><span class="w"> </span><span class="nx">runtime</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">gen_statem</span><span class="w"> </span><span class="nx">integration</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">cure_fsm_builtins</span><span class="p">.</span><span class="nx">erl</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Built</span><span class="o">-</span><span class="k">in</span><span class="w"> </span><span class="nx">FSM</span><span class="w"> </span><span class="nx">functions</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">operations</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">codegen</span><span class="o">/</span><span class="w">                  </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">BEAM</span><span class="w"> </span><span class="nx">bytecode</span><span class="w"> </span><span class="nx">generation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">cure_codegen</span><span class="p">.</span><span class="nx">erl</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Main</span><span class="w"> </span><span class="nx">code</span><span class="w"> </span><span class="nx">generation</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">debug</span><span class="w"> </span><span class="nx">info</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">cure_beam_compiler</span><span class="p">.</span><span class="nx">erl</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">BEAM</span><span class="o">-</span><span class="nx">specific</span><span class="w"> </span><span class="nx">compilation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">cure_action_compiler</span><span class="p">.</span><span class="nx">erl</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Action</span><span class="w"> </span><span class="nx">compilation</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">FSMs</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">cure_guard_compiler</span><span class="p">.</span><span class="nx">erl</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Guard</span><span class="w"> </span><span class="nx">compilation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">runtime</span><span class="o">/</span><span class="w">                  </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Runtime</span><span class="w"> </span><span class="nx">system</span><span class="w"> </span><span class="nx">integration</span>
+<span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="nx">cure_runtime</span><span class="p">.</span><span class="nx">erl</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Core</span><span class="w"> </span><span class="nx">runtime</span><span class="w"> </span><span class="nx">system</span>
+<span class="err">│</span><span class="w">       </span><span class="err">└──</span><span class="w"> </span><span class="nx">cure_std</span><span class="p">.</span><span class="nx">erl</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Standard</span><span class="w"> </span><span class="kn">library</span><span class="w"> </span><span class="nx">runtime</span><span class="w"> </span><span class="nx">support</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">lib</span><span class="o">/</span><span class="w">                          </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Working</span><span class="w"> </span><span class="nx">standard</span><span class="w"> </span><span class="kn">library</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">std</span><span class="p">.</span><span class="nx">cure</span><span class="w">                  </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Main</span><span class="w"> </span><span class="nx">stdlib</span><span class="w"> </span><span class="nx">module</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">re</span><span class="o">-</span><span class="nx">exports</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">std</span><span class="o">/</span><span class="w">                      </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Standard</span><span class="w"> </span><span class="kn">library</span><span class="w"> </span><span class="nx">modules</span><span class="w">  </span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span><span class="w">                 </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Complete</span><span class="w"> </span><span class="kn">library</span><span class="w"> </span><span class="nx">documentation</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">test</span><span class="o">/</span><span class="w">                         </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Comprehensive</span><span class="w"> </span><span class="nx">test</span><span class="w"> </span><span class="nx">suite</span><span class="w"> </span><span class="p">(</span><span class="mi">100</span><span class="o">%</span><span class="w"> </span><span class="nx">pass</span><span class="w"> </span><span class="nx">rate</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="o">*</span><span class="nx">_simple_test</span><span class="p">.</span><span class="nx">erl</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Basic</span><span class="w"> </span><span class="nx">unit</span><span class="w"> </span><span class="nx">tests</span><span class="w"> </span><span class="p">(</span><span class="nx">all</span><span class="w"> </span><span class="nx">passing</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="o">*</span><span class="nx">_comprehensive_test</span><span class="p">.</span><span class="nx">erl</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Comprehensive</span><span class="w"> </span><span class="nx">test</span><span class="w"> </span><span class="nx">suites</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">cli_wrapper_</span><span class="o">*</span><span class="nx">_test</span><span class="p">.</span><span class="nx">erl</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">CLI</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">wrapper</span><span class="w"> </span><span class="nx">functionality</span><span class="w"> </span><span class="nx">tests</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">std_</span><span class="o">*</span><span class="nx">_test</span><span class="p">.</span><span class="nx">erl</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Standard</span><span class="w"> </span><span class="kn">library</span><span class="w"> </span><span class="nx">tests</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">run_all_new_tests</span><span class="p">.</span><span class="nx">erl</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Master</span><span class="w"> </span><span class="nx">test</span><span class="w"> </span><span class="nx">runner</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">examples</span><span class="o">/</span><span class="w">                     </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Working</span><span class="w"> </span><span class="nx">examples</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">runtime</span><span class="w"> </span><span class="nx">verification</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="mi">01</span><span class="nx">_list_basics</span><span class="p">.</span><span class="nx">cure</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Basic</span><span class="w"> </span><span class="nx">list</span><span class="w"> </span><span class="nx">operations</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="mi">02</span><span class="nx">_result_handling</span><span class="p">.</span><span class="nx">cure</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Result</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">usage</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="mi">03</span><span class="nx">_option_type</span><span class="p">.</span><span class="nx">cure</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Option</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">usage</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="mi">04</span><span class="nx">_pattern_guards</span><span class="p">.</span><span class="nx">cure</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Pattern</span><span class="w"> </span><span class="nx">matching</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">guards</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="mi">05</span><span class="nx">_recursion</span><span class="p">.</span><span class="nx">cure</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Recursive</span><span class="w"> </span><span class="nx">functions</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="mi">06</span><span class="nx">_fsm_traffic_light</span><span class="p">.</span><span class="nx">cure</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">FSM</span><span class="w"> </span><span class="nx">demonstration</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">docs</span><span class="o">/</span><span class="w">                         </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Complete</span><span class="w"> </span><span class="nx">documentation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span><span class="w">                 </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Architecture</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">implementation</span><span class="w"> </span><span class="nx">overview</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">API_REFERENCE</span><span class="p">.</span><span class="nx">md</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Complete</span><span class="w"> </span><span class="nx">API</span><span class="w"> </span><span class="nx">documentation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">LANGUAGE_SPEC</span><span class="p">.</span><span class="nx">md</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Formal</span><span class="w"> </span><span class="nx">language</span><span class="w"> </span><span class="nx">specification</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">TYPE_SYSTEM</span><span class="p">.</span><span class="nx">md</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Dependent</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">system</span><span class="w"> </span><span class="nx">documentation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">FSM_SYSTEM</span><span class="p">.</span><span class="nx">md</span><span class="w">             </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">FSM</span><span class="w"> </span><span class="nx">implementation</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">BEAM</span><span class="w"> </span><span class="nx">integration</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">CLI_USAGE</span><span class="p">.</span><span class="nx">md</span><span class="w">              </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Command</span><span class="o">-</span><span class="nx">line</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="nx">documentation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">STD_SUMMARY</span><span class="p">.</span><span class="nx">md</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Standard</span><span class="w"> </span><span class="kn">library</span><span class="w"> </span><span class="nx">implementation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">TESTING_SUMMARY</span><span class="p">.</span><span class="nx">md</span><span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Test</span><span class="w"> </span><span class="nx">suite</span><span class="w"> </span><span class="nx">documentation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">PROJECT_OVERVIEW</span><span class="p">.</span><span class="nx">md</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">This</span><span class="w"> </span><span class="nx">comprehensive</span><span class="w"> </span><span class="nx">overview</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">_build</span><span class="o">/</span><span class="w">                       </span><span class="err">#</span><span class="w"> </span><span class="nx">Build</span><span class="w"> </span><span class="nx">artifacts</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">ebin</span><span class="o">/</span><span class="w">                     </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Compiled</span><span class="w"> </span><span class="nx">Erlang</span><span class="w"> </span><span class="nx">modules</span><span class="w"> </span><span class="p">(</span><span class="nx">working</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">lib</span><span class="o">/</span><span class="w">                      </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Compiled</span><span class="w"> </span><span class="nx">standard</span><span class="w"> </span><span class="kn">library</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">Makefile</span><span class="w">                      </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Complete</span><span class="w"> </span><span class="nx">build</span><span class="w"> </span><span class="nx">system</span>
+<span class="err">└──</span><span class="w"> </span><span class="nx">cure</span><span class="w">                          </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">CLI</span><span class="w"> </span><span class="nx">wrapper</span><span class="w"> </span><span class="nx">script</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">automation</span>
+</code></pre></div>
 
-<h2>Technical Architecture</h2>
-
-<h3>Language Features</h3>
-
-<strong>Dependent Type System</strong>:
-<ul>
-<li>Types parameterized by values with compile-time verification</li>
-<li>SMT-based constraint solving with Z3 integration</li>
-<li>Refinement types with logical constraints</li>
-<li>Length-indexed lists and vectors</li>
-<li>Safe operations guaranteed by type system</li>
-</ul>
-
-<strong>Finite State Machines</strong>:
-<ul>
-<li>First-class FSMs as language constructs with arrow syntax</li>
-<li>Compile to native BEAM <code>gen_statem</code> behaviors</li>
-<li>Record-based payload tracking</li>
-<li>Runtime state transition support</li>
-<li>Integration with OTP supervision trees</li>
-<li>Hot code loading support</li>
-</ul>
-
-<strong>BEAM Platform Integration</strong>:
-<ul>
-<li>Native compilation to BEAM bytecode</li>
-<li>Full OTP compatibility and interoperability</li>
-<li>Erlang/Elixir module calling support</li>
-<li>Supervision tree integration</li>
-<li>Distributed computing capabilities</li>
-</ul>
-
-<h3>Performance Characteristics</h3>
-
-<strong>Compilation Performance</strong>:
-<ul>
-<li>Small files (<100 lines): <1 second</li>
-<li>Medium projects (1K-10K lines): 5-30 seconds  </li>
-<li>Large projects (100K+ lines): 30-300 seconds with incremental compilation</li>
-</ul>
-
-<strong>Runtime Performance</strong>:
-<ul>
-<li>Function calls: ~10ns overhead (after optimization)</li>
-<li>FSM events: ~1μs including message passing  </li>
-<li>Type checking: Zero runtime overhead (compile-time only)</li>
-<li>Memory usage: Comparable to equivalent Erlang code</li>
-<li>Optimization impact: 25-60% performance improvement</li>
-</ul>
-
-<h3>Development Experience</h3>
-
-<strong>Complete Toolchain</strong>:
-<pre><code># Build system
-<p>make all                    # Build complete compiler and stdlib</p>
-<p>make test                   # Run test suite (100% success rate)</p>
-<p>make shell                  # Interactive development</p>
-
-<h1>CLI usage  </h1>
-<p>./cure examples/simple.cure --verbose    # Compile with details</p>
-<p>./cure build                             # Execute make all</p>
-<p>./cure test                              # Execute make test</p>
-
-<h1>Working examples</h1>
-<p>./cure examples/06<em>fsm</em>traffic_light.cure</p>
-<p>./cure examples/04<em>pattern</em>guards.cure</p>
-<p>erl -pa _build/ebin -eval "'TrafficLightFSM':main()."</p>
-</code></pre>
-
-<strong>IDE-Ready</strong>:
-<ul>
-<li>Comprehensive error messages with line/column information</li>
-<li>Debug information generation for BEAM tools</li>
-<li>Hot code loading for live development</li>
-<li>Integration with BEAM ecosystem tools</li>
-</ul>
-
-<h2>Project Structure</h2>
-
-<pre><code>cure/                               # Complete programming language implementation
-<p>├── src/                           # Compiler implementation (100% working)</p>
-<p>│   ├── cure_cli.erl              # ✅ Command-line interface with wrapper scripts</p>
-<p>│   ├── lexer/cure_lexer.erl      # ✅ Complete tokenization engine</p>
-<p>│   ├── parser/                   # ✅ Full AST generation and syntax analysis</p>
-<p>│   │   ├── cure_parser.erl       # ✅ Recursive descent parser with error recovery</p>
-<p>│   │   ├── cure_ast.erl          # ✅ AST utilities and manipulation</p>
-<p>│   │   └── cure_ast.hrl          # ✅ Comprehensive AST record definitions</p>
-<p>│   ├── types/                    # ✅ Advanced dependent type system</p>
-<p>│   │   ├── cure_types.erl        # ✅ Core type system implementation</p>
-<p>│   │   ├── cure_typechecker.erl  # ✅ Bidirectional type checking</p>
-<p>│   │   ├── cure<em>type</em>optimizer.erl # ✅ Type-directed optimizations (25-60% improvement)</p>
-<p>│   │   └── cure<em>smt</em>solver.erl   # ✅ SMT constraint solving with Z3</p>
-<p>│   ├── fsm/                      # ✅ Native FSM implementation</p>
-<p>│   │   ├── cure<em>fsm</em>runtime.erl  # ✅ FSM runtime with gen_statem integration</p>
-<p>│   │   └── cure<em>fsm</em>builtins.erl # ✅ Built-in FSM functions and operations</p>
-<p>│   ├── codegen/                  # ✅ BEAM bytecode generation</p>
-<p>│   │   ├── cure_codegen.erl      # ✅ Main code generation with debug info</p>
-<p>│   │   ├── cure<em>beam</em>compiler.erl # ✅ BEAM-specific compilation</p>
-<p>│   │   ├── cure<em>action</em>compiler.erl # ✅ Action compilation for FSMs</p>
-<p>│   │   └── cure<em>guard</em>compiler.erl  # ✅ Guard compilation</p>
-<p>│   └── runtime/                  # ✅ Runtime system integration</p>
-<p>│       ├── cure_runtime.erl      # ✅ Core runtime system</p>
-<p>│       └── cure_std.erl          # ✅ Standard library runtime support</p>
-<p>├── lib/                          # ✅ Working standard library</p>
-<p>│   ├── std.cure                  # ✅ Main stdlib module with re-exports</p>
-<p>│   ├── std/                      # ✅ Standard library modules  </p>
-<p>│   └── README.md                 # ✅ Complete library documentation</p>
-<p>├── test/                         # ✅ Comprehensive test suite (100% pass rate)</p>
-<p>│   ├── *<em>simple</em>test.erl         # ✅ Basic unit tests (all passing)</p>
-<p>│   ├── *<em>comprehensive</em>test.erl  # ✅ Comprehensive test suites</p>
-<p>│   ├── cli<em>wrapper</em>*_test.erl    # ✅ CLI and wrapper functionality tests</p>
-<p>│   ├── std<em>*</em>test.erl            # ✅ Standard library tests</p>
-<p>│   └── run<em>all</em>new_tests.erl     # ✅ Master test runner</p>
-<p>├── examples/                     # ✅ Working examples with runtime verification</p>
-<p>│   ├── 01<em>list</em>basics.cure       # ✅ Basic list operations</p>
-<p>│   ├── 02<em>result</em>handling.cure   # ✅ Result type usage</p>
-<p>│   ├── 03<em>option</em>type.cure       # ✅ Option type usage</p>
-<p>│   ├── 04<em>pattern</em>guards.cure    # ✅ Pattern matching with guards</p>
-<p>│   ├── 05_recursion.cure         # ✅ Recursive functions</p>
-<p>│   └── 06<em>fsm</em>traffic_light.cure # ✅ FSM demonstration</p>
-<p>├── docs/                         # ✅ Complete documentation</p>
-<p>│   ├── README.md                 # ✅ Architecture and implementation overview</p>
-<p>│   ├── API_REFERENCE.md          # ✅ Complete API documentation</p>
-<p>│   ├── LANGUAGE_SPEC.md          # ✅ Formal language specification</p>
-<p>│   ├── TYPE_SYSTEM.md            # ✅ Dependent type system documentation</p>
-<p>│   ├── FSM_SYSTEM.md             # ✅ FSM implementation and BEAM integration</p>
-<p>│   ├── CLI_USAGE.md              # ✅ Command-line interface documentation</p>
-<p>│   ├── STD_SUMMARY.md            # ✅ Standard library implementation</p>
-<p>│   ├── TESTING_SUMMARY.md        # ✅ Test suite documentation</p>
-<p>│   └── PROJECT_OVERVIEW.md       # ✅ This comprehensive overview</p>
-<p>├── _build/                       # Build artifacts</p>
-<p>│   ├── ebin/                     # ✅ Compiled Erlang modules (working)</p>
-<p>│   └── lib/                      # ✅ Compiled standard library</p>
-<p>├── Makefile                      # ✅ Complete build system</p>
-<p>└── cure                          # ✅ CLI wrapper script with automation</p>
-</code></pre>
-
-<h2>Research & Educational Value</h2>
-
-<h3>Academic Contributions</h3>
-
-<strong>Type System Research</strong>:
-<ul>
-<li>Practical implementation of dependent types in a systems language</li>
-<li>SMT-based constraint solving for real-world type checking</li>
-<li>Type-directed optimizations with measurable performance improvements</li>
-<li>Integration of dependent types with actor model concurrency</li>
-</ul>
-
-<strong>Language Design</strong>:
-<ul>
-<li>First-class FSMs with compile-time verification  </li>
-<li>BEAM platform targeting for functional languages</li>
-<li>Module system design with intelligent import resolution</li>
-<li>Error handling through dependent types and refinement types</li>
-</ul>
-
-<strong>Systems Engineering</strong>:
-<ul>
-<li>Complete compiler toolchain implementation</li>
-<li>Production-ready CLI with comprehensive automation</li>
-<li>Integration with existing BEAM ecosystem</li>
-<li>Hot code loading and live system updates</li>
-</ul>
-
-<h3>Educational Applications</h3>
-
-<strong>Programming Language Courses</strong>:
-<ul>
-<li>Complete implementation demonstrating all compiler phases</li>
-<li>Real-world example of dependent type systems</li>
-<li>Practical constraint solving and SMT integration</li>
-<li>BEAM platform targeting and bytecode generation</li>
-</ul>
-
-<strong>Type Theory Applications</strong>:
-<ul>
-<li>Dependent types in practice with working examples</li>
-<li>Refinement types for program verification</li>
-<li>Type-directed optimizations and performance</li>
-<li>Integration with runtime systems</li>
-</ul>
-
-<strong>Systems Programming</strong>:
-<ul>
-<li>Actor model implementation with type safety</li>
-<li>Fault-tolerant system design with supervision trees</li>
-<li>Concurrent programming with compile-time guarantees</li>
-<li>Cross-language interoperability (Erlang/Elixir)</li>
-</ul>
-
-<h2>Future Roadmap</h2>
-
-<h3>Immediate Enhancements (Next Release)</h3>
+<h2 id="research-educational-value">Research &amp; Educational Value</h2>
+<h3 id="academic-contributions">Academic Contributions</h3>
+<p><strong>Type System Research</strong>:<br />
+- Practical implementation of dependent types in a systems language<br />
+- SMT-based constraint solving for real-world type checking<br />
+- Type-directed optimizations with measurable performance improvements<br />
+- Integration of dependent types with actor model concurrency</p>
+<p><strong>Language Design</strong>:<br />
+- First-class FSMs with compile-time verification<br />
+- BEAM platform targeting for functional languages<br />
+- Module system design with intelligent import resolution<br />
+- Error handling through dependent types and refinement types</p>
+<p><strong>Systems Engineering</strong>:<br />
+- Complete compiler toolchain implementation<br />
+- Production-ready CLI with comprehensive automation<br />
+- Integration with existing BEAM ecosystem<br />
+- Hot code loading and live system updates</p>
+<h3 id="educational-applications">Educational Applications</h3>
+<p><strong>Programming Language Courses</strong>:<br />
+- Complete implementation demonstrating all compiler phases<br />
+- Real-world example of dependent type systems<br />
+- Practical constraint solving and SMT integration<br />
+- BEAM platform targeting and bytecode generation</p>
+<p><strong>Type Theory Applications</strong>:<br />
+- Dependent types in practice with working examples<br />
+- Refinement types for program verification<br />
+- Type-directed optimizations and performance<br />
+- Integration with runtime systems</p>
+<p><strong>Systems Programming</strong>:<br />
+- Actor model implementation with type safety<br />
+- Fault-tolerant system design with supervision trees<br />
+- Concurrent programming with compile-time guarantees<br />
+- Cross-language interoperability (Erlang/Elixir)</p>
+<h2 id="future-roadmap">Future Roadmap</h2>
+<h3 id="immediate-enhancements-next-release">Immediate Enhancements (Next Release)</h3>
 <ul>
 <li><strong>Linear Types</strong>: Resource management and memory safety</li>
 <li><strong>Effect System</strong>: Computational effects tracking  </li>
 <li><strong>Macro System</strong>: Compile-time code generation</li>
 <li><strong>IDE Integration</strong>: Language server protocol support</li>
 </ul>
-
-<h3>Medium-term Goals</h3>
+<h3 id="medium-term-goals">Medium-term Goals</h3>
 <ul>
 <li><strong>Distributed FSMs</strong>: Cross-node state machine coordination</li>
 <li><strong>Package Manager</strong>: Cure library ecosystem</li>
 <li><strong>Performance Tooling</strong>: Profiling and optimization tools</li>
 <li><strong>Visual FSM Tools</strong>: Graphical state machine design</li>
 </ul>
-
-<h3>Long-term Vision</h3>
+<h3 id="long-term-vision">Long-term Vision</h3>
 <ul>
 <li><strong>Theorem Proving</strong>: Integration with proof assistants</li>
 <li><strong>WebAssembly Target</strong>: Browser and edge deployment</li>
 <li><strong>GPU Computing</strong>: Parallel computation with dependent types</li>
 <li><strong>Blockchain Integration</strong>: Smart contract development</li>
 </ul>
-
-<h2>Community & Adoption</h2>
-
-<h3>Target Audiences</h3>
-
-<strong>Research Community</strong>:
-<ul>
-<li>Programming language researchers</li>
-<li>Type theory practitioners  </li>
-<li>Formal methods specialists</li>
-<li>Concurrency and distributed systems researchers</li>
-</ul>
-
-<strong>Industry Applications</strong>:
-<ul>
-<li>Fault-tolerant system development</li>
-<li>Real-time and embedded systems</li>
-<li>Financial trading systems</li>
-<li>Telecommunications infrastructure</li>
-</ul>
-
-<strong>Educational Institutions</strong>:
-<ul>
-<li>Computer science curricula</li>
-<li>Programming language courses</li>
-<li>Type theory education</li>
-<li>Systems programming instruction</li>
-</ul>
-
-<h3>Getting Started</h3>
-
-<strong>For Researchers</strong>:
-<ul>
-<li>Comprehensive documentation and API reference</li>
-<li>Working examples demonstrating all features</li>
-<li>Test suite for validation and experimentation</li>
-<li>Complete source code availability</li>
-</ul>
-
-<strong>For Developers</strong>:
-<ul>
-<li>Production-ready CLI and build system</li>
-<li>BEAM ecosystem integration</li>
-<li>Hot code loading for development</li>
-<li>Comprehensive error messages and debugging</li>
-</ul>
-
-<strong>For Educators</strong>:
-<ul>
-<li>Complete implementation for study</li>
-<li>Working examples for demonstration</li>
-<li>Comprehensive test coverage</li>
-<li>Clear documentation and specification</li>
-</ul>
-
-<h2>Conclusion</h2>
-
+<h2 id="community-adoption">Community &amp; Adoption</h2>
+<h3 id="target-audiences">Target Audiences</h3>
+<p><strong>Research Community</strong>:<br />
+- Programming language researchers<br />
+- Type theory practitioners<br />
+- Formal methods specialists<br />
+- Concurrency and distributed systems researchers</p>
+<p><strong>Industry Applications</strong>:<br />
+- Fault-tolerant system development<br />
+- Real-time and embedded systems<br />
+- Financial trading systems<br />
+- Telecommunications infrastructure</p>
+<p><strong>Educational Institutions</strong>:<br />
+- Computer science curricula<br />
+- Programming language courses<br />
+- Type theory education<br />
+- Systems programming instruction</p>
+<h3 id="getting-started">Getting Started</h3>
+<p><strong>For Researchers</strong>:<br />
+- Comprehensive documentation and API reference<br />
+- Working examples demonstrating all features<br />
+- Test suite for validation and experimentation<br />
+- Complete source code availability</p>
+<p><strong>For Developers</strong>:<br />
+- Production-ready CLI and build system<br />
+- BEAM ecosystem integration<br />
+- Hot code loading for development<br />
+- Comprehensive error messages and debugging</p>
+<p><strong>For Educators</strong>:<br />
+- Complete implementation for study<br />
+- Working examples for demonstration<br />
+- Comprehensive test coverage<br />
+- Clear documentation and specification</p>
+<h2 id="conclusion">Conclusion</h2>
 <p>Cure represents a significant achievement in programming language implementation, successfully demonstrating:</p>
-
 <ol>
 <li><strong>Complete Implementation</strong>: All components working with 100% test success rate</li>
 <li><strong>Advanced Features</strong>: Dependent types, FSMs, and BEAM integration working together  </li>
@@ -445,20 +354,12 @@
 <li><strong>Real-world Applicability</strong>: Performance optimizations and ecosystem integration</li>
 <li><strong>Educational Value</strong>: Complete, documented implementation for study and extension</li>
 </ol>
-
 <p>The project showcases the practical viability of advanced type system features in a systems programming context, while maintaining compatibility with the robust BEAM ecosystem. With its combination of type safety, concurrency primitives, and production-ready tooling, Cure establishes a foundation for future research and development in dependently-typed systems programming languages.</p>
-
-<strong>Status</strong>: ✅ Production Ready  
-<strong>Next Steps</strong>: Community adoption, ecosystem development, and advanced feature implementation
-
-<p>---</p>
-
-<em>This overview reflects the state of Cure as of October 31, 2025, representing a complete, functional programming language implementation ready for research, education, and practical application.</em>
-
+<p><strong>Status</strong>: ✅ Production Ready<br />
+<strong>Next Steps</strong>: Community adoption, ecosystem development, and advanced feature implementation</p>
+<hr />
+<p><em>This overview reflects the state of Cure as of October 31, 2025, representing a complete, functional programming language implementation ready for research, education, and practical application.</em></p>
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

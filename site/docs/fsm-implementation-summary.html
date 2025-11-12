@@ -35,127 +35,105 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>FSM Implementation Integration Summary</h1>
-
-<h2>What Was Done</h2>
-
+        <h1 id="fsm-implementation-integration-summary">FSM Implementation Integration Summary</h1>
+<h2 id="what-was-done">What Was Done</h2>
 <p>Successfully connected the Cure FSM standard library (<code>lib/std/fsm.cure</code>) with the underlying Erlang FSM runtime implementation using type-checked FFI bindings.</p>
-
-<h2>Changes Made</h2>
-
-<h3>1. Updated <code>lib/std/fsm.cure</code></h3>
-
+<h2 id="changes-made">Changes Made</h2>
+<h3 id="1-updated-libstdfsmcure">1. Updated <code>lib/std/fsm.cure</code></h3>
 <p>Replaced all placeholder/no-op implementations with proper <code>curify</code> FFI bindings:</p>
-
-<h4>Core Functions (using <code>cure<em>fsm</em>cure_api</code>)</h4>
+<h4 id="core-functions-using-cure_fsm_cure_api">Core Functions (using <code>cure_fsm_cure_api</code>)</h4>
 <ul>
 <li><strong><code>start_fsm/1</code></strong> - Start FSM from compiled Cure module</li>
 <li><strong><code>fsm_cast/2</code></strong> - Send events asynchronously to FSM</li>
 <li><strong><code>fsm_advertise/2</code></strong> - Register FSM process with a name</li>
 <li><strong><code>fsm_state/1</code></strong> - Query current FSM state and payload</li>
 </ul>
-
-<h4>Additional Functions (using <code>cure<em>fsm</em>builtins</code>)</h4>
+<h4 id="additional-functions-using-cure_fsm_builtins">Additional Functions (using <code>cure_fsm_builtins</code>)</h4>
 <ul>
 <li><strong><code>fsm_stop/1</code></strong> - Gracefully terminate FSM process</li>
 <li><strong><code>fsm_spawn/2</code></strong> - Spawn FSM with type and initial data</li>
 <li><strong><code>fsm_send/2</code></strong> - Lower-level event sending</li>
 <li><strong><code>fsm_info/1</code></strong> - Get detailed FSM information</li>
-<li><strong><code>fsm<em>is</em>alive/1</code></strong> - Check if FSM process is alive</li>
+<li><strong><code>fsm_is_alive/1</code></strong> - Check if FSM process is alive</li>
 </ul>
+<h2 id="architecture">Architecture</h2>
+<div class="codehilite"><pre><span></span><code>┌─────────────────────────────────────────┐
+│  Cure Program (e.g., turnstile.cure)   │
+│  - Defines FSM with &#39;fsm&#39; syntax       │
+│  - Calls Std.Fsm functions             │
+└────────────────┬────────────────────────┘
+                 │
+                 ↓
+┌─────────────────────────────────────────┐
+│  lib/std/fsm.cure                       │
+│  - Type-checked API                     │
+│  - curify FFI bindings                  │
+└────────────────┬────────────────────────┘
+                 │
+                 ↓
+┌─────────────────────────────────────────┐
+│  src/fsm/cure_fsm_cure_api.erl          │
+│  - Bridges Cure and Erlang runtime     │
+│  - Resolves module FSM definitions     │
+│  - Handles name resolution              │
+└────────────────┬────────────────────────┘
+                 │
+                 ↓
+┌─────────────────────────────────────────┐
+│  src/fsm/cure_fsm_runtime.erl           │
+│  - gen_server FSM execution engine     │
+│  - Event processing &amp; transitions      │
+│  - Performance &amp; monitoring            │
+└─────────────────────────────────────────┘
+</code></pre></div>
 
-<h2>Architecture</h2>
-
-<pre><code>┌─────────────────────────────────────────┐
-<p>│  Cure Program (e.g., turnstile.cure)   │</p>
-<p>│  - Defines FSM with 'fsm' syntax       │</p>
-<p>│  - Calls Std.Fsm functions             │</p>
-<p>└────────────────┬────────────────────────┘</p>
-<p>                 │</p>
-<p>                 ↓</p>
-<p>┌─────────────────────────────────────────┐</p>
-<p>│  lib/std/fsm.cure                       │</p>
-<p>│  - Type-checked API                     │</p>
-<p>│  - curify FFI bindings                  │</p>
-<p>└────────────────┬────────────────────────┘</p>
-<p>                 │</p>
-<p>                 ↓</p>
-<p>┌─────────────────────────────────────────┐</p>
-<p>│  src/fsm/cure<em>fsm</em>cure_api.erl          │</p>
-<p>│  - Bridges Cure and Erlang runtime     │</p>
-<p>│  - Resolves module FSM definitions     │</p>
-<p>│  - Handles name resolution              │</p>
-<p>└────────────────┬────────────────────────┘</p>
-<p>                 │</p>
-<p>                 ↓</p>
-<p>┌─────────────────────────────────────────┐</p>
-<p>│  src/fsm/cure<em>fsm</em>runtime.erl           │</p>
-<p>│  - gen_server FSM execution engine     │</p>
-<p>│  - Event processing & transitions      │</p>
-<p>│  - Performance & monitoring            │</p>
-<p>└─────────────────────────────────────────┘</p>
-</code></pre>
-
-<h2>How It Works</h2>
-
-<h3>1. FFI with <code>curify</code></h3>
-
+<h2 id="how-it-works">How It Works</h2>
+<h3 id="1-ffi-with-curify">1. FFI with <code>curify</code></h3>
 <p>The <code>curify</code> keyword creates type-checked FFI bindings:</p>
+<div class="codehilite"><pre><span></span><code>curify start_fsm(mod: Atom): Any = {cure_fsm_cure_api, start_fsm, 1}
+</code></pre></div>
 
-<pre><code>curify start<em>fsm(mod: Atom): Any = {cure</em>fsm<em>cure</em>api, start_fsm, 1}
-</code></pre>
-
-<p>This:</p>
-<ul>
-<li>Type-checks arguments at compile time</li>
-<li>Generates call to <code>cure<em>fsm</em>cure<em>api:start</em>fsm(Mod)</code></li>
-<li>Provides runtime type safety</li>
-</ul>
-
-<h3>2. FSM Lifecycle</h3>
-
+<p>This:<br />
+- Type-checks arguments at compile time<br />
+- Generates call to <code>cure_fsm_cure_api:start_fsm(Mod)</code><br />
+- Provides runtime type safety</p>
+<h3 id="2-fsm-lifecycle">2. FSM Lifecycle</h3>
 <ol>
-<li><strong>Define FSM</strong> in Cure module:</li>
+<li>
+<p><strong>Define FSM</strong> in Cure module:<br />
+<code>cure
+   fsm TurnstilePayload{...} do
+     Locked --&gt; |coin| Unlocked
+     Locked --&gt; |push| Locked
+     ...
+   end</code></p>
+</li>
+<li>
+<p><strong>Compile</strong> - Generates <code>Module:'__fsm_definition__'/0</code></p>
+</li>
+<li>
+<p><strong>Start FSM</strong>:<br />
+<code>cure
+   let fsm_pid = start_fsm(Turnstile)</code></p>
+</li>
+<li>
+<p><strong>Send Events</strong>:<br />
+<code>cure
+   fsm_cast(fsm_pid, {:coin, []})</code></p>
+</li>
+<li>
+<p><strong>Query State</strong>:<br />
+<code>cure
+   let {ok, {state, payload}} = fsm_state(fsm_pid)</code></p>
+</li>
 </ol>
-   <pre><code>   fsm TurnstilePayload{...} do
-<p>     Locked --> |coin| Unlocked</p>
-<p>     Locked --> |push| Locked</p>
-<p>     ...</p>
-<p>   end</p>
-   </code></pre>
-
-<ol>
-<li><strong>Compile</strong> - Generates <code>Module:'<strong>fsm_definition</strong>'/0</code></li>
-</ol>
-
-<ol>
-<li><strong>Start FSM</strong>:</li>
-</ol>
-   <pre><code>   let fsm<em>pid = start</em>fsm(Turnstile)
-   </code></pre>
-
-<ol>
-<li><strong>Send Events</strong>:</li>
-</ol>
-   <pre><code>   fsm<em>cast(fsm</em>pid, {:coin, []})
-   </code></pre>
-
-<ol>
-<li><strong>Query State</strong>:</li>
-</ol>
-   <pre><code>   let {ok, {state, payload}} = fsm<em>state(fsm</em>pid)
-   </code></pre>
-
-<h3>3. Type Safety</h3>
-
+<h3 id="3-type-safety">3. Type Safety</h3>
 <ul>
 <li><strong>Compile-time</strong>: Function arguments are type-checked</li>
 <li><strong>Runtime</strong>: Pattern matching on results provides safety</li>
 <li><strong>Validation</strong>: FSM definitions validated during compilation</li>
 </ul>
-
-<h2>Benefits</h2>
-
+<h2 id="benefits">Benefits</h2>
 <ol>
 <li><strong>Type Safety</strong>: Cure's type system validates FSM operations</li>
 <li><strong>Performance</strong>: Direct Erlang calls with minimal overhead</li>
@@ -163,27 +141,20 @@
 <li><strong>Completeness</strong>: Full FSM runtime capabilities exposed</li>
 <li><strong>Error Handling</strong>: Proper error propagation with tagged tuples</li>
 </ol>
-
-<h2>Testing</h2>
-
+<h2 id="testing">Testing</h2>
 <p>Test with the existing example:</p>
-<pre><code># Assuming the Cure compiler is built
-<p>./cure examples/turnstile.cure --verbose</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Assuming the Cure compiler is built</span>
+./cure<span class="w"> </span>examples/turnstile.cure<span class="w"> </span>--verbose
+</code></pre></div>
 
-<p>The turnstile example demonstrates:</p>
-<ul>
-<li>FSM definition with payload</li>
-<li>Starting and naming FSM instances</li>
-<li>Sending events (coin, push)</li>
-<li>Querying state</li>
-<li>Pattern matching on results</li>
-</ul>
-
-<h2>Next Steps</h2>
-
+<p>The turnstile example demonstrates:<br />
+- FSM definition with payload<br />
+- Starting and naming FSM instances<br />
+- Sending events (coin, push)<br />
+- Querying state<br />
+- Pattern matching on results</p>
+<h2 id="next-steps">Next Steps</h2>
 <p>To fully utilize the FSM system:</p>
-
 <ol>
 <li><strong>Register FSM Types</strong>: Optionally pre-register FSM types in runtime</li>
 <li><strong>Add More Examples</strong>: Create more FSM examples (traffic light, protocol, etc.)</li>
@@ -191,42 +162,26 @@
 <li><strong>Documentation</strong>: Add more inline documentation</li>
 <li><strong>Error Messages</strong>: Improve error reporting for FSM operations</li>
 </ol>
-
-<h2>Files Modified</h2>
-
+<h2 id="files-modified">Files Modified</h2>
 <ul>
 <li><code>lib/std/fsm.cure</code> - Implemented all FSM functions with curify bindings</li>
 </ul>
-
-<h2>Files Created</h2>
-
+<h2 id="files-created">Files Created</h2>
 <ul>
 <li><code>lib/std/FSM_INTEGRATION.md</code> - Detailed integration documentation</li>
 </ul>
-
-<h2>Related Files</h2>
-
-<p>Existing Erlang implementation (unchanged):</p>
-<ul>
-<li><code>src/fsm/cure<em>fsm</em>runtime.erl</code> - Core FSM execution engine</li>
-<li><code>src/fsm/cure<em>fsm</em>builtins.erl</code> - FSM utility functions  </li>
-<li><code>src/fsm/cure<em>fsm</em>cure_api.erl</code> - Cure API wrapper</li>
-</ul>
-
-<p>Existing examples (unchanged):</p>
-<ul>
-<li><code>examples/turnstile.cure</code> - Turnstile FSM example</li>
-<li><code>examples/advanced<em>traffic</em>light_demo.erl</code> - Traffic light demo</li>
-</ul>
-
-<h1>FSM Type System Implementation Summary</h1>
-
-<h2>Completed Tasks</h2>
-
-<h3>1. ✅ Standard Library - Fully Compiled</h3>
-
+<h2 id="related-files">Related Files</h2>
+<p>Existing Erlang implementation (unchanged):<br />
+- <code>src/fsm/cure_fsm_runtime.erl</code> - Core FSM execution engine<br />
+- <code>src/fsm/cure_fsm_builtins.erl</code> - FSM utility functions<br />
+- <code>src/fsm/cure_fsm_cure_api.erl</code> - Cure API wrapper</p>
+<p>Existing examples (unchanged):<br />
+- <code>examples/turnstile.cure</code> - Turnstile FSM example<br />
+- <code>examples/advanced_traffic_light_demo.erl</code> - Traffic light demo</p>
+<h1 id="fsm-type-system-implementation-summary">FSM Type System Implementation Summary</h1>
+<h2 id="completed-tasks">Completed Tasks</h2>
+<h3 id="1-standard-library-fully-compiled">1. ✅ Standard Library - Fully Compiled</h3>
 <p>All standard library modules now compile successfully:</p>
-
 <ul>
 <li>✅ <strong>Std.Core</strong> - Core types and operations</li>
 <li>✅ <strong>Std.Fsm</strong> - FSM operations and types</li>
@@ -239,20 +194,16 @@
 <li>✅ <strong>Std.System</strong> - System operations</li>
 <li>✅ <strong>Std.Vector</strong> - Vector operations</li>
 </ul>
-
-<h3>2. ✅ FSM Type System Implementation</h3>
-
+<h3 id="2-fsm-type-system-implementation">2. ✅ FSM Type System Implementation</h3>
 <p>Implemented comprehensive FSM type system support in <code>cure_typechecker.erl</code>:</p>
-
-<h4>FSM Definition Type Checking</h4>
+<h4 id="fsm-definition-type-checking">FSM Definition Type Checking</h4>
 <ul>
 <li><strong>FSM declarations</strong> with states, initial state, and message types</li>
 <li><strong>State definitions</strong> with associated payload types</li>
 <li><strong>Transition handlers</strong> with proper type signatures</li>
 <li><strong>Event types</strong> and message payload validation</li>
 </ul>
-
-<h4>Record Type Support</h4>
+<h4 id="record-type-support">Record Type Support</h4>
 <ul>
 <li><strong>Record definitions</strong> with field types</li>
 <li><strong>Record construction</strong> expressions with field validation</li>
@@ -262,101 +213,80 @@
 <li>Proper field type lookup and validation</li>
 <li><strong>Record update</strong> expressions</li>
 </ul>
-
-<h4>Type Environment Management</h4>
+<h4 id="type-environment-management">Type Environment Management</h4>
 <ul>
 <li>Proper environment extension for FSM types</li>
 <li>Record type storage without overwriting FSM types</li>
 <li>Separation of type vs value namespaces</li>
 <li>Field access type inference with environment lookup</li>
 </ul>
-
-<h3>3. ✅ Fixed Standard Library Issues</h3>
-
-<h4>lib/std/core.cure</h4>
+<h3 id="3-fixed-standard-library-issues">3. ✅ Fixed Standard Library Issues</h3>
+<h4 id="libstdcorecure">lib/std/core.cure</h4>
 <ul>
 <li>Changed <code>compare</code> function return type from <code>Ordering</code> union type to <code>Atom</code></li>
 <li>Returns atoms <code>:lt</code>, <code>:eq</code>, <code>:gt</code> instead of union constructors</li>
 </ul>
-
-<h4>lib/std/result.cure  </h4>
+<h4 id="libstdresultcure">lib/std/result.cure</h4>
 <ul>
 <li>Removed type constructor exports (<code>Ok/1</code>, <code>Error/1</code>) from export list</li>
 <li>Only export actual functions</li>
 </ul>
-
-<h4>lib/std/fsm.cure</h4>
+<h4 id="libstdfsmcure">lib/std/fsm.cure</h4>
 <ul>
 <li>Removed type name exports from function export list</li>
 <li>Keep only function exports</li>
 </ul>
-
-<h4>lib/std/list.cure</h4>
+<h4 id="libstdlistcure">lib/std/list.cure</h4>
 <ul>
 <li>Changed <code>length</code> function from returning <code>Nat</code> (Peano) to <code>Int</code></li>
 <li>Changed <code>nth</code> function parameter from <code>Nat</code> to <code>Int</code></li>
 <li>Used integer literals instead of <code>Zero</code>/<code>Succ</code> constructors</li>
 </ul>
-
-<h3>4. ✅ Field Access Implementation</h3>
-
-<p>Added <code>find<em>record</em>field/2</code> helper function that:</p>
-<ul>
-<li>Looks up field types in record definitions</li>
-<li>Returns <code>{ok, FieldType}</code> or <code>not_found</code></li>
-<li>Works with record field definitions in environment</li>
-</ul>
-
-<p>Enhanced <code>infer_expr</code> for field access:</p>
-<ul>
-<li>Handles both <code>{record<em>type, Name}</code> and <code>{record</em>type, Name, Fields}</code></li>
-<li>Looks up full record definition when needed</li>
-<li>Properly finds field types in record definitions</li>
-<li>Returns field type for valid field accesses</li>
-</ul>
-
-<h3>5. ✅ Type System Enhancements</h3>
-
-<h4>Binary Operator Handling</h4>
+<h3 id="4-field-access-implementation">4. ✅ Field Access Implementation</h3>
+<p>Added <code>find_record_field/2</code> helper function that:<br />
+- Looks up field types in record definitions<br />
+- Returns <code>{ok, FieldType}</code> or <code>not_found</code><br />
+- Works with record field definitions in environment</p>
+<p>Enhanced <code>infer_expr</code> for field access:<br />
+- Handles both <code>{record_type, Name}</code> and <code>{record_type, Name, Fields}</code><br />
+- Looks up full record definition when needed<br />
+- Properly finds field types in record definitions<br />
+- Returns field type for valid field accesses</p>
+<h3 id="5-type-system-enhancements">5. ✅ Type System Enhancements</h3>
+<h4 id="binary-operator-handling">Binary Operator Handling</h4>
 <ul>
 <li>Special case for <code>.</code> operator to handle field access</li>
-<li>Converts <code>{binary<em>op</em>expr, '.', Left, Field, Location}</code> to <code>{field<em>access</em>expr, ...}</code></li>
+<li>Converts <code>{binary_op_expr, '.', Left, Field, Location}</code> to <code>{field_access_expr, ...}</code></li>
 </ul>
-
-<h4>Type Conversion</h4>
+<h4 id="type-conversion">Type Conversion</h4>
 <ul>
-<li>Improved <code>convert<em>param</em>type/2</code> to look up primitive type names in environment</li>
+<li>Improved <code>convert_param_type/2</code> to look up primitive type names in environment</li>
 <li>Resolves record and FSM types from type names</li>
 <li>Handles type aliases and imports</li>
 </ul>
-
-<h2>Test Results</h2>
-
-<h3>Passing Tests</h3>
+<h2 id="test-results">Test Results</h2>
+<h3 id="passing-tests">Passing Tests</h3>
 <ul>
 <li>✅ <strong>parser_test</strong> - Parser functionality</li>
 <li>✅ <strong>fsm_test</strong> - FSM type checking and inference</li>
 <li>✅ <strong>Standard library compilation</strong> - All 10 modules compile</li>
 </ul>
-
-<h3>Known Issues</h3>
+<h3 id="known-issues">Known Issues</h3>
 <ul>
 <li>⚠️ <strong>lexer_test</strong> - Pre-existing keyword recognition issue</li>
 <li>⚠️ <strong>codegen_test</strong> - Pre-existing FSM integration test issue  </li>
 <li>⚠️ <strong>turnstile.cure example</strong> - Needs updates for type aliases and Result types</li>
 </ul>
+<h2 id="architecture-improvements">Architecture Improvements</h2>
+<h3 id="type-environment-structure">Type Environment Structure</h3>
+<div class="codehilite"><pre><span></span><code><span class="nv">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">  </span><span class="n">&#39;TurnstileFSM&#39;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">fsm_type</span><span class="p">,</span><span class="w"> </span><span class="n">&#39;TurnstileFSM&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">States</span><span class="p">,</span><span class="w"> </span><span class="nv">InitialState</span><span class="p">},</span>
+<span class="w">  </span><span class="n">&#39;TurnstilePayload&#39;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">record_type</span><span class="p">,</span><span class="w"> </span><span class="n">&#39;TurnstilePayload&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">Fields</span><span class="p">},</span>
+<span class="w">  </span><span class="c">% Other bindings...</span>
+<span class="p">}</span>
+</code></pre></div>
 
-<h2>Architecture Improvements</h2>
-
-<h3>Type Environment Structure</h3>
-<pre><code>Env = #{
-<p>  'TurnstileFSM' => {fsm_type, 'TurnstileFSM', States, InitialState},</p>
-<p>  'TurnstilePayload' => {record_type, 'TurnstilePayload', Fields},</p>
-<p>  % Other bindings...</p>
-<p>}</p>
-</code></pre>
-
-<h3>Field Access Flow</h3>
+<h3 id="field-access-flow">Field Access Flow</h3>
 <ol>
 <li>Parse field access as <code>record.field</code></li>
 <li>Infer record expression type</li>
@@ -364,61 +294,47 @@
 <li>Find field type in record fields</li>
 <li>Return field type</li>
 </ol>
-
-<h3>Record Type Handling</h3>
+<h3 id="record-type-handling">Record Type Handling</h3>
 <ul>
 <li>Store both FSM type and record type separately</li>
 <li>Use record type for field access</li>
 <li>Use FSM type for FSM operations</li>
 <li>No namespace collision</li>
 </ul>
-
-<h2>Files Modified</h2>
-
-<h3>Core Type System</h3>
+<h2 id="files-modified_1">Files Modified</h2>
+<h3 id="core-type-system">Core Type System</h3>
 <ul>
 <li><code>src/types/cure_types.erl</code> - Added field access support</li>
 <li><code>src/types/cure_typechecker.erl</code> - Enhanced FSM and record type checking</li>
 </ul>
-
-<h3>Standard Library</h3>
+<h3 id="standard-library">Standard Library</h3>
 <ul>
 <li><code>lib/std/core.cure</code> - Fixed Ordering return type</li>
 <li><code>lib/std/result.cure</code> - Fixed export list</li>
 <li><code>lib/std/fsm.cure</code> - Fixed export list</li>
 <li><code>lib/std/list.cure</code> - Changed Nat to Int</li>
 </ul>
+<h2 id="verification-commands">Verification Commands</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Compile standard library</span>
+make<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>all
 
-<h2>Verification Commands</h2>
+<span class="c1"># Run core tests</span>
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-noshell<span class="w"> </span>-eval<span class="w"> </span><span class="s1">&#39;fsm_test:run(), parser_test:run(), halt().&#39;</span>
 
-<pre><code># Compile standard library
-<p>make clean && make all</p>
+<span class="c1"># Verify stdlib modules</span>
+ls<span class="w"> </span>_build/ebin/Std.*.beam
+</code></pre></div>
 
-<h1>Run core tests</h1>
-<p>erl -pa <em>build/ebin -noshell -eval 'fsm</em>test:run(), parser_test:run(), halt().'</p>
-
-<h1>Verify stdlib modules</h1>
-<p>ls _build/ebin/Std.*.beam</p>
-</code></pre>
-
-<h2>Summary</h2>
-
-<p>The FSM type system is now fully implemented with:</p>
-<ul>
-<li>✅ Complete FSM type checking</li>
-<li>✅ Record type support with field access</li>
-<li>✅ All 10 standard library modules compiled</li>
-<li>✅ Core tests passing</li>
-<li>✅ Proper type environment management</li>
-<li>✅ Field access inference working</li>
-</ul>
-
+<h2 id="summary">Summary</h2>
+<p>The FSM type system is now fully implemented with:<br />
+- ✅ Complete FSM type checking<br />
+- ✅ Record type support with field access<br />
+- ✅ All 10 standard library modules compiled<br />
+- ✅ Core tests passing<br />
+- ✅ Proper type environment management<br />
+- ✅ Field access inference working</p>
 <p>The implementation is production-ready for FSM features demonstrated in the examples, with a fully functional standard library.</p>
-
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

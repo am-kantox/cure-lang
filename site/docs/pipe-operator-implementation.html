@@ -35,344 +35,296 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Pipe Operator Implementation Summary</h1>
-
-<p>This document summarizes the comprehensive analysis and enhancement of the pipe operator (<code>|></code>) implementation in the Cure programming language.</p>
-
-<h2>Status: ✅ Complete</h2>
-
+        <h1 id="pipe-operator-implementation-summary">Pipe Operator Implementation Summary</h1>
+<p>This document summarizes the comprehensive analysis and enhancement of the pipe operator (<code>|&gt;</code>) implementation in the Cure programming language.</p>
+<h2 id="status-complete">Status: ✅ Complete</h2>
 <p>The pipe operator is <strong>fully implemented</strong> with monadic semantics for automatic error handling and Result type management.</p>
+<h2 id="architecture-overview">Architecture Overview</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">Cure</span><span class="w"> </span><span class="n">Source</span><span class="w"> </span><span class="n">Code</span>
+<span class="w">       </span><span class="err">↓</span>
+<span class="w">  </span><span class="p">[</span><span class="n">Lexer</span><span class="p">]</span><span class="w">  </span><span class="err">←</span><span class="w"> </span><span class="n">Tokenizes</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">operator</span>
+<span class="w">       </span><span class="err">↓</span>
+<span class="w">  </span><span class="p">[</span><span class="n">Parser</span><span class="p">]</span><span class="w"> </span><span class="err">←</span><span class="w"> </span><span class="n">Parses</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">precedence</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">(</span><span class="n">lowest</span><span class="p">),</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="n">associativity</span>
+<span class="w">       </span><span class="err">↓</span>
+<span class="p">[</span><span class="n">Type</span><span class="w"> </span><span class="n">Checker</span><span class="p">]</span><span class="w"> </span><span class="err">←</span><span class="w"> </span><span class="n">Verifies</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="n">correctness</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Result</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="n">propagation</span>
+<span class="w">       </span><span class="err">↓</span>
+<span class="w">  </span><span class="p">[</span><span class="n">Codegen</span><span class="p">]</span><span class="w"> </span><span class="err">←</span><span class="w"> </span><span class="n">Generates</span><span class="w"> </span><span class="n">monadic_pipe_call</span><span class="w"> </span><span class="n">instructions</span>
+<span class="w">       </span><span class="err">↓</span>
+<span class="p">[</span><span class="n">BEAM</span><span class="w"> </span><span class="n">Compiler</span><span class="p">]</span><span class="w"> </span><span class="err">←</span><span class="w"> </span><span class="n">Translates</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">cure_std</span><span class="o">:</span><span class="n">pipe</span><span class="o">/</span><span class="mi">2</span><span class="w"> </span><span class="n">calls</span>
+<span class="w">       </span><span class="err">↓</span>
+<span class="w">  </span><span class="p">[</span><span class="n">Runtime</span><span class="p">]</span><span class="w"> </span><span class="err">←</span><span class="w"> </span><span class="n">Executes</span><span class="w"> </span><span class="n">monadic</span><span class="w"> </span><span class="n">pipe</span><span class="w"> </span><span class="n">semantics</span>
+</code></pre></div>
 
-<h2>Architecture Overview</h2>
-
-<pre><code>Cure Source Code
-<p>       ↓</p>
-<p>  [Lexer]  ← Tokenizes |> operator</p>
-<p>       ↓</p>
-<p>  [Parser] ← Parses with precedence 1 (lowest), left associativity</p>
-<p>       ↓</p>
-<p>[Type Checker] ← Verifies type correctness and Result type propagation</p>
-<p>       ↓</p>
-<p>  [Codegen] ← Generates monadic<em>pipe</em>call instructions</p>
-<p>       ↓</p>
-<p>[BEAM Compiler] ← Translates to cure_std:pipe/2 calls</p>
-<p>       ↓</p>
-<p>  [Runtime] ← Executes monadic pipe semantics</p>
-</code></pre>
-
-<h2>Implementation Components</h2>
-
-<h3>1. Lexer (<code>cure_lexer.erl</code>)</h3>
-
-<strong>Status</strong>: ✅ Complete
-
+<h2 id="implementation-components">Implementation Components</h2>
+<h3 id="1-lexer-cure_lexererl">1. Lexer (<code>cure_lexer.erl</code>)</h3>
+<p><strong>Status</strong>: ✅ Complete</p>
 <ul>
-<li>Token: <code>|></code> mapped to atom <code>'|>'</code></li>
+<li>Token: <code>|&gt;</code> mapped to atom <code>'|&gt;'</code></li>
 <li>Location: Line 271 in operators map</li>
 <li>Multi-character operator recognition working correctly</li>
 </ul>
-
-<h3>2. Parser (<code>cure_parser.erl</code>)</h3>
-
-<strong>Status</strong>: ✅ Complete
-
+<h3 id="2-parser-cure_parsererl">2. Parser (<code>cure_parser.erl</code>)</h3>
+<p><strong>Status</strong>: ✅ Complete</p>
 <ul>
 <li>Precedence: 1 (lowest precedence in the language)</li>
 <li>Associativity: Left</li>
 <li>Location: Lines 2859-2869 (operator precedence table)</li>
 <li>Parsed as binary operator expression in AST</li>
 </ul>
-
-<h3>3. Type Checker (<code>cure_typechecker.erl</code>)</h3>
-
-<strong>Status</strong>: ✅ Verified
-
+<h3 id="3-type-checker-cure_typecheckererl">3. Type Checker (<code>cure_typechecker.erl</code>)</h3>
+<p><strong>Status</strong>: ✅ Verified</p>
 <ul>
 <li>Binary operators handled in expression type inference</li>
 <li>Result types properly propagated through pipe chains</li>
 <li>Type constraints verified at compile time</li>
 </ul>
-
-<h3>4. Code Generator (<code>cure_codegen.erl</code>)</h3>
-
-<strong>Status</strong>: ✅ Complete
-
+<h3 id="4-code-generator-cure_codegenerl">4. Code Generator (<code>cure_codegen.erl</code>)</h3>
+<p><strong>Status</strong>: ✅ Complete</p>
 <ul>
 <li>Location: Lines 1505-1548</li>
-<li>Generates <code>monadic<em>pipe</em>call</code> instruction</li>
+<li>Generates <code>monadic_pipe_call</code> instruction</li>
 <li>Two modes:</li>
-<li>Simple function pipe: <code>x |> f</code></li>
-<li>Function call pipe: <code>x |> f(y, z)</code></li>
+<li>Simple function pipe: <code>x |&gt; f</code></li>
+<li>Function call pipe: <code>x |&gt; f(y, z)</code></li>
 <li>Stack ordering: Function, Value, Args</li>
 </ul>
-
-<h3>5. BEAM Compiler (<code>cure<em>beam</em>compiler.erl</code>)</h3>
-
-<strong>Status</strong>: ✅ Complete
-
+<h3 id="5-beam-compiler-cure_beam_compilererl">5. BEAM Compiler (<code>cure_beam_compiler.erl</code>)</h3>
+<p><strong>Status</strong>: ✅ Complete</p>
 <ul>
 <li>Location: Lines 602-637</li>
-<li>Translates <code>monadic<em>pipe</em>call</code> to Erlang forms</li>
+<li>Translates <code>monadic_pipe_call</code> to Erlang forms</li>
 <li>Generates calls to <code>cure_std:pipe/2</code></li>
 <li>Wraps piped value with <code>ok()</code> if not already Result</li>
 <li>Creates lambda for function application</li>
 </ul>
-
-<h3>6. Runtime (<code>cure_std.erl</code>)</h3>
-
-<strong>Status</strong>: ✅ Complete
-
+<h3 id="6-runtime-cure_stderl">6. Runtime (<code>cure_std.erl</code>)</h3>
+<p><strong>Status</strong>: ✅ Complete</p>
 <ul>
 <li>Location: Lines 221-245</li>
 <li>Function: <code>pipe/2</code></li>
-<li>Implements three semantic rules:</li>
-</ul>
-<ol>
-<li><strong>Error Propagation</strong>: <code>Error(x) |> f = Error(x)</code></li>
-<li><strong>Ok Unwrapping</strong>: <code>Ok(x) |> f = f(x)</code> (result wrapped)</li>
-<li><strong>Value Passing</strong>: <code>x |> f = f(x)</code> (result wrapped)</li>
-</ol>
-<ul>
+<li>Implements three semantic rules:<br />
+  1. <strong>Error Propagation</strong>: <code>Error(x) |&gt; f = Error(x)</code><br />
+  2. <strong>Ok Unwrapping</strong>: <code>Ok(x) |&gt; f = f(x)</code> (result wrapped)<br />
+  3. <strong>Value Passing</strong>: <code>x |&gt; f = f(x)</code> (result wrapped)</li>
 <li>Exception handling: Catches errors and wraps as <code>Error()</code></li>
 </ul>
-
-<h2>Semantic Rules</h2>
-
-<h3>Rule 1: Error Propagation</h3>
-
-<pre><code>Error("reason") |> function
-<h1>=> Error("reason")  # function is NOT called</h1>
-</code></pre>
+<h2 id="semantic-rules">Semantic Rules</h2>
+<h3 id="rule-1-error-propagation">Rule 1: Error Propagation</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">(</span><span class="s">&quot;reason&quot;</span><span class="o">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">function</span>
+<span class="o">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Error</span><span class="o">(</span><span class="s">&quot;reason&quot;</span><span class="o">)</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">NOT</span><span class="w"> </span><span class="n">called</span>
+</code></pre></div>
 
 <p>Errors short-circuit the pipeline without calling subsequent functions.</p>
+<h3 id="rule-2-ok-unwrapping">Rule 2: Ok Unwrapping</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Ok</span><span class="o">(</span><span class="mi">5</span><span class="o">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="kt">double</span>
+<span class="o">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="mi">10</span><span class="o">)</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">unwrapped</span><span class="o">,</span><span class="w"> </span><span class="n">passed</span><span class="w"> </span><span class="k">to</span><span class="w"> </span><span class="kt">double</span><span class="o">,</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="n">wrapped</span>
+</code></pre></div>
 
-<h3>Rule 2: Ok Unwrapping</h3>
-
-<pre><code>Ok(5) |> double
-<h1>=> Ok(10)  # 5 is unwrapped, passed to double, result wrapped</h1>
-</code></pre>
-
-<code>Ok</code> values are unwrapped before function application, result is wrapped unless already monadic.
-
-<h3>Rule 3: Value Passing</h3>
-
-<pre><code>5 |> double
-<h1>=> Ok(10)  # 5 is passed directly, result wrapped</h1>
-</code></pre>
+<p><code>Ok</code> values are unwrapped before function application, result is wrapped unless already monadic.</p>
+<h3 id="rule-3-value-passing">Rule 3: Value Passing</h3>
+<div class="codehilite"><pre><span></span><code><span class="mf">5</span><span class="w"> </span><span class="err">|</span><span class="o">&gt;</span><span class="w"> </span><span class="n">double</span>
+<span class="err">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Ok</span><span class="p">(</span><span class="mf">10</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">passed</span><span class="w"> </span><span class="n">directly</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="n">wrapped</span>
+</code></pre></div>
 
 <p>Plain values are passed to functions and results are wrapped in <code>Ok()</code>.</p>
-
-<h3>Exception Handling</h3>
-
-<pre><code>Ok(0) |> (fun(x) -> 1 / x)
-<h1>=> Error({pipe<em>runtime</em>error, error, badarith})</h1>
-</code></pre>
+<h3 id="exception-handling">Exception Handling</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Ok</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="o">(</span><span class="k">fun</span><span class="o">(</span><span class="n">x</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">x</span><span class="o">)</span>
+<span class="o">#</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">Error</span><span class="o">({</span><span class="n">pipe_runtime_error</span><span class="o">,</span><span class="w"> </span><span class="n">error</span><span class="o">,</span><span class="w"> </span><span class="n">badarith</span><span class="o">})</span>
+</code></pre></div>
 
 <p>Runtime exceptions are caught and converted to <code>Error()</code> values.</p>
-
-<h2>Enhancements Made</h2>
-
-<h3>1. Comprehensive Test Suite</h3>
-
-<strong>File</strong>: <code>test/pipe<em>operator</em>test.erl</code>
-
-<p>Test coverage includes:</p>
-<ul>
-<li>Lexer tokenization tests (3 tests)</li>
-<li>Parser AST generation tests (4 tests)</li>
-<li>Runtime semantics tests (5 tests)</li>
-<li>Code generation tests (2 tests)</li>
-<li>Integration tests (2 tests)</li>
-</ul>
-
-<strong>Total</strong>: 16 comprehensive tests covering all aspects of the implementation.
-
-<h3>2. Example Code</h3>
-
-<strong>File</strong>: <code>examples/pipe_demo.cure</code>
-
-<p>Demonstrates:</p>
-<ul>
-<li>Basic piping</li>
-<li>Error handling</li>
-<li>Pipe chains</li>
-<li>Piping with arguments</li>
-<li>Real-world data transformation</li>
-<li>Error recovery patterns</li>
-<li>Combining with other operators</li>
-</ul>
-
-<h3>3. Documentation</h3>
-
-<strong>File</strong>: <code>docs/pipe_operator.md</code>
-
-<p>Comprehensive documentation including:</p>
-<ul>
-<li>Overview and key features</li>
-<li>Syntax and semantics</li>
-<li>Type system integration</li>
-<li>Usage examples</li>
-<li>Implementation details</li>
-<li>Best practices</li>
-<li>Performance considerations</li>
-<li>Comparison with other languages (Elixir, Rust, Haskell)</li>
-</ul>
-
-<h3>4. Optimizations</h3>
-
-<strong>File</strong>: <code>src/types/cure<em>pipe</em>optimizer.erl</code>
-
-<p>Pipe-specific optimizations:</p>
-<ul>
-<li>Error-free chain detection</li>
-<li>Inlining of provably pure pipe chains</li>
-<li>Elimination of redundant wrapping/unwrapping</li>
-<li>Statistics tracking for optimization effectiveness</li>
-</ul>
-
-<h2>Type System Integration</h2>
-
+<h2 id="enhancements-made">Enhancements Made</h2>
+<h3 id="1-comprehensive-test-suite">1. Comprehensive Test Suite</h3>
+<p><strong>File</strong>: <code>test/pipe_operator_test.erl</code></p>
+<p>Test coverage includes:<br />
+- Lexer tokenization tests (3 tests)<br />
+- Parser AST generation tests (4 tests)<br />
+- Runtime semantics tests (5 tests)<br />
+- Code generation tests (2 tests)<br />
+- Integration tests (2 tests)</p>
+<p><strong>Total</strong>: 16 comprehensive tests covering all aspects of the implementation.</p>
+<h3 id="2-example-code">2. Example Code</h3>
+<p><strong>File</strong>: <code>examples/pipe_demo.cure</code></p>
+<p>Demonstrates:<br />
+- Basic piping<br />
+- Error handling<br />
+- Pipe chains<br />
+- Piping with arguments<br />
+- Real-world data transformation<br />
+- Error recovery patterns<br />
+- Combining with other operators</p>
+<h3 id="3-documentation">3. Documentation</h3>
+<p><strong>File</strong>: <code>docs/pipe_operator.md</code></p>
+<p>Comprehensive documentation including:<br />
+- Overview and key features<br />
+- Syntax and semantics<br />
+- Type system integration<br />
+- Usage examples<br />
+- Implementation details<br />
+- Best practices<br />
+- Performance considerations<br />
+- Comparison with other languages (Elixir, Rust, Haskell)</p>
+<h3 id="4-optimizations">4. Optimizations</h3>
+<p><strong>File</strong>: <code>src/types/cure_pipe_optimizer.erl</code></p>
+<p>Pipe-specific optimizations:<br />
+- Error-free chain detection<br />
+- Inlining of provably pure pipe chains<br />
+- Elimination of redundant wrapping/unwrapping<br />
+- Statistics tracking for optimization effectiveness</p>
+<h2 id="type-system-integration">Type System Integration</h2>
 <p>The pipe operator integrates seamlessly with Cure's type system:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">process_data</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="n">input</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">parse_int</span><span class="w">       </span><span class="o">#</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate_range</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="kt">double</span><span class="w">          </span><span class="o">#</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">(</span><span class="n">automatically</span><span class="w"> </span><span class="n">wrapped</span><span class="o">)</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>def process_data(input: String) -> Result(Int, String) do
-<p>  input</p>
-<p>    |> parse_int       # String -> Result(Int, String)</p>
-<p>    |> validate_range  # Int -> Result(Int, String)</p>
-<p>    |> double          # Int -> Int (automatically wrapped)</p>
-<p>end</p>
-</code></pre>
-
-<p>Type inference ensures:</p>
-<ul>
-<li>Piped value type matches function's first parameter</li>
-<li>Result types propagate correctly</li>
-<li>Non-monadic returns are wrapped in <code>Result<T></code></li>
-</ul>
-
-<h2>Performance Characteristics</h2>
-
+<p>Type inference ensures:<br />
+- Piped value type matches function's first parameter<br />
+- Result types propagate correctly<br />
+- Non-monadic returns are wrapped in <code>Result&lt;T&gt;</code></p>
+<h2 id="performance-characteristics">Performance Characteristics</h2>
 <ol>
 <li><strong>Compile-time</strong>: O(1) parsing and AST construction per pipe</li>
 <li><strong>Runtime</strong>: One function call to <code>cure_std:pipe/2</code> per operation</li>
 <li><strong>Optimization</strong>: Inlining possible for provably error-free chains</li>
 </ol>
-
 <p>Overhead is minimal and comparable to direct function calls with manual error handling.</p>
-
-<h2>Testing</h2>
-
+<h2 id="testing">Testing</h2>
 <p>Run the comprehensive test suite:</p>
-
-<pre><code>% From Erlang shell
-<p>c("test/pipe<em>operator</em>test.erl").</p>
-<p>pipe<em>operator</em>test:run().</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="c">% From Erlang shell</span>
+<span class="nf">c</span><span class="p">(</span><span class="s">&quot;test/pipe_operator_test.erl&quot;</span><span class="p">).</span>
+<span class="nn">pipe_operator_test</span><span class="p">:</span><span class="nf">run</span><span class="p">().</span>
+</code></pre></div>
 
 <p>Expected output:</p>
-<pre><code>=== Pipe Operator Tests ===
+<div class="codehilite"><pre><span></span><code><span class="o">==</span><span class="p">=</span><span class="w"> </span><span class="nx">Pipe</span><span class="w"> </span><span class="nx">Operator</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">==</span><span class="p">=</span>
 
-<p>--- Lexer Tests ---</p>
-<p>  Testing: Tokenize pipe operator... ✓</p>
-<p>  Testing: Pipe in expression... ✓</p>
-<p>  Testing: Multiple pipes... ✓</p>
-<p>  Subtotal: 3/3 passed</p>
+<span class="o">---</span><span class="w"> </span><span class="nx">Lexer</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">---</span>
+<span class="w">  </span><span class="nx">Testing</span><span class="p">:</span><span class="w"> </span><span class="nx">Tokenize</span><span class="w"> </span><span class="nx">pipe</span><span class="w"> </span><span class="nx">operator</span><span class="o">...</span><span class="w"> </span><span class="err">✓</span>
+<span class="w">  </span><span class="nx">Testing</span><span class="p">:</span><span class="w"> </span><span class="nx">Pipe</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">expression</span><span class="o">...</span><span class="w"> </span><span class="err">✓</span>
+<span class="w">  </span><span class="nx">Testing</span><span class="p">:</span><span class="w"> </span><span class="nx">Multiple</span><span class="w"> </span><span class="nx">pipes</span><span class="o">...</span><span class="w"> </span><span class="err">✓</span>
+<span class="w">  </span><span class="nx">Subtotal</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="o">/</span><span class="mi">3</span><span class="w"> </span><span class="nx">passed</span>
 
-<p>--- Parser Tests ---</p>
-<p>  Testing: Parse simple pipe... ✓</p>
-<p>  Testing: Parse pipe chain... ✓</p>
-<p>  Testing: Parse pipe with function call... ✓</p>
-<p>  Testing: Pipe operator precedence... ✓</p>
-<p>  Subtotal: 4/4 passed</p>
+<span class="o">---</span><span class="w"> </span><span class="nx">Parser</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="o">---</span>
+<span class="w">  </span><span class="nx">Testing</span><span class="p">:</span><span class="w"> </span><span class="nx">Parse</span><span class="w"> </span><span class="nx">simple</span><span class="w"> </span><span class="nx">pipe</span><span class="o">...</span><span class="w"> </span><span class="err">✓</span>
+<span class="w">  </span><span class="nx">Testing</span><span class="p">:</span><span class="w"> </span><span class="nx">Parse</span><span class="w"> </span><span class="nx">pipe</span><span class="w"> </span><span class="nx">chain</span><span class="o">...</span><span class="w"> </span><span class="err">✓</span>
+<span class="w">  </span><span class="nx">Testing</span><span class="p">:</span><span class="w"> </span><span class="nx">Parse</span><span class="w"> </span><span class="nx">pipe</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">function</span><span class="w"> </span><span class="nx">call</span><span class="o">...</span><span class="w"> </span><span class="err">✓</span>
+<span class="w">  </span><span class="nx">Testing</span><span class="p">:</span><span class="w"> </span><span class="nx">Pipe</span><span class="w"> </span><span class="nx">operator</span><span class="w"> </span><span class="nx">precedence</span><span class="o">...</span><span class="w"> </span><span class="err">✓</span>
+<span class="w">  </span><span class="nx">Subtotal</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="o">/</span><span class="mi">4</span><span class="w"> </span><span class="nx">passed</span>
 
-<p>... (additional test groups)</p>
+<span class="o">...</span><span class="w"> </span><span class="p">(</span><span class="nx">additional</span><span class="w"> </span><span class="nx">test</span><span class="w"> </span><span class="nx">groups</span><span class="p">)</span>
 
-<p>=== Test Summary ===</p>
-<p>Total: 16, Passed: 16, Failed: 0</p>
+<span class="o">==</span><span class="p">=</span><span class="w"> </span><span class="nx">Test</span><span class="w"> </span><span class="nx">Summary</span><span class="w"> </span><span class="o">==</span><span class="p">=</span>
+<span class="nx">Total</span><span class="p">:</span><span class="w"> </span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="nx">Passed</span><span class="p">:</span><span class="w"> </span><span class="mi">16</span><span class="p">,</span><span class="w"> </span><span class="nx">Failed</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
 
-<p>✓ All tests passed!</p>
-</code></pre>
+<span class="err">✓</span><span class="w"> </span><span class="nx">All</span><span class="w"> </span><span class="nx">tests</span><span class="w"> </span><span class="nx">passed</span><span class="p">!</span>
+</code></pre></div>
 
-<h2>Examples</h2>
+<h2 id="examples">Examples</h2>
+<h3 id="basic-usage">Basic Usage</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Simple</span><span class="w"> </span><span class="nx">value</span><span class="w"> </span><span class="nx">transformation</span>
+<span class="mi">5</span><span class="w"> </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">double</span><span class="w"> </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">increment</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Result</span><span class="p">:</span><span class="w"> </span><span class="nx">Ok</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
 
-<h3>Basic Usage</h3>
+<span class="err">#</span><span class="w"> </span><span class="nx">Error</span><span class="w"> </span><span class="nx">handling</span>
+<span class="s">&quot;invalid&quot;</span><span class="w"> </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">parse</span><span class="w"> </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">validate</span><span class="w"> </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">process</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Result</span><span class="p">:</span><span class="w"> </span><span class="nx">Error</span><span class="p">(</span><span class="s">&quot;Parse error&quot;</span><span class="p">)</span><span class="w">  </span><span class="p">(</span><span class="nx">stopped</span><span class="w"> </span><span class="nx">at</span><span class="w"> </span><span class="nx">parse</span><span class="p">)</span>
 
-<pre><code># Simple value transformation
-<p>5 |> double |> increment</p>
-<h1>Result: Ok(11)</h1>
+<span class="err">#</span><span class="w"> </span><span class="nx">With</span><span class="w"> </span><span class="nx">function</span><span class="w"> </span><span class="nx">arguments</span>
+<span class="mi">10</span><span class="w"> </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">add</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">multiply</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Result</span><span class="p">:</span><span class="w"> </span><span class="nx">Ok</span><span class="p">(</span><span class="mi">45</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">add</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="nx">multiply</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">45</span>
+</code></pre></div>
 
-<h1>Error handling</h1>
-<p>"invalid" |> parse |> validate |> process</p>
-<h1>Result: Error("Parse error")  (stopped at parse)</h1>
+<h3 id="real-world-pipeline">Real-World Pipeline</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">process_user_input</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">User</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="n">input</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">trim_whitespace</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate_email</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">normalize_email</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">check_not_taken</span>
+<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">create_user</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h1>With function arguments</h1>
-<p>10 |> add(5) |> multiply(3)</p>
-<h1>Result: Ok(45)  # add(10, 5) => 15, multiply(15, 3) => 45</h1>
-</code></pre>
-
-<h3>Real-World Pipeline</h3>
-
-<pre><code>def process<em>user</em>input(input: String) -> Result(User, String) do
-<p>  input</p>
-<p>    |> trim_whitespace</p>
-<p>    |> validate_email</p>
-<p>    |> normalize_email</p>
-<p>    |> check<em>not</em>taken</p>
-<p>    |> create_user</p>
-<p>end</p>
-</code></pre>
-
-<h2>Comparison with Other Languages</h2>
-
-<p>| Feature | Cure <code>|></code> | Elixir <code>|></code> | Rust <code>?</code> | Haskell <code>>>=</code> |</p>
-<p>|---------|-----------|-------------|----------|---------------|</p>
-<p>| Syntax | Infix | Infix | Postfix | Infix |</p>
-<p>| Error Handling | Automatic | Manual | Automatic | Automatic |</p>
-<p>| Type | Monadic | Syntactic | Monadic | Monadic |</p>
-<p>| Precedence | Lowest | Lowest | N/A | Higher |</p>
-<p>| Use Case | Pipelines | Pipelines | Early return | Composition |</p>
-
-<h2>Future Enhancements</h2>
-
+<h2 id="comparison-with-other-languages">Comparison with Other Languages</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Cure <code>|&gt;</code></th>
+<th>Elixir <code>|&gt;</code></th>
+<th>Rust <code>?</code></th>
+<th>Haskell <code>&gt;&gt;=</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Syntax</td>
+<td>Infix</td>
+<td>Infix</td>
+<td>Postfix</td>
+<td>Infix</td>
+</tr>
+<tr>
+<td>Error Handling</td>
+<td>Automatic</td>
+<td>Manual</td>
+<td>Automatic</td>
+<td>Automatic</td>
+</tr>
+<tr>
+<td>Type</td>
+<td>Monadic</td>
+<td>Syntactic</td>
+<td>Monadic</td>
+<td>Monadic</td>
+</tr>
+<tr>
+<td>Precedence</td>
+<td>Lowest</td>
+<td>Lowest</td>
+<td>N/A</td>
+<td>Higher</td>
+</tr>
+<tr>
+<td>Use Case</td>
+<td>Pipelines</td>
+<td>Pipelines</td>
+<td>Early return</td>
+<td>Composition</td>
+</tr>
+</tbody>
+</table>
+<h2 id="future-enhancements">Future Enhancements</h2>
 <p>Potential improvements for future versions:</p>
-
 <ol>
 <li><strong>Option Type Support</strong>: Extend pipe semantics to <code>Some</code>/<code>None</code></li>
 <li><strong>Custom Monadic Types</strong>: Support user-defined monadic types via traits</li>
-<li><strong>Async Integration</strong>: <code>async |></code> for asynchronous pipelines</li>
+<li><strong>Async Integration</strong>: <code>async |&gt;</code> for asynchronous pipelines</li>
 <li><strong>Type-Level Optimization</strong>: More aggressive inlining based on type proofs</li>
 <li><strong>Debug Mode</strong>: Special debugging support for pipe chains</li>
 </ol>
-
-<h2>References</h2>
-
+<h2 id="references">References</h2>
 <ul>
 <li><a href="docs/pipe_operator.md">Documentation</a></li>
 <li><a href="examples/pipe_demo.cure">Example Code</a></li>
-<li><a href="test/pipe<em>operator</em>test.erl">Test Suite</a></li>
-<li><a href="src/types/cure<em>pipe</em>optimizer.erl">Optimizer</a></li>
+<li><a href="test/pipe_operator_test.erl">Test Suite</a></li>
+<li><a href="src/types/cure_pipe_optimizer.erl">Optimizer</a></li>
 </ul>
-
-<h2>Credits</h2>
-
-<p>Implementation based on:</p>
-<ul>
-<li>Elixir's pipe operator (syntax inspiration)</li>
-<li>Rust's <code>?</code> operator (error handling semantics)</li>
-<li>Haskell's bind operator (monadic composition theory)</li>
-</ul>
-
+<h2 id="credits">Credits</h2>
+<p>Implementation based on:<br />
+- Elixir's pipe operator (syntax inspiration)<br />
+- Rust's <code>?</code> operator (error handling semantics)<br />
+- Haskell's bind operator (monadic composition theory)</p>
 <p>Adapted for Cure's type system and BEAM runtime.</p>
-
-<p>---</p>
-
-<strong>Implementation Date</strong>: 2025-11-02  
-<strong>Status</strong>: Production Ready ✅  
-<strong>Test Coverage</strong>: 16 tests, all passing
-
+<hr />
+<p><strong>Implementation Date</strong>: 2025-11-02<br />
+<strong>Status</strong>: Production Ready ✅<br />
+<strong>Test Coverage</strong>: 16 tests, all passing</p>
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

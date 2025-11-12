@@ -35,247 +35,195 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Typeclass Operator Implementation - COMPLETE ✅</h1>
-
-<h2>Summary</h2>
-
+        <h1 id="typeclass-operator-implementation-complete">Typeclass Operator Implementation - COMPLETE ✅</h1>
+<h2 id="summary">Summary</h2>
 <p>All components for typeclass operator support are now fully implemented and working.</p>
-
-<h2>Implementation Status</h2>
-
-<h3>✅ Completed Components</h3>
-
-<h4>1. Lexer (<code>src/lexer/cure_lexer.erl</code>)</h4>
+<h2 id="implementation-status">Implementation Status</h2>
+<h3 id="completed-components">✅ Completed Components</h3>
+<h4 id="1-lexer-srclexercure_lexererl">1. Lexer (<code>src/lexer/cure_lexer.erl</code>)</h4>
 <ul>
 <li>Added all Functor/Applicative/Monad operators to <code>operators()</code> map</li>
-<li>Operators: <code><$</code>, <code>$></code>, <code><<em>></code>, <code></em>></code>, <code><*</code>, <code>>>=</code>, <code>>></code></li>
+<li>Operators: <code>&lt;$</code>, <code>$&gt;</code>, <code>&lt;*&gt;</code>, <code>*&gt;</code>, <code>&lt;*</code>, <code>&gt;&gt;=</code>, <code>&gt;&gt;</code></li>
 <li>All operators tokenize correctly</li>
 </ul>
-
-<h4>2. Parser (<code>src/parser/cure_parser.erl</code>)</h4>
+<h4 id="2-parser-srcparsercure_parsererl">2. Parser (<code>src/parser/cure_parser.erl</code>)</h4>
 <ul>
 <li><strong>Operator function definitions</strong>: <code>def (op)(params): ReturnType</code></li>
 <li><strong>Added functions</strong>:</li>
 <li><code>expect_operator/1</code> - Validates and consumes operator tokens</li>
-<li><code>is<em>operator</em>token/1</code> - Checks if token is a valid operator</li>
+<li><code>is_operator_token/1</code> - Checks if token is a valid operator</li>
 <li><strong>Updated functions</strong>:</li>
 <li><code>parse_function/1</code> - Regular function definitions support operators</li>
-<li><code>parse<em>typeclass</em>method/1</code> - Typeclass method signatures support operators</li>
-<li><code>parse<em>instance</em>method/1</code> - Instance method implementations support operators</li>
-<li><strong>Operator precedence</strong> in <code>get<em>operator</em>info/1</code>:</li>
-<li>Functor operators (<code><$</code>, <code>$></code>) - precedence 8</li>
-<li>Applicative operators (<code><<em>></code>, <code></em>></code>, <code><*</code>) - precedence 7</li>
-<li>Monad operators (<code>>>=</code>, <code>>></code>) - precedence 1</li>
+<li><code>parse_typeclass_method/1</code> - Typeclass method signatures support operators</li>
+<li><code>parse_instance_method/1</code> - Instance method implementations support operators</li>
+<li><strong>Operator precedence</strong> in <code>get_operator_info/1</code>:</li>
+<li>Functor operators (<code>&lt;$</code>, <code>$&gt;</code>) - precedence 8</li>
+<li>Applicative operators (<code>&lt;*&gt;</code>, <code>*&gt;</code>, <code>&lt;*</code>) - precedence 7</li>
+<li>Monad operators (<code>&gt;&gt;=</code>, <code>&gt;&gt;</code>) - precedence 1</li>
 </ul>
-
-<h4>3. Code Generation (<code>src/codegen/cure<em>typeclass</em>codegen.erl</code>)</h4>
+<h4 id="3-code-generation-srccodegencure_typeclass_codegenerl">3. Code Generation (<code>src/codegen/cure_typeclass_codegen.erl</code>)</h4>
 <ul>
 <li>Typeclasses compile to behaviour modules with <code>behaviour_info/1</code></li>
 <li>Instance methods compile to mangled Erlang functions</li>
 <li>Default method implementations compile to actual BEAM code</li>
 <li>Proper state threading throughout compilation</li>
 </ul>
-
-<h4>4. Syntax Files (<code>lib/typeclass_spec/</code>)</h4>
+<h4 id="4-syntax-files-libtypeclass_spec">4. Syntax Files (<code>lib/typeclass_spec/</code>)</h4>
 <ul>
-<li>All function types parenthesized: <code>(A -> B)</code> instead of <code>A -> B</code></li>
+<li>All function types parenthesized: <code>(A -&gt; B)</code> instead of <code>A -&gt; B</code></li>
 <li>Files parse successfully</li>
 <li>Ready for compilation once higher-kinded types are complete</li>
 </ul>
+<h2 id="syntax-requirements">Syntax Requirements</h2>
+<h3 id="function-types-must-be-parenthesized">Function Types Must Be Parenthesized</h3>
+<p>When function types appear as:<br />
+- <strong>Function parameters</strong>: <code>def foo(f: (A -&gt; B))</code><br />
+- <strong>Type arguments</strong>: <code>def bar(x: F((A -&gt; B)))</code></p>
+<p>This matches standard practice in:<br />
+- Haskell: <code>f :: (a -&gt; b) -&gt; c</code><br />
+- OCaml: <code>val f : (a -&gt; b) -&gt; c</code><br />
+- Scala: <code>def f(g: A =&gt; B): C</code></p>
+<h3 id="operator-function-definitions">Operator Function Definitions</h3>
+<div class="codehilite"><pre><span></span><code># Regular function
+def add(x: Int, y: Int): Int = x + y
 
-<h2>Syntax Requirements</h2>
+# Operator function
+def (&lt;$)(value: A, fb: F(B)): F(A) = ...
+</code></pre></div>
 
-<h3>Function Types Must Be Parenthesized</h3>
+<h2 id="parsing-success">Parsing Success</h2>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-noshell<span class="w"> </span>-eval<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;case cure_parser:parse_file(\&quot;lib/typeclass_spec/typeclass.cure\&quot;) of \</span>
+<span class="s2">     {ok, AST} -&gt; io:format(\&quot;Success!~n\&quot;); \</span>
+<span class="s2">     {error, E} -&gt; io:format(\&quot;Error: ~p~n\&quot;, [E]) \</span>
+<span class="s2">   end, halt(0).&quot;</span>
 
-<p>When function types appear as:</p>
-<ul>
-<li><strong>Function parameters</strong>: <code>def foo(f: (A -> B))</code></li>
-<li><strong>Type arguments</strong>: <code>def bar(x: F((A -> B)))</code></li>
-</ul>
+✅<span class="w"> </span>SUCCESS!<span class="w"> </span>Parsed<span class="w"> </span>typeclass.cure<span class="w"> </span>with<span class="w"> </span><span class="m">1</span><span class="w"> </span>top-level<span class="w"> </span>items
+</code></pre></div>
 
-<p>This matches standard practice in:</p>
-<ul>
-<li>Haskell: <code>f :: (a -> b) -> c</code></li>
-<li>OCaml: <code>val f : (a -> b) -> c</code></li>
-<li>Scala: <code>def f(g: A => B): C</code></li>
-</ul>
+<h2 id="what-was-fixed">What Was Fixed</h2>
+<h3 id="issue-1-character-not-recognized">Issue 1: <code>$</code> Character Not Recognized</h3>
+<p><strong>Problem</strong>: Lexer rejected <code>$</code> as unexpected character (ASCII 36)</p>
+<p><strong>Solution</strong>: Added 7 new operators to lexer's <code>operators()</code> map:</p>
+<div class="codehilite"><pre><span></span><code><span class="o">&lt;&lt;</span><span class="s">&quot;&lt;$&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;&lt;$&#39;</span><span class="p">,</span>
+<span class="o">&lt;&lt;</span><span class="s">&quot;$&gt;&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;$&gt;&#39;</span><span class="p">,</span>
+<span class="o">&lt;&lt;</span><span class="s">&quot;&lt;*&gt;&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;&lt;*&gt;&#39;</span><span class="p">,</span>
+<span class="o">&lt;&lt;</span><span class="s">&quot;*&gt;&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;*&gt;&#39;</span><span class="p">,</span>
+<span class="o">&lt;&lt;</span><span class="s">&quot;&lt;*&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;&lt;*&#39;</span><span class="p">,</span>
+<span class="o">&lt;&lt;</span><span class="s">&quot;&gt;&gt;=&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;&gt;&gt;=&#39;</span><span class="p">,</span>
+<span class="o">&lt;&lt;</span><span class="s">&quot;&gt;&gt;&quot;</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;&gt;&gt;&#39;</span>
+</code></pre></div>
 
-<h3>Operator Function Definitions</h3>
-
-<pre><code># Regular function
-<p>def add(x: Int, y: Int): Int = x + y</p>
-
-<h1>Operator function</h1>
-<p>def (<$)(value: A, fb: F(B)): F(A) = ...</p>
-</code></pre>
-
-<h2>Parsing Success</h2>
-
-<pre><code>$ erl -pa _build/ebin -noshell -eval \
-<p>  "case cure<em>parser:parse</em>file(\"lib/typeclass_spec/typeclass.cure\") of \</p>
-<p>     {ok, AST} -> io:format(\"Success!~n\"); \</p>
-<p>     {error, E} -> io:format(\"Error: ~p~n\", [E]) \</p>
-<p>   end, halt(0)."</p>
-
-<p>✅ SUCCESS! Parsed typeclass.cure with 1 top-level items</p>
-</code></pre>
-
-<h2>What Was Fixed</h2>
-
-<h3>Issue 1: <code>$</code> Character Not Recognized</h3>
-<strong>Problem</strong>: Lexer rejected <code>$</code> as unexpected character (ASCII 36)
-
-<strong>Solution</strong>: Added 7 new operators to lexer's <code>operators()</code> map:
-<pre><code><<"<$">> => '<$',
-<<"$>">> => '$>',
-<<"<<em>>">> => '<</em>>',
-<<"<em>>">> => '</em>>',
-<<"<<em>">> => '<</em>',
-<<">>=">> => '>>=',
-<<">>">> => '>>'
-</code></pre>
-
-<h3>Issue 2: Operators Not Valid as Function Names</h3>
-<strong>Problem</strong>: Parser only accepted identifiers for function names
-
-<strong>Solution</strong>: 
-<ol>
-<li>Added <code>expect_operator/1</code> to parse and validate operators</li>
-<li>Updated <code>parse_function/1</code> to check for <code>def (op)(...)</code> syntax</li>
-<li>Updated typeclass and instance parsing similarly</li>
-</ol>
-
-<h3>Issue 3: Function Type Ambiguity</h3>
-<strong>Problem</strong>: <code>F(A -> B)</code> was ambiguous - is <code>-></code> part of the type or return marker?
-
-<strong>Solution</strong>: Require parentheses: <code>F((A -> B))</code>
-<ul>
-<li>This is standard in functional languages</li>
-<li>Removes all ambiguity</li>
-<li>Clearer for readers</li>
-</ul>
-
-<h3>Issue 4: Codegen Was Incomplete</h3>
-<strong>Problem</strong>: <code>cure<em>typeclass</em>codegen</code> returned metadata instead of compiled code
-
-<strong>Solution</strong>: 
-<ul>
-<li>Made <code>compile<em>instance</em>method</code> call <code>cure<em>codegen:compile</em>function_impl</code></li>
-<li>Made <code>compile<em>default</em>methods</code> compile to actual BEAM functions</li>
-<li>Fixed state threading throughout</li>
-</ul>
-
-<h2>Files Modified</h2>
-
-<h3>Lexer</h3>
+<h3 id="issue-2-operators-not-valid-as-function-names">Issue 2: Operators Not Valid as Function Names</h3>
+<p><strong>Problem</strong>: Parser only accepted identifiers for function names</p>
+<p><strong>Solution</strong>: <br />
+1. Added <code>expect_operator/1</code> to parse and validate operators<br />
+2. Updated <code>parse_function/1</code> to check for <code>def (op)(...)</code> syntax<br />
+3. Updated typeclass and instance parsing similarly</p>
+<h3 id="issue-3-function-type-ambiguity">Issue 3: Function Type Ambiguity</h3>
+<p><strong>Problem</strong>: <code>F(A -&gt; B)</code> was ambiguous - is <code>-&gt;</code> part of the type or return marker?</p>
+<p><strong>Solution</strong>: Require parentheses: <code>F((A -&gt; B))</code><br />
+- This is standard in functional languages<br />
+- Removes all ambiguity<br />
+- Clearer for readers</p>
+<h3 id="issue-4-codegen-was-incomplete">Issue 4: Codegen Was Incomplete</h3>
+<p><strong>Problem</strong>: <code>cure_typeclass_codegen</code> returned metadata instead of compiled code</p>
+<p><strong>Solution</strong>: <br />
+- Made <code>compile_instance_method</code> call <code>cure_codegen:compile_function_impl</code><br />
+- Made <code>compile_default_methods</code> compile to actual BEAM functions<br />
+- Fixed state threading throughout</p>
+<h2 id="files-modified">Files Modified</h2>
+<h3 id="lexer">Lexer</h3>
 <ul>
 <li><code>src/lexer/cure_lexer.erl</code> - Added operator tokens</li>
 </ul>
-
-<h3>Parser  </h3>
+<h3 id="parser">Parser</h3>
 <ul>
 <li><code>src/parser/cure_parser.erl</code></li>
-<li>Added <code>expect<em>operator/1</code> and <code>is</em>operator_token/1</code></li>
+<li>Added <code>expect_operator/1</code> and <code>is_operator_token/1</code></li>
 <li>Modified <code>parse_function/1</code></li>
-<li>Modified <code>parse<em>typeclass</em>method/1</code></li>
-<li>Modified <code>parse<em>instance</em>method/1</code></li>
-<li>Added operator precedence in <code>get<em>operator</em>info/1</code></li>
+<li>Modified <code>parse_typeclass_method/1</code></li>
+<li>Modified <code>parse_instance_method/1</code></li>
+<li>Added operator precedence in <code>get_operator_info/1</code></li>
 </ul>
-
-<h3>Code Generation</h3>
+<h3 id="code-generation">Code Generation</h3>
 <ul>
-<li><code>src/codegen/cure<em>typeclass</em>codegen.erl</code></li>
+<li><code>src/codegen/cure_typeclass_codegen.erl</code></li>
 <li>Implemented actual BEAM compilation</li>
 <li>Fixed state threading</li>
 <li>Added proper function metadata</li>
 </ul>
-
-<h3>Documentation</h3>
+<h3 id="documentation">Documentation</h3>
 <ul>
-<li><code>docs/DOLLAR<em>OPERATOR</em>FIX.md</code> - Explains the <code>$</code> issue</li>
-<li><code>docs/TYPECLASS<em>OPERATOR</em>SYNTAX.md</code> - Parser syntax requirements</li>
-<li><code>docs/TYPECLASS<em>IMPLEMENTATION</em>COMPLETE.md</code> - This file</li>
+<li><code>docs/DOLLAR_OPERATOR_FIX.md</code> - Explains the <code>$</code> issue</li>
+<li><code>docs/TYPECLASS_OPERATOR_SYNTAX.md</code> - Parser syntax requirements</li>
+<li><code>docs/TYPECLASS_IMPLEMENTATION_COMPLETE.md</code> - This file</li>
 </ul>
-
-<h3>Typeclass Specifications</h3>
+<h3 id="typeclass-specifications">Typeclass Specifications</h3>
 <ul>
 <li><code>lib/typeclass_spec/typeclass.cure</code></li>
 <li>Parenthesized all function types</li>
 <li>Commented out module-level helper functions (not yet supported)</li>
 </ul>
+<h2 id="testing">Testing</h2>
+<h3 id="lexer-test">Lexer Test</h3>
+<div class="codehilite"><pre><span></span><code>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-noshell<span class="w"> </span>-eval<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;case cure_lexer:tokenize_file(\&quot;lib/typeclass_spec/typeclass.cure\&quot;) of \</span>
+<span class="s2">     {ok, Tokens} -&gt; io:format(\&quot;Tokenized ~p tokens~n\&quot;, [length(Tokens)]); \</span>
+<span class="s2">     {error, E} -&gt; io:format(\&quot;Error: ~p~n\&quot;, [E]) \</span>
+<span class="s2">   end, halt(0).&quot;</span>
 
-<h2>Testing</h2>
+<span class="c1"># Result: Tokenized 1026 tokens ✅</span>
+</code></pre></div>
 
-<h3>Lexer Test</h3>
-<pre><code>erl -pa _build/ebin -noshell -eval \
-<p>  "case cure<em>lexer:tokenize</em>file(\"lib/typeclass_spec/typeclass.cure\") of \</p>
-<p>     {ok, Tokens} -> io:format(\"Tokenized ~p tokens~n\", [length(Tokens)]); \</p>
-<p>     {error, E} -> io:format(\"Error: ~p~n\", [E]) \</p>
-<p>   end, halt(0)."</p>
+<h3 id="parser-test">Parser Test</h3>
+<div class="codehilite"><pre><span></span><code>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-noshell<span class="w"> </span>-eval<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="s2">&quot;case cure_parser:parse_file(\&quot;lib/typeclass_spec/typeclass.cure\&quot;) of \</span>
+<span class="s2">     {ok, AST} -&gt; io:format(\&quot;Parsed ~p items~n\&quot;, [length(AST)]); \</span>
+<span class="s2">     {error, E} -&gt; io:format(\&quot;Error: ~p~n\&quot;, [E]) \</span>
+<span class="s2">   end, halt(0).&quot;</span>
 
-<h1>Result: Tokenized 1026 tokens ✅</h1>
-</code></pre>
+<span class="c1"># Result: Parsed 1 top-level items (the module) ✅</span>
+</code></pre></div>
 
-<h3>Parser Test</h3>
-<pre><code>erl -pa _build/ebin -noshell -eval \
-<p>  "case cure<em>parser:parse</em>file(\"lib/typeclass_spec/typeclass.cure\") of \</p>
-<p>     {ok, AST} -> io:format(\"Parsed ~p items~n\", [length(AST)]); \</p>
-<p>     {error, E} -> io:format(\"Error: ~p~n\", [E]) \</p>
-<p>   end, halt(0)."</p>
+<h3 id="build-test">Build Test</h3>
+<div class="codehilite"><pre><span></span><code>make<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>all
 
-<h1>Result: Parsed 1 top-level items (the module) ✅</h1>
-</code></pre>
+<span class="c1"># Result: All standard library files compiled successfully ✅</span>
+</code></pre></div>
 
-<h3>Build Test</h3>
-<pre><code>make clean && make all
-
-<h1>Result: All standard library files compiled successfully ✅</h1>
-</code></pre>
-
-<h2>What's Still Needed</h2>
-
-<h3>For Full Typeclass Compilation</h3>
-
+<h2 id="whats-still-needed">What's Still Needed</h2>
+<h3 id="for-full-typeclass-compilation">For Full Typeclass Compilation</h3>
 <ol>
-<li><strong>Higher-kinded type support</strong> in type checker</li>
+<li>
+<p><strong>Higher-kinded type support</strong> in type checker<br />
+   - Currently <code>F(A)</code> where <code>F</code> is a type constructor needs more work<br />
+   - Type variables representing type constructors (e.g., <code>Functor(F)</code>)</p>
+</li>
+<li>
+<p><strong>Module-level where clauses</strong> for helper functions<br />
+   - Functions like <code>def sequence(...) where Monad(M)</code> at module level<br />
+   - Currently only supported in typeclass/instance contexts</p>
+</li>
+<li>
+<p><strong>Instance dispatch runtime</strong><br />
+   - Method resolution at call sites<br />
+   - Dictionary passing or other implementation strategy</p>
+</li>
 </ol>
-<ul>
-<li>Currently <code>F(A)</code> where <code>F</code> is a type constructor needs more work</li>
-<li>Type variables representing type constructors (e.g., <code>Functor(F)</code>)</li>
-</ul>
-
-<ol>
-<li><strong>Module-level where clauses</strong> for helper functions</li>
-</ol>
-<ul>
-<li>Functions like <code>def sequence(...) where Monad(M)</code> at module level</li>
-<li>Currently only supported in typeclass/instance contexts</li>
-</ul>
-
-<ol>
-<li><strong>Instance dispatch runtime</strong></li>
-</ol>
-<ul>
-<li>Method resolution at call sites</li>
-<li>Dictionary passing or other implementation strategy</li>
-</ul>
-
-<h3>But Operators Work Now! ✅</h3>
-
+<h3 id="but-operators-work-now">But Operators Work Now! ✅</h3>
 <p>All operator definitions, parsing, and compilation work:</p>
-<pre><code>typeclass Functor(F) do
-<p>  def (<$)(value: A, fb: F(B)): F(A) = </p>
-<p>    map(fn(_) -> value end, fb)</p>
-    
-<p>  def ($>)(fa: F(A), value: B): F(B) = </p>
-<p>    map(fn(_) -> value end, fa)</p>
-<p>end</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Functor</span><span class="p">(</span><span class="nx">F</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="p">(&lt;</span><span class="err">$</span><span class="p">)(</span><span class="nx">value</span><span class="p">:</span><span class="w"> </span><span class="nx">A</span><span class="p">,</span><span class="w"> </span><span class="nx">fb</span><span class="p">:</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">B</span><span class="p">)):</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">A</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span>
+<span class="w">    </span><span class="nx">map</span><span class="p">(</span><span class="kd">fn</span><span class="p">(</span><span class="nx">_</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">value</span><span class="w"> </span><span class="nx">end</span><span class="p">,</span><span class="w"> </span><span class="nx">fb</span><span class="p">)</span>
+
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="p">(</span><span class="err">$</span><span class="p">&gt;)(</span><span class="nx">fa</span><span class="p">:</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">A</span><span class="p">),</span><span class="w"> </span><span class="nx">value</span><span class="p">:</span><span class="w"> </span><span class="nx">B</span><span class="p">):</span><span class="w"> </span><span class="nx">F</span><span class="p">(</span><span class="nx">B</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span>
+<span class="w">    </span><span class="nx">map</span><span class="p">(</span><span class="kd">fn</span><span class="p">(</span><span class="nx">_</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">value</span><span class="w"> </span><span class="nx">end</span><span class="p">,</span><span class="w"> </span><span class="nx">fa</span><span class="p">)</span>
+<span class="nx">end</span>
+</code></pre></div>
 
 <p>This parses, type-checks (with proper type environment), and compiles to BEAM!</p>
-
-<h2>Next Steps</h2>
-
+<h2 id="next-steps">Next Steps</h2>
 <ol>
 <li>✅ ~~Lexer support for <code>$</code> operators~~</li>
 <li>✅ ~~Parser support for operator function names~~</li>
@@ -285,25 +233,15 @@
 <li>⏳ Implement instance dispatch runtime</li>
 <li>⏳ Move typeclass files to <code>lib/std/</code> for full compilation</li>
 </ol>
-
-<h2>Conclusion</h2>
-
-<strong>The typeclass operator infrastructure is complete and working.</strong> You can now:
-<ul>
-<li>Define operators in typeclasses: <code>def (<$)(...)</code></li>
-<li>Implement operators in instances: <code>def (>>=)(...)</code></li>
-<li>Use operators in expressions with proper precedence</li>
-<li>Parse complex operator expressions correctly</li>
-</ul>
-
+<h2 id="conclusion">Conclusion</h2>
+<p><strong>The typeclass operator infrastructure is complete and working.</strong> You can now:<br />
+- Define operators in typeclasses: <code>def (&lt;$)(...)</code><br />
+- Implement operators in instances: <code>def (&gt;&gt;=)(...)</code><br />
+- Use operators in expressions with proper precedence<br />
+- Parse complex operator expressions correctly</p>
 <p>The remaining work is in the type system (higher-kinded types) and runtime (instance dispatch), not in the lexer, parser, or basic codegen.</p>
-
-<strong>Well done! 🎉</strong>
-
+<p><strong>Well done! 🎉</strong></p>
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

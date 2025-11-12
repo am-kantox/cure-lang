@@ -36,15 +36,11 @@ Last Updated: November 5, 2025">
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h2>Typeclass Guide for Cure</h2>
-
-<strong>Version</strong>: 1.0  
-<strong>Last Updated</strong>: November 5, 2025
-
-<p>---</p>
-
-<h2>Table of Contents</h2>
-
+        <h2 id="typeclass-guide-for-cure">Typeclass Guide for Cure</h2>
+<p><strong>Version</strong>: 1.0<br />
+<strong>Last Updated</strong>: November 5, 2025</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
 <ol>
 <li><a href="#introduction">Introduction</a></li>
 <li><a href="#quick-start">Quick Start</a></li>
@@ -57,591 +53,506 @@ Last Updated: November 5, 2025">
 <li><a href="#best-practices">Best Practices</a></li>
 <li><a href="#troubleshooting">Troubleshooting</a></li>
 </ol>
-
-<p>---</p>
-
-<h2>Introduction</h2>
-
-<h3>What are Typeclasses?</h3>
-
+<hr />
+<h2 id="introduction">Introduction</h2>
+<h3 id="what-are-typeclasses">What are Typeclasses?</h3>
 <p>Typeclasses are Cure's mechanism for <strong>ad-hoc polymorphism</strong> - allowing you to write generic code that works with any type that satisfies certain requirements. They're similar to:</p>
-
 <ul>
 <li><strong>Interfaces</strong> in Java/C# (but more powerful)</li>
 <li><strong>Traits</strong> in Rust</li>
 <li><strong>Protocols</strong> in Elixir/Clojure</li>
 <li><strong>Type Classes</strong> in Haskell (the inspiration)</li>
 </ul>
+<h3 id="why-use-typeclasses">Why Use Typeclasses?</h3>
+<p><strong>1. Code Reuse</strong>: Write generic functions once</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="s">sort(list:</span><span class="w"> </span><span class="s">List(T)):</span><span class="w"> </span><span class="s">List(T)</span><span class="w"> </span><span class="s">where</span><span class="w"> </span><span class="s">Ord(T)</span>
+<span class="c">% Works with ANY orderable type</span>
+</code></pre></div>
 
-<h3>Why Use Typeclasses?</h3>
+<p><strong>2. Type Safety</strong>: Compiler ensures constraints are met</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% This won&#39;t compile - String doesn&#39;t have Num instance</span>
+<span class="n">def</span><span class="w"> </span><span class="s">add_numbers(x:</span><span class="w"> </span><span class="s">String,</span><span class="w"> </span><span class="s">y:</span><span class="w"> </span><span class="s">String)</span><span class="w"> </span><span class="s">where</span><span class="w"> </span><span class="s">Num(String)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span>
+</code></pre></div>
 
-<strong>1. Code Reuse</strong>: Write generic functions once
-<pre><code>def sort(list: List(T)): List(T) where Ord(T)
-<p>% Works with ANY orderable type</p>
-</code></pre>
+<p><strong>3. Zero Boilerplate</strong>: Automatic derivation</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">record</span><span class="w"> </span><span class="nx">Point</span><span class="w"> </span><span class="nx">do</span><span class="w"> </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">end</span>
+<span class="nx">derive</span><span class="w"> </span><span class="nx">Show</span><span class="p">,</span><span class="w"> </span><span class="nx">Eq</span><span class="p">,</span><span class="w"> </span><span class="nx">Ord</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="nx">No</span><span class="w"> </span><span class="nx">manual</span><span class="w"> </span><span class="nx">implementation</span><span class="w"> </span><span class="nx">needed</span><span class="p">!</span>
+</code></pre></div>
 
-<strong>2. Type Safety</strong>: Compiler ensures constraints are met
-<pre><code>% This won't compile - String doesn't have Num instance
-<p>def add_numbers(x: String, y: String) where Num(String) = x + y</p>
-</code></pre>
+<p><strong>4. Performance</strong>: Monomorphization means zero runtime cost</p>
+<hr />
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="1-define-a-typeclass">1. Define a Typeclass</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Drawable</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">draw</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">size</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="p">{</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Int</span><span class="p">}</span>
+<span class="nx">end</span>
+</code></pre></div>
 
-<strong>3. Zero Boilerplate</strong>: Automatic derivation
-<pre><code>record Point do x: Int, y: Int end
-<p>derive Show, Eq, Ord  % No manual implementation needed!</p>
-</code></pre>
+<h3 id="2-implement-an-instance">2. Implement an Instance</h3>
+<div class="codehilite"><pre><span></span><code>record Circle do
+    radius: Float
+end
 
-<strong>4. Performance</strong>: Monomorphization means zero runtime cost
+instance Drawable(Circle) do
+    def draw(c: Circle): String = &quot;⭕&quot;
+    def size(c: Circle): {Int, Int} = {c.radius <span class="gs">* 2, c.radius *</span> 2}
+end
+</code></pre></div>
 
-<p>---</p>
+<h3 id="3-use-with-constraints">3. Use with Constraints</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="s">render(obj:</span><span class="w"> </span><span class="s">T):</span><span class="w"> </span><span class="s">String</span><span class="w"> </span><span class="s">where</span><span class="w"> </span><span class="s">Drawable(T)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">draw</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
-<h2>Quick Start</h2>
+<span class="c">% Works with any Drawable type</span>
+<span class="n">render</span><span class="p">(</span><span class="n">Circle</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">radius</span><span class="p">:</span><span class="w"> </span><span class="mf">5.0</span><span class="w"> </span><span class="p">})</span><span class="w">  </span><span class="c">% &quot;⭕&quot;</span>
+</code></pre></div>
 
-<h3>1. Define a Typeclass</h3>
+<hr />
+<h2 id="typeclass-definitions">Typeclass Definitions</h2>
+<h3 id="basic-syntax">Basic Syntax</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">typeclass</span><span class="w"> </span><span class="s">TypeclassName(TypeParam)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">method_name</span><span class="p">(</span><span class="n">params</span><span class="p">):</span><span class="w"> </span><span class="n">ReturnType</span>
+<span class="w">    </span><span class="c">% ... more methods</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>typeclass Drawable(T) do
-<p>    def draw(x: T): String</p>
-<p>    def size(x: T): {Int, Int}</p>
-<p>end</p>
-</code></pre>
+<h3 id="methods">Methods</h3>
+<p><strong>Required Methods</strong> (must be implemented by instances):</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span>
+<span class="nx">end</span>
+</code></pre></div>
 
-<h3>2. Implement an Instance</h3>
+<p><strong>Default Methods</strong> (optional, can be overridden):</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Eq</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="p">(</span><span class="o">==</span><span class="p">)(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">Bool</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="p">(</span><span class="o">!=</span><span class="p">)(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">Bool</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="k">not</span><span class="w"> </span><span class="p">(</span><span class="nx">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">y</span><span class="p">)</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="nx">Default</span>
+<span class="nx">end</span>
+</code></pre></div>
 
-<pre><code>record Circle do
-<p>    radius: Float</p>
-<p>end</p>
-
-<p>instance Drawable(Circle) do</p>
-<p>    def draw(c: Circle): String = "⭕"</p>
-<p>    def size(c: Circle): {Int, Int} = {c.radius <em> 2, c.radius </em> 2}</p>
-<p>end</p>
-</code></pre>
-
-<h3>3. Use with Constraints</h3>
-
-<pre><code>def render(obj: T): String where Drawable(T) =
-<p>    draw(obj)</p>
-
-<p>% Works with any Drawable type</p>
-<p>render(Circle { radius: 5.0 })  % "⭕"</p>
-</code></pre>
-
-<p>---</p>
-
-<h2>Typeclass Definitions</h2>
-
-<h3>Basic Syntax</h3>
-
-<pre><code>typeclass TypeclassName(TypeParam) do
-<p>    def method_name(params): ReturnType</p>
-<p>    % ... more methods</p>
-<p>end</p>
-</code></pre>
-
-<h3>Methods</h3>
-
-<strong>Required Methods</strong> (must be implemented by instances):
-<pre><code>typeclass Show(T) do
-<p>    def show(x: T): String</p>
-<p>end</p>
-</code></pre>
-
-<strong>Default Methods</strong> (optional, can be overridden):
-<pre><code>typeclass Eq(T) do
-<p>    def (==)(x: T, y: T): Bool</p>
-<p>    def (!=)(x: T, y: T): Bool = not (x == y)  % Default</p>
-<p>end</p>
-</code></pre>
-
-<h3>Superclass Constraints</h3>
-
+<h3 id="superclass-constraints">Superclass Constraints</h3>
 <p>Typeclasses can require other typeclasses:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">typeclass</span><span class="w"> </span><span class="s">Ord(T)</span><span class="w"> </span><span class="s">when</span><span class="w"> </span><span class="s">Eq(T)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">compare</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">Ordering</span>
+<span class="w">    </span><span class="c">% Ord requires Eq</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>typeclass Ord(T) when Eq(T) do
-<p>    def compare(x: T, y: T): Ordering</p>
-<p>    % Ord requires Eq</p>
-<p>end</p>
-</code></pre>
+<h3 id="multiple-type-parameters">Multiple Type Parameters</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Convertible</span><span class="p">(</span><span class="nx">From</span><span class="p">,</span><span class="w"> </span><span class="nx">To</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">convert</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">From</span><span class="p">):</span><span class="w"> </span><span class="nx">To</span>
+<span class="nx">end</span>
+</code></pre></div>
 
-<h3>Multiple Type Parameters</h3>
+<hr />
+<h2 id="instance-definitions">Instance Definitions</h2>
+<h3 id="basic-instance">Basic Instance</h3>
+<div class="codehilite"><pre><span></span><code>instance Show(Int) do
+    def show(x: Int): String = int_to_string(x)
+end
+</code></pre></div>
 
-<pre><code>typeclass Convertible(From, To) do
-<p>    def convert(x: From): To</p>
-<p>end</p>
-</code></pre>
-
-<p>---</p>
-
-<h2>Instance Definitions</h2>
-
-<h3>Basic Instance</h3>
-
-<pre><code>instance Show(Int) do
-<p>    def show(x: Int): String = int<em>to</em>string(x)</p>
-<p>end</p>
-</code></pre>
-
-<h3>Parameterized Instances</h3>
-
+<h3 id="parameterized-instances">Parameterized Instances</h3>
 <p>For generic types, add constraints:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">instance</span><span class="w"> </span><span class="k">Show</span><span class="ss">(</span><span class="nv">List</span><span class="ss">(</span><span class="nv">T</span><span class="ss">))</span><span class="w"> </span><span class="nv">where</span><span class="w"> </span><span class="k">Show</span><span class="ss">(</span><span class="nv">T</span><span class="ss">)</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="nv">def</span><span class="w"> </span><span class="k">show</span><span class="ss">(</span><span class="nv">list</span>:<span class="w"> </span><span class="nv">List</span><span class="ss">(</span><span class="nv">T</span><span class="ss">))</span>:<span class="w"> </span><span class="nv">String</span><span class="w"> </span><span class="o">=</span>
+<span class="w">        </span><span class="s2">&quot;[&quot;</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="nv">join</span><span class="ss">(</span><span class="s2">&quot;, &quot;</span>,<span class="w"> </span><span class="nv">map</span><span class="ss">(</span><span class="k">show</span>,<span class="w"> </span><span class="nv">list</span><span class="ss">))</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="s2">&quot;]&quot;</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>instance Show(List(T)) where Show(T) do
-<p>    def show(list: List(T)): String =</p>
-<p>        "[" ++ join(", ", map(show, list)) ++ "]"</p>
-<p>end</p>
-</code></pre>
+<h3 id="instance-rules">Instance Rules</h3>
+<p><strong>1. Coherence</strong>: Only one instance per typeclass/type pair</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% ❌ ERROR: Duplicate instance</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Show(Int)</span><span class="w"> </span><span class="s">do</span><span class="w"> </span><span class="s">...</span><span class="w"> </span><span class="s">end</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Show(Int)</span><span class="w"> </span><span class="s">do</span><span class="w"> </span><span class="s">...</span><span class="w"> </span><span class="s">end</span><span class="w">  </span><span class="s">%</span><span class="w"> </span><span class="s">Compiler</span><span class="w"> </span><span class="s">error!</span>
+</code></pre></div>
 
-<h3>Instance Rules</h3>
+<p><strong>2. Orphan Prevention</strong>: Instances must be in same module as type or typeclass</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% ✅ OK: In same module as Int definition (built-in)</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Show(Int)</span><span class="w"> </span><span class="s">do</span><span class="w"> </span><span class="s">...</span><span class="w"> </span><span class="s">end</span>
 
-<strong>1. Coherence</strong>: Only one instance per typeclass/type pair
-<pre><code>% ❌ ERROR: Duplicate instance
-<p>instance Show(Int) do ... end</p>
-<p>instance Show(Int) do ... end  % Compiler error!</p>
-</code></pre>
+<span class="c">% ✅ OK: In same module as Circle definition</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Show(Circle)</span><span class="w"> </span><span class="s">do</span><span class="w"> </span><span class="s">...</span><span class="w"> </span><span class="s">end</span>
 
-<strong>2. Orphan Prevention</strong>: Instances must be in same module as type or typeclass
-<pre><code>% ✅ OK: In same module as Int definition (built-in)
-<p>instance Show(Int) do ... end</p>
+<span class="c">% ❌ ERROR: Orphan instance (neither Show nor String defined here)</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Show(String)</span><span class="w"> </span><span class="s">do</span><span class="w"> </span><span class="s">...</span><span class="w"> </span><span class="s">end</span><span class="w">  </span><span class="s">%</span><span class="w"> </span><span class="s">If</span><span class="w"> </span><span class="s">not</span><span class="w"> </span><span class="s">in</span><span class="w"> </span><span class="s">Std</span><span class="w"> </span><span class="s">module</span>
+</code></pre></div>
 
-<p>% ✅ OK: In same module as Circle definition</p>
-<p>instance Show(Circle) do ... end</p>
+<hr />
+<h2 id="automatic-derivation">Automatic Derivation</h2>
+<h3 id="syntax">Syntax</h3>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">TypeName</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="c">% fields</span>
+<span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">TypeclassA,</span><span class="w"> </span><span class="s">TypeclassB,</span><span class="w"> </span><span class="s">TypeclassC</span>
+</code></pre></div>
 
-<p>% ❌ ERROR: Orphan instance (neither Show nor String defined here)</p>
-<p>instance Show(String) do ... end  % If not in Std module</p>
-</code></pre>
+<h3 id="supported-typeclasses">Supported Typeclasses</h3>
+<h4 id="show-string-representation">Show - String Representation</h4>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Point</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">    </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Show</span>
 
-<p>---</p>
+<span class="c">% Generates:</span>
+<span class="c">% show(Point{x: 10, y: 20}) → &quot;Point { x: 10, y: 20 }&quot;</span>
+</code></pre></div>
 
-<h2>Automatic Derivation</h2>
+<h4 id="eq-equality-testing">Eq - Equality Testing</h4>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Person</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">    </span><span class="n">age</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Eq</span>
 
-<h3>Syntax</h3>
+<span class="c">% Generates structural equality:</span>
+<span class="c">% Person{name: &quot;Alice&quot;, age: 30} == Person{name: &quot;Alice&quot;, age: 30} → true</span>
+</code></pre></div>
 
-<pre><code>record TypeName do
-<p>    % fields</p>
-<p>end</p>
-<p>derive TypeclassA, TypeclassB, TypeclassC</p>
-</code></pre>
+<h4 id="ord-ordering">Ord - Ordering</h4>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Book</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="nb">title</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">    </span><span class="nb">year</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Ord</span><span class="w">  </span><span class="s">%</span><span class="w"> </span><span class="s">Automatically</span><span class="w"> </span><span class="s">includes</span><span class="w"> </span><span class="s">Eq</span>
 
-<h3>Supported Typeclasses</h3>
+<span class="c">% Lexicographic ordering by fields (title, then year)</span>
+</code></pre></div>
 
-<h4>Show - String Representation</h4>
-
-<pre><code>record Point do
-<p>    x: Int</p>
-<p>    y: Int</p>
-<p>end</p>
-<p>derive Show</p>
-
-<p>% Generates:</p>
-<p>% show(Point{x: 10, y: 20}) → "Point { x: 10, y: 20 }"</p>
-</code></pre>
-
-<h4>Eq - Equality Testing</h4>
-
-<pre><code>record Person do
-<p>    name: String</p>
-<p>    age: Int</p>
-<p>end</p>
-<p>derive Eq</p>
-
-<p>% Generates structural equality:</p>
-<p>% Person{name: "Alice", age: 30} == Person{name: "Alice", age: 30} → true</p>
-</code></pre>
-
-<h4>Ord - Ordering</h4>
-
-<pre><code>record Book do
-<p>    title: String</p>
-<p>    year: Int</p>
-<p>end</p>
-<p>derive Ord  % Automatically includes Eq</p>
-
-<p>% Lexicographic ordering by fields (title, then year)</p>
-</code></pre>
-
-<h3>Constraint Inference</h3>
-
+<h3 id="constraint-inference">Constraint Inference</h3>
 <p>For parameterized types, constraints are inferred automatically:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Container</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">T</span>
+<span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Show</span>
 
-<pre><code>record Container(T) do
-<p>    value: T</p>
-<p>end</p>
-<p>derive Show</p>
+<span class="c">% Compiler generates:</span>
+<span class="c">% instance Show(Container(T)) where Show(T) do ... end</span>
+</code></pre></div>
 
-<p>% Compiler generates:</p>
-<p>% instance Show(Container(T)) where Show(T) do ... end</p>
-</code></pre>
+<h3 id="when-not-to-derive">When NOT to Derive</h3>
+<p><strong>Custom Behavior Needed</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">Temperature</span><span class="w"> </span><span class="n">do</span><span class="w"> </span><span class="n">celsius</span><span class="p">:</span><span class="w"> </span><span class="n">Float</span><span class="w"> </span><span class="k">end</span>
 
-<h3>When NOT to Derive</h3>
+<span class="c">% Manual instance for custom formatting</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Show(Temperature)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">t</span><span class="p">:</span><span class="w"> </span><span class="n">Temperature</span><span class="p">):</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="n">float_to_string</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">celsius</span><span class="p">)</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="s">&quot;°C&quot;</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<strong>Custom Behavior Needed</strong>:
-<pre><code>record Temperature do celsius: Float end
+<p><strong>Performance Optimization</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">record</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">    </span><span class="n">metadata</span><span class="p">:</span><span class="w"> </span><span class="n">Map</span><span class="p">(</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="p">)</span><span class="w">  </span><span class="c">% Large field</span>
+<span class="k">end</span>
 
-<p>% Manual instance for custom formatting</p>
-<p>instance Show(Temperature) do</p>
-<p>    def show(t: Temperature): String =</p>
-<p>        float<em>to</em>string(t.celsius) ++ "°C"</p>
-<p>end</p>
-</code></pre>
+<span class="c">% Custom Eq that only compares ID (faster)</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Eq(User)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="o">==</span><span class="p">(</span><span class="n">u1</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="p">,</span><span class="w"> </span><span class="n">u2</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="p">):</span><span class="w"> </span><span class="n">Bool</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">u1</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">u2</span><span class="p">.</span><span class="n">id</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<strong>Performance Optimization</strong>:
-<pre><code>record User do
-<p>    id: Int</p>
-<p>    name: String</p>
-<p>    metadata: Map(String, String)  % Large field</p>
-<p>end</p>
-
-<p>% Custom Eq that only compares ID (faster)</p>
-<p>instance Eq(User) do</p>
-<p>    def ==(u1: User, u2: User): Bool = u1.id == u2.id</p>
-<p>end</p>
-</code></pre>
-
-<p>---</p>
-
-<h2>Using Typeclasses</h2>
-
-<h3>Function Constraints</h3>
-
+<hr />
+<h2 id="using-typeclasses">Using Typeclasses</h2>
+<h3 id="function-constraints">Function Constraints</h3>
 <p>Single constraint:</p>
-<pre><code>def print_value(x: T): Unit where Show(T) =
-<p>    println(show(x))</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code>def print_value(x: T): Unit where Show(T) =
+    println(show(x))
+</code></pre></div>
 
 <p>Multiple constraints:</p>
-<pre><code>def compare<em>and</em>show(x: T, y: T): String where Ord(T), Show(T) =
-<p>    match compare(x, y) do</p>
-<p>        LT -> show(x) ++ " < " ++ show(y)</p>
-<p>        EQ -> show(x) ++ " == " ++ show(y)</p>
-<p>        GT -> show(x) ++ " > " ++ show(y)</p>
-<p>    end</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">compare_and_show</span><span class="p">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">T</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="n">Ord</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="w"> </span><span class="n">Show</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">match</span><span class="w"> </span><span class="n">compare</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">        </span><span class="n">LT</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="s">&quot; &lt; &quot;</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="w">        </span><span class="n">EQ</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="s">&quot; == &quot;</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="w">        </span><span class="n">GT</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="s">&quot; &gt; &quot;</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">end</span>
+</code></pre></div>
 
-<h3>Generic Algorithms</h3>
+<h3 id="generic-algorithms">Generic Algorithms</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">%</span><span class="w"> </span><span class="n">Generic</span><span class="w"> </span><span class="n">sort</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">works</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="ow">ANY</span><span class="w"> </span><span class="n">Ord</span><span class="w"> </span><span class="n">type</span>
+<span class="n">def</span><span class="w"> </span><span class="n">sort</span><span class="p">(</span><span class="nl">list</span><span class="p">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">))</span><span class="err">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="n">Ord</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="k">match</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="n">do</span>
+<span class="w">        </span><span class="err">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">[]</span>
+<span class="w">        </span><span class="o">[</span><span class="n">pivot | rest</span><span class="o">]</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="n">let</span><span class="w"> </span><span class="n">smaller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="n">x | x &lt;- rest, compare(x, pivot) == LT</span><span class="o">]</span>
+<span class="w">            </span><span class="n">let</span><span class="w"> </span><span class="n">larger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">[</span><span class="n">x | x &lt;- rest, compare(x, pivot) != LT</span><span class="o">]</span>
+<span class="w">            </span><span class="n">sort</span><span class="p">(</span><span class="n">smaller</span><span class="p">)</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="o">[</span><span class="n">pivot</span><span class="o">]</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="n">sort</span><span class="p">(</span><span class="n">larger</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span>
 
-<pre><code>% Generic sort - works with ANY Ord type
-<p>def sort(list: List(T)): List(T) where Ord(T) =</p>
-<p>    match list do</p>
-<p>        [] -> []</p>
-<p>        [pivot | rest] -></p>
-<p>            let smaller = [x | x <- rest, compare(x, pivot) == LT]</p>
-<p>            let larger = [x | x <- rest, compare(x, pivot) != LT]</p>
-<p>            sort(smaller) ++ [pivot] ++ sort(larger)</p>
-<p>    end</p>
+<span class="o">%</span><span class="w"> </span><span class="k">Use</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">different</span><span class="w"> </span><span class="n">types</span>
+<span class="n">sort</span><span class="p">(</span><span class="o">[</span><span class="n">3, 1, 4, 1, 5</span><span class="o">]</span><span class="p">)</span><span class="w">              </span><span class="o">%</span><span class="w"> </span><span class="n">Sort</span><span class="w"> </span><span class="n">Ints</span>
+<span class="n">sort</span><span class="p">(</span><span class="o">[</span><span class="n">&quot;cat&quot;, &quot;ant&quot;, &quot;dog&quot;</span><span class="o">]</span><span class="p">)</span><span class="w">        </span><span class="o">%</span><span class="w"> </span><span class="n">Sort</span><span class="w"> </span><span class="n">Strings</span><span class="w">  </span>
+<span class="n">sort</span><span class="p">(</span><span class="o">[</span><span class="n">Person{...}, Person{...}</span><span class="o">]</span><span class="p">)</span><span class="w">   </span><span class="o">%</span><span class="w"> </span><span class="n">Sort</span><span class="w"> </span><span class="n">custom</span><span class="w"> </span><span class="n">types</span>
+</code></pre></div>
 
-<p>% Use with different types</p>
-<p>sort([3, 1, 4, 1, 5])              % Sort Ints</p>
-<p>sort(["cat", "ant", "dog"])        % Sort Strings  </p>
-<p>sort([Person{...}, Person{...}])   % Sort custom types</p>
-</code></pre>
+<hr />
+<h2 id="standard-library">Standard Library</h2>
+<h3 id="core-typeclasses">Core Typeclasses</h3>
+<h4 id="show">Show</h4>
+<div class="codehilite"><pre><span></span><code><span class="n">typeclass</span><span class="w"> </span><span class="s">Show(T)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">String</span>
+<span class="k">end</span>
 
-<p>---</p>
+<span class="c">% Instances: Int, Float, String, Bool, Atom, List(T), Option(T), Result(T,E)</span>
+<span class="c">% Helper: print, println, debug</span>
+</code></pre></div>
 
-<h2>Standard Library</h2>
+<h4 id="eq">Eq</h4>
+<div class="codehilite"><pre><span></span><code><span class="n">typeclass</span><span class="w"> </span><span class="s">Eq(T)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="p">(</span><span class="o">==</span><span class="p">)(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">Bool</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="p">(</span>!<span class="p">=)(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">Bool</span><span class="w">  </span><span class="c">% Default</span>
+<span class="k">end</span>
 
-<h3>Core Typeclasses</h3>
+<span class="c">% Instances: All primitive types, List(T), Option(T), Result(T,E)</span>
+<span class="c">% Helper: elem, nub, same_elements</span>
+</code></pre></div>
 
-<h4>Show</h4>
-<pre><code>typeclass Show(T) do
-<p>    def show(x: T): String</p>
-<p>end</p>
+<h4 id="ord">Ord</h4>
+<div class="codehilite"><pre><span></span><code><span class="n">typeclass</span><span class="w"> </span><span class="s">Ord(T)</span><span class="w"> </span><span class="s">when</span><span class="w"> </span><span class="s">Eq(T)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">compare</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">Ordering</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="p">(</span><span class="o">&lt;</span><span class="p">)(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">Bool</span><span class="w">    </span><span class="c">% Default</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="p">(</span><span class="o">&lt;=</span><span class="p">)(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">Bool</span><span class="w">   </span><span class="c">% Default</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="p">(</span><span class="o">&gt;</span><span class="p">)(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">Bool</span><span class="w">    </span><span class="c">% Default</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="p">(</span><span class="o">&gt;=</span><span class="p">)(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">Bool</span><span class="w">   </span><span class="c">% Default</span>
+<span class="k">end</span>
 
-<p>% Instances: Int, Float, String, Bool, Atom, List(T), Option(T), Result(T,E)</p>
-<p>% Helper: print, println, debug</p>
-</code></pre>
+<span class="c">% Instances: Int, Float, String, List(T)</span>
+<span class="c">% Helper: max, min, clamp</span>
+</code></pre></div>
 
-<h4>Eq</h4>
-<pre><code>typeclass Eq(T) do
-<p>    def (==)(x: T, y: T): Bool</p>
-<p>    def (!=)(x: T, y: T): Bool  % Default</p>
-<p>end</p>
+<h4 id="functor">Functor</h4>
+<div class="codehilite"><pre><span></span><code><span class="n">typeclass</span><span class="w"> </span><span class="s">Functor(F)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">f</span><span class="p">:</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">fa</span><span class="p">:</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">A</span><span class="p">)):</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+<span class="k">end</span>
 
-<p>% Instances: All primitive types, List(T), Option(T), Result(T,E)</p>
-<p>% Helper: elem, nub, same_elements</p>
-</code></pre>
+<span class="c">% Instances: List, Option, Result(*, E)</span>
+<span class="c">% Helper: map_nested, void, as</span>
+</code></pre></div>
 
-<h4>Ord</h4>
-<pre><code>typeclass Ord(T) when Eq(T) do
-<p>    def compare(x: T, y: T): Ordering</p>
-<p>    def (<)(x: T, y: T): Bool    % Default</p>
-<p>    def (<=)(x: T, y: T): Bool   % Default</p>
-<p>    def (>)(x: T, y: T): Bool    % Default</p>
-<p>    def (>=)(x: T, y: T): Bool   % Default</p>
-<p>end</p>
+<h4 id="applicative">Applicative</h4>
+<div class="codehilite"><pre><span></span><code><span class="n">typeclass</span><span class="w"> </span><span class="s">Applicative(F)</span><span class="w"> </span><span class="s">when</span><span class="w"> </span><span class="s">Functor(F)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">pure</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">A</span><span class="p">):</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="p">(</span><span class="o">&lt;*&gt;</span><span class="p">)(</span><span class="n">ff</span><span class="p">:</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">B</span><span class="p">),</span><span class="w"> </span><span class="n">fa</span><span class="p">:</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">A</span><span class="p">)):</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+<span class="k">end</span>
 
-<p>% Instances: Int, Float, String, List(T)</p>
-<p>% Helper: max, min, clamp</p>
-</code></pre>
+<span class="c">% Instances: List, Option, Result(*, E)</span>
+</code></pre></div>
 
-<h4>Functor</h4>
-<pre><code>typeclass Functor(F) do
-<p>    def map(f: A -> B, fa: F(A)): F(B)</p>
-<p>end</p>
+<h4 id="monad">Monad</h4>
+<div class="codehilite"><pre><span></span><code><span class="n">typeclass</span><span class="w"> </span><span class="s">Monad(M)</span><span class="w"> </span><span class="s">when</span><span class="w"> </span><span class="s">Applicative(M)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">bind</span><span class="p">(</span><span class="n">ma</span><span class="p">:</span><span class="w"> </span><span class="n">M</span><span class="p">(</span><span class="n">A</span><span class="p">),</span><span class="w"> </span><span class="n">f</span><span class="p">:</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">M</span><span class="p">(</span><span class="n">B</span><span class="p">)):</span><span class="w"> </span><span class="n">M</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="p">(</span><span class="o">&gt;&gt;=</span><span class="p">)(</span><span class="n">ma</span><span class="p">:</span><span class="w"> </span><span class="n">M</span><span class="p">(</span><span class="n">A</span><span class="p">),</span><span class="w"> </span><span class="n">f</span><span class="p">:</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">M</span><span class="p">(</span><span class="n">B</span><span class="p">)):</span><span class="w"> </span><span class="n">M</span><span class="p">(</span><span class="n">B</span><span class="p">)</span><span class="w">  </span><span class="c">% Alias</span>
+<span class="k">end</span>
 
-<p>% Instances: List, Option, Result(*, E)</p>
-<p>% Helper: map_nested, void, as</p>
-</code></pre>
+<span class="c">% Instances: List, Option, Result(*, E)</span>
+</code></pre></div>
 
-<h4>Applicative</h4>
-<pre><code>typeclass Applicative(F) when Functor(F) do
-<p>    def pure(x: A): F(A)</p>
-<p>    def (<*>)(ff: F(A -> B), fa: F(A)): F(B)</p>
-<p>end</p>
+<h3 id="importing-typeclasses">Importing Typeclasses</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">%</span> <span class="n">Import</span> <span class="n">specific</span> <span class="n">typeclasses</span> <span class="ow">and</span> <span class="n">methods</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">typeclass</span> <span class="p">[</span><span class="n">Show</span><span class="p">,</span> <span class="n">Eq</span><span class="p">,</span> <span class="n">show</span><span class="p">,</span> <span class="n">compare</span><span class="p">]</span>
 
-<p>% Instances: List, Option, Result(*, E)</p>
-</code></pre>
+<span class="o">%</span> <span class="n">Import</span> <span class="nb">all</span> <span class="kn">from</span><span class="w"> </span><span class="nn">standard</span> <span class="n">library</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std</span> <span class="p">[</span><span class="o">*</span><span class="p">]</span>
+</code></pre></div>
 
-<h4>Monad</h4>
-<pre><code>typeclass Monad(M) when Applicative(M) do
-<p>    def bind(ma: M(A), f: A -> M(B)): M(B)</p>
-<p>    def (>>=)(ma: M(A), f: A -> M(B)): M(B)  % Alias</p>
-<p>end</p>
-
-<p>% Instances: List, Option, Result(*, E)</p>
-</code></pre>
-
-<h3>Importing Typeclasses</h3>
-
-<pre><code>% Import specific typeclasses and methods
-<p>import typeclass [Show, Eq, show, compare]</p>
-
-<p>% Import all from standard library</p>
-<p>import Std [*]</p>
-</code></pre>
-
-<p>---</p>
-
-<h2>Advanced Topics</h2>
-
-<h3>Higher-Kinded Types</h3>
-
+<hr />
+<h2 id="advanced-topics">Advanced Topics</h2>
+<h3 id="higher-kinded-types">Higher-Kinded Types</h3>
 <p>Support for container types:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Functor works with List, Option, Result, etc.</span>
+<span class="n">typeclass</span><span class="w"> </span><span class="s">Functor(F)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">f</span><span class="p">:</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">fa</span><span class="p">:</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">A</span><span class="p">)):</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
+<span class="k">end</span>
 
-<pre><code>% Functor works with List, Option, Result, etc.
-<p>typeclass Functor(F) do</p>
-<p>    def map(f: A -> B, fa: F(A)): F(B)</p>
-<p>end</p>
+<span class="n">instance</span><span class="w"> </span><span class="s">Functor(Option)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">f</span><span class="p">:</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">:</span><span class="w"> </span><span class="n">Option</span><span class="p">(</span><span class="n">A</span><span class="p">)):</span><span class="w"> </span><span class="n">Option</span><span class="p">(</span><span class="n">B</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="n">match</span><span class="w"> </span><span class="n">opt</span><span class="w"> </span><span class="n">do</span>
+<span class="w">            </span><span class="n">Some</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Some</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+<span class="w">            </span><span class="n">None</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">None</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<p>instance Functor(Option) do</p>
-<p>    def map(f: A -> B, opt: Option(A)): Option(B) =</p>
-<p>        match opt do</p>
-<p>            Some(x) -> Some(f(x))</p>
-<p>            None -> None</p>
-<p>        end</p>
-<p>end</p>
-</code></pre>
-
-<h3>Associated Types</h3>
-
+<h3 id="associated-types">Associated Types</h3>
 <p>(Future feature - not yet implemented)</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Collection</span><span class="p">(</span><span class="nx">C</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="k">type</span><span class="w"> </span><span class="nx">Element</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">empty</span><span class="p">():</span><span class="w"> </span><span class="nx">C</span>
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">insert</span><span class="p">(</span><span class="nx">elem</span><span class="p">:</span><span class="w"> </span><span class="nx">Element</span><span class="p">,</span><span class="w"> </span><span class="nx">coll</span><span class="p">:</span><span class="w"> </span><span class="nx">C</span><span class="p">):</span><span class="w"> </span><span class="nx">C</span>
+<span class="nx">end</span>
+</code></pre></div>
 
-<pre><code>typeclass Collection(C) do
-<p>    type Element</p>
-<p>    def empty(): C</p>
-<p>    def insert(elem: Element, coll: C): C</p>
-<p>end</p>
-</code></pre>
-
-<h3>Overlapping Instances</h3>
-
+<h3 id="overlapping-instances">Overlapping Instances</h3>
 <p>Not allowed - ensures coherence:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% ❌ ERROR: Overlapping instances</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Show(List(Int))</span><span class="w"> </span><span class="s">do</span><span class="w"> </span><span class="s">...</span><span class="w"> </span><span class="s">end</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Show(List(T))</span><span class="w"> </span><span class="s">where</span><span class="w"> </span><span class="s">Show(T)</span><span class="w"> </span><span class="s">do</span><span class="w"> </span><span class="s">...</span><span class="w"> </span><span class="s">end</span>
+</code></pre></div>
 
-<pre><code>% ❌ ERROR: Overlapping instances
-<p>instance Show(List(Int)) do ... end</p>
-<p>instance Show(List(T)) where Show(T) do ... end</p>
-</code></pre>
-
-<h3>Conditional Instances</h3>
-
+<h3 id="conditional-instances">Conditional Instances</h3>
 <p>Instances can have constraints:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">instance</span><span class="w"> </span><span class="n">Ord</span><span class="p">(</span><span class="n">Option</span><span class="p">(</span><span class="n">T</span><span class="p">))</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="n">Ord</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">compare</span><span class="p">(</span><span class="n">opt1</span><span class="o">:</span><span class="w"> </span><span class="n">Option</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="w"> </span><span class="n">opt2</span><span class="o">:</span><span class="w"> </span><span class="n">Option</span><span class="p">(</span><span class="n">T</span><span class="p">))</span><span class="o">:</span><span class="w"> </span><span class="n">Ordering</span><span class="w"> </span><span class="o">=</span>
+<span class="w">        </span><span class="n">match</span><span class="w"> </span><span class="p">{</span><span class="n">opt1</span><span class="p">,</span><span class="w"> </span><span class="n">opt2</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">            </span><span class="p">{</span><span class="n">None</span><span class="p">,</span><span class="w"> </span><span class="n">None</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">EQ</span>
+<span class="w">            </span><span class="p">{</span><span class="n">None</span><span class="p">,</span><span class="w"> </span><span class="n">Some</span><span class="p">(</span><span class="n">_</span><span class="p">)}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">LT</span>
+<span class="w">            </span><span class="p">{</span><span class="n">Some</span><span class="p">(</span><span class="n">_</span><span class="p">),</span><span class="w"> </span><span class="n">None</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">GT</span>
+<span class="w">            </span><span class="p">{</span><span class="n">Some</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">Some</span><span class="p">(</span><span class="n">y</span><span class="p">)}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">compare</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+<span class="w">        </span><span class="kd">end</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-<pre><code>instance Ord(Option(T)) where Ord(T) do
-<p>    def compare(opt1: Option(T), opt2: Option(T)): Ordering =</p>
-<p>        match {opt1, opt2} do</p>
-<p>            {None, None} -> EQ</p>
-<p>            {None, Some(_)} -> LT</p>
-<p>            {Some(_), None} -> GT</p>
-<p>            {Some(x), Some(y)} -> compare(x, y)</p>
-<p>        end</p>
-<p>end</p>
-</code></pre>
-
-<p>---</p>
-
-<h2>Best Practices</h2>
-
-<h3>1. Prefer Derivation</h3>
-
+<hr />
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="1-prefer-derivation">1. Prefer Derivation</h3>
 <p>Start with derive, override only when needed:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% ✅ Good: Use derive for standard behavior</span>
+<span class="nb">record</span><span class="w"> </span><span class="n">Point</span><span class="w"> </span><span class="n">do</span><span class="w"> </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Show,</span><span class="w"> </span><span class="s">Eq,</span><span class="w"> </span><span class="s">Ord</span>
 
-<pre><code>% ✅ Good: Use derive for standard behavior
-<p>record Point do x: Int, y: Int end</p>
-<p>derive Show, Eq, Ord</p>
+<span class="c">% ❌ Avoid: Manual implementation unless necessary</span>
+</code></pre></div>
 
-<p>% ❌ Avoid: Manual implementation unless necessary</p>
-</code></pre>
+<h3 id="2-name-methods-clearly">2. Name Methods Clearly</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% ✅ Good: Clear method names</span>
+<span class="n">typeclass</span><span class="w"> </span><span class="s">Serializable(T)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">serialize</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">String</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">deserialize</span><span class="p">(</span><span class="n">s</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="p">):</span><span class="w"> </span><span class="n">Option</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+<span class="k">end</span>
 
-<h3>2. Name Methods Clearly</h3>
+<span class="c">% ❌ Bad: Ambiguous names</span>
+<span class="n">typeclass</span><span class="w"> </span><span class="s">Serializable(T)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">to</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">String</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">from</span><span class="p">(</span><span class="n">s</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="p">):</span><span class="w"> </span><span class="n">Option</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>% ✅ Good: Clear method names
-<p>typeclass Serializable(T) do</p>
-<p>    def serialize(x: T): String</p>
-<p>    def deserialize(s: String): Option(T)</p>
-<p>end</p>
+<h3 id="3-use-superclass-constraints">3. Use Superclass Constraints</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% ✅ Good: Express dependencies</span>
+<span class="n">typeclass</span><span class="w"> </span><span class="s">Ord(T)</span><span class="w"> </span><span class="s">when</span><span class="w"> </span><span class="s">Eq(T)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">compare</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">Ordering</span>
+<span class="k">end</span>
 
-<p>% ❌ Bad: Ambiguous names</p>
-<p>typeclass Serializable(T) do</p>
-<p>    def to(x: T): String</p>
-<p>    def from(s: String): Option(T)</p>
-<p>end</p>
-</code></pre>
+<span class="c">% ❌ Bad: Duplicate Eq methods in Ord</span>
+</code></pre></div>
 
-<h3>3. Use Superclass Constraints</h3>
+<h3 id="4-document-instances">4. Document Instances</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Custom instance with non-obvious behavior</span>
+<span class="c">% Orders products by price (ascending)</span>
+<span class="n">instance</span><span class="w"> </span><span class="s">Ord(Product)</span><span class="w"> </span><span class="s">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">compare</span><span class="p">(</span><span class="n">p1</span><span class="p">:</span><span class="w"> </span><span class="n">Product</span><span class="p">,</span><span class="w"> </span><span class="n">p2</span><span class="p">:</span><span class="w"> </span><span class="n">Product</span><span class="p">):</span><span class="w"> </span><span class="n">Ordering</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="n">compare</span><span class="p">(</span><span class="n">p1</span><span class="p">.</span><span class="n">price</span><span class="p">,</span><span class="w"> </span><span class="n">p2</span><span class="p">.</span><span class="n">price</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>% ✅ Good: Express dependencies
-<p>typeclass Ord(T) when Eq(T) do</p>
-<p>    def compare(x: T, y: T): Ordering</p>
-<p>end</p>
+<h3 id="5-test-generic-code">5. Test Generic Code</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Test with multiple types</span>
+<span class="n">def</span><span class="w"> </span><span class="s">test_sort()</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="nb">assert</span><span class="w"> </span><span class="nb">sort</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">])</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+<span class="w">    </span><span class="nb">assert</span><span class="w"> </span><span class="nb">sort</span><span class="p">([</span><span class="s">&quot;c&quot;</span><span class="p">,</span><span class="s">&quot;a&quot;</span><span class="p">,</span><span class="s">&quot;b&quot;</span><span class="p">])</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;a&quot;</span><span class="p">,</span><span class="s">&quot;b&quot;</span><span class="p">,</span><span class="s">&quot;c&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="nb">assert</span><span class="w"> </span><span class="nb">sort</span><span class="p">([</span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="n">y</span><span class="p">:</span><span class="mi">1</span><span class="p">},</span><span class="w"> </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="n">y</span><span class="p">:</span><span class="mi">1</span><span class="p">}])</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="p">[</span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span><span class="n">y</span><span class="p">:</span><span class="mi">1</span><span class="p">},</span><span class="w"> </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="n">y</span><span class="p">:</span><span class="mi">1</span><span class="p">}]</span>
+</code></pre></div>
 
-<p>% ❌ Bad: Duplicate Eq methods in Ord</p>
-</code></pre>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-errors">Common Errors</h3>
+<p><strong>1. No Instance Found</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">No</span><span class="w"> </span><span class="n">instance</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">Show</span><span class="o">(</span><span class="n">MyType</span><span class="o">)</span>
+</code></pre></div>
 
-<h3>4. Document Instances</h3>
+<p><strong>Solution</strong>: Add derive or manual instance</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">derive</span><span class="w"> </span><span class="k">Show</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="nv">or</span>
+<span class="nv">instance</span><span class="w"> </span><span class="k">Show</span><span class="ss">(</span><span class="nv">MyType</span><span class="ss">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>...<span class="w"> </span><span class="k">end</span>
+</code></pre></div>
 
-<pre><code>% Custom instance with non-obvious behavior
-<p>% Orders products by price (ascending)</p>
-<p>instance Ord(Product) do</p>
-<p>    def compare(p1: Product, p2: Product): Ordering =</p>
-<p>        compare(p1.price, p2.price)</p>
-<p>end</p>
-</code></pre>
+<p><strong>2. Overlapping Instances</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Overlapping</span><span class="w"> </span><span class="n">instance</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">Show</span><span class="o">(</span><span class="n">List</span><span class="o">(</span><span class="n">Int</span><span class="o">))</span>
+</code></pre></div>
 
-<h3>5. Test Generic Code</h3>
+<p><strong>Solution</strong>: Remove one instance, keep the more general one</p>
+<p><strong>3. Missing Constraint</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Cannot</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="s1">&#39;==&#39;</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="n">T</span>
+</code></pre></div>
 
-<pre><code>% Test with multiple types
-<p>def test_sort() =</p>
-<p>    assert sort([3,1,2]) == [1,2,3]</p>
-<p>    assert sort(["c","a","b"]) == ["a","b","c"]</p>
-<p>    assert sort([Point{x:2,y:1}, Point{x:1,y:1}]) == [Point{x:1,y:1}, Point{x:2,y:1}]</p>
-</code></pre>
+<p><strong>Solution</strong>: Add Eq constraint</p>
+<div class="codehilite"><pre><span></span><code>def contains(x: T, list: List(T)) where Eq(T) = ...
+</code></pre></div>
 
-<p>---</p>
+<p><strong>4. Orphan Instance</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Orphan</span><span class="w"> </span><span class="n">instance</span><span class="w"> </span><span class="n">Show</span><span class="o">(</span><span class="n">ExternalType</span><span class="o">)</span>
+</code></pre></div>
 
-<h2>Troubleshooting</h2>
+<p><strong>Solution</strong>: Define instance in same module as type or typeclass</p>
+<h3 id="debugging-tips">Debugging Tips</h3>
+<p><strong>1. Check Instance Resolution</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Explicitly annotate types to see what instances are used</span>
+<span class="n">let</span><span class="w"> </span><span class="s">result:</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span><span class="w">  </span><span class="c">% Uses Show(Int)</span>
+</code></pre></div>
 
-<h3>Common Errors</h3>
+<p><strong>2. Simplify Constraints</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="o">%</span><span class="w"> </span><span class="nx">If</span><span class="w"> </span><span class="nx">complex</span><span class="w"> </span><span class="nx">constraints</span><span class="w"> </span><span class="nx">fail</span><span class="p">,</span><span class="w"> </span><span class="k">break</span><span class="w"> </span><span class="nx">into</span><span class="w"> </span><span class="nx">simpler</span><span class="w"> </span><span class="nx">functions</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">complex</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">),</span><span class="w"> </span><span class="nx">Eq</span><span class="p">(</span><span class="nx">T</span><span class="p">),</span><span class="w"> </span><span class="nx">Ord</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">...</span>
 
-<strong>1. No Instance Found</strong>
-<pre><code>Error: No instance of Show(MyType)
-</code></pre>
-<strong>Solution</strong>: Add derive or manual instance
-<pre><code>derive Show  % or
-<p>instance Show(MyType) do ... end</p>
-</code></pre>
+<span class="o">%</span><span class="w"> </span><span class="nx">Becomes</span><span class="p">:</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">simple_show</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">...</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">simple_eq</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">Eq</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">...</span>
+</code></pre></div>
 
-<strong>2. Overlapping Instances</strong>
-<pre><code>Error: Overlapping instance for Show(List(Int))
-</code></pre>
-<strong>Solution</strong>: Remove one instance, keep the more general one
+<p><strong>3. Check Derivation</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Verify generated instance exists</span>
+<span class="nb">record</span><span class="w"> </span><span class="nb">Test</span><span class="w"> </span><span class="n">do</span><span class="w"> </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="k">end</span>
+<span class="n">derive</span><span class="w"> </span><span class="s">Show</span>
 
-<strong>3. Missing Constraint</strong>
-<pre><code>Error: Cannot use '==' on type T
-</code></pre>
-<strong>Solution</strong>: Add Eq constraint
-<pre><code>def contains(x: T, list: List(T)) where Eq(T) = ...
-</code></pre>
+<span class="c">% Test it</span>
+<span class="n">show</span><span class="p">(</span><span class="nb">Test</span><span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">})</span><span class="w">  </span><span class="c">% Should work</span>
+</code></pre></div>
 
-<strong>4. Orphan Instance</strong>
-<pre><code>Error: Orphan instance Show(ExternalType)
-</code></pre>
-<strong>Solution</strong>: Define instance in same module as type or typeclass
+<hr />
+<h2 id="known-limitations">Known Limitations</h2>
+<h3 id="ord-typeclass-temporarily-disabled">Ord Typeclass Temporarily Disabled</h3>
+<p><strong>Status</strong>: Compiler bug prevents Ord typeclass from compiling</p>
+<p><strong>Issue</strong>: Union type variants cannot be returned from typeclass instance methods due to a type unification bug:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Type</span><span class="w"> </span><span class="n">mismatch</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">unification</span><span class="w"> </span><span class="n">failed</span><span class="w"> </span><span class="n">between</span>
+<span class="w">  </span><span class="o">{</span><span class="n">primitive_type</span><span class="o">,</span><span class="s1">&#39;Ordering&#39;</span><span class="o">}</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="o">{</span><span class="n">union_type</span><span class="o">,</span><span class="s1">&#39;Ordering&#39;</span><span class="o">,...}</span>
+</code></pre></div>
 
-<h3>Debugging Tips</h3>
+<p><strong>Impact</strong>:<br />
+- The <code>Ord</code> typeclass and <code>Ordering</code> type are commented out in <code>lib/std/typeclasses.cure</code><br />
+- You cannot use <code>compare()</code> method or derive <code>Ord</code> instances<br />
+- <code>Show</code>, <code>Eq</code>, and <code>Serializable</code> typeclasses work correctly</p>
+<p><strong>Workaround</strong>:<br />
+Use comparison operators (<code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>) directly instead of the <code>compare()</code> method:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% ❌ Won&#39;t work until bug is fixed</span>
+<span class="n">def</span><span class="w"> </span><span class="s">sort(list:</span><span class="w"> </span><span class="s">List(T))</span><span class="w"> </span><span class="s">where</span><span class="w"> </span><span class="s">Ord(T)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="k">...</span>
 
-<strong>1. Check Instance Resolution</strong>
-<pre><code>% Explicitly annotate types to see what instances are used
-<p>let result: Int = show(42)  % Uses Show(Int)</p>
-</code></pre>
+<span class="c">% ✅ Use direct comparisons instead</span>
+<span class="n">def</span><span class="w"> </span><span class="s">sort_int(list:</span><span class="w"> </span><span class="s">List(Int)):</span><span class="w"> </span><span class="s">List(Int)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="c">% Use &lt; and &gt; operators directly</span>
+<span class="w">    </span><span class="k">...</span>
+</code></pre></div>
 
-<strong>2. Simplify Constraints</strong>
-<pre><code>% If complex constraints fail, break into simpler functions
-<p>def complex(x: T) where Show(T), Eq(T), Ord(T) = ...</p>
-
-<p>% Becomes:</p>
-<p>def simple_show(x: T) where Show(T) = ...</p>
-<p>def simple_eq(x: T) where Eq(T) = ...</p>
-</code></pre>
-
-<strong>3. Check Derivation</strong>
-<pre><code>% Verify generated instance exists
-<p>record Test do x: Int end</p>
-<p>derive Show</p>
-
-<p>% Test it</p>
-<p>show(Test{x: 42})  % Should work</p>
-</code></pre>
-
-<p>---</p>
-
-<h2>Known Limitations</h2>
-
-<h3>Ord Typeclass Temporarily Disabled</h3>
-
-<strong>Status</strong>: Compiler bug prevents Ord typeclass from compiling
-
-<strong>Issue</strong>: Union type variants cannot be returned from typeclass instance methods due to a type unification bug:
-<pre><code>Error: Type mismatch - unification failed between
-<p>  {primitive<em>type,'Ordering'} and {union</em>type,'Ordering',...}</p>
-</code></pre>
-
-<strong>Impact</strong>:
-<ul>
-<li>The <code>Ord</code> typeclass and <code>Ordering</code> type are commented out in <code>lib/std/typeclasses.cure</code></li>
-<li>You cannot use <code>compare()</code> method or derive <code>Ord</code> instances</li>
-<li><code>Show</code>, <code>Eq</code>, and <code>Serializable</code> typeclasses work correctly</li>
-</ul>
-
-<strong>Workaround</strong>:
-<p>Use comparison operators (<code><</code>, <code>></code>, <code><=</code>, <code>>=</code>) directly instead of the <code>compare()</code> method:</p>
-<pre><code>% ❌ Won't work until bug is fixed
-<p>def sort(list: List(T)) where Ord(T) = ...</p>
-
-<p>% ✅ Use direct comparisons instead</p>
-<p>def sort_int(list: List(Int)): List(Int) =</p>
-<p>    % Use < and > operators directly</p>
-<p>    ...</p>
-</code></pre>
-
-<strong>Expected Fix</strong>: The compiler's typeclass instance type checker needs to properly handle union type constructors.
-
-<p>---</p>
-
-<h2>Examples</h2>
-
-<p>See these files for complete examples:</p>
-<ul>
-<li><code>examples/08_typeclasses.cure</code> - Basic typeclass usage</li>
-<li><code>examples/09_derive.cure</code> - Automatic derivation</li>
-<li><code>examples/10<em>generic</em>algorithms.cure</code> - Real-world generic code</li>
-</ul>
-
-<p>---</p>
-
-<h2>Additional Resources</h2>
-
+<p><strong>Expected Fix</strong>: The compiler's typeclass instance type checker needs to properly handle union type constructors.</p>
+<hr />
+<h2 id="examples">Examples</h2>
+<p>See these files for complete examples:<br />
+- <code>examples/08_typeclasses.cure</code> - Basic typeclass usage<br />
+- <code>examples/09_derive.cure</code> - Automatic derivation<br />
+- <code>examples/10_generic_algorithms.cure</code> - Real-world generic code</p>
+<hr />
+<h2 id="additional-resources">Additional Resources</h2>
 <ul>
 <li><a href="./DERIVE_GUIDE.md">Derive Guide</a> - Detailed derivation documentation</li>
-<li><a href="./TYPECLASS<em>IMPLEMENTATION</em>STATUS.md">Implementation Status</a> - Technical details</li>
+<li><a href="./TYPECLASS_IMPLEMENTATION_STATUS.md">Implementation Status</a> - Technical details</li>
 <li><a href="./TYPE_SYSTEM.md">Type System</a> - Cure's type system overview</li>
 </ul>
-
-<p>---</p>
-
-<em>For questions or issues, see the project repository or documentation.</em>
-
+<hr />
+<p><em>For questions or issues, see the project repository or documentation.</em></p>
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

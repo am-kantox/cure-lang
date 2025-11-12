@@ -13,7 +13,6 @@ site/
 ├── media/                  # Images and assets
 │   ├── logo-128x128.png   # Logo/favicon
 │   ├── ad.png             # Marketing banner
-│   ├── pill-512x512.png   # Decorative element
 │   └── logo-bottle.png    # Hero image
 ├── docs/                   # Converted documentation (HTML)
 │   ├── language-spec.html

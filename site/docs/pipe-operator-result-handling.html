@@ -35,170 +35,154 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Pipe Operator Result Handling</h1>
-
-<h2>Overview</h2>
-
-<p>The Cure pipe operator (<code>|></code>) implements Railway-Oriented Programming with automatic <code>Result</code> type handling. This provides elegant error propagation and composition without explicit error checking at each step.</p>
-
-<h2>Semantics</h2>
-
+        <h1 id="pipe-operator-result-handling">Pipe Operator Result Handling</h1>
+<h2 id="overview">Overview</h2>
+<p>The Cure pipe operator (<code>|&gt;</code>) implements Railway-Oriented Programming with automatic <code>Result</code> type handling. This provides elegant error propagation and composition without explicit error checking at each step.</p>
+<h2 id="semantics">Semantics</h2>
 <p>The pipe operator follows these rules:</p>
-
-<h3>Rule 1: Bare Value Input</h3>
+<h3 id="rule-1-bare-value-input">Rule 1: Bare Value Input</h3>
 <p>When a bare value <code>T</code> is piped, it's treated as <code>Ok(T)</code> for subsequent operations:</p>
-<pre><code>def double(x: Int): Int = x * 2
-<p>5 |> double  # Returns: Ok(10)</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="kt">double</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">):</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span>
+<span class="mi">5</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="kt">double</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="o">:</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="mi">10</span><span class="o">)</span>
+</code></pre></div>
 
-<h3>Rule 2: <code>Ok(T)</code> Unwrapping</h3>
+<h3 id="rule-2-okt-unwrapping">Rule 2: <code>Ok(T)</code> Unwrapping</h3>
 <p>When <code>Ok(T)</code> flows through the pipe, the value is unwrapped before being passed to the transformation function:</p>
-<pre><code>def transformation_fun(x: Int): Int = x * 2
-<p>Ok(5) |> transformation_fun  # x receives 5 (unwrapped), returns Ok(10)</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">transformation_fun</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">):</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span>
+<span class="n">Ok</span><span class="o">(</span><span class="mi">5</span><span class="o">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">transformation_fun</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">receives</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="o">(</span><span class="n">unwrapped</span><span class="o">),</span><span class="w"> </span><span class="n">returns</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="mi">10</span><span class="o">)</span>
+</code></pre></div>
 
-<h3>Rule 3: <code>Error(E)</code> Propagation</h3>
+<h3 id="rule-3-errore-propagation">Rule 3: <code>Error(E)</code> Propagation</h3>
 <p>When <code>Error(E)</code> flows through the pipe, transformation functions are <strong>not called</strong> and the error propagates to the end:</p>
-<pre><code>def transformation_fun(x: Int): Int = x * 2
-<p>Error("failed") |> transformation<em>fun  # Returns: Error("failed"), transformation</em>fun never called</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">transformation_fun</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">):</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span>
+<span class="n">Error</span><span class="o">(</span><span class="s">&quot;failed&quot;</span><span class="o">)</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">transformation_fun</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="o">:</span><span class="w"> </span><span class="n">Error</span><span class="o">(</span><span class="s">&quot;failed&quot;</span><span class="o">),</span><span class="w"> </span><span class="n">transformation_fun</span><span class="w"> </span><span class="n">never</span><span class="w"> </span><span class="n">called</span>
+</code></pre></div>
 
-<h3>Rule 4: Result-Returning Functions</h3>
+<h3 id="rule-4-result-returning-functions">Rule 4: Result-Returning Functions</h3>
 <p>Transformation functions can return either bare values or <code>Result</code> types:</p>
-<pre><code># Bare return - wrapped in Ok automatically
-<p>def double(x: Int): Int = x * 2</p>
-<p>5 |> double  # Returns: Ok(10)</p>
+<div class="codehilite"><pre><span></span><code><span class="o">#</span><span class="w"> </span><span class="n">Bare</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">wrapped</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">Ok</span><span class="w"> </span><span class="n">automatically</span>
+<span class="n">def</span><span class="w"> </span><span class="kt">double</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">):</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span>
+<span class="mi">5</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="kt">double</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="o">:</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="mi">10</span><span class="o">)</span>
 
-<h1>Result return - used as-is</h1>
-<p>def safe_divide(x: Int): Result(Int, String) =</p>
-<p>  match x do</p>
-<p>    0 -> error("Cannot divide by zero")</p>
-<p>    _ -> ok(10 / x)</p>
-<p>  end</p>
+<span class="o">#</span><span class="w"> </span><span class="n">Result</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">used</span><span class="w"> </span><span class="k">as</span><span class="o">-</span><span class="n">is</span>
+<span class="n">def</span><span class="w"> </span><span class="n">safe_divide</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">):</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="k">match</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">error</span><span class="o">(</span><span class="s">&quot;Cannot divide by zero&quot;</span><span class="o">)</span>
+<span class="w">    </span><span class="o">_</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="o">(</span><span class="mi">10</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">x</span><span class="o">)</span>
+<span class="w">  </span><span class="k">end</span>
 
-<p>5 |> safe_divide  # Returns: Ok(2)</p>
-<p>0 |> safe_divide  # Returns: Error("Cannot divide by zero")</p>
-</code></pre>
+<span class="mi">5</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">safe_divide</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="o">:</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>
+<span class="mi">0</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">safe_divide</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="o">:</span><span class="w"> </span><span class="n">Error</span><span class="o">(</span><span class="s">&quot;Cannot divide by zero&quot;</span><span class="o">)</span>
+</code></pre></div>
 
-<h3>Rule 5: Chaining</h3>
+<h3 id="rule-5-chaining">Rule 5: Chaining</h3>
 <p>Multiple pipes compose naturally with error short-circuiting:</p>
-<pre><code>def double(x: Int): Int = x * 2
-<p>def safe_divide(x: Int): Result(Int, String) = ...</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="kt">double</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">):</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span>
+<span class="n">def</span><span class="w"> </span><span class="n">safe_divide</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">):</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">...</span>
 
-<p>5 |> double |> safe_divide  </p>
-<h1>Flow: 5 -> Ok(10) -> Ok(1)</h1>
+<span class="mi">5</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">safe_divide</span><span class="w">  </span>
+<span class="o">#</span><span class="w"> </span><span class="n">Flow</span><span class="o">:</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="mi">10</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
 
-<p>0 |> safe_divide |> double</p>
-<h1>Flow: 0 -> Error("Cannot divide by zero") -> Error(...) (double not called)</h1>
-</code></pre>
+<span class="mi">0</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">safe_divide</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="kt">double</span>
+<span class="o">#</span><span class="w"> </span><span class="n">Flow</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Error</span><span class="o">(</span><span class="s">&quot;Cannot divide by zero&quot;</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Error</span><span class="o">(...)</span><span class="w"> </span><span class="o">(</span><span class="kt">double</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">called</span><span class="o">)</span>
+</code></pre></div>
 
-<h3>Rule 6: Final Return Type</h3>
+<h3 id="rule-6-final-return-type">Rule 6: Final Return Type</h3>
 <p>The entire pipe chain <strong>always</strong> returns <code>Result(T, E)</code>:</p>
-<pre><code>def f(): Result(Int, String) = 5 |> double  # Must declare Result return type
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="nx">def</span><span class="w"> </span><span class="nx">f</span><span class="p">():</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">String</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">double</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Must</span><span class="w"> </span><span class="nx">declare</span><span class="w"> </span><span class="nx">Result</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">type</span>
+</code></pre></div>
 
-<h2>Implementation</h2>
-
+<h2 id="implementation">Implementation</h2>
 <p>The pipe operator is implemented through:</p>
-
 <ol>
-<li><strong>Parser</strong> (<code>src/parser/cure_parser.erl</code>): Parses <code>|></code> as a binary operator</li>
-<li><strong>Codegen</strong> (<code>src/codegen/cure<em>codegen.erl</code>): Generates <code>monadic</em>pipe_call</code> instructions</li>
+<li><strong>Parser</strong> (<code>src/parser/cure_parser.erl</code>): Parses <code>|&gt;</code> as a binary operator</li>
+<li><strong>Codegen</strong> (<code>src/codegen/cure_codegen.erl</code>): Generates <code>monadic_pipe_call</code> instructions</li>
 <li><strong>Runtime</strong> (<code>src/runtime/cure_std.erl</code>): The <code>pipe/2</code> function handles all cases</li>
 </ol>
+<h3 id="runtime-implementation">Runtime Implementation</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% cure_std.erl</span>
+<span class="nf">pipe</span><span class="p">({</span><span class="n">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">_}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Err</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="nv">RHO</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Rule 1: propagate error without calling RHO</span>
+<span class="w">    </span><span class="nv">Err</span><span class="p">;</span>
+<span class="nf">pipe</span><span class="p">({</span><span class="n">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">V</span><span class="p">},</span><span class="w"> </span><span class="nv">RHO</span><span class="p">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="nb">is_function</span><span class="p">(</span><span class="nv">RHO</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Rule 2: unwrap Ok(V), call RHO(V), wrap result if not already a monad</span>
+<span class="w">    </span><span class="k">try</span>
+<span class="w">        </span><span class="nv">Res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">RHO</span><span class="p">(</span><span class="nv">V</span><span class="p">),</span>
+<span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="n">is_monad</span><span class="p">(</span><span class="nv">Res</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">            </span><span class="n">true</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Res</span><span class="p">;</span>
+<span class="w">            </span><span class="n">false</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">Res</span><span class="p">}</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">    </span><span class="k">catch</span>
+<span class="w">        </span><span class="nv">Error</span><span class="p">:</span><span class="nv">Reason</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">pipe_runtime_error</span><span class="p">,</span><span class="w"> </span><span class="nv">Error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}}</span>
+<span class="w">    </span><span class="k">end</span><span class="p">;</span>
+<span class="nf">pipe</span><span class="p">(</span><span class="nv">LHO</span><span class="p">,</span><span class="w"> </span><span class="nv">RHO</span><span class="p">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="nb">is_function</span><span class="p">(</span><span class="nv">RHO</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Rule 3: pass bare LHO to RHO, wrap result if not already a monad</span>
+<span class="w">    </span><span class="k">try</span>
+<span class="w">        </span><span class="nv">Res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">RHO</span><span class="p">(</span><span class="nv">LHO</span><span class="p">),</span>
+<span class="w">        </span><span class="k">case</span><span class="w"> </span><span class="n">is_monad</span><span class="p">(</span><span class="nv">Res</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">            </span><span class="n">true</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Res</span><span class="p">;</span>
+<span class="w">            </span><span class="n">false</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">Res</span><span class="p">}</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">    </span><span class="k">catch</span>
+<span class="w">        </span><span class="nv">Error</span><span class="p">:</span><span class="nv">Reason</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">pipe_runtime_error</span><span class="p">,</span><span class="w"> </span><span class="nv">Error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}}</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+</code></pre></div>
 
-<h3>Runtime Implementation</h3>
-
-<pre><code>% cure_std.erl
-<p>pipe({'Error', <em>} = Err, </em>RHO) -></p>
-<p>    % Rule 1: propagate error without calling RHO</p>
-<p>    Err;</p>
-<p>pipe({'Ok', V}, RHO) when is_function(RHO) -></p>
-<p>    % Rule 2: unwrap Ok(V), call RHO(V), wrap result if not already a monad</p>
-<p>    try</p>
-<p>        Res = RHO(V),</p>
-<p>        case is_monad(Res) of</p>
-<p>            true -> Res;</p>
-<p>            false -> {'Ok', Res}</p>
-<p>        end</p>
-<p>    catch</p>
-<p>        Error:Reason -> {'Error', {pipe<em>runtime</em>error, Error, Reason}}</p>
-<p>    end;</p>
-<p>pipe(LHO, RHO) when is_function(RHO) -></p>
-<p>    % Rule 3: pass bare LHO to RHO, wrap result if not already a monad</p>
-<p>    try</p>
-<p>        Res = RHO(LHO),</p>
-<p>        case is_monad(Res) of</p>
-<p>            true -> Res;</p>
-<p>            false -> {'Ok', Res}</p>
-<p>        end</p>
-<p>    catch</p>
-<p>        Error:Reason -> {'Error', {pipe<em>runtime</em>error, Error, Reason}}</p>
-<p>    end.</p>
-</code></pre>
-
-<h2>Examples</h2>
-
+<h2 id="examples">Examples</h2>
 <p>See <code>examples/simple_pipe.cure</code> for comprehensive examples:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span> <span class="n">simple_pipe</span> <span class="n">do</span>
+  <span class="n">export</span> <span class="p">[</span>
+    <span class="n">example_bare_to_bare</span><span class="o">/</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">example_bare_to_result</span><span class="o">/</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">example_result_ok_chain</span><span class="o">/</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">example_result_error_propagation</span><span class="o">/</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">example_mixed_chain</span><span class="o">/</span><span class="mi">0</span>
+  <span class="p">]</span>
 
-<pre><code>module simple_pipe do
-<p>  export [</p>
-<p>    example<em>bare</em>to_bare/0,</p>
-<p>    example<em>bare</em>to_result/0,</p>
-<p>    example<em>result</em>ok_chain/0,</p>
-<p>    example<em>result</em>error_propagation/0,</p>
-<p>    example<em>mixed</em>chain/0</p>
-<p>  ]</p>
-  
-<p>  import Std.Core [Result, ok/1, error/1]</p>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Core</span> <span class="p">[</span><span class="n">Result</span><span class="p">,</span> <span class="n">ok</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">error</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
 
-<p>  # Example 1: Bare -> Bare</p>
-<p>  def double(x: Int): Int = x * 2</p>
-<p>  def example<em>bare</em>to_bare(): Result(Int, String) =</p>
-<p>    5 |> double  # Returns: Ok(10)</p>
+  <span class="c1"># Example 1: Bare -&gt; Bare</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">double</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Int</span><span class="p">):</span> <span class="n">Int</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">example_bare_to_bare</span><span class="p">():</span> <span class="n">Result</span><span class="p">(</span><span class="n">Int</span><span class="p">,</span> <span class="n">String</span><span class="p">)</span> <span class="o">=</span>
+    <span class="mi">5</span> <span class="o">|&gt;</span> <span class="n">double</span>  <span class="c1"># Returns: Ok(10)</span>
 
-<p>  # Example 2: Bare -> Result</p>
-<p>  def safe_divide(x: Int): Result(Int, String) =</p>
-<p>    match x do</p>
-<p>      0 -> error("Cannot divide by zero")</p>
-<p>      _ -> ok(10 / x)</p>
-<p>    end</p>
-<p>  def example<em>bare</em>to_result(): Result(Int, String) =</p>
-<p>    5 |> safe_divide  # Returns: Ok(2)</p>
+  <span class="c1"># Example 2: Bare -&gt; Result</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">safe_divide</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Int</span><span class="p">):</span> <span class="n">Result</span><span class="p">(</span><span class="n">Int</span><span class="p">,</span> <span class="n">String</span><span class="p">)</span> <span class="o">=</span>
+    <span class="k">match</span> <span class="n">x</span> <span class="n">do</span>
+      <span class="mi">0</span> <span class="o">-&gt;</span> <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Cannot divide by zero&quot;</span><span class="p">)</span>
+      <span class="n">_</span> <span class="o">-&gt;</span> <span class="n">ok</span><span class="p">(</span><span class="mi">10</span> <span class="o">/</span> <span class="n">x</span><span class="p">)</span>
+    <span class="n">end</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">example_bare_to_result</span><span class="p">():</span> <span class="n">Result</span><span class="p">(</span><span class="n">Int</span><span class="p">,</span> <span class="n">String</span><span class="p">)</span> <span class="o">=</span>
+    <span class="mi">5</span> <span class="o">|&gt;</span> <span class="n">safe_divide</span>  <span class="c1"># Returns: Ok(2)</span>
 
-<p>  # Example 3: Chaining with Ok</p>
-<p>  def example<em>result</em>ok_chain(): Result(Int, String) =</p>
-<p>    5 |> double |> safe_divide  # Returns: Ok(1)</p>
+  <span class="c1"># Example 3: Chaining with Ok</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">example_result_ok_chain</span><span class="p">():</span> <span class="n">Result</span><span class="p">(</span><span class="n">Int</span><span class="p">,</span> <span class="n">String</span><span class="p">)</span> <span class="o">=</span>
+    <span class="mi">5</span> <span class="o">|&gt;</span> <span class="n">double</span> <span class="o">|&gt;</span> <span class="n">safe_divide</span>  <span class="c1"># Returns: Ok(1)</span>
 
-<p>  # Example 4: Error propagation</p>
-<p>  def example<em>result</em>error_propagation(): Result(Int, String) =</p>
-<p>    0 |> safe_divide |> double  # Returns: Error("Cannot divide by zero")</p>
+  <span class="c1"># Example 4: Error propagation</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">example_result_error_propagation</span><span class="p">():</span> <span class="n">Result</span><span class="p">(</span><span class="n">Int</span><span class="p">,</span> <span class="n">String</span><span class="p">)</span> <span class="o">=</span>
+    <span class="mi">0</span> <span class="o">|&gt;</span> <span class="n">safe_divide</span> <span class="o">|&gt;</span> <span class="n">double</span>  <span class="c1"># Returns: Error(&quot;Cannot divide by zero&quot;)</span>
 
-<p>  # Example 5: Mixed chain</p>
-<p>  def increment(x: Int): Int = x + 1</p>
-<p>  def example<em>mixed</em>chain(): Result(Int, String) =</p>
-<p>    5 |> double |> increment |> safe_divide  # Returns: Ok(0)</p>
-<p>end</p>
-</code></pre>
+  <span class="c1"># Example 5: Mixed chain</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">increment</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Int</span><span class="p">):</span> <span class="n">Int</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">example_mixed_chain</span><span class="p">():</span> <span class="n">Result</span><span class="p">(</span><span class="n">Int</span><span class="p">,</span> <span class="n">String</span><span class="p">)</span> <span class="o">=</span>
+    <span class="mi">5</span> <span class="o">|&gt;</span> <span class="n">double</span> <span class="o">|&gt;</span> <span class="n">increment</span> <span class="o">|&gt;</span> <span class="n">safe_divide</span>  <span class="c1"># Returns: Ok(0)</span>
+<span class="n">end</span>
+</code></pre></div>
 
-<h2>Testing</h2>
-
+<h2 id="testing">Testing</h2>
 <p>Run the test suite with:</p>
-<pre><code>erl -pa <em>build/ebin -noshell -s simple</em>pipe_test run
-</code></pre>
+<div class="codehilite"><pre><span></span><code>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-noshell<span class="w"> </span>-s<span class="w"> </span>simple_pipe_test<span class="w"> </span>run
+</code></pre></div>
 
-<p>All tests verify:</p>
-<ul>
-<li>✓ Bare value → Bare function returns <code>Ok(result)</code></li>
-<li>✓ Bare value → Result function preserves Result</li>
-<li>✓ Error returns propagate <code>Error</code> unchanged</li>
-<li>✓ Chaining bare functions works correctly</li>
-<li>✓ Error propagation short-circuits the chain</li>
-<li>✓ Mixed bare and Result functions compose properly</li>
-</ul>
-
-<h2>Benefits</h2>
-
+<p>All tests verify:<br />
+- ✓ Bare value → Bare function returns <code>Ok(result)</code><br />
+- ✓ Bare value → Result function preserves Result<br />
+- ✓ Error returns propagate <code>Error</code> unchanged<br />
+- ✓ Chaining bare functions works correctly<br />
+- ✓ Error propagation short-circuits the chain<br />
+- ✓ Mixed bare and Result functions compose properly</p>
+<h2 id="benefits">Benefits</h2>
 <ol>
 <li><strong>Railway-Oriented Programming</strong>: Errors flow on a separate "track"</li>
 <li><strong>No Explicit Error Checking</strong>: No need for <code>match</code> or <code>case</code> at every step</li>
@@ -206,9 +190,7 @@
 <li><strong>Type Safety</strong>: All pipes return <code>Result</code>, making error handling explicit</li>
 <li><strong>Short-Circuiting</strong>: Errors stop execution immediately, avoiding wasted work</li>
 </ol>
-
-<h2>Related</h2>
-
+<h2 id="related">Related</h2>
 <ul>
 <li><code>Std.Core.Result(T, E)</code> - Result type definition</li>
 <li><code>Std.Core.ok/1</code> - Wrap value in Ok</li>
@@ -216,11 +198,7 @@
 <li><code>Std.Core.and_then/2</code> - Monadic bind for manual composition</li>
 <li><code>Std.Core.map_ok/2</code> - Map function over Ok values</li>
 </ul>
-
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

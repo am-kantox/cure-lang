@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-0B854C3B.js"></script>
+    <script src="dist/sidebar_items-28313B55.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -150,7 +150,7 @@ language constructs including keywords, operators, literals, and comments.</p><h
   </a>
   <span class="text">Error Handling</span>
 </h2>
-<p>All tokenization errors include precise location information:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="6444478813-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6444478813-2">{</span><span class="n">Reason</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="6444478813-2">}</span><span class="p" data-group-id="6444478813-1">}</span></code></pre>
+<p>All tokenization errors include precise location information:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="8562049576-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8562049576-2">{</span><span class="n">Reason</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="8562049576-2">}</span><span class="p" data-group-id="8562049576-1">}</span></code></pre>
     </section>
 
 </div>
@@ -287,12 +287,12 @@ pattern matching and categorizing tokens in the parser.</p><h2 id="token_type/1-
   </a>
   <span class="text">Examples</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">token</span><span class="p" data-group-id="0763871757-1">{</span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">identifier</span><span class="p">,</span><span class="w"> </span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;add&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="ss">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="0763871757-1">}</span><span class="p">,</span><span class="w">
-</span><span class="nf">token_type</span><span class="p" data-group-id="0763871757-2">(</span><span class="n">Token</span><span class="p" data-group-id="0763871757-2">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">Token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">token</span><span class="p" data-group-id="0405119152-1">{</span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">identifier</span><span class="p">,</span><span class="w"> </span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;add&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="ss">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="0405119152-1">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">token_type</span><span class="p" data-group-id="0405119152-2">(</span><span class="n">Token</span><span class="p" data-group-id="0405119152-2">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; identifier</span><span class="w">
 
-</span><span class="n">KeywordToken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">token</span><span class="p" data-group-id="0763871757-3">{</span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">def</span><span class="p">,</span><span class="w"> </span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">def</span><span class="p">,</span><span class="w"> </span><span class="ss">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="0763871757-3">}</span><span class="p">,</span><span class="w">
-</span><span class="nf">token_type</span><span class="p" data-group-id="0763871757-4">(</span><span class="n">KeywordToken</span><span class="p" data-group-id="0763871757-4">)</span><span class="p">.</span><span class="w">
+</span><span class="n">KeywordToken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">token</span><span class="p" data-group-id="0405119152-3">{</span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">def</span><span class="p">,</span><span class="w"> </span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">def</span><span class="p">,</span><span class="w"> </span><span class="ss">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="0405119152-3">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">token_type</span><span class="p" data-group-id="0405119152-4">(</span><span class="n">KeywordToken</span><span class="p" data-group-id="0405119152-4">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; def</span></code></pre>
   </section>
 </section>
@@ -347,7 +347,7 @@ input and returns a list of tokens with position information.</p><h2 id="tokeniz
   </a>
   <span class="text">Examples</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nf">tokenize</span><span class="p" data-group-id="0025787998-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;def add(x, y) = x + y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="0025787998-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nf">tokenize</span><span class="p" data-group-id="8267923790-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;def add(x, y) = x + y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="8267923790-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {ok, [</span><span class="w">
 </span><span class="c1">%      #token{type=def, value=def, line=1, column=1},</span><span class="w">
 </span><span class="c1">%      #token{type=identifier, value= &lt;&lt;&quot;add&quot;&gt;&gt;, line=1, column=5},</span><span class="w">
@@ -355,7 +355,7 @@ input and returns a list of tokens with position information.</p><h2 id="tokeniz
 </span><span class="c1">%      ...</span><span class="w">
 </span><span class="c1">%    ]}</span><span class="w">
 
-</span><span class="nf">tokenize</span><span class="p" data-group-id="0025787998-2">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;invalid \xff character&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="0025787998-2">)</span><span class="p">.</span><span class="w">
+</span><span class="nf">tokenize</span><span class="p" data-group-id="8267923790-2">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;invalid \xff character&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="8267923790-2">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {invalid_character, 1, 9}}</span></code></pre><h2 id="tokenize/1-error-types" class="section-heading">
   <a href="#tokenize/1-error-types" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -411,10 +411,10 @@ main tokenization function.</p><h2 id="tokenize_file/1-arguments" class="section
   </a>
   <span class="text">Examples</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nf">tokenize_file</span><span class="p" data-group-id="5284117468-1">(</span><span class="s">&quot;examples/hello.cure&quot;</span><span class="p" data-group-id="5284117468-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nf">tokenize_file</span><span class="p" data-group-id="1201726190-1">(</span><span class="s">&quot;examples/hello.cure&quot;</span><span class="p" data-group-id="1201726190-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {ok, [#token{type=def, ...}, ...]}</span><span class="w">
 
-</span><span class="nf">tokenize_file</span><span class="p" data-group-id="5284117468-2">(</span><span class="s">&quot;nonexistent.cure&quot;</span><span class="p" data-group-id="5284117468-2">)</span><span class="p">.</span><span class="w">
+</span><span class="nf">tokenize_file</span><span class="p" data-group-id="1201726190-2">(</span><span class="s">&quot;nonexistent.cure&quot;</span><span class="p" data-group-id="1201726190-2">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {file_error, enoent}}</span></code></pre>
   </section>
 </section>

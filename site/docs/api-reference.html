@@ -35,17 +35,12 @@
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Cure API Reference</h1>
-
-<h2>Overview</h2>
-
+        <h1 id="cure-api-reference">Cure API Reference</h1>
+<h2 id="overview">Overview</h2>
 <p>This document provides comprehensive API documentation for the Cure programming language - a <strong>complete, production-ready</strong> strongly-typed, dependently-typed language for the BEAM virtual machine with built-in finite state machines (FSMs) and actor model primitives.</p>
-
-<p>🎯 <strong>Status</strong>: 100% functional implementation with working import system, standard library, and runtime verification</p>
-<p>✅ <strong>Verified Working</strong>: All APIs documented below are implemented and tested</p>
-
-<h2>Table of Contents</h2>
-
+<p>🎯 <strong>Status</strong>: 100% functional implementation with working import system, standard library, and runtime verification<br />
+✅ <strong>Verified Working</strong>: All APIs documented below are implemented and tested</p>
+<h2 id="table-of-contents">Table of Contents</h2>
 <ol>
 <li><a href="#compiler-api">Compiler API</a></li>
 <li><a href="#standard-library">Standard Library</a></li>
@@ -56,223 +51,190 @@
 <li><a href="#runtime-system">Runtime System</a></li>
 <li><a href="#integration-examples">Integration Examples</a></li>
 </ol>
-
-<h2>Compiler API</h2>
-
+<h2 id="compiler-api">Compiler API</h2>
 <p>The Cure compiler provides a complete toolchain from lexical analysis through BEAM bytecode generation.</p>
+<h3 id="command-line-interface-working">Command Line Interface ✅ <strong>WORKING</strong></h3>
+<h4 id="cure_climain1"><code>cure_cli:main/1</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">main</span><span class="p">(</span><span class="nv">Args</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="p">[</span><span class="n">string</span><span class="p">()])</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">no_return</span><span class="p">().</span>
+</code></pre></div>
 
-<h3>Command Line Interface ✅ <strong>WORKING</strong></h3>
-
-<h4><code>cure_cli:main/1</code></h4>
-<pre><code>main(Args :: [string()]) -> no_return().
-</code></pre>
 <p>Main entry point for the Cure compiler CLI with complete functionality.</p>
+<p><strong>Usage:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ✅ WORKING: Basic compilation</span>
+cure<span class="w"> </span>input.cure<span class="w">                    </span><span class="c1"># Compile with defaults</span>
+cure<span class="w"> </span>input.cure<span class="w"> </span>-o<span class="w"> </span>output.beam<span class="w">     </span><span class="c1"># Specify output file</span>
+cure<span class="w"> </span>input.cure<span class="w"> </span>--verbose<span class="w">          </span><span class="c1"># Verbose compilation with detailed output</span>
+cure<span class="w"> </span>input.cure<span class="w"> </span>--no-optimize<span class="w">      </span><span class="c1"># Disable type-directed optimizations</span>
 
-<strong>Usage:</strong>
-<pre><code># ✅ WORKING: Basic compilation
-<p>cure input.cure                    # Compile with defaults</p>
-<p>cure input.cure -o output.beam     # Specify output file</p>
-<p>cure input.cure --verbose          # Verbose compilation with detailed output</p>
-<p>cure input.cure --no-optimize      # Disable type-directed optimizations</p>
+<span class="c1"># ✅ WORKING: Wrapper script commands with full automation</span>
+cure<span class="w"> </span>build<span class="w">                         </span><span class="c1"># Execute &#39;make all&#39; with error handling</span>
+cure<span class="w"> </span><span class="nb">test</span><span class="w">                          </span><span class="c1"># Execute &#39;make test&#39; (100% success rate)</span>
+cure<span class="w"> </span>shell<span class="w">                         </span><span class="c1"># Start development shell with modules loaded</span>
+cure<span class="w"> </span>clean<span class="w">                         </span><span class="c1"># Execute &#39;make clean&#39; with cleanup verification</span>
 
-<h1>✅ WORKING: Wrapper script commands with full automation</h1>
-<p>cure build                         # Execute 'make all' with error handling</p>
-<p>cure test                          # Execute 'make test' (100% success rate)</p>
-<p>cure shell                         # Start development shell with modules loaded</p>
-<p>cure clean                         # Execute 'make clean' with cleanup verification</p>
+<span class="c1"># ✅ VERIFIED: Working examples</span>
+./cure<span class="w"> </span>examples/dependent_types_simple.cure<span class="w"> </span>--verbose
+<span class="c1"># Successfully compiles and runs with import system!</span>
+</code></pre></div>
 
-<h1>✅ VERIFIED: Working examples</h1>
-<p>./cure examples/dependent<em>types</em>simple.cure --verbose</p>
-<h1>Successfully compiles and runs with import system!</h1>
-</code></pre>
+<p><strong>Options:</strong><br />
+- <code>-o, --output FILE</code> - Output file path<br />
+- <code>-d, --output-dir DIR</code> - Output directory (default: <code>_build/ebin</code>)<br />
+- <code>--verbose</code> - Enable verbose output<br />
+- <code>--no-debug</code> - Disable debug information<br />
+- <code>--no-warnings</code> - Suppress warnings<br />
+- <code>--no-type-check</code> - Skip type checking<br />
+- <code>--no-optimize</code> - Disable optimizations<br />
+- <code>--help, -h</code> - Show help<br />
+- <code>--version, -v</code> - Show version</p>
+<h4 id="cure_clicompile_file12"><code>cure_cli:compile_file/1,2</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">compile_file</span><span class="p">(</span><span class="nv">Filename</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">string</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">OutputFile</span><span class="p">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}.</span>
+<span class="nf">compile_file</span><span class="p">(</span><span class="nv">Filename</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">string</span><span class="p">(),</span><span class="w"> </span><span class="nv">Options</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">compile_options</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">OutputFile</span><span class="p">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}.</span>
+</code></pre></div>
 
-<strong>Options:</strong>
-<ul>
-<li><code>-o, --output FILE</code> - Output file path</li>
-<li><code>-d, --output-dir DIR</code> - Output directory (default: <code>_build/ebin</code>)</li>
-<li><code>--verbose</code> - Enable verbose output</li>
-<li><code>--no-debug</code> - Disable debug information</li>
-<li><code>--no-warnings</code> - Suppress warnings</li>
-<li><code>--no-type-check</code> - Skip type checking</li>
-<li><code>--no-optimize</code> - Disable optimizations</li>
-<li><code>--help, -h</code> - Show help</li>
-<li><code>--version, -v</code> - Show version</li>
-</ul>
-
-<h4><code>cure<em>cli:compile</em>file/1,2</code></h4>
-<pre><code>compile_file(Filename :: string()) -> {ok, OutputFile} | {error, Reason}.
-<p>compile<em>file(Filename :: string(), Options :: compile</em>options()) -> {ok, OutputFile} | {error, Reason}.</p>
-</code></pre>
 <p>Programmatically compile a .cure file.</p>
+<h4 id="cure_cliadd_automatic_stdlib_imports2"><code>cure_cli:add_automatic_stdlib_imports/2</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">add_automatic_stdlib_imports</span><span class="p">(</span><span class="nv">Source</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">string</span><span class="p">(),</span><span class="w"> </span><span class="nv">Options</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">compile_options</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">string</span><span class="p">().</span>
+</code></pre></div>
 
-<h4><code>cure<em>cli:add</em>automatic<em>stdlib</em>imports/2</code></h4>
-<pre><code>add<em>automatic</em>stdlib<em>imports(Source :: string(), Options :: compile</em>options()) -> string().
-</code></pre>
 <p>Automatically add standard library imports to source code that lacks explicit imports.</p>
+<h4 id="cure_clihas_explicit_module_or_imports1"><code>cure_cli:has_explicit_module_or_imports/1</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">has_explicit_module_or_imports</span><span class="p">(</span><span class="nv">Source</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">string</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">boolean</span><span class="p">().</span>
+</code></pre></div>
 
-<h4><code>cure<em>cli:has</em>explicit<em>module</em>or_imports/1</code></h4>
-<pre><code>has<em>explicit</em>module<em>or</em>imports(Source :: string()) -> boolean().
-</code></pre>
 <p>Check if source code contains explicit module definitions or imports.</p>
+<h4 id="cure_cliensure_stdlib_available1-working"><code>cure_cli:ensure_stdlib_available/1</code> ✅ <strong>WORKING</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">ensure_stdlib_available</span><span class="p">(</span><span class="nv">Options</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">compile_options</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}.</span>
+</code></pre></div>
 
-<h4><code>cure<em>cli:ensure</em>stdlib_available/1</code> ✅ <strong>WORKING</strong></h4>
-<pre><code>ensure<em>stdlib</em>available(Options :: compile_options()) -> ok | {error, Reason}.
-</code></pre>
 <p>Ensure standard library is compiled and available, compiling if necessary.</p>
+<p><strong>Features:</strong><br />
+- ✅ Automatic standard library compilation when missing<br />
+- ✅ Intelligent dependency detection and resolution<br />
+- ✅ Graceful error handling with detailed failure reporting<br />
+- ✅ Support for partial compilation failures with continued operation</p>
+<h4 id="cure_cliconvert_beam_to_source_path1"><code>cure_cli:convert_beam_to_source_path/1</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">convert_beam_to_source_path</span><span class="p">(</span><span class="nv">BeamPath</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">string</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">SourcePath</span><span class="p">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="n">error</span><span class="p">.</span>
+</code></pre></div>
 
-<strong>Features:</strong>
-<ul>
-<li>✅ Automatic standard library compilation when missing</li>
-<li>✅ Intelligent dependency detection and resolution</li>
-<li>✅ Graceful error handling with detailed failure reporting</li>
-<li>✅ Support for partial compilation failures with continued operation</li>
-</ul>
-
-<h4><code>cure<em>cli:convert</em>beam<em>to</em>source_path/1</code></h4>
-<pre><code>convert<em>beam</em>to<em>source</em>path(BeamPath :: string()) -> {ok, SourcePath} | error.
-</code></pre>
 <p>Convert BEAM file path to corresponding source file path.</p>
+<h3 id="lexical-analysis">Lexical Analysis</h3>
+<h4 id="cure_lexertokenize1"><code>cure_lexer:tokenize/1</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">tokenize</span><span class="p">(</span><span class="nv">Input</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">binary</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nv">Token</span><span class="p">]}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nv">Line</span><span class="p">,</span><span class="w"> </span><span class="nv">Column</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}}.</span>
+</code></pre></div>
 
-<h3>Lexical Analysis</h3>
-
-<h4><code>cure_lexer:tokenize/1</code></h4>
-<pre><code>tokenize(Input :: binary()) -> {ok, [Token]} | {error, {Line, Column, Reason}}.
-</code></pre>
 <p>Tokenizes Cure source code into a list of tokens.</p>
+<p><strong>Token Types:</strong><br />
+- <code>{identifier, Line, Name}</code> - Variable/function names<br />
+- <code>{keyword, Line, Keyword}</code> - Language keywords (def, fsm, match, etc.)<br />
+- <code>{operator, Line, Op}</code> - Operators (+, -, -&gt;, |&gt;, etc.)<br />
+- <code>{literal, Line, Value}</code> - Numeric, string, and boolean literals<br />
+- <code>{delimiter, Line, Delim}</code> - Parentheses, brackets, braces</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nn">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p">(</span><span class="o">&lt;&lt;</span><span class="s">&quot;def add(x, y) = x + y&quot;</span><span class="o">&gt;&gt;</span><span class="p">).</span>
+<span class="c">% Returns: {ok, [{keyword,1,def},{identifier,1,&quot;add&quot;},...]}</span>
+</code></pre></div>
 
-<strong>Token Types:</strong>
-<ul>
-<li><code>{identifier, Line, Name}</code> - Variable/function names</li>
-<li><code>{keyword, Line, Keyword}</code> - Language keywords (def, fsm, match, etc.)</li>
-<li><code>{operator, Line, Op}</code> - Operators (+, -, ->, |>, etc.)</li>
-<li><code>{literal, Line, Value}</code> - Numeric, string, and boolean literals</li>
-<li><code>{delimiter, Line, Delim}</code> - Parentheses, brackets, braces</li>
-</ul>
-
-<strong>Example:</strong>
-<pre><code>cure_lexer:tokenize(<<"def add(x, y) = x + y">>).
-<p>% Returns: {ok, [{keyword,1,def},{identifier,1,"add"},...]}</p>
-</code></pre>
-
-<h3>Multi-Clause Functions ✅ <strong>NEW FEATURE</strong></h3>
-
+<h3 id="multi-clause-functions-new-feature">Multi-Clause Functions ✅ <strong>NEW FEATURE</strong></h3>
 <p>Cure now supports Erlang-style multi-clause functions where multiple function definitions with the same name and arity are automatically grouped and their types unified.</p>
+<p><strong>Syntax:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Multiple</span><span class="w"> </span><span class="nx">clauses</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">pattern</span><span class="w"> </span><span class="nx">matching</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">process</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;Integer: &quot;</span><span class="w"> </span><span class="p">&lt;&gt;</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">process</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Float</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;Float: &quot;</span><span class="w"> </span><span class="p">&lt;&gt;</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span>
 
-<strong>Syntax:</strong>
-<pre><code># Multiple clauses with pattern matching
-<p>def process(x: Int): String = "Integer: " <> show(x)</p>
-<p>def process(x: Float): String = "Float: " <> show(x)</p>
+<span class="err">#</span><span class="w"> </span><span class="nx">Automatically</span><span class="w"> </span><span class="nx">derives</span><span class="w"> </span><span class="nx">union</span><span class="w"> </span><span class="k">type</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Float</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">String</span>
+</code></pre></div>
 
-<h1>Automatically derives union type: Int | Float -> String</h1>
-</code></pre>
+<p><strong>Type Inference:</strong><br />
+- Parameter types are combined as unions across all clauses<br />
+- Return types are combined as unions across all clauses<br />
+- Type checker validates each clause independently<br />
+- Code generator emits multiple BEAM function clauses</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">factorial</span><span class="p">(</span><span class="mi">0</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="n">def</span><span class="w"> </span><span class="n">factorial</span><span class="p">(</span><span class="n">n</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">factorial</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
 
-<strong>Type Inference:</strong>
-<ul>
-<li>Parameter types are combined as unions across all clauses</li>
-<li>Return types are combined as unions across all clauses  </li>
-<li>Type checker validates each clause independently</li>
-<li>Code generator emits multiple BEAM function clauses</li>
-</ul>
+<span class="cp"># Derived signature: Int -&gt; Int</span>
+<span class="cp"># Pattern matching on specific values supported</span>
+</code></pre></div>
 
-<strong>Example:</strong>
-<pre><code>def factorial(0: Int): Int = 1
-<p>def factorial(n: Int): Int = n * factorial(n - 1)</p>
+<h3 id="parsing">Parsing</h3>
+<h4 id="cure_parserparse1"><code>cure_parser:parse/1</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">parse</span><span class="p">(</span><span class="nv">Tokens</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="p">[</span><span class="nv">Token</span><span class="p">])</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">AST</span><span class="p">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nv">Line</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}}.</span>
+</code></pre></div>
 
-<h1>Derived signature: Int -> Int</h1>
-<h1>Pattern matching on specific values supported</h1>
-</code></pre>
-
-<h3>Parsing</h3>
-
-<h4><code>cure_parser:parse/1</code></h4>
-<pre><code>parse(Tokens :: [Token]) -> {ok, AST} | {error, {Line, Reason}}.
-</code></pre>
 <p>Parses tokens into an Abstract Syntax Tree (AST).</p>
+<p><strong>AST Node Types:</strong><br />
+- <code>#function{}</code> - Function definitions<br />
+- <code>#fsm{}</code> - FSM definitions<br />
+- <code>#module{}</code> - Module definitions<br />
+- <code>#expression{}</code> - Expressions<br />
+- <code>#type{}</code> - Type expressions</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Tokens</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p">(</span><span class="o">&lt;&lt;</span><span class="s">&quot;def add(x, y) = x + y&quot;</span><span class="o">&gt;&gt;</span><span class="p">),</span>
+<span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">AST</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_parser</span><span class="p">:</span><span class="nf">parse</span><span class="p">(</span><span class="nv">Tokens</span><span class="p">).</span>
+</code></pre></div>
 
-<strong>AST Node Types:</strong>
-<ul>
-<li><code>#function{}</code> - Function definitions</li>
-<li><code>#fsm{}</code> - FSM definitions</li>
-<li><code>#module{}</code> - Module definitions</li>
-<li><code>#expression{}</code> - Expressions</li>
-<li><code>#type{}</code> - Type expressions</li>
-</ul>
+<h4 id="cure_parserparse_file1"><code>cure_parser:parse_file/1</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">parse_file</span><span class="p">(</span><span class="nv">Filename</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">string</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">AST</span><span class="p">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}.</span>
+</code></pre></div>
 
-<strong>Example:</strong>
-<pre><code>{ok, Tokens} = cure_lexer:tokenize(<<"def add(x, y) = x + y">>),
-<p>{ok, AST} = cure_parser:parse(Tokens).</p>
-</code></pre>
-
-<h4><code>cure<em>parser:parse</em>file/1</code></h4>
-<pre><code>parse_file(Filename :: string()) -> {ok, AST} | {error, Reason}.
-</code></pre>
 <p>Parse a Cure source file directly.</p>
+<h3 id="type-system">Type System</h3>
+<h4 id="cure_typecheckercheck_program1"><code>cure_typechecker:check_program/1</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">check_program</span><span class="p">(</span><span class="nv">AST</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">term</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">TypedAST</span><span class="p">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nv">TypeError</span><span class="p">]}.</span>
+</code></pre></div>
 
-<h3>Type System</h3>
-
-<h4><code>cure<em>typechecker:check</em>program/1</code></h4>
-<pre><code>check_program(AST :: term()) -> {ok, TypedAST} | {error, [TypeError]}.
-</code></pre>
 <p>Type-check a program AST with dependent type support.</p>
+<p><strong>Type Error Format:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="n">type_error</span><span class="p">,</span><span class="w"> </span><span class="nv">Line</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">expected</span><span class="p">,</span><span class="w"> </span><span class="nv">ExpectedType</span><span class="p">,</span><span class="w"> </span><span class="n">actual</span><span class="p">,</span><span class="w"> </span><span class="nv">ActualType</span><span class="p">}}.</span>
+<span class="p">{</span><span class="n">constraint_error</span><span class="p">,</span><span class="w"> </span><span class="nv">Line</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">reason</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}}.</span>
+<span class="p">{</span><span class="n">undefined_variable</span><span class="p">,</span><span class="w"> </span><span class="nv">Line</span><span class="p">,</span><span class="w"> </span><span class="nv">VarName</span><span class="p">}.</span>
+</code></pre></div>
 
-<strong>Type Error Format:</strong>
-<pre><code>{type_error, Line, {expected, ExpectedType, actual, ActualType}}.
-<p>{constraint_error, Line, {constraint, Constraint, reason, Reason}}.</p>
-<p>{undefined_variable, Line, VarName}.</p>
-</code></pre>
+<h4 id="cure_typesinfer_type2"><code>cure_types:infer_type/2</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">infer_type</span><span class="p">(</span><span class="nv">Expression</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">term</span><span class="p">(),</span><span class="w"> </span><span class="nv">Context</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">type_context</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="nv">Type</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nv">Constraint</span><span class="p">]}.</span>
+</code></pre></div>
 
-<h4><code>cure<em>types:infer</em>type/2</code></h4>
-<pre><code>infer<em>type(Expression :: term(), Context :: type</em>context()) -> {Type, [Constraint]}.
-</code></pre>
 <p>Infer the type of an expression with constraints.</p>
+<h4 id="cure_type_optimizeroptimize2"><code>cure_type_optimizer:optimize/2</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">optimize</span><span class="p">(</span><span class="nv">TypedAST</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">term</span><span class="p">(),</span><span class="w"> </span><span class="nv">Options</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">optimization_options</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">OptimizedAST</span><span class="p">.</span>
+</code></pre></div>
 
-<h4><code>cure<em>type</em>optimizer:optimize/2</code></h4>
-<pre><code>optimize(TypedAST :: term(), Options :: optimization_options()) -> OptimizedAST.
-</code></pre>
-<p>Apply type-directed optimizations:</p>
-<ul>
-<li><strong>Monomorphization</strong> - Convert polymorphic functions to monomorphic versions</li>
-<li><strong>Function Specialization</strong> - Create specialized versions for frequent patterns</li>
-<li><strong>Inlining</strong> - Inline small functions based on cost/benefit analysis</li>
-<li><strong>Dead Code Elimination</strong> - Remove unused code paths</li>
-</ul>
+<p>Apply type-directed optimizations:<br />
+- <strong>Monomorphization</strong> - Convert polymorphic functions to monomorphic versions<br />
+- <strong>Function Specialization</strong> - Create specialized versions for frequent patterns<br />
+- <strong>Inlining</strong> - Inline small functions based on cost/benefit analysis<br />
+- <strong>Dead Code Elimination</strong> - Remove unused code paths</p>
+<h3 id="code-generation">Code Generation</h3>
+<h4 id="cure_codegencompile_program12"><code>cure_codegen:compile_program/1,2</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">compile_program</span><span class="p">(</span><span class="nv">TypedAST</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">term</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">BeamBinary</span><span class="p">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}.</span>
+<span class="nf">compile_program</span><span class="p">(</span><span class="nv">TypedAST</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">term</span><span class="p">(),</span><span class="w"> </span><span class="nv">Options</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">codegen_options</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">BeamBinary</span><span class="p">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}.</span>
+</code></pre></div>
 
-<h3>Code Generation</h3>
-
-<h4><code>cure<em>codegen:compile</em>program/1,2</code></h4>
-<pre><code>compile_program(TypedAST :: term()) -> {ok, BeamBinary} | {error, Reason}.
-<p>compile<em>program(TypedAST :: term(), Options :: codegen</em>options()) -> {ok, BeamBinary} | {error, Reason}.</p>
-</code></pre>
 <p>Compile a typed AST to BEAM bytecode.</p>
+<p><strong>Code Generation Options:</strong><br />
+- <code>debug_info</code> - Include debug information (default: true)<br />
+- <code>optimize</code> - Enable optimizations (default: true)<br />
+- <code>fsm_runtime</code> - Include FSM runtime support (default: true)</p>
+<h4 id="cure_beam_compilercompile_to_beam2"><code>cure_beam_compiler:compile_to_beam/2</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">compile_to_beam</span><span class="p">(</span><span class="nv">ErlangForms</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="p">[</span><span class="n">abstract_form</span><span class="p">()],</span><span class="w"> </span><span class="nv">Options</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="p">[</span><span class="n">term</span><span class="p">()])</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">binary</span><span class="p">().</span>
+</code></pre></div>
 
-<strong>Code Generation Options:</strong>
-<ul>
-<li><code>debug_info</code> - Include debug information (default: true)</li>
-<li><code>optimize</code> - Enable optimizations (default: true)</li>
-<li><code>fsm_runtime</code> - Include FSM runtime support (default: true)</li>
-</ul>
-
-<h4><code>cure<em>beam</em>compiler:compile<em>to</em>beam/2</code></h4>
-<pre><code>compile<em>to</em>beam(ErlangForms :: [abstract_form()], Options :: [term()]) -> binary().
-</code></pre>
 <p>Compile Erlang abstract forms to BEAM bytecode.</p>
-
-<h3>Standard Library ✅ <strong>WORKING</strong> (Runtime Verified)</h3>
-
+<h3 id="standard-library-working-runtime-verified">Standard Library ✅ <strong>WORKING</strong> (Runtime Verified)</h3>
 <p>The standard library modules and their exported functions reflect the current implementation:</p>
-
-<h4>Std.Core</h4>
+<h4 id="stdcore">Std.Core</h4>
 <ul>
 <li>identity/1, compose/2, flip/1</li>
 <li>not/1, and/2, or/2, xor/2</li>
 <li>eq/2, ne/2, lt/2, le/2, gt/2, ge/2, compare/2</li>
 <li>minimum/2, maximum/2, clamp/3</li>
-<li>Result(T, E): ok/1, error/1, is<em>ok/1, is</em>error/1, map<em>ok/2, map</em>error/2, and_then/2</li>
-<li>Option(T): some/1, none/0, is<em>some/1, is</em>none/1, map<em>option/2, flat</em>map<em>option/2, option</em>or/2</li>
+<li>Result(T, E): ok/1, error/1, is_ok/1, is_error/1, map_ok/2, map_error/2, and_then/2</li>
+<li>Option(T): some/1, none/0, is_some/1, is_none/1, map_option/2, flat_map_option/2, option_or/2</li>
 <li>const/1, apply/2, pipe/2</li>
 </ul>
-
-<h4>Std.List</h4>
+<h4 id="stdlist">Std.List</h4>
 <ul>
 <li>length/1, is_empty/1, reverse/2</li>
 <li>head/2, tail/1</li>
@@ -280,107 +242,91 @@
 <li>map/2, filter/2, fold/3, zip_with/3</li>
 <li>contains/2</li>
 </ul>
-
-<h4>Std.Fsm (Curify wrappers)</h4>
+<h4 id="stdfsm-curify-wrappers">Std.Fsm (Curify wrappers)</h4>
 <ul>
-<li>start<em>fsm/1, fsm</em>cast/2, fsm<em>advertise/2, fsm</em>state/1, fsm_stop/1</li>
-<li>fsm<em>spawn/2, fsm</em>send/2, fsm<em>info/1, fsm</em>is_alive/1</li>
+<li>start_fsm/1, fsm_cast/2, fsm_advertise/2, fsm_state/1, fsm_stop/1</li>
+<li>fsm_spawn/2, fsm_send/2, fsm_info/1, fsm_is_alive/1</li>
 </ul>
-
 <p>Other modules: Std.Math, Std.Pair, Std.Show, Std.String, Std.System, Std.Vector</p>
-
 <p>The Cure standard library is implemented in Cure itself with Erlang runtime support and <strong>full import system integration</strong>.</p>
+<p><strong>🚀 Breakthrough</strong>: Complete import system with working functions demonstrated in <code>dependent_types_simple.cure</code></p>
+<h3 id="core-types">Core Types</h3>
+<h4 id="result-type-working">Result Type ✅ <strong>WORKING</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">E</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Ok</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Error</span><span class="p">(</span><span class="nx">E</span><span class="p">)</span>
+</code></pre></div>
 
-<strong>🚀 Breakthrough</strong>: Complete import system with working functions demonstrated in <code>dependent<em>types</em>simple.cure</code>
-
-<h3>Core Types</h3>
-
-<h4>Result Type ✅ <strong>WORKING</strong></h4>
-<pre><code>type Result(T, E) = Ok(T) | Error(E)
-</code></pre>
 <p>Used for error handling without exceptions.</p>
+<p><strong>✅ Working Functions:</strong><br />
+- <code>ok/1</code> - Create a successful result ✅ <strong>VERIFIED</strong><br />
+- <code>error/1</code> - Create an error result ✅ <strong>VERIFIED</strong><br />
+- <code>map_ok/2</code> - Transform successful value (used in working examples)<br />
+- <code>and_then/2</code> - Chain operations that may fail (monadic composition)<br />
+- <code>unwrap_or/2</code> - Get value or default</p>
+<h4 id="option-type-working">Option Type ✅ <strong>WORKING</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Option</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Some</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">None</span>
+</code></pre></div>
 
-<strong>✅ Working Functions:</strong>
-<ul>
-<li><code>ok/1</code> - Create a successful result ✅ <strong>VERIFIED</strong></li>
-<li><code>error/1</code> - Create an error result ✅ <strong>VERIFIED</strong>  </li>
-<li><code>map_ok/2</code> - Transform successful value (used in working examples)</li>
-<li><code>and_then/2</code> - Chain operations that may fail (monadic composition)</li>
-<li><code>unwrap_or/2</code> - Get value or default</li>
-</ul>
-
-<h4>Option Type ✅ <strong>WORKING</strong></h4>
-<pre><code>type Option(T) = Some(T) | None
-</code></pre>
 <p>Used for nullable values.</p>
+<p><strong>✅ Working Functions:</strong><br />
+- <code>some/1</code> - Create a Some value ✅ <strong>VERIFIED</strong><br />
+- <code>none/0</code> - Create None ✅ <strong>VERIFIED</strong><br />
+- <code>map/2</code> - Transform contained value (used in working examples)<br />
+- <code>filter/2</code> - Filter based on predicate<br />
+- <code>unwrap_or/2</code> - Get value or default</p>
+<h3 id="list-operations-working-runtime-verified">List Operations ✅ <strong>WORKING</strong> (Runtime Verified)</h3>
+<h4 id="stdlist-module-with-working-import-system"><code>Std.List</code> Module with Working Import System</h4>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">WORKING</span><span class="p">:</span><span class="w"> </span><span class="nx">Core</span><span class="w"> </span><span class="nx">list</span><span class="w"> </span><span class="nx">functions</span><span class="w"> </span><span class="p">(</span><span class="nx">runtime</span><span class="w"> </span><span class="nx">verified</span><span class="p">)</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">length</span><span class="p">(</span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)):</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">n</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="nx">Working</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">dependent_types_simple</span><span class="p">.</span><span class="nx">cure</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">head</span><span class="p">(</span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)):</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="nx">Safe</span><span class="w"> </span><span class="nx">head</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">compile</span><span class="o">-</span><span class="nx">time</span><span class="w"> </span><span class="nx">guarantee</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">tail</span><span class="p">(</span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Length</span><span class="o">-</span><span class="nx">preserving</span><span class="w"> </span><span class="nx">tail</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">append</span><span class="p">(</span><span class="nx">xs</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">),</span><span class="w"> </span><span class="nx">ys</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">m</span><span class="p">)):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="o">+</span><span class="nx">m</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Dependent</span><span class="w"> </span><span class="nx">concatenation</span>
 
-<strong>✅ Working Functions:</strong>
-<ul>
-<li><code>some/1</code> - Create a Some value ✅ <strong>VERIFIED</strong></li>
-<li><code>none/0</code> - Create None ✅ <strong>VERIFIED</strong></li>
-<li><code>map/2</code> - Transform contained value (used in working examples)</li>
-<li><code>filter/2</code> - Filter based on predicate</li>
-<li><code>unwrap_or/2</code> - Get value or default</li>
-</ul>
+<span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">WORKING</span><span class="p">:</span><span class="w"> </span><span class="nx">Higher</span><span class="o">-</span><span class="nx">order</span><span class="w"> </span><span class="nx">functions</span><span class="w"> </span><span class="p">(</span><span class="nx">verified</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">examples</span><span class="p">)</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">map</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">U</span><span class="p">,</span><span class="w"> </span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">U</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="nx">Used</span><span class="w"> </span><span class="nx">successfully</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">examples</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">filter</span><span class="p">(</span><span class="nx">pred</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Bool</span><span class="p">,</span><span class="w"> </span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">m</span><span class="p">)</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">m</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">n</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">fold</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">Acc</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Acc</span><span class="p">,</span><span class="w"> </span><span class="nx">acc</span><span class="p">:</span><span class="w"> </span><span class="nx">Acc</span><span class="p">,</span><span class="w"> </span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)):</span><span class="w"> </span><span class="nx">Acc</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Working</span><span class="w"> </span><span class="nx">fold</span><span class="o">/</span><span class="mi">3</span><span class="w"> </span><span class="nx">function</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">zip_with</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">U</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">V</span><span class="p">,</span><span class="w"> </span><span class="nx">xs</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">),</span><span class="w"> </span><span class="nx">ys</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">U</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">V</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Working</span><span class="p">!</span>
 
-<h3>List Operations ✅ <strong>WORKING</strong> (Runtime Verified)</h3>
+<span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">WORKING</span><span class="p">:</span><span class="w"> </span><span class="nx">Safe</span><span class="w"> </span><span class="nx">operations</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">safe_head</span><span class="p">(</span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)):</span><span class="w"> </span><span class="nx">Option</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="nx">Safe</span><span class="w"> </span><span class="nx">variant</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">any</span><span class="w"> </span><span class="nx">list</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">safe_tail</span><span class="p">(</span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)):</span><span class="w"> </span><span class="nx">Option</span><span class="p">(</span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">))</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Safe</span><span class="w"> </span><span class="nx">tail</span><span class="w"> </span><span class="nx">operation</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">safe_nth</span><span class="p">(</span><span class="nx">list</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">),</span><span class="w"> </span><span class="nx">index</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">Option</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Safe</span><span class="w"> </span><span class="nx">indexing</span>
+</code></pre></div>
 
-<h4><code>Std.List</code> Module with Working Import System</h4>
-<pre><code># ✅ WORKING: Core list functions (runtime verified)
-<p>def length(list: List(T, n)): Int = n       # Working in dependent<em>types</em>simple.cure</p>
-<p>def head(list: List(T, n)): T when n > 0     # Safe head with compile-time guarantee</p>
-<p>def tail(list: List(T, n)): List(T, n-1) when n > 0  # Length-preserving tail</p>
-<p>def append(xs: List(T, n), ys: List(T, m)): List(T, n+m)  # Dependent concatenation</p>
+<p><strong>🎆 Success Example from <code>dependent_types_simple.cure</code>:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="o">#</span><span class="w"> </span><span class="n">This</span><span class="w"> </span><span class="n">actually</span><span class="w"> </span><span class="n">works</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">runs</span><span class="w"> </span><span class="n">successfully</span><span class="o">!</span>
+<span class="k">let</span><span class="w"> </span><span class="nv">v1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_vec3</span><span class="o">(</span><span class="mi">1</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span><span class="w"> </span><span class="mi">2</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span><span class="w"> </span><span class="mi">3</span><span class="o">.</span><span class="mi">0</span><span class="o">)</span>
+<span class="k">let</span><span class="w"> </span><span class="nv">v2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_vec3</span><span class="o">(</span><span class="mi">4</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span><span class="w"> </span><span class="mi">5</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span><span class="w"> </span><span class="mi">6</span><span class="o">.</span><span class="mi">0</span><span class="o">)</span><span class="w"> </span>
+<span class="k">let</span><span class="w"> </span><span class="nv">dot_result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zip_with</span><span class="o">(</span><span class="n">v1</span><span class="o">,</span><span class="w"> </span><span class="n">v2</span><span class="o">,</span><span class="w"> </span><span class="n">fn</span><span class="o">(</span><span class="n">x</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="k">end</span><span class="o">)</span>
+<span class="w">                </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">fold</span><span class="o">(</span><span class="mi">0</span><span class="o">.</span><span class="mi">0</span><span class="o">,</span><span class="w"> </span><span class="n">fn</span><span class="o">(</span><span class="n">x</span><span class="o">,</span><span class="w"> </span><span class="n">acc</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">acc</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="k">end</span><span class="o">)</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Result</span><span class="o">:</span><span class="w"> </span><span class="mi">32</span><span class="o">.</span><span class="mi">0</span>
+</code></pre></div>
 
-<h1>✅ WORKING: Higher-order functions (verified in examples)</h1>
-<p>def map(f: T -> U, list: List(T, n)): List(U, n)     # Used successfully in examples</p>
-<p>def filter(pred: T -> Bool, list: List(T, n)): List(T, m) when m <= n</p>
-<p>def fold(f: (T, Acc) -> Acc, acc: Acc, list: List(T)): Acc  # Working fold/3 function</p>
-<p>def zip_with(f: (T, U) -> V, xs: List(T, n), ys: List(U, n)): List(V, n)  # Working!</p>
+<h3 id="mathematical-functions">Mathematical Functions</h3>
+<h4 id="stdmath-module"><code>Std.Math</code> Module</h4>
+<div class="codehilite"><pre><span></span><code>#<span class="w"> </span>Constants
+val<span class="w"> </span>pi:<span class="w"> </span>Float<span class="w"> </span>=<span class="w"> </span>3.141592653589793
+val<span class="w"> </span>e:<span class="w"> </span>Float<span class="w"> </span>=<span class="w"> </span>2.718281828459045
 
-<h1>✅ WORKING: Safe operations</h1>
-<p>def safe_head(list: List(T)): Option(T)      # Safe variant for any list</p>
-<p>def safe_tail(list: List(T)): Option(List(T))  # Safe tail operation</p>
-<p>def safe_nth(list: List(T), index: Int): Option(T)  # Safe indexing</p>
-</code></pre>
+#<span class="w"> </span>Basic<span class="w"> </span>operations
+def<span class="w"> </span>abs(x:<span class="w"> </span>Int):<span class="w"> </span>Nat
+def<span class="w"> </span>abs(x:<span class="w"> </span>Float):<span class="w"> </span>Float<span class="w"> </span>when<span class="w"> </span>result<span class="w"> </span>&gt;=<span class="w"> </span>0.0
+def<span class="w"> </span>min(x:<span class="w"> </span>T,<span class="w"> </span>y:<span class="w"> </span>T):<span class="w"> </span>T<span class="w"> </span>where<span class="w"> </span>T:<span class="w"> </span>Ord
+def<span class="w"> </span>max(x:<span class="w"> </span>T,<span class="w"> </span>y:<span class="w"> </span>T):<span class="w"> </span>T<span class="w"> </span>where<span class="w"> </span>T:<span class="w"> </span>Ord
 
-<strong>🎆 Success Example from <code>dependent<em>types</em>simple.cure</code>:</strong>
-<pre><code># This actually works and runs successfully!
-<p>let v1 = make_vec3(1.0, 2.0, 3.0)</p>
-<p>let v2 = make_vec3(4.0, 5.0, 6.0) </p>
-<p>let dot<em>result = zip</em>with(v1, v2, fn(x, y) -> x * y end)</p>
-<p>                |> fold(0.0, fn(x, acc) -> acc + x end)  # Result: 32.0</p>
-</code></pre>
+#<span class="w"> </span>Advanced<span class="w"> </span>functions
+def<span class="w"> </span>sqrt(x:<span class="w"> </span>Float):<span class="w"> </span>Float<span class="w"> </span>when<span class="w"> </span>x<span class="w"> </span>&gt;=<span class="w"> </span>0.0
+def<span class="w"> </span>power(base:<span class="w"> </span>Float,<span class="w"> </span>exp:<span class="w"> </span>Float):<span class="w"> </span>Float
+def<span class="w"> </span>sin(x:<span class="w"> </span>Float):<span class="w"> </span>Float
+def<span class="w"> </span>cos(x:<span class="w"> </span>Float):<span class="w"> </span>Float
+def<span class="w"> </span>log(x:<span class="w"> </span>Float):<span class="w"> </span>Float<span class="w"> </span>when<span class="w"> </span>x<span class="w"> </span>&gt;<span class="w"> </span>0.0
 
-<h3>Mathematical Functions</h3>
+#<span class="w"> </span>Safe<span class="w"> </span>operations
+def<span class="w"> </span>safe_divide(x:<span class="w"> </span>Float,<span class="w"> </span>y:<span class="w"> </span>Float):<span class="w"> </span>Result(Float,<span class="w"> </span>String)
+def<span class="w"> </span>safe_sqrt(x:<span class="w"> </span>Float):<span class="w"> </span>Result(Float,<span class="w"> </span>String)
+</code></pre></div>
 
-<h4><code>Std.Math</code> Module</h4>
-<pre><code># Constants
-<p>val pi: Float = 3.141592653589793</p>
-<p>val e: Float = 2.718281828459045</p>
-
-<h1>Basic operations</h1>
-<p>def abs(x: Int): Nat</p>
-<p>def abs(x: Float): Float when result >= 0.0</p>
-<p>def min(x: T, y: T): T where T: Ord</p>
-<p>def max(x: T, y: T): T where T: Ord</p>
-
-<h1>Advanced functions</h1>
-<p>def sqrt(x: Float): Float when x >= 0.0</p>
-<p>def power(base: Float, exp: Float): Float</p>
-<p>def sin(x: Float): Float</p>
-<p>def cos(x: Float): Float</p>
-<p>def log(x: Float): Float when x > 0.0</p>
-
-<h1>Safe operations</h1>
-<p>def safe_divide(x: Float, y: Float): Result(Float, String)</p>
-<p>def safe_sqrt(x: Float): Result(Float, String)</p>
-</code></pre>
-
-<h3>FSM Runtime API</h3>
-
+<h3 id="fsm-runtime-api">FSM Runtime API</h3>
 <p>The Std.Fsm module provides curify wrappers to the Erlang runtime. The following functions are available (see lib/std/fsm.cure):</p>
-
 <ul>
 <li>start_fsm/1</li>
 <li>fsm_cast/2</li>
@@ -390,248 +336,223 @@
 <li>fsm_spawn/2</li>
 <li>fsm_send/2</li>
 <li>fsm_info/1</li>
-<li>fsm<em>is</em>alive/1</li>
+<li>fsm_is_alive/1</li>
 </ul>
-
 <p>The FSM runtime provides native support for finite state machines.</p>
+<h3 id="fsm-lifecycle">FSM Lifecycle</h3>
+<h4 id="cure_fsm_runtimespawn_fsm12"><code>cure_fsm_runtime:spawn_fsm/1,2</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">spawn_fsm</span><span class="p">(</span><span class="nv">Type</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">atom</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">pid</span><span class="p">().</span>
+<span class="nf">spawn_fsm</span><span class="p">(</span><span class="nv">Type</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">atom</span><span class="p">(),</span><span class="w"> </span><span class="nv">InitData</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">term</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">pid</span><span class="p">().</span>
+</code></pre></div>
 
-<h3>FSM Lifecycle</h3>
-
-<h4><code>cure<em>fsm</em>runtime:spawn_fsm/1,2</code></h4>
-<pre><code>spawn_fsm(Type :: atom()) -> pid().
-<p>spawn_fsm(Type :: atom(), InitData :: term()) -> pid().</p>
-</code></pre>
 <p>Spawn a new FSM process.</p>
+<h4 id="cure_fsm_runtimestop_fsm1"><code>cure_fsm_runtime:stop_fsm/1</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">stop_fsm</span><span class="p">(</span><span class="nv">FsmPid</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">pid</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="p">.</span>
+</code></pre></div>
 
-<h4><code>cure<em>fsm</em>runtime:stop_fsm/1</code></h4>
-<pre><code>stop_fsm(FsmPid :: pid()) -> ok.
-</code></pre>
 <p>Gracefully stop an FSM process.</p>
+<h3 id="fsm-communication">FSM Communication</h3>
+<h4 id="cure_fsm_runtimesend_event23"><code>cure_fsm_runtime:send_event/2,3</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">send_event</span><span class="p">(</span><span class="nv">FsmPid</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">pid</span><span class="p">(),</span><span class="w"> </span><span class="nv">Event</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">term</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="p">.</span>
+<span class="nf">send_event</span><span class="p">(</span><span class="nv">FsmPid</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">pid</span><span class="p">(),</span><span class="w"> </span><span class="nv">Event</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">term</span><span class="p">(),</span><span class="w"> </span><span class="nv">Timeout</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">integer</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="n">timeout</span><span class="p">.</span>
+</code></pre></div>
 
-<h3>FSM Communication</h3>
-
-<h4><code>cure<em>fsm</em>runtime:send_event/2,3</code></h4>
-<pre><code>send_event(FsmPid :: pid(), Event :: term()) -> ok.
-<p>send_event(FsmPid :: pid(), Event :: term(), Timeout :: integer()) -> ok | timeout.</p>
-</code></pre>
 <p>Send events to FSM processes.</p>
+<h4 id="cure_fsm_runtimeget_state1"><code>cure_fsm_runtime:get_state/1</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">get_state</span><span class="p">(</span><span class="nv">FsmPid</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">pid</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="nv">StateName</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">atom</span><span class="p">(),</span><span class="w"> </span><span class="nv">StateData</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">term</span><span class="p">()}.</span>
+</code></pre></div>
 
-<h4><code>cure<em>fsm</em>runtime:get_state/1</code></h4>
-<pre><code>get_state(FsmPid :: pid()) -> {StateName :: atom(), StateData :: term()}.
-</code></pre>
 <p>Get the current state of an FSM.</p>
+<h3 id="fsm-inspection">FSM Inspection</h3>
+<h4 id="cure_fsm_runtimeget_fsm_info1"><code>cure_fsm_runtime:get_fsm_info/1</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">get_fsm_info</span><span class="p">(</span><span class="nv">FsmPid</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">pid</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">fsm_info</span><span class="p">().</span>
+</code></pre></div>
 
-<h3>FSM Inspection</h3>
-
-<h4><code>cure<em>fsm</em>runtime:get<em>fsm</em>info/1</code></h4>
-<pre><code>get<em>fsm</em>info(FsmPid :: pid()) -> fsm_info().
-</code></pre>
 <p>Get detailed FSM information for debugging:</p>
-<pre><code>-record(fsm_info, {
-<p>    type :: atom(),</p>
-<p>    current_state :: atom(),</p>
-<p>    state_data :: term(),</p>
-<p>    transitions :: [transition()],</p>
-<p>    message_queue :: [term()]</p>
-<p>}).</p>
-</code></pre>
+<div class="codehilite"><pre><span></span><code><span class="p">-</span><span class="ni">record</span><span class="p">(</span><span class="nl">fsm_info</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">type</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">atom</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">current_state</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">atom</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">state_data</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">term</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">transitions</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="p">[</span><span class="n">transition</span><span class="p">()],</span>
+<span class="w">    </span><span class="n">message_queue</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="p">[</span><span class="n">term</span><span class="p">()]</span>
+<span class="p">}).</span>
+</code></pre></div>
 
-<h3>Built-in FSMs</h3>
+<h3 id="built-in-fsms">Built-in FSMs</h3>
+<h4 id="counter-fsm">Counter FSM</h4>
+<div class="codehilite"><pre><span></span><code><span class="n">fsm</span><span class="w"> </span><span class="n">Counter</span><span class="p">(</span><span class="nl">initial</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="nl">states</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">Counting</span><span class="o">]</span>
+<span class="w">  </span><span class="nl">initial</span><span class="p">:</span><span class="w"> </span><span class="n">Counting</span>
+<span class="w">  </span><span class="k">data</span><span class="err">:</span><span class="w"> </span><span class="err">{</span><span class="k">value</span><span class="err">:</span><span class="w"> </span><span class="nc">Int</span><span class="err">}</span>
 
-<h4>Counter FSM</h4>
-<pre><code>fsm Counter(initial: Int) do
-<p>  states: [Counting]</p>
-<p>  initial: Counting</p>
-<p>  data: {value: Int}</p>
+<span class="w">  </span><span class="k">state</span><span class="w"> </span><span class="n">Counting</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">event</span><span class="p">(</span><span class="err">:</span><span class="n">increment</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span>
+<span class="w">      </span><span class="k">data</span><span class="p">.</span><span class="k">value</span><span class="w"> </span><span class="err">:</span><span class="o">=</span><span class="w"> </span><span class="k">data</span><span class="p">.</span><span class="k">value</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">      </span><span class="n">Counting</span>
+<span class="w">    </span><span class="n">event</span><span class="p">(</span><span class="err">:</span><span class="n">decrement</span><span class="p">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="k">data</span><span class="p">.</span><span class="k">value</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span>
+<span class="w">      </span><span class="k">data</span><span class="p">.</span><span class="k">value</span><span class="w"> </span><span class="err">:</span><span class="o">=</span><span class="w"> </span><span class="k">data</span><span class="p">.</span><span class="k">value</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">      </span><span class="n">Counting</span>
+<span class="w">    </span><span class="n">event</span><span class="p">(</span><span class="err">:</span><span class="n">reset</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">      </span><span class="k">data</span><span class="p">.</span><span class="k">value</span><span class="w"> </span><span class="err">:</span><span class="o">=</span><span class="w"> </span><span class="n">initial</span>
+<span class="w">      </span><span class="n">Counting</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<p>  state Counting do</p>
-<p>    event(:increment) -> </p>
-<p>      data.value := data.value + 1</p>
-<p>      Counting</p>
-<p>    event(:decrement) when data.value > 0 -> </p>
-<p>      data.value := data.value - 1</p>
-<p>      Counting</p>
-<p>    event(:reset) -></p>
-<p>      data.value := initial</p>
-<p>      Counting</p>
-<p>  end</p>
-<p>end</p>
-</code></pre>
-
-<h2>Type System API</h2>
-
-<h3>Dependent Types</h3>
-
+<h2 id="type-system-api">Type System API</h2>
+<h3 id="dependent-types">Dependent Types</h3>
 <p>Cure supports dependent types where types can depend on values:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Vector</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">compile</span><span class="o">-</span><span class="nx">time</span><span class="w"> </span><span class="nx">known</span><span class="w"> </span><span class="nx">length</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span>
 
-<pre><code># Vector with compile-time known length
-<p>type Vector(T, n: Nat) = List(T, n)</p>
+<span class="err">#</span><span class="w"> </span><span class="nx">Safe</span><span class="w"> </span><span class="nx">array</span><span class="w"> </span><span class="nx">access</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">get_element</span><span class="p">(</span><span class="nx">vec</span><span class="p">:</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">),</span><span class="w"> </span><span class="nx">index</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">):</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">index</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Type</span><span class="w"> </span><span class="nx">system</span><span class="w"> </span><span class="nx">guarantees</span><span class="w"> </span><span class="nx">index</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="nx">valid</span>
+<span class="w">  </span><span class="nx">unsafe_get</span><span class="p">(</span><span class="nx">vec</span><span class="p">,</span><span class="w"> </span><span class="nx">index</span><span class="p">)</span>
+</code></pre></div>
 
-<h1>Safe array access</h1>
-<p>def get_element(vec: Vector(T, n), index: Nat): T when index < n =</p>
-<p>  # Type system guarantees index is valid</p>
-<p>  unsafe_get(vec, index)</p>
-</code></pre>
+<h3 id="type-constraints">Type Constraints</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Constrained</span><span class="w"> </span><span class="nx">function</span><span class="w"> </span><span class="nx">parameters</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">positive_sqrt</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Float</span><span class="p">):</span><span class="w"> </span><span class="nx">Float</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="m m-Double">0.0</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span>
 
-<h3>Type Constraints</h3>
+<span class="err">#</span><span class="w"> </span><span class="nx">Dependent</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="nx">types</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">replicate</span><span class="p">(</span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">value</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">  </span><span class="k">else</span><span class="w"> </span><span class="p">[</span><span class="nx">value</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">replicate</span><span class="p">(</span><span class="nx">n</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nx">value</span><span class="p">)]</span>
+<span class="w">  </span><span class="nx">end</span>
+</code></pre></div>
 
-<pre><code># Constrained function parameters
-<p>def positive_sqrt(x: Float): Float when x > 0.0 =</p>
-<p>  sqrt(x)</p>
-
-<h1>Dependent return types</h1>
-<p>def replicate(n: Nat, value: T): List(T, n) =</p>
-<p>  if n == 0 then []</p>
-<p>  else [value | replicate(n-1, value)]</p>
-<p>  end</p>
-</code></pre>
-
-<h3>Record Types ✅ <strong>IMPLEMENTED</strong></h3>
-
+<h3 id="record-types-implemented">Record Types ✅ <strong>IMPLEMENTED</strong></h3>
 <p>Records provide structured data with named fields:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Record definition</span>
+<span class="n">record</span><span class="w"> </span><span class="n">Point</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">Float</span>
+<span class="w">  </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">Float</span>
+<span class="n">end</span>
 
-<pre><code># Record definition
-<p>record Point do</p>
-<p>  x: Float</p>
-<p>  y: Float</p>
-<p>end</p>
+<span class="c1"># Record with type parameters</span>
+<span class="n">record</span><span class="w"> </span><span class="n">Pair</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">U</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">first</span><span class="p">:</span><span class="w"> </span><span class="n">T</span>
+<span class="w">  </span><span class="n">second</span><span class="p">:</span><span class="w"> </span><span class="n">U</span>
+<span class="n">end</span>
 
-<h1>Record with type parameters</h1>
-<p>record Pair(T, U) do</p>
-<p>  first: T</p>
-<p>  second: U</p>
-<p>end</p>
+<span class="c1"># Record construction</span>
+<span class="n">let</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="mf">3.0</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="mf">4.0</span><span class="p">}</span>
+<span class="n">let</span><span class="w"> </span><span class="n">pair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Pair</span><span class="p">{</span><span class="n">first</span><span class="p">:</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="n">second</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;hello&quot;</span><span class="p">}</span>
 
-<h1>Record construction</h1>
-<p>let point = Point{x: 3.0, y: 4.0}</p>
-<p>let pair = Pair{first: 42, second: "hello"}</p>
+<span class="c1"># Record pattern matching</span>
+<span class="k">match</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="s2">&quot;Origin&quot;</span>
+<span class="w">  </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">_</span><span class="p">}</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="s2">&quot;Right side&quot;</span>
+<span class="n">end</span>
+</code></pre></div>
 
-<h1>Record pattern matching</h1>
-<p>match point do</p>
-<p>  Point{x: x, y: y} when x == 0.0 and y == 0.0 -></p>
-<p>    "Origin"</p>
-<p>  Point{x: x, y: _} when x > 0.0 -></p>
-<p>    "Right side"</p>
-<p>end</p>
-</code></pre>
-
-<h3>Pattern Guards ✅ <strong>IMPLEMENTED</strong></h3>
-
+<h3 id="pattern-guards-implemented">Pattern Guards ✅ <strong>IMPLEMENTED</strong></h3>
 <p>Pattern matching supports guard expressions with the <code>when</code> keyword:</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Numeric guards</span>
+<span class="n">match</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Negative&quot;</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Zero&quot;</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Positive&quot;</span>
+<span class="kd">end</span>
 
-<pre><code># Numeric guards
-<p>match value do</p>
-<p>  x when x < 0 -> "Negative"</p>
-<p>  x when x == 0 -> "Zero"</p>
-<p>  x when x > 0 -> "Positive"</p>
-<p>end</p>
+<span class="cp"># Logical operators in guards</span>
+<span class="n">match</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;In range&quot;</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="kr">or</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Out of range&quot;</span>
+<span class="kd">end</span>
 
-<h1>Logical operators in guards</h1>
-<p>match n do</p>
-<p>  x when x >= 10 and x <= 20 -> "In range"</p>
-<p>  x when x < 10 or x > 20 -> "Out of range"</p>
-<p>end</p>
+<span class="cp"># Guards with record patterns</span>
+<span class="n">match</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;First quadrant&quot;</span>
+<span class="w">  </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">1.0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Inside unit circle&quot;</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-<h1>Guards with record patterns</h1>
-<p>match point do</p>
-<p>  Point{x: x, y: y} when x > 0.0 and y > 0.0 -> "First quadrant"</p>
-<p>  Point{x: x, y: y} when x <em> x + y </em> y < 1.0 -> "Inside unit circle"</p>
-<p>end</p>
-</code></pre>
+<h3 id="type-classes">Type Classes</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">typeclass</span><span class="w"> </span><span class="nx">Ord</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">compare</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">Ordering</span>
+<span class="nx">end</span>
 
-<h3>Type Classes</h3>
+<span class="nx">typeclass</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span>
+<span class="w">  </span><span class="nx">def</span><span class="w"> </span><span class="nx">show</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">):</span><span class="w"> </span><span class="nx">String</span>
+<span class="nx">end</span>
 
-<pre><code>typeclass Ord(T) where
-<p>  def compare(x: T, y: T): Ordering</p>
-<p>end</p>
+<span class="err">#</span><span class="w"> </span><span class="nx">Automatic</span><span class="w"> </span><span class="nx">derivation</span>
+<span class="nx">derive</span><span class="w"> </span><span class="nx">Show</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">Show</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span>
+<span class="nx">derive</span><span class="w"> </span><span class="nx">Ord</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">Ord</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span>
+</code></pre></div>
 
-<p>typeclass Show(T) where</p>
-<p>  def show(x: T): String</p>
-<p>end</p>
+<h2 id="cli-interface">CLI Interface</h2>
+<h3 id="build-commands">Build Commands</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Basic compilation</span>
+make<span class="w"> </span>all<span class="w">                    </span><span class="c1"># Build complete compiler and stdlib</span>
+make<span class="w"> </span>compiler<span class="w">               </span><span class="c1"># Build compiler only</span>
+make<span class="w"> </span>stdlib<span class="w">                 </span><span class="c1"># Build standard library</span>
+make<span class="w"> </span><span class="nb">test</span><span class="w">                   </span><span class="c1"># Run test suite</span>
 
-<h1>Automatic derivation</h1>
-<p>derive Show for List(T) when Show(T)</p>
-<p>derive Ord for List(T) when Ord(T)</p>
-</code></pre>
+<span class="c1"># Development commands  </span>
+make<span class="w"> </span>shell<span class="w">                  </span><span class="c1"># Start Erlang shell with modules</span>
+make<span class="w"> </span>clean<span class="w">                  </span><span class="c1"># Clean build artifacts</span>
+make<span class="w"> </span>format<span class="w">                 </span><span class="c1"># Format code with rebar3 fmt</span>
 
-<h2>CLI Interface</h2>
+<span class="c1"># Testing</span>
+make<span class="w"> </span>test-basic<span class="w">             </span><span class="c1"># Run basic tests</span>
+make<span class="w"> </span>test-integration<span class="w">       </span><span class="c1"># Run integration tests</span>
+make<span class="w"> </span>test-performance<span class="w">       </span><span class="c1"># Run performance tests</span>
+</code></pre></div>
 
-<h3>Build Commands</h3>
+<h3 id="file-compilation">File Compilation</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Compile single files</span>
+make<span class="w"> </span>compile-file<span class="w"> </span><span class="nv">CURE_FILE</span><span class="o">=</span>examples/simple.cure
+make<span class="w"> </span>compile-file<span class="w"> </span><span class="nv">CURE_FILE</span><span class="o">=</span>lib/std.cure<span class="w"> </span><span class="nv">OUTPUT</span><span class="o">=</span>custom.beam
 
-<pre><code># Basic compilation
-<p>make all                    # Build complete compiler and stdlib</p>
-<p>make compiler               # Build compiler only</p>
-<p>make stdlib                 # Build standard library</p>
-<p>make test                   # Run test suite</p>
+<span class="c1"># Direct compiler usage</span>
+./cure<span class="w"> </span>examples/simple.cure<span class="w"> </span>--verbose
+./cure<span class="w"> </span>lib/std/math.cure<span class="w"> </span>-o<span class="w"> </span>math.beam<span class="w"> </span>--no-debug
+</code></pre></div>
 
-<h1>Development commands  </h1>
-<p>make shell                  # Start Erlang shell with modules</p>
-<p>make clean                  # Clean build artifacts</p>
-<p>make format                 # Format code with rebar3 fmt</p>
-
-<h1>Testing</h1>
-<p>make test-basic             # Run basic tests</p>
-<p>make test-integration       # Run integration tests</p>
-<p>make test-performance       # Run performance tests</p>
-</code></pre>
-
-<h3>File Compilation</h3>
-
-<pre><code># Compile single files
-<p>make compile-file CURE_FILE=examples/simple.cure</p>
-<p>make compile-file CURE_FILE=lib/std.cure OUTPUT=custom.beam</p>
-
-<h1>Direct compiler usage</h1>
-<p>./cure examples/simple.cure --verbose</p>
-<p>./cure lib/std/math.cure -o math.beam --no-debug</p>
-</code></pre>
-
-<h2>Build System Integration</h2>
-
-<h3>Makefile Integration</h3>
-
+<h2 id="build-system-integration">Build System Integration</h2>
+<h3 id="makefile-integration">Makefile Integration</h3>
 <p>The build system provides comprehensive support for mixed Erlang/Cure projects:</p>
+<div class="codehilite"><pre><span></span><code><span class="c"># Add to your Makefile</span>
+<span class="nv">CURE_FILES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">$(</span>wildcard<span class="w"> </span>src/*.cure<span class="k">)</span>
+<span class="nv">CURE_BEAM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">$(</span>patsubst<span class="w"> </span>src/%.cure,ebin/%.beam,<span class="k">$(</span>CURE_FILES<span class="k">))</span>
 
-<pre><code># Add to your Makefile
-<p>CURE_FILES = $(wildcard src/*.cure)</p>
-<p>CURE<em>BEAM = $(patsubst src/%.cure,ebin/%.beam,$(CURE</em>FILES))</p>
+<span class="c"># Compilation rule</span>
+<span class="nf">ebin/%.beam</span><span class="o">:</span><span class="w"> </span><span class="n">src</span>/%.<span class="n">cure</span>
+<span class="w">    </span>cure<span class="w"> </span><span class="s2">&quot;</span>$<span class="s2">&lt;&quot;</span><span class="w"> </span>-o<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$@</span><span class="s2">&quot;</span><span class="w"> </span>--verbose
 
-<h1>Compilation rule</h1>
-<p>ebin/%.beam: src/%.cure</p>
-<p>	cure "$<" -o "$@" --verbose</p>
+<span class="nf">all</span><span class="o">:</span><span class="w"> </span><span class="k">$(</span><span class="nv">CURE_BEAM</span><span class="k">)</span>
+</code></pre></div>
 
-<p>all: $(CURE_BEAM)</p>
-</code></pre>
+<h3 id="rebar3-integration">Rebar3 Integration</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">%% rebar.config</span>
+<span class="p">{</span><span class="n">pre_hooks</span><span class="p">,</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="n">compile</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;make -C deps/cure compiler&quot;</span><span class="p">}</span>
+<span class="p">]}.</span>
 
-<h3>Rebar3 Integration</h3>
+<span class="p">{</span><span class="n">plugins</span><span class="p">,</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="n">cure_rebar_plugin</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">git</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;https://github.com/cure-lang/rebar3_cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">branch</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;main&quot;</span><span class="p">}}}</span>
+<span class="p">]}.</span>
+</code></pre></div>
 
-<pre><code>%% rebar.config
-<p>{pre_hooks, [</p>
-<p>    {compile, "make -C deps/cure compiler"}</p>
-<p>]}.</p>
-
-<p>{plugins, [</p>
-<p>    {cure<em>rebar</em>plugin, {git, "https://github.com/cure-lang/rebar3_cure", {branch, "main"}}}</p>
-<p>]}.</p>
-</code></pre>
-
-<h2>Runtime System</h2>
-
-<h3>BEAM Integration</h3>
-
+<h2 id="runtime-system">Runtime System</h2>
+<h3 id="beam-integration">BEAM Integration</h3>
 <p>Cure compiles to native BEAM bytecode and integrates seamlessly with Erlang/OTP:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Calling Cure functions from Erlang</span>
+<span class="nn">math_utils</span><span class="p">:</span><span class="nf">factorial</span><span class="p">(</span><span class="mi">5</span><span class="p">).</span><span class="w">     </span><span class="c">% Calls Cure function</span>
+<span class="nn">list_utils</span><span class="p">:</span><span class="nf">map</span><span class="p">(</span><span class="nv">Fun</span><span class="p">,</span><span class="w"> </span><span class="nv">List</span><span class="p">).</span><span class="w">   </span><span class="c">% Calls Cure higher-order function</span>
 
-<pre><code>%% Calling Cure functions from Erlang
-<p>math_utils:factorial(5).     % Calls Cure function</p>
-<p>list_utils:map(Fun, List).   % Calls Cure higher-order function</p>
+<span class="c">%% FSMs as OTP processes</span>
+<span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Pid</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_fsm_runtime</span><span class="p">:</span><span class="nf">spawn_fsm</span><span class="p">(</span><span class="n">traffic_light</span><span class="p">),</span>
+<span class="n">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_fsm_runtime</span><span class="p">:</span><span class="nf">send_event</span><span class="p">(</span><span class="nv">Pid</span><span class="p">,</span><span class="w"> </span><span class="n">go</span><span class="p">).</span>
+</code></pre></div>
 
-<p>%% FSMs as OTP processes</p>
-<p>{ok, Pid} = cure<em>fsm</em>runtime:spawn<em>fsm(traffic</em>light),</p>
-<p>ok = cure<em>fsm</em>runtime:send_event(Pid, go).</p>
-</code></pre>
-
-<h3>Performance Characteristics</h3>
-
+<h3 id="performance-characteristics">Performance Characteristics</h3>
 <ul>
 <li><strong>Function calls</strong>: ~10ns overhead for local calls</li>
 <li><strong>FSM events</strong>: ~1μs including message passing</li>
@@ -639,152 +560,132 @@
 <li><strong>Memory usage</strong>: Similar to equivalent Erlang code</li>
 <li><strong>Garbage collection</strong>: Uses BEAM's GC (per-process, generational)</li>
 </ul>
-
-<h3>Error Handling</h3>
-
+<h3 id="error-handling">Error Handling</h3>
 <p>Cure integrates with BEAM's supervision trees and error handling:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">safe_operation</span><span class="p">()</span><span class="o">:</span><span class="w"> </span><span class="n">Result</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">try</span>
+<span class="w">    </span><span class="n">risky_operation</span><span class="p">()</span>
+<span class="w">  </span><span class="n">catch</span>
+<span class="w">    </span><span class="p">{</span><span class="nf">error</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nf">Error</span><span class="p">(</span><span class="n">atom_to_string</span><span class="p">(</span><span class="n">Reason</span><span class="p">))</span>
+<span class="w">    </span><span class="p">{</span><span class="n">exit</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nf">Error</span><span class="p">(</span><span class="s">&quot;Process exited: &quot;</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="n">atom_to_string</span><span class="p">(</span><span class="n">Reason</span><span class="p">))</span>
+<span class="w">  </span><span class="kd">end</span>
+</code></pre></div>
 
-<pre><code>def safe_operation(): Result(T, String) =
-<p>  try</p>
-<p>    risky_operation()</p>
-<p>  catch</p>
-<p>    {error, Reason} -> Error(atom<em>to</em>string(Reason))</p>
-<p>    {exit, Reason} -> Error("Process exited: " ++ atom<em>to</em>string(Reason))</p>
-<p>  end</p>
-</code></pre>
+<h2 id="integration-examples">Integration Examples</h2>
+<h3 id="calling-from-erlang">Calling from Erlang</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Assuming compiled Cure modules</span>
+<span class="p">-</span><span class="ni">module</span><span class="p">(</span><span class="n">example</span><span class="p">).</span>
+<span class="p">-</span><span class="ni">export</span><span class="p">([</span><span class="n">test</span><span class="o">/</span><span class="mi">0</span><span class="p">]).</span>
 
-<h2>Integration Examples</h2>
+<span class="nf">test</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Call Cure standard library</span>
+<span class="w">    </span><span class="mi">42</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">&#39;Std.Math&#39;</span><span class="p">:</span><span class="nb">abs</span><span class="p">(</span><span class="o">-</span><span class="mi">42</span><span class="p">),</span>
+<span class="w">    </span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">&#39;Std.List&#39;</span><span class="p">:</span><span class="nf">map</span><span class="p">(</span><span class="k">fun</span><span class="p">(</span><span class="nv">X</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">X</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]),</span>
 
-<h3>Calling from Erlang</h3>
+<span class="w">    </span><span class="c">% Use Cure FSMs</span>
+<span class="w">    </span><span class="nv">Counter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_fsm_runtime</span><span class="p">:</span><span class="nf">spawn_fsm</span><span class="p">(</span><span class="n">&#39;Counter&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span>
+<span class="w">    </span><span class="n">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_fsm_runtime</span><span class="p">:</span><span class="nf">send_event</span><span class="p">(</span><span class="nv">Counter</span><span class="p">,</span><span class="w"> </span><span class="n">increment</span><span class="p">),</span>
+<span class="w">    </span><span class="p">{</span><span class="n">counting</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_fsm_runtime</span><span class="p">:</span><span class="nf">get_state</span><span class="p">(</span><span class="nv">Counter</span><span class="p">).</span>
+</code></pre></div>
 
-<pre><code>%% Assuming compiled Cure modules
-<p>-module(example).</p>
-<p>-export([test/0]).</p>
+<h3 id="calling-from-elixir">Calling from Elixir</h3>
+<div class="codehilite"><pre><span></span><code><span class="kd">defmodule</span><span class="w"> </span><span class="nc">Example</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="kd">def</span><span class="w"> </span><span class="n">test</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="c1"># Call Cure standard library</span>
+<span class="w">    </span><span class="mi">42</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">:&quot;Std.Math&quot;</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="o">-</span><span class="mi">42</span><span class="p">)</span>
+<span class="w">    </span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">:&quot;Std.List&quot;</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="o">&amp;</span><span class="p">(</span><span class="ni">&amp;1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
 
-<p>test() -></p>
-<p>    % Call Cure standard library</p>
-<p>    42 = 'Std.Math':abs(-42),</p>
-<p>    [2,4,6] = 'Std.List':map(fun(X) -> X * 2 end, [1,2,3]),</p>
-    
-<p>    % Use Cure FSMs</p>
-<p>    Counter = cure<em>fsm</em>runtime:spawn_fsm('Counter', 0),</p>
-<p>    ok = cure<em>fsm</em>runtime:send_event(Counter, increment),</p>
-<p>    {counting, 1} = cure<em>fsm</em>runtime:get_state(Counter).</p>
-</code></pre>
+<span class="w">    </span><span class="c1"># Use Cure FSMs</span>
+<span class="w">    </span><span class="p">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="n">counter</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">:cure_fsm_runtime</span><span class="o">.</span><span class="n">spawn_fsm</span><span class="p">(</span><span class="ss">:&quot;Counter&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">    </span><span class="ss">:ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">:cure_fsm_runtime</span><span class="o">.</span><span class="n">send_event</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span><span class="w"> </span><span class="ss">:increment</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span><span class="ss">:counting</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">:cure_fsm_runtime</span><span class="o">.</span><span class="n">get_state</span><span class="p">(</span><span class="n">counter</span><span class="p">)</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h3>Calling from Elixir</h3>
+<h3 id="otp-supervision">OTP Supervision</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">%% supervisor.erl</span>
+<span class="nf">init</span><span class="p">([])</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="nv">Children</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">#{</span>
+<span class="w">            </span><span class="n">id</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">cure_fsm_supervisor</span><span class="p">,</span>
+<span class="w">            </span><span class="n">start</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">cure_fsm_runtime</span><span class="p">,</span><span class="w"> </span><span class="n">start_supervisor</span><span class="p">,</span><span class="w"> </span><span class="p">[]},</span>
+<span class="w">            </span><span class="n">type</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">supervisor</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="p">{#{</span><span class="n">strategy</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">one_for_all</span><span class="p">,</span><span class="w"> </span><span class="n">intensity</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">period</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">10</span><span class="p">},</span><span class="w"> </span><span class="nv">Children</span><span class="p">}}.</span>
+</code></pre></div>
 
-<pre><code>defmodule Example do
-<p>  def test do</p>
-<p>    # Call Cure standard library</p>
-<p>    42 = :"Std.Math".abs(-42)</p>
-<p>    [2,4,6] = :"Std.List".map(&(&1 * 2), [1,2,3])</p>
-    
-<p>    # Use Cure FSMs</p>
-<p>    {:ok, counter} = :cure<em>fsm</em>runtime.spawn_fsm(:"Counter", 0)</p>
-<p>    :ok = :cure<em>fsm</em>runtime.send_event(counter, :increment)</p>
-<p>    {:counting, 1} = :cure<em>fsm</em>runtime.get_state(counter)</p>
-<p>  end</p>
-<p>end</p>
-</code></pre>
-
-<h3>OTP Supervision</h3>
-
-<pre><code>%% supervisor.erl
-<p>init([]) -></p>
-<p>    Children = [</p>
-<p>        #{</p>
-<p>            id => cure<em>fsm</em>supervisor,</p>
-<p>            start => {cure<em>fsm</em>runtime, start_supervisor, []},</p>
-<p>            type => supervisor</p>
-<p>        }</p>
-<p>    ],</p>
-<p>    {ok, {#{strategy => one<em>for</em>all, intensity => 10, period => 10}, Children}}.</p>
-</code></pre>
-
-<h2>Testing API ✅ <strong>100% SUCCESS RATE</strong></h2>
-
+<h2 id="testing-api-100-success-rate">Testing API ✅ <strong>100% SUCCESS RATE</strong></h2>
 <p>The Cure compiler includes comprehensive test suites for CLI wrapper functionality, standard library operations, and core compiler components with <strong>complete test coverage and 100% pass rate</strong>.</p>
+<h3 id="cli-testing">CLI Testing</h3>
+<h4 id="run_all_new_testsrun0-working"><code>run_all_new_tests:run/0</code> ✅ <strong>WORKING</strong></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">tests_failed</span><span class="p">,</span><span class="w"> </span><span class="nv">Count</span><span class="p">}}.</span>
+</code></pre></div>
 
-<h3>CLI Testing</h3>
-
-<h4><code>run<em>all</em>new_tests:run/0</code> ✅ <strong>WORKING</strong></h4>
-<pre><code>run() -> ok | {error, {tests_failed, Count}}.
-</code></pre>
 <p>Execute all comprehensive CLI wrapper and standard library test suites.</p>
+<p><strong>🎆 Test Results:</strong><br />
+- Total test suites: 8<br />
+- Passed: 8 ✅<br />
+- Failed: 0 ✅<br />
+- Success rate: 100% 🎉</p>
+<h4 id="cli_wrapper_comprehensive_testrun0"><code>cli_wrapper_comprehensive_test:run/0</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="p">.</span>
+</code></pre></div>
 
-<strong>🎆 Test Results:</strong>
-<ul>
-<li>Total test suites: 8</li>
-<li>Passed: 8 ✅</li>
-<li>Failed: 0 ✅</li>
-<li>Success rate: 100% 🎉</li>
-</ul>
+<p>Run comprehensive CLI wrapper tests including:<br />
+- Cure wrapper script build command execution<br />
+- Missing BEAM modules detection and reporting<br />
+- Automatic stdlib import addition and detection<br />
+- Standard library compilation failure reporting<br />
+- Std.List.length function behavior and performance</p>
+<h3 id="component-specific-testing">Component-Specific Testing</h3>
+<h4 id="cure_wrapper_script_testrun0"><code>cure_wrapper_script_test:run/0</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="p">.</span>
+</code></pre></div>
 
-<h4><code>cli<em>wrapper</em>comprehensive_test:run/0</code></h4>
-<pre><code>run() -> ok.
-</code></pre>
-<p>Run comprehensive CLI wrapper tests including:</p>
-<ul>
-<li>Cure wrapper script build command execution</li>
-<li>Missing BEAM modules detection and reporting</li>
-<li>Automatic stdlib import addition and detection</li>
-<li>Standard library compilation failure reporting</li>
-<li>Std.List.length function behavior and performance</li>
-</ul>
-
-<h3>Component-Specific Testing</h3>
-
-<h4><code>cure<em>wrapper</em>script_test:run/0</code></h4>
-<pre><code>run() -> ok.
-</code></pre>
 <p>Focused tests for wrapper script build command and error reporting.</p>
+<h4 id="cure_cli_stdlib_imports_testrun0"><code>cure_cli_stdlib_imports_test:run/0</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="p">.</span>
+</code></pre></div>
 
-<h4><code>cure<em>cli</em>stdlib<em>imports</em>test:run/0</code></h4>
-<pre><code>run() -> ok.
-</code></pre>
 <p>Tests for CLI automatic stdlib imports with comprehensive edge cases.</p>
+<h4 id="stdlib_compilation_failure_testrun0"><code>stdlib_compilation_failure_test:run/0</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="p">.</span>
+</code></pre></div>
 
-<h4><code>stdlib<em>compilation</em>failure_test:run/0</code></h4>
-<pre><code>run() -> ok.
-</code></pre>
 <p>Tests for stdlib compilation partial failure formatting and reporting.</p>
+<h4 id="std_list_length_function_testrun0"><code>std_list_length_function_test:run/0</code></h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="p">.</span>
+</code></pre></div>
 
-<h4><code>std<em>list</em>length<em>function</em>test:run/0</code></h4>
-<pre><code>run() -> ok.
-</code></pre>
 <p>Comprehensive tests for Std.List.length function with various data types and performance benchmarks.</p>
+<p><strong>✅ Usage Examples (All Working):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Run all comprehensive tests (100% success rate)</span>
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-pa<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-s<span class="w"> </span>run_all_new_tests<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
 
-<strong>✅ Usage Examples (All Working):</strong>
-<pre><code># Run all comprehensive tests (100% success rate)
-<p>erl -pa <em>build/ebin -pa test -s run</em>all<em>new</em>tests run -s init stop</p>
+<span class="c1"># Run individual test suites (all passing)</span>
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-pa<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-s<span class="w"> </span>cli_wrapper_comprehensive_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-pa<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-s<span class="w"> </span>cure_wrapper_script_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-pa<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-s<span class="w"> </span>cure_cli_stdlib_imports_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-pa<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-s<span class="w"> </span>std_list_length_function_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
 
-<h1>Run individual test suites (all passing)</h1>
-<p>erl -pa <em>build/ebin -pa test -s cli</em>wrapper<em>comprehensive</em>test run -s init stop</p>
-<p>erl -pa <em>build/ebin -pa test -s cure</em>wrapper<em>script</em>test run -s init stop</p>
-<p>erl -pa <em>build/ebin -pa test -s cure</em>cli<em>stdlib</em>imports_test run -s init stop</p>
-<p>erl -pa <em>build/ebin -pa test -s std</em>list<em>length</em>function_test run -s init stop</p>
+<span class="c1"># Expected output:</span>
+<span class="c1"># ========================================</span>
+<span class="c1"># Cure Compiler Test Suite</span>
+<span class="c1"># ========================================</span>
+<span class="c1"># [FSM Runtime System] ✅</span>
+<span class="c1"># [Type System &amp; Inference] ✅ </span>
+<span class="c1"># [Code Generation &amp; BEAM] ✅</span>
+<span class="c1"># [CLI Wrapper Comprehensive Tests] ✅</span>
+<span class="c1"># Total test suites: 8</span>
+<span class="c1"># Passed: 8</span>
+<span class="c1"># Failed: 0</span>
+<span class="c1"># 🎉 ALL TESTS PASSED! 🎉</span>
+</code></pre></div>
 
-<h1>Expected output:</h1>
-<h1>========================================</h1>
-<h1>Cure Compiler Test Suite</h1>
-<h1>========================================</h1>
-<h1>[FSM Runtime System] ✅</h1>
-<h1>[Type System & Inference] ✅ </h1>
-<h1>[Code Generation & BEAM] ✅</h1>
-<h1>[CLI Wrapper Comprehensive Tests] ✅</h1>
-<h1>Total test suites: 8</h1>
-<h1>Passed: 8</h1>
-<h1>Failed: 0</h1>
-<h1>🎉 ALL TESTS PASSED! 🎉</h1>
-</code></pre>
-
-<p>This API reference covers the complete Cure compiler and runtime system. For more detailed examples and language features, see the <a href="LANGUAGE<em>SPEC.md">Language Specification</a> and <a href="FEATURE</em>REFERENCE.md">Feature Reference</a>.</p>
-
+<p>This API reference covers the complete Cure compiler and runtime system. For more detailed examples and language features, see the <a href="LANGUAGE_SPEC.md">Language Specification</a> and <a href="FEATURE_REFERENCE.md">Feature Reference</a>.</p>
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">

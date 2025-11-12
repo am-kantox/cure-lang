@@ -37,505 +37,416 @@ Last Updated: Octob">
             <a href="../docs.html">← Back to Documentation</a>
         </div>
         
-        <h1>Cure Language Syntax Guide</h1>
-
-<strong>Based on</strong>: Actual Cure implementation (Standard Library v1.0)  
-<strong>Purpose</strong>: Reference for creating correct Cure examples  
-<strong>Last Updated</strong>: October 30, 2025
-
-<p>---</p>
-
-<h2>1. Module Structure</h2>
-
+        <h1 id="cure-language-syntax-guide">Cure Language Syntax Guide</h1>
+<p><strong>Based on</strong>: Actual Cure implementation (Standard Library v1.0)<br />
+<strong>Purpose</strong>: Reference for creating correct Cure examples<br />
+<strong>Last Updated</strong>: October 30, 2025</p>
+<hr />
+<h2 id="1-module-structure">1. Module Structure</h2>
 <p>Every Cure file should define a module:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="n">ModuleName</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="k">export</span><span class="w"> </span><span class="p">[</span><span class="n">function_name</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">TypeName</span><span class="p">]</span>
 
-<pre><code>module ModuleName do
-  export [function_name/1, TypeName]
-  
-  # Module contents
-end
-</code></pre>
+<span class="w">  </span><span class="c1"># Module contents</span>
+<span class="n">end</span>
+</code></pre></div>
 
-<h3>Exports</h3>
-
+<h3 id="exports">Exports</h3>
 <p>Export declarations specify what's public:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">export</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="n">function_name</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span><span class="w">    </span><span class="c1"># Function with arity</span>
+<span class="w">  </span><span class="n">TypeName</span><span class="p">,</span><span class="w">           </span><span class="c1"># Type constructor</span>
+<span class="w">  </span><span class="n">constructor_name</span><span class="w">    </span><span class="c1"># Data constructor</span>
+<span class="p">]</span>
+</code></pre></div>
 
-<pre><code>export [
-  function_name/1,    # Function with arity
-  TypeName,           # Type constructor
-  constructor_name    # Data constructor
-]
-</code></pre>
-
-<h3>Imports</h3>
-
+<h3 id="imports">Imports</h3>
 <p>Import from other modules (including standard library):</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Core</span> <span class="p">[</span><span class="n">Result</span><span class="p">,</span> <span class="n">Option</span><span class="p">,</span> <span class="n">ok</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">error</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.List</span> <span class="p">[</span><span class="nb">map</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="nb">filter</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fold</span><span class="o">/</span><span class="mi">3</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Io</span> <span class="p">[</span><span class="nb">print</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">println</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+</code></pre></div>
 
-<pre><code>import Std.Core [Result, Option, ok/1, error/1]
-import Std.List [map/2, filter/2, fold/3]
-import Std.Io [print/1, println/1]
-</code></pre>
-
-<p>---</p>
-
-<h2>2. Comments</h2>
-
+<hr />
+<h2 id="2-comments">2. Comments</h2>
 <p>Single-line comments only:</p>
+<div class="codehilite"><pre><span></span><code># This is a comment
+</code></pre></div>
 
-<pre><code># This is a comment
-</code></pre>
+<hr />
+<h2 id="3-type-definitions">3. Type Definitions</h2>
+<h3 id="type-aliases-with-sum-types">Type Aliases with Sum Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">E</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Ok</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Error</span><span class="p">(</span><span class="nx">E</span><span class="p">)</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Option</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Some</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">None</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Ordering</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Lt</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Eq</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Gt</span>
+</code></pre></div>
 
-<p>---</p>
-
-<h2>3. Type Definitions</h2>
-
-<h3>Type Aliases with Sum Types</h3>
-
-<pre><code>type Result(T, E) = Ok(T) | Error(E)
-type Option(T) = Some(T) | None
-type Ordering = Lt | Eq | Gt
-</code></pre>
-
-<h3>Record Types</h3>
-
+<h3 id="record-types">Record Types</h3>
 <p>Records define structured data with named fields:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">record</span><span class="w"> </span><span class="nv">RecordName</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="nv">field1</span>:<span class="w"> </span><span class="nv">Type1</span>
+<span class="w">  </span><span class="nv">field2</span>:<span class="w"> </span><span class="nv">Type2</span>
+<span class="w">  </span><span class="nv">field3</span>:<span class="w"> </span><span class="nv">Type3</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<pre><code>record RecordName do
-  field1: Type1
-  field2: Type2
-  field3: Type3
-end
-</code></pre>
+<h4 id="record-with-type-parameters">Record with Type Parameters</h4>
+<div class="codehilite"><pre><span></span><code><span class="nv">record</span><span class="w"> </span><span class="nv">Point</span><span class="ss">(</span><span class="nv">T</span><span class="ss">)</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="nv">x</span>:<span class="w"> </span><span class="nv">T</span>
+<span class="w">  </span><span class="nv">y</span>:<span class="w"> </span><span class="nv">T</span>
+<span class="k">end</span>
+</code></pre></div>
 
-<h4>Record with Type Parameters</h4>
+<h4 id="record-construction">Record Construction</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Create a record instance</span>
+<span class="n">let</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="mf">3.0</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="mf">4.0</span><span class="p">}</span>
+<span class="n">let</span><span class="w"> </span><span class="n">payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">timer_events</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">emergency_stops</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span>
+</code></pre></div>
 
-<pre><code>record Point(T) do
-  x: T
-  y: T
-end
-</code></pre>
+<h4 id="record-pattern-matching">Record Pattern Matching</h4>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Match and extract fields</span>
+<span class="n">match</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="s">&quot;Origin&quot;</span>
+<span class="w">  </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="s">&quot;First quadrant&quot;</span>
+<span class="w">  </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="s">&quot;On X-axis&quot;</span>
+<span class="kd">end</span>
 
-<h4>Record Construction</h4>
+<span class="cp"># Partial field matching (other fields ignored)</span>
+<span class="n">match</span><span class="w"> </span><span class="n">person</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Person</span><span class="p">{</span><span class="n">age</span><span class="o">:</span><span class="w"> </span><span class="n">age</span><span class="p">,</span><span class="w"> </span><span class="n">score</span><span class="o">:</span><span class="w"> </span><span class="n">score</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">18</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">score</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">90</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="s">&quot;Outstanding young achiever&quot;</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-<pre><code># Create a record instance
-let point = Point{x: 3.0, y: 4.0}
-let payload = TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0}
-</code></pre>
-
-<h4>Record Pattern Matching</h4>
-
-<pre><code># Match and extract fields
-match point do
-  Point{x: x, y: y} when x == 0.0 and y == 0.0 ->
-    "Origin"
-  Point{x: x, y: y} when x > 0.0 and y > 0.0 ->
-    "First quadrant"
-  Point{x: _, y: y} when y == 0.0 ->
-    "On X-axis"
-end
-
-# Partial field matching (other fields ignored)
-match person do
-  Person{age: age, score: score} when age < 18 and score >= 90 ->
-    "Outstanding young achiever"
-end
-</code></pre>
-
-<p>---</p>
-
-<h2>4. Function Definitions</h2>
-
-<h3>Basic Function Syntax</h3>
-
-<pre><code>def function_name(param1: Type1, param2: Type2): ReturnType =
+<hr />
+<h2 id="4-function-definitions">4. Function Definitions</h2>
+<h3 id="basic-function-syntax">Basic Function Syntax</h3>
+<div class="codehilite"><pre><span></span><code>def function_name(param1: Type1, param2: Type2): ReturnType =
   expression
-</code></pre>
+</code></pre></div>
 
-<h3>Function with Match Expression</h3>
+<h3 id="function-with-match-expression">Function with Match Expression</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">list</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">))</span><span class="o">:</span><span class="w"> </span><span class="n">Nat</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">match</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="p">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Zero</span>
+<span class="w">    </span><span class="p">[</span><span class="n">_</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">t</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Succ</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+<span class="w">  </span><span class="kd">end</span>
+</code></pre></div>
 
-<pre><code>def length(list: List(T)): Nat =
-  match list do
-    [] -> Zero
-    [_ | t] -> Succ(length(t))
-  end
-</code></pre>
+<h3 id="functions-with-let-bindings">Functions with Let Bindings</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">list</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="w"> </span><span class="n">predicate</span><span class="o">:</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Bool</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">match</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="p">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">    </span><span class="p">[</span><span class="n">h</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">t</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span>
+<span class="w">      </span><span class="n">let</span><span class="w"> </span><span class="n">filtered_tail</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">filter</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">predicate</span><span class="p">)</span>
+<span class="w">      </span><span class="n">match</span><span class="w"> </span><span class="n">predicate</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">        </span><span class="kr">true</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">[</span><span class="n">h</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">filtered_tail</span><span class="p">]</span>
+<span class="w">        </span><span class="kr">false</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">filtered_tail</span>
+<span class="w">      </span><span class="kd">end</span>
+<span class="w">  </span><span class="kd">end</span>
+</code></pre></div>
 
-<h3>Functions with Let Bindings</h3>
+<h3 id="lambda-functions">Lambda Functions</h3>
+<p>Lambda syntax: <code>fn(params) -&gt; expression end</code></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Simple lambda</span>
+<span class="n">let</span><span class="w"> </span><span class="n">double</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">end</span>
 
-<pre><code>def filter(list: List(T), predicate: T -> Bool): List(T) =
-  match list do
-    [] -> []
-    [h | t] -> 
-      let filtered_tail = filter(t, predicate)
-      match predicate(h) do
-        true -> [h | filtered_tail]
-        false -> filtered_tail
-      end
-  end
-</code></pre>
+<span class="c1"># Lambda with multiple params</span>
+<span class="n">let</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="n">end</span>
 
-<h3>Lambda Functions</h3>
+<span class="c1"># Curried function application</span>
+<span class="n">let</span><span class="w"> </span><span class="n">partial_func</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">func</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+<span class="n">partial_func</span><span class="p">(</span><span class="n">fold</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">,</span><span class="w"> </span><span class="k">func</span><span class="p">))</span>
+</code></pre></div>
 
-<p>Lambda syntax: <code>fn(params) -> expression end</code></p>
+<hr />
+<h2 id="5-pattern-matching">5. Pattern Matching</h2>
+<h3 id="match-expression-structure">Match Expression Structure</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">match</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="kt">pattern1</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">result1</span>
+<span class="w">  </span><span class="kt">pattern2</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">result2</span>
+<span class="w">  </span><span class="n">_</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">default_result</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-<pre><code># Simple lambda
-let double = fn(x) -> x * 2 end
-
-# Lambda with multiple params
-let add = fn(x, y) -> x + y end
-
-# Curried function application
-let partial_func = func(h)
-partial_func(fold(t, init, func))
-</code></pre>
-
-<p>---</p>
-
-<h2>5. Pattern Matching</h2>
-
-<h3>Match Expression Structure</h3>
-
-<pre><code>match value do
-  pattern1 -> result1
-  pattern2 -> result2
-  _ -> default_result
-end
-</code></pre>
-
-<h3>Pattern Guards</h3>
-
+<h3 id="pattern-guards">Pattern Guards</h3>
 <p>Guards allow additional conditions on patterns using <code>when</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">match</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Negative&quot;</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Zero&quot;</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Positive&quot;</span>
+<span class="kd">end</span>
 
-<pre><code>match value do
-  x when x < 0 -> "Negative"
-  x when x == 0 -> "Zero"
-  x when x > 0 -> "Positive"
-end
+<span class="cp"># Multiple conditions with logical operators</span>
+<span class="n">match</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;In range&quot;</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="kr">or</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Out of range&quot;</span>
+<span class="kd">end</span>
 
-# Multiple conditions with logical operators
-match n do
-  x when x >= 10 and x <= 20 -> "In range"
-  x when x < 10 or x > 20 -> "Out of range"
-end
+<span class="cp"># Guards with record patterns</span>
+<span class="n">match</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="s">&quot;First quadrant&quot;</span>
+<span class="w">  </span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">_</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mf">0.0</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="s">&quot;On Y-axis&quot;</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-# Guards with record patterns
-match point do
-  Point{x: x, y: y} when x > 0.0 and y > 0.0 ->
-    "First quadrant"
-  Point{x: x, y: _} when x == 0.0 ->
-    "On Y-axis"
-end
-</code></pre>
+<h3 id="list-patterns">List Patterns</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">match</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="p">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">empty</span><span class="w"> </span><span class="n">list</span>
+<span class="w">  </span><span class="p">[</span><span class="n">h</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">t</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">head</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">tail</span>
+<span class="w">  </span><span class="p">[</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">exact</span><span class="w"> </span><span class="nf">length</span><span class="w"> </span><span class="p">(</span><span class="nf">if</span><span class="w"> </span><span class="n">supported</span><span class="p">)</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-<h3>List Patterns</h3>
+<h3 id="constructor-patterns">Constructor Patterns</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">match</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Ok</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="kr">success</span><span class="w"> </span><span class="kr">case</span>
+<span class="w">  </span><span class="nf">Error</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nf">error</span><span class="w"> </span><span class="kr">case</span>
+<span class="kd">end</span>
 
-<pre><code>match list do
-  [] -> # empty list
-  [h | t] -> # head and tail
-  [a, b, c] -> # exact length (if supported)
-end
-</code></pre>
+<span class="n">match</span><span class="w"> </span><span class="n">option</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Some</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">present</span>
+<span class="w">  </span><span class="n">None</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">absent</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-<h3>Constructor Patterns</h3>
+<h3 id="nested-match">Nested Match</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">match</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="p">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">  </span><span class="p">[</span><span class="n">h</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">t</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="n">match</span><span class="w"> </span><span class="n">predicate</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">      </span><span class="kr">true</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">[</span><span class="n">h</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">filtered_tail</span><span class="p">]</span>
+<span class="w">      </span><span class="kr">false</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">filtered_tail</span>
+<span class="w">    </span><span class="kd">end</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-<pre><code>match result do
-  Ok(value) -> # success case
-  Error(err) -> # error case
-end
-
-match option do
-  Some(value) -> # present
-  None -> # absent
-end
-</code></pre>
-
-<h3>Nested Match</h3>
-
-<pre><code>match list do
-  [] -> []
-  [h | t] ->
-    match predicate(h) do
-      true -> [h | filtered_tail]
-      false -> filtered_tail
-    end
-end
-</code></pre>
-
-<p>---</p>
-
-<h2>6. Type Annotations</h2>
-
-<h3>Function Types</h3>
-
+<hr />
+<h2 id="6-type-annotations">6. Type Annotations</h2>
+<h3 id="function-types">Function Types</h3>
 <p>Arrow notation for function types:</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Function taking T, returning U</span>
+<span class="n">T</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">U</span>
 
-<pre><code># Function taking T, returning U
-T -> U
+<span class="cp"># Function taking two params</span>
+<span class="n">T</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">U</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">V</span>
 
-# Function taking two params
-T -> U -> V
+<span class="cp"># Can be curried</span>
+<span class="n">def</span><span class="w"> </span><span class="n">func</span><span class="p">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">T</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">U</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">V</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">fn</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="kd">end</span>
+</code></pre></div>
 
-# Can be curried
-def func(x: T): U -> V =
-  fn(y) -> result end
-</code></pre>
-
-<h3>Polymorphic Types</h3>
-
+<h3 id="polymorphic-types">Polymorphic Types</h3>
 <p>Generic type parameters:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">identity</span><span class="p">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">T</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span>
+<span class="n">def</span><span class="w"> </span><span class="nf">map</span><span class="p">(</span><span class="n">list</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="w"> </span><span class="n">f</span><span class="o">:</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">U</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">U</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...</span>
+</code></pre></div>
 
-<pre><code>def identity(x: T): T = x
-def map(list: List(T), f: T -> U): List(U) = ...
-</code></pre>
+<hr />
+<h2 id="7-literals-and-basic-types">7. Literals and Basic Types</h2>
+<h3 id="primitives">Primitives</h3>
+<div class="codehilite"><pre><span></span><code><span class="mf">42</span><span class="w">              </span><span class="err">#</span><span class="w"> </span><span class="nb">Int</span>
+<span class="mf">3.14</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">Float</span>
+<span class="s">&quot;hello&quot;</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="n">String</span>
+<span class="n">true</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="n">Bool</span>
+<span class="n">false</span><span class="w">           </span><span class="err">#</span><span class="w"> </span><span class="n">Bool</span>
+<span class="p">:</span><span class="n">atom_name</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="n">Atom</span>
+</code></pre></div>
 
-<p>---</p>
+<h3 id="lists">Lists</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">[]</span><span class="w">              </span><span class="c1"># Empty list</span>
+<span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">]</span><span class="w">       </span><span class="c1"># List of integers</span>
+<span class="p">[</span><span class="n">h</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">t</span><span class="p">]</span><span class="w">         </span><span class="c1"># Cons pattern/constructor</span>
+</code></pre></div>
 
-<h2>7. Literals and Basic Types</h2>
-
-<h3>Primitives</h3>
-
-<pre><code>42              # Int
-3.14            # Float
-"hello"         # String
-true            # Bool
-false           # Bool
-:atom_name      # Atom
-</code></pre>
-
-<h3>Lists</h3>
-
-<pre><code>[]              # Empty list
-[1, 2, 3]       # List of integers
-[h | t]         # Cons pattern/constructor
-</code></pre>
-
-<h3>Tuples (Limited Support)</h3>
-
+<h3 id="tuples-limited-support">Tuples (Limited Support)</h3>
 <p>Check actual implementation before using tuples extensively.</p>
-
-<p>---</p>
-
-<h2>8. Operators</h2>
-
-<h3>Arithmetic</h3>
-
-<pre><code>x + y           # Addition
+<hr />
+<h2 id="8-operators">8. Operators</h2>
+<h3 id="arithmetic">Arithmetic</h3>
+<div class="codehilite"><pre><span></span><code>x + y           # Addition
 x - y           # Subtraction
 x * y           # Multiplication
 x / y           # Division (may be integer division)
-</code></pre>
+</code></pre></div>
 
-<h3>Comparison</h3>
-
-<pre><code>x == y          # Equality
+<h3 id="comparison">Comparison</h3>
+<div class="codehilite"><pre><span></span><code>x == y          # Equality
 x != y          # Inequality
-x < y           # Less than
-x > y           # Greater than
-x <= y          # Less than or equal
-x >= y          # Greater than or equal
-</code></pre>
+x &lt; y           # Less than
+x &gt; y           # Greater than
+x &lt;= y          # Less than or equal
+x &gt;= y          # Greater than or equal
+</code></pre></div>
 
-<h3>List Construction</h3>
+<h3 id="list-construction">List Construction</h3>
+<div class="codehilite"><pre><span></span><code>[element | list]    # Cons (prepend)
+</code></pre></div>
 
-<pre><code>[element | list]    # Cons (prepend)
-</code></pre>
+<h3 id="string-concatenation">String Concatenation</h3>
+<div class="codehilite"><pre><span></span><code><span class="nv">str1</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="nv">str2</span><span class="w">    </span>#<span class="w"> </span><span class="nv">Diamond</span><span class="w"> </span><span class="nv">operator</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">string</span><span class="w"> </span><span class="nv">concatenation</span>
+</code></pre></div>
 
-<h3>String Concatenation</h3>
-
-<pre><code>str1 <> str2    # Diamond operator for string concatenation
-</code></pre>
-
-<p>---</p>
-
-<h2>9. Let Bindings</h2>
-
+<hr />
+<h2 id="9-let-bindings">9. Let Bindings</h2>
 <p>Simple let syntax:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">let</span><span class="w"> </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expression</span><span class="w"> </span><span class="n">body_expression</span>
+<span class="n">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">function_call</span><span class="p">()</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">10</span>
+</code></pre></div>
 
-<pre><code>let variable = expression
-let result = function_call()
-</code></pre>
+<p>The body expression follows the binding immediately without requiring an explicit <code>in</code> keyword.</p>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code>let x = 5 x + 10
+</code></pre></div>
 
-<strong>Note</strong>: Use <code>in</code> for scoped let expressions (check if implemented):
-
-<pre><code>let x = 5 in x + 10
-</code></pre>
-
-<p>---</p>
-
-<h2>10. Special Constructs</h2>
-
-<h3>Curify (Erlang FFI)</h3>
-
+<hr />
+<h2 id="10-special-constructs">10. Special Constructs</h2>
+<h3 id="curify-erlang-ffi">Curify (Erlang FFI)</h3>
 <p>Declare Erlang FFI functions:</p>
-
-<pre><code>curify function_name(param: Type): ReturnType = {module, function, arity}
-</code></pre>
+<div class="codehilite"><pre><span></span><code>curify function_name(param: Type): ReturnType = {module, function, arity}
+</code></pre></div>
 
 <p>Example:</p>
+<div class="codehilite"><pre><span></span><code>curify print_raw(format: String, args: List(String)): Unit = {io, format, 2}
+</code></pre></div>
 
-<pre><code>curify print_raw(format: String, args: List(String)): Unit = {io, format, 2}
-</code></pre>
-
-<h3>Nat Type and Peano Numbers</h3>
-
+<h3 id="nat-type-and-peano-numbers">Nat Type and Peano Numbers</h3>
 <p>Natural numbers use Peano encoding:</p>
-
-<pre><code>Zero            # Zero
+<div class="codehilite"><pre><span></span><code>Zero            # Zero
 Succ(n)         # Successor of n
-</code></pre>
+</code></pre></div>
 
 <p>Example:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">list</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">))</span><span class="o">:</span><span class="w"> </span><span class="n">Nat</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">match</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="p">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Zero</span>
+<span class="w">    </span><span class="p">[</span><span class="n">_</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">t</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Succ</span><span class="p">(</span><span class="nf">length</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+<span class="w">  </span><span class="kd">end</span>
+</code></pre></div>
 
-<pre><code>def length(list: List(T)): Nat =
-  match list do
-    [] -> Zero
-    [_ | t] -> Succ(length(t))
-  end
-</code></pre>
-
-<p>---</p>
-
-<h2>11. FSM Syntax</h2>
-
+<hr />
+<h2 id="11-fsm-syntax">11. FSM Syntax</h2>
 <p>FSMs are defined with an initial payload record and transition arrows:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Define a payload record for FSM state tracking</span>
+<span class="n">record</span><span class="w"> </span><span class="n">PayloadName</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">field1</span><span class="p">:</span><span class="w"> </span><span class="n">Type1</span>
+<span class="w">  </span><span class="n">field2</span><span class="p">:</span><span class="w"> </span><span class="n">Type2</span>
+<span class="n">end</span>
 
-<pre><code># Define a payload record for FSM state tracking
-record PayloadName do
-  field1: Type1
-  field2: Type2
-end
+<span class="c1"># FSM definition with initial payload values</span>
+<span class="n">fsm</span><span class="w"> </span><span class="n">PayloadName</span><span class="p">{</span><span class="n">field1</span><span class="p">:</span><span class="w"> </span><span class="n">value1</span><span class="p">,</span><span class="w"> </span><span class="n">field2</span><span class="p">:</span><span class="w"> </span><span class="n">value2</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">State1</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">event1</span><span class="o">|</span><span class="w"> </span><span class="n">State2</span>
+<span class="w">  </span><span class="n">State1</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">event2</span><span class="o">|</span><span class="w"> </span><span class="n">State1</span>
+<span class="w">  </span><span class="n">State2</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">event3</span><span class="o">|</span><span class="w"> </span><span class="n">State1</span>
+<span class="n">end</span>
+</code></pre></div>
 
-# FSM definition with initial payload values
-fsm PayloadName{field1: value1, field2: value2} do
-  State1 --> |event1| State2
-  State1 --> |event2| State1
-  State2 --> |event3| State1
-end
-</code></pre>
+<h3 id="fsm-example-turnstile">FSM Example: Turnstile</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">record</span><span class="w"> </span><span class="n">TurnstilePayload</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">coins_inserted</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">  </span><span class="n">people_passed</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">  </span><span class="n">denied_attempts</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="n">end</span>
 
-<h3>FSM Example: Turnstile</h3>
+<span class="n">fsm</span><span class="w"> </span><span class="n">TurnstilePayload</span><span class="p">{</span><span class="n">coins_inserted</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">people_passed</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">denied_attempts</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Locked</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">coin</span><span class="o">|</span><span class="w"> </span><span class="n">Unlocked</span>
+<span class="w">  </span><span class="n">Locked</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">push</span><span class="o">|</span><span class="w"> </span><span class="n">Locked</span>
+<span class="w">  </span><span class="n">Unlocked</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">coin</span><span class="o">|</span><span class="w"> </span><span class="n">Unlocked</span>
+<span class="w">  </span><span class="n">Unlocked</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">push</span><span class="o">|</span><span class="w"> </span><span class="n">Locked</span>
+<span class="n">end</span>
+</code></pre></div>
 
-<pre><code>record TurnstilePayload do
-  coins_inserted: Int
-  people_passed: Int
-  denied_attempts: Int
-end
+<h3 id="fsm-runtime-operations">FSM Runtime Operations</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Fsm</span> <span class="p">[</span><span class="n">fsm_spawn</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_cast</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_advertise</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_state</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Pair</span> <span class="p">[</span><span class="n">pair</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
 
-fsm TurnstilePayload{coins_inserted: 0, people_passed: 0, denied_attempts: 0} do
-  Locked --> |coin| Unlocked
-  Locked --> |push| Locked
-  Unlocked --> |coin| Unlocked
-  Unlocked --> |push| Locked
-end
-</code></pre>
+<span class="c1"># Spawn an FSM instance</span>
+<span class="n">let</span> <span class="n">fsm_pid</span> <span class="o">=</span> <span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">PayloadName</span><span class="p">,</span> <span class="n">initial_data</span><span class="p">)</span>
 
-<h3>FSM Runtime Operations</h3>
+<span class="c1"># Give it a name</span>
+<span class="n">let</span> <span class="n">adv_result</span> <span class="o">=</span> <span class="n">fsm_advertise</span><span class="p">(</span><span class="n">fsm_pid</span><span class="p">,</span> <span class="p">:</span><span class="n">fsm_name</span><span class="p">)</span>
 
-<pre><code>import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
-import Std.Pair [pair/2]
+<span class="c1"># Send an event (with empty data list)</span>
+<span class="n">let</span> <span class="n">empty_list</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">let</span> <span class="n">event</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(:</span><span class="n">event_name</span><span class="p">,</span> <span class="n">empty_list</span><span class="p">)</span>
+<span class="n">let</span> <span class="n">cast_result</span> <span class="o">=</span> <span class="n">fsm_cast</span><span class="p">(:</span><span class="n">fsm_name</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
 
-# Spawn an FSM instance
-let fsm_pid = fsm_spawn(:PayloadName, initial_data)
+<span class="c1"># Get current state</span>
+<span class="n">let</span> <span class="n">current_state</span> <span class="o">=</span> <span class="n">fsm_state</span><span class="p">(:</span><span class="n">fsm_name</span><span class="p">)</span>
+</code></pre></div>
 
-# Give it a name
-let adv_result = fsm_advertise(fsm_pid, :fsm_name)
+<p><strong>Key Points</strong>:<br />
+- First state in transitions is the initial state<br />
+- Events are atoms (<code>:event_name</code>)<br />
+- Transitions use <code>--&gt;</code> and <code>|event|</code> syntax<br />
+- Must define a payload record even if empty</p>
+<hr />
+<h2 id="12-common-patterns-from-std-library">12. Common Patterns from Std Library</h2>
+<h3 id="resultoption-handling">Result/Option Handling</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">match</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Ok</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">handle</span><span class="w"> </span><span class="kr">success</span>
+<span class="w">  </span><span class="nf">Error</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">handle</span><span class="w"> </span><span class="nf">error</span>
+<span class="kd">end</span>
 
-# Send an event (with empty data list)
-let empty_list = []
-let event = pair(:event_name, empty_list)
-let cast_result = fsm_cast(:fsm_name, event)
+<span class="n">match</span><span class="w"> </span><span class="n">option</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Some</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">handle</span><span class="w"> </span><span class="n">present</span><span class="w"> </span><span class="n">value</span>
+<span class="w">  </span><span class="n">None</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="n">handle</span><span class="w"> </span><span class="n">absence</span>
+<span class="kd">end</span>
+</code></pre></div>
 
-# Get current state
-let current_state = fsm_state(:fsm_name)
-</code></pre>
+<h3 id="recursive-list-processing">Recursive List Processing</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="nf">map</span><span class="p">(</span><span class="n">list</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="w"> </span><span class="n">f</span><span class="o">:</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">U</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">U</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">match</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="p">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">    </span><span class="p">[</span><span class="n">h</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">t</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">[</span><span class="n">f</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nf">map</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">f</span><span class="p">)]</span>
+<span class="w">  </span><span class="kd">end</span>
+</code></pre></div>
 
-<strong>Key Points</strong>:
-<ul>
-<li>First state in transitions is the initial state</li>
-<li>Events are atoms (<code>:event_name</code>)</li>
-<li>Transitions use <code>--></code> and <code>|event|</code> syntax</li>
-<li>Must define a payload record even if empty</li>
-</ul>
+<h3 id="tail-recursion-with-accumulator">Tail Recursion with Accumulator</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">reverse</span><span class="p">(</span><span class="n">list</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="w"> </span><span class="n">acc</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">))</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">match</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="p">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">acc</span>
+<span class="w">    </span><span class="p">[</span><span class="n">h</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">t</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">reverse</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="n">h</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">acc</span><span class="p">])</span>
+<span class="w">  </span><span class="kd">end</span>
+</code></pre></div>
 
-<p>---</p>
+<h3 id="curried-functions">Curried Functions</h3>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Function returns another function</span>
+<span class="n">def</span><span class="w"> </span><span class="n">flip</span><span class="p">(</span><span class="n">f</span><span class="o">:</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">C</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">C</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">fn</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span>
+<span class="w">    </span><span class="n">let</span><span class="w"> </span><span class="n">g</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="n">g</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="w">  </span><span class="kd">end</span>
+</code></pre></div>
 
-<h2>12. Common Patterns from Std Library</h2>
-
-<h3>Result/Option Handling</h3>
-
-<pre><code>match result do
-  Ok(value) -> # handle success
-  Error(err) -> # handle error
-end
-
-match option do
-  Some(value) -> # handle present value
-  None -> # handle absence
-end
-</code></pre>
-
-<h3>Recursive List Processing</h3>
-
-<pre><code>def map(list: List(T), f: T -> U): List(U) =
-  match list do
-    [] -> []
-    [h | t] -> [f(h) | map(t, f)]
-  end
-</code></pre>
-
-<h3>Tail Recursion with Accumulator</h3>
-
-<pre><code>def reverse(list: List(T), acc: List(T)): List(T) =
-  match list do
-    [] -> acc
-    [h | t] -> reverse(t, [h | acc])
-  end
-</code></pre>
-
-<h3>Curried Functions</h3>
-
-<pre><code># Function returns another function
-def flip(f: A -> B -> C): B -> A -> C =
-  fn(b, a) -> 
-    let g = f(a) in
-    g(b)
-  end
-</code></pre>
-
-<p>---</p>
-
-<h2>13. Key Syntactic Rules</h2>
-
+<hr />
+<h2 id="13-key-syntactic-rules">13. Key Syntactic Rules</h2>
 <ol>
 <li><strong>Module Required</strong>: Every file needs a <code>module ModuleName do ... end</code></li>
 <li><strong>Type Annotations</strong>: All function parameters and return types must be annotated</li>
 <li><strong>Pattern Matching</strong>: Use <code>match ... do ... end</code> blocks</li>
-<li><strong>Lambdas</strong>: Use <code>fn(params) -> body end</code> syntax</li>
+<li><strong>Lambdas</strong>: Use <code>fn(params) -&gt; body end</code> syntax</li>
 <li><strong>Let Binding</strong>: Simple <code>let name = value</code> without semicolons</li>
 <li><strong>Function Application</strong>: Standard <code>func(arg1, arg2)</code> syntax</li>
 <li><strong>Comments</strong>: Only <code>#</code> single-line comments</li>
 <li><strong>Indentation</strong>: Not significant (use <code>do ... end</code> blocks)</li>
 </ol>
-
-<p>---</p>
-
-<h2>14. Things to AVOID (Not in Std Library)</h2>
-
+<hr />
+<h2 id="14-things-to-avoid-not-in-std-library">14. Things to AVOID (Not in Std Library)</h2>
 <p>Based on actual standard library, these features may not be implemented:</p>
-
 <ol>
 <li><strong>Process definitions</strong>: <code>process name(...) do ... end</code> - verify syntax</li>
 <li><strong>Dependent types</strong>: <code>Vector(T, n: Nat)</code> - may not fully work yet</li>
-<li><strong>String interpolation</strong>: <code>"text #{expr}"</code> - use <code><></code> for concatenation instead</li>
+<li><strong>String interpolation</strong>: <code>"text #{expr}"</code> - use <code>&lt;&gt;</code> for concatenation instead</li>
 <li><strong>If-then-else</strong>: May exist but std lib uses match expressions</li>
 </ol>
-
-<p>---</p>
-
-<h2>15. Recommended Workflow</h2>
-
+<hr />
+<h2 id="15-recommended-workflow">15. Recommended Workflow</h2>
 <p>When creating examples:</p>
-
 <ol>
 <li>Start with module definition</li>
 <li>Import needed functions from Std library</li>
@@ -545,47 +456,39 @@ def flip(f: A -> B -> C): B -> A -> C =
 <li>Use lambdas for higher-order functions</li>
 <li>Keep it simple - mirror std library style</li>
 </ol>
+<hr />
+<h2 id="example-complete-module-template">Example: Complete Module Template</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span> <span class="n">ExampleModule</span> <span class="n">do</span>
+  <span class="n">export</span> <span class="p">[</span>
+    <span class="n">main</span><span class="o">/</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">helper_function</span><span class="o">/</span><span class="mi">1</span>
+  <span class="p">]</span>
 
-<p>---</p>
+  <span class="c1"># Import standard library functions</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Core</span> <span class="p">[</span><span class="n">Result</span><span class="p">,</span> <span class="n">ok</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span> <span class="n">error</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.List</span> <span class="p">[</span><span class="nb">map</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="nb">filter</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Io</span> <span class="p">[</span><span class="nb">print</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
 
-<h2>Example: Complete Module Template</h2>
+  <span class="c1"># Type definition</span>
+  <span class="nb">type</span> <span class="n">MyType</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">=</span> <span class="n">Constructor1</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">|</span> <span class="n">Constructor2</span><span class="p">(</span><span class="n">String</span><span class="p">)</span>
 
-<pre><code>module ExampleModule do
-  export [
-    main/0,
-    helper_function/1
-  ]
-  
-  # Import standard library functions
-  import Std.Core [Result, ok/1, error/1]
-  import Std.List [map/2, filter/2]
-  import Std.Io [print/1]
-  
-  # Type definition
-  type MyType(T) = Constructor1(T) | Constructor2(String)
-  
-  # Main function
-  def main(): Unit =
-    let result = helper_function(42)
-    print("Done")
-  
-  # Helper with pattern matching
-  def helper_function(value: Int): Result(String, String) =
-    match value > 0 do
-      true -> ok("positive")
-      false -> error("non-positive")
-    end
-end
-</code></pre>
+  <span class="c1"># Main function</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span> <span class="n">Unit</span> <span class="o">=</span>
+    <span class="n">let</span> <span class="n">result</span> <span class="o">=</span> <span class="n">helper_function</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done&quot;</span><span class="p">)</span>
 
-<p>---</p>
+  <span class="c1"># Helper with pattern matching</span>
+  <span class="k">def</span><span class="w"> </span><span class="nf">helper_function</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Int</span><span class="p">):</span> <span class="n">Result</span><span class="p">(</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="p">)</span> <span class="o">=</span>
+    <span class="k">match</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="n">do</span>
+      <span class="n">true</span> <span class="o">-&gt;</span> <span class="n">ok</span><span class="p">(</span><span class="s2">&quot;positive&quot;</span><span class="p">)</span>
+      <span class="n">false</span> <span class="o">-&gt;</span> <span class="n">error</span><span class="p">(</span><span class="s2">&quot;non-positive&quot;</span><span class="p">)</span>
+    <span class="n">end</span>
+<span class="n">end</span>
+</code></pre></div>
 
-<strong>This guide is based on actual working code in the Cure standard library. When in doubt, refer to <code>lib/std/</code> directory for real examples.</strong>
-
+<hr />
+<p><strong>This guide is based on actual working code in the Cure standard library. When in doubt, refer to <code>lib/std/</code> directory for real examples.</strong></p>
     </div>
-
-    <!-- Pill Decoration -->
-    <img src="../media/pill-512x512.png" alt="" class="pill-decoration">
 
     <!-- Footer -->
     <footer class="site-footer">
