@@ -446,7 +446,9 @@ compile_source(Filename, Source, Options) ->
                             % Generate BEAM binary in memory
                             case cure_codegen:convert_to_erlang_forms(Module) of
                                 {ok, Forms} ->
-                                    case compile:forms(Forms, [binary, return_errors]) of
+                                    case
+                                        compile:forms(Forms, [binary, return_errors, no_auto_import])
+                                    of
                                         {ok, ModuleName, Binary} ->
                                             {ok, {ModuleName, Binary}};
                                         {error, Errors, _Warnings} ->

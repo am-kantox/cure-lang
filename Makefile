@@ -80,28 +80,33 @@ gen-signatures: setup
 	@$(ERL) -pa $(EBIN_DIR) -noshell -eval 'cure_signature_generator:generate(), halt().'
 	@# Compile the generated signatures module
 	@$(ERLC) +debug_info -o $(EBIN_DIR) src/types/cure_stdlib_signatures.erl
-	@echo "Stdlib signatures generated and compiled"
+	rebar3 fmt src/types/cure_stdlib_signatures.erl
+	@echo "Stdlib signatures generated, compiled and formatted"
 
 compiler: $(BEAM_FILES)
 	@echo "Cure compiler built successfully"
 
 # Compile Cure standard library
-stdlib: compiler $(CURE_STD_BEAM_FILES)
+stdlib: stdlib-clean-lib-ebin compiler $(CURE_STD_BEAM_FILES)
 	@echo "Cure standard library compilation completed"
-	@FAILED_FILES=$$(find $(LIB_EBIN_DIR) -name "*.failed" 2>/dev/null | wc -l); \
+	@FAILED_FILES=$$(find $(LIB_EBIN_DIR)/std -name "*.failed" 2>/dev/null | wc -l); \
 	if [ $$FAILED_FILES -gt 0 ]; then \
 		echo "Warning: $$FAILED_FILES standard library files failed to compile"; \
 		echo "Failed files:"; \
-		find $(LIB_EBIN_DIR) -name "*.failed" -exec echo "  {}" \; 2>/dev/null || true; \
+		find $(LIB_EBIN_DIR)/std -name "*.failed" -exec echo "  {}" \; 2>/dev/null || true; \
 		echo "Standard library partially compiled - some functionality may be limited"; \
 	else \
 		echo "All standard library files compiled successfully"; \
 	fi
 
+# Remove failed artifacts from previous runs
+stdlib-clean-lib-ebin:
+	find $(LIB_EBIN_DIR) -name "*.failed" -delete 2>/dev/null || true
+
 # Clean standard library build artifacts
 stdlib-clean:
 	@echo "Cleaning Cure standard library build artifacts..."
-	rm -rf $(LIB_EBIN_DIR)
+	rm -rf $(LIB_EBIN_DIR)/std
 	find $(BUILD_DIR) -name "*.failed" -delete 2>/dev/null || true
 	@echo "Standard library artifacts cleaned"
 
