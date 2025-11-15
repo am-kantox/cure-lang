@@ -49,10 +49,10 @@ halt(0).
 echo "4. Running..."
 echo ""
 erl -pa _build/ebin -noshell -eval "
-code:purge(simple_pipe),
-code:load_file(simple_pipe),
+code:purge('PipeExample'),
+code:load_file('PipeExample'),
 try
-    Result = simple_pipe:main(),
+    Result = 'PipeExample':main(),
     io:format(\"📊 Result: ~p~n\", [Result]),
     io:format(\"~n✅ Success! The pipe operator works correctly.~n\"),
     io:format(\"   5 |> double |> increment = 5 -> 10 -> 11~n\"),

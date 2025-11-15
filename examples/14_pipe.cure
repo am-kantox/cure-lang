@@ -1,7 +1,7 @@
 # Simple Pipe Operator Example
 # Demonstrates the pipe operator with Result type wrapping
 
-module simple_pipe do
+module PipeExample do
   export [
     main/0,
     example_bare_to_bare/0,
@@ -23,8 +23,11 @@ module simple_pipe do
   # Function that takes bare Int and returns bare Int
   def increment(x: Int): Int = x + 1
   
+  # Ditto but with additional agruments
+  def add(x1: Int, x2: Int): Int = x1 + x2
+  
   # Function that takes bare Int and returns Result
-  def safe_divide(x: Int): Result(Int, String) =
+  def safe_divide(x: Int): Result(Float, String) =
     match x do
       0 -> error("Cannot divide by zero")
       _ -> ok(10 / x)
@@ -83,5 +86,6 @@ module simple_pipe do
   # Main entry point
   # ============================================================================
   def main(): Result(Int, String) =
-    5 |> double |> increment |> safe_divide
+    5 |> double() |> add(10.0) |> safe_divide()
+
 end

@@ -95,11 +95,17 @@ type system and Erlang's dynamic typing.
     wrap_ok/1,
     and_then/2,
     pipe/2,
+    % Result type constructors
+    ok/1,
+    error/1,
+    % I/O functions
     print/1,
     println/1,
+    % FSM functions
     fsm_create/2,
     fsm_send_safe/2,
     create_counter/1,
+    % Utility functions
     list_to_string/1,
     join_ints/2,
     show/1,
@@ -152,6 +158,10 @@ is_monad({'Ok', _}) ->
     true;
 is_monad({'Error', _}) ->
     true;
+is_monad({ok, _}) ->
+    true;
+is_monad({error, _}) ->
+    true;
 is_monad(_) ->
     false.
 
@@ -159,6 +169,50 @@ is_monad(_) ->
 %% Used by the pipe operator to ensure values are properly typed as Results.
 wrap_ok(Value) ->
     {'Ok', Value}.
+
+-doc """
+Creates an Ok Result value.
+
+This is the primary constructor for successful Result values in Cure.
+It always returns an uppercase 'Ok' atom tuple, which is the canonical
+Cure representation.
+
+## Arguments
+- `Value` - The value to wrap in Ok
+
+## Returns
+- `{'Ok', Value}` - Result type with uppercase Ok constructor
+
+## Example
+```erlang
+cure_std:ok(42).        %% Returns: {'Ok', 42}
+cure_std:ok([1, 2, 3]). %% Returns: {'Ok', [1, 2, 3]}
+```
+""".
+ok(Value) ->
+    {'Ok', Value}.
+
+-doc """
+Creates an Error Result value.
+
+This is the primary constructor for failed Result values in Cure.
+It always returns an uppercase 'Error' atom tuple, which is the canonical
+Cure representation.
+
+## Arguments
+- `Reason` - The error reason to wrap in Error
+
+## Returns
+- `{'Error', Reason}` - Result type with uppercase Error constructor
+
+## Example
+```erlang
+cure_std:error("division by zero").  %% Returns: {'Error', "division by zero"}
+cure_std:error({badarg, x}).         %% Returns: {'Error', {badarg, x}}
+```
+""".
+error(Reason) ->
+    {'Error', Reason}.
 
 %% Monadic bind operation (and_then)
 %% and_then(Function, Result) applies Function to the value inside Ok,
@@ -239,16 +293,24 @@ The pipe operator maintains type safety by:
 - Preserving monadic invariants through composition chains
 """.
 pipe({'Error', _} = Err, _RHO) ->
-    % Rule 1: propagate error
+    % Rule 1: propagate error (uppercase)
     Err;
+pipe({error, Reason}, _RHO) ->
+    % Rule 1: propagate error (normalize lowercase to uppercase)
+    {'Error', Reason};
 pipe({'Ok', V}, RHO) when is_function(RHO) ->
     % Rule 2: unwrap Ok(V), call RHO(V), wrap unless already a monad
     try
         Res = RHO(V),
-        case is_monad(Res) of
-            true -> Res;
-            false -> {'Ok', Res}
-        end
+        normalize_result(Res)
+    catch
+        Error:Reason -> {'Error', {pipe_runtime_error, Error, Reason}}
+    end;
+pipe({ok, V}, RHO) when is_function(RHO) ->
+    % Rule 2: unwrap ok(V) (normalize lowercase), call RHO(V), wrap unless already a monad
+    try
+        Res = RHO(V),
+        normalize_result(Res)
     catch
         Error:Reason -> {'Error', {pipe_runtime_error, Error, Reason}}
     end;
@@ -256,13 +318,23 @@ pipe(LHO, RHO) when is_function(RHO) ->
     % Rule 3: pass non-monad LHO to RHO, wrap unless already a monad
     try
         Res = RHO(LHO),
-        case is_monad(Res) of
-            true -> Res;
-            false -> {'Ok', Res}
-        end
+        normalize_result(Res)
     catch
         Error:Reason -> {'Error', {pipe_runtime_error, Error, Reason}}
     end.
+
+%% Normalize result values to always use uppercase 'Ok' and 'Error'
+normalize_result({'Ok', _} = Res) ->
+    Res;
+normalize_result({'Error', _} = Res) ->
+    Res;
+normalize_result({ok, Value}) ->
+    {'Ok', Value};
+normalize_result({error, Reason}) ->
+    {'Error', Reason};
+normalize_result(Value) ->
+    % Not a Result type, wrap in Ok
+    {'Ok', Value}.
 
 %% ============================================================================
 %% IO Operations

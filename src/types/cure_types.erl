@@ -2748,29 +2748,85 @@ is_constructor_type(_) ->
 
 %% Check if a name represents a generic type variable (T, E, U, etc.)
 is_generic_type_variable_name(Name) ->
-    % Check if it's a common generic type variable name pattern
-    case atom_to_list(Name) of
-        % Single letter: T, E, U, n, etc.
-        [C] when (C >= $A andalso C =< $Z) orelse (C >= $a andalso C =< $z) -> true;
-        % Type variables like T1, T2, etc.
-        "T" ++ _ -> true;
-        % Error type variables
-        "E" ++ _ -> true;
-        % Other generic variables
-        "U" ++ _ -> true;
-        % Generic A variables
-        "A" ++ _ -> true;
-        % Generic B variables
-        "B" ++ _ -> true;
-        % Generic C variables
-        "C" ++ _ -> true;
-        % Generic F variables (for function types)
-        "F" ++ _ -> true;
-        % Common lowercase type variables
-        "n" ++ _ -> true;
-        "m" ++ _ -> true;
-        "k" ++ _ -> true;
-        _ -> false
+    % First, check if it's a known primitive/built-in type - these are NOT type variables
+    case Name of
+        'Int' ->
+            false;
+        'Float' ->
+            false;
+        'String' ->
+            false;
+        'Bool' ->
+            false;
+        'Atom' ->
+            false;
+        'Charlist' ->
+            false;
+        'Binary' ->
+            false;
+        'Unit' ->
+            false;
+        'Pid' ->
+            false;
+        'Infinity' ->
+            false;
+        'Nat' ->
+            false;
+        'List' ->
+            false;
+        'Vector' ->
+            false;
+        'Map' ->
+            false;
+        'Result' ->
+            false;
+        'Option' ->
+            false;
+        'Some' ->
+            false;
+        'None' ->
+            false;
+        'Ok' ->
+            false;
+        'Error' ->
+            false;
+        'Ordering' ->
+            false;
+        'Lt' ->
+            false;
+        'Eq' ->
+            false;
+        'Gt' ->
+            false;
+        'Timeout' ->
+            false;
+        'Pair' ->
+            false;
+        _ ->
+            % Not a known type, check if it's a generic type variable pattern
+            case atom_to_list(Name) of
+                % Single letter: T, E, U, n, etc.
+                [C] when (C >= $A andalso C =< $Z) orelse (C >= $a andalso C =< $z) -> true;
+                % Type variables like T1, T2, etc.
+                "T" ++ _ -> true;
+                % Error type variables (but not Error constructor!)
+                "E" ++ _ -> true;
+                % Other generic variables
+                "U" ++ _ -> true;
+                % Generic A variables
+                "A" ++ _ -> true;
+                % Generic B variables
+                "B" ++ _ -> true;
+                % Generic C variables
+                "C" ++ _ -> true;
+                % Generic F variables (for function types, but not Float!)
+                "F" ++ _ -> true;
+                % Common lowercase type variables
+                "n" ++ _ -> true;
+                "m" ++ _ -> true;
+                "k" ++ _ -> true;
+                _ -> false
+            end
     end.
 
 -doc """
@@ -3181,12 +3237,14 @@ infer_binary_op('*', LeftType, RightType, Location, Constraints) ->
     ],
     {ok, ResultType, Constraints ++ NumConstraints};
 infer_binary_op('/', LeftType, RightType, Location, Constraints) ->
-    ResultType = new_type_var(),
-    NumConstraints = [
-        #type_constraint{left = LeftType, op = '=', right = RightType, location = Location},
-        #type_constraint{left = LeftType, op = '=', right = ResultType, location = Location}
-    ],
-    {ok, ResultType, Constraints ++ NumConstraints};
+    % Division: operands must be numeric; result is Float
+    NumericLeft = #type_constraint{
+        left = LeftType, op = 'numeric', right = undefined, location = Location
+    },
+    NumericRight = #type_constraint{
+        left = RightType, op = 'numeric', right = undefined, location = Location
+    },
+    {ok, ?TYPE_FLOAT, Constraints ++ [NumericLeft, NumericRight]};
 infer_binary_op('%', LeftType, RightType, Location, Constraints) ->
     % Modulo operator: both operands must be integers, result is integer
     ResultType = new_type_var(),
@@ -3870,6 +3928,23 @@ solve_constraint(#type_constraint{left = Left, op = 'covariant', right = Right},
 solve_constraint(#type_constraint{left = Left, op = 'contravariant', right = Right}, Subst) ->
     % Handle contravariance constraints
     solve_variance_constraint(Left, Right, contravariant, Subst);
+solve_constraint(#type_constraint{left = Left, op = 'numeric', right = _}, Subst) ->
+    % Handle numeric type constraint - type must be Int or Float
+    case apply_substitution(Left, Subst) of
+        ?TYPE_INT ->
+            {ok, Subst};
+        ?TYPE_FLOAT ->
+            {ok, Subst};
+        #type_var{id = _Id} ->
+            % If it's a type variable, we accept it (will be resolved later)
+            % Could optionally constrain it to numeric types
+            {ok, Subst};
+        {type_var, _} ->
+            % Type variable in tuple format
+            {ok, Subst};
+        _Other ->
+            {error, {non_numeric_type, Left}}
+    end;
 solve_constraint(#type_constraint{op = Op}, _Subst) ->
     % For now, accept arithmetic constraints without solving them
     % This preserves basic dependent type functionality
