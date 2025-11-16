@@ -20,6 +20,9 @@ module PipeExample do
   # Function that takes bare Int and returns bare Int
   def double(x: Int): Int = x * 2
   
+  # Function that takes bare Float and returns bareFloatt
+  def double_float(x: Float): Float = x * 2.0
+  
   # Function that takes bare Int and returns bare Int
   def increment(x: Int): Int = x + 1
   
@@ -52,7 +55,7 @@ module PipeExample do
   # Input: 5 (bare Int)
   # Transformation: ok(x * 2) (returns Result(Int, String))
   # Expected: Ok(10)
-  def example_bare_to_result(): Result(Int, String) =
+  def example_bare_to_result(): Result(Float, String) =
     5 |> safe_divide
 
   # ============================================================================
@@ -61,7 +64,7 @@ module PipeExample do
   # Input: 5 (bare Int)
   # Chain: double (returns bare) -> safe_divide (returns Result)
   # Expected: Ok(1) because 5 * 2 = 10, then 10 / 10 = 1
-  def example_result_ok_chain(): Result(Int, String) =
+  def example_result_ok_chain(): Result(Float, String) =
     5 |> double |> safe_divide
 
   # ============================================================================
@@ -70,8 +73,8 @@ module PipeExample do
   # Input: 0 (bare Int)
   # Chain: safe_divide (returns Error) -> double (should NOT be called)
   # Expected: Error("Cannot divide by zero")
-  def example_result_error_propagation(): Result(Int, String) =
-    0 |> safe_divide |> double
+  def example_result_error_propagation(): Result(Float, String) =
+    0 |> safe_divide |> double_float
 
   # ============================================================================
   # Example 5: Mixed bare and Result functions
@@ -79,13 +82,13 @@ module PipeExample do
   # Input: 5 (bare Int)
   # Chain: double (bare) -> increment (bare) -> safe_divide (Result)
   # Expected: Ok(0) because (5 * 2 + 1) = 11, then 10 / 11 = 0 (integer division)
-  def example_mixed_chain(): Result(Int, String) =
+  def example_mixed_chain(): Result(Float, String) =
     5 |> double |> increment |> safe_divide
 
   # ============================================================================
   # Main entry point
   # ============================================================================
-  def main(): Result(Int, String) =
-    5 |> double() |> add(10.0) |> safe_divide()
+  def main(): Result(Float, String) =
+    5 |> double |> add(10) |> safe_divide
 
 end

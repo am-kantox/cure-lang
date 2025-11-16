@@ -323,6 +323,15 @@ get_function_type('Std.List', map, 2) ->
                 {function_type, [{primitive_type, 'T'}], {primitive_type, 'U'}}
             ],
             {dependent_type, 'List', [{type_param, undefined, {type_var, 'U', 'U', []}}]}}};
+get_function_type('Std.List', nth, 3) ->
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {primitive_type, 'Nat'},
+                {primitive_type, 'T'}
+            ],
+            {primitive_type, 'T'}}};
 get_function_type('Std.List', reverse, 2) ->
     {ok,
         {function_type,
@@ -800,6 +809,7 @@ all_signatures() ->
         {'Std.List', is_empty, 1},
         {'Std.List', length, 1},
         {'Std.List', map, 2},
+        {'Std.List', nth, 3},
         {'Std.List', reverse, 2},
         {'Std.List', tail, 1},
         {'Std.List', zip_with, 3},

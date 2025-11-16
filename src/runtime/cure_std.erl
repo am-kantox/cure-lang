@@ -111,7 +111,8 @@ type system and Erlang's dynamic typing.
     show/1,
     % Nat type constructors
     'Zero'/0,
-    'Succ'/1
+    'Succ'/1,
+    'Pred'/1
 ]).
 
 % NOTE: Most standard library functions are now implemented in Cure itself (lib/std/)
@@ -628,6 +629,54 @@ let three = Succ(two)
 
 ## Type
 - Succ : Nat -> Nat
+
+## Inverse Property
+- Pred(Succ(n)) = n for all n >= 0
 """.
 'Succ'(N) when is_integer(N), N >= 0 ->
     N + 1.
+
+-doc """
+Nat type unary constructor representing predecessor.
+
+Takes a natural number and returns its predecessor (n-1) if n > 0,
+or Zero if n = 0. This is the inverse of Succ.
+
+## Arguments
+- `N` - A natural number (Nat)
+
+## Returns
+- N-1 if N > 0, or 0 if N = 0 (predecessor of Zero is Zero)
+
+## Example
+```erlang
+cure_std:'Pred'(0).        %% Returns: 0 (predecessor of Zero is Zero)
+cure_std:'Pred'(1).        %% Returns: 0 (predecessor of 1 is Zero)
+cure_std:'Pred'(5).        %% Returns: 4 (predecessor of 5)
+```
+
+## Usage in Cure
+```cure
+let three = Succ(Succ(Succ(Zero)))
+let two = Pred(three)
+let one = Pred(two)
+let zero = Pred(one)
+```
+
+## Properties
+- Pred(Succ(n)) = n for all n >= 0
+- Succ(Pred(n)) = n for all n > 0
+- Pred(Zero) = Zero
+
+## Type
+- Pred : Nat -> Nat
+
+## Design Note
+Pred(Zero) = Zero rather than being undefined, making Pred a total
+function on natural numbers. This follows the common convention for
+Peano arithmetic where the predecessor of zero is zero (saturating subtraction).
+""".
+'Pred'(N) when is_integer(N), N > 0 ->
+    N - 1;
+'Pred'(0) ->
+    0.

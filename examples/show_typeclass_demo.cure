@@ -4,7 +4,7 @@
 module ShowTypeclassDemo do
   export [main/0, show_int/1, show_bool/1, show_string/1]
 
-  import Std.Show [Show]
+  import Std.Show [Show, show]
   import Std.Io [println]
 
   # Helper functions that use Show typeclass constraint
