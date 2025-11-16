@@ -126,7 +126,9 @@ The parser integrates with:
     tokens :: [term()],
     current :: term() | eof,
     position :: integer(),
-    filename :: string() | undefined
+    filename :: string() | undefined,
+    % Track last valid token for EOF errors
+    last_token :: term() | undefined
 }).
 
 %% API Functions
@@ -230,14 +232,16 @@ init_parser([], Filename) ->
         tokens = [],
         current = eof,
         position = 0,
-        filename = Filename
+        filename = Filename,
+        last_token = undefined
     };
 init_parser([First | Rest], Filename) ->
     #parser_state{
         tokens = Rest,
         current = First,
         position = 1,
-        filename = Filename
+        filename = Filename,
+        last_token = undefined
     }.
 
 %% Get current token
@@ -245,19 +249,23 @@ current_token(#parser_state{current = Current}) ->
     Current.
 
 %% Advance to next token
-advance(#parser_state{tokens = [], filename = Filename}) ->
+advance(#parser_state{tokens = [], current = Current, filename = Filename}) ->
     #parser_state{
         tokens = [],
         current = eof,
         position = 0,
-        filename = Filename
+        filename = Filename,
+        last_token = Current
     };
-advance(#parser_state{tokens = [Next | Rest], position = Pos, filename = Filename}) ->
+advance(#parser_state{
+    tokens = [Next | Rest], position = Pos, current = Current, filename = Filename
+}) ->
     #parser_state{
         tokens = Rest,
         current = Next,
         position = Pos + 1,
-        filename = Filename
+        filename = Filename,
+        last_token = Current
     }.
 
 %% Check if current token matches expected type
@@ -323,6 +331,15 @@ get_token_line_col(eof) ->
     {0, 0};
 get_token_line_col(_) ->
     {0, 0}.
+
+%% Get token line and column with fallback to last token (for EOF)
+get_token_line_col_with_state(#parser_state{current = eof, last_token = LastToken}) when
+    LastToken =/= undefined
+->
+    % EOF - use the location of the last token we saw
+    get_token_line_col(LastToken);
+get_token_line_col_with_state(#parser_state{current = Current}) ->
+    get_token_line_col(Current).
 
 %% Expect a specific token type and consume it
 expect(State, TokenType) ->
@@ -877,7 +894,9 @@ parse_curify_function(State) ->
                         parse_type(State5b);
                     false ->
                         % For curify, return type is required for type safety
-                        throw({parse_error, {missing_return_type_for_curify}, 0, 0})
+                        CurrentToken = current_token(State5),
+                        {Line, Col} = get_token_line_col(CurrentToken),
+                        throw({parse_error, {missing_return_type_for_curify}, Line, Col})
                 end
         end,
 
@@ -909,11 +928,15 @@ parse_curify_function(State) ->
 
     % Validate arity matches parameter count
     ParamCount = length(Params),
+    % Pre-calculate location for potential error
+    {ArityLine, ArityCol} = get_token_line_col(ArityToken),
     case ErlangArity of
         ParamCount ->
             ok;
         _ ->
-            throw({parse_error, {curify_arity_mismatch, ParamCount, ErlangArity}, 0, 0})
+            throw(
+                {parse_error, {curify_arity_mismatch, ParamCount, ErlangArity}, ArityLine, ArityCol}
+            )
     end,
 
     IsPrivate = false,
@@ -2802,7 +2825,8 @@ parse_primary_type(State) ->
             {Type, State3};
         _ ->
             CurrentToken = current_token(State),
-            throw({parse_error, {expected_type_got, get_token_type(CurrentToken)}, 0, 0})
+            {Line, Col} = get_token_line_col(CurrentToken),
+            throw({parse_error, {expected_type_got, get_token_type(CurrentToken)}, Line, Col})
     end.
 
 %% Parse type constructor (Ok, Error, Some, None) with optional parameters
@@ -3001,10 +3025,11 @@ parse_type_parameter(State) ->
                         throw:{parse_error, _, _, _} ->
                             % If both fail, give a better error
                             CurrentToken = current_token(State),
+                            {Line, Col} = get_token_line_col(CurrentToken),
                             throw(
                                 {parse_error,
-                                    {expected_type_parameter_got, get_token_type(CurrentToken)}, 0,
-                                    0}
+                                    {expected_type_parameter_got, get_token_type(CurrentToken)},
+                                    Line, Col}
                             )
                     end
             end
@@ -3378,7 +3403,8 @@ get_operator_info(_) -> undefined.
 parse_primary_expression(State) ->
     case current_token(State) of
         eof ->
-            throw({parse_error, unexpected_end_of_input, 0, 0});
+            {Line, Col} = get_token_line_col_with_state(State),
+            throw({parse_error, unexpected_end_of_input, Line, Col});
         Token ->
             case get_token_type(Token) of
                 identifier ->
@@ -3556,8 +3582,10 @@ parse_primary_expression(State) ->
                 '{' ->
                     parse_tuple_expression(State);
                 _ ->
+                    {Line, Col} = get_token_line_col(Token),
                     throw(
-                        {parse_error, {unexpected_token_in_expression, get_token_type(Token)}, 0, 0}
+                        {parse_error, {unexpected_token_in_expression, get_token_type(Token)}, Line,
+                            Col}
                     )
             end
     end.
@@ -3688,9 +3716,12 @@ parse_identifier_or_call(State) ->
                                                     },
                                                     {RecordExpr, State5};
                                                 false ->
+                                                    CurrentToken = current_token(State3),
+                                                    {Line, Col} = get_token_line_col(CurrentToken),
                                                     throw(
                                                         {parse_error,
-                                                            expected_colon_or_pipe_in_record, 0, 0}
+                                                            expected_colon_or_pipe_in_record, Line,
+                                                            Col}
                                                     )
                                             end
                                     end;
@@ -4410,7 +4441,8 @@ parse_pattern(State) ->
                     {Pattern, State4};
                 false ->
                     % Succ without arguments is malformed
-                    throw({parse_error, {succ_requires_argument}, 0, 0})
+                    {Line, Col} = get_token_line_col(Token),
+                    throw({parse_error, {succ_requires_argument}, Line, Col})
             end;
         'Pred' ->
             {Token, State1} = expect(State, 'Pred'),
@@ -4428,7 +4460,8 @@ parse_pattern(State) ->
                     {Pattern, State4};
                 false ->
                     % Pred without arguments is malformed
-                    throw({parse_error, {pred_requires_argument}, 0, 0})
+                    {Line, Col} = get_token_line_col(Token),
+                    throw({parse_error, {pred_requires_argument}, Line, Col})
             end;
         true ->
             {Token, State1} = expect(State, true),
@@ -4448,7 +4481,8 @@ parse_pattern(State) ->
             {Pattern, State1};
         _ ->
             Token = current_token(State),
-            throw({parse_error, {unexpected_token_in_pattern, get_token_type(Token)}, 0, 0})
+            {Line, Col} = get_token_line_col(Token),
+            throw({parse_error, {unexpected_token_in_pattern, get_token_type(Token)}, Line, Col})
     end.
 
 %% Parse list pattern [head | tail] or [a, b, c]
@@ -5081,7 +5115,10 @@ parse_string_interpolation_parts(State, Acc) ->
             },
             {Expr, State1};
         _ ->
-            throw({parse_error, {unexpected_token_in_interpolation, get_token_type(Token)}, 0, 0})
+            {Line, Col} = get_token_line_col(Token),
+            throw(
+                {parse_error, {unexpected_token_in_interpolation, get_token_type(Token)}, Line, Col}
+            )
     end.
 
 %% Parse expression inside interpolation
