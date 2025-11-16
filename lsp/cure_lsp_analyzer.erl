@@ -941,11 +941,22 @@ convert_type_error(Error) ->
     make_diagnostic(0, 0, format_message(Error), warning).
 
 %% Helper functions
-make_diagnostic(Line, Column, Message, Severity) ->
+make_diagnostic(Line, Column, Message, Severity) when is_integer(Line), is_integer(Column) ->
     #{
         range => #{
             start => #{line => max(0, Line - 1), character => Column},
             'end' => #{line => max(0, Line - 1), character => Column + 10}
+        },
+        severity => severity_to_int(Severity),
+        source => <<"cure-lsp">>,
+        message => format_message(Message)
+    };
+make_diagnostic(_Line, _Column, Message, Severity) ->
+    % Fallback for when location is not provided properly
+    #{
+        range => #{
+            start => #{line => 0, character => 0},
+            'end' => #{line => 0, character => 10}
         },
         severity => severity_to_int(Severity),
         source => <<"cure-lsp">>,
