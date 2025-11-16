@@ -34,11 +34,11 @@ test_basic_type_inference() ->
     ?assertMatch(#typecheck_result{success = true}, Result1),
     ?assertMatch({primitive_type, 'Int'}, Result1#typecheck_result.type),
 
-    % String literal
+    % String literal (Erlang string literals are charlists)
     StringLiteral = #literal_expr{value = "hello", location = create_location(1, 1)},
     Result2 = cure_typechecker:check_expression(StringLiteral, Env),
     ?assertMatch(#typecheck_result{success = true}, Result2),
-    ?assertMatch({primitive_type, 'String'}, Result2#typecheck_result.type),
+    ?assertMatch({primitive_type, 'Charlist'}, Result2#typecheck_result.type),
 
     % Boolean literal
     BoolLiteral = #literal_expr{value = true, location = create_location(1, 1)},
@@ -70,7 +70,8 @@ test_simple_function_checking() ->
         location = create_location(1, 1)
     },
 
-    Result = cure_typechecker:check_function(Function),
+    Env = cure_typechecker:builtin_env(),
+    Result = cure_typechecker:check_function(Function, Env),
     ?assertMatch({ok, _Env, #typecheck_result{success = true}}, Result),
 
     cure_utils:debug("✓ Simple function checking test passed~n").

@@ -3118,9 +3118,20 @@ free_type_vars_in_env(_) ->
     sets:new().
 
 %% Infer curried function application: f(a1, a2, ..., an) becomes f(a1)(a2)...(an)
-infer_curried_application(FuncType, [], _Location, Constraints) ->
-    % No arguments - return function as-is
-    {ok, FuncType, Constraints};
+infer_curried_application(FuncType, [], Location, Constraints) ->
+    % No arguments - check if this is a zero-arity function call f()
+    % If so, unwrap the function type to get the return type
+    case instantiate_function_type(FuncType) of
+        {ok, {function_type, [], ReturnType}, InstConstraints} ->
+            % This is a zero-arity function - return its return type
+            {ok, ReturnType, Constraints ++ InstConstraints};
+        {ok, {function_type, _ParamTypes, _ReturnType}, _InstConstraints} ->
+            % This is a function with parameters being called with no args - error
+            {error, {arity_mismatch, FuncType, 0, Location}};
+        {error, {not_function_type, _}} ->
+            % Not a function type - return as-is (might be a type variable that will be constrained later)
+            {ok, FuncType, Constraints}
+    end;
 infer_curried_application(FuncType, ArgTypes, Location, Constraints) ->
     % Try to apply all arguments at once first (for multi-parameter functions)
     case apply_all_args_at_once(FuncType, ArgTypes, Location) of

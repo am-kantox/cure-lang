@@ -2,6 +2,9 @@
 
 -export([run/0]).
 
+-include("../src/parser/cure_ast.hrl").
+-include("../src/codegen/cure_codegen.hrl").
+
 %% Test suite for pipe operator (|>) implementation
 
 run() ->
@@ -353,8 +356,6 @@ test_int_error_shortcircuit() ->
 %% Test Utilities
 %% ============================================================================
 
--include("../src/parser/cure_ast.hrl").
-
 run_tests(Tests) ->
     Results = lists:map(
         fun({Name, TestFun}) ->
@@ -370,9 +371,9 @@ run_tests(Tests) ->
                         {1, 0}
                 end
             catch
-                Error:Reason:Stack ->
+                Error:ExcReason:Stack ->
                     io:format("✗ (exception)~n"),
-                    io:format("    ~p:~p~n", [Error, Reason]),
+                    io:format("    ~p:~p~n", [Error, ExcReason]),
                     io:format("    Stack: ~p~n", [Stack]),
                     {1, 0}
             end

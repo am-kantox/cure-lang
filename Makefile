@@ -185,7 +185,7 @@ clean-all: clean
 # Run tests
 test: tests
 	@echo "Running Cure compiler test suite..."
-	$(ERL) -pa $(EBIN_DIR) -pa $(LIB_EBIN_DIR) -pa $(LIB_EBIN_DIR)/std -noshell -s test_runner run_all -s init stop
+	$(ERL) -pa $(EBIN_DIR) -pa $(LIB_EBIN_DIR) -pa $(LIB_EBIN_DIR)/std -eval 'test_runner:run_all(), init:stop().'
 
 # Run only basic tests
 test-basic: tests
