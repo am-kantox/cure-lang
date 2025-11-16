@@ -60,7 +60,7 @@
 <p>This declares that any type <code>T</code> implementing <code>Show</code> must provide a <code>show</code> function that converts values of type <code>T</code> to <code>String</code>.</p>
 <h2 id="using-show">Using Show</h2>
 <h3 id="importing-the-show-module">Importing the Show Module</h3>
-<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Show</span> <span class="p">[</span><span class="n">Show</span><span class="p">,</span> <span class="n">show</span><span class="p">]</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Show</span><span class="w"> </span><span class="p">[</span><span class="n">Show</span><span class="p">,</span><span class="w"> </span><span class="n">show</span><span class="p">]</span>
 </code></pre></div>
 
 <p>This imports:<br />
@@ -368,12 +368,12 @@ def show_complex(x: ComplexType): String =
 </ol>
 <h2 id="integration-with-other-systems">Integration with Other Systems</h2>
 <h3 id="with-io-operations">With IO Operations</h3>
-<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Show</span> <span class="p">[</span><span class="n">show</span><span class="p">]</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Io</span> <span class="p">[</span><span class="n">println</span><span class="p">]</span>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Show</span><span class="w"> </span><span class="p">[</span><span class="n">show</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Io</span><span class="w"> </span><span class="p">[</span><span class="n">println</span><span class="p">]</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">display</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">T</span><span class="p">):</span> <span class="n">Int</span> <span class="n">where</span> <span class="n">Show</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">=</span>
-  <span class="n">println</span><span class="p">(</span><span class="n">show</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
-  <span class="mi">0</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">display</span><span class="p">(</span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="n">Show</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">println</span><span class="p">(</span><span class="n">show</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+<span class="w">  </span><span class="mi">0</span>
 </code></pre></div>
 
 <h3 id="with-logging">With Logging</h3>

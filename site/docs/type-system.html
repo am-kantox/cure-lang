@@ -181,30 +181,30 @@ Tuple(T1, T2, ..) # Fixed-size tuples: (1, &quot;hello&quot;, true)
 <h3 id="fsm-type-examples">FSM Type Examples</h3>
 <p><strong>Current Implementation</strong> (from <code>examples/06_fsm_traffic_light.cure</code>):</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># Traffic light FSM with arrow-based transitions</span>
-<span class="n">record</span> <span class="n">TrafficPayload</span> <span class="n">do</span>
-  <span class="n">cycles_completed</span><span class="p">:</span> <span class="n">Int</span>
-  <span class="n">timer_events</span><span class="p">:</span> <span class="n">Int</span>
-  <span class="n">emergency_stops</span><span class="p">:</span> <span class="n">Int</span>
+<span class="n">record</span><span class="w"> </span><span class="n">TrafficPayload</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">cycles_completed</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span>
+<span class="w">  </span><span class="n">timer_events</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span>
+<span class="w">  </span><span class="n">emergency_stops</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span>
 <span class="n">end</span>
 
-<span class="n">fsm</span> <span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">timer_events</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">emergency_stops</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span> <span class="n">do</span>
-  <span class="n">Red</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">timer</span><span class="o">|</span> <span class="n">Green</span>
-  <span class="n">Red</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">emergency</span><span class="o">|</span> <span class="n">Red</span>
-  <span class="n">Green</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">timer</span><span class="o">|</span> <span class="n">Yellow</span>
-  <span class="n">Green</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">emergency</span><span class="o">|</span> <span class="n">Red</span>
-  <span class="n">Yellow</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">timer</span><span class="o">|</span> <span class="n">Red</span>
-  <span class="n">Yellow</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">emergency</span><span class="o">|</span> <span class="n">Red</span>
+<span class="n">fsm</span><span class="w"> </span><span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">timer_events</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">emergency_stops</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Red</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Green</span>
+<span class="w">  </span><span class="n">Red</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">emergency</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+<span class="w">  </span><span class="n">Green</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Yellow</span>
+<span class="w">  </span><span class="n">Green</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">emergency</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+<span class="w">  </span><span class="n">Yellow</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+<span class="w">  </span><span class="n">Yellow</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">emergency</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
 <span class="n">end</span>
 
 <span class="c1"># FSM operations (from Std.Fsm)</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Fsm</span> <span class="p">[</span><span class="n">fsm_spawn</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_cast</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_advertise</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_state</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Pair</span> <span class="p">[</span><span class="n">pair</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Fsm</span><span class="w"> </span><span class="p">[</span><span class="n">fsm_spawn</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">fsm_cast</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">fsm_advertise</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">fsm_state</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Pair</span><span class="w"> </span><span class="p">[</span><span class="n">pair</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
 
-<span class="n">let</span> <span class="n">fsm_pid</span> <span class="o">=</span> <span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">TrafficPayload</span><span class="p">,</span> <span class="n">initial_data</span><span class="p">)</span>
-<span class="n">let</span> <span class="n">adv_result</span> <span class="o">=</span> <span class="n">fsm_advertise</span><span class="p">(</span><span class="n">fsm_pid</span><span class="p">,</span> <span class="p">:</span><span class="n">traffic_light</span><span class="p">)</span>
-<span class="n">let</span> <span class="n">event</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(:</span><span class="n">timer</span><span class="p">,</span> <span class="p">[])</span>
-<span class="n">let</span> <span class="n">cast_result</span> <span class="o">=</span> <span class="n">fsm_cast</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
-<span class="n">let</span> <span class="n">current_state</span> <span class="o">=</span> <span class="n">fsm_state</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">)</span>
+<span class="n">let</span><span class="w"> </span><span class="n">fsm_pid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">TrafficPayload</span><span class="p">,</span><span class="w"> </span><span class="n">initial_data</span><span class="p">)</span>
+<span class="n">let</span><span class="w"> </span><span class="n">adv_result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fsm_advertise</span><span class="p">(</span><span class="n">fsm_pid</span><span class="p">,</span><span class="w"> </span><span class="p">:</span><span class="n">traffic_light</span><span class="p">)</span>
+<span class="n">let</span><span class="w"> </span><span class="n">event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pair</span><span class="p">(:</span><span class="n">timer</span><span class="p">,</span><span class="w"> </span><span class="p">[])</span>
+<span class="n">let</span><span class="w"> </span><span class="n">cast_result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fsm_cast</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">,</span><span class="w"> </span><span class="n">event</span><span class="p">)</span>
+<span class="n">let</span><span class="w"> </span><span class="n">current_state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fsm_state</span><span class="p">(:</span><span class="n">traffic_light</span><span class="p">)</span>
 </code></pre></div>
 
 <p><strong>Planned Syntax</strong> (for future implementation with guards and actions):</p>
@@ -454,27 +454,27 @@ Balanced(T) = {tree: Tree(T) | is_balanced(tree)}
 <h3 id="fsm-type-safety_1">FSM Type Safety</h3>
 <p><strong>Current Implementation</strong>:</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># From examples/06_fsm_traffic_light.cure</span>
-<span class="n">record</span> <span class="n">TrafficPayload</span> <span class="n">do</span>
-  <span class="n">cycles_completed</span><span class="p">:</span> <span class="n">Int</span>
-  <span class="n">timer_events</span><span class="p">:</span> <span class="n">Int</span>
-  <span class="n">emergency_stops</span><span class="p">:</span> <span class="n">Int</span>
+<span class="n">record</span><span class="w"> </span><span class="n">TrafficPayload</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">cycles_completed</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span>
+<span class="w">  </span><span class="n">timer_events</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span>
+<span class="w">  </span><span class="n">emergency_stops</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span>
 <span class="n">end</span>
 
-<span class="n">fsm</span> <span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">timer_events</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="n">emergency_stops</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span> <span class="n">do</span>
-  <span class="n">Red</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">timer</span><span class="o">|</span> <span class="n">Green</span>
-  <span class="n">Green</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">timer</span><span class="o">|</span> <span class="n">Yellow</span>
-  <span class="n">Yellow</span> <span class="o">--&gt;</span> <span class="o">|</span><span class="n">timer</span><span class="o">|</span> <span class="n">Red</span>
+<span class="n">fsm</span><span class="w"> </span><span class="n">TrafficPayload</span><span class="p">{</span><span class="n">cycles_completed</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">timer_events</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">emergency_stops</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Red</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Green</span>
+<span class="w">  </span><span class="n">Green</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Yellow</span>
+<span class="w">  </span><span class="n">Yellow</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
 <span class="n">end</span>
 
 <span class="c1"># Type-safe FSM usage</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Fsm</span> <span class="p">[</span><span class="n">fsm_spawn</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">fsm_cast</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Pair</span> <span class="p">[</span><span class="n">pair</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Fsm</span><span class="w"> </span><span class="p">[</span><span class="n">fsm_spawn</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">fsm_cast</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">Std.Pair</span><span class="w"> </span><span class="p">[</span><span class="n">pair</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">increment_counter</span><span class="p">(</span><span class="n">initial_data</span><span class="p">:</span> <span class="n">TrafficPayload</span><span class="p">):</span> <span class="n">Int</span> <span class="o">=</span>
-  <span class="n">let</span> <span class="n">fsm_pid</span> <span class="o">=</span> <span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">TrafficPayload</span><span class="p">,</span> <span class="n">initial_data</span><span class="p">)</span>
-  <span class="n">let</span> <span class="n">event</span> <span class="o">=</span> <span class="n">pair</span><span class="p">(:</span><span class="n">timer</span><span class="p">,</span> <span class="p">[])</span>
-  <span class="n">let</span> <span class="n">result</span> <span class="o">=</span> <span class="n">fsm_cast</span><span class="p">(</span><span class="n">fsm_pid</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
-  <span class="mi">0</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">increment_counter</span><span class="p">(</span><span class="n">initial_data</span><span class="p">:</span><span class="w"> </span><span class="n">TrafficPayload</span><span class="p">):</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">let</span><span class="w"> </span><span class="n">fsm_pid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">TrafficPayload</span><span class="p">,</span><span class="w"> </span><span class="n">initial_data</span><span class="p">)</span>
+<span class="w">  </span><span class="n">let</span><span class="w"> </span><span class="n">event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pair</span><span class="p">(:</span><span class="n">timer</span><span class="p">,</span><span class="w"> </span><span class="p">[])</span>
+<span class="w">  </span><span class="n">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fsm_cast</span><span class="p">(</span><span class="n">fsm_pid</span><span class="p">,</span><span class="w"> </span><span class="n">event</span><span class="p">)</span>
+<span class="w">  </span><span class="mi">0</span>
 </code></pre></div>
 
 <h2 id="type-optimization">Type Optimization</h2>

@@ -5,16 +5,16 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.2.0">
+    <meta name="project" content="cure v0.3.0">
 
 
-    <title>Typeclass Operator Syntax — cure v0.2.0</title>
+    <title>Typeclass Operator Syntax — cure v0.3.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-28313B55.js"></script>
+    <script src="dist/sidebar_items-DAE95399.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.2.0
+          v0.3.0
         </div>
       </div>
     </div>
@@ -112,7 +112,7 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.2.0/docs/TYPECLASS_OPERATOR_SYNTAX.md#L1" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.3.0/docs/TYPECLASS_OPERATOR_SYNTAX.md#L1" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
@@ -262,14 +262,14 @@ def foo(x: A): B
   <span class="text">Alternative: Parser Enhancement (Future)</span>
 </h2>
 <p>We <em>could</em> enhance the parser to understand context, but it adds complexity:</p><pre><code class="makeup erlang" translate="no"><span class="c1">% In parse_type, when inside type arguments:</span><span class="w">
-</span><span class="nf">parse_type_in_context</span><span class="p" data-group-id="9005403088-1">(</span><span class="n">State</span><span class="p">,</span><span class="w"> </span><span class="n">Context</span><span class="p" data-group-id="9005403088-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+</span><span class="nf">parse_type_in_context</span><span class="p" data-group-id="3960087967-1">(</span><span class="n">State</span><span class="p">,</span><span class="w"> </span><span class="n">Context</span><span class="p" data-group-id="3960087967-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
     </span><span class="k">case</span><span class="w"> </span><span class="n">Context</span><span class="w"> </span><span class="k">of</span><span class="w">
         </span><span class="ss">inside_type_args</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
             </span><span class="c1">% Allow -&gt; as part of function type</span><span class="w">
-            </span><span class="nf">parse_function_type</span><span class="p" data-group-id="9005403088-2">(</span><span class="n">State</span><span class="p" data-group-id="9005403088-2">)</span><span class="p">;</span><span class="w">
+            </span><span class="nf">parse_function_type</span><span class="p" data-group-id="3960087967-2">(</span><span class="n">State</span><span class="p" data-group-id="3960087967-2">)</span><span class="p">;</span><span class="w">
         </span><span class="p">_</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
             </span><span class="c1">% Treat -&gt; as return type marker</span><span class="w">
-            </span><span class="nf">parse_simple_type</span><span class="p" data-group-id="9005403088-3">(</span><span class="n">State</span><span class="p" data-group-id="9005403088-3">)</span><span class="w">
+            </span><span class="nf">parse_simple_type</span><span class="p" data-group-id="3960087967-3">(</span><span class="n">State</span><span class="p" data-group-id="3960087967-3">)</span><span class="w">
     </span><span class="k">end</span><span class="p">.</span></code></pre><p>This would require:</p><ol><li>Threading context through all type parsing functions</li><li>Tracking parenthesis depth</li><li>More complex lookahead logic</li></ol><p><strong>Recommendation</strong>: Keep current behavior, require parentheses. It's clearer and matches industry standards.</p><h2 id="testing" class="section-heading">
   <a href="#testing" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -329,11 +329,11 @@ Typeclass Summary
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.2.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.3.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.2.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.3.0">Hex Preview</a>
 
-              (<a href="https://preview.hex.pm/preview/cure/0.2.0/show/docs/TYPECLASS_OPERATOR_SYNTAX.md">current file</a>)
+              (<a href="https://preview.hex.pm/preview/cure/0.3.0/show/docs/TYPECLASS_OPERATOR_SYNTAX.md">current file</a>)
 
           </span>
 

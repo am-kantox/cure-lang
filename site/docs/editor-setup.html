@@ -289,23 +289,23 @@ autocmd <span class="nb">FileType</span> cure inoreabbrev <span class="s1">&#39;
 </ol>
 <h2 id="testing-your-setup">Testing Your Setup</h2>
 <p>Create a test file <code>test.cure</code>:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">module</span> <span class="n">Test</span> <span class="n">do</span>
-  <span class="n">export</span> <span class="p">[</span><span class="n">main</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="n">Test</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">export</span><span class="w"> </span><span class="p">[</span><span class="n">main</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
 
-  <span class="kn">import</span><span class="w"> </span><span class="nn">Std.Io</span> <span class="p">[</span><span class="n">println</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+<span class="w">  </span><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Io</span><span class="w"> </span><span class="p">[</span><span class="n">println</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
 
-  <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span> <span class="n">Int</span> <span class="o">=</span>
-    <span class="c1"># String literal (straight quotes)</span>
-    <span class="n">let</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;hello&quot;</span>
-    <span class="n">println</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="c1"># String literal (straight quotes)</span>
+<span class="w">    </span><span class="n">let</span><span class="w"> </span><span class="nb">str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;hello&quot;</span>
+<span class="w">    </span><span class="n">println</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
 
-    <span class="c1"># Charlist literal (curly quotes) - stores as [104, 101, 108, 108, 111]</span>
-    <span class="c1"># let chars = &#39;hello&#39;</span>
+<span class="w">    </span><span class="c1"># Charlist literal (curly quotes) - stores as [104, 101, 108, 108, 111]</span>
+<span class="w">    </span><span class="c1"># let chars = &#39;hello&#39;</span>
 
-    <span class="c1"># Atom (ASCII single quote)</span>
-    <span class="n">let</span> <span class="n">atom</span> <span class="o">=</span> <span class="p">:</span><span class="n">my_atom</span>
+<span class="w">    </span><span class="c1"># Atom (ASCII single quote)</span>
+<span class="w">    </span><span class="n">let</span><span class="w"> </span><span class="n">atom</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">:</span><span class="n">my_atom</span>
 
-    <span class="mi">0</span>
+<span class="w">    </span><span class="mi">0</span>
 <span class="n">end</span>
 </code></pre></div>
 
