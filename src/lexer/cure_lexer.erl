@@ -390,9 +390,9 @@ scan_tokens(<<226, 128, 186, Rest/binary>>, Line, Column, Acc) ->
     scan_tokens(Rest, Line, Column + 1, [Token | Acc]);
 %% Single-quoted atoms (ASCII single quote) - kept for backward compatibility if needed
 scan_tokens(<<$', Rest/binary>>, Line, Column, Acc) ->
-    {Atom, NewRest, NewColumn} = scan_quoted_atom(Rest, Column + 1, <<>>),
+    {Atom, NewRest, NewLine, NewColumn} = scan_quoted_atom(Rest, Line, Column + 1, <<>>),
     Token = #token{type = atom, value = Atom, line = Line, column = Column},
-    scan_tokens(NewRest, Line, NewColumn, [Token | Acc]);
+    scan_tokens(NewRest, NewLine, NewColumn, [Token | Acc]);
 %% Atom literals (starting with :) - but check for :: first
 scan_tokens(<<$:, $:, Rest/binary>>, Line, Column, Acc) ->
     Token = #token{type = '::', value = '::', line = Line, column = Column},
@@ -683,19 +683,19 @@ scan_atom(Rest, Column, Acc) ->
     {binary_to_atom(Acc, utf8), Rest, Column}.
 
 %% Scan single-quoted atom
-scan_quoted_atom(<<$', Rest/binary>>, Column, Acc) ->
-    {binary_to_atom(Acc, utf8), Rest, Column + 1};
-scan_quoted_atom(<<$\\, C, Rest/binary>>, Column, Acc) ->
+scan_quoted_atom(<<$', Rest/binary>>, Line, Column, Acc) ->
+    {binary_to_atom(Acc, utf8), Rest, Line, Column + 1};
+scan_quoted_atom(<<$\\, C, Rest/binary>>, Line, Column, Acc) ->
     % Handle escape sequences in quoted atoms
     Escaped = escape_char(C),
-    scan_quoted_atom(Rest, Column + 2, <<Acc/binary, Escaped>>);
-scan_quoted_atom(<<$\n, Rest/binary>>, Column, Acc) ->
-    % Allow newlines in quoted atoms
-    scan_quoted_atom(Rest, Column + 1, <<Acc/binary, $\n>>);
-scan_quoted_atom(<<C, Rest/binary>>, Column, Acc) ->
-    scan_quoted_atom(Rest, Column + 1, <<Acc/binary, C>>);
-scan_quoted_atom(<<>>, Column, _Acc) ->
-    throw({lexer_error, unterminated_quoted_atom, Column, Column}).
+    scan_quoted_atom(Rest, Line, Column + 2, <<Acc/binary, Escaped>>);
+scan_quoted_atom(<<$\n, Rest/binary>>, Line, _Column, Acc) ->
+    % Allow newlines in quoted atoms - increment line, reset column
+    scan_quoted_atom(Rest, Line + 1, 1, <<Acc/binary, $\n>>);
+scan_quoted_atom(<<C, Rest/binary>>, Line, Column, Acc) ->
+    scan_quoted_atom(Rest, Line, Column + 1, <<Acc/binary, C>>);
+scan_quoted_atom(<<>>, Line, Column, _Acc) ->
+    throw({lexer_error, unterminated_quoted_atom, Line, Column}).
 
 %% Scan number (integers and floats)
 scan_number(<<C, Rest/binary>>, Column, Acc) when C >= $0, C =< $9 ->

@@ -4,6 +4,19 @@
 
 -include("../src/parser/cure_ast.hrl").
 
+%% Type checker error and warning records
+-record(typecheck_result, {
+    success :: boolean(),
+    type :: term() | undefined,
+    errors :: [typecheck_error()],
+    warnings :: [typecheck_warning()]
+}).
+-record(typecheck_error, {message :: string(), location :: location(), details :: term()}).
+-record(typecheck_warning, {message :: string(), location :: location(), details :: term()}).
+
+-type typecheck_error() :: #typecheck_error{}.
+-type typecheck_warning() :: #typecheck_warning{}.
+
 %% Analyze document and return diagnostics
 analyze(Text) when is_binary(Text) ->
     case cure_lexer:tokenize(Text) of
@@ -20,10 +33,14 @@ analyze(Text) when is_binary(Text) ->
                     % Generic parse error
                     [make_diagnostic(0, 0, Reason, error)]
             end;
-        {error, {Line, Column, Message}} ->
+        {error, {Reason, Line, Column}} when is_integer(Line), is_integer(Column) ->
+            % Lexer error with location: {Reason, Line, Column}
+            [make_diagnostic(Line, Column, Reason, error)];
+        {error, {Line, Column, Message}} when is_integer(Line), is_integer(Column) ->
+            % Alternative format: {Line, Column, Message}
             [make_diagnostic(Line, Column, Message, error)];
         {error, Reason} ->
-            % Generic lex error
+            % Generic lex error without location
             [make_diagnostic(0, 0, Reason, error)]
     end;
 analyze(Text) when is_list(Text) ->
@@ -919,26 +936,63 @@ format_type_list(_) ->
 
 %% Type checking diagnostics
 type_check_diagnostics(AST) ->
-    % Placeholder for type checking integration
-    % Would call cure_typechecker:check(AST) and convert errors to diagnostics
-    case catch cure_typechecker:check(AST) of
-        {ok, _TypedAST} ->
+    % Call the type checker and convert results to LSP diagnostics
+    try
+        Result = cure_typechecker:check_program(AST),
+        case Result of
+            #typecheck_result{success = true, warnings = Warnings} ->
+                % Type checking succeeded - convert warnings to diagnostics
+                lists:map(fun convert_type_warning/1, Warnings);
+            #typecheck_result{success = false, errors = Errors, warnings = Warnings} ->
+                % Type checking failed - convert both errors and warnings
+                ErrorDiags = lists:map(fun convert_type_error/1, Errors),
+                WarningDiags = lists:map(fun convert_type_warning/1, Warnings),
+                ErrorDiags ++ WarningDiags;
+            _ ->
+                % Unexpected result format
+                []
+        end
+    catch
+        error:undef ->
+            % Type checker module not available
             [];
-        {error, TypeErrors} when is_list(TypeErrors) ->
-            lists:map(fun convert_type_error/1, TypeErrors);
-        {'EXIT', _Reason} ->
-            % Type checker not available or crashed
-            [];
-        _ ->
+        _:Reason ->
+            % Type checker crashed - log but don't fail LSP
+            io:format("Type checker error: ~p~n", [Reason]),
             []
     end.
 
+%% Convert type checker error record to LSP diagnostic
+convert_type_error(#typecheck_error{message = Message, location = Location, details = _Details}) ->
+    {Line, Column} = extract_location(Location),
+    make_diagnostic(Line, Column, format_message(Message), error);
 convert_type_error({Line, Column, Message}) ->
-    make_diagnostic(Line, Column, format_message(Message), warning);
+    make_diagnostic(Line, Column, format_message(Message), error);
 convert_type_error({Line, Message}) ->
-    make_diagnostic(Line, 0, format_message(Message), warning);
+    make_diagnostic(Line, 0, format_message(Message), error);
 convert_type_error(Error) ->
-    make_diagnostic(0, 0, format_message(Error), warning).
+    make_diagnostic(0, 0, format_message(Error), error).
+
+%% Convert type checker warning record to LSP diagnostic
+convert_type_warning(#typecheck_warning{message = Message, location = Location, details = _Details}) ->
+    {Line, Column} = extract_location(Location),
+    make_diagnostic(Line, Column, format_message(Message), warning);
+convert_type_warning({Line, Column, Message}) ->
+    make_diagnostic(Line, Column, format_message(Message), warning);
+convert_type_warning({Line, Message}) ->
+    make_diagnostic(Line, 0, format_message(Message), warning);
+convert_type_warning(Warning) ->
+    make_diagnostic(0, 0, format_message(Warning), warning).
+
+%% Extract line and column from location record or tuple
+extract_location(#location{line = Line, column = Col}) ->
+    {Line, Col};
+extract_location({Line, Col}) when is_integer(Line), is_integer(Col) ->
+    {Line, Col};
+extract_location(Line) when is_integer(Line) ->
+    {Line, 0};
+extract_location(_) ->
+    {0, 0}.
 
 %% Helper functions
 make_diagnostic(Line, Column, Message, Severity) when is_integer(Line), is_integer(Column) ->
