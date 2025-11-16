@@ -1133,6 +1133,7 @@ parse_fsm_initial(State) ->
             identifier -> expect(State2, identifier);
             'Zero' -> expect(State2, 'Zero');
             'Succ' -> expect(State2, 'Succ');
+            'Pred' -> expect(State2, 'Pred');
             'Ok' -> expect(State2, 'Ok');
             'Error' -> expect(State2, 'Error');
             'Some' -> expect(State2, 'Some');
@@ -1144,6 +1145,7 @@ parse_fsm_initial(State) ->
             identifier -> token_value_to_atom(get_token_value(StateToken));
             'Zero' -> 'Zero';
             'Succ' -> 'Succ';
+            'Pred' -> 'Pred';
             'Ok' -> 'Ok';
             'Error' -> 'Error';
             'Some' -> 'Some';
@@ -1172,6 +1174,7 @@ parse_fsm_state_definition(State) ->
             identifier -> expect(State1, identifier);
             'Zero' -> expect(State1, 'Zero');
             'Succ' -> expect(State1, 'Succ');
+            'Pred' -> expect(State1, 'Pred');
             'Ok' -> expect(State1, 'Ok');
             'Error' -> expect(State1, 'Error');
             'Some' -> expect(State1, 'Some');
@@ -1183,6 +1186,7 @@ parse_fsm_state_definition(State) ->
             identifier -> token_value_to_atom(get_token_value(NameToken));
             'Zero' -> 'Zero';
             'Succ' -> 'Succ';
+            'Pred' -> 'Pred';
             'Ok' -> 'Ok';
             'Error' -> 'Error';
             'Some' -> 'Some';
@@ -1242,6 +1246,7 @@ parse_fsm_transition(State) ->
                     identifier -> expect(State6, identifier);
                     'Zero' -> expect(State6, 'Zero');
                     'Succ' -> expect(State6, 'Succ');
+                    'Pred' -> expect(State6, 'Pred');
                     'Ok' -> expect(State6, 'Ok');
                     'Error' -> expect(State6, 'Error');
                     'Some' -> expect(State6, 'Some');
@@ -1253,6 +1258,7 @@ parse_fsm_transition(State) ->
                     identifier -> token_value_to_atom(get_token_value(TargetToken));
                     'Zero' -> 'Zero';
                     'Succ' -> 'Succ';
+                    'Pred' -> 'Pred';
                     'Ok' -> 'Ok';
                     'Error' -> 'Error';
                     'Some' -> 'Some';
@@ -2752,6 +2758,10 @@ parse_primary_type(State) ->
             {SuccToken, State1} = expect(State, 'Succ'),
             Location = get_token_location(SuccToken),
             parse_type_constructor('Succ', Location, State1);
+        'Pred' ->
+            {PredToken, State1} = expect(State, 'Pred'),
+            Location = get_token_location(PredToken),
+            parse_type_constructor('Pred', Location, State1);
         'Ok' ->
             {OkToken, State1} = expect(State, 'Ok'),
             Location = get_token_location(OkToken),
@@ -3505,6 +3515,8 @@ parse_primary_expression(State) ->
                 'Zero' ->
                     parse_constructor_expression(State);
                 'Succ' ->
+                    parse_constructor_expression(State);
+                'Pred' ->
                     parse_constructor_expression(State);
                 'ok' ->
                     parse_constructor_expression(State);
@@ -4400,6 +4412,24 @@ parse_pattern(State) ->
                     % Succ without arguments is malformed
                     throw({parse_error, {succ_requires_argument}, 0, 0})
             end;
+        'Pred' ->
+            {Token, State1} = expect(State, 'Pred'),
+            Location = get_token_location(Token),
+            case match_token(State1, '(') of
+                true ->
+                    {_, State2} = expect(State1, '('),
+                    {InnerPattern, State3} = parse_pattern(State2),
+                    {_, State4} = expect(State3, ')'),
+                    Pattern = #constructor_pattern{
+                        name = 'Pred',
+                        args = [InnerPattern],
+                        location = Location
+                    },
+                    {Pattern, State4};
+                false ->
+                    % Pred without arguments is malformed
+                    throw({parse_error, {pred_requires_argument}, 0, 0})
+            end;
         true ->
             {Token, State1} = expect(State, true),
             Location = get_token_location(Token),
@@ -4623,6 +4653,7 @@ parse_constructor_expression(State) ->
             'None' -> expect(State, 'None');
             'Zero' -> expect(State, 'Zero');
             'Succ' -> expect(State, 'Succ');
+            'Pred' -> expect(State, 'Pred');
             'ok' -> expect(State, 'ok');
             'error' -> expect(State, 'error')
         end,
@@ -4635,6 +4666,7 @@ parse_constructor_expression(State) ->
             'None' -> 'None';
             'Zero' -> 'Zero';
             'Succ' -> 'Succ';
+            'Pred' -> 'Pred';
             'ok' -> ok;
             'error' -> error;
             _ -> get_token_value(Token)

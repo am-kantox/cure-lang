@@ -278,7 +278,8 @@ new_state() ->
         % Nullary constructor
         'Zero' => 0,
         % Unary constructor
-        'Succ' => 1
+        'Succ' => 1,
+        'Pred' => 1
     },
     #codegen_state{
         module_name = undefined,
@@ -398,7 +399,8 @@ compile_module({module_def, Name, Imports, Exports, Items, _Location}, Options) 
         % Nullary constructor
         'Zero' => 0,
         % Unary constructor
-        'Succ' => 1
+        'Succ' => 1,
+        'Pred' => 1
     },
     State = #codegen_state{
         module_name = Name,
@@ -459,7 +461,8 @@ compile_module(#module_def{name = Name, exports = Exports, items = Items} = Modu
         % Nullary constructor
         'Zero' => 0,
         % Unary constructor
-        'Succ' => 1
+        'Succ' => 1,
+        'Pred' => 1
     },
     State = #codegen_state{
         module_name = Name,
@@ -3019,7 +3022,7 @@ convert_to_erlang_forms(Module) ->
             {attribute, 1, module, ModuleName},
             {attribute, 2, export, ExportsWithRegistration},
             % Import Nat constructors from cure_std
-            {attribute, 3, import, {cure_std, [{'Zero', 0}, {'Succ', 1}]}}
+            {attribute, 3, import, {cure_std, [{'Zero', 0}, {'Succ', 1}, {'Pred', 1}]}}
         ],
 
         % Add compile attributes (include FSM header if FSMs present)

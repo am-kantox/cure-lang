@@ -105,7 +105,7 @@ module Std.List do
   def nth(list: List(T), index: Nat, default: T): T =
     match index do
       0 -> head(list, default)
-      _ -> nth(tail(list), index - 1, default)
+      _ -> nth(tail(list), Pred(index), default)
     end
 
   # def take(list: List(T), n: Int): List(T) =

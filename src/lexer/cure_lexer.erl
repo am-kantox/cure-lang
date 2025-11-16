@@ -342,6 +342,7 @@ keywords() ->
         <<"Atom">> => 'Atom',
         <<"Zero">> => 'Zero',
         <<"Succ">> => 'Succ',
+        <<"Pred">> => 'Pred',
         <<"ok">> => 'ok',
         <<"error">> => 'error'
     }.

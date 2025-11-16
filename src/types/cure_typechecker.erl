@@ -1702,6 +1702,9 @@ builtin_env() ->
     % Succ : Nat -> Nat (unary constructor)
     SuccType = {function_type, [{primitive_type, 'Nat'}], {primitive_type, 'Nat'}},
     Env7_2 = cure_types:extend_env(Env7_1, 'Succ', SuccType),
+    % Pred : Nat -> Nat (unary constructor - predecessor)
+    PredType = {function_type, [{primitive_type, 'Nat'}], {primitive_type, 'Nat'}},
+    Env7_3 = cure_types:extend_env(Env7_2, 'Pred', PredType),
 
     % Add built-in functions
     % map : (A -> B) -> [A] -> [B]
@@ -1712,7 +1715,7 @@ builtin_env() ->
                 {list_type, cure_types:new_type_var(), undefined}
             ],
             {list_type, cure_types:new_type_var(), undefined}},
-    Env8 = cure_types:extend_env(Env7_2, map, MapType),
+    Env8 = cure_types:extend_env(Env7_3, map, MapType),
 
     % filter : (A -> Bool) -> [A] -> [A]
     FilterType =
