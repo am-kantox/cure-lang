@@ -2947,12 +2947,6 @@ type_to_string('Bool') -> "Bool";
 type_to_string(Type) when is_atom(Type) -> atom_to_list(Type);
 type_to_string(_) -> "Unknown".
 
-%% Get the module where typeclass instances are defined
-get_typeclass_module('Show') -> 'Std.Show';
-get_typeclass_module('Eq') -> 'Std.Eq';
-get_typeclass_module('Ord') -> 'Std.Ord';
-get_typeclass_module(TypeclassName) -> TypeclassName.
-
 %% Convert internal representation to Erlang abstract forms
 convert_to_erlang_forms(Module) ->
     try

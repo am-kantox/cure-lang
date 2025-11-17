@@ -419,19 +419,3 @@ is_type_variable_or_param(#dependent_type{}) ->
     true;
 is_type_variable_or_param(_) ->
     false.
-
-%% ============================================================================
-%% Testing Helpers
-%% ============================================================================
-
--doc """
-Generate instance code as a string for inspection/debugging.
-""".
--spec format_instance(#instance_def{}) -> string().
-format_instance(#instance_def{typeclass = TC, type_args = Args}) ->
-    TypeArgStr = format_type_args(Args),
-    io_lib:format("instance ~p(~s) do ... end", [TC, TypeArgStr]).
-
-format_type_args([]) -> "";
-format_type_args([#primitive_type{name = Name}]) -> atom_to_list(Name);
-format_type_args([H | T]) -> format_type_args([H]) ++ ", " ++ format_type_args(T).

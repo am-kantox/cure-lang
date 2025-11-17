@@ -11,7 +11,10 @@ pipe chains when type information proves they cannot fail.
 -export([
     optimize_pipe_chain/2,
     can_inline_pipe_chain/2,
-    is_error_free_pipe/2
+    is_error_free_pipe/2,
+    new_stats/0,
+    update_stats/2,
+    format_stats/1
 ]).
 
 -include("../parser/cure_ast.hrl").
@@ -33,29 +36,30 @@ This function analyzes a pipe chain and applies optimizations:
 - `TypeEnv` - Type environment for type inference
 
 ## Returns
-- `{ok, OptimizedExpr}` - Optimized expression
-- `{unchanged, PipeExpr}` - No optimization applied
+- `{ok, OptimizedExpr, Stats}` - Optimized expression with statistics
+- `{unchanged, PipeExpr, Stats}` - No optimization applied with statistics
 """.
 optimize_pipe_chain(#binary_op_expr{op = '|>', left = Left, right = Right} = PipeExpr, TypeEnv) ->
+    Stats = new_stats(),
     % Check if we can optimize this pipe chain
     case analyze_pipe_chain(PipeExpr, TypeEnv) of
         {error_free, _ChainTypes} ->
             % This chain provably cannot fail - can optimize to direct calls
             case can_inline_to_direct_calls(Left, Right, TypeEnv) of
                 {true, DirectCall} ->
-                    {ok, DirectCall};
+                    {ok, DirectCall, update_stats(Stats, inlined)};
                 false ->
-                    {unchanged, PipeExpr}
+                    {unchanged, PipeExpr, update_stats(Stats, error_free)}
             end;
         {may_error, _ChainTypes} ->
             % Keep monadic pipe semantics
-            {unchanged, PipeExpr};
+            {unchanged, PipeExpr, update_stats(Stats, unchanged)};
         unknown ->
             % Cannot determine - keep original
-            {unchanged, PipeExpr}
+            {unchanged, PipeExpr, update_stats(Stats, unchanged)}
     end;
 optimize_pipe_chain(Expr, _TypeEnv) ->
-    {unchanged, Expr}.
+    {unchanged, Expr, new_stats()}.
 
 -doc """
 Check if a pipe chain can be inlined to direct function calls.

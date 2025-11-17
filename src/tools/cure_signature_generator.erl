@@ -55,17 +55,17 @@ extract_module_functions_helper([], Acc) ->
     Acc;
 extract_module_functions_helper([Item | Rest], Acc) ->
     case Item of
-        #module_def{name = ModuleName, items = ModuleItems} ->
-            % Record format (most common from parser)
-            ModuleFunctions = extract_functions_from_items(ModuleItems, ModuleName),
-            NewAcc = maps:merge(Acc, ModuleFunctions),
-            extract_module_functions_helper(Rest, NewAcc);
         {module_def, ModuleName, _Imports, _Exports, ModuleItems, _Location} ->
             ModuleFunctions = extract_functions_from_items(ModuleItems, ModuleName),
             NewAcc = maps:merge(Acc, ModuleFunctions),
             extract_module_functions_helper(Rest, NewAcc);
         {module_def, ModuleName, _Exports, ModuleItems, _Location} ->
             % 4-element version without imports
+            ModuleFunctions = extract_functions_from_items(ModuleItems, ModuleName),
+            NewAcc = maps:merge(Acc, ModuleFunctions),
+            extract_module_functions_helper(Rest, NewAcc);
+        #module_def{name = ModuleName, items = ModuleItems} ->
+            % Record format (most common from parser)
             ModuleFunctions = extract_functions_from_items(ModuleItems, ModuleName),
             NewAcc = maps:merge(Acc, ModuleFunctions),
             extract_module_functions_helper(Rest, NewAcc);
@@ -207,9 +207,6 @@ convert_type_param_value({primitive_type, Name}) ->
     end;
 convert_type_param_value(#identifier_expr{name = Name}) ->
     %% Type parameter referring to a value like n or m
-    {identifier_expr, Name, undefined};
-convert_type_param_value({identifier_expr, Name, _Loc}) ->
-    %% Type parameter value expression
     {identifier_expr, Name, undefined};
 convert_type_param_value(Other) ->
     %% Other type expressions - recursively convert

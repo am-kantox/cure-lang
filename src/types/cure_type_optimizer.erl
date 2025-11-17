@@ -972,6 +972,21 @@ inline_in_expression(
             NewArgs = [inline_in_expression(Arg, InliningMap, FuncDefs) || Arg <- Args],
             CallExpr#function_call_expr{args = NewArgs}
     end;
+inline_in_expression(
+    #binary_op_expr{op = '|>', left = Left, right = Right} = Expr, InliningMap, FuncDefs
+) ->
+    % First try pipe-specific optimizations
+    case cure_pipe_optimizer:optimize_pipe_chain(Expr, #{}) of
+        {ok, OptimizedExpr, _Stats} ->
+            % Pipe was optimized, continue with inlining on result
+            inline_in_expression(OptimizedExpr, InliningMap, FuncDefs);
+        {unchanged, _, _Stats} ->
+            % Pipe not optimized, process recursively
+            Expr#binary_op_expr{
+                left = inline_in_expression(Left, InliningMap, FuncDefs),
+                right = inline_in_expression(Right, InliningMap, FuncDefs)
+            }
+    end;
 inline_in_expression(#binary_op_expr{left = Left, right = Right} = Expr, InliningMap, FuncDefs) ->
     Expr#binary_op_expr{
         left = inline_in_expression(Left, InliningMap, FuncDefs),
@@ -986,6 +1001,20 @@ substitute_in_expression(#identifier_expr{name = Name} = Expr, SubstMap, _Inlini
 substitute_in_expression(#function_call_expr{args = Args} = Expr, SubstMap, InliningMap, FuncDefs) ->
     NewArgs = [substitute_in_expression(Arg, SubstMap, InliningMap, FuncDefs) || Arg <- Args],
     inline_in_expression(Expr#function_call_expr{args = NewArgs}, InliningMap, FuncDefs);
+substitute_in_expression(
+    #binary_op_expr{op = '|>', left = Left, right = Right} = Expr, SubstMap, InliningMap, FuncDefs
+) ->
+    % Substitute in both sides first
+    NewLeft = substitute_in_expression(Left, SubstMap, InliningMap, FuncDefs),
+    NewRight = substitute_in_expression(Right, SubstMap, InliningMap, FuncDefs),
+    NewExpr = Expr#binary_op_expr{left = NewLeft, right = NewRight},
+    % Then try pipe-specific optimizations
+    case cure_pipe_optimizer:optimize_pipe_chain(NewExpr, #{}) of
+        {ok, OptimizedExpr, _Stats} ->
+            OptimizedExpr;
+        {unchanged, _, _Stats} ->
+            NewExpr
+    end;
 substitute_in_expression(
     #binary_op_expr{left = Left, right = Right} = Expr, SubstMap, InliningMap, FuncDefs
 ) ->
