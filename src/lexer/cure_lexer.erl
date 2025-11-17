@@ -469,14 +469,30 @@ scan_two_char(Binary, Line, Column, Acc) ->
     scan_single_char(Binary, Line, Column, Acc).
 
 %% Handle single character tokens
-scan_single_char(<<C, Rest/binary>>, Line, Column, Acc) ->
-    SingleChar = <<C>>,
-    case maps:get(SingleChar, operators(), undefined) of
-        undefined ->
-            throw({lexer_error, {unexpected_character, C}, Line, Column});
-        Op ->
-            Token = #token{type = Op, value = Op, line = Line, column = Column},
-            scan_tokens(Rest, Line, Column + 1, [Token | Acc])
+scan_single_char(Binary, Line, Column, Acc) when byte_size(Binary) > 0 ->
+    % Try to extract UTF-8 character for proper error reporting
+    case extract_utf8_char(Binary) of
+        {Char, CharSize} when CharSize > 0 ->
+            % Check if it's a single-byte ASCII operator
+            <<FirstByte, _/binary>> = Binary,
+            SingleChar = <<FirstByte>>,
+            case maps:get(SingleChar, operators(), undefined) of
+                undefined ->
+                    % Not a known operator, report as unexpected character
+                    throw({lexer_error, {unexpected_character, Char}, Line, Column});
+                Op when CharSize =:= 1 ->
+                    % Valid single-byte operator
+                    <<_, Rest/binary>> = Binary,
+                    Token = #token{type = Op, value = Op, line = Line, column = Column},
+                    scan_tokens(Rest, Line, Column + 1, [Token | Acc]);
+                _ ->
+                    % Multi-byte character that happens to start like an operator
+                    throw({lexer_error, {unexpected_character, Char}, Line, Column})
+            end;
+        _ ->
+            % Invalid UTF-8
+            <<FirstByte, _/binary>> = Binary,
+            throw({lexer_error, {invalid_utf8, FirstByte}, Line, Column})
     end;
 scan_single_char(<<>>, _Line, _Column, Acc) ->
     Acc.
@@ -660,7 +676,9 @@ scan_one_token(<<C1, C2, Rest/binary>>, Line, Column) ->
             SingleChar = <<C1>>,
             case maps:get(SingleChar, operators(), undefined) of
                 undefined ->
-                    throw({lexer_error, {unexpected_character, C1}, Line, Column});
+                    % Decode UTF-8 character for error message
+                    {Char, _} = extract_utf8_char(<<C1, C2, Rest/binary>>),
+                    throw({lexer_error, {unexpected_character, Char}, Line, Column});
                 Op ->
                     Token = #token{type = Op, value = Op, line = Line, column = Column},
                     {Token, <<C2, Rest/binary>>, Line, Column + 1}
@@ -741,3 +759,24 @@ scan_charlist_literal_impl(<<C/utf8, Rest/binary>>, Line, Column, Charlist) ->
     scan_charlist_literal_impl(Rest, Line, Column + 1, [C | Charlist]);
 scan_charlist_literal_impl(<<>>, Line, Column, _Charlist) ->
     {error, {unterminated_charlist, Line, Column}}.
+
+%% Extract a single UTF-8 character from binary for error reporting
+%% Returns {CodePoint, ByteSize} or error
+extract_utf8_char(<<Char/utf8, _Rest/binary>> = Binary) ->
+    % Calculate how many bytes this UTF-8 character uses
+    CharSize = case Char of
+        C when C =< 16#7F -> 1;      % ASCII
+        C when C =< 16#7FF -> 2;     % 2-byte UTF-8
+        C when C =< 16#FFFF -> 3;    % 3-byte UTF-8
+        C when C =< 16#10FFFF -> 4;  % 4-byte UTF-8
+        _ -> 0
+    end,
+    % Verify we actually have that many bytes
+    case byte_size(Binary) >= CharSize of
+        true -> {Char, CharSize};
+        false -> error
+    end;
+extract_utf8_char(<<>>) ->
+    {0, 0};
+extract_utf8_char(_) ->
+    error.
