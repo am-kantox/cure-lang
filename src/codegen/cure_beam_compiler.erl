@@ -1002,7 +1002,13 @@ compile_multiple_clauses(
                 Rest, CurrentLine + 5, ModuleName, LocalFunctions, ImportedFunctions, [Clause | Acc]
             );
         {error, Reason} ->
-            throw({clause_compilation_failed, Reason})
+            % Extract location from first clause if available
+            Loc =
+                case ClauseInfo of
+                    #{location := L} -> L;
+                    _ -> #location{line = CurrentLine, column = 0}
+                end,
+            throw({clause_compilation_failed, Reason, Loc})
     end.
 
 %% Tagged tuple matching (for records like Ok(value), Error(msg))

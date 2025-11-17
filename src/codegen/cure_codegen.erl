@@ -1008,7 +1008,7 @@ compile_function_impl(
                                 NewState
                             };
                         {error, Reason} ->
-                            throw({guard_compilation_failed, Reason})
+                            throw({guard_compilation_failed, Reason, Location})
                     end
             end,
 
@@ -1133,7 +1133,7 @@ compile_single_function_clause(
                             NewState
                         };
                     {error, Reason} ->
-                        throw({guard_compilation_failed, Reason})
+                        throw({guard_compilation_failed, Reason, ClauseLocation})
                 end
         end,
 
@@ -1172,7 +1172,7 @@ compile_curify_function_impl(
             ErlArity ->
                 ok;
             ActualArity ->
-                throw({curify_arity_mismatch, Name, ActualArity, ErlArity})
+                throw({curify_arity_mismatch, Name, ActualArity, ErlArity, Location})
         end,
 
         FunctionCode = #{
