@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        otp: ['28']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Erlang/OTP
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{ matrix.otp }}
+        rebar3-version: '3.23'
+    
+    - name: Build compiler
+      run: make all
+    
+    - name: Build LSP
+      run: make lsp
+    
+    - name: Run tests
+      run: make test
