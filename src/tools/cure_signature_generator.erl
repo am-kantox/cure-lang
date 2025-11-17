@@ -55,15 +55,6 @@ extract_module_functions_helper([], Acc) ->
     Acc;
 extract_module_functions_helper([Item | Rest], Acc) ->
     case Item of
-        {module_def, ModuleName, _Imports, _Exports, ModuleItems, _Location} ->
-            ModuleFunctions = extract_functions_from_items(ModuleItems, ModuleName),
-            NewAcc = maps:merge(Acc, ModuleFunctions),
-            extract_module_functions_helper(Rest, NewAcc);
-        {module_def, ModuleName, _Exports, ModuleItems, _Location} ->
-            % 4-element version without imports
-            ModuleFunctions = extract_functions_from_items(ModuleItems, ModuleName),
-            NewAcc = maps:merge(Acc, ModuleFunctions),
-            extract_module_functions_helper(Rest, NewAcc);
         #module_def{name = ModuleName, items = ModuleItems} ->
             % Record format (most common from parser)
             ModuleFunctions = extract_functions_from_items(ModuleItems, ModuleName),
@@ -141,13 +132,7 @@ convert_param_type(_) ->
 %% Convert type expression to internal representation
 convert_type(undefined) ->
     {type_var, '_'};
-convert_type(#primitive_type{name = Name}) ->
-    {primitive_type, Name};
-convert_type({primitive_type, Name, _Location}) when is_atom(Name) ->
-    %% Handle 3-tuple format with location (from parser)
-    convert_type({primitive_type, Name});
-convert_type({primitive_type, Name}) when is_atom(Name) ->
-    %% Handle 2-tuple format without location
+convert_type(#primitive_type{name = Name, location = _Location}) ->
     {primitive_type, Name};
 convert_type({list_type, ElemType, _Length}) ->
     {list_type, convert_type(ElemType), undefined};
@@ -187,22 +172,6 @@ convert_type_param_value(#primitive_type{name = Name, location = _Loc}) ->
             {type_var_record, Name};
         false ->
             %% Value parameter like n, m - keep as identifier expression
-            {identifier_expr, Name, undefined}
-    end;
-convert_type_param_value({primitive_type, Name, _Loc}) ->
-    %% Handle tuple format
-    case is_type_variable_name(Name) of
-        true ->
-            {type_var_record, Name};
-        false ->
-            {identifier_expr, Name, undefined}
-    end;
-convert_type_param_value({primitive_type, Name}) ->
-    %% Handle simple tuple format without location
-    case is_type_variable_name(Name) of
-        true ->
-            {type_var_record, Name};
-        false ->
             {identifier_expr, Name, undefined}
     end;
 convert_type_param_value(#identifier_expr{name = Name}) ->

@@ -58,8 +58,14 @@ Cure constraints are translated to SMT-LIB format:
     prove_constraint/2,
     find_counterexample/2,
     simplify_constraint/2,
+    solve_constraints/1,
     available_solvers/0,
-    set_solver/1
+    set_solver/1,
+    % Helper functions for LSP integration
+    equality_constraint/2,
+    inequality_constraint/3,
+    variable_term/1,
+    constant_term/1
 ]).
 
 -include("../parser/cure_ast.hrl").
@@ -138,6 +144,26 @@ simplify_constraint(Constraint, _Env) ->
     % TODO: Use SMT solver to simplify constraint
     % For now, return as-is
     Constraint.
+
+%% @doc Solve multiple constraints (conjunction)
+-spec solve_constraints([expr()]) -> sat | unsat | unknown | {sat, map()}.
+solve_constraints([]) ->
+    sat;
+solve_constraints([SingleConstraint]) ->
+    check_constraint(SingleConstraint, #{});
+solve_constraints(Constraints) ->
+    % Combine all constraints with AND
+    Combined = lists:foldl(
+        fun(C, Acc) ->
+            case Acc of
+                undefined -> C;
+                _ -> make_conjunction(Acc, C)
+            end
+        end,
+        undefined,
+        Constraints
+    ),
+    check_constraint(Combined, #{}).
 
 %% @doc Get list of available SMT solvers
 -spec available_solvers() -> [atom()].
@@ -344,3 +370,41 @@ find_cvc5() ->
         false -> false;
         _ -> true
     end.
+
+%% ============================================================================
+%% Helper Functions for LSP Integration
+%% ============================================================================
+
+%% @doc Create an equality constraint for SMT
+equality_constraint(Left, Right) ->
+    #binary_op_expr{
+        op = '==',
+        left = Left,
+        right = Right,
+        location = #location{line = 0, column = 0, file = undefined}
+    }.
+
+%% @doc Create an inequality constraint for SMT
+inequality_constraint(Left, Op, Right) ->
+    #binary_op_expr{
+        op = Op,
+        left = Left,
+        right = Right,
+        location = #location{line = 0, column = 0, file = undefined}
+    }.
+
+%% @doc Create a variable term
+variable_term(Name) when is_atom(Name) ->
+    #identifier_expr{
+        name = Name,
+        location = #location{line = 0, column = 0, file = undefined}
+    };
+variable_term(Name) when is_list(Name) ->
+    variable_term(list_to_atom(Name)).
+
+%% @doc Create a constant term
+constant_term(Value) ->
+    #literal_expr{
+        value = Value,
+        location = #location{line = 0, column = 0, file = undefined}
+    }.
