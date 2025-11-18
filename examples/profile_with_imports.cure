@@ -1,11 +1,17 @@
 module ProfileWithImports do
-  export [test_function/0]
+  export [main/0, test_function/1]
   
   import Std.List [map/2, filter/2, fold/3]
   import Std.Core [identity/1, compose/2]
   import Std.Io [print/1]
   
-  def test_function(): Int =
-    0
+  def test_function(x: Boolean): Int =
+    match x do
+      true  -> 1
+      false -> 0
+    end
+
+  def main(): Int =
+    test_function(false)
 
 end

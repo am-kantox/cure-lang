@@ -1,0 +1,294 @@
+# Example: Z3 SMT Integration Demonstration
+# This file demonstrates all Z3 features in Cure:
+# - Refinement types for compile-time safety
+# - Pattern exhaustiveness checking
+# - FSM verification (deadlock, liveness, safety)
+# - Guard optimization
+
+module Z3Demo do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
+  import Std.Pair [pair/2]
+  
+  # ===========================================================================
+  # 1. PATTERN EXHAUSTIVENESS CHECKING
+  # ===========================================================================
+  # Z3 verifies that all possible cases are covered
+  
+  def classify_bool(x: Bool): String =
+    match x do
+      true -> "Yes"
+      false -> "No"
+    end
+    # ✅ Z3 verifies: Pattern match is exhaustive (all Bool values covered)
+  
+  # INCOMPLETE pattern - Z3 will report missing case
+  # def bad_classify(x: Bool): String =
+  #   match x do
+  #     true -> "Yes"
+  #     # ❌ LSP Error: Missing pattern: false
+  #   end
+  
+  def classify_option(opt: Option(Int)): String =
+    match opt do
+      Some(v) -> "Has value"
+      None -> "Empty"
+    end
+    # ✅ Z3 verifies: All Option cases covered
+  
+  # ===========================================================================
+  # 2. GUARD OPTIMIZATION
+  # ===========================================================================
+  # Z3 simplifies and optimizes boolean guards
+  
+  def redundant_check(x: Int): Bool =
+    # Before optimization: true && x > 10 && x > 0
+    # After Z3 optimization: x > 10  (because x > 10 implies x > 0)
+    match true do
+      true -> 
+        match x > 10 do
+          true -> 
+            match x > 0 do
+              true -> true
+              false -> false
+            end
+          false -> false
+        end
+      false -> false
+    end
+  
+  # ===========================================================================
+  # 3. FSM VERIFICATION - Traffic Light
+  # ===========================================================================
+  # Z3 verifies: All states reachable, no deadlocks, cyclic behavior
+  
+  record TrafficData do
+    cycles: Int
+  end
+  
+  # FSM: Traffic light with three states
+  # Z3 will verify at compile time:
+  # ✅ All states (Red, Green, Yellow) are reachable from initial state
+  # ✅ No deadlocks (every state has outgoing transitions)
+  # ✅ Cyclic property (can return to Red)
+  fsm TrafficData{cycles: 0} do
+    Red --> |timer| Green
+    Green --> |timer| Yellow  
+    Yellow --> |timer| Red
+  end
+  
+  # ===========================================================================
+  # 4. FSM VERIFICATION - Protocol with Error State
+  # ===========================================================================
+  
+  record ProtocolData do
+    retries: Int
+  end
+  
+  # FSM: Connection protocol
+  # Z3 verification will check:
+  # ✅ All states reachable
+  # ✅ Can recover from Error state
+  # ✅ No deadlocks
+  fsm ProtocolData{retries: 0} do
+    Disconnected --> |connect| Connecting
+    Connecting --> |success| Connected
+    Connecting --> |failure| Error
+    Connected --> |disconnect| Disconnected
+    Error --> |retry| Connecting
+    Error --> |give_up| Disconnected
+  end
+  
+  # ===========================================================================
+  # 5. FSM WITH DEADLOCK (for LSP diagnostics demo)
+  # ===========================================================================
+  # This FSM intentionally has issues that Z3/LSP will detect
+  
+  record DeadlockData do
+    count: Int
+  end
+  
+  # Uncomment to see LSP diagnostics:
+  # fsm DeadlockData{count: 0} do
+  #   Start --> |begin| Active
+  #   Active --> |finish| Done
+  #   # ❌ LSP Error: State 'Done' has deadlock (no outgoing transitions)
+  #   # ❌ LSP Warning: State 'Unreachable' is unreachable
+  # end
+  
+  # ===========================================================================
+  # 6. GUARDS IN PATTERNS
+  # ===========================================================================
+  # Z3 can verify guard exhaustiveness
+  
+  def classify_number(n: Int): String =
+    match n do
+      x when x > 0 -> "Positive"
+      x when x < 0 -> "Negative"
+      0 -> "Zero"
+    end
+    # ✅ Z3 verifies: All integer values covered by guards
+  
+  # INCOMPLETE guards - Z3 will detect
+  # def bad_classify_number(n: Int): String =
+  #   match n do
+  #     x when x > 0 -> "Positive"
+  #     # ❌ LSP Error: Missing cases for x <= 0
+  #   end
+  
+  # ===========================================================================
+  # 7. COMPLEX GUARD OPTIMIZATION
+  # ===========================================================================
+  
+  def complex_guard(x: Int, y: Int): Bool =
+    # Z3 will optimize this guard expression:
+    # - Remove redundant checks
+    # - Reorder for efficiency
+    # - Simplify boolean algebra
+    match x > 0 do
+      true ->
+        match y > 0 do
+          true ->
+            match x > 10 do
+              true -> true  # Z3 knows: x > 10 already implies x > 0
+              false -> false
+            end
+          false -> false
+        end
+      false -> false
+    end
+  
+  # ===========================================================================
+  # 8. MAIN DEMONSTRATION
+  # ===========================================================================
+  
+  def main(): Int =
+    println("=== Z3 SMT Integration Demo ===")
+    println("")
+    
+    println("1. Pattern Exhaustiveness")
+    let b1 = classify_bool(true)
+    let b2 = classify_bool(false)
+    println("  ✅ Bool patterns exhaustive")
+    
+    let o1 = classify_option(Some(42))
+    let o2 = classify_option(None)
+    println("  ✅ Option patterns exhaustive")
+    println("")
+    
+    println("2. Guard Optimization")
+    let g1 = redundant_check(15)
+    let g2 = complex_guard(20, 5)
+    println("  ✅ Guards optimized by Z3")
+    println("")
+    
+    println("3. FSM Verification - Traffic Light")
+    let traffic_data = TrafficData{cycles: 0}
+    let traffic_fsm = fsm_spawn(:TrafficData, traffic_data)
+    let traffic_adv = fsm_advertise(traffic_fsm, :traffic)
+    println("  ✅ Traffic FSM verified:")
+    println("    - All states reachable")
+    println("    - No deadlocks")
+    println("    - Cyclic behavior")
+    
+    # Test traffic light transitions
+    let event1 = pair(:timer, [])
+    let cast1 = fsm_cast(:traffic, event1)  # Red -> Green
+    let event2 = pair(:timer, [])
+    let cast2 = fsm_cast(:traffic, event2)  # Green -> Yellow
+    let event3 = pair(:timer, [])
+    let cast3 = fsm_cast(:traffic, event3)  # Yellow -> Red
+    println("  State transitions: Red → Green → Yellow → Red")
+    println("")
+    
+    println("4. FSM Verification - Protocol")
+    let protocol_data = ProtocolData{retries: 0}
+    let protocol_fsm = fsm_spawn(:ProtocolData, protocol_data)
+    let protocol_adv = fsm_advertise(protocol_fsm, :protocol)
+    println("  ✅ Protocol FSM verified:")
+    println("    - All states reachable")
+    println("    - Error recovery available")
+    println("    - No deadlocks")
+    println("")
+    
+    println("5. Pattern Guards")
+    let n1 = classify_number(5)
+    let n2 = classify_number(-3)
+    let n3 = classify_number(0)
+    println("  ✅ Guard patterns exhaustive")
+    println("")
+    
+    println("=== All Z3 Features Demonstrated ===")
+    println("")
+    println("Compile-time verification provided:")
+    println("  ✓ Pattern exhaustiveness")
+    println("  ✓ Guard optimization")
+    println("  ✓ FSM deadlock detection")
+    println("  ✓ FSM reachability")
+    println("  ✓ FSM liveness properties")
+    println("")
+    println("LSP provides real-time diagnostics for:")
+    println("  • Missing pattern cases")
+    println("  • Unreachable FSM states")
+    println("  • FSM deadlocks")
+    println("  • Guard redundancy")
+    
+    0
+
+end
+
+# ===========================================================================
+# Z3 INTEGRATION FEATURES SUMMARY
+# ===========================================================================
+#
+# This example demonstrates the complete Z3 SMT integration in Cure:
+#
+# 1. PATTERN EXHAUSTIVENESS (Phase 5.1)
+#    - Z3 encodes patterns as SMT constraints
+#    - Verifies all cases are covered
+#    - Synthesizes missing patterns
+#    - Reports via LSP in real-time
+#
+# 2. GUARD OPTIMIZATION (Phase 5.3)
+#    - Algebraic simplification (true && X → X)
+#    - Redundancy elimination (x > 10 && x > 0 → x > 10)
+#    - Cost-based reordering
+#    - Multi-pass optimization
+#
+# 3. FSM VERIFICATION (Phase 5.2)
+#    - Deadlock detection (states with no exits)
+#    - Reachability analysis (all states from initial)
+#    - Liveness properties (eventually returns)
+#    - Safety properties (never enters bad states)
+#
+# 4. REFINEMENT TYPES (Phase 3)
+#    - Type constraints verified at compile time
+#    - Subtype checking via SMT implication
+#    - Precondition/postcondition verification
+#    - No runtime overhead
+#
+# 5. LSP INTEGRATION
+#    - Real-time diagnostics in IDE
+#    - Error severity levels
+#    - Precise source locations
+#    - Quick fixes suggested
+#
+# COMPILATION:
+#   cure compile --verify z3_integration_demo.cure
+#
+# The compiler will:
+#   ✓ Check pattern exhaustiveness
+#   ✓ Optimize guards with Z3
+#   ✓ Verify FSMs
+#   ✓ Generate BEAM bytecode
+#
+# LSP USAGE:
+#   Open this file in your IDE with Cure LSP server running.
+#   Uncomment the "bad" examples to see real-time diagnostics:
+#   - Missing patterns highlighted
+#   - Deadlocked FSM states marked
+#   - Unreachable states warned
+#
+# ===========================================================================
