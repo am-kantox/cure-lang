@@ -25,7 +25,11 @@
     refinement_violation_to_diagnostic/1,
     generate_code_actions/2,
     pattern_exhaustiveness_to_diagnostic/1,
-    generate_pattern_diagnostics/1
+    generate_pattern_diagnostics/1,
+
+    % FSM verification
+    generate_fsm_diagnostics/1,
+    fsm_verification_to_diagnostic/2
 ]).
 
 -include("../src/parser/cure_ast.hrl").
@@ -1101,3 +1105,142 @@ generate_refined_type_annotation(RefType) ->
         <<": ">>,
         cure_refinement_types:format_refinement_error(RefType)
     ]).
+
+%% ============================================================================
+%% FSM Verification Diagnostics (Phase 5.2 Integration)
+%% ============================================================================
+
+%% @doc Generate FSM verification diagnostics for a module
+generate_fsm_diagnostics(#module_def{items = Items}) ->
+    lists:flatmap(fun generate_item_fsm_diagnostics/1, Items);
+generate_fsm_diagnostics(_) ->
+    [].
+
+generate_item_fsm_diagnostics(#fsm_def{} = FsmDef) ->
+    % Verify the FSM and generate diagnostics
+    try
+        case cure_fsm_verifier:verify_fsm(FsmDef) of
+            {ok, Results} ->
+                % Convert verification results to diagnostics
+                lists:filtermap(
+                    fun(Result) ->
+                        case needs_diagnostic(Result) of
+                            true ->
+                                {true, fsm_verification_to_diagnostic(Result, FsmDef)};
+                            false ->
+                                false
+                        end
+                    end,
+                    Results
+                );
+            {error, _Reason} ->
+                % Silently ignore verification errors
+                []
+        end
+    catch
+        _:_ ->
+            % Ignore exceptions
+            []
+    end;
+generate_item_fsm_diagnostics(_) ->
+    [].
+
+%% Check if a verification result needs a diagnostic
+needs_diagnostic({has_deadlock, _}) -> true;
+needs_diagnostic({unreachable, _}) -> true;
+needs_diagnostic({liveness_violated, _}) -> true;
+needs_diagnostic({safety_violated, _}) -> true;
+needs_diagnostic(_) -> false.
+
+%% @doc Convert FSM verification result to LSP diagnostic
+fsm_verification_to_diagnostic({has_deadlock, State}, #fsm_def{name = FsmName, location = Loc}) ->
+    #{
+        range => location_to_range(Loc),
+        % Error - deadlocks are critical
+        severity => 1,
+        source => <<"Cure FSM Verifier">>,
+        message => iolist_to_binary([
+            <<"Deadlock detected in FSM '">>,
+            atom_to_binary(FsmName, utf8),
+            <<"' at state '">>,
+            atom_to_binary(State, utf8),
+            <<"': no outgoing transitions">>
+        ]),
+        code => <<"fsm-deadlock">>,
+        % No tags for errors
+        tags => []
+    };
+fsm_verification_to_diagnostic({unreachable, State}, #fsm_def{name = FsmName, location = Loc}) ->
+    #{
+        range => location_to_range(Loc),
+        % Warning - unreachable states are problems but not critical
+        severity => 2,
+        source => <<"Cure FSM Verifier">>,
+        message => iolist_to_binary([
+            <<"State '">>,
+            atom_to_binary(State, utf8),
+            <<"' in FSM '">>,
+            atom_to_binary(FsmName, utf8),
+            <<"' is unreachable from initial state">>
+        ]),
+        code => <<"fsm-unreachable-state">>,
+        % Tag 1 = Unnecessary (dead code)
+        tags => [1]
+    };
+fsm_verification_to_diagnostic(
+    {liveness_violated, {deadlocks, Deadlocks}},
+    #fsm_def{name = FsmName, location = Loc}
+) ->
+    DeadlockStates = [
+        atom_to_binary(S, utf8)
+     || {has_deadlock, S} <- Deadlocks
+    ],
+    #{
+        range => location_to_range(Loc),
+        % Error
+        severity => 1,
+        source => <<"Cure FSM Verifier">>,
+        message => iolist_to_binary([
+            <<"Liveness property violated in FSM '">>,
+            atom_to_binary(FsmName, utf8),
+            <<"': system can get stuck in terminal state(s): ">>,
+            iolist_to_binary(lists:join(<<", ">>, DeadlockStates))
+        ]),
+        code => <<"fsm-liveness-violation">>,
+        tags => []
+    };
+fsm_verification_to_diagnostic(
+    {safety_violated, #{bad_state := BadState, path := Path}},
+    #fsm_def{name = FsmName, location = Loc}
+) ->
+    PathStr = format_state_path(Path),
+    #{
+        range => location_to_range(Loc),
+        % Error - safety violations are critical
+        severity => 1,
+        source => <<"Cure FSM Verifier">>,
+        message => iolist_to_binary([
+            <<"Safety property violated in FSM '">>,
+            atom_to_binary(FsmName, utf8),
+            <<"': bad state '">>,
+            atom_to_binary(BadState, utf8),
+            <<"' is reachable via path: ">>,
+            PathStr
+        ]),
+        code => <<"fsm-safety-violation">>,
+        tags => []
+    };
+fsm_verification_to_diagnostic(_, _) ->
+    % Default diagnostic for unknown results
+    #{
+        severity => 2,
+        source => <<"Cure FSM Verifier">>,
+        message => <<"FSM verification issue">>
+    }.
+
+%% Format a state path for display
+format_state_path(Path) when is_list(Path) ->
+    StateStrs = [atom_to_binary(S, utf8) || S <- Path],
+    iolist_to_binary(lists:join(<<" -> ">>, StateStrs));
+format_state_path(_) ->
+    <<"unknown">>.
