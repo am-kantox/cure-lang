@@ -70,13 +70,15 @@ test_document_open_with_smt() ->
 
     % Simple Cure code with refinement type
     Code =
-        <<"\n"
-        "        type Positive = Int when x > 0\n"
-        "        \n"
-        "        def test(x: Positive) -> Int do\n"
-        "            x + 1\n"
-        "        end\n"
-        "    ">>,
+        <<
+            "\n"
+            "        type Positive = Int when x > 0\n"
+            "        \n"
+            "        def test(x: Positive) -> Int do\n"
+            "            x + 1\n"
+            "        end\n"
+            "    "
+        >>,
 
     try
         {ok, Pid} = cure_lsp:start(),
@@ -113,20 +115,24 @@ test_document_change_with_smt() ->
     io:format("Test: Document change triggers incremental SMT verification...~n", []),
 
     InitialCode =
-        <<"\n"
-        "        type Positive = Int when x > 0\n"
-        "        def test(x: Positive) -> Int do\n"
-        "            x\n"
-        "        end\n"
-        "    ">>,
+        <<
+            "\n"
+            "        type Positive = Int when x > 0\n"
+            "        def test(x: Positive) -> Int do\n"
+            "            x\n"
+            "        end\n"
+            "    "
+        >>,
 
     ChangedCode =
-        <<"\n"
-        "        type Positive = Int when x > 0\n"
-        "        def test(x: Int) -> Int do\n"
-        "            x\n"
-        "        end\n"
-        "    ">>,
+        <<
+            "\n"
+            "        type Positive = Int when x > 0\n"
+            "        def test(x: Int) -> Int do\n"
+            "            x\n"
+            "        end\n"
+            "    "
+        >>,
 
     try
         {ok, Pid} = cure_lsp:start(),
@@ -205,13 +211,15 @@ test_smt_diagnostics_combined() ->
 
     % Code with both syntax error and refinement type issue
     CodeWithErrors =
-        <<"\n"
-        "        type Positive = Int when x > 0\n"
-        "        \n"
-        "        def test(x: Positive) -> Int do\n"
-        "            x + \n"
-        "        end\n"
-        "    ">>,
+        <<
+            "\n"
+            "        type Positive = Int when x > 0\n"
+            "        \n"
+            "        def test(x: Positive) -> Int do\n"
+            "            x + \n"
+            "        end\n"
+            "    "
+        >>,
 
     try
         % Parse and analyze

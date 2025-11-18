@@ -273,9 +273,12 @@ propagate_constraints(Expr, Env, ConstraintMap) ->
 collect_constraints(#identifier_expr{name = Name}, Env, ConstraintMap) ->
     % Look up type and add constraint if it's a refinement type
     case cure_types:lookup_env(Env, Name) of
-        {ok, RefType} when is_record(RefType, refinement_type) ->
-            {ok, Constraint} = extract_constraint(RefType),
+        RefType when is_record(RefType, refinement_type) ->
+            % Extract constraint from refinement type
+            Constraint = RefType#refinement_type.predicate,
             maps:put(Name, Constraint, ConstraintMap);
+        undefined ->
+            ConstraintMap;
         _ ->
             ConstraintMap
     end;
