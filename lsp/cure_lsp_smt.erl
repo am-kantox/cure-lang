@@ -23,7 +23,9 @@
 
     % Diagnostics
     refinement_violation_to_diagnostic/1,
-    generate_code_actions/2
+    generate_code_actions/2,
+    pattern_exhaustiveness_to_diagnostic/1,
+    generate_pattern_diagnostics/1
 ]).
 
 -include("../src/parser/cure_ast.hrl").
@@ -343,34 +345,47 @@ find_variable_uses(VarName, Expr) ->
 %% Pattern Matching Exhaustiveness
 %% ============================================================================
 
-%% @doc Check if pattern matching is exhaustive using SMT
+%% @doc Check if pattern matching is exhaustive using SMT (uses cure_pattern_checker)
 check_exhaustiveness(#match_expr{expr = Expr, patterns = Patterns}) ->
+    % Extract patterns from match clauses
+    PatternList = [P || #match_clause{pattern = P} <- Patterns],
+
+    % Infer type being matched
     ExprType = infer_expression_type(Expr),
-    PatternTypes = [infer_pattern_type(P) || #match_clause{pattern = P} <- Patterns],
 
-    % Create SMT constraint: is there a value of ExprType not covered by patterns?
-    TypeConstraint = type_to_smt_constraint(ExprType),
-    PatternConstraints = lists:map(fun pattern_type_to_smt_constraint/1, PatternTypes),
-
-    % Negate all pattern constraints (find value NOT matching any pattern)
-    NegatedPatterns = lists:map(fun cure_smt_solver:negate_constraint/1, PatternConstraints),
-
-    % If satisfiable, pattern match is not exhaustive
-    case cure_smt_solver:solve_constraints([TypeConstraint | NegatedPatterns]) of
-        {sat, CounterExample} ->
-            {not_exhaustive, CounterExample};
-        unsat ->
+    % Use the new pattern checker module
+    case cure_pattern_checker:check_exhaustiveness(PatternList, ExprType) of
+        {exhaustive} ->
             exhaustive;
-        unknown ->
+        {incomplete, MissingPatterns, _Message} ->
+            {not_exhaustive, MissingPatterns};
+        {error, Reason} ->
+            io:format("Pattern exhaustiveness check error: ~p~n", [Reason]),
             unknown
     end;
 check_exhaustiveness(_) ->
     unknown.
 
-check_pattern_exhaustiveness(_Patterns) ->
-    % Generate exhaustiveness check constraints
-    % For now, return empty list (placeholder)
-    [].
+check_pattern_exhaustiveness(Patterns) ->
+    % Generate exhaustiveness diagnostics for LSP
+    % Extract patterns from clauses
+    PatternList = [P || #match_clause{pattern = P} <- Patterns],
+
+    % Try to infer type from first pattern
+    Type =
+        case PatternList of
+            [FirstPattern | _] -> infer_pattern_type(FirstPattern);
+            [] -> unknown
+        end,
+
+    % Check exhaustiveness and return diagnostic if incomplete
+    case cure_pattern_checker:check_exhaustiveness(PatternList, Type) of
+        {incomplete, MissingPatterns, Message} ->
+            % Return diagnostic
+            [{pattern_exhaustiveness_warning, MissingPatterns, Message}];
+        _ ->
+            []
+    end.
 
 %% ============================================================================
 %% Counter-Example Generation
@@ -899,17 +914,20 @@ generate_code_actions({precondition_violation, Location, RefType, _CounterEx}, U
                     ]
                 }
             }
-        },
-        % Quick fix: Strengthen type annotation
+        }
+    ];
+generate_code_actions({incomplete_pattern_match, Location, MissingPatterns}, Uri) ->
+    [
+        % Quick fix: Add missing pattern cases
         #{
-            title => <<"Strengthen type annotation">>,
+            title => <<"Add missing pattern cases">>,
             kind => <<"quickfix">>,
             edit => #{
                 changes => #{
                     Uri => [
                         #{
                             range => location_to_range(Location),
-                            newText => generate_refined_type_annotation(RefType)
+                            newText => generate_missing_patterns_text(MissingPatterns)
                         }
                     ]
                 }
@@ -918,6 +936,151 @@ generate_code_actions({precondition_violation, Location, RefType, _CounterEx}, U
     ];
 generate_code_actions(_, _) ->
     [].
+
+%% @doc Generate diagnostic for incomplete pattern match
+pattern_exhaustiveness_to_diagnostic(
+    {incomplete_pattern_match, Location, MissingPatterns, Message}
+) ->
+    #{
+        range => location_to_range(Location),
+        % Warning
+        severity => 2,
+        source => <<"Cure Pattern Checker">>,
+        message => iolist_to_binary([
+            <<"Pattern match is not exhaustive\n">>,
+            list_to_binary(Message)
+        ]),
+        code => <<"incomplete-pattern-match">>,
+        % Tag 1 = Unnecessary (deprecated code)
+        tags => [1]
+    };
+pattern_exhaustiveness_to_diagnostic({redundant_pattern, Location, Index}) ->
+    #{
+        range => location_to_range(Location),
+        % Warning
+        severity => 2,
+        source => <<"Cure Pattern Checker">>,
+        message => iolist_to_binary(
+            io_lib:format(
+                "Pattern at position ~p is redundant (already covered by earlier patterns)",
+                [Index]
+            )
+        ),
+        code => <<"redundant-pattern">>,
+        % Tag 1 = Unnecessary
+        tags => [1]
+    };
+pattern_exhaustiveness_to_diagnostic(_) ->
+    #{
+        severity => 2,
+        source => <<"Cure Pattern Checker">>,
+        message => <<"Pattern analysis warning">>
+    }.
+
+%% @doc Scan AST for match expressions and generate pattern diagnostics
+generate_pattern_diagnostics(#module_def{items = Items}) ->
+    lists:flatmap(fun generate_item_pattern_diagnostics/1, Items);
+generate_pattern_diagnostics(_) ->
+    [].
+
+generate_item_pattern_diagnostics(#function_def{body = Body, location = _Loc}) ->
+    find_match_exprs_and_check(Body);
+generate_item_pattern_diagnostics(_) ->
+    [].
+
+find_match_exprs_and_check(
+    #match_expr{expr = Expr, patterns = Patterns, location = Loc} = MatchExpr
+) ->
+    % Check this match expression
+    Diagnostic =
+        case cure_pattern_checker:check_match(MatchExpr, #{}) of
+            {exhaustive} ->
+                [];
+            {incomplete, MissingPatterns, Message} ->
+                [
+                    pattern_exhaustiveness_to_diagnostic({
+                        incomplete_pattern_match,
+                        Loc,
+                        MissingPatterns,
+                        Message
+                    })
+                ];
+            {redundant, Indices, Message} ->
+                % Generate diagnostic for each redundant pattern
+                lists:map(
+                    fun(Index) ->
+                        PatternLoc = get_pattern_location(Patterns, Index),
+                        pattern_exhaustiveness_to_diagnostic({
+                            redundant_pattern,
+                            PatternLoc,
+                            Index
+                        })
+                    end,
+                    Indices
+                );
+            {error, _Reason} ->
+                % Silently ignore errors (e.g., Z3 not available)
+                []
+        end,
+
+    % Recursively check nested expressions
+    NestedDiagnostics =
+        lists:flatmap(
+            fun(#match_clause{body = Body}) ->
+                find_match_exprs_and_check(Body)
+            end,
+            Patterns
+        ) ++ find_match_exprs_and_check(Expr),
+
+    Diagnostic ++ NestedDiagnostics;
+find_match_exprs_and_check(#let_expr{body = Body, bindings = Bindings}) ->
+    BindingDiags = lists:flatmap(
+        fun(#binding{value = Val}) -> find_match_exprs_and_check(Val) end,
+        Bindings
+    ),
+    BindingDiags ++ find_match_exprs_and_check(Body);
+find_match_exprs_and_check(#function_call_expr{args = Args}) ->
+    lists:flatmap(fun find_match_exprs_and_check/1, Args);
+find_match_exprs_and_check(#binary_op_expr{left = Left, right = Right}) ->
+    find_match_exprs_and_check(Left) ++ find_match_exprs_and_check(Right);
+find_match_exprs_and_check(#block_expr{expressions = Exprs}) ->
+    lists:flatmap(fun find_match_exprs_and_check/1, Exprs);
+find_match_exprs_and_check(_) ->
+    [].
+
+get_pattern_location(Patterns, Index) when Index > 0, Index =< length(Patterns) ->
+    Clause = lists:nth(Index, Patterns),
+    case Clause of
+        #match_clause{location = Loc} -> Loc;
+        _ -> #location{line = 0, column = 0, file = undefined}
+    end;
+get_pattern_location(_, _) ->
+    #location{line = 0, column = 0, file = undefined}.
+
+generate_missing_patterns_text(MissingPatterns) ->
+    PatternTexts = lists:map(
+        fun(Pattern) ->
+            % Format pattern using pattern_checker's format_pattern
+            FormattedPattern = format_pattern_for_code(Pattern),
+            io_lib:format("  | ~s -> ???~n", [FormattedPattern])
+        end,
+        MissingPatterns
+    ),
+    iolist_to_binary([<<"\n">>, PatternTexts]).
+
+format_pattern_for_code(#literal_expr{value = Value}) ->
+    io_lib:format("~p", [Value]);
+format_pattern_for_code(#identifier_expr{name = '_'}) ->
+    "_";
+format_pattern_for_code(#identifier_expr{name = Name}) ->
+    atom_to_list(Name);
+format_pattern_for_code(#constructor_pattern{name = Name, args = []}) ->
+    atom_to_list(Name);
+format_pattern_for_code(#constructor_pattern{name = Name, args = Args}) ->
+    ArgStrs = [format_pattern_for_code(A) || A <- Args],
+    io_lib:format("~s(~s)", [Name, string:join(ArgStrs, ", ")]);
+format_pattern_for_code(_) ->
+    "_".
 
 generate_constraint_check(RefType) ->
     % Generate if-check for constraint
