@@ -8,6 +8,7 @@
 module Z3Demo do
   export [main/0]
   
+  import Std.Core [Some, None]
   import Std.Io [println/1]
   import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
   import Std.Pair [pair/2]
@@ -95,10 +96,10 @@ module Z3Demo do
   fsm ProtocolData{retries: 0} do
     Disconnected --> |connect| Connecting
     Connecting --> |success| Connected
-    Connecting --> |failure| Error
+    Connecting --> |failure| Err
     Connected --> |disconnect| Disconnected
-    Error --> |retry| Connecting
-    Error --> |give_up| Disconnected
+    Err --> |retry| Connecting
+    Err --> |give_up| Disconnected
   end
   
   # ===========================================================================
@@ -194,11 +195,14 @@ module Z3Demo do
     println("    - Cyclic behavior")
     
     # Test traffic light transitions
-    let event1 = pair(:timer, [])
+    let empty1 = []
+    let event1 = pair(:timer, empty1)
     let cast1 = fsm_cast(:traffic, event1)  # Red -> Green
-    let event2 = pair(:timer, [])
+    let empty2 = []
+    let event2 = pair(:timer, empty2)
     let cast2 = fsm_cast(:traffic, event2)  # Green -> Yellow
-    let event3 = pair(:timer, [])
+    let empty3 = []
+    let event3 = pair(:timer, empty3)
     let cast3 = fsm_cast(:traffic, event3)  # Yellow -> Red
     println("  State transitions: Red → Green → Yellow → Red")
     println("")
