@@ -8,7 +8,22 @@
     verify_refinement_types/1,
     check_exhaustiveness/1,
     generate_counter_example/1,
-    suggest_type_annotations/1
+    suggest_type_annotations/1,
+
+    % Refinement type verification
+    verify_refinement_subtyping/3,
+    check_refinement_constraint/3,
+    verify_function_preconditions/2,
+    verify_function_postconditions/2,
+
+    % Incremental verification
+    init_verification_state/0,
+    verify_document_incremental/2,
+    invalidate_cache/2,
+
+    % Diagnostics
+    refinement_violation_to_diagnostic/1,
+    generate_code_actions/2
 ]).
 
 -include("../src/parser/cure_ast.hrl").
@@ -591,3 +606,335 @@ format_type(Type) when is_atom(Type) ->
     atom_to_binary(Type, utf8);
 format_type(_) ->
     <<"Unknown">>.
+
+%% ============================================================================
+%% Refinement Type Verification (Phase 3 Integration)
+%% ============================================================================
+
+%% @doc Verify refinement type subtyping using Z3
+verify_refinement_subtyping(Type1, Type2, Env) ->
+    cure_refinement_types:check_subtype(Type1, Type2, Env).
+
+%% @doc Check if a value satisfies a refinement constraint
+check_refinement_constraint(Value, RefType, Env) ->
+    cure_refinement_types:check_constraint(Value, RefType, Env).
+
+%% @doc Verify function preconditions for refinement types
+verify_function_preconditions(#function_def{params = Params} = FuncDef, CallSite) ->
+    % Extract argument types from call site
+    ArgTypes = extract_argument_types(CallSite),
+
+    % Verify each argument against parameter refinement
+    Results = lists:zipwith(
+        fun(Param, ArgType) ->
+            case is_refinement_param(Param) of
+                {true, RefType} ->
+                    % Check if argument type satisfies parameter refinement
+                    case verify_refinement_subtyping(ArgType, RefType, #{}) of
+                        {ok, true} -> ok;
+                        {ok, false} -> {error, {precondition_violation, Param, ArgType}};
+                        Error -> Error
+                    end;
+                false ->
+                    ok
+            end
+        end,
+        Params,
+        ArgTypes
+    ),
+
+    % Collect errors
+    Errors = [E || {error, E} <- Results],
+    case Errors of
+        [] -> ok;
+        _ -> {error, {precondition_violations, Errors}}
+    end.
+
+%% @doc Verify function postconditions for refinement types
+verify_function_postconditions(#function_def{return_type = RetType, body = Body}, Env) ->
+    case is_refinement_return_type(RetType) of
+        {true, RefType} ->
+            % Infer return type from body
+            InferredType = infer_expression_type(Body),
+
+            % Check if inferred type satisfies return refinement
+            case verify_refinement_subtyping(InferredType, RefType, Env) of
+                {ok, true} -> ok;
+                {ok, false} -> {error, {postcondition_violation, RefType, InferredType}};
+                Error -> Error
+            end;
+        false ->
+            ok
+    end.
+
+is_refinement_param(#param{type = Type}) ->
+    % Check if parameter has refinement type
+    % Simplified - would check for actual refinement type records
+    case Type of
+        #dependent_type{} -> {true, Type};
+        _ -> false
+    end.
+
+is_refinement_return_type(Type) ->
+    % Check if return type is a refinement type
+    case Type of
+        #dependent_type{} -> {true, Type};
+        _ -> false
+    end.
+
+extract_argument_types(#function_call_expr{args = Args}) ->
+    lists:map(fun infer_expression_type/1, Args);
+extract_argument_types(_) ->
+    [].
+
+%% ============================================================================
+%% Incremental SMT Solving (Phase 4)
+%% ============================================================================
+
+-type constraint_hash() :: integer().
+-type result() :: valid | invalid | unknown.
+-type uri() :: binary().
+-type constraint() :: term().
+
+-record(verification_state, {
+    % Cache of verification results
+    cache = #{} :: #{constraint_hash() => result()},
+    % Document constraints
+    doc_constraints = #{} :: #{uri() => [constraint()]},
+    % Verification timestamps
+    timestamps = #{} :: #{uri() => integer()},
+    % Active solver process (optional, for session persistence)
+    solver_pid = undefined :: pid() | undefined
+}).
+
+%% @doc Initialize verification state for incremental solving
+init_verification_state() ->
+    #verification_state{}.
+
+%% @doc Verify document with incremental constraint solving
+verify_document_incremental(Uri, #verification_state{} = State) ->
+    % Get document timestamp
+    Timestamp = erlang:system_time(millisecond),
+    LastTimestamp = maps:get(Uri, State#verification_state.timestamps, 0),
+
+    % Check if document has changed
+    case Timestamp > LastTimestamp of
+        true ->
+            % Document changed - re-verify
+            case verify_document_with_cache(Uri, State) of
+                {ok, Diagnostics, NewState} ->
+                    UpdatedState = NewState#verification_state{
+                        timestamps = maps:put(
+                            Uri, Timestamp, NewState#verification_state.timestamps
+                        )
+                    },
+                    {ok, Diagnostics, UpdatedState};
+                Error ->
+                    Error
+            end;
+        false ->
+            % Document unchanged - use cached results
+            CachedDiagnostics = get_cached_diagnostics(Uri, State),
+            {ok, CachedDiagnostics, State}
+    end.
+
+%% @doc Verify document using cache for unchanged constraints
+verify_document_with_cache(Uri, #verification_state{cache = Cache} = State) ->
+    % Extract constraints from document (placeholder)
+    Constraints = extract_document_constraints(Uri),
+
+    % Verify constraints, using cache when possible
+    {Diagnostics, NewCache} = lists:foldl(
+        fun(Constraint, {DiagAcc, CacheAcc}) ->
+            Hash = constraint_hash(Constraint),
+            case maps:get(Hash, CacheAcc, undefined) of
+                undefined ->
+                    % Not in cache - verify
+                    case verify_constraint(Constraint) of
+                        {ok, Result} ->
+                            Diag = constraint_result_to_diagnostic(Constraint, Result),
+                            {[Diag | DiagAcc], maps:put(Hash, Result, CacheAcc)};
+                        _ ->
+                            {DiagAcc, CacheAcc}
+                    end;
+                CachedResult ->
+                    % In cache - reuse
+                    Diag = constraint_result_to_diagnostic(Constraint, CachedResult),
+                    {[Diag | DiagAcc], CacheAcc}
+            end
+        end,
+        {[], Cache},
+        Constraints
+    ),
+
+    NewState = State#verification_state{cache = NewCache},
+    {ok, lists:reverse(Diagnostics), NewState}.
+
+%% @doc Invalidate cache for changed document regions
+invalidate_cache(Uri, #verification_state{cache = Cache, doc_constraints = DocCons} = State) ->
+    % Remove constraints for this document from cache
+    OldConstraints = maps:get(Uri, DocCons, []),
+    NewCache = lists:foldl(
+        fun(Constraint, CacheAcc) ->
+            maps:remove(constraint_hash(Constraint), CacheAcc)
+        end,
+        Cache,
+        OldConstraints
+    ),
+
+    State#verification_state{
+        cache = NewCache,
+        doc_constraints = maps:remove(Uri, DocCons)
+    }.
+
+extract_document_constraints(_Uri) ->
+    % Placeholder - would extract constraints from parsed document
+    [].
+
+verify_constraint(_Constraint) ->
+    % Placeholder - would verify using Z3
+    {ok, valid}.
+
+constraint_hash(Constraint) ->
+    % Simple hash of constraint for caching
+    erlang:phash2(Constraint).
+
+get_cached_diagnostics(_Uri, _State) ->
+    % Placeholder - would return cached diagnostics
+    [].
+
+constraint_result_to_diagnostic(_Constraint, _Result) ->
+    % Placeholder - would convert result to LSP diagnostic
+    #{}.
+
+%% ============================================================================
+%% Rich Diagnostics (Phase 4)
+%% ============================================================================
+
+%% @doc Convert refinement type violation to LSP diagnostic
+refinement_violation_to_diagnostic({precondition_violation, Location, RefType, CounterEx}) ->
+    #{
+        range => location_to_range(Location),
+        % Error
+        severity => 1,
+        source => <<"Cure SMT">>,
+        message => format_refinement_violation(RefType, CounterEx),
+        code => <<"refinement-violation">>,
+        relatedInformation => [
+            #{
+                location => #{uri => <<"file://constraint">>, range => location_to_range(Location)},
+                message => <<"Refinement constraint defined here">>
+            }
+        ]
+    };
+refinement_violation_to_diagnostic({subtype_check_failed, Type1, Type2}) ->
+    #{
+        % Error
+        severity => 1,
+        source => <<"Cure SMT">>,
+        message => iolist_to_binary([
+            <<"Subtyping failed: ">>,
+            cure_refinement_types:format_refinement_error({subtype_check_failed, Type1, Type2})
+        ]),
+        code => <<"subtype-violation">>
+    };
+refinement_violation_to_diagnostic(Other) ->
+    #{
+        severity => 1,
+        source => <<"Cure SMT">>,
+        message => iolist_to_binary(io_lib:format("Verification failed: ~p", [Other]))
+    }.
+
+format_refinement_violation(RefType, CounterEx) ->
+    iolist_to_binary([
+        <<"Refinement type constraint violated\n">>,
+        <<"  Required: ">>,
+        cure_refinement_types:format_refinement_error(RefType),
+        <<"\n">>,
+        <<"  Counterexample: ">>,
+        format_counterexample(CounterEx)
+    ]).
+
+format_counterexample(CounterEx) when is_map(CounterEx) ->
+    Entries = [
+        iolist_to_binary([atom_to_binary(K, utf8), <<" = ">>, io_lib:format("~p", [V])])
+     || {K, V} <- maps:to_list(CounterEx)
+    ],
+    iolist_to_binary(lists:join(<<", ">>, Entries));
+format_counterexample(Other) ->
+    iolist_to_binary(io_lib:format("~p", [Other])).
+
+location_to_range(#location{line = Line, column = Col}) ->
+    #{
+        start => #{line => max(0, Line - 1), character => max(0, Col - 1)},
+        'end' => #{line => max(0, Line - 1), character => max(0, Col + 10)}
+    };
+location_to_range(_) ->
+    #{
+        start => #{line => 0, character => 0},
+        'end' => #{line => 0, character => 0}
+    }.
+
+%% ============================================================================
+%% Code Actions (Phase 4)
+%% ============================================================================
+
+%% @doc Generate code actions for refinement type violations
+generate_code_actions({precondition_violation, Location, RefType, _CounterEx}, Uri) ->
+    [
+        % Quick fix: Add runtime check
+        #{
+            title => <<"Add constraint check">>,
+            kind => <<"quickfix">>,
+            diagnostics => [
+                refinement_violation_to_diagnostic({precondition_violation, Location, RefType, #{}})
+            ],
+            edit => #{
+                changes => #{
+                    Uri => [
+                        #{
+                            range => location_to_range(Location),
+                            newText => generate_constraint_check(RefType)
+                        }
+                    ]
+                }
+            }
+        },
+        % Quick fix: Strengthen type annotation
+        #{
+            title => <<"Strengthen type annotation">>,
+            kind => <<"quickfix">>,
+            edit => #{
+                changes => #{
+                    Uri => [
+                        #{
+                            range => location_to_range(Location),
+                            newText => generate_refined_type_annotation(RefType)
+                        }
+                    ]
+                }
+            }
+        }
+    ];
+generate_code_actions(_, _) ->
+    [].
+
+generate_constraint_check(RefType) ->
+    % Generate if-check for constraint
+    % Simplified - would generate proper Cure syntax
+    iolist_to_binary([
+        <<"if satisfies_constraint(x) then\n">>,
+        <<"  % your code here\n">>,
+        <<"else\n">>,
+        <<"  error(\"Constraint violation: ">>,
+        io_lib:format("~p", [RefType]),
+        <<"\")\n">>,
+        <<"end">>
+    ]).
+
+generate_refined_type_annotation(RefType) ->
+    % Generate refined type annotation
+    iolist_to_binary([
+        <<": ">>,
+        cure_refinement_types:format_refinement_error(RefType)
+    ]).

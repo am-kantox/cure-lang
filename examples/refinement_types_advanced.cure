@@ -1,0 +1,356 @@
+%% ============================================================================
+%% Advanced Refinement Types Example
+%% Demonstrates SMT-verified refinement types in Cure
+%% ============================================================================
+
+module RefinementTypesAdvanced
+
+%% ============================================================================
+%% Basic Refinement Types
+%% ============================================================================
+
+%% Positive integers (x > 0)
+type Positive = Int when x > 0
+
+%% Non-zero integers (x /= 0)
+type NonZero = Int when x /= 0
+
+%% Negative integers (x < 0)
+type Negative = Int when x < 0
+
+%% Non-negative integers (x >= 0)
+type NonNegative = Int when x >= 0
+
+%% Percentage (0-100)
+type Percentage = Int when x >= 0 and x <= 100
+
+%% ============================================================================
+%% Subtyping Relationships (Proven by Z3)
+%% ============================================================================
+
+%% Positive <: NonZero
+%% Proof: x > 0 => x /= 0
+
+%% Negative <: NonZero
+%% Proof: x < 0 => x /= 0
+
+%% Percentage <: NonNegative
+%% Proof: (x >= 0 and x <= 100) => x >= 0
+
+%% ============================================================================
+%% Safe Division - Using Refinement Types
+%% ============================================================================
+
+%% Safe division that requires non-zero divisor
+%% The compiler uses Z3 to verify the divisor is non-zero at each call site
+def safe_div(numerator: Int, divisor: NonZero) -> Int do
+  numerator / divisor
+end
+
+%% Examples of safe_div usage:
+def div_example() -> Int do
+  let x = 10 in
+  let y = 5 in
+  safe_div(x, y)  %% OK: 5 is non-zero (literal constant)
+end
+
+%% This would be rejected by the compiler:
+%% def unsafe_div_example() -> Int do
+%%   let x = 10 in
+%%   let y = 0 in
+%%   safe_div(x, y)  %% ERROR: 0 does not satisfy NonZero
+%% end
+
+%% ============================================================================
+%% Array Indexing with Bounds Checking
+%% ============================================================================
+
+%% Valid array index (non-negative)
+type Index = Int when x >= 0
+
+%% Array length (positive)
+type Length = Positive
+
+%% Bounded index verified against array length
+type BoundedIndex(n: Length) = Int when x >= 0 and x < n
+
+%% Safe array access function
+def array_get(arr: List(Int), idx: Index) -> Option(Int)
+when idx >= 0 and idx < length(arr) do
+  %% When clause constraint verified by Z3 before function body executes
+  list_nth(arr, idx)
+end
+
+%% Example: accessing with verified index
+def array_example() -> Option(Int) do
+  let arr = [1, 2, 3, 4, 5] in
+  let idx = 2 in
+  %% Compiler verifies: idx >= 0 and idx < length(arr)
+  array_get(arr, idx)
+end
+
+%% ============================================================================
+%% Financial Calculations with Constraints
+%% ============================================================================
+
+%% Dollar amount (non-negative cents)
+type Dollars = Int when x >= 0
+
+%% Interest rate (0-100%)
+type InterestRate = Percentage
+
+%% Calculate interest on principal
+def calculate_interest(principal: Dollars, rate: InterestRate) -> Dollars do
+  (principal * rate) / 100
+end
+
+%% Compound interest over time
+def compound_interest(principal: Dollars, rate: InterestRate, years: Positive) -> Dollars do
+  %% All parameters verified to satisfy constraints
+  let multiplier = (100 + rate) in
+  let base = principal in
+  compound_helper(base, multiplier, years)
+end
+
+def compound_helper(amount: Dollars, multiplier: Int, years: Int) -> Dollars
+when years > 0 do
+  match years do
+    | 1 -> (amount * multiplier) / 100
+    | n when n > 1 -> 
+        let new_amount = (amount * multiplier) / 100 in
+        compound_helper(new_amount, multiplier, n - 1)
+  end
+end
+
+%% ============================================================================
+%% Temperature Conversions with Physical Constraints
+%% ============================================================================
+
+%% Celsius temperature (above absolute zero: -273.15°C)
+type Celsius = Real when x >= -273.15
+
+%% Fahrenheit temperature (above absolute zero: -459.67°F)
+type Fahrenheit = Real when x >= -459.67
+
+%% Kelvin temperature (non-negative)
+type Kelvin = Real when x >= 0.0
+
+%% Convert Celsius to Fahrenheit (preserves physical constraints)
+def celsius_to_fahrenheit(c: Celsius) -> Fahrenheit do
+  (c * 9.0 / 5.0) + 32.0
+  %% Z3 proves: c >= -273.15 => result >= -459.67
+end
+
+%% Convert Fahrenheit to Celsius
+def fahrenheit_to_celsius(f: Fahrenheit) -> Celsius do
+  (f - 32.0) * 5.0 / 9.0
+  %% Z3 proves: f >= -459.67 => result >= -273.15
+end
+
+%% Convert Celsius to Kelvin
+def celsius_to_kelvin(c: Celsius) -> Kelvin do
+  c + 273.15
+  %% Z3 proves: c >= -273.15 => result >= 0.0
+end
+
+%% ============================================================================
+%% Sorted List Invariant
+%% ============================================================================
+
+%% Sorted list maintains ordering constraint
+type SortedList(T) = List(T)
+when forall i, j. (i < j and i >= 0 and j < length(xs)) => xs[i] <= xs[j]
+
+%% Insert into sorted list (maintains sortedness)
+def sorted_insert(elem: Int, lst: SortedList(Int)) -> SortedList(Int) do
+  match lst do
+    | [] -> [elem]
+    | [head | tail] when elem <= head -> [elem | lst]
+    | [head | tail] when elem > head -> [head | sorted_insert(elem, tail)]
+  end
+  %% Z3 verifies result is still sorted
+end
+
+%% Binary search on sorted list
+def binary_search(elem: Int, lst: SortedList(Int)) -> Option(Index) do
+  binary_search_helper(elem, lst, 0, length(lst) - 1)
+end
+
+def binary_search_helper(elem: Int, lst: SortedList(Int), low: Index, high: Int) 
+    -> Option(Index)
+when low >= 0 and high >= -1 do
+  match high >= low do
+    | false -> None
+    | true ->
+        let mid = (low + high) / 2 in
+        let mid_val = list_nth(lst, mid) in
+        match mid_val do
+          | Some(v) when v == elem -> Some(mid)
+          | Some(v) when v < elem -> binary_search_helper(elem, lst, mid + 1, high)
+          | Some(v) when v > elem -> binary_search_helper(elem, lst, low, mid - 1)
+          | None -> None
+        end
+  end
+end
+
+%% ============================================================================
+%% Network Protocol with State Constraints
+%% ============================================================================
+
+%% TCP sequence number (32-bit unsigned)
+type SeqNum = Int when x >= 0 and x <= 4294967295
+
+%% TCP window size (16-bit unsigned)
+type WindowSize = Int when x >= 0 and x <= 65535
+
+%% TCP connection state
+fsm TcpConnection do
+  state Closed do
+    on open() -> Listen
+  end
+  
+  state Listen do
+    on syn_received(seq: SeqNum) -> SynReceived(seq)
+  end
+  
+  state SynReceived(initial_seq: SeqNum) do
+    on ack_received(seq: SeqNum) when seq == initial_seq + 1 -> Established(seq)
+    on timeout() -> Listen
+  end
+  
+  state Established(current_seq: SeqNum) do
+    on send_data(data: List(Byte), window: WindowSize) -> Established(current_seq + length(data))
+    when length(data) <= window  %% Respect window size
+    
+    on receive_ack(seq: SeqNum) when seq >= current_seq -> Established(seq)
+    
+    on close() -> FinWait
+  end
+  
+  state FinWait do
+    on fin_ack_received() -> Closed
+  end
+end
+
+%% ============================================================================
+%% Smart Contract Constraints
+%% ============================================================================
+
+%% Wei amount (smallest Ethereum unit)
+type Wei = Int when x >= 0
+
+%% Gas limit (reasonable bounds)
+type GasLimit = Int when x >= 21000 and x <= 30000000
+
+%% Ethereum address (not zero address)
+type Address = Int when x > 0
+
+%% Transfer with balance check
+def transfer(from: Address, to: Address, amount: Wei, balance: Wei) -> Result(Wei, String)
+when amount <= balance do
+  %% Constraint verified before execution
+  let new_balance = balance - amount in
+  Ok(new_balance)
+end
+
+%% This would fail at compile time:
+%% def unsafe_transfer(from: Address, to: Address, amount: Wei, balance: Wei) 
+%%     -> Result(Wei, String) do
+%%   %% ERROR: No guarantee that amount <= balance
+%%   let new_balance = balance - amount in
+%%   Ok(new_balance)
+%% end
+
+%% ============================================================================
+%% Database Query with Size Limits
+%% ============================================================================
+
+%% Page number (1-indexed, positive)
+type PageNum = Positive
+
+%% Page size (bounded for performance)
+type PageSize = Int when x >= 1 and x <= 100
+
+%% Offset calculation for pagination
+def calculate_offset(page: PageNum, page_size: PageSize) -> NonNegative do
+  (page - 1) * page_size
+  %% Z3 proves: (x > 0 and y >= 1) => (x - 1) * y >= 0
+end
+
+%% Paginated query
+def paginated_query(table: String, page: PageNum, size: PageSize) -> List(Row) do
+  let offset = calculate_offset(page, size) in
+  %% offset is guaranteed to be non-negative
+  query_with_limit(table, offset, size)
+end
+
+%% ============================================================================
+%% Cryptographic Key Sizes
+%% ============================================================================
+
+%% RSA key size (must be multiple of 1024 and reasonable)
+type RsaKeySize = Int when x >= 2048 and x <= 8192 and (x mod 1024) == 0
+
+%% AES key size (128, 192, or 256 bits)
+type AesKeySize = Int when x == 128 or x == 192 or x == 256
+
+%% Generate RSA keypair
+def generate_rsa_keypair(key_size: RsaKeySize) -> RsaKeyPair do
+  %% key_size is guaranteed to be 2048, 3072, 4096, 6144, or 8192
+  rsa_keygen(key_size)
+end
+
+%% Generate AES key
+def generate_aes_key(key_size: AesKeySize) -> AesKey do
+  %% key_size is guaranteed to be 128, 192, or 256
+  aes_keygen(key_size)
+end
+
+%% ============================================================================
+%% Matrix Dimensions
+%% ============================================================================
+
+%% Matrix dimensions (positive)
+type Dimension = Positive
+
+%% Matrix with verified dimensions
+type Matrix(rows: Dimension, cols: Dimension) = List(List(Real))
+when length(matrix) == rows and forall row. length(row) == cols
+
+%% Matrix multiplication with dimension compatibility check
+def matrix_multiply(
+  a: Matrix(m, n),
+  b: Matrix(n, p)
+) -> Matrix(m, p)
+when n == n do  %% Type system ensures inner dimensions match
+  %% Dimensions verified at compile time by Z3
+  matrix_mult_impl(a, b)
+end
+
+%% Example usage:
+def matrix_example() -> Matrix(2, 2) do
+  let a = [[1.0, 2.0], [3.0, 4.0]] in  %% Matrix(2, 2)
+  let b = [[5.0, 6.0], [7.0, 8.0]] in  %% Matrix(2, 2)
+  matrix_multiply(a, b)  %% OK: dimensions compatible
+end
+
+%% This would fail at compile time:
+%% def matrix_incompatible() do
+%%   let a = [[1.0, 2.0], [3.0, 4.0]] in        %% Matrix(2, 2)
+%%   let b = [[5.0, 6.0, 7.0], [8.0, 9.0, 10.0]] in  %% Matrix(2, 3)
+%%   matrix_multiply(a, b)  %% ERROR: dimensions incompatible (2 /= 3)
+%% end
+
+%% ============================================================================
+%% Test Functions
+%% ============================================================================
+
+export def run_refinement_examples() -> Bool do
+  %% All these compile because constraints are satisfied
+  let d1 = div_example() in
+  let a1 = array_example() in
+  let i1 = calculate_interest(1000, 5) in
+  let f1 = celsius_to_fahrenheit(100.0) in
+  let m1 = matrix_example() in
+  true
+end

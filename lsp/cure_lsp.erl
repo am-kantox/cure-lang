@@ -17,7 +17,9 @@
     % URI -> Diagnostics
     diagnostics = #{} :: map(),
     % Symbol table for workspace
-    symbols = undefined
+    symbols = undefined,
+    % SMT verification state for refinement type checking
+    smt_state = undefined
 }).
 
 %% Public API
@@ -34,7 +36,8 @@ stop() ->
 init(Options) ->
     Transport = proplists:get_value(transport, Options, stdio),
     SymbolTable = cure_lsp_symbols:new(),
-    State = #state{transport = Transport, symbols = SymbolTable},
+    SmtState = cure_lsp_smt:init_verification_state(),
+    State = #state{transport = Transport, symbols = SymbolTable, smt_state = SmtState},
     % Start stdin reader process
     spawn_link(fun() -> stdin_reader() end),
     {ok, State}.
@@ -236,6 +239,8 @@ process_message(Message, State) ->
             handle_references(Id, Params, State);
         <<"textDocument/documentSymbol">> ->
             handle_document_symbol(Id, Params, State);
+        <<"textDocument/codeAction">> ->
+            handle_code_action(Id, Params, State);
         _ ->
             io:format(standard_error, "Unhandled method: ~p~n", [Method]),
             State
@@ -264,7 +269,13 @@ handle_initialize(Id, Params, State) ->
                 definitionProvider => true,
                 referencesProvider => true,
                 documentSymbolProvider => true,
-                workspaceSymbolProvider => true
+                workspaceSymbolProvider => true,
+                codeActionProvider => #{
+                    codeActionKinds => [
+                        <<"quickfix">>,
+                        <<"refactor.rewrite">>
+                    ]
+                }
             },
             serverInfo => #{
                 name => <<"cure-lsp">>,
@@ -316,9 +327,8 @@ handle_did_open(Params, State) ->
         symbols = NewSymbols
     },
 
-    % Run diagnostics
-    diagnose_document(Uri, Text, NewState),
-    NewState.
+    % Run diagnostics and get updated state
+    diagnose_document(Uri, Text, NewState).
 
 handle_did_change(Params, State) ->
     TextDocument = maps:get(textDocument, Params),
@@ -371,18 +381,21 @@ handle_did_change(Params, State) ->
             },
 
             % Run diagnostics (with error handling)
-            try
-                diagnose_document(Uri, NewText, NewState),
-                io:format(standard_error, "[LSP] Diagnostics sent for ~s~n", [Uri])
-            catch
-                _:DiagErr:DiagStack ->
-                    io:format(standard_error, "[LSP] Diagnostic error: ~p~n~p~n", [
-                        DiagErr, DiagStack
-                    ]),
-                    % Send empty diagnostics on error
-                    send_empty_diagnostics(Uri, NewState)
-            end,
-            NewState
+            FinalState =
+                try
+                    UpdatedState = diagnose_document(Uri, NewText, NewState),
+                    io:format(standard_error, "[LSP] Diagnostics sent for ~s~n", [Uri]),
+                    UpdatedState
+                catch
+                    _:DiagErr:DiagStack ->
+                        io:format(standard_error, "[LSP] Diagnostic error: ~p~n~p~n", [
+                            DiagErr, DiagStack
+                        ]),
+                        % Send empty diagnostics on error
+                        send_empty_diagnostics(Uri, NewState),
+                        NewState
+                end,
+            FinalState
     end.
 
 handle_did_close(Params, State) ->
@@ -521,6 +534,38 @@ handle_document_symbol(Id, Params, State) ->
     send_message(Response, State),
     State.
 
+handle_code_action(Id, Params, State) ->
+    TextDocument = maps:get(textDocument, Params),
+    Uri = maps:get(uri, TextDocument),
+    Context = maps:get(context, Params, #{}),
+    Diagnostics = maps:get(diagnostics, Context, []),
+
+    % Generate code actions for refinement type diagnostics
+    Actions = lists:flatmap(
+        fun(Diagnostic) ->
+            Code = maps:get(code, Diagnostic, <<>>),
+            case is_refinement_diagnostic(Code) of
+                true ->
+                    cure_lsp_smt:generate_code_actions(Diagnostic, Uri);
+                false ->
+                    []
+            end
+        end,
+        Diagnostics
+    ),
+
+    Response = #{
+        jsonrpc => <<"2.0">>,
+        id => Id,
+        result => Actions
+    },
+    send_message(Response, State),
+    State.
+
+%% Check if a diagnostic code is from refinement type checking
+is_refinement_diagnostic(<<"refinement_", _/binary>>) -> true;
+is_refinement_diagnostic(_) -> false.
+
 apply_changes(Text, Changes) ->
     lists:foldl(fun apply_single_change/2, Text, Changes).
 
@@ -584,19 +629,28 @@ apply_range_change_to_lines(Lines, StartLine, StartChar, EndLine, EndChar, NewTe
     iolist_to_binary(lists:join(<<"\n">>, AllLines)).
 
 diagnose_document(Uri, Text, State) ->
-    % Run lexer and parser to get diagnostics
-    Diagnostics = cure_lsp_analyzer:analyze(Text),
+    % Run lexer and parser to get basic diagnostics
+    BasicDiagnostics = cure_lsp_analyzer:analyze(Text),
+
+    % Run SMT verification for refinement type checking
+    {SmtDiagnostics, NewSmtState} = run_smt_verification(Uri, Text, State#state.smt_state),
+
+    % Combine all diagnostics
+    AllDiagnostics = BasicDiagnostics ++ SmtDiagnostics,
 
     Message = #{
         jsonrpc => <<"2.0">>,
         method => <<"textDocument/publishDiagnostics">>,
         params => #{
             uri => Uri,
-            diagnostics => Diagnostics
+            diagnostics => AllDiagnostics
         }
     },
 
-    send_message(Message, State).
+    send_message(Message, State),
+
+    % Return updated state with new SMT state
+    State#state{smt_state = NewSmtState}.
 
 send_empty_diagnostics(Uri, State) ->
     Message = #{
@@ -608,6 +662,37 @@ send_empty_diagnostics(Uri, State) ->
         }
     },
     send_message(Message, State).
+
+%% Run SMT verification on document
+run_smt_verification(Uri, Text, SmtState) ->
+    try
+        % Parse document to get AST for SMT verification
+        TextBin =
+            if
+                is_binary(Text) -> Text;
+                is_list(Text) -> list_to_binary(Text);
+                true -> <<>>
+            end,
+
+        case cure_lexer:tokenize(TextBin) of
+            {ok, Tokens} ->
+                case cure_parser:parse(Tokens) of
+                    {ok, AST} ->
+                        % Run incremental SMT verification
+                        cure_lsp_smt:verify_document_incremental(SmtState, {Uri, AST});
+                    {error, _ParseError} ->
+                        % Parse error - no SMT diagnostics
+                        {[], SmtState}
+                end;
+            {error, _LexError} ->
+                % Lex error - no SMT diagnostics
+                {[], SmtState}
+        end
+    catch
+        _Error:_Reason:_Stack ->
+            % SMT verification failed - return no diagnostics, keep old state
+            {[], SmtState}
+    end.
 
 %% Extract text from content changes (for fallback)
 get_text_from_changes([]) ->

@@ -34,7 +34,11 @@ Query = cure_smt_translator:generate_query(Constraint, Env).
     translate_expr/2,
     infer_logic/1,
     collect_variables/2,
-    declare_variable/2
+    declare_variable/2,
+
+    % Refinement type support
+    generate_refinement_subtype_query/4,
+    generate_constraint_check_query/3
 ]).
 
 -include("../parser/cure_ast.hrl").
@@ -139,6 +143,8 @@ translate_expr(#binary_op_expr{op = 'div', left = L, right = R}, Env) ->
     ["(div ", translate_expr(L, Env), " ", translate_expr(R, Env), ")"];
 translate_expr(#binary_op_expr{op = 'rem', left = L, right = R}, Env) ->
     ["(mod ", translate_expr(L, Env), " ", translate_expr(R, Env), ")"];
+translate_expr(#binary_op_expr{op = 'mod', left = L, right = R}, Env) ->
+    ["(mod ", translate_expr(L, Env), " ", translate_expr(R, Env), ")"];
 % Binary operations - comparison
 translate_expr(#binary_op_expr{op = '==', left = L, right = R}, Env) ->
     ["(= ", translate_expr(L, Env), " ", translate_expr(R, Env), ")"];
@@ -168,6 +174,59 @@ translate_expr(#unary_op_expr{op = 'not', operand = Operand}, Env) ->
     ["(not ", translate_expr(Operand, Env), ")"];
 translate_expr(#unary_op_expr{op = '-', operand = Operand}, Env) ->
     ["(- ", translate_expr(Operand, Env), ")"];
+% Function calls - SMT built-in functions
+translate_expr(#function_call_expr{function = #identifier_expr{name = abs}, args = [Arg]}, Env) ->
+    ["(abs ", translate_expr(Arg, Env), ")"];
+translate_expr(
+    #function_call_expr{function = #identifier_expr{name = min}, args = [Arg1, Arg2]}, Env
+) ->
+    % min(a, b) = ite(a < b, a, b)
+    [
+        "(ite (< ",
+        translate_expr(Arg1, Env),
+        " ",
+        translate_expr(Arg2, Env),
+        ") ",
+        translate_expr(Arg1, Env),
+        " ",
+        translate_expr(Arg2, Env),
+        ")"
+    ];
+translate_expr(
+    #function_call_expr{function = #identifier_expr{name = max}, args = [Arg1, Arg2]}, Env
+) ->
+    % max(a, b) = ite(a > b, a, b)
+    [
+        "(ite (> ",
+        translate_expr(Arg1, Env),
+        " ",
+        translate_expr(Arg2, Env),
+        ") ",
+        translate_expr(Arg1, Env),
+        " ",
+        translate_expr(Arg2, Env),
+        ")"
+    ];
+translate_expr(#function_call_expr{function = #identifier_expr{name = length}, args = [List]}, Env) ->
+    % For arrays, use (length array)
+    % For now, treat as an uninterpreted function
+    ["(length ", translate_expr(List, Env), ")"];
+% Quantified expressions - forall
+translate_expr({forall_expr, Vars, Body}, Env) ->
+    % (forall ((x Type) (y Type)) body)
+    VarDecls = [translate_quantifier_var(V, Env) || V <- Vars],
+    ["(forall (", lists:join(" ", VarDecls), ") ", translate_expr(Body, Env), ")"];
+translate_expr({forall_expr, Vars, Body, _Location}, Env) ->
+    VarDecls = [translate_quantifier_var(V, Env) || V <- Vars],
+    ["(forall (", lists:join(" ", VarDecls), ") ", translate_expr(Body, Env), ")"];
+% Quantified expressions - exists
+translate_expr({exists_expr, Vars, Body}, Env) ->
+    % (exists ((x Type) (y Type)) body)
+    VarDecls = [translate_quantifier_var(V, Env) || V <- Vars],
+    ["(exists (", lists:join(" ", VarDecls), ") ", translate_expr(Body, Env), ")"];
+translate_expr({exists_expr, Vars, Body, _Location}, Env) ->
+    VarDecls = [translate_quantifier_var(V, Env) || V <- Vars],
+    ["(exists (", lists:join(" ", VarDecls), ") ", translate_expr(Body, Env), ")"];
 % Identifiers (variables)
 translate_expr(#identifier_expr{name = Name}, _Env) ->
     atom_to_list(Name);
@@ -194,6 +253,9 @@ Analyzes the constraint to determine which SMT-LIB logic is required.
 - `QF_LRA` - Quantifier-free linear real arithmetic  
 - `QF_LIRA` - Quantifier-free linear integer/real arithmetic
 - `QF_NIA` - Quantifier-free nonlinear integer arithmetic
+- `LIA` - Linear integer arithmetic (with quantifiers)
+- `LRA` - Linear real arithmetic (with quantifiers)
+- `NIA` - Nonlinear integer arithmetic (with quantifiers)
 
 ## Arguments
 - `Constraint` - Cure AST expression
@@ -208,23 +270,31 @@ infer_logic(Constraint) ->
     HasFloats = maps:get(has_floats, Features, false),
     HasInts = maps:get(has_ints, Features, true),
     IsNonlinear = maps:get(is_nonlinear, Features, false),
+    HasQuantifiers = maps:get(has_quantifiers, Features, false),
 
-    case {HasFloats, HasInts, IsNonlinear} of
-        % Mixed int/real
-        {true, true, _} -> 'QF_LIRA';
-        % Pure real, linear
-        {true, false, false} -> 'QF_LRA';
-        % Pure int, linear
-        {false, true, false} -> 'QF_LIA';
-        % Pure int, nonlinear
-        {false, true, true} -> 'QF_NIA';
+    case {HasFloats, HasInts, IsNonlinear, HasQuantifiers} of
+        % With quantifiers
+        {true, true, _, true} -> 'LIRA';
+        {true, false, false, true} -> 'LRA';
+        {false, true, false, true} -> 'LIA';
+        {false, true, true, true} -> 'NIA';
+        % Quantifier-free (as before)
+        {true, true, _, false} -> 'QF_LIRA';
+        {true, false, false, false} -> 'QF_LRA';
+        {false, true, false, false} -> 'QF_LIA';
+        {false, true, true, false} -> 'QF_NIA';
         % Default to linear integer arithmetic
         _ -> 'QF_LIA'
     end.
 
 %% Analyze features of constraint for logic inference
 analyze_features(Expr) ->
-    analyze_features(Expr, #{has_floats => false, has_ints => false, is_nonlinear => false}).
+    analyze_features(Expr, #{
+        has_floats => false,
+        has_ints => false,
+        is_nonlinear => false,
+        has_quantifiers => false
+    }).
 
 analyze_features(#binary_op_expr{op = Op, left = L, right = R}, Acc) ->
     % Check for nonlinear operations
@@ -238,6 +308,18 @@ analyze_features(#binary_op_expr{op = Op, left = L, right = R}, Acc) ->
     analyze_features(R, Acc2);
 analyze_features(#unary_op_expr{operand = Operand}, Acc) ->
     analyze_features(Operand, Acc);
+analyze_features(#function_call_expr{args = Args}, Acc) ->
+    lists:foldl(fun analyze_features/2, Acc, Args);
+% Quantified expressions
+analyze_features({forall_expr, _Vars, Body}, Acc) ->
+    analyze_features(Body, Acc#{has_quantifiers => true});
+analyze_features({forall_expr, _Vars, Body, _Loc}, Acc) ->
+    analyze_features(Body, Acc#{has_quantifiers => true});
+analyze_features({exists_expr, _Vars, Body}, Acc) ->
+    analyze_features(Body, Acc#{has_quantifiers => true});
+analyze_features({exists_expr, _Vars, Body, _Loc}, Acc) ->
+    analyze_features(Body, Acc#{has_quantifiers => true});
+% Literals
 analyze_features(#literal_expr{value = Val}, Acc) when is_integer(Val) ->
     Acc#{has_ints => true};
 analyze_features(#literal_expr{value = Val}, Acc) when is_float(Val) ->
@@ -349,8 +431,139 @@ is_nat_type(VarName, Env) ->
     end.
 
 %% ============================================================================
+%% Quantifier Translation
+%% ============================================================================
+
+%% Translate a quantified variable declaration
+%% Var can be: atom, {VarName, Type}, or #param{}
+translate_quantifier_var(Var, Env) when is_atom(Var) ->
+    % Infer type from environment
+    Type = infer_variable_type(Var, Env),
+    SmtType = map_type_to_smt(Type),
+    ["(", atom_to_list(Var), " ", SmtType, ")"];
+translate_quantifier_var({VarName, Type}, _Env) when is_atom(VarName) ->
+    % Explicit type given
+    SmtType = map_type_to_smt(Type),
+    ["(", atom_to_list(VarName), " ", SmtType, ")"];
+translate_quantifier_var(#param{name = Name, type = Type}, _Env) ->
+    % Parameter record
+    TypeAtom = extract_type_name(Type),
+    SmtType = map_type_to_smt(TypeAtom),
+    ["(", atom_to_list(Name), " ", SmtType, ")"];
+translate_quantifier_var(Var, _Env) ->
+    % Fallback
+    io_lib:format("(; unsupported var: ~p ;)", [Var]).
+
+%% Extract type name from type expression
+extract_type_name(#primitive_type{name = Name}) -> Name;
+extract_type_name(#dependent_type{name = Name}) -> Name;
+extract_type_name(Type) when is_atom(Type) -> Type;
+extract_type_name(_) -> int.
+
+%% ============================================================================
 %% Unit Tests (Internal)
 %% ============================================================================
+
+%% ============================================================================
+%% Refinement Type Support
+%% ============================================================================
+
+-doc """
+Generate SMT-LIB query to check refinement type subtyping.
+
+Checks if refinement type with predicate Pred1 is a subtype of refinement type
+with predicate Pred2. This is equivalent to proving: ∀Var. Pred1 => Pred2
+
+## Arguments
+- `Pred1` - Predicate of subtype (e.g., x > 0)
+- `Pred2` - Predicate of supertype (e.g., x /= 0)
+- `Var` - Refinement variable name
+- `BaseType` - Base type (int, real, bool)
+
+## Returns
+- `iolist()` - SMT-LIB query
+
+## Example
+```erlang
+% Check if Positive <: NonZero
+% i.e., ∀x. (x > 0) => (x ≠ 0)
+Pred1 = #binary_op_expr{op = '>', left = var(x), right = lit(0)},
+Pred2 = #binary_op_expr{op = '/=', left = var(x), right = lit(0)},
+Query = generate_refinement_subtype_query(Pred1, Pred2, x, int).
+```
+""".
+-spec generate_refinement_subtype_query(expr(), expr(), atom(), atom()) -> iolist().
+generate_refinement_subtype_query(Pred1, Pred2, Var, BaseType) ->
+    % Build environment with variable type
+    Env = #{Var => {type, BaseType}},
+
+    % Build implication: Pred1 => Pred2
+    Implication = #binary_op_expr{
+        op = '=>',
+        left = Pred1,
+        right = Pred2,
+        location = #location{line = 0, column = 0, file = undefined}
+    },
+
+    % Build forall quantifier: ∀Var. (Pred1 => Pred2)
+    Quantified = {forall_expr, [{Var, BaseType}], Implication},
+
+    % Infer logic
+    Logic = infer_logic(Quantified),
+
+    % Translate to SMT-LIB
+    SmtType = map_type_to_smt(BaseType),
+    VarDecl = ["(", atom_to_list(Var), " ", SmtType, ")"],
+
+    Pred1Smt = translate_expr(Pred1, Env),
+    Pred2Smt = translate_expr(Pred2, Env),
+
+    % Build query
+    % To prove ∀x. P1 => P2, we check if ∃x. P1 ∧ ¬P2 is unsat
+    % i.e., assert (and Pred1 (not Pred2)) and check for unsat
+    % If unsat, then there's no counterexample, so the implication holds
+    [
+        "(set-logic ",
+        atom_to_list(Logic),
+        ")\n",
+        "(declare-const ",
+        atom_to_list(Var),
+        " ",
+        SmtType,
+        ")\n",
+        "(assert ",
+        Pred1Smt,
+        ")\n",
+        "(assert (not ",
+        Pred2Smt,
+        "))\n",
+        "(check-sat)\n"
+    ].
+
+-doc """
+Generate SMT-LIB query to check if a value satisfies a constraint.
+
+## Arguments
+- `ValueExpr` - Expression representing the value
+- `Predicate` - Constraint predicate
+- `Env` - Environment with variable types
+
+## Returns
+- `iolist()` - SMT-LIB query
+
+## Example
+```erlang
+% Check if 5 satisfies (x > 0)
+Value = #literal_expr{value = 5},
+Pred = #binary_op_expr{op = '>', left = var(x), right = lit(0)},
+Query = generate_constraint_check_query(Value, Pred, #{x => {type, int}}).
+```
+""".
+-spec generate_constraint_check_query(expr(), expr(), map()) -> iolist().
+generate_constraint_check_query(ValueExpr, Predicate, Env) ->
+    % Simple version: just check if predicate with value substituted is sat
+    % For more complex cases, we'd need proper substitution
+    generate_query(Predicate, Env, #{}).
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
