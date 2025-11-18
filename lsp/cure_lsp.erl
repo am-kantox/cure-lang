@@ -253,8 +253,8 @@ handle_initialize(Id, Params, State) ->
             capabilities => #{
                 textDocumentSync => #{
                     openClose => true,
-                    % Incremental
-                    change => 2,
+                    % Full document sync (mode 1) - simpler and more reliable
+                    change => 1,
                     save => #{includeText => true}
                 },
                 completionProvider => #{
@@ -326,24 +326,62 @@ handle_did_change(Params, State) ->
     Version = maps:get(version, TextDocument),
     ContentChanges = maps:get(contentChanges, Params),
 
+    io:format(standard_error, "[LSP] Document changed: ~s (version ~p)~n", [Uri, Version]),
+
     case maps:get(Uri, State#state.documents, undefined) of
         undefined ->
-            State;
+            io:format(
+                standard_error, "[LSP] Warning: Document not found in state, treating as new~n"
+            ),
+            % Treat as new document
+            NewText = get_text_from_changes(ContentChanges),
+            NewParams = Params#{textDocument => TextDocument#{text => NewText}},
+            handle_did_open(NewParams, State);
         Doc ->
-            % Apply incremental changes
-            NewText = apply_changes(maps:get(text, Doc), ContentChanges),
+            % Apply changes
+            OldText = maps:get(text, Doc),
+            NewText =
+                try
+                    apply_changes(OldText, ContentChanges)
+                catch
+                    Error:Reason:Stack ->
+                        io:format(standard_error, "[LSP] Error applying changes: ~p:~p~n~p~n", [
+                            Error, Reason, Stack
+                        ]),
+                        % Fall back to full text if available
+                        get_text_from_changes(ContentChanges)
+                end,
+
+            io:format(standard_error, "[LSP] Text updated, length: ~p bytes~n", [byte_size(NewText)]),
             NewDoc = Doc#{text => NewText, version => Version},
 
             % Update symbol table
-            NewSymbols = update_symbols(Uri, NewText, State#state.symbols),
+            NewSymbols =
+                try
+                    update_symbols(Uri, NewText, State#state.symbols)
+                catch
+                    _:SymErr ->
+                        io:format(standard_error, "[LSP] Symbol update failed: ~p~n", [SymErr]),
+                        State#state.symbols
+                end,
 
             NewState = State#state{
                 documents = maps:put(Uri, NewDoc, State#state.documents),
                 symbols = NewSymbols
             },
 
-            % Run diagnostics
-            diagnose_document(Uri, NewText, NewState),
+            % Run diagnostics (with error handling)
+            try
+                diagnose_document(Uri, NewText, NewState),
+                io:format(standard_error, "[LSP] Diagnostics sent for ~s~n", [Uri])
+            catch
+                _:DiagErr:DiagStack ->
+                    io:format(standard_error, "[LSP] Diagnostic error: ~p~n~p~n", [
+                        DiagErr, DiagStack
+                    ]),
+                    % Send empty diagnostics on error
+                    send_empty_diagnostics(Uri, NewState)
+            end,
             NewState
     end.
 
@@ -486,8 +524,64 @@ handle_document_symbol(Id, Params, State) ->
 apply_changes(Text, Changes) ->
     lists:foldl(fun apply_single_change/2, Text, Changes).
 
+%% Apply a single change to the document
+%% For full document sync (mode 1), changes contain the entire new text
+%% For incremental sync (mode 2), changes contain a range and text to replace
 apply_single_change(Change, Text) ->
-    maps:get(text, Change, Text).
+    case maps:get(range, Change, undefined) of
+        undefined ->
+            % Full document replacement
+            maps:get(text, Change, Text);
+        Range ->
+            % Incremental change - apply range-based edit
+            StartPos = maps:get(start, Range),
+            EndPos = maps:get('end', Range),
+            NewText = maps:get(text, Change, <<>>),
+            apply_range_change(Text, StartPos, EndPos, NewText)
+    end.
+
+%% Apply a range-based change to text
+apply_range_change(Text, StartPos, EndPos, NewText) ->
+    StartLine = maps:get(line, StartPos),
+    StartChar = maps:get(character, StartPos),
+    EndLine = maps:get('end', EndPos, maps:get(line, EndPos)),
+    EndChar = maps:get(character, EndPos),
+
+    % Split text into lines
+    Lines = binary:split(Text, <<"\n">>, [global]),
+
+    % Apply the change
+    apply_range_change_to_lines(Lines, StartLine, StartChar, EndLine, EndChar, NewText).
+
+%% Apply range change to lines
+apply_range_change_to_lines(Lines, StartLine, StartChar, EndLine, EndChar, NewText) ->
+    {BeforeLines, Rest1} = lists:split(StartLine, Lines),
+    [StartLineText | AfterStart] = Rest1,
+
+    % Handle same-line or multi-line change
+    {AfterLines, EndLineText} =
+        if
+            StartLine =:= EndLine ->
+                % Same line change
+                {AfterStart, StartLineText};
+            true ->
+                % Multi-line change
+                {_Skipped, After} = lists:split(EndLine - StartLine, AfterStart),
+                [EndLine_ | RestAfter] = After,
+                {RestAfter, EndLine_}
+        end,
+
+    % Extract parts of affected lines
+    BeforePart = binary:part(StartLineText, 0, StartChar),
+    AfterPart = binary:part(EndLineText, EndChar, byte_size(EndLineText) - EndChar),
+
+    % Combine with new text
+    NewLines = [BeforePart, NewText, AfterPart],
+    NewLine = iolist_to_binary(NewLines),
+
+    % Reconstruct document
+    AllLines = BeforeLines ++ [NewLine | AfterLines],
+    iolist_to_binary(lists:join(<<"\n">>, AllLines)).
 
 diagnose_document(Uri, Text, State) ->
     % Run lexer and parser to get diagnostics
@@ -503,6 +597,24 @@ diagnose_document(Uri, Text, State) ->
     },
 
     send_message(Message, State).
+
+send_empty_diagnostics(Uri, State) ->
+    Message = #{
+        jsonrpc => <<"2.0">>,
+        method => <<"textDocument/publishDiagnostics">>,
+        params => #{
+            uri => Uri,
+            diagnostics => []
+        }
+    },
+    send_message(Message, State).
+
+%% Extract text from content changes (for fallback)
+get_text_from_changes([]) ->
+    <<>>;
+get_text_from_changes([Change | _]) ->
+    % For full document sync, the first change contains the full text
+    maps:get(text, Change, <<>>).
 
 update_symbols(Uri, Text, SymbolTable) ->
     % Parse the document and update symbol table

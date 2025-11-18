@@ -7,4 +7,5 @@ module ProfileWithImports do
   
   def test_function(): Int =
     0
+
 end

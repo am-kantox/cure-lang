@@ -5,7 +5,7 @@
 %% Test UTF-8 character error reporting in lexer
 run() ->
     io:format("~n=== UTF-8 Lexer Error Reporting Test ===~n~n"),
-    
+
     % Test 1: Ellipsis character (U+2026)
     io:format("Test 1: Ellipsis character '…' (U+2026)...~n"),
     Code1 = <<"module Test\n\nfunc foo() -> Int {\n  …\n}">>,
@@ -22,7 +22,7 @@ run() ->
         {ok, _Tokens1} ->
             io:format("  ✗ FAIL - Should have failed but got tokens~n")
     end,
-    
+
     % Test 2: Em-dash (U+2014)
     io:format("~nTest 2: Em-dash character '—' (U+2014)...~n"),
     Code2 = <<"x — y">>,
@@ -39,7 +39,7 @@ run() ->
         {ok, _Tokens2} ->
             io:format("  ✗ FAIL - Should have failed but got tokens~n")
     end,
-    
+
     % Test 3: Greek letter (U+03B1 α)
     io:format("~nTest 3: Greek letter 'α' (U+03B1)...~n"),
     Code3 = <<"x α y">>,
@@ -57,7 +57,7 @@ run() ->
         {ok, _Tokens3} ->
             io:format("  ✗ FAIL - Should have failed but got tokens~n")
     end,
-    
+
     % Test 4: Emoji (U+1F600 😀)
     io:format("~nTest 4: Emoji '😀' (U+1F600)...~n"),
     Code4 = <<"x 😀 y">>,
@@ -69,14 +69,16 @@ run() ->
                     io:format("  Character code: ~p (0x~.16B)~n", [Char4, Char4]),
                     io:format("  ✓ PASS - Got 4-byte UTF-8 codepoint~n");
                 {unexpected_character, Char4} when is_integer(Char4) ->
-                    io:format("  ⚠ Got integer but value seems wrong: ~p (0x~.16B)~n", [Char4, Char4]);
+                    io:format("  ⚠ Got integer but value seems wrong: ~p (0x~.16B)~n", [
+                        Char4, Char4
+                    ]);
                 {unexpected_character, _} ->
                     io:format("  ✗ FAIL - Got byte value instead~n")
             end;
         {ok, _Tokens4} ->
             io:format("  ✗ FAIL - Should have failed but got tokens~n")
     end,
-    
+
     % Test 5: Verify location is preserved
     io:format("~nTest 5: Location tracking with UTF-8...~n"),
     Code5 = <<"x = 1\ny = …\nz = 3">>,
@@ -95,6 +97,6 @@ run() ->
         {ok, _Tokens5} ->
             io:format("  ✗ FAIL - Should have failed~n")
     end,
-    
+
     io:format("~n✓ UTF-8 lexer error reporting tests completed~n"),
     ok.

@@ -27,9 +27,13 @@ analyze(Text) when is_binary(Text) ->
                     type_check_diagnostics(AST);
                 {error, {Line, Column, Message}} when is_integer(Line), is_integer(Column) ->
                     [make_diagnostic(Line, Column, Message, error)];
-                {error, {parse_error, Reason, Line, Column}} when is_integer(Line), is_integer(Column) ->
+                {error, {parse_error, Reason, Line, Column}} when
+                    is_integer(Line), is_integer(Column)
+                ->
                     [make_diagnostic(Line, Column, Reason, error)];
-                {error, {parse_error, Reason, {Line, Column}}} when is_integer(Line), is_integer(Column) ->
+                {error, {parse_error, Reason, {Line, Column}}} when
+                    is_integer(Line), is_integer(Column)
+                ->
                     [make_diagnostic(Line, Column, Reason, error)];
                 {error, {Reason, Line, Column}} when is_integer(Line), is_integer(Column) ->
                     % Parser error with location

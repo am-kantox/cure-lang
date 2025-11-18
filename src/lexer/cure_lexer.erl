@@ -764,13 +764,18 @@ scan_charlist_literal_impl(<<>>, Line, Column, _Charlist) ->
 %% Returns {CodePoint, ByteSize} or error
 extract_utf8_char(<<Char/utf8, _Rest/binary>> = Binary) ->
     % Calculate how many bytes this UTF-8 character uses
-    CharSize = case Char of
-        C when C =< 16#7F -> 1;      % ASCII
-        C when C =< 16#7FF -> 2;     % 2-byte UTF-8
-        C when C =< 16#FFFF -> 3;    % 3-byte UTF-8
-        C when C =< 16#10FFFF -> 4;  % 4-byte UTF-8
-        _ -> 0
-    end,
+    CharSize =
+        case Char of
+            % ASCII
+            C when C =< 16#7F -> 1;
+            % 2-byte UTF-8
+            C when C =< 16#7FF -> 2;
+            % 3-byte UTF-8
+            C when C =< 16#FFFF -> 3;
+            % 4-byte UTF-8
+            C when C =< 16#10FFFF -> 4;
+            _ -> 0
+        end,
     % Verify we actually have that many bytes
     case byte_size(Binary) >= CharSize of
         true -> {Char, CharSize};
