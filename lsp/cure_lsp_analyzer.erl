@@ -25,13 +25,19 @@ analyze(Text) when is_binary(Text) ->
                 {ok, AST} ->
                     % Type check if possible
                     type_check_diagnostics(AST);
-                {error, {Line, Column, Message}} ->
+                {error, {Line, Column, Message}} when is_integer(Line), is_integer(Column) ->
                     [make_diagnostic(Line, Column, Message, error)];
-                {error, {parse_error, Reason, Line, Column}} ->
+                {error, {parse_error, Reason, Line, Column}} when is_integer(Line), is_integer(Column) ->
+                    [make_diagnostic(Line, Column, Reason, error)];
+                {error, {parse_error, Reason, {Line, Column}}} when is_integer(Line), is_integer(Column) ->
+                    [make_diagnostic(Line, Column, Reason, error)];
+                {error, {Reason, Line, Column}} when is_integer(Line), is_integer(Column) ->
+                    % Parser error with location
                     [make_diagnostic(Line, Column, Reason, error)];
                 {error, Reason} ->
-                    % Generic parse error
-                    [make_diagnostic(0, 0, Reason, error)]
+                    % Generic parse error without location - log for debugging
+                    io:format("[LSP] Parser error without location: ~p~n", [Reason]),
+                    [make_diagnostic(1, 1, Reason, error)]
             end;
         {error, {Reason, Line, Column}} when is_integer(Line), is_integer(Column) ->
             % Lexer error with location: {Reason, Line, Column}
@@ -39,9 +45,13 @@ analyze(Text) when is_binary(Text) ->
         {error, {Line, Column, Message}} when is_integer(Line), is_integer(Column) ->
             % Alternative format: {Line, Column, Message}
             [make_diagnostic(Line, Column, Message, error)];
+        {error, {{Reason, Detail}, Line, Column}} when is_integer(Line), is_integer(Column) ->
+            % Lexer error with nested reason: {{Reason, Detail}, Line, Column}
+            [make_diagnostic(Line, Column, {Reason, Detail}, error)];
         {error, Reason} ->
-            % Generic lex error without location
-            [make_diagnostic(0, 0, Reason, error)]
+            % Generic lex error without location - log for debugging
+            io:format("[LSP] Lexer error without location: ~p~n", [Reason]),
+            [make_diagnostic(1, 1, Reason, error)]
     end;
 analyze(Text) when is_list(Text) ->
     analyze(list_to_binary(Text)).
@@ -966,23 +976,33 @@ type_check_diagnostics(AST) ->
 convert_type_error(#typecheck_error{message = Message, location = Location, details = _Details}) ->
     {Line, Column} = extract_location(Location),
     make_diagnostic(Line, Column, format_message(Message), error);
-convert_type_error({Line, Column, Message}) ->
+convert_type_error({error, Reason, #location{line = Line, column = Column}}) ->
+    make_diagnostic(Line, Column, format_message(Reason), error);
+convert_type_error({Line, Column, Message}) when is_integer(Line), is_integer(Column) ->
     make_diagnostic(Line, Column, format_message(Message), error);
-convert_type_error({Line, Message}) ->
+convert_type_error({Line, Message}) when is_integer(Line) ->
     make_diagnostic(Line, 0, format_message(Message), error);
+convert_type_error({Reason, Line, Column}) when is_integer(Line), is_integer(Column) ->
+    make_diagnostic(Line, Column, format_message(Reason), error);
 convert_type_error(Error) ->
-    make_diagnostic(0, 0, format_message(Error), error).
+    io:format("[LSP] Type error without location: ~p~n", [Error]),
+    make_diagnostic(1, 1, format_message(Error), error).
 
 %% Convert type checker warning record to LSP diagnostic
 convert_type_warning(#typecheck_warning{message = Message, location = Location, details = _Details}) ->
     {Line, Column} = extract_location(Location),
     make_diagnostic(Line, Column, format_message(Message), warning);
-convert_type_warning({Line, Column, Message}) ->
+convert_type_warning({warning, Reason, #location{line = Line, column = Column}}) ->
+    make_diagnostic(Line, Column, format_message(Reason), warning);
+convert_type_warning({Line, Column, Message}) when is_integer(Line), is_integer(Column) ->
     make_diagnostic(Line, Column, format_message(Message), warning);
-convert_type_warning({Line, Message}) ->
+convert_type_warning({Line, Message}) when is_integer(Line) ->
     make_diagnostic(Line, 0, format_message(Message), warning);
+convert_type_warning({Reason, Line, Column}) when is_integer(Line), is_integer(Column) ->
+    make_diagnostic(Line, Column, format_message(Reason), warning);
 convert_type_warning(Warning) ->
-    make_diagnostic(0, 0, format_message(Warning), warning).
+    io:format("[LSP] Type warning without location: ~p~n", [Warning]),
+    make_diagnostic(1, 1, format_message(Warning), warning).
 
 %% Extract line and column from location record or tuple
 extract_location(#location{line = Line, column = Col}) ->

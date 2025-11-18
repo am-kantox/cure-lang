@@ -9,7 +9,7 @@ module VectorBasics do
   import Std.List [zip_with/3]
   import Std.Io [println/1]
 
-  def mult_by_2(x: Int) -> Int = x * 2
+  def mult_by_2(x: Int): Int = x * 2
   def zip(v1: List(Int), v2: List(Float), f: Int => Float => Float): List(Float) =
     zip_with(v1, v2, f)
 
