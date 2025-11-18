@@ -1,5 +1,6 @@
 %% Test suite for refinement types with SMT verification
 -module(refinement_types_test).
+-export([run/0]).
 
 -include("../src/parser/cure_ast.hrl").
 -include_lib("eunit/include/eunit.hrl").
