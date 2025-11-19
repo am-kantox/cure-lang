@@ -1961,10 +1961,29 @@ compile_fsm_impl(
         initial = Initial,
         state_defs = StateDefs,
         location = Location
-    },
+    } = FSMDef,
     State
 ) ->
     try
+        % Optional: Run FSM verification pass
+        % Set CURE_FSM_VERIFY=1 environment variable to enable verification
+        case os:getenv("CURE_FSM_VERIFY") of
+            "1" ->
+                cure_utils:debug("[FSM_VERIFY] Running verification for FSM: ~p~n", [Name]),
+                case cure_fsm_verifier:verify_fsm(FSMDef) of
+                    {ok, VerificationResults} ->
+                        report_verification_results(Name, VerificationResults);
+                    {error, VerifyError} ->
+                        cure_utils:debug(
+                            "[FSM_VERIFY] Verification failed for ~p: ~p~n",
+                            [Name, VerifyError]
+                        )
+                end;
+            _ ->
+                % Verification disabled
+                ok
+        end,
+
         % Compile FSM definition to runtime format
         CompiledFSM = cure_fsm_runtime:compile_fsm_definition(#fsm_def{
             name = Name,
@@ -1995,6 +2014,31 @@ compile_fsm_impl(
         error:Reason:Stack ->
             {error, {fsm_compilation_failed, Name, Reason, Stack}}
     end.
+
+%% Report FSM verification results
+report_verification_results(FSMName, Results) ->
+    cure_utils:debug("[FSM_VERIFY] Verification results for ~p:~n", [FSMName]),
+    lists:foreach(
+        fun(Result) ->
+            case Result of
+                {reachable, State} ->
+                    cure_utils:debug("  ✓ State ~p is reachable~n", [State]);
+                {unreachable, State} ->
+                    cure_utils:debug("  ⚠ Warning: State ~p is unreachable~n", [State]);
+                {has_deadlock, State} ->
+                    cure_utils:debug(
+                        "  ⚠ Warning: State ~p is a deadlock (no outgoing transitions)~n", [State]
+                    );
+                {liveness_satisfied} ->
+                    cure_utils:debug("  ✓ Liveness property satisfied~n");
+                {liveness_violated, Reason} ->
+                    cure_utils:debug("  ⚠ Warning: Liveness property violated: ~p~n", [Reason]);
+                _ ->
+                    cure_utils:debug("  ~ Result: ~p~n", [Result])
+            end
+        end,
+        Results
+    ).
 
 %% Generate BEAM functions for FSM access
 generate_fsm_functions(FSMName, CompiledFSM, Location) ->

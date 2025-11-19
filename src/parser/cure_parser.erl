@@ -1488,7 +1488,7 @@ parse_mermaid_transitions(State, Acc) ->
             parse_mermaid_transitions(State1, [Transition | Acc])
     end.
 
-%% Parse a single Mermaid transition: FromState --> |event| ToState
+%% Parse a single Mermaid transition: FromState --> |event| ToState { action }
 parse_single_mermaid_transition(State) ->
     % Parse from state
     {FromStateToken, State1} = expect(State, identifier),
@@ -1498,15 +1498,30 @@ parse_single_mermaid_transition(State) ->
     % Expect -->
     {_, State2} = expect(State1, '-->'),
 
-    % Expect |event|
+    % Expect |event| - allow keywords as event names
     {_, State3} = expect(State2, '|'),
-    {EventToken, State4} = expect(State3, identifier),
-    EventName = token_value_to_atom(get_token_value(EventToken)),
+    {EventToken, EventName, State4} = parse_event_name(State3),
     {_, State5} = expect(State4, '|'),
 
     % Parse to state
     {ToStateToken, State6} = expect(State5, identifier),
     ToState = token_value_to_atom(get_token_value(ToStateToken)),
+
+    % Optional action block: { statements }
+    {Action, State7} =
+        case match_token(State6, '{') of
+            true ->
+                {_, State6a} = expect(State6, '{'),
+                {ActionExprs, State6b} = parse_action_statements(State6a, []),
+                {_, State6c} = expect(State6b, '}'),
+                % Wrap multiple statements in a sequence
+                case ActionExprs of
+                    [SingleExpr] -> {SingleExpr, State6c};
+                    Multiple -> {{sequence, Multiple, FromLocation}, State6c}
+                end;
+            false ->
+                {undefined, State6}
+        end,
 
     % Create transition record
     % Event is just the atom for the handler function name
@@ -1519,13 +1534,40 @@ parse_single_mermaid_transition(State) ->
         event = EventAtom,
         guard = undefined,
         target = ToState,
-        action = undefined,
+        action = Action,
         timeout = undefined,
         location = FromLocation
     },
 
     % Store the from state with the transition for later grouping
-    {{FromState, Transition}, State6}.
+    {{FromState, Transition}, State7}.
+
+%% Parse event name (allow keywords as event names in FSM)
+parse_event_name(State) ->
+    Token = current_token(State),
+    TokenType = get_token_type(Token),
+    case TokenType of
+        identifier ->
+            {EventToken, State1} = expect(State, identifier),
+            EventName = token_value_to_atom(get_token_value(EventToken)),
+            {EventToken, EventName, State1};
+        error ->
+            {EventToken, State1} = expect(State, error),
+            {EventToken, error, State1};
+        ok ->
+            {EventToken, State1} = expect(State, ok),
+            {EventToken, ok, State1};
+        _ ->
+            % Try to accept other keywords as identifiers
+            {Token, State1} = {Token, advance(State)},
+            case is_atom(TokenType) of
+                true ->
+                    {Token, TokenType, State1};
+                false ->
+                    {Line, Col} = get_token_line_col(Token),
+                    throw({parse_error, {expected, identifier, got, TokenType}, Line, Col})
+            end
+    end.
 
 %% Build state_defs from flat list of transitions
 %% Input: List of {FromState, Transition}
@@ -4869,6 +4911,32 @@ parse_action_sequence(State, Acc) ->
             end
     end.
 
+%% Parse action statements for Mermaid-style FSM (newline or ; separated)
+parse_action_statements(State, Acc) ->
+    case match_token(State, '}') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            % Parse single action using existing action parser
+            try
+                {Action, State1} = parse_single_action(State),
+                % Optional semicolon
+                State2 =
+                    case match_token(State1, ';') of
+                        true ->
+                            {_, S} = expect(State1, ';'),
+                            S;
+                        false ->
+                            State1
+                    end,
+                parse_action_statements(State2, [Action | Acc])
+            catch
+                _:_ ->
+                    % If single_action fails, return what we have
+                    {lists:reverse(Acc), State}
+            end
+    end.
+
 %% Parse a single action
 parse_single_action(State) ->
     {NameToken, State1} = expect(State, identifier),
@@ -4975,6 +5043,36 @@ parse_action_condition(State) ->
 
 %% Parse action values (expressions that produce values)
 parse_action_value(State) ->
+    % Parse primary value first
+    {PrimaryValue, State1} = parse_action_primary_value(State),
+    % Check for binary operators
+    case get_token_type(current_token(State1)) of
+        '+' ->
+            {_, State2} = expect(State1, '+'),
+            {Right, State3} = parse_action_value(State2),
+            Location = get_expr_or_action_location(PrimaryValue),
+            {{binary_op, '+', PrimaryValue, Right, Location}, State3};
+        '-' ->
+            {_, State2} = expect(State1, '-'),
+            {Right, State3} = parse_action_value(State2),
+            Location = get_expr_or_action_location(PrimaryValue),
+            {{binary_op, '-', PrimaryValue, Right, Location}, State3};
+        '*' ->
+            {_, State2} = expect(State1, '*'),
+            {Right, State3} = parse_action_value(State2),
+            Location = get_expr_or_action_location(PrimaryValue),
+            {{binary_op, '*', PrimaryValue, Right, Location}, State3};
+        '/' ->
+            {_, State2} = expect(State1, '/'),
+            {Right, State3} = parse_action_value(State2),
+            Location = get_expr_or_action_location(PrimaryValue),
+            {{binary_op, '/', PrimaryValue, Right, Location}, State3};
+        _ ->
+            {PrimaryValue, State1}
+    end.
+
+%% Parse primary action value (without binary operators)
+parse_action_primary_value(State) ->
     case get_token_type(current_token(State)) of
         integer ->
             {Token, State1} = expect(State, integer),
@@ -5035,6 +5133,17 @@ parse_action_value(State) ->
         _ ->
             {error, {unexpected_token_in_action_value, get_token_type(current_token(State))}}
     end.
+
+%% Helper to get location from action tuple or expression
+get_expr_or_action_location(Action) when is_tuple(Action) ->
+    case Action of
+        {_Type, _Name, Location} -> Location;
+        {_Type, _Name, _Value, Location} -> Location;
+        {_Type, _Op, _Left, _Right, Location} -> Location;
+        _ -> #location{line = 0, column = 0, file = undefined}
+    end;
+get_expr_or_action_location(_) ->
+    #location{line = 0, column = 0, file = undefined}.
 
 %% Parse binary expressions in actions
 parse_action_binary_expr(State) ->

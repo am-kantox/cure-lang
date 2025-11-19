@@ -1785,6 +1785,7 @@ compile_timeouts(StateDefs) ->
     ).
 
 %% Extract event from AST
+extract_event(#identifier_expr{name = Name}) -> Name;
 extract_event({atom, Event}) -> Event;
 extract_event(Event) when is_atom(Event) -> Event;
 extract_event(_) -> unknown_event.
@@ -1808,9 +1809,11 @@ compile_action(Action) when is_function(Action) ->
     % Pass through functions unchanged
     Action;
 compile_action(Action) ->
-    case cure_action_compiler:compile_action(Action, #{}) of
-        {ok, Instructions, _} -> {compiled_action, Instructions};
-        {error, _Reason} -> undefined
+    % Use the new FSM action compiler for Mermaid-style action blocks
+    try
+        cure_fsm_action_compiler:compile_action(Action)
+    catch
+        _:_ -> undefined
     end.
 
 %% Find timeout transition in list of transitions

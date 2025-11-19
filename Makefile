@@ -50,7 +50,7 @@ LSP_BEAM_FILES = $(patsubst $(LSP_DIR)/%.erl,$(LSP_EBIN_DIR)/%.beam,$(LSP_SRC))
 # Compiler options
 ERLC_OPTS = +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(EBIN_DIR)
 
-.PHONY: all clean clean-all test test-basic test-integration test-performance test-smt docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-deps lsp-scripts lsp-shell gen-signatures
+.PHONY: all clean clean-all test test-basic test-integration test-performance test-smt test-fsm docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-deps lsp-scripts lsp-shell gen-signatures
 
 all: setup gen-signatures compiler stdlib
 
@@ -212,6 +212,19 @@ test-smt: compiler $(SMT_TEST_BEAM_FILES)
 	@echo "Running SMT solver tests..."
 	$(ERL) -pa $(EBIN_DIR) -noshell -s smt_process_test run -s smt_parser_test run -s smt_typechecker_test run -s init stop
 
+# Run FSM compilation tests
+test-fsm: compiler
+	@echo "Running FSM compilation tests..."
+	@$(ERLC) $(ERLC_OPTS) $(TEST_DIR)/fsm_mermaid_compile_test.erl
+	@$(ERLC) $(ERLC_OPTS) $(TEST_DIR)/fsm_verification_compile_test.erl
+	@$(ERLC) $(ERLC_OPTS) $(TEST_DIR)/fsm_verification_integration_test.erl
+	@echo "Testing Mermaid-style FSM compilation..."
+	@$(ERL) -pa $(EBIN_DIR) -noshell -s fsm_mermaid_compile_test run -s init stop
+	@echo "Testing verification example FSMs..."
+	@$(ERL) -pa $(EBIN_DIR) -noshell -s fsm_verification_compile_test run -s init stop
+	@echo "Testing FSM verification integration..."
+	@$(ERL) -pa $(EBIN_DIR) -noshell -s fsm_verification_integration_test run -s init stop
+
 # Generate documentation
 docs: compiler
 	@echo "Generating documentation with rebar3 ex_doc..."
@@ -288,6 +301,7 @@ help:
 	@echo "  test-basic - Run only basic unit tests"
 	@echo "  test-integration - Run only integration tests"
 	@echo "  test-performance - Run performance benchmark tests"
+	@echo "  test-fsm   - Run FSM compilation end-to-end tests"
 	@echo "  clean      - Remove build artifacts"
 	@echo "  clean-all  - Remove all artifacts including docs and caches"
 	@echo "  docs       - Generate HTML documentation"

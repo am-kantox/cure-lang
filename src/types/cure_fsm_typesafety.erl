@@ -322,10 +322,117 @@ check_action_types(#fsm_def{state_defs = StateDefs}, FsmEnv) ->
     end.
 
 %% Check type of a single action
+check_action_type(Action, InputType, ToState, FsmEnv) when is_tuple(Action) ->
+    case Action of
+        % Assignment action: variable = expression
+        {assign, VarName, ValueExpr, _Location} ->
+            % Check that the variable exists in the payload
+            % Check that the value expression type matches variable type
+            ValueType = infer_expr_type(ValueExpr, InputType, FsmEnv),
+            check_assignment_type(VarName, ValueType, InputType, ToState);
+        % Binary operation: left op right
+        {binary_op, Op, Left, Right, _Location} ->
+            LeftType = infer_expr_type(Left, InputType, FsmEnv),
+            RightType = infer_expr_type(Right, InputType, FsmEnv),
+            check_binary_op_type(Op, LeftType, RightType);
+        % Sequence of actions: action1; action2; ...
+        {sequence, Actions, _Location} ->
+            lists:foreach(
+                fun(SubAction) ->
+                    check_action_type(SubAction, InputType, ToState, FsmEnv)
+                end,
+                Actions
+            );
+        % Unknown action format - allow it (for backward compatibility)
+        _ ->
+            ok
+    end;
 check_action_type(_Action, _InputType, _ToState, _FsmEnv) ->
-    % Simplified: assume actions are well-typed
-    % Full implementation would type-check action expressions
+    % Non-tuple actions (functions, etc.) - assume well-typed
     ok.
+
+%% Infer type of an expression in an action
+infer_expr_type(Expr, PayloadType, FsmEnv) when is_tuple(Expr) ->
+    case Expr of
+        % Literal value
+        {literal, Value, _Location} when is_integer(Value) -> {primitive_type, 'Int'};
+        {literal, Value, _Location} when is_float(Value) -> {primitive_type, 'Float'};
+        {literal, Value, _Location} when is_boolean(Value) -> {primitive_type, 'Bool'};
+        {literal, Value, _Location} when is_binary(Value) -> {primitive_type, 'String'};
+        {literal, Value, _Location} when is_atom(Value) -> {atom_type, Value};
+        % Identifier (variable reference)
+        {identifier, VarName, _Location} ->
+            % Look up variable in payload type
+
+            % Simplified: assume any type
+            {any};
+        % Binary operation
+        {binary_op, Op, Left, Right, _Location} ->
+            LeftType = infer_expr_type(Left, PayloadType, FsmEnv),
+            RightType = infer_expr_type(Right, PayloadType, FsmEnv),
+            infer_binary_op_result_type(Op, LeftType, RightType);
+        % Unknown expression
+        _ ->
+            {any}
+    end;
+infer_expr_type(Value, _PayloadType, _FsmEnv) when is_integer(Value) ->
+    {primitive_type, 'Int'};
+infer_expr_type(Value, _PayloadType, _FsmEnv) when is_float(Value) ->
+    {primitive_type, 'Float'};
+infer_expr_type(Value, _PayloadType, _FsmEnv) when is_boolean(Value) ->
+    {primitive_type, 'Bool'};
+infer_expr_type(Value, _PayloadType, _FsmEnv) when is_atom(Value) ->
+    {atom_type, Value};
+infer_expr_type(_Value, _PayloadType, _FsmEnv) ->
+    {any}.
+
+%% Check assignment type compatibility
+check_assignment_type(_VarName, _ValueType, _PayloadType, _ToState) ->
+    % Simplified: allow all assignments
+    % Full implementation would check payload structure and types
+    ok.
+
+%% Check binary operation type
+check_binary_op_type(Op, LeftType, RightType) ->
+    case Op of
+        '+' -> check_numeric_op(LeftType, RightType);
+        '-' -> check_numeric_op(LeftType, RightType);
+        '*' -> check_numeric_op(LeftType, RightType);
+        '/' -> check_numeric_op(LeftType, RightType);
+        'div' -> check_numeric_op(LeftType, RightType);
+        'rem' -> check_numeric_op(LeftType, RightType);
+        % Allow other operations
+        _ -> ok
+    end.
+
+%% Check numeric operation types
+check_numeric_op(LeftType, RightType) ->
+    case {is_numeric_type(LeftType), is_numeric_type(RightType)} of
+        {true, true} -> ok;
+        {false, _} -> throw({action_type_error, {non_numeric_operand, left, LeftType}});
+        {_, false} -> throw({action_type_error, {non_numeric_operand, right, RightType}})
+    end.
+
+%% Check if type is numeric
+is_numeric_type({primitive_type, 'Int'}) -> true;
+is_numeric_type({primitive_type, 'Float'}) -> true;
+is_numeric_type({primitive_type, 'Nat'}) -> true;
+% Allow any for flexibility
+is_numeric_type({any}) -> true;
+is_numeric_type(_) -> false.
+
+%% Infer result type of binary operation
+infer_binary_op_result_type(Op, LeftType, RightType) when
+    Op =:= '+'; Op =:= '-'; Op =:= '*'; Op =:= '/'
+->
+    case {LeftType, RightType} of
+        {{primitive_type, 'Int'}, {primitive_type, 'Int'}} -> {primitive_type, 'Int'};
+        {{primitive_type, 'Float'}, _} -> {primitive_type, 'Float'};
+        {_, {primitive_type, 'Float'}} -> {primitive_type, 'Float'};
+        _ -> {any}
+    end;
+infer_binary_op_result_type(_Op, _LeftType, _RightType) ->
+    {any}.
 
 %% ============================================================================
 %% Type Inference
