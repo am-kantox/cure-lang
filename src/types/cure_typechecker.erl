@@ -141,6 +141,8 @@ operations can run concurrently on different ASTs.
 
 -export([
     check_program/1,
+    % With SMT options
+    check_program/2,
     check_module/2,
     check_function/2,
     % For testing
@@ -234,8 +236,37 @@ end.
 """.
 
 check_program(AST) ->
+    check_program(AST, #{}).
+
+-doc """
+ Type checks a Cure program with SMT options.
+
+## Arguments
+
+- `AST` - List of top-level AST items from the parser
+- `SmtOpts` - Map of SMT solver options:
+  - `enabled` - Enable/disable SMT constraint solving (default: true)
+  - `solver` - SMT solver to use: z3, cvc5, auto (default: auto)
+  - `timeout` - Solver timeout in milliseconds (default: 5000)
+
+## Returns
+
+- `typecheck_result()` - Complete type checking results
+
+## Example
+
+```erlang
+SmtOpts = #{enabled => true, solver => z3, timeout => 10000},
+Result = cure_typechecker:check_program(AST, SmtOpts).
+```
+""".
+
+check_program(AST, SmtOpts) ->
+    % Store SMT options in process dictionary for constraint checking
+    put(smt_options, SmtOpts),
+
     Env = builtin_env(),
-    check_items(
+    Result = check_items(
         AST,
         Env,
         #typecheck_result{
@@ -244,7 +275,11 @@ check_program(AST) ->
             errors = [],
             warnings = []
         }
-    ).
+    ),
+
+    % Clean up process dictionary
+    erase(smt_options),
+    Result.
 
 % Check list of top-level items
 check_items([], _Env, Result) ->

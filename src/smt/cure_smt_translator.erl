@@ -92,10 +92,13 @@ generate_query(Constraint, Env, Opts) ->
     % 3. Generate variable declarations
     Declarations = [declare_variable(V, Env) || V <- Vars],
 
-    % 4. Translate constraint to assertion
+    % 4. Generate Nat constraints (>= 0) for Nat-typed variables
+    NatConstraints = generate_nat_constraints(Vars, Env),
+
+    % 5. Translate constraint to assertion
     Assertion = ["(assert ", translate_expr(Constraint, Env), ")\n"],
 
-    % 5. Add check-sat and optionally get-model
+    % 6. Add check-sat and optionally get-model
     CheckSat = "(check-sat)\n",
     GetModel =
         case maps:get(get_model, Opts, true) of
@@ -103,12 +106,14 @@ generate_query(Constraint, Env, Opts) ->
             false -> ""
         end,
 
-    % 6. Assemble query
+    % 7. Assemble query with Nat constraints
     [
         "(set-logic ",
         atom_to_list(Logic),
         ")\n",
         Declarations,
+        % Add Nat constraints after declarations
+        NatConstraints,
         Assertion,
         CheckSat,
         GetModel

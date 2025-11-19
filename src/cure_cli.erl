@@ -450,7 +450,7 @@ compile_source(Filename, Source, Options) ->
         {"Parsing", fun(Tokens) -> cure_parser:parse(Tokens) end},
         {"Type Checking", fun(AST) ->
             case Options#compile_options.type_check of
-                true -> type_check_ast(AST);
+                true -> type_check_ast(AST, Options);
                 false -> {ok, AST}
             end
         end},
@@ -535,11 +535,18 @@ run_pipeline([{StageName, StageFunc} | RestStages], Input, Options) ->
             run_pipeline(RestStages, Output, Options)
     end.
 
-%% Type check AST (simplified version)
-type_check_ast(AST) ->
+%% Type check AST with SMT options
+type_check_ast(AST, Options) ->
+    % Extract SMT options from compile options
+    SmtOpts = #{
+        enabled => Options#compile_options.smt_enabled,
+        solver => Options#compile_options.smt_solver,
+        timeout => Options#compile_options.smt_timeout
+    },
+
     try
-        % Always use check_program - it handles all cases including modules
-        case cure_typechecker:check_program(AST) of
+        % Pass SMT options to type checker
+        case cure_typechecker:check_program(AST, SmtOpts) of
             {error, Reason} ->
                 cure_utils:debug("Type checking error: ~p~n", [Reason]),
                 {error, Reason};
@@ -556,6 +563,10 @@ type_check_ast(AST) ->
             end,
             {error, type_check_exception}
     end.
+
+%% Type check AST (legacy - without options)
+type_check_ast(AST) ->
+    type_check_ast(AST, #compile_options{}).
 
 %% Check type checking result and determine success/failure
 check_type_result(Result, AST) ->
