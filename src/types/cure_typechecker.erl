@@ -1320,7 +1320,8 @@ check_type_definition(
     #type_def{
         name = Name,
         params = Params,
-        definition = Definition
+        definition = Definition,
+        constraint = Constraint
     },
     Env
 ) ->
@@ -1345,7 +1346,32 @@ check_type_definition(
                 {ok, FinalEnv, success_result(UnionType)};
             _ ->
                 % Simple type definition or type alias
-                TypeDefType = convert_type_to_tuple(Definition),
+                BaseType = convert_type_to_tuple(Definition),
+
+                % Check if this is a refinement type (has a when clause)
+                TypeDefType =
+                    case Constraint of
+                        undefined ->
+                            % No constraint - regular type alias
+                            BaseType;
+                        _ ->
+                            % Has constraint - create refinement type
+                            % Use the first parameter name or default to 'x' as the refinement variable
+                            VarName =
+                                case Params of
+                                    % Default refinement variable name
+                                    [] -> x;
+                                    [FirstParam | _] when is_atom(FirstParam) -> FirstParam;
+                                    [#type_param{name = ParamName} | _] -> ParamName;
+                                    _ -> x
+                                end,
+                            cure_refinement_types:create_refinement_type(
+                                BaseType,
+                                VarName,
+                                Constraint
+                            )
+                    end,
+
                 NewEnv = cure_types:extend_env(EnvWithTypeParams, Name, TypeDefType),
                 {ok, NewEnv, success_result(TypeDefType)}
         end

@@ -867,6 +867,25 @@ unify(Type1, Type2, Subst) ->
 
 unify_impl(T, T, Subst) ->
     {ok, Subst};
+%% Handle refinement types - check subtyping via SMT
+unify_impl(Type1, Type2, Subst) when
+    is_tuple(Type1), element(1, Type1) =:= refinement_type;
+    is_tuple(Type2), element(1, Type2) =:= refinement_type
+->
+    % At least one type is a refinement type - use SMT-based subtyping
+    case cure_refinement_types:check_subtype(Type1, Type2, #{}) of
+        {ok, true} ->
+            % Subtyping holds, unification succeeds
+            {ok, Subst};
+        {ok, false} ->
+            % Try reverse direction (might be covariant)
+            case cure_refinement_types:check_subtype(Type2, Type1, #{}) of
+                {ok, true} -> {ok, Subst};
+                _ -> {error, {refinement_subtyping_failed, Type1, Type2}}
+            end;
+        {error, Reason} ->
+            {error, {refinement_check_error, Reason}}
+    end;
 %% Handle unification with undefined
 unify_impl(undefined, _Type, Subst) ->
     % undefined can unify with any type
