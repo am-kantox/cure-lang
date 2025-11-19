@@ -767,6 +767,7 @@ extract_location(#function_def{location = Loc}) -> Loc;
 extract_location(_) -> #location{line = 1, column = 1}.
 
 %% Get hover information at position
+%% Now enhanced with refinement type information
 get_hover_info(Uri, Line, Character, State) ->
     case maps:get(Uri, State#state.documents, undefined) of
         undefined ->
@@ -779,12 +780,22 @@ get_hover_info(Uri, Line, Character, State) ->
                 undefined ->
                     undefined;
                 Node ->
-                    % Try to infer type for this node
-                    case infer_node_type(Node, State) of
-                        {ok, Type} ->
-                            format_hover_info(Node, Type);
+                    % Check if node has refinement type information
+                    case try_get_refinement_type(Node, AST) of
+                        {ok, VarName, RefinementType} ->
+                            % Use enhanced hover with refinement type
+                            HoverMap = cure_lsp_diagnostics:create_hover_info(
+                                VarName, RefinementType, extract_location(Node)
+                            ),
+                            maps:get(contents, HoverMap);
                         _ ->
-                            undefined
+                            % Fall back to basic type inference
+                            case infer_node_type(Node, State) of
+                                {ok, Type} ->
+                                    format_hover_info(Node, Type);
+                                _ ->
+                                    undefined
+                            end
                     end
             end
     end.
@@ -975,10 +986,16 @@ find_node_in_type(#primitive_type{location = Loc} = Node, Line, Character) ->
         true -> Node;
         false -> undefined
     end;
-find_node_in_type(#dependent_type{params = Params, location = Loc} = Node, Line, Character) ->
+find_node_in_type(
+    #dependent_type{type_params = TypeParams, value_params = ValueParams, location = Loc} = Node,
+    Line,
+    Character
+) ->
     case location_contains(Loc, Line, Character) of
         true ->
-            case find_node_in_list(Params, Line, Character) of
+            % Check both type and value parameters
+            AllParams = TypeParams ++ ValueParams,
+            case find_node_in_list(AllParams, Line, Character) of
                 undefined -> Node;
                 ParamNode -> ParamNode
             end;
@@ -1036,8 +1053,11 @@ infer_node_type(#type_def{name = Name, params = Params}, _State) ->
     end;
 infer_node_type(#primitive_type{name = TypeName}, _State) ->
     {ok, atom_to_binary(TypeName, utf8)};
-infer_node_type(#dependent_type{name = TypeName, params = Params}, _State) ->
-    ParamStr = format_type_params(Params),
+infer_node_type(
+    #dependent_type{name = TypeName, type_params = TypeParams, value_params = ValueParams}, _State
+) ->
+    AllParams = TypeParams ++ ValueParams,
+    ParamStr = format_type_params(AllParams),
     {ok, iolist_to_binary([atom_to_binary(TypeName, utf8), "(", ParamStr, ")"])};
 infer_node_type(#binary_op_expr{op = Op, left = Left, right = Right}, State) ->
     % Binary operation - infer from operands
@@ -1099,8 +1119,9 @@ format_type(undefined) ->
     <<"_">>;
 format_type(#primitive_type{name = Name}) ->
     atom_to_binary(Name, utf8);
-format_type(#dependent_type{name = Name, params = Params}) ->
-    ParamStr = format_type_params(Params),
+format_type(#dependent_type{name = Name, type_params = TypeParams, value_params = ValueParams}) ->
+    AllParams = TypeParams ++ ValueParams,
+    ParamStr = format_type_params(AllParams),
     iolist_to_binary([atom_to_binary(Name, utf8), "(", ParamStr, ")"]);
 format_type(#function_type{params = Params, return_type = RetType}) ->
     ParamStrs = lists:map(fun format_type/1, Params),
@@ -1119,11 +1140,16 @@ format_type_params(Params) when is_list(Params) ->
 format_type_params(_) ->
     <<"...">>.
 
-format_type_param(#type_param{name = Name, value = Value}) when Name =/= undefined ->
-    ValueStr = format_type(Value),
-    iolist_to_binary([atom_to_binary(Name, utf8), ": ", ValueStr]);
-format_type_param(#type_param{value = Value}) ->
-    format_type(Value);
+format_type_param(#type_param{name = Name, type = Type}) when
+    Name =/= undefined, Type =/= undefined
+->
+    TypeStr = format_type(Type),
+    iolist_to_binary([atom_to_binary(Name, utf8), ": ", TypeStr]);
+format_type_param(#type_param{name = Name}) when Name =/= undefined ->
+    atom_to_binary(Name, utf8);
+format_type_param(#value_param{name = Name, type = Type}) when Name =/= undefined ->
+    TypeStr = format_type(Type),
+    iolist_to_binary([atom_to_binary(Name, utf8), ": ", TypeStr]);
 format_type_param(Atom) when is_atom(Atom) ->
     atom_to_binary(Atom, utf8);
 format_type_param(_) ->
@@ -1135,6 +1161,109 @@ format_hover_info(Node, Type) ->
         <<"kind">> => <<"markdown">>,
         <<"value">> => iolist_to_binary(["Type: `", Type, "`"])
     }.
+
+%% Try to extract refinement type information for a node
+try_get_refinement_type(#identifier_expr{name = VarName}, AST) ->
+    % Search for variable definition with refinement type in AST
+    case find_refinement_type_for_var(VarName, AST) of
+        {ok, RefinementType} -> {ok, VarName, RefinementType};
+        _ -> undefined
+    end;
+try_get_refinement_type(
+    #type_def{name = TypeName, definition = Def, constraint = Constraint}, _AST
+) ->
+    % Type definition with constraint
+    case Constraint of
+        undefined -> undefined;
+        _ -> {ok, TypeName, {refined_type, Def, Constraint}}
+    end;
+try_get_refinement_type(_Node, _AST) ->
+    undefined.
+
+%% Find refinement type for a variable in the AST
+find_refinement_type_for_var(VarName, AST) when is_list(AST) ->
+    lists:foldl(
+        fun(Item, Acc) ->
+            case Acc of
+                % Already found
+                {ok, _} -> Acc;
+                _ -> find_refinement_type_for_var(VarName, Item)
+            end
+        end,
+        undefined,
+        AST
+    );
+find_refinement_type_for_var(VarName, #module_def{items = Items}) ->
+    find_refinement_type_for_var(VarName, Items);
+find_refinement_type_for_var(VarName, #function_def{params = Params, body = Body}) ->
+    % Check if variable is a parameter with refinement type
+    case find_refined_param(VarName, Params) of
+        {ok, RefinementType} -> {ok, RefinementType};
+        _ -> find_refinement_type_in_expr(VarName, Body)
+    end;
+find_refinement_type_for_var(VarName, #type_def{
+    name = Name, definition = Def, constraint = Constraint
+}) ->
+    case Name =:= VarName andalso Constraint =/= undefined of
+        true -> {ok, {refined_type, Def, Constraint}};
+        false -> undefined
+    end;
+find_refinement_type_for_var(_VarName, _) ->
+    undefined.
+
+%% Find refined parameter
+%% Note: param record doesn't have constraint field - would need enhancement
+find_refined_param(_VarName, undefined) ->
+    undefined;
+find_refined_param(_VarName, []) ->
+    undefined;
+find_refined_param(VarName, [#param{name = Name, type = Type} | Rest]) ->
+    % Check if the type itself is a refinement type
+    case is_refinement_type(Type) andalso Name =:= VarName of
+        true -> {ok, Type};
+        false -> find_refined_param(VarName, Rest)
+    end;
+find_refined_param(VarName, [_ | Rest]) ->
+    find_refined_param(VarName, Rest).
+
+%% Check if a type is a refinement type
+is_refinement_type({refined_type, _, _}) -> true;
+is_refinement_type(_) -> false.
+
+%% Find refinement type in expression
+find_refinement_type_in_expr(_VarName, undefined) ->
+    undefined;
+find_refinement_type_in_expr(VarName, #let_expr{bindings = Bindings, body = Body}) ->
+    case find_refined_binding(VarName, Bindings) of
+        {ok, RefinementType} -> {ok, RefinementType};
+        _ -> find_refinement_type_in_expr(VarName, Body)
+    end;
+find_refinement_type_in_expr(VarName, #match_expr{expr = Expr}) ->
+    find_refinement_type_in_expr(VarName, Expr);
+find_refinement_type_in_expr(_VarName, _) ->
+    undefined.
+
+%% Find refined binding
+%% Note: binding record has pattern/value/location, not name/type/constraint
+find_refined_binding(_VarName, undefined) ->
+    undefined;
+find_refined_binding(_VarName, []) ->
+    undefined;
+find_refined_binding(VarName, [#binding{pattern = Pattern, value = _Value} | Rest]) ->
+    % Check if pattern matches VarName and extract type if refinement
+    case extract_var_from_pattern(Pattern, VarName) of
+        {ok, Type} when Type =/= undefined -> {ok, Type};
+        _ -> find_refined_binding(VarName, Rest)
+    end;
+find_refined_binding(VarName, [_ | Rest]) ->
+    find_refined_binding(VarName, Rest).
+
+%% Extract variable from pattern if it matches
+extract_var_from_pattern(#identifier_pattern{name = Name}, VarName) when Name =:= VarName ->
+    % Found but no type info in pattern
+    {ok, undefined};
+extract_var_from_pattern(_, _) ->
+    undefined.
 
 %% Default server capabilities
 default_capabilities() ->

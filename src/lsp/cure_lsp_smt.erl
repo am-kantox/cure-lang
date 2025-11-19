@@ -335,46 +335,39 @@ verify_constraint(_) ->
     ok.
 
 %% Convert constraint error to diagnostic
-constraint_error_to_diagnostic({refinement_constraint, Name, _Constraint, Loc}, Reason) ->
-    {Line, Col} =
-        case Loc of
-            #location{line = L, column = C} -> {L, C};
-            _ -> {1, 1}
-        end,
+%% Now uses cure_lsp_diagnostics for enhanced formatting
+constraint_error_to_diagnostic({refinement_constraint, Name, Constraint, Loc}, Reason) ->
+    % Use enhanced diagnostics with SMT counterexamples
+    SmtResult = extract_smt_result_from_reason(Reason),
+    EnhancedDiag = cure_lsp_diagnostics:create_refinement_diagnostic(
+        Name, Constraint, Loc, SmtResult
+    ),
 
-    Message = iolist_to_binary([
-        <<"Refinement type constraint violated for ">>,
-        atom_to_binary(Name, utf8),
-        <<": ">>,
-        format_constraint_error(Reason)
-    ]),
-
+    % Convert to internal format (keeping backward compatibility)
     #{
         severity => warning,
-        message => Message,
+        message => maps:get(message, EnhancedDiag),
         location => Loc,
-        hint => <<"Consider relaxing the constraint or adding runtime checks">>
+        hint => <<"Consider relaxing the constraint or adding runtime checks">>,
+        % Include full LSP diagnostic
+        lsp_diagnostic => EnhancedDiag
     };
-constraint_error_to_diagnostic({function_constraint, _Constraint, Loc}, Reason) ->
-    {Line, Col} =
-        case Loc of
-            #location{line = L, column = C} -> {L, C};
-            _ -> {1, 1}
-        end,
-
-    Message = iolist_to_binary([
-        <<"Function constraint violated: ">>,
-        format_constraint_error(Reason)
-    ]),
+constraint_error_to_diagnostic({function_constraint, Constraint, Loc}, Reason) ->
+    % Function constraints use similar enhanced format
+    SmtResult = extract_smt_result_from_reason(Reason),
+    EnhancedDiag = cure_lsp_diagnostics:create_refinement_diagnostic(
+        function, Constraint, Loc, SmtResult
+    ),
 
     #{
         severity => warning,
-        message => Message,
+        message => maps:get(message, EnhancedDiag),
         location => Loc,
-        hint => <<"Add a guard clause to ensure the constraint holds">>
+        hint => <<"Add a guard clause to ensure the constraint holds">>,
+        lsp_diagnostic => EnhancedDiag
     }.
 
-%% Format constraint error
+%% Format constraint error (legacy - now delegated to cure_lsp_diagnostics)
 format_constraint_error(constraint_violated) ->
     <<"SMT solver proved constraint cannot be satisfied">>;
 format_constraint_error(Reason) when is_binary(Reason) ->
@@ -383,6 +376,17 @@ format_constraint_error(Reason) when is_atom(Reason) ->
     atom_to_binary(Reason, utf8);
 format_constraint_error(Reason) ->
     iolist_to_binary(io_lib:format("~p", [Reason])).
+
+%% Extract SMT result from error reason for counterexample generation
+extract_smt_result_from_reason({constraint_violated, Model}) when is_map(Model) ->
+    % Constraint violated with counterexample model
+    {unsat, Model};
+extract_smt_result_from_reason(constraint_violated) ->
+    % Constraint violated but no model
+    {unsat, #{}};
+extract_smt_result_from_reason(_Reason) ->
+    % No SMT result available
+    undefined.
 
 %% Lookup cached verification result
 lookup_cached_verification(Uri, AST, State) ->
