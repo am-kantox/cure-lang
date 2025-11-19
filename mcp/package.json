@@ -1,0 +1,29 @@
+{
+  "name": "cure-mcp-server",
+  "version": "0.1.0",
+  "description": "Model Context Protocol server for the Cure programming language",
+  "bin": {
+    "cure-mcp": "./cure-mcp-server.sh"
+  },
+  "keywords": [
+    "cure",
+    "mcp",
+    "model-context-protocol",
+    "language-server",
+    "ai-tools",
+    "beam",
+    "erlang"
+  ],
+  "author": "Cure Language Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/am-kantox/cure-lang"
+  },
+  "scripts": {
+    "start": "./cure-mcp-server.sh"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
