@@ -173,6 +173,8 @@ handle_lsp_message(#{<<"method">> := <<"textDocument/hover">>} = Msg, State) ->
     handle_hover(Msg, State);
 handle_lsp_message(#{<<"method">> := <<"textDocument/completion">>} = Msg, State) ->
     handle_completion(Msg, State);
+handle_lsp_message(#{<<"method">> := <<"textDocument/codeAction">>} = Msg, State) ->
+    handle_code_action(Msg, State);
 handle_lsp_message(#{<<"method">> := <<"shutdown">>}, State) ->
     {reply, null, State};
 handle_lsp_message(#{<<"method">> := <<"exit">>}, State) ->
@@ -260,6 +262,23 @@ handle_completion(#{<<"params">> := Params}, State) ->
     Response = #{<<"items">> => Items},
     {reply, Response, State}.
 
+%% Code actions (quick fixes)
+handle_code_action(#{<<"params">> := Params}, State) ->
+    #{<<"textDocument">> := TextDoc, <<"range">> := Range} = Params,
+    Uri = maps:get(<<"uri">>, TextDoc),
+    Context = maps:get(<<"context">>, Params, #{}),
+    Diagnostics = maps:get(<<"diagnostics">>, Context, []),
+
+    % Get code actions for diagnostics at range
+    Actions = get_code_actions(Uri, Range, Diagnostics, State),
+
+    Response =
+        case Actions of
+            [] -> null;
+            _ -> Actions
+        end,
+    {reply, Response, State}.
+
 %% Get completion items at position
 get_completion_items(Uri, _Line, _Character, State) ->
     case maps:get(Uri, State#state.documents, undefined) of
@@ -270,6 +289,23 @@ get_completion_items(Uri, _Line, _Character, State) ->
         #document{ast = AST} ->
             % Collect completions from AST
             collect_completions(AST)
+    end.
+
+%% Get code actions for diagnostics
+get_code_actions(Uri, _Range, Diagnostics, State) ->
+    case maps:get(Uri, State#state.documents, undefined) of
+        undefined ->
+            [];
+        #document{ast = undefined} ->
+            [];
+        #document{ast = AST} ->
+            % Generate code actions for each diagnostic
+            lists:flatmap(
+                fun(Diagnostic) ->
+                    cure_lsp_code_actions:generate_code_actions(Uri, Diagnostic, AST)
+                end,
+                Diagnostics
+            )
     end.
 
 %% Collect completion items from AST
@@ -1281,5 +1317,6 @@ default_capabilities() ->
         <<"diagnosticProvider">> => #{
             <<"interFileDependencies">> => false,
             <<"workspaceDiagnostics">> => false
-        }
+        },
+        <<"codeActionProvider">> => true
     }.
