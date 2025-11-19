@@ -70,7 +70,7 @@ kind_inference_fully_applied_list_test() ->
 
     % List(Int) :: *
     {ok, AppliedKind} = cure_types:infer_kind(
-        {dependent_type, 'List', [#type_param{value = {primitive_type, 'Int'}}]},
+        {dependent_type, 'List', [#type_param{type = {primitive_type, 'Int'}}]},
         EnvWithList
     ),
     ?assertEqual({kind, star, [], star, 0, undefined}, AppliedKind).
@@ -131,11 +131,11 @@ typeclass_functor_kind_test() ->
                     #param{name = f, type = {function_type, ['A'], 'B'}, location = undefined},
                     #param{
                         name = fa,
-                        type = {dependent_type, 'F', [#type_param{value = {primitive_type, 'A'}}]},
+                        type = {dependent_type, 'F', [#type_param{type = {primitive_type, 'A'}}]},
                         location = undefined
                     }
                 ],
-                return_type = {dependent_type, 'F', [#type_param{value = {primitive_type, 'B'}}]},
+                return_type = {dependent_type, 'F', [#type_param{type = {primitive_type, 'B'}}]},
                 location = undefined
             }
         ],
@@ -161,7 +161,7 @@ typeclass_monad_kind_test() ->
             #method_signature{
                 name = return,
                 params = [#param{name = a, type = 'A', location = undefined}],
-                return_type = {dependent_type, 'M', [#type_param{value = {primitive_type, 'A'}}]},
+                return_type = {dependent_type, 'M', [#type_param{type = {primitive_type, 'A'}}]},
                 location = undefined
             },
             #method_signature{
@@ -169,18 +169,18 @@ typeclass_monad_kind_test() ->
                 params = [
                     #param{
                         name = ma,
-                        type = {dependent_type, 'M', [#type_param{value = {primitive_type, 'A'}}]},
+                        type = {dependent_type, 'M', [#type_param{type = {primitive_type, 'A'}}]},
                         location = undefined
                     },
                     #param{
                         name = f,
                         type =
                             {function_type, ['A'],
-                                {dependent_type, 'M', [#type_param{value = {primitive_type, 'B'}}]}},
+                                {dependent_type, 'M', [#type_param{type = {primitive_type, 'B'}}]}},
                         location = undefined
                     }
                 ],
-                return_type = {dependent_type, 'M', [#type_param{value = {primitive_type, 'B'}}]},
+                return_type = {dependent_type, 'M', [#type_param{type = {primitive_type, 'B'}}]},
                 location = undefined
             }
         ],
@@ -391,11 +391,11 @@ full_functor_list_integration_test() ->
                     #param{name = f, type = {function_type, ['A'], 'B'}, location = undefined},
                     #param{
                         name = fa,
-                        type = {dependent_type, 'F', [#type_param{value = {primitive_type, 'A'}}]},
+                        type = {dependent_type, 'F', [#type_param{type = {primitive_type, 'A'}}]},
                         location = undefined
                     }
                 ],
-                return_type = {dependent_type, 'F', [#type_param{value = {primitive_type, 'B'}}]},
+                return_type = {dependent_type, 'F', [#type_param{type = {primitive_type, 'B'}}]},
                 location = undefined
             }
         ],

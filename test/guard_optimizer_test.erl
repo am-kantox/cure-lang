@@ -329,7 +329,7 @@ make_identifier(Name) ->
 
 make_literal(Value) ->
     #literal_expr{
-        value = Value,
+        type = Value,
         location = #location{}
     }.
 

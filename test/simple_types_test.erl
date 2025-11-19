@@ -24,7 +24,7 @@ run() ->
 
     % Test basic literal type inference
     IntLiteral = #literal_expr{
-        value = 42, location = #location{line = 1, column = 1, file = undefined}
+        type = 42, location = #location{line = 1, column = 1, file = undefined}
     },
 
     try

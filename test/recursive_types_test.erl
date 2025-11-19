@@ -76,14 +76,14 @@ test_recursive_type_creation() ->
         {union_type, [
             {primitive_type, 'Nil'},
             {cons_type, [
-                #type_param{name = elem_type, value = #type_var{id = 't'}},
+                #type_param{name = elem_type, type = #type_var{id = 't'}},
                 {recursive_type_ref, 'List'}
             ]}
         ]},
 
     case
         cure_types:create_recursive_type(
-            'List', [#type_param{name = elem_type, value = #type_var{id = 't'}}], ListDef, {1, 1}
+            'List', [#type_param{name = elem_type, type = #type_var{id = 't'}}], ListDef, {1, 1}
         )
     of
         RecType when is_record(RecType, recursive_type) ->
@@ -102,7 +102,7 @@ test_tree_recursive_type() ->
         {union_type, [
             {primitive_type, 'Leaf'},
             {node_type, [
-                #type_param{name = value, value = #type_var{id = 't'}},
+                #type_param{name = value, type = #type_var{id = 't'}},
                 {recursive_type_ref, 'Tree'},
                 {recursive_type_ref, 'Tree'}
             ]}
@@ -110,7 +110,7 @@ test_tree_recursive_type() ->
 
     case
         cure_types:create_recursive_type(
-            'Tree', [#type_param{name = value, value = #type_var{id = 't'}}], TreeDef, {2, 1}
+            'Tree', [#type_param{name = value, type = #type_var{id = 't'}}], TreeDef, {2, 1}
         )
     of
         RecType when is_record(RecType, recursive_type) ->
@@ -162,7 +162,7 @@ test_type_unfolding() ->
 
     RecType = #recursive_type{
         name = 'List',
-        params = [#type_param{name = elem_type, value = #type_var{id = 't'}}],
+        params = [#type_param{name = elem_type, type = #type_var{id = 't'}}],
         definition = ListDef,
         binding_context = #{},
         location = {5, 1}
@@ -352,7 +352,7 @@ test_recursive_unification() ->
     % Test unifying identical recursive types
     ListType1 = #recursive_type{
         name = 'List',
-        params = [#type_param{name = elem, value = #type_var{id = 't1'}}],
+        params = [#type_param{name = elem, type = #type_var{id = 't1'}}],
         definition = {cons_type, [#type_var{id = 't1'}, {recursive_type_ref, 'List'}]},
         binding_context = #{},
         location = {12, 1}
@@ -360,7 +360,7 @@ test_recursive_unification() ->
 
     ListType2 = #recursive_type{
         name = 'List',
-        params = [#type_param{name = elem, value = #type_var{id = 't2'}}],
+        params = [#type_param{name = elem, type = #type_var{id = 't2'}}],
         definition = {cons_type, [#type_var{id = 't2'}, {recursive_type_ref, 'List'}]},
         binding_context = #{},
         location = {12, 5}
@@ -476,7 +476,7 @@ contains_recursive_ref_in_type_impl({list_type, ElemType, LenExpr}) ->
     contains_recursive_ref_in_type_impl(ElemType) orelse
         (LenExpr =/= undefined andalso contains_recursive_ref_in_type_impl(LenExpr));
 contains_recursive_ref_in_type_impl({dependent_type, _, Params}) ->
-    lists:any(fun(#type_param{value = V}) -> contains_recursive_ref_in_type_impl(V) end, Params);
+    lists:any(fun(#type_param{type = V}) -> contains_recursive_ref_in_type_impl(V) end, Params);
 contains_recursive_ref_in_type_impl({union_type, Variants}) ->
     lists:any(fun contains_recursive_ref_in_type_impl/1, Variants);
 contains_recursive_ref_in_type_impl({cons_type, Elements}) ->

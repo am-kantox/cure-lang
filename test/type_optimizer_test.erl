@@ -442,10 +442,10 @@ create_sample_ast_with_calls() ->
                 },
                 args = [
                     #literal_expr{
-                        value = 10, location = #location{line = 2, column = 5, file = "test"}
+                        type = 10, location = #location{line = 2, column = 5, file = "test"}
                     },
                     #literal_expr{
-                        value = 20, location = #location{line = 2, column = 8, file = "test"}
+                        type = 20, location = #location{line = 2, column = 8, file = "test"}
                     }
                 ],
                 location = #location{line = 2, column = 1, file = "test"}
@@ -506,7 +506,7 @@ create_sample_ast_with_types() ->
             return_type = {primitive_type, 'String'},
             constraint = undefined,
             body = #literal_expr{
-                value = <<"result">>, location = #location{line = 2, column = 1, file = "test"}
+                type = <<"result">>, location = #location{line = 2, column = 1, file = "test"}
             },
             location = #location{line = 1, column = 1, file = "test"}
         }
@@ -521,7 +521,7 @@ create_sample_ast_with_many_calls() ->
             },
             args = [
                 #literal_expr{
-                    value = I, location = #location{line = 2, column = I + 5, file = "test"}
+                    type = I, location = #location{line = 2, column = I + 5, file = "test"}
                 }
             ],
             location = #location{line = 2, column = I, file = "test"}
@@ -566,7 +566,7 @@ create_sample_ast_with_unused_functions() ->
             return_type = {primitive_type, 'Int'},
             constraint = undefined,
             body = #literal_expr{
-                value = 42, location = #location{line = 2, column = 1, file = "test"}
+                type = 42, location = #location{line = 2, column = 1, file = "test"}
             },
             location = #location{line = 1, column = 1, file = "test"}
         },
@@ -576,7 +576,7 @@ create_sample_ast_with_unused_functions() ->
             return_type = {primitive_type, 'Int'},
             constraint = undefined,
             body = #literal_expr{
-                value = 1, location = #location{line = 5, column = 1, file = "test"}
+                type = 1, location = #location{line = 5, column = 1, file = "test"}
             },
             location = #location{line = 4, column = 1, file = "test"}
         },
@@ -586,7 +586,7 @@ create_sample_ast_with_unused_functions() ->
             return_type = {primitive_type, 'Int'},
             constraint = undefined,
             body = #literal_expr{
-                value = 2, location = #location{line = 8, column = 1, file = "test"}
+                type = 2, location = #location{line = 8, column = 1, file = "test"}
             },
             location = #location{line = 7, column = 1, file = "test"}
         }
@@ -609,7 +609,7 @@ create_sample_ast_with_polymorphic_calls() ->
                         },
                         args = [
                             #literal_expr{
-                                value = 10,
+                                type = 10,
                                 location = #location{line = 2, column = 17, file = "test"}
                             }
                         ],
@@ -622,7 +622,7 @@ create_sample_ast_with_polymorphic_calls() ->
                         },
                         args = [
                             #literal_expr{
-                                value = 3.14,
+                                type = 3.14,
                                 location = #location{line = 3, column = 17, file = "test"}
                             }
                         ],
@@ -635,7 +635,7 @@ create_sample_ast_with_polymorphic_calls() ->
                         },
                         args = [
                             #literal_expr{
-                                value = <<"string">>,
+                                type = <<"string">>,
                                 location = #location{line = 4, column = 17, file = "test"}
                             }
                         ],
@@ -648,7 +648,7 @@ create_sample_ast_with_polymorphic_calls() ->
                         },
                         args = [
                             #literal_expr{
-                                value = 42,
+                                type = 42,
                                 location = #location{line = 5, column = 17, file = "test"}
                             }
                         ],
@@ -661,7 +661,7 @@ create_sample_ast_with_polymorphic_calls() ->
                         },
                         args = [
                             #literal_expr{
-                                value = 2.71,
+                                type = 2.71,
                                 location = #location{line = 6, column = 17, file = "test"}
                             }
                         ],
@@ -674,7 +674,7 @@ create_sample_ast_with_polymorphic_calls() ->
                         },
                         args = [
                             #literal_expr{
-                                value = 100,
+                                type = 100,
                                 location = #location{line = 7, column = 17, file = "test"}
                             }
                         ],
@@ -841,7 +841,7 @@ create_sample_ast_with_inlining_candidates() ->
                             name = c, location = #location{line = 9, column = 1, file = "test"}
                         },
                         right = #literal_expr{
-                            value = 2, location = #location{line = 9, column = 3, file = "test"}
+                            type = 2, location = #location{line = 9, column = 3, file = "test"}
                         },
                         location = #location{line = 9, column = 2, file = "test"}
                     },
@@ -875,11 +875,11 @@ create_sample_ast_with_inlining_candidates() ->
                         },
                         args = [
                             #literal_expr{
-                                value = 1,
+                                type = 1,
                                 location = #location{line = 13, column = 11, file = "test"}
                             },
                             #literal_expr{
-                                value = 2,
+                                type = 2,
                                 location = #location{line = 13, column = 14, file = "test"}
                             }
                         ],
@@ -892,7 +892,7 @@ create_sample_ast_with_inlining_candidates() ->
                         },
                         args = [
                             #literal_expr{
-                                value = 5,
+                                type = 5,
                                 location = #location{line = 14, column = 13, file = "test"}
                             }
                         ],
@@ -967,7 +967,7 @@ create_sample_ast_with_dead_code() ->
                     name = x, location = #location{line = 2, column = 1, file = "test"}
                 },
                 right = #literal_expr{
-                    value = 10, location = #location{line = 2, column = 3, file = "test"}
+                    type = 10, location = #location{line = 2, column = 3, file = "test"}
                 },
                 location = #location{line = 2, column = 2, file = "test"}
             },
@@ -991,7 +991,7 @@ create_sample_ast_with_dead_code() ->
                     name = y, location = #location{line = 5, column = 1, file = "test"}
                 },
                 right = #literal_expr{
-                    value = 2.0, location = #location{line = 5, column = 3, file = "test"}
+                    type = 2.0, location = #location{line = 5, column = 3, file = "test"}
                 },
                 location = #location{line = 5, column = 2, file = "test"}
             },
@@ -1004,7 +1004,7 @@ create_sample_ast_with_dead_code() ->
             return_type = {primitive_type, 'Bool'},
             constraint = undefined,
             body = #literal_expr{
-                value = false, location = #location{line = 8, column = 1, file = "test"}
+                type = false, location = #location{line = 8, column = 1, file = "test"}
             },
             location = #location{line = 7, column = 1, file = "test"}
         },
@@ -1021,7 +1021,7 @@ create_sample_ast_with_dead_code() ->
                 },
                 args = [
                     #literal_expr{
-                        value = 5, location = #location{line = 10, column = 16, file = "test"}
+                        type = 5, location = #location{line = 10, column = 16, file = "test"}
                     }
                 ],
                 location = #location{line = 10, column = 1, file = "test"}

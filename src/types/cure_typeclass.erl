@@ -525,9 +525,13 @@ check_single_constraint(#typeclass_constraint{typeclass = TC, type_args = Args},
     end.
 
 %% Check if a type is concrete (no type variables)
-is_concrete_type(#primitive_type{}) -> true;
-is_concrete_type(#dependent_type{params = Params}) -> lists:all(fun is_concrete_type/1, Params);
-is_concrete_type(_) -> false.
+is_concrete_type(#primitive_type{}) ->
+    true;
+is_concrete_type(#dependent_type{type_params = TypeParams, value_params = ValueParams}) ->
+    AllParams = TypeParams ++ ValueParams,
+    lists:all(fun is_concrete_type/1, AllParams);
+is_concrete_type(_) ->
+    false.
 
 %% Categorize constraint check results
 categorize_constraint_results(Results, Constraints) ->
@@ -667,7 +671,8 @@ constraint_key(#typeclass_constraint{typeclass = Name, type_args = TypeArgs}) ->
 %% Convert type to a key for comparison
 type_to_key(#primitive_type{name = Name}) ->
     {primitive, Name};
-type_to_key(#dependent_type{name = Name, params = Params}) ->
-    {dependent, Name, [type_to_key(P) || P <- Params]};
+type_to_key(#dependent_type{name = Name, type_params = TypeParams, value_params = ValueParams}) ->
+    AllParams = TypeParams ++ ValueParams,
+    {dependent, Name, [type_to_key(P) || P <- AllParams]};
 type_to_key(Type) ->
     Type.

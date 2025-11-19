@@ -637,7 +637,7 @@ occurs_check_impl(Id, {dependent_type, _, Params}) ->
     lists:any(
         fun(Param) ->
             case Param of
-                #type_param{value = V} -> occurs_check_impl(Id, V);
+                #type_param{type = V} -> occurs_check_impl(Id, V);
                 _ -> occurs_check_impl(Id, Param)
             end
         end,
@@ -894,9 +894,9 @@ unify_impl(_Type, undefined, Subst) ->
     % any type can unify with undefined
     {ok, Subst};
 %% Handle #type_param{} records - extract value and unify
-unify_impl(#type_param{value = Value}, Type, Subst) ->
+unify_impl(#type_param{type = Value}, Type, Subst) ->
     unify_impl(Value, Type, Subst);
-unify_impl(Type, #type_param{value = Value}, Subst) ->
+unify_impl(Type, #type_param{type = Value}, Subst) ->
     unify_impl(Type, Value, Subst);
 %% Handle {type_param, _, Value} tuple format - extract value and unify
 unify_impl({type_param, _, Value}, Type, Subst) ->
@@ -1564,8 +1564,8 @@ unify_lengths_strict_impl(Len1, Len2, LocalSubst, EnhancedSubst) ->
 unify_type_params([], [], Subst) ->
     {ok, Subst};
 unify_type_params(
-    [#type_param{value = V1} | T1],
-    [#type_param{value = V2} | T2],
+    [#type_param{type = V1} | T1],
+    [#type_param{type = V2} | T2],
     Subst
 ) ->
     case unify_impl(V1, V2, Subst) of
@@ -1650,16 +1650,16 @@ unify_length_expressions(Expr1, Expr2, Subst) ->
 %% Helper functions for dependent type parameter extraction
 extract_list_params([]) ->
     {error, missing_params};
-extract_list_params([#type_param{name = elem_type, value = ElemType}]) ->
+extract_list_params([#type_param{name = elem_type, type = ElemType}]) ->
     {ok, ElemType, undefined};
 extract_list_params([
-    #type_param{name = elem_type, value = ElemType},
-    #type_param{name = length, value = Length}
+    #type_param{name = elem_type, type = ElemType},
+    #type_param{name = length, type = Length}
 ]) ->
     {ok, ElemType, Length};
 extract_list_params([
-    #type_param{name = length, value = Length},
-    #type_param{name = elem_type, value = ElemType}
+    #type_param{name = length, type = Length},
+    #type_param{name = elem_type, type = ElemType}
 ]) ->
     {ok, ElemType, Length};
 extract_list_params([Param1, Param2]) ->
@@ -1676,16 +1676,16 @@ extract_list_params(_) ->
 
 extract_vector_params([]) ->
     {error, missing_params};
-extract_vector_params([#type_param{name = elem_type, value = ElemType}]) ->
+extract_vector_params([#type_param{name = elem_type, type = ElemType}]) ->
     {ok, ElemType, undefined};
 extract_vector_params([
-    #type_param{name = elem_type, value = ElemType},
-    #type_param{name = length, value = Length}
+    #type_param{name = elem_type, type = ElemType},
+    #type_param{name = length, type = Length}
 ]) ->
     {ok, ElemType, Length};
 extract_vector_params([
-    #type_param{name = length, value = Length},
-    #type_param{name = elem_type, value = ElemType}
+    #type_param{name = length, type = Length},
+    #type_param{name = elem_type, type = ElemType}
 ]) ->
     {ok, ElemType, Length};
 extract_vector_params([Param1, Param2]) ->
@@ -1737,16 +1737,16 @@ extract_param_info(Param1, Param2) ->
     end.
 
 %% Get parameter name and value from AST record format (covers both record and tuple formats)
-get_tuple_param_info(#type_param{name = Name, value = Value}) ->
+get_tuple_param_info(#type_param{name = Name, type = Value}) ->
     {Name, Value};
 get_tuple_param_info(_Other) ->
     {unknown, undefined}.
 
 %% Safe parameter value extraction for AST record format
-safe_extract_param_value(#type_param{value = undefined}) ->
+safe_extract_param_value(#type_param{type = undefined}) ->
     % Create a fresh type variable for undefined values
     new_type_var();
-safe_extract_param_value(#type_param{value = Value}) ->
+safe_extract_param_value(#type_param{type = Value}) ->
     Value;
 safe_extract_param_value(Value) ->
     % Handle cases where it's not a type_param record
@@ -1797,8 +1797,8 @@ apply_substitution(Type, _Subst) ->
 apply_substitution_to_param(Param, Subst) ->
     case Param of
         % Type parameter record
-        #type_param{name = Name, value = Value} ->
-            #type_param{name = Name, value = apply_substitution_to_param(Value, Subst)};
+        #type_param{name = Name, type = Value} ->
+            #type_param{name = Name, type = apply_substitution_to_param(Value, Subst)};
         % Type expressions
         {primitive_type, _} ->
             apply_substitution(Param, Subst);
@@ -2739,11 +2739,11 @@ instantiate_expression_with_map(Expr, _Map) ->
     Expr.
 
 %% Update the value in a type parameter
-update_param_value(#type_param{name = _Name, value = _OldValue} = Param, NewValue) ->
-    Param#type_param{value = NewValue};
+update_param_value(#type_param{name = _Name, type = _OldValue} = Param, NewValue) ->
+    Param#type_param{type = NewValue};
 update_param_value(_Param, NewValue) ->
     % Fallback - create new param structure
-    #type_param{name = undefined, value = NewValue}.
+    #type_param{name = undefined, type = NewValue}.
 
 %% Check if a type is a nullary constructor (value type, not function type)
 is_constructor_type({function_type, _, _}) ->
@@ -2987,10 +2987,15 @@ apply_poly_substitution(Type, _Subst) ->
     Type.
 
 %% Apply substitution to type parameter
-apply_poly_subst_to_param(#type_param{name = Name, value = Value, location = Loc}, Subst) ->
+apply_poly_subst_to_param(
+    #type_param{name = Name, kind = Kind, type = Type, constraint = Constraint, location = Loc},
+    Subst
+) ->
     #type_param{
         name = Name,
-        value = apply_poly_substitution(Value, Subst),
+        kind = Kind,
+        type = apply_poly_substitution(Type, Subst),
+        constraint = Constraint,
         location = Loc
     };
 apply_poly_subst_to_param(Param, _Subst) ->
@@ -3745,7 +3750,7 @@ infer_list_pattern_elements([], Tail, MatchType, Env, Constraints) ->
                 % Create new dependent type for tail with reduced length
                 NewLengthVar = create_derived_length_var(LengthParam, "tail"),
                 {dependent_type, 'List', [
-                    TypeParam, #type_param{value = {identifier_expr, NewLengthVar, undefined}}
+                    TypeParam, #type_param{type = {identifier_expr, NewLengthVar, undefined}}
                 ]};
             _ ->
                 {list_type, new_type_var(), undefined}
@@ -3915,13 +3920,13 @@ solve_constraint(#type_constraint{left = Left, op = '=', right = Right}, Subst) 
     % Extract values from #type_param{} records if present (both record and tuple format)
     LeftExtracted =
         case Left of
-            #type_param{value = V} -> V;
+            #type_param{type = V} -> V;
             {type_param, _, V} -> V;
             _ -> Left
         end,
     RightExtracted =
         case Right of
-            #type_param{value = V2} -> V2;
+            #type_param{type = V2} -> V2;
             {type_param, _, V2} -> V2;
             _ -> Right
         end,
@@ -4122,18 +4127,18 @@ type_to_string(Type) ->
     io_lib:format("~p", [Type]).
 
 %% Helper functions for dependent type pattern matching
-extract_length_var(#type_param{value = {identifier_expr, VarName, _}}) ->
+extract_length_var(#type_param{type = {identifier_expr, VarName, _}}) ->
     VarName;
 extract_length_var(_) ->
     unknown_length.
 
-extract_type_param_value(#type_param{value = Value}) ->
+extract_type_param_value(#type_param{type = Value}) ->
     Value;
 % Fallback for other formats
 extract_type_param_value(Value) ->
     Value.
 
-create_derived_length_var(#type_param{value = {identifier_expr, BaseVar, _}}, Suffix) ->
+create_derived_length_var(#type_param{type = {identifier_expr, BaseVar, _}}, Suffix) ->
     list_to_atom(atom_to_list(BaseVar) ++ "_" ++ Suffix);
 create_derived_length_var(_, Suffix) ->
     list_to_atom("derived_" ++ Suffix).
@@ -4171,7 +4176,7 @@ is_well_formed_type({type_var, {id, Id}}) when is_integer(Id) ->
 is_well_formed_type(_) ->
     false.
 
-is_well_formed_type_param(#type_param{value = Value}) ->
+is_well_formed_type_param(#type_param{type = Value}) ->
     is_well_formed_type(Value) orelse is_well_formed_expr(Value) orelse is_type_var(Value);
 is_well_formed_type_param(_) ->
     false.
@@ -4223,8 +4228,8 @@ enhance_with_dependent_info({list_type, ElemType, LenExpr}, {list_expr, Elements
             % Convert to dependent List type
             {ok,
                 {dependent_type, 'List', [
-                    #type_param{name = elem_type, value = ElemType},
-                    #type_param{name = length, value = {literal_expr, ActualLength, undefined}}
+                    #type_param{name = elem_type, type = ElemType},
+                    #type_param{name = length, type = {literal_expr, ActualLength, undefined}}
                 ]}};
         _ ->
             {ok, {list_type, ElemType, {literal_expr, ActualLength, undefined}}}
@@ -4510,7 +4515,7 @@ check_dependent_occurs(#type_var{id = Id}, {dependent_type, _Name, Params}) ->
     lists:any(
         fun(Param) ->
             case Param of
-                #type_param{value = Value} ->
+                #type_param{type = Value} ->
                     occurs_check_impl(Id, Value) orelse
                         case Value of
                             % Direct match
@@ -4850,9 +4855,9 @@ test_bounds_compatibility(Predicate, Min, Max) when is_function(Predicate, 1) ->
         _:_ -> false
     end.
 
-extract_integer_param(#type_param{value = {literal_expr, N, _}}) when is_integer(N) ->
+extract_integer_param(#type_param{type = {literal_expr, N, _}}) when is_integer(N) ->
     {ok, N};
-extract_integer_param(#type_param{value = N}) when is_integer(N) ->
+extract_integer_param(#type_param{type = N}) when is_integer(N) ->
     {ok, N};
 extract_integer_param(_) ->
     {error, not_integer}.
@@ -5331,8 +5336,8 @@ generate_list_alternatives(Elements, {list_type, ElemType, _}, Env) ->
             Length = length(Elements),
             VectorType =
                 {dependent_type, 'Vector', [
-                    #type_param{name = elem_type, value = NumericType},
-                    #type_param{name = length, value = {literal_expr, Length, undefined}}
+                    #type_param{name = elem_type, type = NumericType},
+                    #type_param{name = length, type = {literal_expr, Length, undefined}}
                 ]},
             [VectorType];
         _ ->
@@ -5587,7 +5592,7 @@ extract_type_vars({function_type, Params, Return}) ->
     ReturnVars = extract_type_vars(Return),
     ParamVars ++ ReturnVars;
 extract_type_vars({dependent_type, _Name, Params}) ->
-    lists:flatmap(fun(#type_param{value = Value}) -> extract_type_vars(Value) end, Params);
+    lists:flatmap(fun(#type_param{type = Value}) -> extract_type_vars(Value) end, Params);
 extract_type_vars(_) ->
     [].
 
@@ -5777,7 +5782,7 @@ detect_cycles_impl({function_type, Params, Return}, State) ->
         Error -> Error
     end;
 detect_cycles_impl({dependent_type, _Name, Params}, State) ->
-    TypeParams = [V || #type_param{value = V} <- Params],
+    TypeParams = [V || #type_param{type = V} <- Params],
     detect_cycles_in_list(TypeParams, State);
 detect_cycles_impl({list_type, ElemType, LenExpr}, State) ->
     case detect_cycles_impl(ElemType, State) of
@@ -5826,7 +5831,7 @@ find_recursive_refs_impl({function_type, Params, Return}, Name, Acc) ->
     ReturnRefs = find_recursive_refs_impl(Return, Name, []),
     ParamRefs ++ ReturnRefs ++ Acc;
 find_recursive_refs_impl({dependent_type, _, Params}, Name, Acc) ->
-    lists:flatmap(fun(#type_param{value = V}) -> find_recursive_refs_impl(V, Name, []) end, Params) ++
+    lists:flatmap(fun(#type_param{type = V}) -> find_recursive_refs_impl(V, Name, []) end, Params) ++
         Acc;
 find_recursive_refs_impl({list_type, ElemType, LenExpr}, Name, Acc) ->
     ElemRefs = find_recursive_refs_impl(ElemType, Name, []),
@@ -5880,8 +5885,8 @@ substitute_recursive_refs_impl({function_type, Params, Return}, RecName, RecType
     {function_type, NewParams, NewReturn};
 substitute_recursive_refs_impl({dependent_type, Name, Params}, RecName, RecType, Depth) ->
     NewParams = [
-        #type_param{name = N, value = substitute_recursive_refs_impl(V, RecName, RecType, Depth)}
-     || #type_param{name = N, value = V} <- Params
+        #type_param{name = N, type = substitute_recursive_refs_impl(V, RecName, RecType, Depth)}
+     || #type_param{name = N, type = V} <- Params
     ],
     {dependent_type, Name, NewParams};
 substitute_recursive_refs_impl({list_type, ElemType, LenExpr}, RecName, RecType, Depth) ->
@@ -5906,8 +5911,8 @@ substitute_mu_var_impl({function_type, Params, Return}, MuVar, Replacement) ->
     {function_type, NewParams, NewReturn};
 substitute_mu_var_impl({dependent_type, Name, Params}, MuVar, Replacement) ->
     NewParams = [
-        #type_param{name = N, value = substitute_mu_var_impl(V, MuVar, Replacement)}
-     || #type_param{name = N, value = V} <- Params
+        #type_param{name = N, type = substitute_mu_var_impl(V, MuVar, Replacement)}
+     || #type_param{name = N, type = V} <- Params
     ],
     {dependent_type, Name, NewParams};
 substitute_mu_var_impl({list_type, ElemType, LenExpr}, MuVar, Replacement) ->
@@ -5944,7 +5949,7 @@ contains_free_var_impl({function_type, Params, Return}, Var) ->
     lists:any(fun(P) -> contains_free_var_impl(P, Var) end, Params) orelse
         contains_free_var_impl(Return, Var);
 contains_free_var_impl({dependent_type, _, Params}, Var) ->
-    lists:any(fun(#type_param{value = V}) -> contains_free_var_impl(V, Var) end, Params);
+    lists:any(fun(#type_param{type = V}) -> contains_free_var_impl(V, Var) end, Params);
 contains_free_var_impl({list_type, ElemType, LenExpr}, Var) ->
     contains_free_var_impl(ElemType, Var) orelse
         (LenExpr =/= undefined andalso contains_free_var_impl(LenExpr, Var));
@@ -5996,7 +6001,7 @@ has_constructor_above_var({function_type, Params, Return}, Var) ->
 has_constructor_above_var({list_type, ElemType, _}, Var) ->
     has_constructor_above_var(ElemType, Var);
 has_constructor_above_var({dependent_type, _, Params}, Var) ->
-    lists:any(fun(#type_param{value = V}) -> has_constructor_above_var(V, Var) end, Params);
+    lists:any(fun(#type_param{type = V}) -> has_constructor_above_var(V, Var) end, Params);
 has_constructor_above_var(_, _) ->
     true.
 
@@ -6039,7 +6044,7 @@ occurs_check_in_recursive_def_impl(Id, {function_type, Params, Return}) ->
     lists:any(fun(P) -> occurs_check_in_recursive_def_impl(Id, P) end, Params) orelse
         occurs_check_in_recursive_def_impl(Id, Return);
 occurs_check_in_recursive_def_impl(Id, {dependent_type, _, Params}) ->
-    lists:any(fun(#type_param{value = V}) -> occurs_check_in_recursive_def_impl(Id, V) end, Params);
+    lists:any(fun(#type_param{type = V}) -> occurs_check_in_recursive_def_impl(Id, V) end, Params);
 occurs_check_in_recursive_def_impl(Id, {list_type, ElemType, LenExpr}) ->
     occurs_check_in_recursive_def_impl(Id, ElemType) orelse
         (LenExpr =/= undefined andalso occurs_check_in_recursive_def_impl(Id, LenExpr));

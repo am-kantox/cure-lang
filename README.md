@@ -306,6 +306,7 @@ See the `examples/` directory for working code:
 
 Comprehensive documentation is available in the `docs/` directory:
 
+### Core Documentation
 - **[LANGUAGE_SPEC.md](docs/LANGUAGE_SPEC.md)** - Complete language specification
 - **[TYPE_SYSTEM.md](docs/TYPE_SYSTEM.md)** - Dependent types and type system details
 - **[FSM_USAGE.md](docs/FSM_USAGE.md)** - Finite state machine guide
@@ -313,6 +314,11 @@ Comprehensive documentation is available in the `docs/` directory:
 - **[STD_SUMMARY.md](docs/STD_SUMMARY.md)** - Standard library module documentation
 - **[TODO.md](docs/TODO.md)** - Missing features and future work
 - **[EDITOR_SETUP.md](docs/EDITOR_SETUP.md)** - IDE configuration for Cure development
+
+### Advanced Features
+- **[DEPENDENT_TYPES_GUIDE.md](docs/DEPENDENT_TYPES_GUIDE.md)** - User guide to dependent types with SMT verification
+- **[DEPENDENT_TYPES_DESIGN.md](docs/DEPENDENT_TYPES_DESIGN.md)** - Design document and implementation details
+- **[dependent_types_demo.cure](examples/dependent_types_demo.cure)** - Comprehensive examples showcasing compile-time verification
 
 ## Community & Development
 

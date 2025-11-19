@@ -83,8 +83,8 @@ test_vector_types() ->
         % Test Vector(Float, 3) creation and type checking
         Vec3Type =
             {dependent_type, 'Vector', [
-                #type_param{name = elem_type, value = {primitive_type, 'Float'}},
-                #type_param{name = length, value = {literal_expr, 3, undefined}}
+                #type_param{name = elem_type, type = {primitive_type, 'Float'}},
+                #type_param{name = length, type = {literal_expr, 3, undefined}}
             ]},
 
         % Test vector literal with correct length
@@ -174,8 +174,8 @@ test_length_indexed_lists() ->
         % Test List(Int, 3)
         List3Type =
             {dependent_type, 'List', [
-                #type_param{name = elem_type, value = {primitive_type, 'Int'}},
-                #type_param{name = length, value = {literal_expr, 3, undefined}}
+                #type_param{name = elem_type, type = {primitive_type, 'Int'}},
+                #type_param{name = length, type = {literal_expr, 3, undefined}}
             ]},
 
         % Test list literal [1, 2, 3]
@@ -222,16 +222,16 @@ test_list_operations(Env, List3Type) ->
     % Test append function: List(T, n) + List(T, m) -> List(T, n+m)
     List2Type =
         {dependent_type, 'List', [
-            #type_param{name = elem_type, value = {primitive_type, 'Int'}},
-            #type_param{name = length, value = {literal_expr, 2, undefined}}
+            #type_param{name = elem_type, type = {primitive_type, 'Int'}},
+            #type_param{name = length, type = {literal_expr, 2, undefined}}
         ]},
 
     List5Type =
         {dependent_type, 'List', [
-            #type_param{name = elem_type, value = {primitive_type, 'Int'}},
+            #type_param{name = elem_type, type = {primitive_type, 'Int'}},
             #type_param{
                 name = length,
-                value =
+                type =
                     {binary_op_expr, '+', {literal_expr, 3, undefined},
                         {literal_expr, 2, undefined}, undefined}
             }
@@ -420,13 +420,13 @@ test_gadts() ->
         _ExprIntType =
             {gadt_constructor, 'IntLit', [{primitive_type, 'Int'}],
                 {dependent_type, 'Expr', [
-                    #type_param{name = result_type, value = {primitive_type, 'Int'}}
+                    #type_param{name = result_type, type = {primitive_type, 'Int'}}
                 ]}},
 
         _ExprBoolType =
             {gadt_constructor, 'BoolLit', [{primitive_type, 'Bool'}],
                 {dependent_type, 'Expr', [
-                    #type_param{name = result_type, value = {primitive_type, 'Bool'}}
+                    #type_param{name = result_type, type = {primitive_type, 'Bool'}}
                 ]}},
 
         % Add(Expr(Int), Expr(Int)): Expr(Int)
@@ -434,14 +434,14 @@ test_gadts() ->
             {gadt_constructor, 'Add',
                 [
                     {dependent_type, 'Expr', [
-                        #type_param{name = result_type, value = {primitive_type, 'Int'}}
+                        #type_param{name = result_type, type = {primitive_type, 'Int'}}
                     ]},
                     {dependent_type, 'Expr', [
-                        #type_param{name = result_type, value = {primitive_type, 'Int'}}
+                        #type_param{name = result_type, type = {primitive_type, 'Int'}}
                     ]}
                 ],
                 {dependent_type, 'Expr', [
-                    #type_param{name = result_type, value = {primitive_type, 'Int'}}
+                    #type_param{name = result_type, type = {primitive_type, 'Int'}}
                 ]}},
 
         % Test eval function: Expr(T) -> T
@@ -449,7 +449,7 @@ test_gadts() ->
             {function_type,
                 [
                     {dependent_type, 'Expr', [
-                        #type_param{name = result_type, value = {primitive_type, 'Int'}}
+                        #type_param{name = result_type, type = {primitive_type, 'Int'}}
                     ]}
                 ],
                 {primitive_type, 'Int'}},
@@ -476,14 +476,14 @@ test_phantom_types() ->
 
         MeasurementMetersType =
             {dependent_type, 'Measurement', [
-                #type_param{name = unit, value = MetersType},
-                #type_param{name = value_type, value = {primitive_type, 'Float'}}
+                #type_param{name = unit, type = MetersType},
+                #type_param{name = value_type, type = {primitive_type, 'Float'}}
             ]},
 
         MeasurementFeetType =
             {dependent_type, 'Measurement', [
-                #type_param{name = unit, value = FeetType},
-                #type_param{name = value_type, value = {primitive_type, 'Float'}}
+                #type_param{name = unit, type = FeetType},
+                #type_param{name = value_type, type = {primitive_type, 'Float'}}
             ]},
 
         % add_meters: (Measurement(Meters, Float), Measurement(Meters, Float)) -> Measurement(Meters, Float)
@@ -531,8 +531,8 @@ test_proof_carrying_code() ->
         SortedListType =
             {proof_type, 'SortedList',
                 {dependent_type, 'List', [
-                    #type_param{name = elem_type, value = {type_var, {id, 1}}},
-                    #type_param{name = length, value = {type_var, {id, 2}}}
+                    #type_param{name = elem_type, type = {type_var, {id, 1}}},
+                    #type_param{name = length, type = {type_var, {id, 2}}}
                 ]},
                 {predicate, is_sorted, [{type_var, {id, 3}}]}},
 
@@ -566,8 +566,8 @@ test_liquid_types() ->
         % ArrayIndex(arr: Array(T, n)) = Nat when i >= 0 && i < n
         ArrayType =
             {dependent_type, 'Array', [
-                #type_param{name = elem_type, value = {type_var, {id, 1}}},
-                #type_param{name = length, value = {type_var, {id, 2}}}
+                #type_param{name = elem_type, type = {type_var, {id, 1}}},
+                #type_param{name = length, type = {type_var, {id, 2}}}
             ]},
 
         ArrayIndexType =
@@ -647,14 +647,14 @@ test_constraint_generation() ->
 
         V1Type =
             {dependent_type, 'Vector', [
-                #type_param{name = elem_type, value = {primitive_type, 'Float'}},
-                #type_param{name = length, value = {type_var, {id, 1}}}
+                #type_param{name = elem_type, type = {primitive_type, 'Float'}},
+                #type_param{name = length, type = {type_var, {id, 1}}}
             ]},
 
         V2Type =
             {dependent_type, 'Vector', [
-                #type_param{name = elem_type, value = {primitive_type, 'Float'}},
-                #type_param{name = length, value = {type_var, {id, 2}}}
+                #type_param{name = elem_type, type = {primitive_type, 'Float'}},
+                #type_param{name = length, type = {type_var, {id, 2}}}
             ]},
 
         DotProductType = {function_type, [V1Type, V2Type], {primitive_type, 'Float'}},
@@ -859,8 +859,8 @@ test_occurs_check_with_dependent_types() ->
         % Try to unify TypeVar with Vector(TypeVar, 3) (should fail occurs check)
         RecursiveType =
             {dependent_type, 'Vector', [
-                #type_param{name = elem_type, value = TypeVar},
-                #type_param{name = length, value = {literal_expr, 3, undefined}}
+                #type_param{name = elem_type, type = TypeVar},
+                #type_param{name = length, type = {literal_expr, 3, undefined}}
             ]},
 
         case cure_types:unify(TypeVar, RecursiveType) of
@@ -1038,22 +1038,22 @@ test_type_level_computation() ->
         % Test append with type-level arithmetic: List(T, n) + List(T, m) -> List(T, n+m)
         List3Type =
             {dependent_type, 'List', [
-                #type_param{name = elem_type, value = {primitive_type, 'Int'}},
-                #type_param{name = length, value = {literal_expr, 3, undefined}}
+                #type_param{name = elem_type, type = {primitive_type, 'Int'}},
+                #type_param{name = length, type = {literal_expr, 3, undefined}}
             ]},
 
         List5Type =
             {dependent_type, 'List', [
-                #type_param{name = elem_type, value = {primitive_type, 'Int'}},
-                #type_param{name = length, value = {literal_expr, 5, undefined}}
+                #type_param{name = elem_type, type = {primitive_type, 'Int'}},
+                #type_param{name = length, type = {literal_expr, 5, undefined}}
             ]},
 
         List8Type =
             {dependent_type, 'List', [
-                #type_param{name = elem_type, value = {primitive_type, 'Int'}},
+                #type_param{name = elem_type, type = {primitive_type, 'Int'}},
                 #type_param{
                     name = length,
-                    value =
+                    type =
                         {binary_op_expr, '+', {literal_expr, 3, undefined},
                             {literal_expr, 5, undefined}, undefined}
                 }
@@ -1092,8 +1092,8 @@ create_vector_type(ElemType, Length) ->
             _ -> Length
         end,
     {dependent_type, 'Vector', [
-        #type_param{name = elem_type, value = ElemType},
-        #type_param{name = length, value = LengthExpr}
+        #type_param{name = elem_type, type = ElemType},
+        #type_param{name = length, type = LengthExpr}
     ]}.
 
 create_matrix_type(Rows, Cols, ElemType) ->
@@ -1108,9 +1108,9 @@ create_matrix_type(Rows, Cols, ElemType) ->
             _ -> Cols
         end,
     {dependent_type, 'Matrix', [
-        #type_param{name = rows, value = RowsExpr},
-        #type_param{name = cols, value = ColsExpr},
-        #type_param{name = elem_type, value = ElemType}
+        #type_param{name = rows, type = RowsExpr},
+        #type_param{name = cols, type = ColsExpr},
+        #type_param{name = elem_type, type = ElemType}
     ]}.
 
 has_length_constraint(Type, ExpectedLength) ->
@@ -1120,7 +1120,7 @@ has_length_constraint(Type, ExpectedLength) ->
         {dependent_type, _, Params} ->
             lists:any(
                 fun
-                    (#type_param{name = length, value = {literal_expr, L, _}}) ->
+                    (#type_param{name = length, type = {literal_expr, L, _}}) ->
                         L =:= ExpectedLength;
                     (_) ->
                         false

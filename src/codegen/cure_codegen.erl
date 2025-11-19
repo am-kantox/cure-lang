@@ -1427,17 +1427,27 @@ extract_dimension_bindings(Params) ->
 %% Extract dimension variable from a parameter
 extract_dimension_from_param(#param{name = ParamName, type = Type}) ->
     case Type of
-        #dependent_type{name = 'Vector', params = [_TypeParam, DimParam]} ->
-            case DimParam of
-                #identifier_expr{name = DimVar} -> {ok, DimVar, ParamName};
-                {primitive_type, DimVar} when is_atom(DimVar) -> {ok, DimVar, ParamName};
-                _ -> error
+        #dependent_type{name = 'Vector', type_params = TypeParams, value_params = ValueParams} ->
+            AllParams = TypeParams ++ ValueParams,
+            case AllParams of
+                [_TypeParam, DimParam] ->
+                    case DimParam of
+                        #identifier_expr{name = DimVar} ->
+                            {ok, DimVar, ParamName};
+                        #type_param{type = #identifier_expr{name = DimVar}} ->
+                            {ok, DimVar, ParamName};
+                        {primitive_type, DimVar} when is_atom(DimVar) -> {ok, DimVar, ParamName};
+                        _ ->
+                            error
+                    end;
+                _ ->
+                    error
             end;
         {dependent_type, 'Vector', [_TypeParam, DimParam]} ->
             case DimParam of
-                #type_param{value = #identifier_expr{name = DimVar}} ->
+                #type_param{type = #identifier_expr{name = DimVar}} ->
                     {ok, DimVar, ParamName};
-                #type_param{value = {primitive_type, DimVar}} when is_atom(DimVar) ->
+                #type_param{type = {primitive_type, DimVar}} when is_atom(DimVar) ->
                     {ok, DimVar, ParamName};
                 _ ->
                     error
@@ -4780,9 +4790,12 @@ generate_single_constructor(_TypeName, Variant, State) ->
 extract_constructor_info(#primitive_type{name = Name}) ->
     % Nullary constructor like Lt, Eq, Gt, None
     {ok, Name, 0};
-extract_constructor_info(#dependent_type{name = Name, params = Params}) ->
+extract_constructor_info(#dependent_type{
+    name = Name, type_params = TypeParams, value_params = ValueParams
+}) ->
     % Constructor with arguments like Ok(T), Error(E), Some(T)
-    {ok, Name, length(Params)};
+    AllParams = TypeParams ++ ValueParams,
+    {ok, Name, length(AllParams)};
 extract_constructor_info(Variant) ->
     {error, {unsupported_variant, Variant}}.
 

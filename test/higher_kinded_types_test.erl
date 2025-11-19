@@ -121,7 +121,7 @@ test_kind_inference_dependent() ->
     % Test kind inference for dependent types (higher-kinded)
     KindEnv = #{},
     ListType =
-        {dependent_type, 'List', [#type_param{name = elem, value = {primitive_type, 'Int'}}]},
+        {dependent_type, 'List', [#type_param{name = elem, type = {primitive_type, 'Int'}}]},
 
     case cure_types:infer_kind(ListType, KindEnv) of
         {ok, Kind} when Kind#kind.constructor =:= arrow ->
@@ -166,7 +166,7 @@ test_type_constructor_creation() ->
         location = undefined
     },
 
-    Params = [#type_param{name = a, value = #type_var{id = type_var_a}}],
+    Params = [#type_param{name = a, type = #type_var{id = type_var_a}}],
 
     case cure_types:create_type_constructor('Maybe', ArrowKind, Params, undefined, {4, 1}) of
         Constructor when is_record(Constructor, type_constructor) ->
@@ -199,7 +199,7 @@ test_functor_constructor() ->
         location = undefined
     },
 
-    Params = [#type_param{name = f, value = #type_var{id = type_var_f}}],
+    Params = [#type_param{name = f, type = #type_var{id = type_var_f}}],
 
     case cure_types:create_type_constructor('Functor', FunctorKind, Params, undefined, {5, 1}) of
         Constructor when is_record(Constructor, type_constructor) ->
@@ -212,8 +212,8 @@ test_constructor_validation() ->
     % Test that invalid constructors are rejected (arity mismatch)
     StarKind = #kind{constructor = star, args = [], result = star, arity = 0, location = undefined},
     TooManyParams = [
-        #type_param{name = a, value = #type_var{id = var_a}},
-        #type_param{name = b, value = #type_var{id = var_b}}
+        #type_param{name = a, type = #type_var{id = var_a}},
+        #type_param{name = b, type = #type_var{id = var_b}}
     ],
 
     case
@@ -241,7 +241,7 @@ test_higher_kinded_type_application() ->
     MaybeConstructor = #type_constructor{
         name = 'Maybe',
         kind = ArrowKind,
-        params = [#type_param{name = a, value = #type_var{id = type_var_a}}],
+        params = [#type_param{name = a, type = #type_var{id = type_var_a}}],
         definition = undefined,
         constraints = [],
         location = {7, 1}
@@ -275,8 +275,8 @@ test_partial_application() ->
         name = 'Either',
         kind = ArrowKind,
         params = [
-            #type_param{name = a, value = #type_var{id = type_var_a}},
-            #type_param{name = b, value = #type_var{id = type_var_b}}
+            #type_param{name = a, type = #type_var{id = type_var_a}},
+            #type_param{name = b, type = #type_var{id = type_var_b}}
         ],
         definition = undefined,
         constraints = [],
@@ -311,7 +311,7 @@ test_over_application() ->
     MaybeConstructor = #type_constructor{
         name = 'Maybe',
         kind = ArrowKind,
-        params = [#type_param{name = a, value = #type_var{id = type_var_a}}],
+        params = [#type_param{name = a, type = #type_var{id = type_var_a}}],
         definition = undefined,
         constraints = [],
         location = {9, 1}
@@ -490,7 +490,7 @@ test_well_formed_checking() ->
     ValidConstructor = #type_constructor{
         name = 'List',
         kind = ArrowKind,
-        params = [#type_param{name = a, value = #type_var{id = type_var_a}}],
+        params = [#type_param{name = a, type = #type_var{id = type_var_a}}],
         definition = undefined,
         constraints = [],
         location = {16, 1}
@@ -514,7 +514,7 @@ test_malformed_checking() ->
         name = 'Invalid',
         kind = #kind{constructor = star, args = [], result = star, arity = 0, location = undefined},
         % Arity mismatch
-        params = [#type_param{name = a, value = #type_var{id = var_a}}],
+        params = [#type_param{name = a, type = #type_var{id = var_a}}],
         definition = undefined,
         constraints = [],
         location = {17, 1}

@@ -58,16 +58,16 @@ create_test_env() ->
     Env3 = cure_types:extend_env(Env2, fibonacci, FibonacciType),
 
     % Add Vector type constructor
-    VectorElemParam = #type_param{name = elem_type, value = cure_types:new_type_var()},
-    VectorLenParam = #type_param{name = length, value = cure_types:new_type_var()},
+    VectorElemParam = #type_param{name = elem_type, type = cure_types:new_type_var()},
+    VectorLenParam = #type_param{name = length, type = cure_types:new_type_var()},
     VectorType = {dependent_type, 'Vector', [VectorElemParam, VectorLenParam]},
     Env4 = cure_types:extend_env(Env3, 'Vector', VectorType),
 
     % Add dot_product function type: Vector(T,n) -> Vector(T,n) -> T
     T = cure_types:new_type_var(elem),
     N = cure_types:new_type_var(len),
-    VecParam1 = #type_param{name = elem_type, value = T},
-    VecParam2 = #type_param{name = length, value = N},
+    VecParam1 = #type_param{name = elem_type, type = T},
+    VecParam2 = #type_param{name = length, type = N},
     VectorTN = {dependent_type, 'Vector', [VecParam1, VecParam2]},
 
     DotProductType = {function_type, [VectorTN, VectorTN], T},
@@ -75,8 +75,8 @@ create_test_env() ->
 
     % Add list_sum function type: List(Int,n) -> Int
     IntType = {primitive_type, 'Int'},
-    ListLenParam = #type_param{name = length, value = cure_types:new_type_var()},
-    ListIntParam = #type_param{name = elem_type, value = IntType},
+    ListLenParam = #type_param{name = length, type = cure_types:new_type_var()},
+    ListIntParam = #type_param{name = elem_type, type = IntType},
     ListIntType = {dependent_type, 'List', [ListIntParam, ListLenParam]},
 
     ListSumType = {function_type, [ListIntType], IntType},
@@ -130,8 +130,8 @@ test_vector_dot_product_test() ->
     IntType = {primitive_type, 'Int'},
     Three = {literal_expr, 3, {location, 1, 1, undefined}},
 
-    ElemParam = #type_param{name = elem_type, value = IntType},
-    LenParam = #type_param{name = length, value = Three},
+    ElemParam = #type_param{name = elem_type, type = IntType},
+    LenParam = #type_param{name = length, type = Three},
     VectorInt3 = {dependent_type, 'Vector', [ElemParam, LenParam]},
 
     % Create dummy vector expressions (for simplicity)
@@ -257,8 +257,8 @@ test_dependent_constraint_tracking_test() ->
 
     % Create some dependent type constraints
     T1 = cure_types:new_type_var(),
-    VecParam1 = #type_param{name = elem_type, value = T1},
-    VecParam2 = #type_param{name = length, value = {literal_expr, 3, undefined}},
+    VecParam1 = #type_param{name = elem_type, type = T1},
+    VecParam2 = #type_param{name = length, type = {literal_expr, 3, undefined}},
     VectorType = {dependent_type, 'Vector', [VecParam1, VecParam2]},
 
     Constraint = #type_constraint{

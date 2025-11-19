@@ -93,7 +93,7 @@ test_dependent_types() ->
         params = [
             #type_param{
                 name = 'T',
-                value = #primitive_type{name = 'Int', location = #location{line = 1, column = 1}},
+                type = #primitive_type{name = 'Int', location = #location{line = 1, column = 1}},
                 location = #location{line = 4, column = 1}
             }
         ],

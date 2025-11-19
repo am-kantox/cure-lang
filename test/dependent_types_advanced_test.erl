@@ -737,9 +737,9 @@ create_vector_type(ElementType, Length) ->
         name = 'Vector',
         params = [
             #type_param{
-                value = #primitive_type{name = ElementType, location = create_location(1, 1)}
+                type = #primitive_type{name = ElementType, location = create_location(1, 1)}
             },
-            #type_param{value = Length}
+            #type_param{type = Length}
         ],
         location = create_location(1, 1)
     }.
@@ -749,7 +749,7 @@ create_dependent_list_type(ElementType) ->
         name = 'List',
         params = [
             #type_param{
-                value = #primitive_type{name = ElementType, location = create_location(1, 1)}
+                type = #primitive_type{name = ElementType, location = create_location(1, 1)}
             }
         ],
         location = create_location(1, 1)
@@ -759,8 +759,8 @@ create_refinement_type(BaseType, Predicate) ->
     #dependent_type{
         name = 'Refined',
         params = [
-            #type_param{value = #primitive_type{name = BaseType, location = create_location(1, 1)}},
-            #type_param{value = Predicate}
+            #type_param{type = #primitive_type{name = BaseType, location = create_location(1, 1)}},
+            #type_param{type = Predicate}
         ],
         location = create_location(1, 1)
     }.
@@ -841,9 +841,9 @@ create_bounded_list_type(ElementType, MaxCapacity) ->
         name = 'BoundedList',
         params = [
             #type_param{
-                value = #primitive_type{name = ElementType, location = create_location(1, 1)}
+                type = #primitive_type{name = ElementType, location = create_location(1, 1)}
             },
-            #type_param{value = create_literal_int(MaxCapacity)}
+            #type_param{type = create_literal_int(MaxCapacity)}
         ],
         location = create_location(1, 1)
     }.
@@ -855,8 +855,8 @@ create_tagged_type(Tag, InnerType) ->
     #dependent_type{
         name = 'Tagged',
         params = [
-            #type_param{value = create_identifier(Tag)},
-            #type_param{value = InnerType}
+            #type_param{type = create_identifier(Tag)},
+            #type_param{type = InnerType}
         ],
         location = create_location(1, 1)
     }.

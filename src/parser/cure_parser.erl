@@ -2640,7 +2640,9 @@ parse_type_parameter_names(State, Acc) ->
                         Location = get_token_location(Token),
                         TypeParam = #type_param{
                             name = ParamName,
-                            value = TypeExpr,
+                            kind = value,
+                            type = TypeExpr,
+                            constraint = undefined,
                             location = Location
                         },
                         {TypeParam, State1b};
@@ -2729,10 +2731,12 @@ parse_primary_type(State) ->
                     {_, State2} = expect(State1, '('),
                     {Params, State3} = parse_type_parameters(State2, []),
                     {_, State4} = expect(State3, ')'),
-
+                    % Separate type and value parameters
+                    {TypeParams, ValueParams} = separate_type_value_params(Params),
                     Type = #dependent_type{
                         name = Name,
-                        params = Params,
+                        type_params = TypeParams,
+                        value_params = ValueParams,
                         location = Location
                     },
                     {Type, State4};
@@ -2879,9 +2883,12 @@ parse_type_constructor(Name, Location, State) ->
             {_, State1} = expect(State, '('),
             {Params, State2} = parse_type_parameters(State1, []),
             {_, State3} = expect(State2, ')'),
+            % Separate type and value parameters
+            {TypeParams, ValueParams} = separate_type_value_params(Params),
             Type = #dependent_type{
                 name = Name,
-                params = Params,
+                type_params = TypeParams,
+                value_params = ValueParams,
                 location = Location
             },
             {Type, State3};
@@ -2947,6 +2954,11 @@ parse_tuple_type_elements(State, Acc) ->
             end
     end.
 
+%% Separate type parameters from value parameters
+%% Type parameters have kind = type, value parameters have kind = value
+separate_type_value_params(Params) ->
+    lists:partition(fun(#type_param{kind = Kind}) -> Kind =:= type end, Params).
+
 %% Parse type parameters
 parse_type_parameters(State, Acc) ->
     case match_token(State, ')') of
@@ -2974,10 +2986,12 @@ parse_type_parameter(State) ->
             Location = get_token_location(NumberToken),
             Param = #type_param{
                 name = undefined,
-                value = #literal_expr{
+                kind = value,
+                type = #literal_expr{
                     value = Value,
                     location = Location
                 },
+                constraint = undefined,
                 location = Location
             },
             {Param, State1};
@@ -2988,10 +3002,12 @@ parse_type_parameter(State) ->
             Location = get_token_location(NumberToken),
             Param = #type_param{
                 name = undefined,
-                value = #literal_expr{
+                kind = value,
+                type = #literal_expr{
                     value = Value,
                     location = Location
                 },
+                constraint = undefined,
                 location = Location
             },
             {Param, State1};
@@ -3007,7 +3023,9 @@ parse_type_parameter(State) ->
                         ExprLocation = get_expr_location(Expr),
                         Param = #type_param{
                             name = undefined,
-                            value = Expr,
+                            kind = value,
+                            type = Expr,
+                            constraint = undefined,
                             location = ExprLocation
                         },
                         {Param, StateExpr}
@@ -3023,7 +3041,9 @@ parse_type_parameter(State) ->
                             },
                             FallbackParam = #type_param{
                                 name = undefined,
-                                value = TypeVar,
+                                kind = type,
+                                type = TypeVar,
+                                constraint = undefined,
                                 location = Location
                             },
                             {FallbackParam, StateId}
@@ -3035,7 +3055,9 @@ parse_type_parameter(State) ->
                     Location = get_type_location(Type),
                     Param = #type_param{
                         name = undefined,
-                        value = Type,
+                        kind = type,
+                        type = Type,
+                        constraint = undefined,
                         location = Location
                     },
                     {Param, State2}
@@ -3047,7 +3069,9 @@ parse_type_parameter(State) ->
                 ExprLocation = get_expr_location(Expr),
                 Param = #type_param{
                     name = undefined,
-                    value = Expr,
+                    kind = value,
+                    type = Expr,
+                    constraint = undefined,
                     location = ExprLocation
                 },
                 {Param, State1}
@@ -3059,7 +3083,9 @@ parse_type_parameter(State) ->
                         TypeLocation = get_expr_location(Type),
                         TypeParam = #type_param{
                             name = undefined,
-                            value = Type,
+                            kind = type,
+                            type = Type,
+                            constraint = undefined,
                             location = TypeLocation
                         },
                         {TypeParam, State2}

@@ -2061,8 +2061,8 @@ contains_type_variables({list_type, ElemType, _Length}) ->
     contains_type_variables(ElemType);
 contains_type_variables({dependent_type, _Name, Params}) ->
     lists:any(
-        fun(#type_param{value = Value}) ->
-            contains_type_variables(Value)
+        fun(#type_param{type = Type}) ->
+            contains_type_variables(Type)
         end,
         Params
     );
@@ -2608,7 +2608,7 @@ is_concrete_type({function_type, ParamTypes, ReturnType}) ->
 is_concrete_type({list_type, ElemType, _Length}) ->
     is_concrete_type(ElemType);
 is_concrete_type({dependent_type, _Name, Params}) ->
-    lists:all(fun(#type_param{value = Value}) -> is_concrete_type(Value) end, Params);
+    lists:all(fun(#type_param{type = Type}) -> is_concrete_type(Type) end, Params);
 % Primitive types are concrete
 is_concrete_type(_) ->
     true.
@@ -6884,10 +6884,15 @@ specialize_type(Type, _TypeSubst) ->
     Type.
 
 %% Specialize type parameter
-specialize_type_param(#type_param{name = Name, value = Value, location = Loc}, TypeSubst) ->
+specialize_type_param(
+    #type_param{name = Name, kind = Kind, type = Type, constraint = Constraint, location = Loc},
+    TypeSubst
+) ->
     #type_param{
         name = Name,
-        value = specialize_type(Value, TypeSubst),
+        kind = Kind,
+        type = specialize_type(Type, TypeSubst),
+        constraint = Constraint,
         location = Loc
     };
 specialize_type_param(Param, _TypeSubst) ->

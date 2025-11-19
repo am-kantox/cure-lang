@@ -57,12 +57,12 @@ test_pair_unification() ->
 
     StringParam = #type_param{
         name = undefined,
-        value = StringType,
+        type = StringType,
         location = Location
     },
     IntParam = #type_param{
         name = undefined,
-        value = IntType,
+        type = IntType,
         location = Location
     },
 
@@ -113,12 +113,12 @@ test_pair_tuple_equivalence() ->
 
     StringParam = #type_param{
         name = undefined,
-        value = StringType,
+        type = StringType,
         location = Location
     },
     IntParam = #type_param{
         name = undefined,
-        value = IntType,
+        type = IntType,
         location = Location
     },
 

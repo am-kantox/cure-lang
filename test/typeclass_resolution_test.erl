@@ -86,7 +86,7 @@ test_register_instance() ->
         },
         constraint = undefined,
         body = #literal_expr{
-            value = "42", location = #location{line = 1, column = 1, file = "test"}
+            type = "42", location = #location{line = 1, column = 1, file = "test"}
         },
         is_private = false,
         location = #location{line = 1, column = 1, file = "test"}
@@ -157,7 +157,7 @@ test_overlapping_instances() ->
         },
         constraint = undefined,
         body = #literal_expr{
-            value = "different", location = #location{line = 1, column = 1, file = "test"}
+            type = "different", location = #location{line = 1, column = 1, file = "test"}
         },
         is_private = false,
         location = #location{line = 1, column = 1, file = "test"}

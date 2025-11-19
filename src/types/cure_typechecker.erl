@@ -1451,10 +1451,13 @@ process_variant(Variant, TypeName, TypeParams, Env) ->
             ResultType = create_result_type_with_env(TypeName, TypeParams, Env),
             NewEnv = cure_types:extend_env(Env, ConstructorName, ResultType),
             {ConstructorName, ResultType, NewEnv};
-        #dependent_type{name = ConstructorName, params = Args} ->
+        #dependent_type{
+            name = ConstructorName, type_params = TypeParams, value_params = ValueParams
+        } ->
             % Constructor with arguments: Ok(T), Error(E), Some(T)
             % Use environment-aware conversion to properly resolve type variables
-            ArgTypes = [convert_type_param_with_env(P, Env) || P <- Args],
+            AllParams = TypeParams ++ ValueParams,
+            ArgTypes = [convert_type_param_with_env(P, Env) || P <- AllParams],
             ResultType = create_result_type_with_env(TypeName, TypeParams, Env),
             % Create function type: (ArgTypes...) -> ResultType
             ConstructorType = {function_type, ArgTypes, ResultType},
@@ -2154,8 +2157,11 @@ convert_block_to_lets([Expr | RestExprs], Location) ->
 %% Convert AST types to type system tuples
 convert_type_to_tuple(#primitive_type{name = Name}) ->
     {primitive_type, Name};
-convert_type_to_tuple(#dependent_type{name = Name, params = Params}) ->
-    ConvertedParams = [convert_type_param_to_tuple(P) || P <- Params],
+convert_type_to_tuple(#dependent_type{
+    name = Name, type_params = TypeParams, value_params = ValueParams
+}) ->
+    AllParams = TypeParams ++ ValueParams,
+    ConvertedParams = [convert_type_param_to_tuple(P) || P <- AllParams],
     {dependent_type, Name, ConvertedParams};
 convert_type_to_tuple(#union_type{types = Variants}) ->
     ConvertedVariants = [convert_type_to_tuple(V) || V <- Variants],
@@ -2257,13 +2263,16 @@ convert_type_with_env(Type, _Env) ->
     convert_type_to_tuple(Type).
 
 %% Convert type parameter expressions while resolving type variables from environment
-% Handle type_param in tuple format (from parser)
+% Handle type_param in tuple or record format (from parser)
+convert_type_param_with_env(#type_param{type = Type}, Env) ->
+    convert_type_with_env(Type, Env);
 convert_type_param_with_env({type_param, _Name, Value, _Location}, Env) ->
     convert_type_with_env(Value, Env);
 convert_type_param_with_env(TypeParam, Env) ->
     convert_type_with_env(TypeParam, Env).
 
-convert_type_param_to_tuple(#type_param{value = Value}) ->
+convert_type_param_to_tuple(#type_param{type = Type}) ->
+    Value = Type,
     case Value of
         TypeExpr when is_record(TypeExpr, primitive_type); is_record(TypeExpr, dependent_type) ->
             convert_type_to_tuple(TypeExpr);
@@ -2669,13 +2678,16 @@ extract_and_add_type_params(TypeExpr, Env) ->
 extract_and_add_type_params_safe(TypeExpr, Env) ->
     extract_type_params_helper_safe(TypeExpr, Env).
 
-extract_type_params_helper(#dependent_type{params = Params}, Env) ->
+extract_type_params_helper(
+    #dependent_type{type_params = TypeParams, value_params = ValueParams}, Env
+) ->
+    AllParams = TypeParams ++ ValueParams,
     lists:foldl(
-        fun(#type_param{value = Value}, AccEnv) ->
-            extract_type_param_value(Value, AccEnv)
+        fun(#type_param{type = Type}, AccEnv) ->
+            extract_type_param_value(Type, AccEnv)
         end,
         Env,
-        Params
+        AllParams
     );
 extract_type_params_helper(
     #function_type{params = ParamTypes, return_type = ReturnType},
@@ -2738,13 +2750,16 @@ extract_type_params_helper(#identifier_expr{name = Name}, Env) ->
 extract_type_params_helper(_, Env) ->
     Env.
 
-extract_type_params_helper_safe(#dependent_type{params = Params}, Env) ->
+extract_type_params_helper_safe(
+    #dependent_type{type_params = TypeParams, value_params = ValueParams}, Env
+) ->
+    AllParams = TypeParams ++ ValueParams,
     lists:foldl(
-        fun(#type_param{value = Value}, AccEnv) ->
-            extract_type_param_value_safe(Value, AccEnv)
+        fun(#type_param{type = Type}, AccEnv) ->
+            extract_type_param_value_safe(Type, AccEnv)
         end,
         Env,
-        Params
+        AllParams
     );
 extract_type_params_helper_safe(
     #function_type{

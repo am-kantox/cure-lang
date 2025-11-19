@@ -160,8 +160,8 @@ test_invariant_constraints() ->
         % Test structural invariant for Vector type
         VectorType =
             {dependent_type, 'Vector', [
-                #type_param{name = elem_type, value = {primitive_type, 'Float'}},
-                #type_param{name = length, value = {literal_expr, 3, undefined}}
+                #type_param{name = elem_type, type = {primitive_type, 'Float'}},
+                #type_param{name = length, type = {literal_expr, 3, undefined}}
             ]},
 
         % Invariant: Vector length must be positive
@@ -172,8 +172,8 @@ test_invariant_constraints() ->
                 % Test with zero-length vector (should fail)
                 ZeroVectorType =
                     {dependent_type, 'Vector', [
-                        #type_param{name = elem_type, value = {primitive_type, 'Float'}},
-                        #type_param{name = length, value = {literal_expr, 0, undefined}}
+                        #type_param{name = elem_type, type = {primitive_type, 'Float'}},
+                        #type_param{name = length, type = {literal_expr, 0, undefined}}
                     ]},
 
                 case cure_types:solve_invariant_constraint(ZeroVectorType, Invariant, #{}) of
@@ -197,8 +197,8 @@ test_variance_constraints() ->
         % Test covariance for List type
         ListType =
             {dependent_type, 'List', [
-                #type_param{name = elem_type, value = {primitive_type, 'Int'}},
-                #type_param{name = length, value = {literal_expr, 5, undefined}}
+                #type_param{name = elem_type, type = {primitive_type, 'Int'}},
+                #type_param{name = length, type = {literal_expr, 5, undefined}}
             ]},
 
         case
@@ -208,8 +208,8 @@ test_variance_constraints() ->
                 % Test invariance for Vector type
                 VectorType =
                     {dependent_type, 'Vector', [
-                        #type_param{name = elem_type, value = {primitive_type, 'Float'}},
-                        #type_param{name = length, value = {literal_expr, 3, undefined}}
+                        #type_param{name = elem_type, type = {primitive_type, 'Float'}},
+                        #type_param{name = length, type = {literal_expr, 3, undefined}}
                     ]},
 
                 case
@@ -255,8 +255,8 @@ test_dependent_relations() ->
         % Test type predicate evaluation for Vector
         VectorType =
             {dependent_type, 'Vector', [
-                #type_param{name = elem_type, value = {primitive_type, 'Float'}},
-                #type_param{name = length, value = {literal_expr, 5, undefined}}
+                #type_param{name = elem_type, type = {primitive_type, 'Float'}},
+                #type_param{name = length, type = {literal_expr, 5, undefined}}
             ]},
 
         case cure_types:evaluate_type_predicate(VectorType, #{}) of
@@ -264,8 +264,8 @@ test_dependent_relations() ->
                 % Test invalid Vector (negative length)
                 InvalidVectorType =
                     {dependent_type, 'Vector', [
-                        #type_param{name = elem_type, value = {primitive_type, 'Float'}},
-                        #type_param{name = length, value = {literal_expr, -1, undefined}}
+                        #type_param{name = elem_type, type = {primitive_type, 'Float'}},
+                        #type_param{name = length, type = {literal_expr, -1, undefined}}
                     ]},
 
                 case cure_types:evaluate_type_predicate(InvalidVectorType, #{}) of
@@ -327,9 +327,9 @@ test_structural_invariants() ->
         % Test Matrix type with structural invariants
         MatrixType =
             {dependent_type, 'Matrix', [
-                #type_param{name = rows, value = {literal_expr, 3, undefined}},
-                #type_param{name = cols, value = {literal_expr, 4, undefined}},
-                #type_param{name = elem_type, value = {primitive_type, 'Float'}}
+                #type_param{name = rows, type = {literal_expr, 3, undefined}},
+                #type_param{name = cols, type = {literal_expr, 4, undefined}},
+                #type_param{name = elem_type, type = {primitive_type, 'Float'}}
             ]},
 
         case cure_types:evaluate_type_predicate(MatrixType, #{}) of
@@ -337,9 +337,9 @@ test_structural_invariants() ->
                 % Test Matrix with invalid dimensions
                 InvalidMatrixType =
                     {dependent_type, 'Matrix', [
-                        #type_param{name = rows, value = {literal_expr, 0, undefined}},
-                        #type_param{name = cols, value = {literal_expr, -1, undefined}},
-                        #type_param{name = elem_type, value = {primitive_type, 'Float'}}
+                        #type_param{name = rows, type = {literal_expr, 0, undefined}},
+                        #type_param{name = cols, type = {literal_expr, -1, undefined}},
+                        #type_param{name = elem_type, type = {primitive_type, 'Float'}}
                     ]},
 
                 case cure_types:evaluate_type_predicate(InvalidMatrixType, #{}) of

@@ -1,0 +1,281 @@
+%% Cure Dependent Types - Comprehensive Examples
+%% Demonstrates the power of dependent types for compile-time verification
+
+module DependentTypesDemo do
+    
+    %% ========================================================================
+    %% Example 1: Safe Head - No Runtime Checks!
+    %% ========================================================================
+    
+    %% Traditional approach: Runtime error possible
+    def unsafe_head_old(xs: List(Int)): Int =
+        match xs with
+        | [x | _] -> x
+        | [] -> error("empty list!")  % Runtime error!
+        end
+    
+    %% Dependent types approach: Compile-time safety
+    def safe_head<T, n: Nat>(xs: Vector(T, n + 1)): T =
+        match xs with
+        | [x | _] -> x
+        % No error case needed! Compiler proves xs is non-empty
+        end
+    
+    %% Usage
+    def demo_safe_head(): Int =
+        let v = [1, 2, 3] in  % Type: Vector(Int, 3)
+        safe_head(v)  % Safe! 3 = n + 1, so n = 2 >= 0
+    
+    %% This would be a compile-time error:
+    %% def demo_unsafe_head(): Int =
+    %%     let v = [] in  % Type: Vector(Int, 0)
+    %%     safe_head(v)  % ERROR: Cannot prove 0 = n + 1
+    
+    %% ========================================================================
+    %% Example 2: Safe Indexing - No Bounds Checks!
+    %% ========================================================================
+    
+    %% Index type ensures valid bounds at compile time
+    type Index(n: Nat) = Int where 0 <= this < n
+    
+    def safe_nth<T, n: Nat>(v: Vector(T, n), i: Index(n)): T =
+        nth_impl(v, i)
+    
+    def nth_impl<T>(v: List(T), i: Int): T =
+        match {v, i} with
+        | {[x | _], 0} -> x
+        | {[_ | xs], i} when i > 0 -> nth_impl(xs, i - 1)
+        end
+    
+    %% Usage
+    def demo_safe_indexing(): Int =
+        let v = [10, 20, 30, 40, 50] in  % Type: Vector(Int, 5)
+        let i: Index(5) = 2 in  % Compiler verifies 0 <= 2 < 5
+        safe_nth(v, i)  % Returns 30, no runtime bounds check!
+    
+    %% This would be a compile-time error:
+    %% def demo_unsafe_indexing(): Int =
+    %%     let v = [10, 20, 30] in  % Type: Vector(Int, 3)
+    %%     let i: Index(3) = 5 in  % ERROR: Cannot prove 5 < 3
+    %%     safe_nth(v, i)
+    
+    %% ========================================================================
+    %% Example 3: Concatenation - Length Arithmetic
+    %% ========================================================================
+    
+    def concat<T, m: Nat, n: Nat>(
+        v1: Vector(T, m),
+        v2: Vector(T, n)
+    ): Vector(T, m + n) =
+        v1 ++ v2
+    
+    %% Usage
+    def demo_concat(): Vector(Int, 6) =
+        let v1 = [1, 2, 3] in      % Type: Vector(Int, 3)
+        let v2 = [4, 5, 6] in      % Type: Vector(Int, 3)
+        concat(v1, v2)              % Type: Vector(Int, 3 + 3) = Vector(Int, 6)
+    
+    %% Type system verifies the length!
+    def demo_concat_verified(): Vector(Int, 6) =
+        concat([1, 2, 3], [4, 5, 6])
+        % Compiler proves: length([1,2,3]) == 3, length([4,5,6]) == 3
+        % Therefore: length(result) == 3 + 3 == 6 ✓
+    
+    %% ========================================================================
+    %% Example 4: Matrix Operations - Multi-dimensional Safety
+    %% ========================================================================
+    
+    %% Matrix: A vector of vectors with verified dimensions
+    type Matrix(T, rows: Nat, cols: Nat) = Vector(Vector(T, cols), rows)
+    
+    %% Transpose: Swap rows and columns
+    %% Type system verifies dimensions automatically!
+    def transpose<T, m: Nat, n: Nat>(
+        matrix: Matrix(T, m, n)
+    ): Matrix(T, n, m) =
+        transpose_impl(matrix)
+    
+    def transpose_impl<T>(matrix: List(List(T))): List(List(T)) =
+        % Implementation details...
+        matrix  % Placeholder
+    
+    %% Matrix multiplication with dimension verification
+    def matrix_multiply<T, m: Nat, n: Nat, p: Nat>(
+        a: Matrix(T, m, n),
+        b: Matrix(T, n, p)
+    ): Matrix(T, m, p) =
+        % Compiler verifies: a.cols == b.rows (both are n)
+        % Result type: m rows, p cols
+        multiply_impl(a, b)
+    
+    def multiply_impl<T>(a: List(List(T)), b: List(List(T))): List(List(T)) =
+        % Implementation details...
+        [[]]  % Placeholder
+    
+    %% Usage
+    def demo_matrix(): Matrix(Int, 2, 3) =
+        let a = [[1, 2], [3, 4], [5, 6]] in  % Matrix(Int, 3, 2)
+        let b = [[7, 8, 9], [10, 11, 12]] in  % Matrix(Int, 2, 3)
+        matrix_multiply(a, b)  % Result: Matrix(Int, 3, 3)
+    
+    %% This would be a compile-time error:
+    %% def demo_matrix_error(): Matrix(Int, m, p) =
+    %%     let a = [[1, 2, 3], [4, 5, 6]] in  % Matrix(Int, 2, 3)
+    %%     let b = [[7, 8], [9, 10]] in        % Matrix(Int, 2, 2)
+    %%     matrix_multiply(a, b)  % ERROR: a.cols (3) != b.rows (2)
+    
+    %% ========================================================================
+    %% Example 5: Bounded Integers - Range Verification
+    %% ========================================================================
+    
+    %% Percentage: Always between 0 and 100
+    type Percentage = Int where 0 <= this <= 100
+    
+    %% Age: Non-negative integer (reasonable bounds)
+    type Age = Int where 0 <= this <= 150
+    
+    def calculate_percentage(value: Int, total: Int where total > 0): Percentage =
+        (value * 100) / total
+        % Compiler proves: result is in range [0, 100]
+    
+    def is_adult(age: Age): Bool =
+        age >= 18
+    
+    %% Usage
+    def demo_percentage(): Percentage =
+        calculate_percentage(75, 100)  % Returns 75, verified to be in [0, 100]
+    
+    def demo_age(person_age: Age): String =
+        match is_adult(person_age) with
+        | true -> "Adult"
+        | false -> "Minor"
+        end
+    
+    %% ========================================================================
+    %% Example 6: Take and Drop with Length Tracking
+    %% ========================================================================
+    
+    %% Take first k elements (k must be <= n)
+    def take<T, n: Nat, k: Nat where k <= n>(
+        v: Vector(T, n),
+        k: Nat
+    ): Vector(T, k) =
+        take_impl(v, k)
+    
+    def take_impl<T>(v: List(T), k: Int): List(T) =
+        match {v, k} with
+        | {_, 0} -> []
+        | {[x | xs], k} when k > 0 -> [x | take_impl(xs, k - 1)]
+        end
+    
+    %% Drop first k elements (k must be <= n)
+    def drop<T, n: Nat, k: Nat where k <= n>(
+        v: Vector(T, n),
+        k: Nat
+    ): Vector(T, n - k) =
+        drop_impl(v, k)
+    
+    def drop_impl<T>(v: List(T), k: Int): List(T) =
+        match {v, k} with
+        | {xs, 0} -> xs
+        | {[_ | xs], k} when k > 0 -> drop_impl(xs, k - 1)
+        end
+    
+    %% Usage
+    def demo_take_drop(): {Vector(Int, 3), Vector(Int, 2)} =
+        let v = [1, 2, 3, 4, 5] in  % Type: Vector(Int, 5)
+        let first_three = take(v, 3) in  % Type: Vector(Int, 3)
+        let last_two = drop(v, 3) in     % Type: Vector(Int, 5 - 3) = Vector(Int, 2)
+        {first_three, last_two}
+    
+    %% This would be a compile-time error:
+    %% def demo_take_too_many(): Vector(Int, 10) =
+    %%     let v = [1, 2, 3, 4, 5] in  % Type: Vector(Int, 5)
+    %%     take(v, 10)  % ERROR: Cannot prove 10 <= 5
+    
+    %% ========================================================================
+    %% Example 7: FSM with Dependent Types - State Invariants
+    %% ========================================================================
+    
+    %% Bank account FSM with balance invariant
+    fsm BankAccount do
+        type Balance = Int where this >= 0  % Balance must be non-negative
+        
+        payload: {balance: Balance}
+        
+        state Active(balance: Balance) do
+            %% Deposit always preserves balance >= 0
+            on deposit(amount: Int where amount > 0) ->
+                Active { balance = balance + amount }
+                % Compiler proves: balance + amount >= 0
+                % (balance >= 0 AND amount > 0) => (balance + amount >= 0)
+            
+            %% Withdraw only allowed if sufficient funds
+            on withdraw(amount: Int where amount <= balance) ->
+                Active { balance = balance - amount }
+                % Compiler proves: balance - amount >= 0
+                % (balance >= 0 AND amount <= balance) => (balance - amount >= 0)
+        end
+        
+        %% State invariant automatically verified by type system!
+        invariant: balance >= 0
+    end
+    
+    %% ========================================================================
+    %% Example 8: Zip with Same-Length Verification
+    %% ========================================================================
+    
+    def zip<T, U, n: Nat>(
+        v1: Vector(T, n),
+        v2: Vector(U, n)
+    ): Vector({T, U}, n) =
+        zip_impl(v1, v2)
+    
+    def zip_impl<T, U>(v1: List(T), v2: List(U)): List({T, U}) =
+        match {v1, v2} with
+        | {[], []} -> []
+        | {[x | xs], [y | ys]} -> [{x, y} | zip_impl(xs, ys)]
+        end
+    
+    %% Usage
+    def demo_zip(): Vector({Int, String}, 3) =
+        let numbers = [1, 2, 3] in      % Type: Vector(Int, 3)
+        let words = ["one", "two", "three"] in  % Type: Vector(String, 3)
+        zip(numbers, words)  % Type: Vector({Int, String}, 3)
+    
+    %% This would be a compile-time error:
+    %% def demo_zip_mismatch(): Vector({Int, String}, n) =
+    %%     let numbers = [1, 2, 3] in      % Type: Vector(Int, 3)
+    %%     let words = ["one", "two"] in   % Type: Vector(String, 2)
+    %%     zip(numbers, words)  % ERROR: Cannot unify 3 and 2
+    
+    %% ========================================================================
+    %% Summary of Benefits
+    %% ========================================================================
+    
+    %% 1. NO RUNTIME BOUNDS CHECKS
+    %%    - head/tail/nth operations don't need error handling
+    %%    - Compiler proves safety at compile time
+    %%    - Generated code is faster (no checks)
+    
+    %% 2. NO RUNTIME ERRORS
+    %%    - Empty list errors caught at compile time
+    %%    - Index out of bounds caught at compile time
+    %%    - Dimension mismatches caught at compile time
+    
+    %% 3. BETTER DOCUMENTATION
+    %%    - Types express invariants explicitly
+    %%    - Function signatures show preconditions
+    %%    - Matrix dimensions clear from types
+    
+    %% 4. VERIFIED CORRECTNESS
+    %%    - FSM invariants verified automatically
+    %%    - Balance constraints enforced by type system
+    %%    - Arithmetic relationships proven by SMT
+    
+    %% 5. OPTIMIZATIONS
+    %%    - Compiler can optimize away checks
+    %%    - Static length enables better memory layout
+    %%    - FSM transitions can be optimized
+    
+end

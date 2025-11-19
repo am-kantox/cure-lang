@@ -38,7 +38,7 @@ test_nested_let_expressions() ->
         bindings = [
             #binding{
                 pattern = #identifier_pattern{name = x, location = create_location(1, 5)},
-                value = create_literal_int(10),
+                type = create_literal_int(10),
                 location = create_location(1, 1)
             }
         ],
@@ -46,7 +46,7 @@ test_nested_let_expressions() ->
             bindings = [
                 #binding{
                     pattern = #identifier_pattern{name = y, location = create_location(2, 5)},
-                    value = #binary_op_expr{
+                    type = #binary_op_expr{
                         op = '+',
                         left = create_identifier('x'),
                         right = create_literal_int(5),
@@ -59,7 +59,7 @@ test_nested_let_expressions() ->
                 bindings = [
                     #binding{
                         pattern = #identifier_pattern{name = z, location = create_location(3, 5)},
-                        value = #binary_op_expr{
+                        type = #binary_op_expr{
                             op = '*',
                             left = create_identifier('y'),
                             right = create_literal_int(2),
@@ -164,7 +164,7 @@ test_let_with_function_calls() ->
         bindings = [
             #binding{
                 pattern = #identifier_pattern{name = x, location = create_location(1, 5)},
-                value = #function_call_expr{
+                type = #function_call_expr{
                     function = create_identifier('foo'),
                     args = [create_literal_int(1)],
                     location = create_location(1, 9)
@@ -176,7 +176,7 @@ test_let_with_function_calls() ->
             bindings = [
                 #binding{
                     pattern = #identifier_pattern{name = y, location = create_location(2, 5)},
-                    value = #function_call_expr{
+                    type = #function_call_expr{
                         function = create_identifier('bar'),
                         args = [create_identifier('x'), create_literal_int(2)],
                         location = create_location(2, 9)
@@ -221,7 +221,7 @@ test_deeply_nested_expressions() ->
         bindings = [
             #binding{
                 pattern = #identifier_pattern{name = a, location = create_location(1, 5)},
-                value = #function_call_expr{
+                type = #function_call_expr{
                     function = create_identifier('f'),
                     args = [
                         #let_expr{
@@ -230,7 +230,7 @@ test_deeply_nested_expressions() ->
                                     pattern = #identifier_pattern{
                                         name = b, location = create_location(1, 15)
                                     },
-                                    value = #function_call_expr{
+                                    type = #function_call_expr{
                                         function = create_identifier('g'),
                                         args = [create_literal_int(1)],
                                         location = create_location(1, 19)
@@ -256,7 +256,7 @@ test_deeply_nested_expressions() ->
             bindings = [
                 #binding{
                     pattern = #identifier_pattern{name = c, location = create_location(2, 5)},
-                    value = #function_call_expr{
+                    type = #function_call_expr{
                         function = create_identifier('h'),
                         args = [
                             create_identifier('a'),
@@ -266,7 +266,7 @@ test_deeply_nested_expressions() ->
                                         pattern = #identifier_pattern{
                                             name = d, location = create_location(2, 20)
                                         },
-                                        value = #function_call_expr{
+                                        type = #function_call_expr{
                                             function = create_identifier('i'),
                                             args = [create_literal_int(3)],
                                             location = create_location(2, 24)
@@ -340,7 +340,7 @@ test_let_expression_scoping() ->
         bindings = [
             #binding{
                 pattern = #identifier_pattern{name = x, location = create_location(1, 5)},
-                value = create_literal_int(1),
+                type = create_literal_int(1),
                 location = create_location(1, 1)
             }
         ],
@@ -350,7 +350,7 @@ test_let_expression_scoping() ->
                 bindings = [
                     #binding{
                         pattern = #identifier_pattern{name = x, location = create_location(1, 20)},
-                        value = create_literal_int(2),
+                        type = create_literal_int(2),
                         location = create_location(1, 16)
                     }
                 ],
@@ -513,7 +513,7 @@ test_closure_generation() ->
         bindings = [
             #binding{
                 pattern = #identifier_pattern{name = x, location = create_location(1, 5)},
-                value = create_literal_int(10),
+                type = create_literal_int(10),
                 location = create_location(1, 1)
             }
         ],
@@ -521,7 +521,7 @@ test_closure_generation() ->
             bindings = [
                 #binding{
                     pattern = #identifier_pattern{name = f, location = create_location(2, 5)},
-                    value = #lambda_expr{
+                    type = #lambda_expr{
                         params = [
                             #param{name = y, type = undefined, location = create_location(2, 17)}
                         ],
@@ -660,7 +660,7 @@ test_let_expression_optimizations() ->
         bindings = [
             #binding{
                 pattern = #identifier_pattern{name = x, location = create_location(1, 5)},
-                value = create_literal_int(5),
+                type = create_literal_int(5),
                 location = create_location(1, 1)
             }
         ],
@@ -680,7 +680,7 @@ test_let_expression_optimizations() ->
         bindings = [
             #binding{
                 pattern = #identifier_pattern{name = x, location = create_location(2, 5)},
-                value = #function_call_expr{
+                type = #function_call_expr{
                     function = create_identifier('expensive_call'),
                     args = [],
                     location = create_location(2, 9)
