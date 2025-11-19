@@ -37,6 +37,7 @@ Positive <: NonZero   (proven by Z3: x > 0 => x /= 0)
 """.
 
 -include("../parser/cure_ast.hrl").
+-include("cure_refinement_types.hrl").
 
 -export([
     % Refinement type operations
@@ -68,13 +69,6 @@ Positive <: NonZero   (proven by Z3: x > 0 => x /= 0)
 %% ============================================================================
 %% Type Definitions
 %% ============================================================================
-
--record(refinement_type, {
-    base_type :: type_expr(),
-    variable :: atom(),
-    predicate :: expr(),
-    location :: location()
-}).
 
 -type refinement_type() :: #refinement_type{}.
 
@@ -336,10 +330,69 @@ format_refinement_error(Other) ->
 %% @doc Generate a counterexample for constraint violation
 -spec generate_counterexample(expr(), refinement_type()) ->
     {ok, map()} | {error, term()}.
-generate_counterexample(_ValueExpr, #refinement_type{variable = Var, predicate = _Pred}) ->
-    % Simplified counterexample generation
-    % In full implementation, would use Z3 to find actual counterexamples
-    {ok, #{Var => 0}}.
+generate_counterexample(ValueExpr, #refinement_type{variable = Var, predicate = Pred}) ->
+    % Try to find a counterexample using Z3
+    try
+        % Build a query that asks Z3 to find a value that violates the constraint
+        % (assert (not predicate))
+        NegatedPred = negate_predicate(Pred),
+        SubstitutedPred = substitute_in_expr(NegatedPred, Var, ValueExpr),
+
+        Query = cure_smt_translator:generate_model_query(
+            SubstitutedPred,
+            SubstitutedPred,
+            #{}
+        ),
+
+        QueryBinary = iolist_to_binary(Query),
+        case z3_query_with_model(QueryBinary) of
+            {ok, Model} when map_size(Model) > 0 ->
+                {ok, Model};
+            {ok, _EmptyModel} ->
+                % No model available, return placeholder
+                {ok, #{Var => unknown}};
+            {error, _Reason} ->
+                {ok, #{Var => unknown}}
+        end
+    catch
+        _:_ ->
+            % Fallback to placeholder
+            {ok, #{Var => unknown}}
+    end.
+
+%% @doc Negate a predicate expression for counterexample generation
+negate_predicate(#binary_op_expr{op = '>', left = L, right = R} = _Pred) ->
+    % x > n becomes x <= n
+    #binary_op_expr{op = '<=', left = L, right = R, location = #location{}};
+negate_predicate(#binary_op_expr{op = '>=', left = L, right = R} = _Pred) ->
+    #binary_op_expr{op = '<', left = L, right = R, location = #location{}};
+negate_predicate(#binary_op_expr{op = '<', left = L, right = R} = _Pred) ->
+    #binary_op_expr{op = '>=', left = L, right = R, location = #location{}};
+negate_predicate(#binary_op_expr{op = '<=', left = L, right = R} = _Pred) ->
+    #binary_op_expr{op = '>', left = L, right = R, location = #location{}};
+negate_predicate(#binary_op_expr{op = '==', left = L, right = R} = _Pred) ->
+    #binary_op_expr{op = '!=', left = L, right = R, location = #location{}};
+negate_predicate(#binary_op_expr{op = '!=', left = L, right = R} = _Pred) ->
+    #binary_op_expr{op = '==', left = L, right = R, location = #location{}};
+negate_predicate(#binary_op_expr{op = 'and', left = L, right = R} = _Pred) ->
+    % !(A && B) = !A || !B (De Morgan)
+    #binary_op_expr{
+        op = 'or',
+        left = negate_predicate(L),
+        right = negate_predicate(R),
+        location = #location{}
+    };
+negate_predicate(#binary_op_expr{op = 'or', left = L, right = R} = _Pred) ->
+    % !(A || B) = !A && !B (De Morgan)
+    #binary_op_expr{
+        op = 'and',
+        left = negate_predicate(L),
+        right = negate_predicate(R),
+        location = #location{}
+    };
+negate_predicate(Expr) ->
+    % Fallback: wrap in unary not
+    #unary_op_expr{op = 'not', operand = Expr, location = #location{}}.
 
 %% ============================================================================
 %% Helper Functions
@@ -362,6 +415,32 @@ z3_query(QueryBinary) ->
                     {unknown, _} -> {ok, <<"unknown">>};
                     {error, Reason} -> {error, Reason}
                 end
+            catch
+                _:Error ->
+                    cure_smt_process:stop_solver(Pid),
+                    {error, Error}
+            end;
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Execute a Z3 query and extract model for counterexample
+z3_query_with_model(QueryBinary) ->
+    case cure_smt_process:start_solver(z3, 5000) of
+        {ok, Pid} ->
+            try
+                % Execute query with (check-sat) and (get-model)
+                Result = cure_smt_process:execute_query(Pid, QueryBinary, 5000),
+                Model =
+                    case Result of
+                        {sat, ModelData} ->
+                            % Parse model from Z3 output
+                            cure_smt_parser:parse_model(ModelData);
+                        _ ->
+                            {ok, #{}}
+                    end,
+                cure_smt_process:stop_solver(Pid),
+                Model
             catch
                 _:Error ->
                     cure_smt_process:stop_solver(Pid),

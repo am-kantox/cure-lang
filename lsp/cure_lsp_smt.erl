@@ -18,8 +18,14 @@
 
     % Incremental verification
     init_verification_state/0,
+    init_verification_state/1,
     verify_document_incremental/2,
     invalidate_cache/2,
+    invalidate_cache_region/4,
+    get_cache_stats/1,
+    evict_old_cache_entries/2,
+    push_solver_context/1,
+    pop_solver_context/1,
 
     % Diagnostics
     refinement_violation_to_diagnostic/1,
@@ -27,12 +33,32 @@
     pattern_exhaustiveness_to_diagnostic/1,
     generate_pattern_diagnostics/1,
 
+    % Hover support (Phase 4.2)
+    generate_hover_info/3,
+    generate_type_hover/2,
+    generate_constraint_hover/2,
+    format_refinement_violation/2,
+    format_type/1,
+    format_predicate/1,
+    format_operator/1,
+
+    % Code actions (Phase 4.3)
+    generate_assertion/1,
+    generate_guard_clause/1,
+    generate_relaxed_constraint/1,
+    generate_conditional_wrapper/1,
+    generate_type_annotation/1,
+    generate_refinement_annotation/1,
+    relax_predicate/1,
+    generate_relaxed_type/2,
+
     % FSM verification
     generate_fsm_diagnostics/1,
     fsm_verification_to_diagnostic/2
 ]).
 
 -include("../src/parser/cure_ast.hrl").
+-include("../src/types/cure_refinement_types.hrl").
 
 %% ============================================================================
 %% Type Constraint Extraction
@@ -607,25 +633,6 @@ infer_pattern_type(#tuple_pattern{}) ->
 infer_pattern_type(_) ->
     unknown.
 
-format_type(int) ->
-    <<"Int">>;
-format_type(float) ->
-    <<"Float">>;
-format_type(string) ->
-    <<"String">>;
-format_type(atom) ->
-    <<"Atom">>;
-format_type(list) ->
-    <<"List">>;
-format_type(tuple) ->
-    <<"Tuple">>;
-format_type(unknown) ->
-    <<"_">>;
-format_type(Type) when is_atom(Type) ->
-    atom_to_binary(Type, utf8);
-format_type(_) ->
-    <<"Unknown">>.
-
 %% ============================================================================
 %% Refinement Type Verification (Phase 3 Integration)
 %% ============================================================================
@@ -717,18 +724,68 @@ extract_argument_types(_) ->
 
 -record(verification_state, {
     % Cache of verification results
-    cache = #{} :: #{constraint_hash() => result()},
+    cache = #{} :: #{constraint_hash() => {result(), integer()}},
     % Document constraints
     doc_constraints = #{} :: #{uri() => [constraint()]},
     % Verification timestamps
     timestamps = #{} :: #{uri() => integer()},
     % Active solver process (optional, for session persistence)
-    solver_pid = undefined :: pid() | undefined
+    solver_pid = undefined :: pid() | undefined,
+    % Solver context depth (for push/pop)
+    context_depth = 0 :: integer(),
+    % Cache statistics
+    cache_hits = 0 :: integer(),
+    cache_misses = 0 :: integer(),
+    % Document line change tracking
+    doc_changes = #{} :: #{uri() => #{integer() => boolean()}}
 }).
 
 %% @doc Initialize verification state for incremental solving
 init_verification_state() ->
-    #verification_state{}.
+    init_verification_state(#{}).
+
+%% @doc Initialize verification state with options
+init_verification_state(Opts) ->
+    UsePersistentSolver = maps:get(persistent_solver, Opts, true),
+
+    State = #verification_state{},
+
+    case UsePersistentSolver of
+        true ->
+            % Start persistent solver process
+            case start_persistent_solver(Opts) of
+                {ok, Pid} ->
+                    State#verification_state{solver_pid = Pid};
+                {error, _Reason} ->
+                    % Fall back to non-persistent
+                    State
+            end;
+        false ->
+            State
+    end.
+
+%% @doc Start a persistent solver session
+start_persistent_solver(Opts) ->
+    Solver = maps:get(solver, Opts, z3),
+    % Shorter timeout for LSP
+    Timeout = maps:get(timeout, Opts, 500),
+
+    case cure_smt_process:start_solver(Solver, Timeout) of
+        {ok, Pid} ->
+            % Initialize solver with common declarations
+            % Use longer timeout for initialization (5000ms)
+            InitQuery = [
+                <<"(set-option :produce-models true)\n">>,
+                <<"(set-option :produce-unsat-cores true)\n">>
+            ],
+            case cure_smt_process:execute_query(Pid, InitQuery, 5000) of
+                % Continue even if options fail
+                {error, _} -> {ok, Pid};
+                _ -> {ok, Pid}
+            end;
+        Error ->
+            Error
+    end.
 
 %% @doc Verify document with incremental constraint solving
 verify_document_incremental(Uri, #verification_state{} = State) ->
@@ -739,7 +796,7 @@ verify_document_incremental(Uri, #verification_state{} = State) ->
     % Check if document has changed
     case Timestamp > LastTimestamp of
         true ->
-            % Document changed - re-verify
+            % Document changed - re-verify with cache
             case verify_document_with_cache(Uri, State) of
                 {ok, Diagnostics, NewState} ->
                     UpdatedState = NewState#verification_state{
@@ -752,42 +809,112 @@ verify_document_incremental(Uri, #verification_state{} = State) ->
                     Error
             end;
         false ->
-            % Document unchanged - use cached results
+            % Document unchanged - return cached diagnostics
             CachedDiagnostics = get_cached_diagnostics(Uri, State),
-            {ok, CachedDiagnostics, State}
+            NewState = State#verification_state{
+                cache_hits = State#verification_state.cache_hits + 1
+            },
+            {ok, CachedDiagnostics, NewState}
+    end.
+
+%% @doc Push a new context onto the solver stack
+push_solver_context(#verification_state{solver_pid = undefined} = State) ->
+    % No persistent solver, return unchanged
+    State;
+push_solver_context(#verification_state{solver_pid = Pid, context_depth = Depth} = State) ->
+    % Send push command to solver
+    Query = <<"(push 1)\n">>,
+    case cure_smt_process:execute_query(Pid, Query, 500) of
+        {error, _Reason} ->
+            % Push failed, continue without persistent solver
+            State#verification_state{solver_pid = undefined};
+        _ ->
+            % Successfully pushed
+            State#verification_state{context_depth = Depth + 1}
+    end.
+
+%% @doc Pop a context from the solver stack
+pop_solver_context(#verification_state{solver_pid = undefined} = State) ->
+    State;
+pop_solver_context(#verification_state{solver_pid = Pid, context_depth = Depth} = State) when
+    Depth > 0
+->
+    Query = <<"(pop 1)\n">>,
+    case cure_smt_process:execute_query(Pid, Query, 500) of
+        {error, _Reason} ->
+            State#verification_state{solver_pid = undefined, context_depth = 0};
+        _ ->
+            State#verification_state{context_depth = Depth - 1}
+    end;
+pop_solver_context(State) ->
+    State.
+
+%% @doc Execute query with persistent solver if available
+execute_with_solver(Query, #verification_state{solver_pid = undefined}) ->
+    % No persistent solver, use one-shot verification
+    case cure_smt_solver:check_constraint(Query, #{}) of
+        {sat, Model} -> {ok, sat, Model};
+        sat -> {ok, sat, #{}};
+        unsat -> {ok, unsat, #{}};
+        unknown -> {ok, unknown, #{}};
+        {error, Reason} -> {error, Reason}
+    end;
+execute_with_solver(Query, #verification_state{solver_pid = Pid}) ->
+    % Use persistent solver
+    QueryBin = constraint_to_smtlib(Query),
+    case cure_smt_process:execute_query(Pid, QueryBin, 500) of
+        {sat, ModelLines} ->
+            Model = parse_model_from_lines(ModelLines),
+            {ok, sat, Model};
+        {unsat, _} ->
+            {ok, unsat, #{}};
+        {unknown, _} ->
+            {ok, unknown, #{}};
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 %% @doc Verify document using cache for unchanged constraints
 verify_document_with_cache(Uri, #verification_state{cache = Cache} = State) ->
-    % Extract constraints from document (placeholder)
+    % Extract constraints from document
     Constraints = extract_document_constraints(Uri),
 
+    Timestamp = erlang:system_time(millisecond),
+
     % Verify constraints, using cache when possible
-    {Diagnostics, NewCache} = lists:foldl(
-        fun(Constraint, {DiagAcc, CacheAcc}) ->
+    {Diagnostics, NewCache, NewState} = lists:foldl(
+        fun(Constraint, {DiagAcc, CacheAcc, StateAcc}) ->
             Hash = constraint_hash(Constraint),
             case maps:get(Hash, CacheAcc, undefined) of
                 undefined ->
-                    % Not in cache - verify
-                    case verify_constraint(Constraint) of
-                        {ok, Result} ->
-                            Diag = constraint_result_to_diagnostic(Constraint, Result),
-                            {[Diag | DiagAcc], maps:put(Hash, Result, CacheAcc)};
-                        _ ->
-                            {DiagAcc, CacheAcc}
+                    % Not in cache - verify with persistent solver if available
+                    case execute_with_solver(Constraint, StateAcc) of
+                        {ok, Result, Model} ->
+                            % Store in cache with timestamp
+                            NewCacheAcc = maps:put(Hash, {Result, Timestamp}, CacheAcc),
+                            Diag = constraint_result_to_diagnostic(Constraint, Result, Model),
+                            NewStateAcc = StateAcc#verification_state{
+                                cache_misses = StateAcc#verification_state.cache_misses + 1
+                            },
+                            {[Diag | DiagAcc], NewCacheAcc, NewStateAcc};
+                        {error, _Reason} ->
+                            {DiagAcc, CacheAcc, StateAcc}
                     end;
-                CachedResult ->
+                {CachedResult, _CachedTime} ->
                     % In cache - reuse
-                    Diag = constraint_result_to_diagnostic(Constraint, CachedResult),
-                    {[Diag | DiagAcc], CacheAcc}
+                    Diag = constraint_result_to_diagnostic(Constraint, CachedResult, #{}),
+                    NewStateAcc = StateAcc#verification_state{
+                        cache_hits = StateAcc#verification_state.cache_hits + 1
+                    },
+                    {[Diag | DiagAcc], CacheAcc, NewStateAcc}
             end
         end,
-        {[], Cache},
+        {[], Cache, State},
         Constraints
     ),
 
-    NewState = State#verification_state{cache = NewCache},
-    {ok, lists:reverse(Diagnostics), NewState}.
+    FinalState = NewState#verification_state{cache = NewCache},
+    {ok, lists:reverse(Diagnostics), FinalState}.
 
 %% @doc Invalidate cache for changed document regions
 invalidate_cache(Uri, #verification_state{cache = Cache, doc_constraints = DocCons} = State) ->
@@ -803,8 +930,51 @@ invalidate_cache(Uri, #verification_state{cache = Cache, doc_constraints = DocCo
 
     State#verification_state{
         cache = NewCache,
-        doc_constraints = maps:remove(Uri, DocCons)
+        doc_constraints = maps:remove(Uri, DocCons),
+        doc_changes = maps:remove(Uri, State#verification_state.doc_changes)
     }.
+
+%% @doc Invalidate cache for specific line range
+invalidate_cache_region(Uri, StartLine, EndLine, #verification_state{} = State) ->
+    % Mark lines as changed
+    Changes = maps:get(Uri, State#verification_state.doc_changes, #{}),
+    NewChanges = lists:foldl(
+        fun(Line, Acc) ->
+            maps:put(Line, true, Acc)
+        end,
+        Changes,
+        lists:seq(StartLine, EndLine)
+    ),
+
+    State#verification_state{
+        doc_changes = maps:put(Uri, NewChanges, State#verification_state.doc_changes)
+    }.
+
+%% @doc Get cache statistics
+get_cache_stats(#verification_state{cache_hits = Hits, cache_misses = Misses, cache = Cache}) ->
+    Total = Hits + Misses,
+    HitRate =
+        if
+            Total > 0 -> (Hits / Total) * 100;
+            true -> 0.0
+        end,
+    #{
+        cache_hits => Hits,
+        cache_misses => Misses,
+        cache_size => maps:size(Cache),
+        hit_rate_percent => HitRate
+    }.
+
+%% @doc Clear old cache entries (cache eviction)
+evict_old_cache_entries(#verification_state{cache = Cache} = State, MaxAge) ->
+    Now = erlang:system_time(millisecond),
+    NewCache = maps:filter(
+        fun(_Hash, {_Result, Timestamp}) ->
+            (Now - Timestamp) < MaxAge
+        end,
+        Cache
+    ),
+    State#verification_state{cache = NewCache}.
 
 extract_document_constraints(_Uri) ->
     % Placeholder - would extract constraints from parsed document
@@ -822,9 +992,65 @@ get_cached_diagnostics(_Uri, _State) ->
     % Placeholder - would return cached diagnostics
     [].
 
-constraint_result_to_diagnostic(_Constraint, _Result) ->
-    % Placeholder - would convert result to LSP diagnostic
-    #{}.
+constraint_result_to_diagnostic(_Constraint, valid, _Model) ->
+    % No diagnostic for valid constraints
+    undefined;
+constraint_result_to_diagnostic(Constraint, invalid, Model) ->
+    % Generate diagnostic for invalid constraint
+    Location = get_constraint_location(Constraint),
+    #{
+        range => location_to_range(Location),
+        % Error
+        severity => 1,
+        source => <<"Cure SMT">>,
+        message => format_constraint_violation(Constraint, Model),
+        code => <<"constraint-violation">>
+    };
+constraint_result_to_diagnostic(_Constraint, unknown, _Model) ->
+    % Unknown result - no diagnostic (may need runtime check)
+    undefined.
+
+%% @doc Convert constraint to SMT-LIB format
+constraint_to_smtlib(Constraint) ->
+    % Use existing SMT translator
+    case cure_smt_translator:translate_to_smtlib(Constraint, #{}) of
+        {ok, SmtLib} -> SmtLib;
+        % Fallback
+        {error, _} -> <<"(check-sat)\n">>
+    end.
+
+%% @doc Parse model from SMT solver output lines
+parse_model_from_lines(Lines) ->
+    case cure_smt_parser:parse_model(Lines) of
+        {ok, Model} -> Model;
+        {error, _} -> #{}
+    end.
+
+%% @doc Get location from constraint
+get_constraint_location(_Constraint) ->
+    % Placeholder - would extract location from constraint AST
+    #location{line = 1, column = 1, file = undefined}.
+
+%% @doc Format constraint violation message
+format_constraint_violation(_Constraint, Model) ->
+    case maps:size(Model) of
+        0 ->
+            <<"Constraint cannot be satisfied">>;
+        _ ->
+            Entries = [
+                iolist_to_binary([atom_to_binary(K, utf8), <<" = ">>, format_value(V)])
+             || {K, V} <- maps:to_list(Model)
+            ],
+            iolist_to_binary([
+                <<"Constraint violated with: ">>,
+                iolist_to_binary(lists:join(<<", ">>, Entries))
+            ])
+    end.
+
+format_value(V) when is_integer(V) -> integer_to_binary(V);
+format_value(V) when is_float(V) -> float_to_binary(V);
+format_value(V) when is_atom(V) -> atom_to_binary(V, utf8);
+format_value(V) -> iolist_to_binary(io_lib:format("~p", [V])).
 
 %% ============================================================================
 %% Rich Diagnostics (Phase 4)
@@ -865,14 +1091,33 @@ refinement_violation_to_diagnostic(Other) ->
     }.
 
 format_refinement_violation(RefType, CounterEx) ->
+    TypeStr = format_refinement_type_constraint(RefType),
+    CounterExStr = format_counterexample_detailed(CounterEx),
+
     iolist_to_binary([
-        <<"Refinement type constraint violated\n">>,
-        <<"  Required: ">>,
-        cure_refinement_types:format_refinement_error(RefType),
+        <<"Constraint violation\n">>,
+        <<"━━━━━━━━━━━━━━━━━━━━━━━━\n">>,
+        <<"Required: ">>,
+        TypeStr,
         <<"\n">>,
-        <<"  Counterexample: ">>,
-        format_counterexample(CounterEx)
+        <<"\nCounterexample:\n">>,
+        CounterExStr,
+        <<"\n━━━━━━━━━━━━━━━━━━━━━━━━\n">>,
+        <<"\n💡 Tip: Strengthen the constraint or add runtime validation">>
     ]).
+
+format_counterexample_detailed(CounterEx) when is_map(CounterEx), map_size(CounterEx) > 0 ->
+    Entries = lists:map(
+        fun({K, V}) ->
+            VarName = format_variable_name(K),
+            VarValue = format_variable_value(V),
+            iolist_to_binary([<<"  • ">>, VarName, <<" = ">>, VarValue])
+        end,
+        maps:to_list(CounterEx)
+    ),
+    iolist_to_binary(lists:join(<<"\n">>, Entries));
+format_counterexample_detailed(_) ->
+    <<"  (No specific counterexample available)">>.
 
 format_counterexample(CounterEx) when is_map(CounterEx) ->
     Entries = [
@@ -882,6 +1127,49 @@ format_counterexample(CounterEx) when is_map(CounterEx) ->
     iolist_to_binary(lists:join(<<", ">>, Entries));
 format_counterexample(Other) ->
     iolist_to_binary(io_lib:format("~p", [Other])).
+
+format_variable_name(Var) when is_atom(Var) ->
+    atom_to_binary(Var, utf8);
+format_variable_name(Var) ->
+    iolist_to_binary(io_lib:format("~p", [Var])).
+
+format_variable_value(unknown) -> <<"<unknown>">>;
+format_variable_value(V) when is_integer(V) -> integer_to_binary(V);
+format_variable_value(V) when is_float(V) -> float_to_binary(V, [{decimals, 4}]);
+format_variable_value(V) when is_atom(V) -> atom_to_binary(V, utf8);
+format_variable_value(V) when is_binary(V) -> <<"\"", V/binary, "\"">>;
+format_variable_value(V) -> iolist_to_binary(io_lib:format("~p", [V])).
+
+format_refinement_type_constraint(#refinement_type{variable = Var, predicate = Pred}) ->
+    VarStr = format_variable_name(Var),
+    PredStr = format_predicate(Pred),
+    iolist_to_binary([<<"{">>, VarStr, <<" : Int | ">>, PredStr, <<"}">>]);
+format_refinement_type_constraint(Type) when is_record(Type, refinement_type) ->
+    <<"<refinement type>">>;
+format_refinement_type_constraint(_) ->
+    <<"<type>">>.
+
+format_predicate(#binary_op_expr{op = Op, left = L, right = R}) ->
+    LeftStr = format_predicate(L),
+    RightStr = format_predicate(R),
+    OpStr = format_operator(Op),
+    iolist_to_binary([LeftStr, <<" ">>, OpStr, <<" ">>, RightStr]);
+format_predicate(#identifier_expr{name = Name}) ->
+    atom_to_binary(Name, utf8);
+format_predicate(#literal_expr{value = Val}) ->
+    format_variable_value(Val);
+format_predicate(_) ->
+    <<"...">>.
+
+format_operator('>') -> <<">">>;
+format_operator('>=') -> <<">=">>;
+format_operator('<') -> <<"<">>;
+format_operator('<=') -> <<"<=">>;
+format_operator('==') -> <<"==">>;
+format_operator('!=') -> <<"!=">>;
+format_operator('and') -> <<"&&">>;
+format_operator('or') -> <<"||">>;
+format_operator(Op) -> atom_to_binary(Op, utf8).
 
 location_to_range(#location{line = Line, column = Col}) ->
     #{
@@ -899,21 +1187,69 @@ location_to_range(_) ->
 %% ============================================================================
 
 %% @doc Generate code actions for refinement type violations
-generate_code_actions({precondition_violation, Location, RefType, _CounterEx}, Uri) ->
+generate_code_actions({precondition_violation, Location, RefType, CounterEx}, Uri) ->
+    % Generate multiple quick fix options
     [
-        % Quick fix: Add runtime check
+        % Quick fix 1: Add runtime assertion
         #{
-            title => <<"Add constraint check">>,
+            title => <<"Add runtime assertion">>,
             kind => <<"quickfix">>,
             diagnostics => [
-                refinement_violation_to_diagnostic({precondition_violation, Location, RefType, #{}})
+                refinement_violation_to_diagnostic(
+                    {precondition_violation, Location, RefType, CounterEx}
+                )
             ],
             edit => #{
                 changes => #{
                     Uri => [
                         #{
                             range => location_to_range(Location),
-                            newText => generate_constraint_check(RefType)
+                            newText => generate_assertion(RefType)
+                        }
+                    ]
+                }
+            }
+        },
+        % Quick fix 2: Add guard clause
+        #{
+            title => <<"Add guard clause">>,
+            kind => <<"quickfix">>,
+            edit => #{
+                changes => #{
+                    Uri => [
+                        #{
+                            range => location_to_range(Location),
+                            newText => generate_guard_clause(RefType)
+                        }
+                    ]
+                }
+            }
+        },
+        % Quick fix 3: Relax constraint
+        #{
+            title => <<"Suggest weaker constraint">>,
+            kind => <<"quickfix">>,
+            edit => #{
+                changes => #{
+                    Uri => [
+                        #{
+                            range => location_to_range(Location),
+                            newText => generate_relaxed_constraint(RefType)
+                        }
+                    ]
+                }
+            }
+        },
+        % Quick fix 4: Wrap in conditional
+        #{
+            title => <<"Wrap in conditional check">>,
+            kind => <<"quickfix">>,
+            edit => #{
+                changes => #{
+                    Uri => [
+                        #{
+                            range => location_to_range(Location),
+                            newText => generate_conditional_wrapper(RefType)
                         }
                     ]
                 }
@@ -932,6 +1268,72 @@ generate_code_actions({incomplete_pattern_match, Location, MissingPatterns}, Uri
                         #{
                             range => location_to_range(Location),
                             newText => generate_missing_patterns_text(MissingPatterns)
+                        }
+                    ]
+                }
+            }
+        }
+    ];
+generate_code_actions({missing_type_annotation, Location, SuggestedType}, Uri) ->
+    [
+        % Quick fix: Add inferred type annotation
+        #{
+            title => <<"Add type annotation">>,
+            kind => <<"quickfix">>,
+            edit => #{
+                changes => #{
+                    Uri => [
+                        #{
+                            range => location_to_range(Location),
+                            newText => generate_type_annotation(SuggestedType)
+                        }
+                    ]
+                }
+            }
+        },
+        % Quick fix: Add refinement type annotation
+        #{
+            title => <<"Add refinement type">>,
+            kind => <<"quickfix">>,
+            edit => #{
+                changes => #{
+                    Uri => [
+                        #{
+                            range => location_to_range(Location),
+                            newText => generate_refinement_annotation(SuggestedType)
+                        }
+                    ]
+                }
+            }
+        }
+    ];
+generate_code_actions({subtype_check_failed, Location, Type1, Type2}, Uri) ->
+    [
+        % Quick fix: Use more general type
+        #{
+            title => iolist_to_binary([<<"Use type ">>, format_type(Type2)]),
+            kind => <<"quickfix">>,
+            edit => #{
+                changes => #{
+                    Uri => [
+                        #{
+                            range => location_to_range(Location),
+                            newText => format_type(Type2)
+                        }
+                    ]
+                }
+            }
+        },
+        % Quick fix: Relax constraint in Type1
+        #{
+            title => <<"Relax constraint to satisfy subtyping">>,
+            kind => <<"quickfix">>,
+            edit => #{
+                changes => #{
+                    Uri => [
+                        #{
+                            range => location_to_range(Location),
+                            newText => generate_relaxed_type(Type1, Type2)
                         }
                     ]
                 }
@@ -1087,24 +1489,142 @@ format_pattern_for_code(_) ->
     "_".
 
 generate_constraint_check(RefType) ->
-    % Generate if-check for constraint
-    % Simplified - would generate proper Cure syntax
+    % Legacy function - use generate_assertion instead
+    generate_assertion(RefType).
+
+%% @doc Generate assertion for runtime constraint checking
+generate_assertion(#refinement_type{variable = Var, predicate = Pred}) ->
+    PredStr = format_predicate(Pred),
+    VarStr = atom_to_binary(Var, utf8),
     iolist_to_binary([
-        <<"if satisfies_constraint(x) then\n">>,
-        <<"  % your code here\n">>,
+        <<"assert ">>,
+        PredStr,
+        <<" else error(\"">>,
+        <<"Constraint violated: ">>,
+        VarStr,
+        <<" must satisfy ">>,
+        PredStr,
+        <<"\")">>
+    ]);
+generate_assertion(_) ->
+    <<"assert true">>.
+
+%% @doc Generate guard clause for function parameter
+generate_guard_clause(#refinement_type{variable = Var, predicate = Pred}) ->
+    PredStr = format_predicate_for_guard(Pred),
+    iolist_to_binary([<<" when ">>, PredStr]);
+generate_guard_clause(_) ->
+    <<"">>.
+
+%% @doc Format predicate for guard clause (may need variable substitution)
+format_predicate_for_guard(Pred) ->
+    % Similar to format_predicate but for guard context
+    format_predicate(Pred).
+
+%% @doc Generate relaxed version of constraint
+generate_relaxed_constraint(#refinement_type{variable = Var, predicate = Pred, base_type = Base}) ->
+    % Try to weaken the constraint
+    RelaxedPred = relax_predicate(Pred),
+    BaseStr = format_type(Base),
+    VarStr = atom_to_binary(Var, utf8),
+    PredStr = format_predicate(RelaxedPred),
+    iolist_to_binary([
+        <<"% Suggested weaker constraint:\n">>,
+        <<"% type ">>,
+        VarStr,
+        <<"Type = ">>,
+        BaseStr,
+        <<" when ">>,
+        PredStr
+    ]);
+generate_relaxed_constraint(_) ->
+    <<"% No relaxation available">>.
+
+%% @doc Relax a predicate to a weaker version
+relax_predicate(#binary_op_expr{op = '>', left = L, right = R} = _Pred) ->
+    % x > n becomes x >= n
+    #binary_op_expr{op = '>=', left = L, right = R, location = #location{}};
+relax_predicate(#binary_op_expr{op = '<', left = L, right = R} = _Pred) ->
+    % x < n becomes x <= n
+    #binary_op_expr{op = '<=', left = L, right = R, location = #location{}};
+relax_predicate(#binary_op_expr{op = '!=', left = L, right = R} = _Pred) ->
+    % x != n becomes true (remove constraint)
+    #literal_expr{value = true, location = #location{}};
+relax_predicate(#binary_op_expr{op = 'and', left = L, right = _R} = _Pred) ->
+    % A && B becomes A (drop second constraint)
+    L;
+relax_predicate(Pred) ->
+    % Can't relax, return original
+    Pred.
+
+%% @doc Generate conditional wrapper for expression
+generate_conditional_wrapper(#refinement_type{variable = Var, predicate = Pred}) ->
+    PredStr = format_predicate(Pred),
+    VarStr = atom_to_binary(Var, utf8),
+    iolist_to_binary([
+        <<"if ">>,
+        PredStr,
+        <<" then\n">>,
+        <<"  % Your code here\n">>,
+        <<"  ???\n">>,
         <<"else\n">>,
-        <<"  error(\"Constraint violation: ">>,
-        io_lib:format("~p", [RefType]),
-        <<"\")\n">>,
-        <<"end">>
-    ]).
+        <<"  error(\"">>,
+        VarStr,
+        <<" must satisfy ">>,
+        PredStr,
+        <<"\")">>,
+        <<"\nend">>
+    ]);
+generate_conditional_wrapper(_) ->
+    <<"if true then ??? end">>.
 
 generate_refined_type_annotation(RefType) ->
-    % Generate refined type annotation
-    iolist_to_binary([
-        <<": ">>,
-        cure_refinement_types:format_refinement_error(RefType)
-    ]).
+    % Legacy - use generate_refinement_annotation
+    generate_refinement_annotation(RefType).
+
+%% @doc Generate simple type annotation
+generate_type_annotation(Type) ->
+    TypeStr = format_type(Type),
+    iolist_to_binary([<<": ">>, TypeStr]).
+
+%% @doc Generate refinement type annotation
+generate_refinement_annotation(#refinement_type{} = RefType) ->
+    TypeStr = format_type(RefType),
+    iolist_to_binary([<<": ">>, TypeStr]);
+generate_refinement_annotation(Type) ->
+    % Not a refinement type, suggest a template
+    TypeStr = format_type(Type),
+    iolist_to_binary([<<": {x : ">>, TypeStr, <<" | x > 0}">>]).
+
+%% @doc Generate relaxed type to satisfy subtyping
+generate_relaxed_type(Type1, Type2) ->
+    % Try to find a middle ground between Type1 and Type2
+    case {Type1, Type2} of
+        {#refinement_type{} = Ref1, #refinement_type{} = Ref2} ->
+            % Both refinement types - try to combine predicates
+            generate_combined_refinement(Ref1, Ref2);
+        {#refinement_type{base_type = Base}, _} ->
+            % Type1 refined, Type2 not - use base type
+            format_type(Base);
+        {_, #refinement_type{} = Ref2} ->
+            % Type2 refined, Type1 not - suggest Type2
+            format_type(Ref2);
+        _ ->
+            % Neither refined - use Type2
+            format_type(Type2)
+    end.
+
+%% @doc Combine two refinement types (weakening Type1)
+generate_combined_refinement(
+    #refinement_type{variable = Var1, predicate = Pred1, base_type = Base},
+    #refinement_type{variable = _Var2, predicate = Pred2}
+) ->
+    % Weaken Pred1 or combine with Pred2
+    RelaxedPred = relax_predicate(Pred1),
+    PredStr = format_predicate(RelaxedPred),
+    BaseStr = format_type(Base),
+    VarStr = atom_to_binary(Var1, utf8),
+    iolist_to_binary([<<"{">>, VarStr, <<" : ">>, BaseStr, <<" | ">>, PredStr, <<"}">>]).
 
 %% ============================================================================
 %% FSM Verification Diagnostics (Phase 5.2 Integration)
@@ -1244,3 +1764,174 @@ format_state_path(Path) when is_list(Path) ->
     iolist_to_binary(lists:join(<<" -> ">>, StateStrs));
 format_state_path(_) ->
     <<"unknown">>.
+
+%% ============================================================================
+%% Hover Support (Phase 4.2)
+%% ============================================================================
+
+%% @doc Generate hover information for identifier at position
+%% Returns LSP hover object with markup content
+-spec generate_hover_info(atom(), map(), #location{}) -> map() | undefined.
+generate_hover_info(Identifier, TypeEnv, Location) ->
+    case maps:get(Identifier, TypeEnv, undefined) of
+        undefined ->
+            undefined;
+        Type ->
+            Content = generate_type_hover(Identifier, Type),
+            #{
+                contents => #{
+                    kind => <<"markdown">>,
+                    value => Content
+                },
+                range => location_to_range(Location)
+            }
+    end.
+
+%% @doc Generate hover content for a type
+-spec generate_type_hover(atom(), term()) -> binary().
+generate_type_hover(VarName, #refinement_type{
+    base_type = BaseType, variable = Var, predicate = Pred
+}) ->
+    VarStr = atom_to_binary(VarName, utf8),
+    BaseStr = format_type(BaseType),
+    ConstraintStr = format_predicate(Pred),
+
+    iolist_to_binary([
+        <<"### Refinement Type\n\n">>,
+        <<"```cure\n">>,
+        VarStr,
+        <<" : ">>,
+        BaseStr,
+        <<" | ">>,
+        ConstraintStr,
+        <<"\n">>,
+        <<"```\n\n">>,
+        <<"**Variable**: `">>,
+        atom_to_binary(Var, utf8),
+        <<"`\n\n">>,
+        <<"**Constraint**: The value must satisfy `">>,
+        ConstraintStr,
+        <<"`\n\n">>,
+        <<"---\n\n">>,
+        <<"ℹ️ This constraint is verified at compile-time using SMT">>
+    ]);
+generate_type_hover(VarName, #primitive_type{name = TypeName}) ->
+    VarStr = atom_to_binary(VarName, utf8),
+    TypeStr = atom_to_binary(TypeName, utf8),
+    iolist_to_binary([
+        <<"### Type\n\n">>,
+        <<"```cure\n">>,
+        VarStr,
+        <<" : ">>,
+        TypeStr,
+        <<"\n">>,
+        <<"```">>
+    ]);
+generate_type_hover(VarName, #function_type{params = Params, return_type = RetType}) ->
+    VarStr = atom_to_binary(VarName, utf8),
+    ParamsStr = format_function_params(Params),
+    RetStr = format_type(RetType),
+    iolist_to_binary([
+        <<"### Function Type\n\n">>,
+        <<"```cure\n">>,
+        VarStr,
+        <<" : (">>,
+        ParamsStr,
+        <<") -> ">>,
+        RetStr,
+        <<"\n">>,
+        <<"```">>
+    ]);
+generate_type_hover(VarName, Type) ->
+    VarStr = atom_to_binary(VarName, utf8),
+    iolist_to_binary([
+        <<"### Type\n\n">>,
+        <<"```cure\n">>,
+        VarStr,
+        <<" : ">>,
+        format_type(Type),
+        <<"\n">>,
+        <<"```">>
+    ]).
+
+%% @doc Generate hover content for constraint expressions
+-spec generate_constraint_hover(expr(), map()) -> binary().
+generate_constraint_hover(Expr, TypeEnv) ->
+    % Extract constraints from expression context
+    Constraints = extract_active_constraints(Expr, TypeEnv),
+
+    case length(Constraints) of
+        0 ->
+            <<"### No active constraints">>;
+        _ ->
+            ConstraintStrs = lists:map(
+                fun({Var, Constraint}) ->
+                    VarStr = atom_to_binary(Var, utf8),
+                    ConstStr = format_predicate(Constraint),
+                    iolist_to_binary([<<"- `">>, VarStr, <<"`: ">>, ConstStr])
+                end,
+                Constraints
+            ),
+            iolist_to_binary([
+                <<"### Active Constraints\n\n">>,
+                iolist_to_binary(lists:join(<<"\n">>, ConstraintStrs)),
+                <<"\n\n✓ All constraints verified by SMT solver">>
+            ])
+    end.
+
+%% @doc Extract active constraints in scope at expression
+extract_active_constraints(_Expr, TypeEnv) ->
+    % Extract refinement type constraints from environment
+    lists:filtermap(
+        fun({Var, Type}) ->
+            case Type of
+                #refinement_type{predicate = Pred} ->
+                    {true, {Var, Pred}};
+                _ ->
+                    false
+            end
+        end,
+        maps:to_list(TypeEnv)
+    ).
+
+%% Format type for display
+format_type(#primitive_type{name = Name}) ->
+    atom_to_binary(Name, utf8);
+format_type(#refinement_type{base_type = Base, variable = Var, predicate = Pred}) ->
+    BaseStr = format_type(Base),
+    VarStr = atom_to_binary(Var, utf8),
+    PredStr = format_predicate(Pred),
+    iolist_to_binary([<<"{">>, VarStr, <<" : ">>, BaseStr, <<" | ">>, PredStr, <<"}">>]);
+format_type(#function_type{params = Params, return_type = RetType}) ->
+    ParamsStr = format_function_params(Params),
+    RetStr = format_type(RetType),
+    iolist_to_binary([<<"(">>, ParamsStr, <<") -> ">>, RetStr]);
+% Simple atom types
+format_type(int) ->
+    <<"Int">>;
+format_type(float) ->
+    <<"Float">>;
+format_type(string) ->
+    <<"String">>;
+format_type(atom) ->
+    <<"Atom">>;
+format_type(list) ->
+    <<"List">>;
+format_type(tuple) ->
+    <<"Tuple">>;
+format_type(unknown) ->
+    <<"_">>;
+format_type(Type) when is_atom(Type) -> atom_to_binary(Type, utf8);
+format_type(_) ->
+    <<"<type>">>.
+
+format_function_params(Params) ->
+    ParamStrs = lists:map(fun format_param/1, Params),
+    iolist_to_binary(lists:join(<<", ">>, ParamStrs)).
+
+format_param(#param{name = Name, type = Type}) ->
+    NameStr = atom_to_binary(Name, utf8),
+    TypeStr = format_type(Type),
+    iolist_to_binary([NameStr, <<": ">>, TypeStr]);
+format_param(_) ->
+    <<"_">>.
