@@ -275,30 +275,36 @@ bfs_find_path(Current, Target, Graph, [{Current, Path} | RestQueue], Visited) ->
 %% ============================================================================
 
 %% @doc Verify FSM properties using Z3 (bounded model checking)
-verify_with_smt(#fsm_def{state_defs = StateDefs}, Property, MaxDepth) ->
+verify_with_smt(#fsm_def{state_defs = StateDefs, initial = InitialState}, Property, MaxDepth) ->
     % Encode FSM as SMT constraints
     StateConstraints = encode_states_to_smt(StateDefs),
     TransitionConstraints = encode_transitions_to_smt(StateDefs),
+    InitialConstraint = encode_initial_state(InitialState),
 
-    % Encode property to verify
-    PropertyConstraint = encode_property_to_smt(Property),
+    % Encode property to verify for bounded model checking
+    PropertyConstraints = encode_property_bounded(Property, MaxDepth),
 
     % Build bounded model checking query
     Query = [
         "(set-logic QF_UF)\n",
         StateConstraints,
         TransitionConstraints,
+        InitialConstraint,
         "(push)\n",
-        PropertyConstraint,
+        PropertyConstraints,
         "(check-sat)\n",
+        "(get-model)\n",
         "(pop)\n"
     ],
 
-    % Query Z3
-    case cure_z3:query(Query) of
-        {ok, "sat"} ->
-            {sat, can_violate_property};
-        {ok, "unsat"} ->
+    % Query Z3 via SMT process
+    QueryString = lists:flatten(Query),
+    case cure_smt_process:query_z3(QueryString) of
+        {ok, "sat", Model} ->
+            % Property can be violated - extract counterexample
+            {sat, parse_counterexample(Model)};
+        {ok, "unsat", _} ->
+            % Property holds up to given depth
             {unsat, property_holds};
         {error, Reason} ->
             {error, Reason}
@@ -306,13 +312,19 @@ verify_with_smt(#fsm_def{state_defs = StateDefs}, Property, MaxDepth) ->
 
 encode_states_to_smt(StateDefs) ->
     StateNames = [atom_to_list(get_state_name(S)) || S <- StateDefs],
-    [
-        "(declare-datatype State (",
-        string:join(["(" ++ S ++ ")" || S <- StateNames], " "),
-        "))\n"
-    ].
+    % Declare state as an enumerated datatype
+    StateDecl = io_lib:format(
+        "(declare-datatypes () ((State ~s)))~n",
+        [string:join([atom_to_list(S) || S <- [get_state_name(SD) || SD <- StateDefs]], " ")]
+    ),
+    lists:flatten(StateDecl).
 
 encode_transitions_to_smt(StateDefs) ->
+    % For bounded model checking, we need a function per step
+    % transition_i : State -> State for each step i
+    TransitionDecl = "(declare-fun transition (State Int) State)\n",
+
+    % Build constraints for each possible transition
     Transitions = lists:flatmap(
         fun(StateDef) ->
             Source = get_state_name(StateDef),
@@ -322,13 +334,18 @@ encode_transitions_to_smt(StateDefs) ->
         StateDefs
     ),
 
-    [
-        "(declare-fun transition (State) State)\n",
-        [
-            io_lib:format("(assert (= (transition ~s) ~s))~n", [Source, Target])
-         || {Source, Target} <- Transitions
-        ]
-    ].
+    % For each step, constrain valid transitions
+    TransitionConstraints = lists:map(
+        fun({Source, Target}) ->
+            io_lib:format(
+                "(assert (forall ((step Int)) (=> (= (state step) ~w) (or ~s))))~n",
+                [Source, format_target_disjunction(Target)]
+            )
+        end,
+        group_transitions_by_source(Transitions)
+    ),
+
+    lists:flatten([TransitionDecl, TransitionConstraints]).
 
 encode_property_to_smt(_Property) ->
     % Placeholder - would encode specific property
@@ -368,3 +385,89 @@ format_property_result({safety_violated, #{bad_state := BadState, path := Path}}
     io_lib:format("  ✗ Safety violated: bad state ~p reachable via path: ~p", [BadState, Path]);
 format_property_result(Other) ->
     io_lib:format("  ? Unknown result: ~p", [Other]).
+
+%% ============================================================================
+%% SMT Helper Functions
+%% ============================================================================
+
+%% Encode initial state constraint
+encode_initial_state(InitialState) ->
+    io_lib:format("(declare-fun state (Int) State)~n(assert (= (state 0) ~w))~n", [InitialState]).
+
+%% Encode property for bounded model checking
+encode_property_bounded({deadlock_free}, MaxDepth) ->
+    % Check that at every step there exists a valid transition
+    lists:flatten([
+        io_lib:format(
+            "(assert (not (and ~s)))~n",
+            [
+                lists:concat([
+                    "(= (state " ++ integer_to_list(I) ++ ") Deadlock)"
+                 || I <- lists:seq(0, MaxDepth)
+                ])
+            ]
+        )
+    ]);
+encode_property_bounded({reachable, TargetState}, MaxDepth) ->
+    % Check if target state is reachable within MaxDepth steps
+    lists:flatten([
+        io_lib:format(
+            "(assert (not (or ~s)))~n",
+            [
+                lists:concat([
+                    "(= (state " ++ integer_to_list(I) ++ ") " ++ atom_to_list(TargetState) ++ ")"
+                 || I <- lists:seq(0, MaxDepth)
+                ])
+            ]
+        )
+    ]);
+encode_property_bounded({safety, BadStates}, MaxDepth) ->
+    % Check that bad states are never reached
+    BadStateConstraints = lists:map(
+        fun(BadState) ->
+            lists:concat([
+                "(= (state " ++ integer_to_list(I) ++ ") " ++ atom_to_list(BadState) ++ ")"
+             || I <- lists:seq(0, MaxDepth)
+            ])
+        end,
+        BadStates
+    ),
+    lists:flatten([
+        io_lib:format("(assert (not (or ~s)))~n", [lists:concat(lists:flatten(BadStateConstraints))])
+    ]);
+encode_property_bounded(_Property, _MaxDepth) ->
+    % Default: no property constraints
+    "".
+
+%% Group transitions by source state
+group_transitions_by_source(Transitions) ->
+    GroupedMap = lists:foldl(
+        fun({Source, Target}, Acc) ->
+            maps:update_with(
+                Source,
+                fun(Existing) -> [Target | Existing] end,
+                [Target],
+                Acc
+            )
+        end,
+        #{},
+        Transitions
+    ),
+    maps:to_list(GroupedMap).
+
+%% Format target states as disjunction
+format_target_disjunction(Targets) when is_list(Targets) ->
+    string:join([atom_to_list(T) || T <- Targets], " ");
+format_target_disjunction(Target) ->
+    atom_to_list(Target).
+
+%% Parse counterexample from Z3 model
+parse_counterexample(Model) ->
+    % Extract state values from model
+    case string:find(Model, "state") of
+        nomatch ->
+            #{trace => unknown};
+        _Match ->
+            % Simple parsing - extract state assignments
+            #{trace => Model, description => "Counterexample found"}
+    end.

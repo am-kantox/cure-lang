@@ -779,12 +779,12 @@ handle_cast(_Msg, State) ->
     {noreply, State}.
 
 handle_info(
-    {timeout, TimerRef, timeout_event},
+    {timeout, _TimerRef, TimeoutEvent},
     #fsm_state{timeout_ref = TimerRef} = State
-) ->
-    % Handle timeout event
+) when TimerRef =/= undefined ->
+    % Handle timeout event - use the actual timeout event from the message
     StartTime = erlang:monotonic_time(microsecond),
-    NewState = handle_fsm_event(timeout, undefined, State),
+    NewState = handle_fsm_event(TimeoutEvent, undefined, State),
     FinalState = update_perf_stats(StartTime, NewState#fsm_state{timeout_ref = undefined}),
     {noreply, FinalState};
 handle_info(_Info, State) ->
@@ -947,56 +947,117 @@ execute_instruction(_, Context) ->
     Context.
 
 %% Apply guard built-in functions
-apply_guard_bif('+', [A, B]) -> A + B;
-apply_guard_bif('-', [A, B]) -> A - B;
-apply_guard_bif('*', [A, B]) -> A * B;
+apply_guard_bif('+', [A, B]) ->
+    A + B;
+apply_guard_bif('-', [A, B]) ->
+    A - B;
+apply_guard_bif('*', [A, B]) ->
+    A * B;
 apply_guard_bif('/', [A, B]) when B =/= 0 -> A / B;
 apply_guard_bif('div', [A, B]) when B =/= 0 -> A div B;
 apply_guard_bif('rem', [A, B]) when B =/= 0 -> A rem B;
-apply_guard_bif('==', [A, B]) -> A == B;
-apply_guard_bif('!=', [A, B]) -> A /= B;
-apply_guard_bif('=:=', [A, B]) -> A =:= B;
-apply_guard_bif('=/=', [A, B]) -> A =/= B;
-apply_guard_bif('<', [A, B]) -> A < B;
-apply_guard_bif('>', [A, B]) -> A > B;
-apply_guard_bif('=<', [A, B]) -> A =< B;
-apply_guard_bif('<=', [A, B]) -> A =< B;
-apply_guard_bif('>=', [A, B]) -> A >= B;
-apply_guard_bif('and', [A, B]) -> A and B;
-apply_guard_bif('or', [A, B]) -> A or B;
-apply_guard_bif('not', [A]) -> not A;
-apply_guard_bif('andalso', [A, B]) -> A andalso B;
-apply_guard_bif('orelse', [A, B]) -> A orelse B;
-apply_guard_bif('xor', [A, B]) -> A xor B;
-apply_guard_bif('band', [A, B]) -> A band B;
-apply_guard_bif('bor', [A, B]) -> A bor B;
-apply_guard_bif('bxor', [A, B]) -> A bxor B;
-apply_guard_bif('bnot', [A]) -> bnot A;
-apply_guard_bif('bsl', [A, B]) -> A bsl B;
-apply_guard_bif('bsr', [A, B]) -> A bsr B;
-apply_guard_bif('abs', [A]) -> abs(A);
-apply_guard_bif('trunc', [A]) -> trunc(A);
-apply_guard_bif('round', [A]) -> round(A);
-apply_guard_bif('size', [A]) -> size(A);
-apply_guard_bif('length', [A]) -> length(A);
+apply_guard_bif('==', [A, B]) ->
+    A == B;
+apply_guard_bif('!=', [A, B]) ->
+    A /= B;
+apply_guard_bif('=:=', [A, B]) ->
+    A =:= B;
+apply_guard_bif('=/=', [A, B]) ->
+    A =/= B;
+apply_guard_bif('<', [A, B]) ->
+    A < B;
+apply_guard_bif('>', [A, B]) ->
+    A > B;
+apply_guard_bif('=<', [A, B]) ->
+    A =< B;
+apply_guard_bif('<=', [A, B]) ->
+    A =< B;
+apply_guard_bif('>=', [A, B]) ->
+    A >= B;
+apply_guard_bif('and', [A, B]) ->
+    A and B;
+apply_guard_bif('or', [A, B]) ->
+    A or B;
+apply_guard_bif('not', [A]) ->
+    not A;
+apply_guard_bif('andalso', [A, B]) ->
+    A andalso B;
+apply_guard_bif('orelse', [A, B]) ->
+    A orelse B;
+apply_guard_bif('xor', [A, B]) ->
+    A xor B;
+apply_guard_bif('band', [A, B]) ->
+    A band B;
+apply_guard_bif('bor', [A, B]) ->
+    A bor B;
+apply_guard_bif('bxor', [A, B]) ->
+    A bxor B;
+apply_guard_bif('bnot', [A]) ->
+    bnot A;
+apply_guard_bif('bsl', [A, B]) ->
+    A bsl B;
+apply_guard_bif('bsr', [A, B]) ->
+    A bsr B;
+apply_guard_bif('abs', [A]) ->
+    abs(A);
+apply_guard_bif('trunc', [A]) ->
+    trunc(A);
+apply_guard_bif('round', [A]) ->
+    round(A);
+apply_guard_bif('size', [A]) ->
+    size(A);
+apply_guard_bif('length', [A]) ->
+    length(A);
 apply_guard_bif('hd', [A]) when is_list(A), A =/= [] -> hd(A);
 apply_guard_bif('tl', [A]) when is_list(A), A =/= [] -> tl(A);
 apply_guard_bif('element', [N, T]) when is_tuple(T) -> element(N, T);
-apply_guard_bif('is_atom', [A]) -> is_atom(A);
-apply_guard_bif('is_binary', [A]) -> is_binary(A);
-apply_guard_bif('is_boolean', [A]) -> is_boolean(A);
-apply_guard_bif('is_float', [A]) -> is_float(A);
-apply_guard_bif('is_function', [A]) -> is_function(A);
-apply_guard_bif('is_integer', [A]) -> is_integer(A);
-apply_guard_bif('is_list', [A]) -> is_list(A);
-apply_guard_bif('is_number', [A]) -> is_number(A);
-apply_guard_bif('is_pid', [A]) -> is_pid(A);
-apply_guard_bif('is_port', [A]) -> is_port(A);
-apply_guard_bif('is_reference', [A]) -> is_reference(A);
-apply_guard_bif('is_tuple', [A]) -> is_tuple(A);
-apply_guard_bif('node', []) -> node();
-apply_guard_bif('self', []) -> self();
-apply_guard_bif(_, _) -> false.
+apply_guard_bif('is_atom', [A]) ->
+    is_atom(A);
+apply_guard_bif('is_binary', [A]) ->
+    is_binary(A);
+apply_guard_bif('is_boolean', [A]) ->
+    is_boolean(A);
+apply_guard_bif('is_float', [A]) ->
+    is_float(A);
+apply_guard_bif('is_function', [A]) ->
+    is_function(A);
+apply_guard_bif('is_integer', [A]) ->
+    is_integer(A);
+apply_guard_bif('is_list', [A]) ->
+    is_list(A);
+apply_guard_bif('is_number', [A]) ->
+    is_number(A);
+apply_guard_bif('is_pid', [A]) ->
+    is_pid(A);
+apply_guard_bif('is_port', [A]) ->
+    is_port(A);
+apply_guard_bif('is_reference', [A]) ->
+    is_reference(A);
+apply_guard_bif('is_tuple', [A]) ->
+    is_tuple(A);
+apply_guard_bif('node', []) ->
+    node();
+apply_guard_bif('self', []) ->
+    self();
+apply_guard_bif('tuple_size', [T]) when is_tuple(T) -> tuple_size(T);
+apply_guard_bif('byte_size', [B]) when is_binary(B) -> byte_size(B);
+apply_guard_bif('bit_size', [B]) when is_bitstring(B) -> bit_size(B);
+apply_guard_bif('map_size', [M]) when is_map(M) -> map_size(M);
+apply_guard_bif('is_map', [A]) ->
+    is_map(A);
+apply_guard_bif('is_bitstring', [A]) ->
+    is_bitstring(A);
+apply_guard_bif('is_record', [T, Tag]) when is_tuple(T), tuple_size(T) > 0 -> element(1, T) =:= Tag;
+apply_guard_bif('is_record', [T, Tag, Size]) when is_tuple(T) ->
+    tuple_size(T) =:= Size andalso element(1, T) =:= Tag;
+apply_guard_bif('ceil', [N]) when is_number(N) -> ceil(N);
+apply_guard_bif('floor', [N]) when is_number(N) -> floor(N);
+apply_guard_bif('max', [A, B]) ->
+    max(A, B);
+apply_guard_bif('min', [A, B]) ->
+    min(A, B);
+apply_guard_bif(_, _) ->
+    false.
 
 %% Check if a value is truthy for guard evaluation
 is_truthy(false) -> false;
@@ -1020,23 +1081,53 @@ execute_action_instructions(Instructions, State, EventData) ->
             stack => [],
             state_data => State#fsm_state.data,
             payload => State#fsm_state.payload,
-            modified => false
+            modified => false,
+            % Add debugging/error tracking
+            error => undefined,
+            instruction_count => 0
         },
         Result = execute_action_instructions_impl(Instructions, Context),
-        {
-            maps:get(state_data, Result, State#fsm_state.data),
-            maps:get(payload, Result, State#fsm_state.payload)
-        }
+        case maps:get(error, Result, undefined) of
+            undefined ->
+                {
+                    maps:get(state_data, Result, State#fsm_state.data),
+                    maps:get(payload, Result, State#fsm_state.payload)
+                };
+            ErrorMsg ->
+                % Log error but continue with original state
+                cure_utils:debug("Action execution error: ~p~n", [ErrorMsg]),
+                {State#fsm_state.data, State#fsm_state.payload}
+        end
     catch
-        _:_ -> {State#fsm_state.data, State#fsm_state.payload}
+        ErrorClass:Reason:Stacktrace ->
+            cure_utils:debug("Action execution exception: ~p:~p~n~p~n", [
+                ErrorClass, Reason, Stacktrace
+            ]),
+            {State#fsm_state.data, State#fsm_state.payload}
     end.
 
 %% Execute a list of action instructions
 execute_action_instructions_impl([], Context) ->
     Context;
 execute_action_instructions_impl([Instruction | Rest], Context) ->
-    NewContext = execute_action_instruction(Instruction, Context),
-    execute_action_instructions_impl(Rest, NewContext).
+    % Check instruction limit to prevent infinite loops
+    Count = maps:get(instruction_count, Context, 0),
+    case Count > 10000 of
+        true ->
+            % Instruction limit exceeded
+            Context#{error => instruction_limit_exceeded};
+        false ->
+            NewContext = execute_action_instruction(Instruction, Context),
+            UpdatedContext = NewContext#{instruction_count => Count + 1},
+            % Check if error occurred
+            case maps:get(error, UpdatedContext, undefined) of
+                undefined ->
+                    execute_action_instructions_impl(Rest, UpdatedContext);
+                _Error ->
+                    % Stop execution on error
+                    UpdatedContext
+            end
+    end.
 
 %% Execute individual action instructions
 execute_action_instruction(#{op := load_literal, args := [Value]}, Context) ->
@@ -1178,8 +1269,8 @@ execute_action_instruction(#{op := emit_event, args := [Event, HasData]}, Contex
                 {undefined, Stack}
         end,
 
-    % Send event to self (asynchronous)
-    gen_statem:cast(self(), {event, Event, EventData}),
+    % Send event to self (asynchronous) - using gen_server:cast
+    gen_server:cast(self(), {event, Event, EventData}),
 
     Context#{stack => NewStack};
 execute_action_instruction(#{op := call_action_function, args := [Function, Arity]}, Context) ->
@@ -1217,6 +1308,136 @@ execute_action_instruction(#{op := jump, args := [_Label]}, Context) ->
 execute_action_instruction(#{op := label, args := [_Label]}, Context) ->
     % No-op for now - labels are handled by control flow
     Context;
+execute_action_instruction(#{op := make_tuple, args := [Size]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case length(Stack) >= Size of
+        true ->
+            {Elements, RestStack} = lists:split(Size, Stack),
+            % Elements are in reverse order on stack, reverse them for tuple
+            Tuple = list_to_tuple(lists:reverse(Elements)),
+            Context#{stack => [Tuple | RestStack]};
+        false ->
+            % Not enough elements on stack, push empty tuple
+            Context#{stack => [{} | Stack]}
+    end;
+execute_action_instruction(#{op := make_list, args := [Size]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case length(Stack) >= Size of
+        true ->
+            {Elements, RestStack} = lists:split(Size, Stack),
+            % Elements are in reverse order on stack, reverse them for list
+            List = lists:reverse(Elements),
+            Context#{stack => [List | RestStack]};
+        false ->
+            % Not enough elements on stack, push empty list
+            Context#{stack => [[] | Stack]}
+    end;
+execute_action_instruction(#{op := cons}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [Tail, Head | RestStack] ->
+            % Cons Head onto Tail list
+            NewList = [Head | Tail],
+            Context#{stack => [NewList | RestStack]};
+        _ ->
+            Context
+    end;
+execute_action_instruction(#{op := tuple_element, args := [Index]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [Tuple | RestStack] when is_tuple(Tuple) ->
+            case Index >= 1 andalso Index =< tuple_size(Tuple) of
+                true ->
+                    Element = element(Index, Tuple),
+                    Context#{stack => [Element | RestStack]};
+                false ->
+                    % Index out of bounds
+                    Context#{stack => [undefined | RestStack]}
+            end;
+        _ ->
+            Context
+    end;
+execute_action_instruction(#{op := list_head}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [[Head | _Tail] | RestStack] ->
+            Context#{stack => [Head | RestStack]};
+        _ ->
+            Context#{stack => [undefined | maps:get(stack, Context, [])]}
+    end;
+execute_action_instruction(#{op := list_tail}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [[_Head | Tail] | RestStack] ->
+            Context#{stack => [Tail | RestStack]};
+        _ ->
+            Context#{stack => [[] | maps:get(stack, Context, [])]}
+    end;
+execute_action_instruction(#{op := pattern_match, args := [Pattern]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [Value | RestStack] ->
+            case match_pattern(Pattern, Value) of
+                {match, Bindings} ->
+                    % Pattern matched, update variables with bindings
+                    Variables = maps:get(variables, Context, #{}),
+                    NewVariables = maps:merge(Variables, Bindings),
+                    Context#{stack => [true | RestStack], variables => NewVariables};
+                nomatch ->
+                    % Pattern didn't match
+                    Context#{stack => [false | RestStack]}
+            end;
+        [] ->
+            Context#{stack => [false | Stack]}
+    end;
+execute_action_instruction(#{op := load_var, args := [VarName]}, Context) ->
+    Variables = maps:get(variables, Context, #{}),
+    Stack = maps:get(stack, Context, []),
+    Value = maps:get(VarName, Variables, undefined),
+    Context#{stack => [Value | Stack]};
+execute_action_instruction(#{op := store_var, args := [VarName]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [Value | RestStack] ->
+            Variables = maps:get(variables, Context, #{}),
+            NewVariables = maps:put(VarName, Value, Variables),
+            Context#{stack => RestStack, variables => NewVariables};
+        [] ->
+            Context
+    end;
+execute_action_instruction(#{op := map_get, args := [Key]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [Map | RestStack] when is_map(Map) ->
+            Value = maps:get(Key, Map, undefined),
+            Context#{stack => [Value | RestStack]};
+        _ ->
+            Context#{stack => [undefined | maps:get(stack, Context, [])]}
+    end;
+execute_action_instruction(#{op := map_put, args := [Key]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case Stack of
+        [Value, Map | RestStack] when is_map(Map) ->
+            NewMap = maps:put(Key, Value, Map),
+            Context#{stack => [NewMap | RestStack]};
+        [Value, _NotMap | RestStack] ->
+            % Create new map if not a map
+            NewMap = #{Key => Value},
+            Context#{stack => [NewMap | RestStack]};
+        _ ->
+            Context
+    end;
+execute_action_instruction(#{op := make_map, args := [Size]}, Context) ->
+    Stack = maps:get(stack, Context, []),
+    case length(Stack) >= Size * 2 of
+        true ->
+            {Elements, RestStack} = lists:split(Size * 2, Stack),
+            % Elements are key-value pairs: [V1, K1, V2, K2, ...] (reversed)
+            Map = build_map_from_stack(Elements, #{}),
+            Context#{stack => [Map | RestStack]};
+        false ->
+            Context#{stack => [#{} | Stack]}
+    end;
 execute_action_instruction(_, Context) ->
     % Unknown instruction, skip
     Context.
@@ -1231,6 +1452,94 @@ apply_action_binary_op('rem', A, B) when B =/= 0 -> A rem B;
 apply_action_binary_op('++', A, B) when is_list(A), is_list(B) -> A ++ B;
 apply_action_binary_op('--', A, B) when is_list(A), is_list(B) -> A -- B;
 apply_action_binary_op(_, _, _) -> undefined.
+
+%% Pattern matching helper - matches pattern against value
+match_pattern(Pattern, Value) ->
+    try
+        match_pattern_impl(Pattern, Value, #{})
+    catch
+        _:_ -> nomatch
+    end.
+
+match_pattern_impl({var, VarName}, Value, Bindings) ->
+    % Variable pattern - always matches, binds the value
+    {match, maps:put(VarName, Value, Bindings)};
+match_pattern_impl({literal, Literal}, Value, Bindings) ->
+    % Literal pattern - matches if equal
+    case Literal =:= Value of
+        true -> {match, Bindings};
+        false -> nomatch
+    end;
+match_pattern_impl({tuple, PatternElements}, Value, Bindings) when is_tuple(Value) ->
+    % Tuple pattern
+    case tuple_size(Value) =:= length(PatternElements) of
+        true ->
+            ValueList = tuple_to_list(Value),
+            match_pattern_list(PatternElements, ValueList, Bindings);
+        false ->
+            nomatch
+    end;
+match_pattern_impl({list, PatternElements}, Value, Bindings) when is_list(Value) ->
+    % List pattern
+    case length(Value) =:= length(PatternElements) of
+        true ->
+            match_pattern_list(PatternElements, Value, Bindings);
+        false ->
+            nomatch
+    end;
+match_pattern_impl({cons, HeadPattern, TailPattern}, [Head | Tail], Bindings) ->
+    % Cons pattern [H | T]
+    case match_pattern_impl(HeadPattern, Head, Bindings) of
+        {match, Bindings1} ->
+            match_pattern_impl(TailPattern, Tail, Bindings1);
+        nomatch ->
+            nomatch
+    end;
+match_pattern_impl({map, PatternPairs}, Value, Bindings) when is_map(Value) ->
+    % Map pattern - checks required keys
+    match_map_pattern(PatternPairs, Value, Bindings);
+match_pattern_impl(wildcard, _Value, Bindings) ->
+    % Wildcard pattern _ - always matches, doesn't bind
+    {match, Bindings};
+match_pattern_impl(_Pattern, _Value, _Bindings) ->
+    nomatch.
+
+%% Match a list of patterns against a list of values
+match_pattern_list([], [], Bindings) ->
+    {match, Bindings};
+match_pattern_list([Pattern | RestPatterns], [Value | RestValues], Bindings) ->
+    case match_pattern_impl(Pattern, Value, Bindings) of
+        {match, NewBindings} ->
+            match_pattern_list(RestPatterns, RestValues, NewBindings);
+        nomatch ->
+            nomatch
+    end;
+match_pattern_list(_, _, _) ->
+    nomatch.
+
+%% Match map pattern pairs
+match_map_pattern([], _Map, Bindings) ->
+    {match, Bindings};
+match_map_pattern([{Key, Pattern} | Rest], Map, Bindings) ->
+    case maps:find(Key, Map) of
+        {ok, Value} ->
+            case match_pattern_impl(Pattern, Value, Bindings) of
+                {match, NewBindings} ->
+                    match_map_pattern(Rest, Map, NewBindings);
+                nomatch ->
+                    nomatch
+            end;
+        error ->
+            nomatch
+    end.
+
+%% Build map from stack elements (pairs of key-value)
+build_map_from_stack([], Map) ->
+    Map;
+build_map_from_stack([Value, Key | Rest], Map) ->
+    build_map_from_stack(Rest, maps:put(Key, Value, Map));
+build_map_from_stack(_InvalidStack, Map) ->
+    Map.
 
 %% Apply safe action functions
 apply_action_function(length, [List]) when is_list(List) -> length(List);
@@ -1291,8 +1600,9 @@ execute_action(Action, State, EventData) ->
     end.
 
 %% Set FSM timeout
-set_fsm_timeout(Timeout, _TimeoutEvent, State) ->
-    TimerRef = erlang:send_after(Timeout, self(), {timeout, make_ref(), timeout_event}),
+set_fsm_timeout(Timeout, TimeoutEvent, State) ->
+    % Create a unique timer reference and store the event to fire
+    TimerRef = erlang:send_after(Timeout, self(), {timeout, make_ref(), TimeoutEvent}),
     State#fsm_state{timeout_ref = TimerRef}.
 
 %% Clear FSM timeout

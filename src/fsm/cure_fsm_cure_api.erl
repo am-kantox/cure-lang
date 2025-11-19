@@ -14,7 +14,31 @@
 "module bridges the gap between Cure's high-level FSM syntax "
 "and the\nErlang gen_server runtime.".
 
--export([start_fsm/1, fsm_cast/2, fsm_advertise/2, fsm_state/1]).
+-export([
+    % Lifecycle
+    start_fsm/1, start_fsm/2,
+    start_fsm_link/1, start_fsm_link/2,
+    start_fsm_monitor/1, start_fsm_monitor/2,
+    stop_fsm/1,
+
+    % Messaging
+    fsm_cast/2, fsm_cast/3,
+    fsm_call/2, fsm_call/3,
+    fsm_send_batch/2,
+
+    % State management
+    fsm_state/1,
+    fsm_info/1,
+    fsm_history/1,
+
+    % Registration
+    fsm_advertise/2,
+    fsm_whereis/1,
+
+    % Supervision
+    start_supervised/2,
+    child_spec/2
+]).
 
 -include("../parser/cure_ast.hrl").
 -include("cure_fsm_runtime.hrl").
@@ -145,8 +169,166 @@ fsm_state(Target) ->
     end.
 
 %% ============================================================================
+%% Enhanced Lifecycle Functions
+%% ============================================================================
+
+%% Start FSM with initial data
+-spec start_fsm(Module :: atom(), InitData :: term()) -> {ok, pid()} | {error, term()}.
+start_fsm(Module, InitData) when is_atom(Module) ->
+    case get_module_fsm_definition(Module) of
+        {ok, FsmDef} ->
+            #fsm_definition{name = FsmName} = FsmDef,
+            cure_fsm_runtime:start_fsm(FsmName, InitData);
+        {error, Reason} ->
+            {error, {fsm_definition_not_found, Module, Reason}}
+    end.
+
+%% Start FSM with link
+-spec start_fsm_link(Module :: atom()) -> {ok, pid()} | {error, term()}.
+start_fsm_link(Module) ->
+    case start_fsm(Module) of
+        {ok, Pid} ->
+            link(Pid),
+            {ok, Pid};
+        Error ->
+            Error
+    end.
+
+%% Start FSM with link and initial data
+-spec start_fsm_link(Module :: atom(), InitData :: term()) -> {ok, pid()} | {error, term()}.
+start_fsm_link(Module, InitData) ->
+    case start_fsm(Module, InitData) of
+        {ok, Pid} ->
+            link(Pid),
+            {ok, Pid};
+        Error ->
+            Error
+    end.
+
+%% Start FSM with monitor
+-spec start_fsm_monitor(Module :: atom()) -> {ok, {pid(), reference()}} | {error, term()}.
+start_fsm_monitor(Module) ->
+    case start_fsm(Module) of
+        {ok, Pid} ->
+            Ref = monitor(process, Pid),
+            {ok, {Pid, Ref}};
+        Error ->
+            Error
+    end.
+
+%% Start FSM with monitor and initial data
+-spec start_fsm_monitor(Module :: atom(), InitData :: term()) ->
+    {ok, {pid(), reference()}} | {error, term()}.
+start_fsm_monitor(Module, InitData) ->
+    case start_fsm(Module, InitData) of
+        {ok, Pid} ->
+            Ref = monitor(process, Pid),
+            {ok, {Pid, Ref}};
+        Error ->
+            Error
+    end.
+
+%% Stop an FSM
+-spec stop_fsm(Target :: pid() | atom()) -> ok | {error, term()}.
+stop_fsm(Target) ->
+    TargetPid = resolve_target(Target),
+    cure_fsm_runtime:stop_fsm(TargetPid).
+
+%% ============================================================================
+%% Enhanced Messaging Functions
+%% ============================================================================
+
+%% Cast with event name and optional data
+-spec fsm_cast(Target :: pid() | atom(), Event :: atom(), Data :: term()) -> ok.
+fsm_cast(Target, Event, Data) when is_atom(Event) ->
+    TargetPid = resolve_target(Target),
+    cure_fsm_runtime:send_event(TargetPid, Event, Data),
+    ok.
+
+%% Synchronous call to FSM
+-spec fsm_call(Target :: pid() | atom(), Request :: term()) -> term().
+fsm_call(Target, Request) ->
+    fsm_call(Target, Request, 5000).
+
+%% Synchronous call with timeout
+-spec fsm_call(Target :: pid() | atom(), Request :: term(), Timeout :: timeout()) -> term().
+fsm_call(Target, Request, Timeout) ->
+    TargetPid = resolve_target(Target),
+    try
+        gen_server:call(TargetPid, {fsm_call, Request}, Timeout)
+    catch
+        exit:{timeout, _} -> {error, timeout};
+        exit:{noproc, _} -> {error, noproc};
+        Error:Reason -> {error, {Error, Reason}}
+    end.
+
+%% Send batch of events
+-spec fsm_send_batch(Target :: pid() | atom(), Events :: [term()]) -> ok.
+fsm_send_batch(Target, Events) when is_list(Events) ->
+    TargetPid = resolve_target(Target),
+    cure_fsm_runtime:send_batch_events(TargetPid, Events).
+
+%% ============================================================================
+%% State Management Functions
+%% ============================================================================
+
+%% Get FSM info
+-spec fsm_info(Target :: pid() | atom()) -> {ok, map()} | {error, term()}.
+fsm_info(Target) ->
+    TargetPid = resolve_target(Target),
+    cure_fsm_runtime:get_fsm_info(TargetPid).
+
+%% Get FSM event history
+-spec fsm_history(Target :: pid() | atom()) -> {ok, [term()]} | {error, term()}.
+fsm_history(Target) ->
+    case fsm_info(Target) of
+        {ok, #{event_history := History}} -> {ok, History};
+        {ok, _} -> {ok, []};
+        Error -> Error
+    end.
+
+%% ============================================================================
+%% Registration Functions
+%% ============================================================================
+
+%% Lookup FSM by name
+-spec fsm_whereis(Name :: atom()) -> pid() | undefined.
+fsm_whereis(Name) when is_atom(Name) ->
+    whereis(Name).
+
+%% ============================================================================
+%% Supervision Functions
+%% ============================================================================
+
+%% Start FSM under supervision
+-spec start_supervised(Supervisor :: pid() | atom(), ChildSpec :: map()) ->
+    {ok, pid()} | {error, term()}.
+start_supervised(Supervisor, ChildSpec) ->
+    supervisor:start_child(Supervisor, ChildSpec).
+
+%% Generate child spec for supervisor
+-spec child_spec(Id :: term(), Module :: atom()) -> map().
+child_spec(Id, Module) ->
+    #{
+        id => Id,
+        start => {?MODULE, start_fsm_link, [Module]},
+        restart => permanent,
+        shutdown => 5000,
+        type => worker,
+        modules => [?MODULE, Module]
+    }.
+
+%% ============================================================================
 %% Internal Helper Functions
 %% ============================================================================
+
+%% Resolve target to PID
+resolve_target(Pid) when is_pid(Pid) -> Pid;
+resolve_target(Name) when is_atom(Name) ->
+    case whereis(Name) of
+        undefined -> error({fsm_not_found, Name});
+        Pid -> Pid
+    end.
 
 %% Get the FSM definition from a compiled Cure module
 %%
