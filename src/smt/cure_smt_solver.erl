@@ -218,7 +218,13 @@ get_default_solver() ->
 check_with_z3(Constraint, Env, Context) ->
     case find_z3() of
         false ->
-            % Fallback to symbolic
+            % Provide helpful message when Z3 is not available
+            cure_utils:debug(
+                "SMT: Z3 solver not found in PATH. Falling back to symbolic evaluation.~n"
+            ),
+            cure_utils:debug(
+                "Hint: Install Z3 for better constraint solving (https://github.com/Z3Prover/z3)~n"
+            ),
             check_with_symbolic(Constraint, Env, Context);
         true ->
             try
@@ -236,14 +242,38 @@ check_with_z3(Constraint, Env, Context) ->
                     case Result of
                         {sat, ModelLines} ->
                             case cure_smt_parser:parse_model(ModelLines) of
-                                {ok, Model} -> {sat, Model};
-                                {error, _} -> {sat, #{}}
+                                {ok, Model} ->
+                                    {sat, Model};
+                                {error, ParseErr} ->
+                                    cure_utils:debug("SMT: Failed to parse Z3 model: ~p~n", [
+                                        ParseErr
+                                    ]),
+                                    cure_utils:debug("Model lines: ~p~n", [ModelLines]),
+                                    {sat, #{}}
                             end;
                         {unsat, _} ->
                             unsat;
                         {unknown, _} ->
+                            cure_utils:debug("SMT: Z3 returned 'unknown' for constraint~n"),
+                            cure_utils:debug("Constraint: ~p~n", [format_constraint(Constraint)]),
+                            cure_utils:debug(
+                                "Hint: Constraint may be too complex or timeout was too short (~p ms)~n",
+                                [Context#smt_context.timeout]
+                            ),
                             unknown;
-                        {error, _Reason} ->
+                        {error, timeout} ->
+                            cure_utils:debug("SMT: Z3 timed out after ~p ms~n", [
+                                Context#smt_context.timeout
+                            ]),
+                            cure_utils:debug("Constraint: ~p~n", [format_constraint(Constraint)]),
+                            cure_utils:debug(
+                                "Hint: Try increasing timeout with --smt-timeout <ms>~n"
+                            ),
+                            unknown;
+                        {error, Reason} ->
+                            cure_utils:debug("SMT: Z3 execution error: ~p~n", [Reason]),
+                            cure_utils:debug("Constraint: ~p~n", [format_constraint(Constraint)]),
+                            cure_utils:debug("Query: ~s~n", [Query]),
                             unknown
                     end,
 
@@ -251,8 +281,15 @@ check_with_z3(Constraint, Env, Context) ->
                 cure_smt_process:stop_solver(Pid),
                 ParsedResult
             catch
-                _:_ ->
-                    % Fall back to symbolic on any error
+                Class:Error:Stack ->
+                    % Provide detailed error information
+                    cure_utils:debug("SMT: Z3 execution failed with ~p:~p~n", [Class, Error]),
+                    cure_utils:debug("Constraint: ~p~n", [format_constraint(Constraint)]),
+                    case os:getenv("CURE_DEBUG") of
+                        "1" -> cure_utils:debug("Stack: ~p~n", [Stack]);
+                        _ -> cure_utils:debug("Hint: Set CURE_DEBUG=1 for full stack trace~n")
+                    end,
+                    cure_utils:debug("Falling back to symbolic evaluation~n"),
                     check_with_symbolic(Constraint, Env, Context)
             end
     end.
@@ -261,11 +298,19 @@ check_with_z3(Constraint, Env, Context) ->
 check_with_cvc5(Constraint, Env, Context) ->
     case find_cvc5() of
         false ->
-            % Fallback to symbolic
+            % Provide helpful message when CVC5 is not available
+            cure_utils:debug(
+                "SMT: CVC5 solver not found in PATH. Falling back to symbolic evaluation.~n"
+            ),
+            cure_utils:debug(
+                "Hint: Install CVC5 for alternative SMT solving (https://cvc5.github.io/)~n"
+            ),
             check_with_symbolic(Constraint, Env, Context);
         true ->
             % TODO: Implement actual CVC5 integration
-            % For now, use symbolic fallback
+            cure_utils:debug("SMT: CVC5 integration not yet implemented~n"),
+            cure_utils:debug("Constraint: ~p~n", [format_constraint(Constraint)]),
+            cure_utils:debug("Falling back to symbolic evaluation~n"),
             check_with_symbolic(Constraint, Env, Context)
     end.
 
@@ -274,12 +319,25 @@ check_with_symbolic(Constraint, Env, _Context) ->
     % Simple symbolic evaluation for basic constraints
     try
         case eval_symbolic(Constraint, Env) of
-            true -> sat;
-            false -> unsat;
-            _ -> unknown
+            true ->
+                sat;
+            false ->
+                unsat;
+            _ ->
+                cure_utils:debug("SMT: Symbolic evaluation unable to determine satisfiability~n"),
+                cure_utils:debug("Constraint: ~p~n", [format_constraint(Constraint)]),
+                cure_utils:debug("Hint: Install Z3 or CVC5 for better constraint solving~n"),
+                unknown
         end
     catch
-        _:_ -> unknown
+        Class:Error:Stack ->
+            cure_utils:debug("SMT: Symbolic evaluation failed with ~p:~p~n", [Class, Error]),
+            cure_utils:debug("Constraint: ~p~n", [format_constraint(Constraint)]),
+            case os:getenv("CURE_DEBUG") of
+                "1" -> cure_utils:debug("Stack: ~p~n", [Stack]);
+                _ -> ok
+            end,
+            unknown
     end.
 
 %% Symbolic evaluation
@@ -370,6 +428,21 @@ find_cvc5() ->
         false -> false;
         _ -> true
     end.
+
+%% Format constraint for user-friendly display
+format_constraint(#binary_op_expr{op = Op, left = Left, right = Right}) ->
+    io_lib:format("(~s ~s ~s)", [format_constraint(Left), Op, format_constraint(Right)]);
+format_constraint(#unary_op_expr{op = Op, operand = Operand}) ->
+    io_lib:format("(~s ~s)", [Op, format_constraint(Operand)]);
+format_constraint(#identifier_expr{name = Name}) ->
+    atom_to_list(Name);
+format_constraint(#literal_expr{value = Value}) ->
+    io_lib:format("~p", [Value]);
+format_constraint(#function_call_expr{function = Fun, args = Args}) ->
+    ArgStrs = lists:map(fun format_constraint/1, Args),
+    io_lib:format("~s(~s)", [format_constraint(Fun), string:join(ArgStrs, ", ")]);
+format_constraint(Other) ->
+    io_lib:format("~p", [Other]).
 
 %% ============================================================================
 %% Helper Functions for LSP Integration

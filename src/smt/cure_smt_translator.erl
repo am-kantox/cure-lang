@@ -211,17 +211,24 @@ translate_expr(#function_call_expr{function = #identifier_expr{name = length}, a
     % For arrays, use (length array)
     % For now, treat as an uninterpreted function
     ["(length ", translate_expr(List, Env), ")"];
-% Quantified expressions - forall
-translate_expr({forall_expr, Vars, Body}, Env) ->
+% Quantified expressions - forall (proper AST record)
+translate_expr(#forall_expr{variables = Vars, body = Body}, Env) ->
     % (forall ((x Type) (y Type)) body)
+    VarDecls = [translate_quantifier_var(V, Env) || V <- Vars],
+    ["(forall (", lists:join(" ", VarDecls), ") ", translate_expr(Body, Env), ")"];
+% Quantified expressions - exists (proper AST record)
+translate_expr(#exists_expr{variables = Vars, body = Body}, Env) ->
+    % (exists ((x Type) (y Type)) body)
+    VarDecls = [translate_quantifier_var(V, Env) || V <- Vars],
+    ["(exists (", lists:join(" ", VarDecls), ") ", translate_expr(Body, Env), ")"];
+% Legacy tuple format support (backward compatibility)
+translate_expr({forall_expr, Vars, Body}, Env) ->
     VarDecls = [translate_quantifier_var(V, Env) || V <- Vars],
     ["(forall (", lists:join(" ", VarDecls), ") ", translate_expr(Body, Env), ")"];
 translate_expr({forall_expr, Vars, Body, _Location}, Env) ->
     VarDecls = [translate_quantifier_var(V, Env) || V <- Vars],
     ["(forall (", lists:join(" ", VarDecls), ") ", translate_expr(Body, Env), ")"];
-% Quantified expressions - exists
 translate_expr({exists_expr, Vars, Body}, Env) ->
-    % (exists ((x Type) (y Type)) body)
     VarDecls = [translate_quantifier_var(V, Env) || V <- Vars],
     ["(exists (", lists:join(" ", VarDecls), ") ", translate_expr(Body, Env), ")"];
 translate_expr({exists_expr, Vars, Body, _Location}, Env) ->
@@ -310,7 +317,12 @@ analyze_features(#unary_op_expr{operand = Operand}, Acc) ->
     analyze_features(Operand, Acc);
 analyze_features(#function_call_expr{args = Args}, Acc) ->
     lists:foldl(fun analyze_features/2, Acc, Args);
-% Quantified expressions
+%% Quantified expressions (proper AST records)
+analyze_features(#forall_expr{body = Body}, Acc) ->
+    analyze_features(Body, Acc#{has_quantifiers => true});
+analyze_features(#exists_expr{body = Body}, Acc) ->
+    analyze_features(Body, Acc#{has_quantifiers => true});
+% Legacy tuple format support
 analyze_features({forall_expr, _Vars, Body}, Acc) ->
     analyze_features(Body, Acc#{has_quantifiers => true});
 analyze_features({forall_expr, _Vars, Body, _Loc}, Acc) ->

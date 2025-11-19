@@ -20,7 +20,11 @@ run() ->
         fun test_logic_inference_with_quantifiers/0,
         fun test_nested_quantifiers/0,
         fun test_complex_quantified_formula/0,
-        fun test_end_to_end_quantifier/0
+        fun test_end_to_end_quantifier/0,
+        % New AST record format tests
+        fun test_forall_with_ast_record/0,
+        fun test_exists_with_ast_record/0,
+        fun test_nested_quantifiers_with_records/0
     ],
 
     Results = lists:map(fun run_test/1, Tests),
@@ -468,4 +472,144 @@ test_end_to_end_quantifier() ->
         false ->
             io:format("❌ Query missing components: ~s~n", [QueryStr]),
             error(incomplete_query)
+    end.
+
+%% ============================================================================
+%% Test: forall with AST Record
+%% ============================================================================
+
+test_forall_with_ast_record() ->
+    io:format("Testing forall with AST record... "),
+
+    % forall x: Int. x >= 0 => x + 1 > 0 (using #forall_expr{} record)
+    Body = #binary_op_expr{
+        op = '=>',
+        left = #binary_op_expr{
+            op = '>=',
+            left = #identifier_expr{name = x, location = #location{line = 1, column = 1}},
+            right = #literal_expr{value = 0, location = #location{line = 1, column = 1}},
+            location = #location{line = 1, column = 1}
+        },
+        right = #binary_op_expr{
+            op = '>',
+            left = #binary_op_expr{
+                op = '+',
+                left = #identifier_expr{name = x, location = #location{line = 1, column = 1}},
+                right = #literal_expr{value = 1, location = #location{line = 1, column = 1}},
+                location = #location{line = 1, column = 1}
+            },
+            right = #literal_expr{value = 0, location = #location{line = 1, column = 1}},
+            location = #location{line = 1, column = 1}
+        },
+        location = #location{line = 1, column = 1}
+    },
+
+    % Use new AST record format
+    Expr = #forall_expr{
+        variables = [{x, int}],
+        body = Body,
+        location = #location{line = 1, column = 1}
+    },
+
+    Result = cure_smt_translator:translate_expr(Expr, #{x => {type, int}}),
+    ResultStr = lists:flatten(Result),
+
+    case string:str(ResultStr, "(forall ((x Int))") > 0 of
+        true ->
+            io:format("✅ ~s~n", [ResultStr]),
+            ok;
+        false ->
+            io:format("❌ Expected forall quantifier, got: ~s~n", [ResultStr]),
+            error(unexpected_result)
+    end.
+
+%% ============================================================================
+%% Test: exists with AST Record
+%% ============================================================================
+
+test_exists_with_ast_record() ->
+    io:format("Testing exists with AST record... "),
+
+    % exists x: Int. x > 0 and x < 10 (using #exists_expr{} record)
+    Body = #binary_op_expr{
+        op = 'and',
+        left = #binary_op_expr{
+            op = '>',
+            left = #identifier_expr{name = x, location = #location{line = 1, column = 1}},
+            right = #literal_expr{value = 0, location = #location{line = 1, column = 1}},
+            location = #location{line = 1, column = 1}
+        },
+        right = #binary_op_expr{
+            op = '<',
+            left = #identifier_expr{name = x, location = #location{line = 1, column = 1}},
+            right = #literal_expr{value = 10, location = #location{line = 1, column = 1}},
+            location = #location{line = 1, column = 1}
+        },
+        location = #location{line = 1, column = 1}
+    },
+
+    % Use new AST record format
+    Expr = #exists_expr{
+        variables = [{x, int}],
+        body = Body,
+        location = #location{line = 1, column = 1}
+    },
+
+    Result = cure_smt_translator:translate_expr(Expr, #{x => {type, int}}),
+    ResultStr = lists:flatten(Result),
+
+    case string:str(ResultStr, "(exists ((x Int))") > 0 of
+        true ->
+            io:format("✅ ~s~n", [ResultStr]),
+            ok;
+        false ->
+            io:format("❌ Expected exists quantifier, got: ~s~n", [ResultStr]),
+            error(unexpected_result)
+    end.
+
+%% ============================================================================
+%% Test: Nested Quantifiers with AST Records
+%% ============================================================================
+
+test_nested_quantifiers_with_records() ->
+    io:format("Testing nested quantifiers with AST records... "),
+
+    % forall x. exists y. x + y == 0
+    InnerBody = #binary_op_expr{
+        op = '==',
+        left = #binary_op_expr{
+            op = '+',
+            left = #identifier_expr{name = x, location = #location{line = 1, column = 1}},
+            right = #identifier_expr{name = y, location = #location{line = 1, column = 1}},
+            location = #location{line = 1, column = 1}
+        },
+        right = #literal_expr{value = 0, location = #location{line = 1, column = 1}},
+        location = #location{line = 1, column = 1}
+    },
+
+    ExistsExpr = #exists_expr{
+        variables = [{y, int}],
+        body = InnerBody,
+        location = #location{line = 1, column = 1}
+    },
+
+    ForallExpr = #forall_expr{
+        variables = [{x, int}],
+        body = ExistsExpr,
+        location = #location{line = 1, column = 1}
+    },
+
+    Result = cure_smt_translator:translate_expr(ForallExpr, #{}),
+    ResultStr = lists:flatten(Result),
+
+    HasForall = string:str(ResultStr, "(forall") > 0,
+    HasExists = string:str(ResultStr, "(exists") > 0,
+
+    case HasForall and HasExists of
+        true ->
+            io:format("✅ Nested quantifiers with records translated~n"),
+            ok;
+        false ->
+            io:format("❌ Expected nested quantifiers, got: ~s~n", [ResultStr]),
+            error(unexpected_result)
     end.

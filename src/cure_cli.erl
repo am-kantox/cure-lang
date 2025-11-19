@@ -33,6 +33,9 @@ cure input.cure --no-optimize      # Disable optimizations
 - `--no-warnings` - Suppress compiler warnings
 - `--no-type-check` - Skip type checking phase
 - `--no-optimize` - Disable type-directed optimizations
+- `--no-smt` - Disable SMT constraint solving
+- `--smt-solver SOLVER` - Choose SMT solver (z3, cvc5, auto)
+- `--smt-timeout MS` - Set SMT solver timeout in milliseconds
 - `--help, -h` - Show help information
 - `--version, -v` - Show version information
 
@@ -108,7 +111,13 @@ cure input.cure --no-optimize      # Disable optimizations
     % Include FSM runtime
     fsm_runtime = true,
     % Standard library paths to link
-    stdlib_paths = ["_build/lib", "_build/lib/std"]
+    stdlib_paths = ["_build/lib", "_build/lib/std"],
+    % SMT solver configuration
+    smt_enabled = true,
+    % SMT solver to use (z3, cvc5, or auto)
+    smt_solver = auto,
+    % SMT solver timeout in milliseconds
+    smt_timeout = 5000
 }).
 
 %% ============================================================================
@@ -229,6 +238,29 @@ parse_compile_args(["--no-type-check" | Rest], Options, Filename) ->
 parse_compile_args(["--no-optimize" | Rest], Options, Filename) ->
     NewOptions = Options#compile_options{optimize = false},
     parse_compile_args(Rest, NewOptions, Filename);
+parse_compile_args(["--no-smt" | Rest], Options, Filename) ->
+    NewOptions = Options#compile_options{smt_enabled = false},
+    parse_compile_args(Rest, NewOptions, Filename);
+parse_compile_args(["--smt-solver", Solver | Rest], Options, Filename) ->
+    SolverAtom = list_to_atom(Solver),
+    case lists:member(SolverAtom, [z3, cvc5, auto]) of
+        true ->
+            NewOptions = Options#compile_options{smt_solver = SolverAtom},
+            parse_compile_args(Rest, NewOptions, Filename);
+        false ->
+            {error, io_lib:format("Invalid SMT solver: ~s (must be z3, cvc5, or auto)", [Solver])}
+    end;
+parse_compile_args(["--smt-timeout", TimeoutStr | Rest], Options, Filename) ->
+    try list_to_integer(TimeoutStr) of
+        Timeout when Timeout > 0 ->
+            NewOptions = Options#compile_options{smt_timeout = Timeout},
+            parse_compile_args(Rest, NewOptions, Filename);
+        _ ->
+            {error, "SMT timeout must be a positive integer"}
+    catch
+        _:_ ->
+            {error, io_lib:format("Invalid SMT timeout value: ~s", [TimeoutStr])}
+    end;
 parse_compile_args([Arg | Rest], Options, undefined) when not (hd(Arg) =:= $-) ->
     % This should be the input filename
     case filename:extension(Arg) of
@@ -727,32 +759,36 @@ environment variables to assist users in using the compiler effectively.
 
 """.
 help() ->
-    cure_utils:debug("~s v~s~n", [?CURE_DESCRIPTION, ?CURE_VERSION]),
-    cure_utils:debug("~n"),
-    cure_utils:debug("USAGE:~n"),
-    cure_utils:debug("    cure [OPTIONS] <input-file>~n"),
-    cure_utils:debug("~n"),
-    cure_utils:debug("ARGUMENTS:~n"),
-    cure_utils:debug("    <input-file>    Input .cure source file to compile~n"),
-    cure_utils:debug("~n"),
-    cure_utils:debug("OPTIONS:~n"),
-    cure_utils:debug("    -h, --help           Show this help message~n"),
-    cure_utils:debug("    -v, --version        Show version information~n"),
-    cure_utils:debug("    -o, --output <file>  Output .beam file path~n"),
-    cure_utils:debug("    -d, --output-dir <dir>  Output directory (default: _build/ebin)~n"),
-    cure_utils:debug("    --verbose            Enable verbose output~n"),
-    cure_utils:debug("    --no-debug           Disable debug information~n"),
-    cure_utils:debug("    --no-warnings        Disable warnings~n"),
-    cure_utils:debug("    --no-type-check      Skip type checking~n"),
-    cure_utils:debug("    --no-optimize        Disable optimizations~n"),
-    cure_utils:debug("~n"),
-    cure_utils:debug("EXAMPLES:~n"),
-    cure_utils:debug("    cure examples/simple.cure~n"),
-    cure_utils:debug("    cure examples/fsm_demo.cure -o fsm_demo.beam~n"),
-    cure_utils:debug("    cure src/my_module.cure --verbose -d build/~n"),
-    cure_utils:debug("~n"),
-    cure_utils:debug("ENVIRONMENT VARIABLES:~n"),
-    cure_utils:debug("    CURE_DEBUG=1         Enable debug stack traces~n").
+    io:format("~s v~s~n", [?CURE_DESCRIPTION, ?CURE_VERSION]),
+    io:format("~n"),
+    io:format("USAGE:~n"),
+    io:format("    cure [OPTIONS] <input-file>~n"),
+    io:format("~n"),
+    io:format("ARGUMENTS:~n"),
+    io:format("    <input-file>    Input .cure source file to compile~n"),
+    io:format("~n"),
+    io:format("OPTIONS:~n"),
+    io:format("    -h, --help           Show this help message~n"),
+    io:format("    -v, --version        Show version information~n"),
+    io:format("    -o, --output <file>  Output .beam file path~n"),
+    io:format("    -d, --output-dir <dir>  Output directory (default: _build/ebin)~n"),
+    io:format("    --verbose            Enable verbose output~n"),
+    io:format("    --no-debug           Disable debug information~n"),
+    io:format("    --no-warnings        Disable warnings~n"),
+    io:format("    --no-type-check      Skip type checking~n"),
+    io:format("    --no-optimize        Disable optimizations~n"),
+    io:format("    --no-smt             Disable SMT constraint solving~n"),
+    io:format("    --smt-solver <solver>  Choose SMT solver: z3 (default), cvc5, auto~n"),
+    io:format("    --smt-timeout <ms>   Set SMT timeout in milliseconds (default: 5000)~n"),
+    io:format("~n"),
+    io:format("EXAMPLES:~n"),
+    io:format("    cure examples/simple.cure~n"),
+    io:format("    cure examples/fsm_demo.cure -o fsm_demo.beam~n"),
+    io:format("    cure examples/fsm_demo.cure --no-smt --smt-timeout 10000~n"),
+    io:format("    cure src/my_module.cure --verbose -d build/~n"),
+    io:format("~n"),
+    io:format("ENVIRONMENT VARIABLES:~n"),
+    io:format("    CURE_DEBUG=1         Enable debug stack traces~n").
 
 -doc """
 Display version and system information for the Cure compiler.
@@ -779,12 +815,12 @@ for the BEAM virtual machine with built-in finite state machines.
 
 """.
 version() ->
-    cure_utils:debug("~s v~s~n", [?CURE_DESCRIPTION, ?CURE_VERSION]),
-    cure_utils:debug("~n"),
-    cure_utils:debug("Built with Erlang/OTP ~s~n", [erlang:system_info(otp_release)]),
-    cure_utils:debug("~n"),
-    cure_utils:debug("Cure is a dependently-typed functional programming language~n"),
-    cure_utils:debug("for the BEAM virtual machine with built-in finite state machines.~n").
+    io:format("~s v~s~n", [?CURE_DESCRIPTION, ?CURE_VERSION]),
+    io:format("~n"),
+    io:format("Built with Erlang/OTP ~s~n", [erlang:system_info(otp_release)]),
+    io:format("~n"),
+    io:format("Cure is a dependently-typed functional programming language~n"),
+    io:format("for the BEAM virtual machine with built-in finite state machines.~n").
 
 %% ============================================================================
 %% Error Formatting

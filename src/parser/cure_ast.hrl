@@ -298,6 +298,19 @@
     location
 }).
 
+%% Quantified expressions (for dependent types and SMT)
+-record(forall_expr, {
+    variables,   % List of {VarName, Type} tuples or #param{} records
+    body,        % Body expression
+    location
+}).
+
+-record(exists_expr, {
+    variables,   % List of {VarName, Type} tuples or #param{} records
+    body,        % Body expression
+    location
+}).
+
 %% Field access expressions (record.field)
 -record(field_access_expr, {
     record,    % Expression evaluating to a record
@@ -466,6 +479,8 @@
                #field_access_expr{} |
                #record_update_expr{} |
                #lambda_expr{} |
+               #forall_expr{} |
+               #exists_expr{} |
                #fsm_spawn_expr{} |
                #fsm_send_expr{} |
                #fsm_receive_expr{} |
