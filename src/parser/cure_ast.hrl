@@ -348,16 +348,46 @@
     location
 }).
 
-%% Dependent types
+%% Dependent types (enhanced for Phase 6)
+%% Basic dependent type with value parameters
 -record(dependent_type, {
-    name,
-    params,
+    name,           % Type constructor name (e.g., 'Vector')
+    type_params,    % Type parameters [T, U, ...]
+    value_params,   % Value parameters [{n, Type}, {m, Type}, ...]
     location
 }).
 
+%% Type parameter (can be type or value parameter)
 -record(type_param, {
-    name,
-    value,
+    name,           % Parameter name
+    kind,           % type | value
+    type,           % Type annotation (for value parameters)
+    constraint,     % Optional where clause constraint
+    location
+}).
+
+%% Type-level expression (for arithmetic, comparisons, etc.)
+-record(type_level_expr, {
+    op,             % Operator: '+', '-', '*', '/', '==', '<', '<=', '>', '>=', 'and', 'or'
+    left,           % Left operand (expr or identifier)
+    right,          % Right operand (expr or identifier)
+    location
+}).
+
+%% Dependent function type
+-record(dependent_function_type, {
+    type_params,    % List of #type_param{} (both type and value parameters)
+    params,         % Function parameters [#param{}]
+    return_type,    % Return type (may contain type-level expressions)
+    constraints,    % Where clauses [expr()]
+    location
+}).
+
+%% Value parameter in type (e.g., n: Nat in Vector(T, n))
+-record(value_param, {
+    name,           % Parameter name
+    type,           % Type of the parameter (e.g., Nat, Int)
+    constraint,     % Optional constraint (e.g., n > 0)
     location
 }).
 
