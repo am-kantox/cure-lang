@@ -3,7 +3,7 @@
 
 module Std.System do
   export [
-    system_time/1, monotonic_time/0, timestamp/0
+    system_time/1, monotonic_time/0, timestamp/0, sleep/1
   ]
 
   # Get the current system time with specified precision
@@ -15,5 +15,9 @@ module Std.System do
 
   # Get the current timestamp as {MegaSecs, Secs, MicroSecs}
   curify timestamp(): Any = {erlang, timestamp, 0}
+
+  # Sleep for specified milliseconds
+  # Suspends the calling process for the given duration
+  curify sleep(milliseconds: Int): Any = {timer, sleep, 1}
 
 end

@@ -207,6 +207,8 @@ get_function_type('Std.Fsm', fsm_cast, 2) ->
     {ok,
         {function_type, [{primitive_type, 'Any'}, {primitive_type, 'Any'}],
             {primitive_type, 'Any'}}};
+get_function_type('Std.Fsm', fsm_history, 1) ->
+    {ok, {function_type, [{primitive_type, 'Any'}], {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', fsm_info, 1) ->
     {ok, {function_type, [{primitive_type, 'Any'}], {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', fsm_is_alive, 1) ->
@@ -214,6 +216,14 @@ get_function_type('Std.Fsm', fsm_is_alive, 1) ->
 get_function_type('Std.Fsm', fsm_send, 2) ->
     {ok,
         {function_type, [{primitive_type, 'Any'}, {primitive_type, 'Any'}],
+            {primitive_type, 'Any'}}};
+get_function_type('Std.Fsm', fsm_send_batch, 2) ->
+    {ok,
+        {function_type,
+            [
+                {primitive_type, 'Any'},
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'Any', 'Any', []}}]}
+            ],
             {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', fsm_spawn, 2) ->
     {ok,
@@ -223,6 +233,8 @@ get_function_type('Std.Fsm', fsm_state, 1) ->
     {ok, {function_type, [{primitive_type, 'Any'}], {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', fsm_stop, 1) ->
     {ok, {function_type, [{primitive_type, 'Any'}], {primitive_type, 'Any'}}};
+get_function_type('Std.Fsm', fsm_whereis, 1) ->
+    {ok, {function_type, [{primitive_type, 'Atom'}], {primitive_type, 'Any'}}};
 get_function_type('Std.Fsm', start_fsm, 1) ->
     {ok, {function_type, [{primitive_type, 'Atom'}], {primitive_type, 'Any'}}};
 get_function_type('Std.Io', debug, 1) ->
@@ -636,6 +648,8 @@ get_function_type('Std.String', words, 1) ->
             {dependent_type, 'List', [{type_param, undefined, {type_var, 'String', 'String', []}}]}}};
 get_function_type('Std.System', monotonic_time, 0) ->
     {ok, {function_type, [], {primitive_type, 'Int'}}};
+get_function_type('Std.System', sleep, 1) ->
+    {ok, {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Any'}}};
 get_function_type('Std.System', system_time, 1) ->
     {ok, {function_type, [{primitive_type, 'Atom'}], {primitive_type, 'Int'}}};
 get_function_type('Std.System', timestamp, 0) ->
@@ -787,12 +801,15 @@ all_signatures() ->
         {'Std.Core', 'xor', 2},
         {'Std.Fsm', fsm_advertise, 2},
         {'Std.Fsm', fsm_cast, 2},
+        {'Std.Fsm', fsm_history, 1},
         {'Std.Fsm', fsm_info, 1},
         {'Std.Fsm', fsm_is_alive, 1},
         {'Std.Fsm', fsm_send, 2},
+        {'Std.Fsm', fsm_send_batch, 2},
         {'Std.Fsm', fsm_spawn, 2},
         {'Std.Fsm', fsm_state, 1},
         {'Std.Fsm', fsm_stop, 1},
+        {'Std.Fsm', fsm_whereis, 1},
         {'Std.Fsm', start_fsm, 1},
         {'Std.Io', debug, 1},
         {'Std.Io', io_error, 1},
@@ -880,6 +897,7 @@ all_signatures() ->
         {'Std.String', valid_utf8, 1},
         {'Std.String', words, 1},
         {'Std.System', monotonic_time, 0},
+        {'Std.System', sleep, 1},
         {'Std.System', system_time, 1},
         {'Std.System', timestamp, 0},
         {'Std.Vector', contains, 2},

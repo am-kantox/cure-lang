@@ -5,20 +5,17 @@
 module TrafficLightEnhanced do
   export [main/0]
   
-  # Import enhanced FSM API with all new features
+  # Import FSM API
   import Std.Fsm [
     fsm_spawn/2, 
     fsm_cast/2, 
-    fsm_cast/3,
-    fsm_send_batch/2,
     fsm_advertise/2, 
-    fsm_state/1,
-    fsm_info/1,
-    fsm_history/1,
-    fsm_whereis/1
+    fsm_state/1
   ]
   import Std.Io [println/1, print/1]
   import Std.String [concat/2]
+  import Std.Pair [pair/2]
+  import Std.System [sleep/1]
   
   # Enhanced payload record with richer statistics
   record TrafficStats do
@@ -114,17 +111,17 @@ module TrafficLightEnhanced do
     }
     
     # Error handling - if error occurs, go to flashing red
-    Red --> |error| FlashingRed {
+    Red --> |error_occurred| FlashingRed {
       errors_detected = errors_detected + 1
       total_transitions = total_transitions + 1
     }
     
-    Green --> |error| FlashingRed {
+    Green --> |error_occurred| FlashingRed {
       errors_detected = errors_detected + 1
       total_transitions = total_transitions + 1
     }
     
-    Yellow --> |error| FlashingRed {
+    Yellow --> |error_occurred| FlashingRed {
       errors_detected = errors_detected + 1
       total_transitions = total_transitions + 1
     }
@@ -136,6 +133,9 @@ module TrafficLightEnhanced do
   end
   
   # Main demonstration of all features
+  # NOTE: Before running, FSM types must be registered via:
+  #   TrafficLightEnhanced:register_fsms()
+  # This is automatically done when using -eval to call this function
   def main(): Int =
     println("╔══════════════════════════════════════════════════════════════╗")
     println("║  Enhanced Traffic Light FSM - Complete Feature Demo         ║")
@@ -161,13 +161,10 @@ module TrafficLightEnhanced do
     }
     
     println("✓ Creating FSM with initial statistics")
-    let fsm_pid = fsm_spawn(:TrafficLight, initial_stats)
+    let fsm_pid = fsm_spawn(:TrafficStats, initial_stats)
     
     println("✓ Registering FSM as :smart_traffic_light")
     let adv_result = fsm_advertise(fsm_pid, :smart_traffic_light)
-    
-    println("✓ Verifying registration")
-    let found_pid = fsm_whereis(:smart_traffic_light)
     println("  FSM registered successfully")
     println("")
     
@@ -181,140 +178,109 @@ module TrafficLightEnhanced do
     println("  Initial State: Red")
     
     println("  Sending timer event: Red → Green")
-    fsm_cast(:smart_traffic_light, :timer)
-    # Small delay for async processing
-    let _ = sleep(10)
+    let empty1 = []
+    let event1 = pair(:timer, empty1)
+    fsm_cast(:smart_traffic_light, event1)
     
     let state1 = fsm_state(:smart_traffic_light)
     println("  ✓ Transitioned to Green")
     
     println("  Sending timer event: Green → Yellow")
-    fsm_cast(:smart_traffic_light, :timer)
-    let _ = sleep(10)
+    let empty2 = []
+    let event2 = pair(:timer, empty2)
+    fsm_cast(:smart_traffic_light, event2)
     
     let state2 = fsm_state(:smart_traffic_light)
     println("  ✓ Transitioned to Yellow")
     
     println("  Sending timer event: Yellow → Red (cycle complete)")
-    fsm_cast(:smart_traffic_light, :timer)
-    let _ = sleep(10)
+    let empty3 = []
+    let event3 = pair(:timer, empty3)
+    fsm_cast(:smart_traffic_light, event3)
     
     let state3 = fsm_state(:smart_traffic_light)
     println("  ✓ Transitioned to Red (1 cycle completed)")
     println("")
     
     # ============================================================
-    # PHASE 3: Batch Event Processing
+    # PHASE 3: Emergency Handling
     # ============================================================
-    println("⚡ PHASE 3: Batch Event Processing")
-    println("─────────────────────────────────────────")
-    
-    println("  Sending batch of 6 timer events for 2 complete cycles")
-    let batch_events = [:timer, :timer, :timer, :timer, :timer, :timer]
-    fsm_send_batch(:smart_traffic_light, batch_events)
-    let _ = sleep(50)
-    
-    let state_after_batch = fsm_state(:smart_traffic_light)
-    println("  ✓ Batch processing complete")
-    println("  ✓ Total cycles should be 3")
-    println("")
-    
-    # ============================================================
-    # PHASE 4: Emergency Handling
-    # ============================================================
-    println("🚨 PHASE 4: Emergency Stop System")
+    println("🚨 PHASE 3: Emergency Stop System")
     println("─────────────────────────────────────────")
     
     println("  Progressing to Green state")
-    fsm_cast(:smart_traffic_light, :timer)
-    let _ = sleep(10)
+    let empty4 = []
+    let event4 = pair(:timer, empty4)
+    fsm_cast(:smart_traffic_light, event4)
     
     println("  Triggering emergency stop from Green")
-    fsm_cast(:smart_traffic_light, :emergency)
-    let _ = sleep(10)
+    let empty5 = []
+    let event5 = pair(:emergency, empty5)
+    fsm_cast(:smart_traffic_light, event5)
     
     let emergency_state = fsm_state(:smart_traffic_light)
     println("  ✓ Emergency stop executed: now at Red")
     println("")
     
     # ============================================================
-    # PHASE 5: Pedestrian Crossing
+    # PHASE 4: Pedestrian Crossing
     # ============================================================
-    println("🚶 PHASE 5: Pedestrian Crossing Feature")
+    println("🚶 PHASE 4: Pedestrian Crossing Feature")
     println("─────────────────────────────────────────")
     
     println("  Pedestrian button pressed at Red light")
-    fsm_cast(:smart_traffic_light, :pedestrian)
-    let _ = sleep(10)
+    let empty6 = []
+    let event6 = pair(:pedestrian, empty6)
+    fsm_cast(:smart_traffic_light, event6)
     
     let pedestrian_state = fsm_state(:smart_traffic_light)
     println("  ✓ Light changed to Green for pedestrian")
     println("")
     
     # ============================================================
-    # PHASE 6: Maintenance Mode
+    # PHASE 5: Maintenance Mode
     # ============================================================
-    println("🔧 PHASE 6: Maintenance Mode")
+    println("🔧 PHASE 5: Maintenance Mode")
     println("─────────────────────────────────────────")
     
     println("  Entering maintenance mode")
-    fsm_cast(:smart_traffic_light, :maintenance)
-    let _ = sleep(10)
+    let empty7 = []
+    let event7 = pair(:maintenance, empty7)
+    fsm_cast(:smart_traffic_light, event7)
     
     let maint_state = fsm_state(:smart_traffic_light)
     println("  ✓ In Maintenance mode")
     
     println("  Resuming from maintenance")
-    fsm_cast(:smart_traffic_light, :resume)
-    let _ = sleep(10)
+    let empty8 = []
+    let event8 = pair(:resume, empty8)
+    fsm_cast(:smart_traffic_light, event8)
     
     let resume_state = fsm_state(:smart_traffic_light)
     println("  ✓ Resumed to Red (safe state)")
     println("")
     
     # ============================================================
-    # PHASE 7: Error Handling
+    # PHASE 6: Error Handling
     # ============================================================
-    println("⚠️  PHASE 7: Error Detection & Recovery")
+    println("⚠️  PHASE 6: Error Detection & Recovery")
     println("─────────────────────────────────────────")
     
     println("  Simulating error condition")
-    fsm_cast(:smart_traffic_light, :error)
-    let _ = sleep(10)
+    let empty9 = []
+    let event9 = pair(:error_occurred, empty9)
+    fsm_cast(:smart_traffic_light, event9)
     
     let error_state = fsm_state(:smart_traffic_light)
     println("  ✓ Entered FlashingRed (error mode)")
     
     println("  Resetting from error")
-    fsm_cast(:smart_traffic_light, :reset)
-    let _ = sleep(10)
+    let empty10 = []
+    let event10 = pair(:reset, empty10)
+    fsm_cast(:smart_traffic_light, event10)
     
     let reset_state = fsm_state(:smart_traffic_light)
     println("  ✓ Reset to Red (normal operation)")
-    println("")
-    
-    # ============================================================
-    # PHASE 8: Statistics & Monitoring
-    # ============================================================
-    println("📊 PHASE 8: FSM Statistics & History")
-    println("─────────────────────────────────────────")
-    
-    let final_info = fsm_info(:smart_traffic_light)
-    println("  FSM Information Retrieved:")
-    println("  ✓ FSM Type: TrafficLight")
-    println("  ✓ Current State: Red")
-    
-    let history = fsm_history(:smart_traffic_light)
-    println("  ✓ Event history available")
-    
-    println("")
-    println("  Final Statistics:")
-    println("  • Complete Cycles: ~3-4")
-    println("  • Timer Events: Multiple")
-    println("  • Emergency Stops: 1")
-    println("  • Pedestrian Crossings: 1")
-    println("  • Errors Detected: 1")
-    println("  • Total Transitions: ~20+")
     println("")
     
     # ============================================================
@@ -327,20 +293,10 @@ module TrafficLightEnhanced do
     println("Successfully demonstrated:")
     println("  ✅ FSM lifecycle (spawn, register, lookup)")
     println("  ✅ Normal state transitions (Red→Green→Yellow→Red)")
-    println("  ✅ Batch event processing (6 events at once)")
     println("  ✅ Emergency stop system (immediate safety)")
     println("  ✅ Pedestrian crossing (priority transition)")
     println("  ✅ Maintenance mode (safe servicing)")
     println("  ✅ Error handling & recovery (resilience)")
-    println("  ✅ Statistics tracking (comprehensive monitoring)")
-    println("  ✅ Event history (audit trail)")
-    println("")
-    println("This FSM is production-ready with:")
-    println("  • Type safety (payload verification)")
-    println("  • Formal verification (deadlock-free)")
-    println("  • Runtime monitoring (property checking)")
-    println("  • Performance optimization (batch processing)")
-    println("  • Error recovery (graceful degradation)")
     println("")
     println("🎉 Enhanced FSM features validated!")
     

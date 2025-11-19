@@ -3095,18 +3095,11 @@ convert_to_erlang_forms(Module) ->
             3 + length(CompileAttrs) + length(RecordForms)
         ),
 
-        % Add on_load hook for FSM registration if FSMs present
-        LoadHook =
-            case FSMDefinitions of
-                [] ->
-                    [];
-                _ ->
-                    [
-                        {attribute,
-                            3 + length(CompileAttrs) + length(RecordForms) + length(AttributeForms),
-                            on_load, {register_fsms, 0}}
-                    ]
-            end,
+        % NOTE: on_load hook disabled for FSM registration due to ETS table ownership issues
+        % The on_load process is temporary and the ETS table gets deleted when it exits
+        % Users should call ModuleName:register_fsms() explicitly at application startup
+        % or in their main() function before using FSMs
+        LoadHook = [],
 
         % Set current module name for function reference generation
         put(current_module_name, ModuleName),
@@ -3401,20 +3394,51 @@ convert_attributes_to_forms([{Name, Value} | Rest], Line, Acc) ->
 generate_fsm_registration_function(FSMDefinitions, Line) ->
     FSMNames = [maps:get(name, FSM) || FSM <- FSMDefinitions],
 
-    % Generate registration calls for each FSM
-    RegistrationCalls = lists:map(
+    % Debug logging for on_load execution
+    DebugLog =
+        {call, Line, {remote, Line, {atom, Line, io}, {atom, Line, format}}, [
+            {string, Line, "[FSM] Registering FSMs from on_load hook...~n"}
+        ]},
+
+    % Ensure cure_fsm_runtime module is loaded before registration
+    EnsureLoaded =
+        {call, Line, {remote, Line, {atom, Line, code}, {atom, Line, ensure_loaded}}, [
+            {atom, Line, cure_fsm_runtime}
+        ]},
+
+    % Generate registration calls for each FSM with debug logging
+    RegistrationCalls = lists:flatmap(
         fun(FSMName) ->
             DefFuncName = list_to_atom(atom_to_list(FSMName) ++ "_definition"),
-            {call, Line,
-                {remote, Line, {atom, Line, cure_fsm_runtime}, {atom, Line, register_fsm_type}}, [
-                    {atom, Line, FSMName}, {call, Line, {atom, Line, DefFuncName}, []}
+            [
+                % Debug log before registration
+                {call, Line, {remote, Line, {atom, Line, io}, {atom, Line, format}}, [
+                    {string, Line, "[FSM] Registering FSM type: ~p~n"},
+                    {cons, Line, {atom, Line, FSMName}, {nil, Line}}
+                ]},
+                % Actual registration call
+                {call, Line,
+                    {remote, Line, {atom, Line, cure_fsm_runtime}, {atom, Line, register_fsm_type}},
+                    [
+                        {atom, Line, FSMName}, {call, Line, {atom, Line, DefFuncName}, []}
+                    ]},
+                % Debug log after registration
+                {call, Line, {remote, Line, {atom, Line, io}, {atom, Line, format}}, [
+                    {string, Line, "[FSM] Registered types: ~p~n"},
+                    {cons, Line,
+                        {call, Line,
+                            {remote, Line, {atom, Line, cure_fsm_runtime},
+                                {atom, Line, get_registered_fsm_types}},
+                            []},
+                        {nil, Line}}
                 ]}
+            ]
         end,
         FSMNames
     ),
 
-    % Create function body with all registration calls + ok return
-    Body = RegistrationCalls ++ [{atom, Line, ok}],
+    % Create function body: debug + ensure_loaded + registration calls + ok return
+    Body = [DebugLog, EnsureLoaded | RegistrationCalls] ++ [{atom, Line, ok}],
 
     % Create the register_fsms/0 function
     {

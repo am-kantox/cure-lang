@@ -11,7 +11,10 @@ module Std.Fsm do
     fsm_spawn/2,
     fsm_send/2,
     fsm_info/1,
-    fsm_is_alive/1
+    fsm_is_alive/1,
+    fsm_whereis/1,
+    fsm_history/1,
+    fsm_send_batch/2
   ]
 
   # Core FSM types - these are type aliases
@@ -88,5 +91,18 @@ module Std.Fsm do
   # Check if an FSM process is alive
   # Returns true if the FSM is still running, false otherwise
   curify fsm_is_alive(pid: Any): Any = {cure_fsm_builtins, fsm_is_alive, 1}
+
+  # Look up an FSM process by registered name
+  # Returns the Pid if found, undefined otherwise
+  curify fsm_whereis(name: Atom): Any = {cure_fsm_cure_api, fsm_whereis, 1}
+
+  # Get FSM event history
+  # Returns a list of events that have been processed by the FSM
+  curify fsm_history(pid: Any): Any = {cure_fsm_builtins, fsm_history, 1}
+
+  # Send a batch of events to an FSM
+  # More efficient than multiple fsm_cast calls for bulk operations
+  # Events should be a list of event atoms or tuples
+  curify fsm_send_batch(target: Any, events: List(Any)): Any = {cure_fsm_builtins, fsm_send_batch, 2}
 
 end

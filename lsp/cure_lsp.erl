@@ -341,7 +341,7 @@ handle_did_change(Params, State) ->
     case maps:get(Uri, State#state.documents, undefined) of
         undefined ->
             io:format(
-                standard_error, "[LSP] Warning: Document not found in state, treating as new~n"
+                standard_error, "[LSP] Warning: Document not found in state, treating as new~n", []
             ),
             % Treat as new document
             NewText = get_text_from_changes(ContentChanges),

@@ -7,10 +7,11 @@ module FSMVerificationDemo do
   # Import FSM and verification APIs
   import Std.Fsm [
     fsm_spawn/2,
-    fsm_cast/3,
+    fsm_cast/2,
     fsm_state/1
   ]
   import Std.Io [println/1]
+  import Std.Pair [pair/2]
   
   # Simple counter record
   record CounterState do
@@ -125,20 +126,20 @@ module FSMVerificationDemo do
     println("")
     
     let counter_init = CounterState{count: 0, max_count: 5}
-    let counter_fsm = fsm_spawn(:CounterFSM, counter_init)
+    let counter_fsm = fsm_spawn(:CounterState, counter_init)
     
     println("Initial state: Counting")
     println("Incrementing 5 times...")
     
     # Increment counter 5 times
-    fsm_cast(counter_fsm, :increment, [])
-    fsm_cast(counter_fsm, :increment, [])
-    fsm_cast(counter_fsm, :increment, [])
-    fsm_cast(counter_fsm, :increment, [])
-    fsm_cast(counter_fsm, :increment, [])
+    fsm_cast(counter_fsm, pair(:increment, []))
+    fsm_cast(counter_fsm, pair(:increment, []))
+    fsm_cast(counter_fsm, pair(:increment, []))
+    fsm_cast(counter_fsm, pair(:increment, []))
+    fsm_cast(counter_fsm, pair(:increment, []))
     
     println("Checking if done...")
-    fsm_cast(counter_fsm, :check, [])
+    fsm_cast(counter_fsm, pair(:check, []))
     
     let final_state = fsm_state(counter_fsm)
     println("Final state: Done (deadlock - no transitions available)")
@@ -159,16 +160,16 @@ module FSMVerificationDemo do
     println("")
     
     let light_init = LightState{cycle_count: 0}
-    let light_fsm = fsm_spawn(:TrafficLightFSM, light_init)
+    let light_fsm = fsm_spawn(:LightState, light_init)
     
     println("Starting at: Red")
-    fsm_cast(light_fsm, :timer, [])
+    fsm_cast(light_fsm, pair(:timer, []))
     println("Reached: Green")
     
-    fsm_cast(light_fsm, :timer, [])
+    fsm_cast(light_fsm, pair(:timer, []))
     println("Reached: Yellow")
     
-    fsm_cast(light_fsm, :timer, [])
+    fsm_cast(light_fsm, pair(:timer, []))
     println("Reached: Red (cycled)")
     println("")
     
@@ -187,18 +188,18 @@ module FSMVerificationDemo do
     println("")
     
     let workflow_init = WorkflowState{tasks_completed: 0, total_tasks: 3}
-    let workflow_fsm = fsm_spawn(:WorkflowFSM, workflow_init)
+    let workflow_fsm = fsm_spawn(:WorkflowState, workflow_init)
     
     println("State: Pending")
-    fsm_cast(workflow_fsm, :start, [])
+    fsm_cast(workflow_fsm, pair(:start, []))
     println("State: InProgress")
     
     println("Completing tasks...")
-    fsm_cast(workflow_fsm, :complete_task, [])
-    fsm_cast(workflow_fsm, :complete_task, [])
-    fsm_cast(workflow_fsm, :complete_task, [])
+    fsm_cast(workflow_fsm, pair(:complete_task, []))
+    fsm_cast(workflow_fsm, pair(:complete_task, []))
+    fsm_cast(workflow_fsm, pair(:complete_task, []))
     
-    fsm_cast(workflow_fsm, :finish, [])
+    fsm_cast(workflow_fsm, pair(:finish, []))
     println("State: Completed")
     println("")
     
@@ -217,12 +218,12 @@ module FSMVerificationDemo do
     println("")
     
     let door_init = DoorState{is_locked: 1, alarm_active: 0}
-    let door_fsm = fsm_spawn(:DoorLockFSM, door_init)
+    let door_fsm = fsm_spawn(:DoorState, door_init)
     
     println("State: Locked (alarm inactive)")
     
     println("Activating alarm...")
-    fsm_cast(door_fsm, :activate_alarm, [])
+    fsm_cast(door_fsm, pair(:activate_alarm, []))
     println("State: LockedWithAlarm")
     
     println("")
@@ -231,11 +232,11 @@ module FSMVerificationDemo do
     println("")
     
     println("Deactivating alarm first...")
-    fsm_cast(door_fsm, :deactivate_alarm, [])
+    fsm_cast(door_fsm, pair(:deactivate_alarm, []))
     println("State: Locked (alarm inactive)")
     
     println("Now unlocking...")
-    fsm_cast(door_fsm, :unlock, [])
+    fsm_cast(door_fsm, pair(:unlock, []))
     println("State: Unlocked ✅")
     println("")
     
