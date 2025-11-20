@@ -9,6 +9,7 @@ SRC_DIR = src
 LIB_DIR = lib
 TEST_DIR = test
 LSP_DIR = lsp
+MCP_DIR = mcp
 BUILD_DIR = _build
 EBIN_DIR = $(BUILD_DIR)/ebin
 LIB_EBIN_DIR = $(BUILD_DIR)/lib
@@ -25,6 +26,7 @@ RUNTIME_SRC = $(wildcard $(SRC_DIR)/runtime/*.erl)
 SMT_SRC = $(wildcard $(SRC_DIR)/smt/*.erl)
 CLI_SRC = $(SRC_DIR)/cure_cli.erl
 LSP_SRC = $(wildcard $(LSP_DIR)/*.erl)
+MCP_SRC = $(wildcard $(MCP_DIR)/*.erl)
 
 # Cure standard library files
 CURE_STD_SRC = $(wildcard $(LIB_DIR)/*.cure $(LIB_DIR)/std/*.cure)
@@ -46,13 +48,14 @@ TEST_BEAM_FILES = $(patsubst $(TEST_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(TEST_SRC))
 SMT_TEST_BEAM_FILES = $(patsubst $(TEST_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(SMT_TEST_SRC))
 CURE_STD_BEAM_FILES = $(patsubst $(LIB_DIR)/%.cure,$(LIB_EBIN_DIR)/%.beam,$(CURE_STD_SRC))
 LSP_BEAM_FILES = $(patsubst $(LSP_DIR)/%.erl,$(LSP_EBIN_DIR)/%.beam,$(LSP_SRC))
+MCP_BEAM_FILES = $(patsubst $(MCP_DIR)/%.erl,$(EBIN_DIR)/%.beam,$(MCP_SRC))
 
 # Compiler options
 ERLC_OPTS = +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(EBIN_DIR)
 
-.PHONY: all clean clean-all test test-basic test-integration test-performance test-smt test-fsm docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-deps lsp-scripts lsp-shell gen-signatures
+.PHONY: all clean clean-all test test-basic test-integration test-performance test-smt test-fsm docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-deps lsp-scripts lsp-shell gen-signatures mcp
 
-all: setup gen-signatures compiler stdlib
+all: setup gen-signatures compiler stdlib mcp
 
 setup:
 	@mkdir -p $(BUILD_DIR)
@@ -85,6 +88,10 @@ gen-signatures: setup
 
 compiler: $(BEAM_FILES)
 	@echo "Cure compiler built successfully"
+
+# Compile MCP server
+mcp: compiler $(MCP_BEAM_FILES)
+	@echo "Cure MCP server built successfully"
 
 # Compile Cure standard library
 stdlib: stdlib-clean-lib-ebin compiler $(CURE_STD_BEAM_FILES)
@@ -155,6 +162,12 @@ $(LSP_EBIN_DIR)/%.beam: $(LSP_DIR)/%.erl
 	@echo "Compiling LSP $<..."
 	@mkdir -p $(@D)
 	$(ERLC) +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(LSP_EBIN_DIR) $<
+
+# Pattern rule for compiling MCP files
+$(EBIN_DIR)/%.beam: $(MCP_DIR)/%.erl
+	@echo "Compiling MCP $<..."
+	@mkdir -p $(@D)
+	$(ERLC) +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(EBIN_DIR) $<
 
 # Pattern rule for compiling Cure standard library files
 $(LIB_EBIN_DIR)/%.beam: $(LIB_DIR)/%.cure

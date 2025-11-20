@@ -1,0 +1,239 @@
+# SMT Solver Error Examples
+# This file demonstrates various SMT solver errors that occur during compilation
+# Each example shows code that triggers the SMT solver to report constraint violations
+
+module SmtErrorExamples do
+  export [
+    impossible_constraint/0,
+    divide_by_zero/0,
+    subtype_violation/0,
+    percentage_overflow/0,
+    precondition_fail/0,
+    even_constraint_fail/0,
+    mutually_exclusive/0,
+    compound_violation/0
+  ]
+
+  import Std.Io [println/1]
+
+  # ============================================================================
+  # ERROR 1: Impossible Constraint (UNSAT)
+  # ============================================================================
+  
+  # This type requires a number to be simultaneously positive and negative
+  # SMT solver will report: "constraint cannot be satisfied (unsat)"
+  type ImpossibleInt = Int when x > 0 and x < 0
+
+  # Attempting to use this type triggers SMT error
+  def use_impossible(n: ImpossibleInt): Int =
+    n + 1
+
+  def impossible_constraint(): Int =
+    use_impossible(5)
+    # ERROR: Cannot prove 5 satisfies (x > 0 and x < 0)
+    # SMT solver proves: UNSAT
+
+
+  # ============================================================================
+  # ERROR 2: Division by Zero (Constraint Violation with Counterexample)
+  # ============================================================================
+
+  type NonZero = Int when x != 0
+
+  def safe_divide(a: Int, b: NonZero): Int =
+    a / b
+
+  def divide_by_zero(): Int =
+    let divisor = 0
+    safe_divide(100, divisor)
+    # ERROR: Value 0 does not satisfy constraint x != 0
+    # SMT counterexample: x = 0
+
+
+  # ============================================================================
+  # ERROR 3: Subtype Violation
+  # ============================================================================
+
+  type Positive = Int when x > 0
+  type NonNegative = Int when x >= 0
+
+  # NonNegative includes 0, but Positive does not
+  # SMT proves: NOT (x >= 0 => x > 0)
+  def broken_conversion(n: NonNegative): Positive =
+    n
+    # ERROR: Cannot convert NonNegative to Positive
+    # Counterexample: x = 0 satisfies NonNegative but not Positive
+
+
+  # ============================================================================
+  # ERROR 4: Percentage Out of Range
+  # ============================================================================
+
+  type Percentage = Int when x >= 0 and x <= 100
+
+  def apply_discount(price: Int, discount: Percentage): Int =
+    price - (price * discount / 100)
+
+  def percentage_overflow(): Int =
+    apply_discount(1000, 150)
+    # ERROR: 150 does not satisfy (x >= 0 and x <= 100)
+    # SMT counterexample: x = 150 violates x <= 100
+
+
+  # ============================================================================
+  # ERROR 5: Precondition Violation
+  # ============================================================================
+
+  type StrictPositive = Int when x > 0
+
+  def square_positive(n: StrictPositive): Int =
+    n * n
+
+  def precondition_fail(): Int =
+    square_positive(0)
+    # ERROR: Precondition violation
+    # Value 0 does not satisfy x > 0
+    # SMT counterexample: x = 0
+
+
+  # ============================================================================
+  # ERROR 6: Even Number Constraint
+  # ============================================================================
+
+  type Even = Int when x % 2 == 0
+
+  def half_even(n: Even): Int =
+    n / 2
+
+  def even_constraint_fail(): Int =
+    half_even(7)
+    # ERROR: 7 does not satisfy x % 2 == 0
+    # SMT counterexample: 7 % 2 = 1 (not 0)
+
+
+  # ============================================================================
+  # ERROR 7: Mutually Exclusive Types
+  # ============================================================================
+
+  type SmallInt = Int when x >= 0 and x <= 10
+  type LargeInt = Int when x >= 100 and x <= 1000
+
+  # These constraints have no overlap
+  # SMT proves: (x >= 0 and x <= 10) AND (x >= 100 and x <= 1000) = UNSAT
+  def mutually_exclusive(n: SmallInt): LargeInt =
+    n
+    # ERROR: Cannot convert SmallInt to LargeInt
+    # SMT proves constraints are disjoint
+
+
+  # ============================================================================
+  # ERROR 8: Compound Constraint Violation
+  # ============================================================================
+
+  type PositiveEven = Int when x > 0 and x % 2 == 0
+
+  def process_pos_even(n: PositiveEven): Int =
+    n / 2
+
+  def compound_violation(): Int =
+    process_pos_even(-4)
+    # ERROR: -4 violates compound constraint
+    # SMT counterexample: -4 fails x > 0 (even though it satisfies x % 2 == 0)
+
+
+  # ============================================================================
+  # ERROR 9: Temperature Below Absolute Zero
+  # ============================================================================
+
+  type Celsius = Float when x >= -273.15
+
+  def boil_check(temp: Celsius): Bool =
+    match temp >= 100.0 do
+      true -> true
+      false -> false
+    end
+
+  def absolute_zero_violation(): Bool =
+    boil_check(-300.0)
+    # ERROR: Physical constraint violation
+    # -300.0 does not satisfy x >= -273.15
+    # SMT counterexample: -300.0 < -273.15
+
+
+  # ============================================================================
+  # ERROR 10: Contradictory Function Constraints
+  # ============================================================================
+
+  type PositiveInt = Int when x > 0
+
+  # Function parameter requires x > 0, but when clause requires n < 0
+  # These are contradictory - function can never be called
+  # SMT proves: NOT EXISTS x. (x > 0 AND x < 0)
+  def contradictory(n: PositiveInt): Int
+  when n < 0 =
+    n * 2
+    # ERROR: Contradictory constraints
+    # Parameter constraint (x > 0) conflicts with when clause (n < 0)
+
+
+  # ============================================================================
+  # Working Examples (for comparison)
+  # ============================================================================
+
+  def working_divide(): Int =
+    let divisor = 5
+    safe_divide(100, divisor)
+    # OK: 5 satisfies x != 0
+
+  def working_positive(): Positive =
+    let value = 42
+    value
+    # OK: 42 satisfies x > 0
+
+  def working_percentage(): Int =
+    apply_discount(1000, 25)
+    # OK: 25 satisfies (x >= 0 and x <= 100)
+
+
+  # ============================================================================
+  # Main demonstration
+  # ============================================================================
+
+  def main(): Int =
+    println("=== SMT Solver Error Examples ===")
+    println("")
+    println("This module demonstrates various SMT solver errors.")
+    println("Each error-triggering function is commented to show:")
+    println("  - The constraint violation")
+    println("  - The SMT solver's counterexample")
+    println("  - Why the code fails verification")
+    println("")
+    println("To see the errors, uncomment the function calls below:")
+    println("")
+    
+    # Uncomment these to trigger SMT errors:
+    # let e1 = impossible_constraint()
+    # let e2 = divide_by_zero()
+    # let e3 = subtype_violation()
+    # let e4 = percentage_overflow()
+    # let e5 = precondition_fail()
+    # let e6 = even_constraint_fail()
+    # let e7 = mutually_exclusive()
+    # let e8 = compound_violation()
+    # let e9 = absolute_zero_violation()
+    
+    println("Working examples (no errors):")
+    let w1 = working_divide()
+    println("  - Division with non-zero: OK")
+    
+    let w2 = working_positive()
+    println("  - Positive type: OK")
+    
+    let w3 = working_percentage()
+    println("  - Valid percentage: OK")
+    
+    println("")
+    println("=== Demo Complete ===")
+    0
+
+end
