@@ -5,16 +5,16 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.3.0">
+    <meta name="project" content="cure v0.4.0">
 
 
-    <title>Dollar Operator Fix — cure v0.3.0</title>
+    <title>Dollar Operator Fix — cure v0.4.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-DAE95399.js"></script>
+    <script src="dist/sidebar_items-28C2A753.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.3.0
+          v0.4.0
         </div>
       </div>
     </div>
@@ -112,7 +112,7 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.3.0/docs/DOLLAR_OPERATOR_FIX.md#L1" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/docs/DOLLAR_OPERATOR_FIX.md#L1" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
@@ -139,7 +139,7 @@ Pages
   </a>
   <span class="text">Error Message</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Lexical</span><span class="w"> </span><span class="n">Analysis</span><span class="w"> </span><span class="nc">failed</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0186607230-1">{</span><span class="p" data-group-id="0186607230-2">{</span><span class="ss">unexpected_character</span><span class="p">,</span><span class="mi">36</span><span class="p" data-group-id="0186607230-2">}</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">9</span><span class="p" data-group-id="0186607230-1">}</span></code></pre><ul><li>Character 36 is ASCII for <code class="inline">$</code></li><li>Occurred when parsing typeclass specification files</li></ul><h3 id="root-cause" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Lexical</span><span class="w"> </span><span class="n">Analysis</span><span class="w"> </span><span class="nc">failed</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8653018887-1">{</span><span class="p" data-group-id="8653018887-2">{</span><span class="ss">unexpected_character</span><span class="p">,</span><span class="mi">36</span><span class="p" data-group-id="8653018887-2">}</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">9</span><span class="p" data-group-id="8653018887-1">}</span></code></pre><ul><li>Character 36 is ASCII for <code class="inline">$</code></li><li>Occurred when parsing typeclass specification files</li></ul><h3 id="root-cause" class="section-heading">
   <a href="#root-cause" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -180,8 +180,8 @@ Pages
   </a>
   <span class="text">What We Changed</span>
 </h3>
-<p>Added the new operators to the <code class="inline">operators()</code> map in <code class="inline">src/lexer/cure_lexer.erl</code>:</p><pre><code class="makeup erlang" translate="no"><span class="nf">operators</span><span class="p" data-group-id="9567081231-1">(</span><span class="p" data-group-id="9567081231-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
-    </span><span class="p" data-group-id="9567081231-2">#{</span><span class="w">
+<p>Added the new operators to the <code class="inline">operators()</code> map in <code class="inline">src/lexer/cure_lexer.erl</code>:</p><pre><code class="makeup erlang" translate="no"><span class="nf">operators</span><span class="p" data-group-id="4881158908-1">(</span><span class="p" data-group-id="4881158908-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="p" data-group-id="4881158908-2">#{</span><span class="w">
         </span><span class="c1">% ... existing operators ...</span><span class="w">
         </span><span class="p">&lt;&lt;</span><span class="s">&quot;|&gt;&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;|&gt;&#39;</span><span class="p">,</span><span class="w">
         </span><span class="p">&lt;&lt;</span><span class="s">&quot;#{&quot;</span><span class="p">&gt;&gt;</span><span class="p">=&gt;</span><span class="o">&gt;</span><span class="w">  </span><span class="ss">&#39;interpolation_start&#39;</span><span class="p">,</span><span class="w">
@@ -194,7 +194,7 @@ Pages
         </span><span class="c1">% Monad operators</span><span class="w">
         </span><span class="p">&lt;&lt;</span><span class="s">&quot;&gt;&gt;=&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;&gt;&gt;=&#39;</span><span class="p">,</span><span class="w">
         </span><span class="p">&lt;&lt;</span><span class="s">&quot;&gt;&gt;&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;&gt;&gt;&#39;</span><span class="w">
-    </span><span class="p" data-group-id="9567081231-2">}</span><span class="p">.</span></code></pre><h3 id="how-it-works" class="section-heading">
+    </span><span class="p" data-group-id="4881158908-2">}</span><span class="p">.</span></code></pre><h3 id="how-it-works" class="section-heading">
   <a href="#how-it-works" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -320,11 +320,11 @@ Editor Setup
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.3.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.4.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.3.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.4.0">Hex Preview</a>
 
-              (<a href="https://preview.hex.pm/preview/cure/0.3.0/show/docs/DOLLAR_OPERATOR_FIX.md">current file</a>)
+              (<a href="https://preview.hex.pm/preview/cure/0.4.0/show/docs/DOLLAR_OPERATOR_FIX.md">current file</a>)
 
           </span>
 

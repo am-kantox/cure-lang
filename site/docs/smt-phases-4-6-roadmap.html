@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Integration Phases 4-6: Implementation Roadmap - Cure Documentation</title>
+    <meta name="description" content="Date: 2025-11-19  
+Status: Planning → Implementation  
+Estimated Time: 10-17 weeks total">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="smt-integration-phases-4-6-implementation-roadmap">SMT Integration Phases 4-6: Implementation Roadmap</h1>
+<p><strong>Date</strong>: 2025-11-19<br />
+<strong>Status</strong>: Planning → Implementation<br />
+<strong>Estimated Time</strong>: 10-17 weeks total</p>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>This document outlines the implementation plan for SMT Integration Phases 4-6, building on the completed Phases 1-3 foundation.</p>
+<h3 id="current-status-baseline">Current Status (Baseline)</h3>
+<ul>
+<li>✅ Phase 1: Core SMT infrastructure (100%)</li>
+<li>✅ Phase 2: Quantifiers &amp; CLI configuration (100%)</li>
+<li>✅ Phase 3: Refinement types &amp; type integration (100%)</li>
+<li>🟡 Phase 4: LSP integration (10% - framework exists)</li>
+<li>⬜ Phase 5: Advanced features (0%)</li>
+<li>⬜ Phase 6: Dependent types (0%)</li>
+</ul>
+<hr />
+<h2 id="phase-4-lsp-real-time-verification">Phase 4: LSP Real-Time Verification</h2>
+<p><strong>Goal</strong>: Enable real-time constraint verification in editors with rich diagnostics and code actions.</p>
+<p><strong>Estimated Time</strong>: 2-3 weeks<br />
+<strong>Current Progress</strong>: 10%</p>
+<h3 id="41-incremental-constraint-solving">4.1 Incremental Constraint Solving</h3>
+<p><strong>Objective</strong>: Cache SMT results to avoid redundant verification<br />
+<strong>Files</strong>: <code>lsp/cure_lsp_smt.erl</code><br />
+<strong>Time</strong>: 3-4 days</p>
+<p><strong>Implementation Tasks</strong>:<br />
+1. ✅ Verification state record exists (already implemented)<br />
+2. ❌ Implement persistent solver session<br />
+   - Keep Z3 process alive between verification runs<br />
+   - Use <code>(push)</code> and <code>(pop)</code> commands for scope management<br />
+   - Benefit: Avoid 50ms startup overhead per verification</p>
+<ol start="3">
+<li>
+<p>❌ Implement incremental cache<br />
+   - Hash constraints for cache keys<br />
+   - Store results: <code>#{Hash =&gt; {sat|unsat|unknown, Timestamp}}</code><br />
+   - Invalidate cache on document changes</p>
+</li>
+<li>
+<p>❌ Implement document change tracking<br />
+   - Track which lines changed<br />
+   - Only reverify constraints in changed regions<br />
+   - Reuse results for unchanged code</p>
+</li>
+</ol>
+<p><strong>API</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Initialize persistent solver</span>
+<span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">State</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_lsp_smt</span><span class="p">:</span><span class="nf">init_verification_state</span><span class="p">(),</span>
+
+<span class="c">% Verify with incremental solving</span>
+<span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Diagnostics</span><span class="p">,</span><span class="w"> </span><span class="nv">NewState</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_lsp_smt</span><span class="p">:</span><span class="nf">verify_document_incremental</span><span class="p">(</span><span class="nv">Uri</span><span class="p">,</span><span class="w"> </span><span class="nv">State</span><span class="p">),</span>
+
+<span class="c">% Invalidate cache on edit</span>
+<span class="nv">NewState2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_lsp_smt</span><span class="p">:</span><span class="nf">invalidate_cache_region</span><span class="p">(</span><span class="nv">Uri</span><span class="p">,</span><span class="w"> </span><span class="nv">StartLine</span><span class="p">,</span><span class="w"> </span><span class="nv">EndLine</span><span class="p">,</span><span class="w"> </span><span class="nv">NewState</span><span class="p">).</span>
+</code></pre></div>
+
+<p><strong>Success Metrics</strong>:<br />
+- ✅ &lt;100ms verification for unchanged documents<br />
+- ✅ &lt;500ms for small edits (1-10 lines)<br />
+- ✅ Cache hit rate &gt;80% for typical editing</p>
+<hr />
+<h3 id="42-rich-diagnostics-with-counterexamples">4.2 Rich Diagnostics with Counterexamples</h3>
+<p><strong>Objective</strong>: Provide detailed error messages with SMT counterexamples<br />
+<strong>Files</strong>: <code>lsp/cure_lsp_smt.erl</code>, <code>src/types/cure_refinement_types.erl</code><br />
+<strong>Time</strong>: 3-4 days</p>
+<p><strong>Implementation Tasks</strong>:<br />
+1. ✅ Diagnostic conversion functions exist (partial)<br />
+2. ❌ Enhance counterexample formatting<br />
+   - Show concrete values that violate constraints<br />
+   - Format in human-readable way</p>
+<ol start="3">
+<li>
+<p>❌ Add constraint context<br />
+   - Show where constraint was defined<br />
+   - Show constraint in Cure syntax (not SMT-LIB)</p>
+</li>
+<li>
+<p>❌ Implement hover hints<br />
+   - Show refinement type when hovering over variable<br />
+   - Show inferred constraints</p>
+</li>
+</ol>
+<p><strong>Example Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Refinement</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="n">constraint</span><span class="w"> </span><span class="n">violated</span>
+<span class="w">  </span><span class="n">Required</span><span class="o">:</span><span class="w"> </span><span class="n">Positive</span><span class="w"> </span><span class="o">(</span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="o">)</span>
+<span class="w">  </span><span class="n">Counterexample</span><span class="o">:</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">5</span><span class="w"> </span><span class="n">violates</span><span class="w"> </span><span class="n">constraint</span>
+<span class="w">  </span><span class="n">Defined</span><span class="w"> </span><span class="n">at</span><span class="o">:</span><span class="w"> </span><span class="n">examples</span><span class="o">/</span><span class="n">test</span><span class="o">.</span><span class="na">cure</span><span class="o">:</span><span class="mi">10</span><span class="o">:</span><span class="mi">15</span>
+</code></pre></div>
+
+<p><strong>API</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Enhanced diagnostic with counterexample</span>
+<span class="nv">Diagnostic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">    </span><span class="n">range</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span><span class="n">start</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span><span class="n">line</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">character</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">5</span><span class="p">},</span><span class="w"> </span><span class="p">...},</span>
+<span class="w">    </span><span class="n">severity</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">  </span><span class="c">% Error</span>
+<span class="w">    </span><span class="n">message</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s">&quot;Refinement violated: x = -5 does not satisfy x &gt; 0&quot;</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">source</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s">&quot;Cure SMT&quot;</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">code</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s">&quot;refinement-violation&quot;</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">relatedInformation</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">#{</span>
+<span class="w">            </span><span class="n">location</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span><span class="n">uri</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">...,</span><span class="w"> </span><span class="n">range</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">...},</span>
+<span class="w">            </span><span class="n">message</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s">&quot;Constraint defined here: type Positive = Int when x &gt; 0&quot;</span><span class="o">&gt;&gt;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}.</span>
+</code></pre></div>
+
+<hr />
+<h3 id="43-code-actions-quick-fixes">4.3 Code Actions &amp; Quick Fixes</h3>
+<p><strong>Objective</strong>: Suggest fixes for constraint violations<br />
+<strong>Files</strong>: <code>lsp/cure_lsp_smt.erl</code><br />
+<strong>Time</strong>: 2-3 days</p>
+<p><strong>Implementation Tasks</strong>:<br />
+1. ✅ Code action framework exists (stub)<br />
+2. ❌ Implement constraint relaxation suggestions<br />
+   - Suggest weaker constraints that would pass<br />
+   - Example: <code>x &gt; 0</code> → <code>x &gt;= 0</code></p>
+<ol start="3">
+<li>
+<p>❌ Implement runtime check insertion<br />
+   - Offer to add <code>when x &gt; 0</code> guard<br />
+   - Insert assertion: <code>assert x &gt; 0</code></p>
+</li>
+<li>
+<p>❌ Implement type annotation suggestions<br />
+   - Suggest refinement types based on usage<br />
+   - Auto-infer constraints from guards</p>
+</li>
+</ol>
+<p><strong>Quick Fix Examples</strong>:</p>
+<p><strong>Fix 1: Add Guard</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Before</span>
+<span class="n">def</span><span class="w"> </span><span class="s">divide(a:</span><span class="w"> </span><span class="s">Int,</span><span class="w"> </span><span class="s">b:</span><span class="w"> </span><span class="s">Int):</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span>
+
+<span class="c">% After (quick fix applied)</span>
+<span class="n">def</span><span class="w"> </span><span class="s">divide(a:</span><span class="w"> </span><span class="s">Int,</span><span class="w"> </span><span class="s">b:</span><span class="w"> </span><span class="s">Int)</span><span class="w"> </span><span class="s">when</span><span class="w"> </span><span class="s">b</span><span class="w"> </span><span class="o">/</span><span class="p">=</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span>
+</code></pre></div>
+
+<p><strong>Fix 2: Relax Constraint</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Error: Cannot prove Percentage &lt;: Positive</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">Percentage</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">100</span>
+
+<span class="c">% Suggested fix: Use NonNegative instead</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">NonNegative</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span>
+<span class="n">def</span><span class="w"> </span><span class="s">use_percentage(p:</span><span class="w"> </span><span class="s">NonNegative):</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="k">...</span>
+</code></pre></div>
+
+<p><strong>Fix 3: Add Runtime Check</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="s">process(n:</span><span class="w"> </span><span class="s">Int):</span><span class="w"> </span><span class="s">Result</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="c">% Quick fix inserts this:</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">then</span>
+<span class="w">        </span><span class="n">divide</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span>
+<span class="w">    </span><span class="k">else</span>
+<span class="w">        </span><span class="nb">error</span><span class="p">(</span><span class="s">&quot;n must be positive&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span>
+</code></pre></div>
+
+<hr />
+<h3 id="44-performance-optimization">4.4 Performance Optimization</h3>
+<p><strong>Objective</strong>: Ensure LSP remains responsive<br />
+<strong>Time</strong>: 2-3 days</p>
+<p><strong>Implementation Tasks</strong>:<br />
+1. ❌ Implement query batching<br />
+   - Batch multiple constraints into single SMT query<br />
+   - Use <code>(assert ...)</code> multiple times before <code>(check-sat)</code></p>
+<ol start="2">
+<li>
+<p>❌ Implement timeout tuning<br />
+   - Short timeout (500ms) for LSP<br />
+   - Long timeout (5000ms) for full compilation<br />
+   - Cancel verification on file close</p>
+</li>
+<li>
+<p>❌ Implement background verification<br />
+   - Queue verification tasks<br />
+   - Process in background worker<br />
+   - Return cached results immediately</p>
+</li>
+<li>
+<p>❌ Profile and optimize hot paths<br />
+   - Measure constraint extraction time<br />
+   - Optimize SMT-LIB generation<br />
+   - Cache parsed AST</p>
+</li>
+</ol>
+<p><strong>Performance Targets</strong>:<br />
+- Constraint extraction: &lt;50ms<br />
+- SMT query (simple): &lt;100ms<br />
+- SMT query (complex): &lt;500ms<br />
+- Full document verification: &lt;1s</p>
+<hr />
+<h3 id="45-testing-documentation">4.5 Testing &amp; Documentation</h3>
+<p><strong>Time</strong>: 2-3 days</p>
+<p><strong>Tests to Create</strong>:<br />
+1. LSP incremental solving test<br />
+2. Counterexample formatting test<br />
+3. Code action generation test<br />
+4. Performance benchmark test</p>
+<p><strong>Documentation to Write</strong>:<br />
+1. LSP SMT user guide<br />
+2. Configuration guide (timeout, solver selection)<br />
+3. Troubleshooting guide (Z3 not found, etc.)<br />
+4. Performance tuning guide</p>
+<hr />
+<h2 id="phase-5-advanced-features">Phase 5: Advanced Features</h2>
+<p><strong>Goal</strong>: Add advanced SMT capabilities for pattern synthesis, optimization, and FSM verification.</p>
+<p><strong>Estimated Time</strong>: 4-6 weeks<br />
+<strong>Current Progress</strong>: 0%</p>
+<h3 id="51-array-theory-support">5.1 Array Theory Support</h3>
+<p><strong>Objective</strong>: Enable list/vector constraints with SMT arrays<br />
+<strong>Files</strong>: <code>src/smt/cure_smt_translator.erl</code>, new <code>src/smt/cure_smt_array.erl</code><br />
+<strong>Time</strong>: 1-2 weeks</p>
+<p><strong>Implementation</strong>:<br />
+1. Add array theory to SMT-LIB translation<br />
+<code>smt
+   (declare-const arr (Array Int Int))
+   (assert (forall ((i Int)) (=&gt; (and (&gt;= i 0) (&lt; i n)) (&gt; (select arr i) 0))))</code></p>
+<ol start="2">
+<li>
+<p>Support list constraints:<br />
+<code>cure
+   type AllPositive = List(Int) when forall i. 0 &lt;= i &lt; length(xs) =&gt; xs[i] &gt; 0
+   type Sorted = List(Int) when forall i j. i &lt; j =&gt; xs[i] &lt;= xs[j]</code></p>
+</li>
+<li>
+<p>Implement array operations:<br />
+   - <code>select</code> (array indexing)<br />
+   - <code>store</code> (array update)<br />
+   - quantifiers over array indices</p>
+</li>
+</ol>
+<p><strong>Success Criteria</strong>:<br />
+- ✅ Can express "all positive" list constraint<br />
+- ✅ Can prove sorted list properties<br />
+- ✅ 10+ array theory tests passing</p>
+<hr />
+<h3 id="52-pattern-exhaustiveness-checking">5.2 Pattern Exhaustiveness Checking</h3>
+<p><strong>Objective</strong>: Use SMT to prove pattern matching is exhaustive<br />
+<strong>Files</strong>: <code>src/smt/cure_pattern_checker.erl</code> (exists), enhance with SMT<br />
+<strong>Time</strong>: 1 week</p>
+<p><strong>Current State</strong>:<br />
+- Pattern checker exists<br />
+- Uses basic symbolic analysis<br />
+- <strong>Enhancement</strong>: Add SMT backend for complex patterns</p>
+<p><strong>Implementation</strong>:<br />
+1. Convert patterns to SMT constraints<br />
+<code>erlang
+   Pattern: | 0 -&gt; ... | n when n &gt; 0 -&gt; ...
+   SMT: (assert (or (= x 0) (&gt; x 0)))
+   Check: (check-sat) with (assert (not (or ...)))</code></p>
+<ol start="2">
+<li>
+<p>Prove exhaustiveness via SMT<br />
+   - Generate SMT query for "not covered"<br />
+   - If unsat → exhaustive<br />
+   - If sat → show missing pattern</p>
+</li>
+<li>
+<p>Suggest missing patterns<br />
+   - Extract model from SAT result<br />
+   - Generate pattern from model<br />
+   - Format in Cure syntax</p>
+</li>
+</ol>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">match</span><span class="w"> </span><span class="s">x</span><span class="w"> </span><span class="s">with</span>
+<span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;zero&quot;</span>
+<span class="o">|</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;positive&quot;</span>
+<span class="k">end</span>
+<span class="c">% SMT proves: Missing case for n &lt; 0</span>
+<span class="c">% Suggested fix: Add | n when n &lt; 0 -&gt; ...</span>
+</code></pre></div>
+
+<hr />
+<h3 id="53-guard-optimization">5.3 Guard Optimization</h3>
+<p><strong>Objective</strong>: Eliminate redundant guards via SMT<br />
+<strong>Files</strong>: New <code>src/smt/cure_guard_optimizer.erl</code><br />
+<strong>Time</strong>: 1 week</p>
+<p><strong>Implementation</strong>:<br />
+1. Detect redundant guards<br />
+<code>cure
+   if n &gt; 10 then
+       if n &gt; 5 then  % Redundant! n &gt; 10 implies n &gt; 5
+           ...
+       end
+   end</code></p>
+<ol start="2">
+<li>
+<p>Prove guard implications<br />
+   - Use <code>prove_implication(G1, G2, Env)</code><br />
+   - If G1 → G2, remove G2</p>
+</li>
+<li>
+<p>Optimize guard ordering<br />
+   - Order guards by specificity<br />
+   - More restrictive guards first</p>
+</li>
+</ol>
+<p><strong>Benefits</strong>:<br />
+- Faster runtime (fewer checks)<br />
+- Clearer code (no redundant conditions)<br />
+- Compiler warnings for dead code</p>
+<hr />
+<h3 id="54-fsm-verification-via-smt">5.4 FSM Verification via SMT</h3>
+<p><strong>Objective</strong>: Verify FSM properties using SMT<br />
+<strong>Files</strong>: Enhance <code>src/fsm/cure_fsm_verifier.erl</code><br />
+<strong>Time</strong>: 2 weeks</p>
+<p><strong>Implementation</strong>:<br />
+1. FSM state invariants<br />
+   ```cure<br />
+   fsm BankAccount do<br />
+       payload: {balance: Int}<br />
+       invariant: balance &gt;= 0  % Verify via SMT</p>
+<div class="codehilite"><pre><span></span><code><span class="w">   </span><span class="n">state</span><span class="w"> </span><span class="n">Active</span><span class="w"> </span><span class="n">do</span>
+<span class="w">       </span><span class="n">on</span><span class="w"> </span><span class="n">withdraw</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">           </span><span class="n">Active</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="p">}</span>
+<span class="w">   </span><span class="kd">end</span>
+</code></pre></div>
+
+<p>end<br />
+   ```</p>
+<ol start="2">
+<li>
+<p>Deadlock detection via SMT<br />
+   - Encode state graph as SMT constraints<br />
+   - Prove: ∀ states. ∃ transition</p>
+</li>
+<li>
+<p>Reachability analysis<br />
+   - Prove all states reachable from initial<br />
+   - Generate counter-example path if not</p>
+</li>
+<li>
+<p>Liveness properties<br />
+   - Eventually reach accepting state<br />
+   - No infinite loops in bad states</p>
+</li>
+</ol>
+<p><strong>Success Criteria</strong>:<br />
+- ✅ Verify balance &gt;= 0 invariant holds<br />
+- ✅ Detect deadlocks in FSM definitions<br />
+- ✅ Prove reachability properties<br />
+- ✅ 15+ FSM verification tests passing</p>
+<hr />
+<h2 id="phase-6-dependent-type-constraints">Phase 6: Dependent Type Constraints</h2>
+<p><strong>Goal</strong>: Full dependent types with length-indexed vectors and verified arithmetic.</p>
+<p><strong>Estimated Time</strong>: 4-8 weeks<br />
+<strong>Current Progress</strong>: 0%<br />
+<strong>Status</strong>: Research phase - significant type system changes required</p>
+<h3 id="61-design-dependent-type-system">6.1 Design Dependent Type System</h3>
+<p><strong>Objective</strong>: Architect dependent types compatible with existing system<br />
+<strong>Time</strong>: 1-2 weeks</p>
+<p><strong>Design Questions</strong>:<br />
+1. Syntax for dependent types<br />
+   ```cure<br />
+   type Vector(T, n: Nat) = List(T) when length(this) == n</p>
+<p>def concat<T, m: Nat, n: Nat>(<br />
+       v1: Vector(T, m),<br />
+       v2: Vector(T, n)<br />
+   ): Vector(T, m + n) = v1 ++ v2<br />
+   ```</p>
+<ol start="2">
+<li>
+<p>Type-level computation<br />
+   - How to handle <code>m + n</code> at type level?<br />
+   - SMT for proving <code>length(v1 ++ v2) == length(v1) + length(v2)</code></p>
+</li>
+<li>
+<p>Integration with refinement types<br />
+   - Dependent types as special refinement types?<br />
+   - Or separate type system layer?</p>
+</li>
+</ol>
+<p><strong>Deliverables</strong>:<br />
+- Architecture document<br />
+- Grammar additions<br />
+- Type inference algorithm<br />
+- SMT encoding strategy</p>
+<hr />
+<h3 id="62-parser-ast-support">6.2 Parser &amp; AST Support</h3>
+<p><strong>Objective</strong>: Add syntax for dependent types<br />
+<strong>Files</strong>: <code>src/parser/cure_parser.erl</code>, <code>src/parser/cure_ast.hrl</code><br />
+<strong>Time</strong>: 1 week</p>
+<p><strong>Changes Needed</strong>:<br />
+1. Type-level parameters<br />
+<code>cure
+   type Vector(T, n: Nat) = ...</code></p>
+<ol start="2">
+<li>
+<p>Dependent function types<br />
+<code>cure
+   def safe_index&lt;T, n: Nat&gt;(v: Vector(T, n), i: Nat where i &lt; n): T</code></p>
+</li>
+<li>
+<p>Type-level expressions<br />
+   - Arithmetic: <code>m + n</code>, <code>m * n</code><br />
+   - Comparisons: <code>n &gt; 0</code>, <code>m &gt;= n</code></p>
+</li>
+</ol>
+<p><strong>AST Records</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">-</span><span class="ni">record</span><span class="p">(</span><span class="nl">dependent_function_type</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">type_params</span><span class="p">,</span><span class="w">    </span><span class="c">% [(Name, Kind, Constraint)]</span>
+<span class="w">    </span><span class="n">params</span><span class="p">,</span><span class="w">         </span><span class="c">% [#param{}]</span>
+<span class="w">    </span><span class="n">return_type</span><span class="p">,</span>
+<span class="w">    </span><span class="n">location</span>
+<span class="p">}).</span>
+
+<span class="p">-</span><span class="ni">record</span><span class="p">(</span><span class="nl">length_constraint</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">var</span><span class="p">,</span><span class="w">            </span><span class="c">% Variable name</span>
+<span class="w">    </span><span class="n">length_expr</span><span class="p">,</span><span class="w">    </span><span class="c">% Length expression</span>
+<span class="w">    </span><span class="n">location</span>
+<span class="p">}).</span>
+</code></pre></div>
+
+<hr />
+<h3 id="63-type-checking-with-smt">6.3 Type Checking with SMT</h3>
+<p><strong>Objective</strong>: Verify dependent type constraints<br />
+<strong>Files</strong>: <code>src/types/cure_typechecker.erl</code>, new <code>src/types/cure_dependent_types.erl</code><br />
+<strong>Time</strong>: 2-3 weeks</p>
+<p><strong>Implementation</strong>:<br />
+1. Track type-level variables<br />
+<code>erlang
+   % Environment now includes type-level vars
+   Env = #{
+       term_vars =&gt; #{x =&gt; int, ...},
+       type_vars =&gt; #{n =&gt; nat, m =&gt; nat}
+   }</code></p>
+<ol start="2">
+<li>Generate verification conditions<br />
+   ```cure<br />
+   def concat(v1: Vector(T, m), v2: Vector(T, n)): Vector(T, m+n) =<br />
+       v1 ++ v2</li>
+</ol>
+<p>% VC: length(v1 ++ v2) == m + n<br />
+   % Requires: length(v1) == m, length(v2) == n (from types)<br />
+   % Prove: length(v1 ++ v2) == length(v1) + length(v2)<br />
+   ```</p>
+<ol start="3">
+<li>Verify via SMT<br />
+   - Encode length axioms<br />
+   - Prove verification conditions<br />
+   - Report counterexamples</li>
+</ol>
+<p><strong>Challenges</strong>:<br />
+- List length not directly supported in SMT<br />
+- Need axioms: <code>length([]) = 0</code>, <code>length(x:xs) = 1 + length(xs)</code><br />
+- Array theory may help</p>
+<hr />
+<h3 id="64-standard-library-integration">6.4 Standard Library Integration</h3>
+<p><strong>Objective</strong>: Add dependent types to standard library<br />
+<strong>Files</strong>: <code>lib/std/list.cure</code>, <code>lib/std/vector.cure</code> (new)<br />
+<strong>Time</strong>: 1-2 weeks</p>
+<p><strong>Dependent Types to Add</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">module</span><span class="w"> </span><span class="nx">Vector</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">    </span><span class="k">type</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">length</span><span class="p">(</span><span class="nx">this</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">n</span>
+
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">empty</span><span class="p">&lt;</span><span class="nx">T</span><span class="p">&gt;():</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[]</span>
+
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">cons</span><span class="p">&lt;</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">&gt;(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">v</span><span class="p">:</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)):</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="p">[</span><span class="nx">x</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">v</span><span class="p">]</span>
+
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">head</span><span class="p">&lt;</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">&gt;(</span><span class="nx">v</span><span class="p">:</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)):</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="k">match</span><span class="w"> </span><span class="nx">v</span><span class="w"> </span><span class="nx">with</span>
+<span class="w">        </span><span class="o">|</span><span class="w"> </span><span class="p">[</span><span class="nx">x</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">_</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">x</span>
+<span class="w">        </span><span class="nx">end</span>
+
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">tail</span><span class="p">&lt;</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">&gt;(</span><span class="nx">v</span><span class="p">:</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="o">+</span><span class="mi">1</span><span class="p">)):</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="k">match</span><span class="w"> </span><span class="nx">v</span><span class="w"> </span><span class="nx">with</span>
+<span class="w">        </span><span class="o">|</span><span class="w"> </span><span class="p">[</span><span class="nx">_</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">xs</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">xs</span>
+<span class="w">        </span><span class="nx">end</span>
+
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">concat</span><span class="p">&lt;</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">m</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">&gt;(</span>
+<span class="w">        </span><span class="nx">v1</span><span class="p">:</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">m</span><span class="p">),</span>
+<span class="w">        </span><span class="nx">v2</span><span class="p">:</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)</span>
+<span class="w">    </span><span class="p">):</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">m</span><span class="o">+</span><span class="nx">n</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="nx">v1</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="nx">v2</span>
+
+<span class="w">    </span><span class="nx">def</span><span class="w"> </span><span class="nx">take</span><span class="p">&lt;</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">k</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">k</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">n</span><span class="p">&gt;(</span>
+<span class="w">        </span><span class="nx">v</span><span class="p">:</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">),</span>
+<span class="w">        </span><span class="nx">k</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span>
+<span class="w">    </span><span class="p">):</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">k</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">        </span><span class="o">...</span>
+<span class="nx">end</span>
+</code></pre></div>
+
+<p><strong>Benefits</strong>:<br />
+- No runtime bounds checks needed<br />
+- Prove safety at compile time<br />
+- Better optimization opportunities</p>
+<hr />
+<h2 id="timeline-summary">Timeline Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Feature</th>
+<th>Time</th>
+<th>Start</th>
+<th>End</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4.1</td>
+<td>Incremental solving</td>
+<td>3-4 days</td>
+<td>Week 1</td>
+<td>Week 1</td>
+</tr>
+<tr>
+<td>4.2</td>
+<td>Rich diagnostics</td>
+<td>3-4 days</td>
+<td>Week 1</td>
+<td>Week 2</td>
+</tr>
+<tr>
+<td>4.3</td>
+<td>Code actions</td>
+<td>2-3 days</td>
+<td>Week 2</td>
+<td>Week 2</td>
+</tr>
+<tr>
+<td>4.4</td>
+<td>Performance</td>
+<td>2-3 days</td>
+<td>Week 2</td>
+<td>Week 3</td>
+</tr>
+<tr>
+<td>4.5</td>
+<td>Testing &amp; docs</td>
+<td>2-3 days</td>
+<td>Week 3</td>
+<td>Week 3</td>
+</tr>
+<tr>
+<td><strong>Phase 4 Total</strong></td>
+<td><strong>LSP Integration</strong></td>
+<td><strong>2-3 weeks</strong></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>5.1</td>
+<td>Array theory</td>
+<td>1-2 weeks</td>
+<td>Week 4</td>
+<td>Week 5-6</td>
+</tr>
+<tr>
+<td>5.2</td>
+<td>Pattern checking</td>
+<td>1 week</td>
+<td>Week 6</td>
+<td>Week 7</td>
+</tr>
+<tr>
+<td>5.3</td>
+<td>Guard optimization</td>
+<td>1 week</td>
+<td>Week 7</td>
+<td>Week 8</td>
+</tr>
+<tr>
+<td>5.4</td>
+<td>FSM verification</td>
+<td>2 weeks</td>
+<td>Week 8</td>
+<td>Week 10</td>
+</tr>
+<tr>
+<td><strong>Phase 5 Total</strong></td>
+<td><strong>Advanced Features</strong></td>
+<td><strong>4-6 weeks</strong></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>6.1</td>
+<td>Design</td>
+<td>1-2 weeks</td>
+<td>Week 11</td>
+<td>Week 12-13</td>
+</tr>
+<tr>
+<td>6.2</td>
+<td>Parser support</td>
+<td>1 week</td>
+<td>Week 13</td>
+<td>Week 14</td>
+</tr>
+<tr>
+<td>6.3</td>
+<td>Type checking</td>
+<td>2-3 weeks</td>
+<td>Week 14</td>
+<td>Week 16-17</td>
+</tr>
+<tr>
+<td>6.4</td>
+<td>Standard library</td>
+<td>1-2 weeks</td>
+<td>Week 17</td>
+<td>Week 18-19</td>
+</tr>
+<tr>
+<td><strong>Phase 6 Total</strong></td>
+<td><strong>Dependent Types</strong></td>
+<td><strong>4-8 weeks</strong></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total Estimated Time</strong>: 10-17 weeks</p>
+<hr />
+<h2 id="success-criteria">Success Criteria</h2>
+<h3 id="phase-4">Phase 4</h3>
+<ul>
+<li>✅ LSP responds in &lt;100ms for cached results</li>
+<li>✅ Counterexamples shown in diagnostics</li>
+<li>✅ 5+ code action quick fixes implemented</li>
+<li>✅ 20+ LSP integration tests passing</li>
+</ul>
+<h3 id="phase-5">Phase 5</h3>
+<ul>
+<li>✅ Array theory constraints supported</li>
+<li>✅ Pattern exhaustiveness proven by SMT</li>
+<li>✅ Redundant guards eliminated</li>
+<li>✅ FSM invariants verified</li>
+<li>✅ 50+ advanced feature tests passing</li>
+</ul>
+<h3 id="phase-6">Phase 6</h3>
+<ul>
+<li>✅ Dependent function types type-check</li>
+<li>✅ Vector operations proven safe</li>
+<li>✅ Standard library uses dependent types</li>
+<li>✅ 30+ dependent type tests passing</li>
+</ul>
+<hr />
+<h2 id="risks-mitigation">Risks &amp; Mitigation</h2>
+<h3 id="risk-1-smt-solver-performance">Risk 1: SMT Solver Performance</h3>
+<p><strong>Impact</strong>: LSP too slow for real-time use<br />
+<strong>Mitigation</strong>:<br />
+- Implement aggressive caching<br />
+- Use short timeouts (500ms)<br />
+- Fall back to symbolic evaluation<br />
+- Profile and optimize hot paths</p>
+<h3 id="risk-2-dependent-types-complexity">Risk 2: Dependent Types Complexity</h3>
+<p><strong>Impact</strong>: Type system becomes too complex<br />
+<strong>Mitigation</strong>:<br />
+- Start with simple cases (Vector length)<br />
+- Incremental implementation<br />
+- Extensive testing<br />
+- User feedback before full deployment</p>
+<h3 id="risk-3-z3-availability">Risk 3: Z3 Availability</h3>
+<p><strong>Impact</strong>: Users don't have Z3 installed<br />
+<strong>Mitigation</strong>:<br />
+- Graceful fallback to symbolic evaluation<br />
+- Clear installation instructions<br />
+- Bundle Z3 with compiler (optional)<br />
+- Support multiple solvers (CVC5 backup)</p>
+<hr />
+<p><strong>Next Steps</strong>: Begin Phase 4.1 implementation (incremental solving)</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

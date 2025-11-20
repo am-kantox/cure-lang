@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 3 Completion & Phase 5 Roadmap - Cure Documentation</title>
+    <meta name="description" content="Date: 2025-01-25  
+Status: Planning Document  
+Priority: High (Phase 3), Medium (Phase 5)">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="phase-3-completion-phase-5-roadmap">Phase 3 Completion &amp; Phase 5 Roadmap</h1>
+<p><strong>Date</strong>: 2025-01-25<br />
+<strong>Status</strong>: Planning Document<br />
+<strong>Priority</strong>: High (Phase 3), Medium (Phase 5)</p>
+<h2 id="overview">Overview</h2>
+<p>This document outlines the strategy for completing Phase 3 (Type System Integration) and beginning Phase 5 (Advanced SMT Features) of the Z3 integration.</p>
+<hr />
+<h2 id="phase-3-type-system-integration-completion-plan">Phase 3: Type System Integration - Completion Plan</h2>
+<p><strong>Current Status</strong>: 95% Complete (20/21 tests passing)<br />
+<strong>Remaining Work</strong>: Full precondition/postcondition verification, constraint propagation</p>
+<h3 id="31-preconditionpostcondition-verification">3.1 Precondition/Postcondition Verification</h3>
+<p><strong>Goal</strong>: Verify function preconditions and postconditions using SMT</p>
+<p><strong>Current Stubs</strong> (<code>cure_refinement_types.erl</code>):</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">verify_precondition</span><span class="p">(_</span><span class="nv">FunInfo</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="p">[]}.</span><span class="w">  </span><span class="c">% Stub: always succeeds</span>
+
+<span class="nf">verify_postcondition</span><span class="p">(_</span><span class="nv">FunInfo</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="p">[]}.</span><span class="w">  </span><span class="c">% Stub: always succeeds</span>
+</code></pre></div>
+
+<p><strong>Implementation Plan</strong>:</p>
+<ol>
+<li>
+<p><strong>Extract Function Contracts from AST</strong><br />
+   - Parse <code>@requires</code> annotations for preconditions<br />
+   - Parse <code>@ensures</code> annotations for postconditions<br />
+   - Extract parameter types with refinements<br />
+   - Extract return type with refinements</p>
+</li>
+<li>
+<p><strong>Verify Preconditions at Call Sites</strong><br />
+   ```erlang<br />
+   % Function definition:<br />
+   def safe_div(a: Int, b: NonZero) -&gt; Int where b /= 0</p>
+</li>
+</ol>
+<p>% Call site verification:<br />
+   def caller(x: Int) -&gt; Int do<br />
+       safe_div(10, x)  % Error: x might be 0<br />
+   end</p>
+<p>% SMT query: Can x be 0?<br />
+   % If SAT, report error with counterexample<br />
+   ```</p>
+<ol start="3">
+<li><strong>Verify Postconditions in Function Bodies</strong><br />
+   ```erlang<br />
+   % Function definition:<br />
+   def abs_value(x: Int) -&gt; Positive<br />
+       ensures result &gt; 0<br />
+   do<br />
+       if x &lt; 0 then -x else x end<br />
+   end</li>
+</ol>
+<p>% SMT query: Does the body guarantee result &gt; 0?<br />
+   % Check both branches: (-x &gt; 0) when (x &lt; 0)<br />
+   %                  and (x &gt; 0) when (x &gt;= 0)<br />
+   ```</p>
+<p><strong>Files to Modify</strong>:<br />
+- <code>src/types/cure_refinement_types.erl</code> - Implement verification logic<br />
+- <code>src/types/cure_typechecker.erl</code> - Call verification during type checking<br />
+- <code>test/refinement_types_test.erl</code> - Fix <code>propagate_constraints_simple_test</code></p>
+<p><strong>Estimated Effort</strong>: 2-3 days</p>
+<h3 id="32-constraint-propagation">3.2 Constraint Propagation</h3>
+<p><strong>Goal</strong>: Track constraints through control flow and propagate them</p>
+<p><strong>Current Issue</strong>: Test <code>propagate_constraints_simple_test</code> fails because <code>cure_types:lookup_env/2</code> doesn't exist</p>
+<p><strong>Implementation Plan</strong>:</p>
+<ol>
+<li>
+<p><strong>Add <code>lookup_env/2</code> to <code>cure_types.erl</code></strong><br />
+<code>erlang
+   -spec lookup_env(atom(), type_env()) -&gt; {ok, type()} | error.
+   lookup_env(VarName, Env) -&gt;
+       case maps:get(VarName, Env, undefined) of
+           undefined -&gt; error;
+           Type -&gt; {ok, Type}
+       end.</code></p>
+</li>
+<li>
+<p><strong>Implement Constraint Flow Analysis</strong><br />
+<code>erlang
+   % Example: if-then-else branches
+   if x &gt; 0 then
+       % In this branch, we know x &gt; 0
+       % Propagate this constraint
+       ...
+   else
+       % In this branch, we know x &lt;= 0
+       ...
+   end</code></p>
+</li>
+<li>
+<p><strong>Bidirectional Propagation</strong><br />
+   - Forward propagation: from assignments to uses<br />
+   - Backward propagation: from required types to actual values</p>
+</li>
+</ol>
+<p><strong>Files to Modify</strong>:<br />
+- <code>src/types/cure_types.erl</code> - Add <code>lookup_env/2</code>, <code>add_constraint/3</code><br />
+- <code>src/types/cure_refinement_types.erl</code> - Implement <code>propagate_constraints/2</code><br />
+- <code>src/types/cure_typechecker.erl</code> - Use constraint propagation in branches</p>
+<p><strong>Estimated Effort</strong>: 3-4 days</p>
+<h3 id="33-integration-with-type-checker">3.3 Integration with Type Checker</h3>
+<p><strong>Goal</strong>: Make SMT verification a natural part of type checking</p>
+<p><strong>Tasks</strong>:<br />
+1. Extract refinement types from type annotations<br />
+2. Verify subtyping relationships during unification<br />
+3. Check preconditions at every function call<br />
+4. Verify postconditions in function definitions<br />
+5. Propagate constraints through control flow</p>
+<p><strong>File</strong>: <code>src/types/cure_typechecker.erl</code></p>
+<p><strong>Key Integration Points</strong>:<br />
+- <code>check_function_call/4</code> - Verify preconditions<br />
+- <code>check_function_def/3</code> - Verify postconditions<br />
+- <code>unify/3</code> - Use SMT for subtyping<br />
+- <code>check_if_expr/3</code> - Propagate branch constraints</p>
+<p><strong>Estimated Effort</strong>: 2-3 days</p>
+<p><strong>Total Phase 3 Completion</strong>: 7-10 days</p>
+<hr />
+<h2 id="phase-5-advanced-smt-features">Phase 5: Advanced SMT Features</h2>
+<p><strong>Goal</strong>: Leverage SMT for advanced program analysis</p>
+<p><strong>Status</strong>: Not Started (0%)<br />
+<strong>Dependencies</strong>: Phase 3 complete (or partial completion acceptable)</p>
+<h3 id="51-pattern-exhaustiveness-synthesis">5.1 Pattern Exhaustiveness Synthesis</h3>
+<p><strong>Goal</strong>: Automatically generate missing pattern match cases using SMT</p>
+<p><strong>Algorithm</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">Encode</span><span class="w"> </span><span class="n">covered</span><span class="w"> </span><span class="n">patterns</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="n">SMT</span><span class="w"> </span><span class="n">constraints</span>
+<span class="w">   </span><span class="n">covered_patterns</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">pattern_1</span><span class="w"> </span><span class="err">∨</span><span class="w"> </span><span class="n">pattern_2</span><span class="w"> </span><span class="err">∨</span><span class="w"> </span><span class="mf">...</span><span class="w"> </span><span class="err">∨</span><span class="w"> </span><span class="n">pattern_n</span><span class="p">)</span>
+
+<span class="mf">2.</span><span class="w"> </span><span class="n">Query</span><span class="w"> </span><span class="n">Z3</span><span class="p">:</span><span class="w"> </span><span class="n">Is</span><span class="w"> </span><span class="n">there</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="nb">val</span><span class="n">ue</span><span class="w"> </span><span class="ow">NOT</span><span class="w"> </span><span class="n">covered</span><span class="err">?</span>
+<span class="w">   </span><span class="n">query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">¬</span><span class="n">covered_patterns</span>
+
+<span class="mf">3.</span><span class="w"> </span><span class="kr">If</span><span class="w"> </span><span class="n">SAT</span><span class="p">:</span>
+<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="kr">Get</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="p">(</span><span class="n">counterexample</span><span class="p">)</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="n">Z3</span>
+<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">Convert</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="n">Cure</span><span class="w"> </span><span class="n">pattern</span>
+<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">Suggest</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="n">user</span>
+<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">Add</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="n">covered_patterns</span>
+<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">Repeat</span><span class="w"> </span><span class="kr">step</span><span class="w"> </span><span class="mf">2</span>
+
+<span class="mf">4.</span><span class="w"> </span><span class="kr">If</span><span class="w"> </span><span class="n">UNSAT</span><span class="p">:</span>
+<span class="w">   </span><span class="o">-</span><span class="w"> </span><span class="n">All</span><span class="w"> </span><span class="n">cases</span><span class="w"> </span><span class="n">covered</span><span class="p">,</span><span class="w"> </span><span class="n">pattern</span><span class="w"> </span><span class="n">match</span><span class="w"> </span><span class="n">is</span><span class="w"> </span><span class="n">exhaustive</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Status</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Ok</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Error</span><span class="p">(</span><span class="nx">Int</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Pending</span>
+
+<span class="k">match</span><span class="w"> </span><span class="nx">status</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="nx">Ok</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;done&quot;</span>
+<span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Missing</span><span class="p">:</span><span class="w"> </span><span class="nx">Error</span><span class="p">(</span><span class="nx">_</span><span class="p">)</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">Pending</span>
+<span class="nx">end</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">SMT</span><span class="w"> </span><span class="nx">query</span><span class="p">:</span><span class="w"> </span><span class="nx">status</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Error</span><span class="p">(</span><span class="nx">_</span><span class="p">)</span><span class="w"> </span><span class="nx">OR</span><span class="w"> </span><span class="nx">status</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Pending</span><span class="p">?</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Z3</span><span class="w"> </span><span class="nx">returns</span><span class="p">:</span><span class="w"> </span><span class="nx">SAT</span><span class="p">,</span><span class="w"> </span><span class="nx">model</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span><span class="nx">status</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Error</span><span class="p">(</span><span class="mi">404</span><span class="p">)}</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Suggest</span><span class="p">:</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Error</span><span class="p">(</span><span class="nx">_</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">...</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">After</span><span class="w"> </span><span class="nx">adding</span><span class="w"> </span><span class="nx">Error</span><span class="p">(</span><span class="nx">_</span><span class="p">),</span><span class="w"> </span><span class="nx">query</span><span class="w"> </span><span class="nx">again</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Z3</span><span class="w"> </span><span class="nx">returns</span><span class="p">:</span><span class="w"> </span><span class="nx">SAT</span><span class="p">,</span><span class="w"> </span><span class="nx">model</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span><span class="nx">status</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Pending</span><span class="p">}</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Suggest</span><span class="p">:</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">Pending</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">...</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">After</span><span class="w"> </span><span class="nx">adding</span><span class="w"> </span><span class="nx">Pending</span><span class="p">,</span><span class="w"> </span><span class="nx">query</span><span class="w"> </span><span class="nx">again</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Z3</span><span class="w"> </span><span class="nx">returns</span><span class="p">:</span><span class="w"> </span><span class="nx">UNSAT</span><span class="w"> </span><span class="p">(</span><span class="nx">all</span><span class="w"> </span><span class="nx">cases</span><span class="w"> </span><span class="nx">covered</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Implementation</strong>:</p>
+<ol>
+<li>
+<p><strong>Pattern Encoding</strong> (<code>src/smt/cure_pattern_encoder.erl</code>)<br />
+<code>erlang
+   % Encode pattern as SMT constraint
+   encode_pattern(Pattern, Type) -&gt;
+       case Pattern of
+           {atom, ok} -&gt;
+               "(= status ok)";
+           {tuple, error, {var, _}} -&gt;
+               "(is-error status)";
+           {atom, pending} -&gt;
+               "(= status pending)"
+       end.</code></p>
+</li>
+<li>
+<p><strong>Coverage Analysis</strong> (<code>src/types/cure_pattern_checker.erl</code>)<br />
+   ```erlang<br />
+   % Check if patterns are exhaustive<br />
+   check_exhaustiveness(Patterns, Type) -&gt;<br />
+       EncodedPatterns = [encode_pattern(P, Type) || P &lt;- Patterns],<br />
+       CoveredConstraint = join_with_or(EncodedPatterns),</p>
+<p>% Query: NOT covered<br />
+   Query = "(not " ++ CoveredConstraint ++ ")",</p>
+<p>case cure_smt_solver:check_constraint(Query) of<br />
+       {sat, Model} -&gt;<br />
+           % Found uncovered case<br />
+           MissingPattern = model_to_pattern(Model, Type),<br />
+           {incomplete, MissingPattern};<br />
+       {unsat, _} -&gt;<br />
+           % All cases covered<br />
+           {complete}<br />
+   end.<br />
+   ```</p>
+</li>
+<li>
+<p><strong>LSP Integration</strong><br />
+   - Add diagnostic for non-exhaustive patterns<br />
+   - Code action: "Add missing pattern cases"<br />
+   - Automatically insert generated patterns</p>
+</li>
+</ol>
+<p><strong>Files to Create</strong>:<br />
+- <code>src/smt/cure_pattern_encoder.erl</code> (150 LOC est.)<br />
+- <code>src/types/cure_pattern_checker.erl</code> (200 LOC est.)<br />
+- <code>test/pattern_synthesis_test.erl</code> (100 LOC est.)</p>
+<p><strong>Estimated Effort</strong>: 4-5 days</p>
+<h3 id="52-fsm-verification">5.2 FSM Verification</h3>
+<p><strong>Goal</strong>: Verify finite state machine correctness properties</p>
+<p><strong>Properties to Verify</strong>:<br />
+1. <strong>No Deadlocks</strong>: Every state has at least one outgoing transition<br />
+2. <strong>Reachability</strong>: All states are reachable from initial state<br />
+3. <strong>Liveness</strong>: System can always make progress<br />
+4. <strong>Safety</strong>: Bad states are never reached</p>
+<p><strong>Example FSM</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">fsm</span><span class="w"> </span><span class="n">TrafficLight</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">states</span><span class="w"> </span><span class="p">[</span><span class="n">Green</span><span class="p">,</span><span class="w"> </span><span class="n">Yellow</span><span class="p">,</span><span class="w"> </span><span class="n">Red</span><span class="p">]</span>
+<span class="w">    </span><span class="n">initial</span><span class="w"> </span><span class="n">Green</span>
+
+<span class="w">    </span><span class="n">Green</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Yellow</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">timer</span>
+<span class="w">    </span><span class="n">Yellow</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Red</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">timer</span>
+<span class="w">    </span><span class="n">Red</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Green</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">timer</span>
+<span class="kd">end</span>
+
+<span class="cp"># SMT verifies:</span>
+<span class="cp"># 1. No deadlocks: ✓ (all states have transitions)</span>
+<span class="cp"># 2. Reachability: ✓ (all states reachable from Green)</span>
+<span class="cp"># 3. Liveness: ✓ (always eventually transitions)</span>
+<span class="cp"># 4. Safety: Define bad states, verify unreachable</span>
+</code></pre></div>
+
+<p><strong>Verification Approach</strong>:</p>
+<ol>
+<li><strong>Encode FSM as SMT</strong><br />
+   ```smt2<br />
+   (declare-datatype State<br />
+       ((Green) (Yellow) (Red)))</li>
+</ol>
+<p>(declare-fun transition (State) State)<br />
+   (assert (= (transition Green) Yellow))<br />
+   (assert (= (transition Yellow) Red))<br />
+   (assert (= (transition Red) Green))<br />
+   ```</p>
+<ol start="2">
+<li>
+<p><strong>Deadlock Detection</strong><br />
+<code>erlang
+   % For each state, verify there exists a transition
+   check_deadlock(State) -&gt;
+       Query = "(exists ((next State)) 
+                   (= next (transition " ++ state_to_smt(State) ++ ")))",
+       case cure_smt_solver:check_constraint(Query) of
+           {unsat, _} -&gt; {deadlock, State};
+           {sat, _} -&gt; ok
+       end.</code></p>
+</li>
+<li>
+<p><strong>Reachability Analysis</strong><br />
+<code>erlang
+   % Use transitive closure or bounded model checking
+   check_reachability(Initial, Target, MaxDepth) -&gt;
+       % Can we reach Target from Initial in &lt;= MaxDepth steps?
+       Query = "(exists ((path (Array Int State)))
+                   (and (= (select path 0) " ++ Initial ++ ")
+                        (exists ((k Int))
+                            (and (&lt;= k " ++ MaxDepth ++ ")
+                                 (= (select path k) " ++ Target ++ ")))))",
+       cure_smt_solver:check_constraint(Query).</code></p>
+</li>
+<li>
+<p><strong>Temporal Logic (LTL)</strong><br />
+   - Eventually: ◇φ (φ will eventually be true)<br />
+   - Always: □φ (φ is always true)<br />
+   - Until: φ U ψ (φ until ψ becomes true)</p>
+</li>
+</ol>
+<p><strong>Implementation</strong>:</p>
+<p><strong>Files to Create</strong>:<br />
+- <code>src/fsm/cure_fsm_verifier.erl</code> (300 LOC est.)<br />
+- <code>src/smt/cure_fsm_encoder.erl</code> (200 LOC est.)<br />
+- <code>test/fsm_verification_test.erl</code> (150 LOC est.)</p>
+<p><strong>Estimated Effort</strong>: 5-6 days</p>
+<h3 id="53-guard-optimization">5.3 Guard Optimization</h3>
+<p><strong>Goal</strong>: Simplify guard conditions using SMT equivalence</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Before</span><span class="w"> </span><span class="nx">optimization</span>
+<span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">SMT</span><span class="w"> </span><span class="nx">proves</span><span class="p">:</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="nx">implies</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Optimized</span><span class="p">:</span>
+<span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="mi">100</span>
+</code></pre></div>
+
+<p><strong>Optimization Strategies</strong>:</p>
+<ol>
+<li>
+<p><strong>Redundancy Elimination</strong><br />
+<code>erlang
+   % Remove guard G2 if G1 implies G2
+   is_redundant(G1, G2) -&gt;
+       Implication = "(=&gt; " ++ guard_to_smt(G1) ++ 
+                     " " ++ guard_to_smt(G2) ++ ")",
+       case cure_smt_solver:prove_constraint(Implication) of
+           true -&gt; {redundant, G2};
+           false -&gt; not_redundant
+       end.</code></p>
+</li>
+<li>
+<p><strong>Guard Reordering</strong><br />
+<code>erlang
+   % Reorder guards from most to least selective
+   % Use SMT to estimate selectivity (percentage of values passing)</code></p>
+</li>
+<li>
+<p><strong>Constant Folding</strong><br />
+<code>erlang
+   % If SMT proves guard is always true, remove it
+   % If SMT proves guard is always false, flag as error</code></p>
+</li>
+</ol>
+<p><strong>Files to Create</strong>:<br />
+- <code>src/codegen/cure_guard_optimizer.erl</code> (250 LOC est.)<br />
+- <code>test/guard_optimization_test.erl</code> (100 LOC est.)</p>
+<p><strong>Estimated Effort</strong>: 3-4 days</p>
+<h3 id="54-comprehensive-test-suite">5.4 Comprehensive Test Suite</h3>
+<p><strong>Goal</strong>: Extensive testing for all Phase 5 features</p>
+<p><strong>Test Files to Create</strong>:<br />
+1. <code>test/z3_integration_comprehensive_test.erl</code> - End-to-end tests<br />
+2. <code>test/pattern_synthesis_test.erl</code> - Pattern generation tests<br />
+3. <code>test/fsm_verification_test.erl</code> - FSM correctness tests<br />
+4. <code>test/guard_optimization_test.erl</code> - Guard simplification tests</p>
+<p><strong>Example Test Scenarios</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Pattern synthesis</span>
+<span class="nf">test_pattern_synthesis_simple</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="nv">Code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;</span>
+<span class="s">        type Maybe(T) = Just(T) | Nothing</span>
+
+<span class="s">        def unwrap(m: Maybe(Int)) -&gt; Int do</span>
+<span class="s">            match m do</span>
+<span class="s">                | Just(x) -&gt; x</span>
+<span class="s">                # Missing: Nothing case</span>
+<span class="s">            end</span>
+<span class="s">        end</span>
+<span class="s">    &quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">AST</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_parser</span><span class="p">:</span><span class="nf">parse_string</span><span class="p">(</span><span class="nv">Code</span><span class="p">),</span>
+<span class="w">    </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">non_exhaustive</span><span class="p">,</span><span class="w"> </span><span class="nv">MissingPatterns</span><span class="p">}}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>
+<span class="w">        </span><span class="nn">cure_pattern_checker</span><span class="p">:</span><span class="nf">check_exhaustiveness</span><span class="p">(</span><span class="nv">AST</span><span class="p">),</span>
+<span class="w">    </span><span class="o">?</span><span class="n">assertEqual</span><span class="p">([{</span><span class="n">atom</span><span class="p">,</span><span class="w"> </span><span class="n">nothing</span><span class="p">}],</span><span class="w"> </span><span class="nv">MissingPatterns</span><span class="p">).</span>
+
+<span class="c">% FSM verification</span>
+<span class="nf">test_fsm_no_deadlock</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="nv">FSM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_traffic_light_fsm</span><span class="p">(),</span>
+<span class="w">    </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">States</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_fsm_verifier</span><span class="p">:</span><span class="nf">check_deadlock</span><span class="p">(</span><span class="nv">FSM</span><span class="p">),</span>
+<span class="w">    </span><span class="o">?</span><span class="n">assertEqual</span><span class="p">([],</span><span class="w"> </span><span class="nv">States</span><span class="p">).</span><span class="w">  </span><span class="c">% No deadlock states</span>
+
+<span class="c">% Guard optimization</span>
+<span class="nf">test_guard_redundancy</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="nv">Guard</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="ow">and</span><span class="p">,</span><span class="w"> </span><span class="p">[{</span><span class="n">op</span><span class="p">,</span><span class="w"> </span><span class="n">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="n">lit</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">}},</span>
+<span class="w">                   </span><span class="p">{</span><span class="n">op</span><span class="p">,</span><span class="w"> </span><span class="n">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="n">lit</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">1</span><span class="p">}}]},</span>
+<span class="w">    </span><span class="nv">Optimized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_guard_optimizer</span><span class="p">:</span><span class="nf">optimize</span><span class="p">(</span><span class="nv">Guard</span><span class="p">),</span>
+<span class="w">    </span><span class="nv">Expected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">op</span><span class="p">,</span><span class="w"> </span><span class="n">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">var</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="n">lit</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">}},</span>
+<span class="w">    </span><span class="o">?</span><span class="n">assertEqual</span><span class="p">(</span><span class="nv">Expected</span><span class="p">,</span><span class="w"> </span><span class="nv">Optimized</span><span class="p">).</span>
+</code></pre></div>
+
+<p><strong>Estimated Effort</strong>: 2-3 days</p>
+<p><strong>Total Phase 5</strong>: 14-18 days</p>
+<hr />
+<h2 id="implementation-priority">Implementation Priority</h2>
+<h3 id="high-priority-do-first">High Priority (Do First)</h3>
+<ol>
+<li>✅ Performance profiling infrastructure (DONE)</li>
+<li>Phase 3 completion:<br />
+   - Precondition/postcondition verification<br />
+   - Constraint propagation<br />
+   - Type checker integration</li>
+</ol>
+<h3 id="medium-priority-do-next">Medium Priority (Do Next)</h3>
+<ol start="3">
+<li>Phase 5.1: Pattern exhaustiveness synthesis</li>
+<li>Phase 5.2: FSM verification (basic features)</li>
+</ol>
+<h3 id="lower-priority-later">Lower Priority (Later)</h3>
+<ol start="5">
+<li>Phase 5.3: Guard optimization</li>
+<li>Phase 5.4: Comprehensive testing</li>
+</ol>
+<hr />
+<h2 id="success-metrics">Success Metrics</h2>
+<h3 id="phase-3-complete-when">Phase 3 Complete When:</h3>
+<ul>
+<li>✅ 21/21 refinement type tests passing (currently 20/21)</li>
+<li>✅ Preconditions verified at call sites</li>
+<li>✅ Postconditions verified in function bodies</li>
+<li>✅ Constraints propagate through control flow</li>
+<li>✅ Integration with type checker seamless</li>
+</ul>
+<h3 id="phase-5-complete-when">Phase 5 Complete When:</h3>
+<ul>
+<li>✅ Pattern synthesis suggests missing cases</li>
+<li>✅ FSM deadlocks detected automatically</li>
+<li>✅ Guard conditions optimized correctly</li>
+<li>✅ All Phase 5 tests passing (50+ tests)</li>
+<li>✅ Documentation complete with examples</li>
+</ul>
+<hr />
+<h2 id="risk-mitigation">Risk Mitigation</h2>
+<h3 id="risk-1-type-checker-complexity">Risk 1: Type Checker Complexity</h3>
+<p><strong>Issue</strong>: <code>cure_typechecker.erl</code> is large and complex<br />
+<strong>Mitigation</strong>: <br />
+- Make minimal, targeted changes<br />
+- Add SMT verification as optional enhancement<br />
+- Preserve existing functionality</p>
+<h3 id="risk-2-smt-performance">Risk 2: SMT Performance</h3>
+<p><strong>Issue</strong>: Pattern synthesis may require many Z3 queries<br />
+<strong>Mitigation</strong>:<br />
+- Cache synthesis results<br />
+- Limit search depth<br />
+- Use timeouts aggressively</p>
+<h3 id="risk-3-fsm-state-space-explosion">Risk 3: FSM State Space Explosion</h3>
+<p><strong>Issue</strong>: Large FSMs may have intractable state spaces<br />
+<strong>Mitigation</strong>:<br />
+- Bounded model checking (limit depth)<br />
+- Abstraction techniques<br />
+- User-specified bounds</p>
+<hr />
+<h2 id="next-steps">Next Steps</h2>
+<ol>
+<li>
+<p><strong>Immediate</strong> (Today):<br />
+   - ✅ Create performance profiling module<br />
+   - Start Phase 3 precondition implementation</p>
+</li>
+<li>
+<p><strong>This Week</strong>:<br />
+   - Complete precondition/postcondition verification<br />
+   - Implement constraint propagation<br />
+   - Fix failing test</p>
+</li>
+<li>
+<p><strong>Next Week</strong>:<br />
+   - Integrate with type checker<br />
+   - Begin pattern exhaustiveness synthesis<br />
+   - Start FSM verification basics</p>
+</li>
+<li>
+<p><strong>Following Weeks</strong>:<br />
+   - Complete Phase 5 features<br />
+   - Comprehensive testing<br />
+   - Documentation</p>
+</li>
+</ol>
+<hr />
+<h2 id="estimated-timeline">Estimated Timeline</h2>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Tasks</th>
+<th>Estimated Time</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Performance Profiling</td>
+<td>Infrastructure</td>
+<td>1 day</td>
+<td>✅ Complete</td>
+</tr>
+<tr>
+<td>Phase 3.1</td>
+<td>Preconditions/Postconditions</td>
+<td>2-3 days</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Phase 3.2</td>
+<td>Constraint Propagation</td>
+<td>3-4 days</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Phase 3.3</td>
+<td>Type Checker Integration</td>
+<td>2-3 days</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td><strong>Phase 3 Total</strong></td>
+<td></td>
+<td><strong>7-10 days</strong></td>
+<td><strong>0% Complete</strong></td>
+</tr>
+<tr>
+<td>Phase 5.1</td>
+<td>Pattern Synthesis</td>
+<td>4-5 days</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Phase 5.2</td>
+<td>FSM Verification</td>
+<td>5-6 days</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Phase 5.3</td>
+<td>Guard Optimization</td>
+<td>3-4 days</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td>Phase 5.4</td>
+<td>Testing</td>
+<td>2-3 days</td>
+<td>Pending</td>
+</tr>
+<tr>
+<td><strong>Phase 5 Total</strong></td>
+<td></td>
+<td><strong>14-18 days</strong></td>
+<td><strong>0% Complete</strong></td>
+</tr>
+<tr>
+<td><strong>Grand Total</strong></td>
+<td></td>
+<td><strong>21-28 days</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><strong>Status</strong>: Roadmap Complete<br />
+<strong>Last Updated</strong>: 2025-01-25<br />
+<strong>Owner</strong>: Core Compiler Team</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

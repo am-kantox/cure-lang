@@ -61,7 +61,7 @@ Query = generate_array_query(Constraint, #{arr => {array, int, int}, n => {type,
 %% ============================================================================
 
 %% @doc Generate constraint that all elements in array satisfy a property
-%% forall i. 0 <= i < length => property(arr[i])
+%% forall i. 0 &lt;= i &lt; length =&gt; property(arr[i])
 -spec all_elements_satisfy(atom(), atom(), fun((atom(), expr()) -> expr())) -> expr().
 all_elements_satisfy(ArrayVar, LengthVar, PropertyFn) ->
     % Create index variable
@@ -102,7 +102,7 @@ all_elements_satisfy(ArrayVar, LengthVar, PropertyFn) ->
     {forall_expr, [{IndexVar, int}], Implication}.
 
 %% @doc Generate constraint that at least one element satisfies a property
-%% exists i. 0 <= i < length /\ property(arr[i])
+%% exists i. 0 &lt;= i &lt; length and property(arr[i])
 -spec exists_element_satisfying(atom(), atom(), fun((atom(), expr()) -> expr())) -> expr().
 exists_element_satisfying(ArrayVar, LengthVar, PropertyFn) ->
     IndexVar = list_to_atom(atom_to_list(ArrayVar) ++ "_i"),
@@ -136,7 +136,7 @@ exists_element_satisfying(ArrayVar, LengthVar, PropertyFn) ->
     {exists_expr, [{IndexVar, int}], Conjunction}.
 
 %% @doc Generate sorted ascending constraint
-%% forall i j. 0 <= i < j < length => arr[i] <= arr[j]
+%% forall i j. 0 &lt;= i &lt; j &lt; length =&gt; arr[i] &lt;= arr[j]
 -spec sorted_ascending(atom(), atom()) -> expr().
 sorted_ascending(ArrayVar, LengthVar) ->
     IVar = list_to_atom(atom_to_list(ArrayVar) ++ "_i"),

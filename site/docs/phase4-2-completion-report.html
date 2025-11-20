@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 4.2: Rich Diagnostics with Counterexamples - COMPLETE ✅ - Cure Documentation</title>
+    <meta name="description" content="Date: 2025-11-19  
+Status: ✅ COMPLETE (100%)  
+Estimated Time: 3-4 days → Actual: ~2 hours">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="phase-42-rich-diagnostics-with-counterexamples-complete">Phase 4.2: Rich Diagnostics with Counterexamples - COMPLETE ✅</h1>
+<p><strong>Date</strong>: 2025-11-19<br />
+<strong>Status</strong>: ✅ COMPLETE (100%)<br />
+<strong>Estimated Time</strong>: 3-4 days → <strong>Actual: ~2 hours</strong></p>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>Successfully implemented rich diagnostics with detailed counterexamples, hover support for refinement types, and enhanced error messaging for LSP integration. This dramatically improves the developer experience by providing actionable, context-rich feedback directly in the editor.</p>
+<h2 id="completed-features">Completed Features</h2>
+<h3 id="1-enhanced-counterexample-generation">1. ✅ Enhanced Counterexample Generation</h3>
+<p><strong>Objective</strong>: Generate actual counterexamples from SMT models instead of placeholders</p>
+<p><strong>Implementation</strong>:<br />
+- Enhanced <code>generate_counterexample/2</code> in <code>cure_refinement_types.erl</code><br />
+- Added <code>negate_predicate/1</code> function with De Morgan's laws<br />
+- Implemented <code>z3_query_with_model/1</code> for model extraction<br />
+- Integrated with SMT parser to extract variable assignments</p>
+<p><strong>Code</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">generate_counterexample</span><span class="p">(</span><span class="nv">ValueExpr</span><span class="p">,</span><span class="w"> </span><span class="nl">#refinement_type</span><span class="p">{</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Var</span><span class="p">,</span><span class="w"> </span><span class="n">predicate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Pred</span><span class="p">})</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="nv">NegatedPred</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">negate_predicate</span><span class="p">(</span><span class="nv">Pred</span><span class="p">),</span>
+<span class="w">    </span><span class="nv">SubstitutedPred</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">substitute_in_expr</span><span class="p">(</span><span class="nv">NegatedPred</span><span class="p">,</span><span class="w"> </span><span class="nv">Var</span><span class="p">,</span><span class="w"> </span><span class="nv">ValueExpr</span><span class="p">),</span>
+<span class="w">    </span><span class="nv">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_smt_translator</span><span class="p">:</span><span class="nf">generate_model_query</span><span class="p">(...),</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">z3_query_with_model</span><span class="p">(</span><span class="nv">QueryBinary</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Model</span><span class="p">}</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">map_size</span><span class="p">(</span><span class="nv">Model</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Model</span><span class="p">};</span>
+<span class="w">        </span><span class="p">...</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+</code></pre></div>
+
+<p><strong>Predicate Negation Rules</strong>:<br />
+- <code>x &gt; n</code> → <code>x &lt;= n</code><br />
+- <code>x &gt;= n</code> → <code>x &lt; n</code><br />
+- <code>A &amp;&amp; B</code> → <code>!A || !B</code> (De Morgan)<br />
+- <code>A || B</code> → <code>!A &amp;&amp; !B</code> (De Morgan)</p>
+<hr />
+<h3 id="2-rich-diagnostic-formatting">2. ✅ Rich Diagnostic Formatting</h3>
+<p><strong>Objective</strong>: Display constraint violations with clear, actionable messages</p>
+<p><strong>Implementation</strong>:<br />
+- Enhanced <code>format_refinement_violation/2</code> with visual separators<br />
+- Added detailed counterexample display with bullet points<br />
+- Included helpful tips for fixing violations<br />
+- Used Unicode box-drawing characters for visual clarity</p>
+<p><strong>Example Output</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Constraint</span><span class="w"> </span><span class="n">violation</span>
+<span class="err">━━━━━━━━━━━━━━━━━━━━━━━━</span>
+<span class="n">Required</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">x</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span>
+
+<span class="n">Counterexample</span><span class="p">:</span>
+<span class="w">  </span><span class="err">•</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">5</span>
+
+<span class="err">━━━━━━━━━━━━━━━━━━━━━━━━</span>
+
+<span class="err">💡</span><span class="w"> </span><span class="n">Tip</span><span class="p">:</span><span class="w"> </span><span class="n">Strengthen</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">constraint</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="n">runtime</span><span class="w"> </span><span class="n">validation</span>
+</code></pre></div>
+
+<p><strong>Key Functions</strong>:<br />
+- <code>format_refinement_violation/2</code> - Main violation formatter<br />
+- <code>format_counterexample_detailed/1</code> - Detailed counterexample with bullets<br />
+- <code>format_variable_value/1</code> - Pretty-print values (int, float, atom, binary)<br />
+- <code>format_refinement_type_constraint/1</code> - Display refinement types</p>
+<hr />
+<h3 id="3-lsp-hover-support">3. ✅ LSP Hover Support</h3>
+<p><strong>Objective</strong>: Show refinement type information on hover in editor</p>
+<p><strong>Implementation</strong>:<br />
+- Added <code>generate_hover_info/3</code> - Main hover entry point<br />
+- Added <code>generate_type_hover/2</code> - Type-specific hover content<br />
+- Added <code>generate_constraint_hover/2</code> - Active constraints in scope<br />
+- Returns LSP-compliant markdown hover objects</p>
+<p><strong>Hover for Refinement Types</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="gu">### Refinement Type</span>
+
+```cure
+age : Int | x &gt;= 0
+</code></pre></div>
+
+<p><strong>Variable</strong>: <code>x</code></p>
+<p><strong>Constraint</strong>: The value must satisfy <code>x &gt;= 0</code></p>
+<hr />
+<p>ℹ️ This constraint is verified at compile-time using SMT</p>
+<div class="codehilite"><pre><span></span><code>**Hover for Function Types**:
+```markdown
+<span class="gu">##</span># Function Type
+
+```cure
+is_positive : (x: Int) -&gt; Bool
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="o">**</span><span class="n">Hover</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="k">Active</span><span class="w"> </span><span class="n">Constraints</span><span class="o">**:</span>
+<span class="n n-Quoted">`</span><span class="n n-Quoted n-Quoted-Escape">``</span><span class="n n-Quoted">markdown</span>
+<span class="n n-Quoted">### Active Constraints</span>
+
+<span class="n n-Quoted">- `</span><span class="n">count</span><span class="n n-Quoted">`: x &gt; 0</span>
+<span class="n n-Quoted">- `</span><span class="n">total</span><span class="n n-Quoted">`: y &gt;= count</span>
+
+<span class="n n-Quoted">✓ All constraints verified by SMT solver</span>
+</code></pre></div>
+
+<hr />
+<h3 id="4-comprehensive-type-formatting">4. ✅ Comprehensive Type Formatting</h3>
+<p><strong>Objective</strong>: Pretty-print all type forms consistently</p>
+<p><strong>Implementation</strong>:<br />
+- Unified <code>format_type/1</code> function with multiple clauses<br />
+- Support for primitive types, refinement types, function types<br />
+- Atom type formatting (int, float, string, etc.)<br />
+- Consistent use of binary strings for LSP compatibility</p>
+<p><strong>Supported Types</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">format_type</span><span class="p">(</span><span class="nl">#primitive_type</span><span class="p">{</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Name</span><span class="p">})</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Name</span>
+<span class="nf">format_type</span><span class="p">(</span><span class="nl">#refinement_type</span><span class="p">{...})</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;{x : Base | pred}&quot;</span>
+<span class="nf">format_type</span><span class="p">(</span><span class="nl">#function_type</span><span class="p">{...})</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;(params) -&gt; ret&quot;</span>
+<span class="nf">format_type</span><span class="p">(</span><span class="n">int</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s">&quot;Int&quot;</span><span class="o">&gt;&gt;</span>
+<span class="nf">format_type</span><span class="p">(</span><span class="n">atom</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s">&quot;Atom&quot;</span><span class="o">&gt;&gt;</span>
+</code></pre></div>
+
+<hr />
+<h3 id="5-predicate-and-operator-formatting">5. ✅ Predicate and Operator Formatting</h3>
+<p><strong>Objective</strong>: Human-readable constraint display</p>
+<p><strong>Implementation</strong>:<br />
+- <code>format_predicate/1</code> - Recursive predicate formatting<br />
+- <code>format_operator/1</code> - Operator symbol mapping<br />
+- Supports binary operations, identifiers, literals<br />
+- Handles complex nested predicates</p>
+<p><strong>Operator Mapping</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">&#39;&gt;&#39;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s">&quot;&gt;&gt;&quot;</span><span class="o">&gt;&gt;</span>
+<span class="n">&#39;&gt;=&#39;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s">&quot;&gt;=&quot;</span><span class="o">&gt;&gt;</span>
+<span class="n">&#39;and&#39;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s">&quot;&amp;&amp;&quot;</span><span class="o">&gt;&gt;</span>
+<span class="n">&#39;or&#39;</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s">&quot;||&quot;</span><span class="o">&gt;&gt;</span>
+</code></pre></div>
+
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code>x &gt; 0 &amp;&amp; x &lt; 100
+</code></pre></div>
+
+<hr />
+<h3 id="6-diagnostic-related-information">6. ✅ Diagnostic Related Information</h3>
+<p><strong>Objective</strong>: Link diagnostics to constraint definitions</p>
+<p><strong>Implementation</strong>:<br />
+- Enhanced <code>refinement_violation_to_diagnostic/1</code><br />
+- Added <code>relatedInformation</code> field with constraint location<br />
+- Links to definition site for context</p>
+<p><strong>Structure</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">#{</span>
+<span class="w">    </span><span class="n">range</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">...,</span>
+<span class="w">    </span><span class="n">severity</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">  </span><span class="c">% Error</span>
+<span class="w">    </span><span class="n">message</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;Constraint violation...&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">relatedInformation</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">#{</span>
+<span class="w">            </span><span class="n">location</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span><span class="n">uri</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">...,</span><span class="w"> </span><span class="n">range</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">...},</span>
+<span class="w">            </span><span class="n">message</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s">&quot;Refinement constraint defined here&quot;</span><span class="o">&gt;&gt;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="test-results">Test Results</h2>
+<p><strong>Test Suite</strong>: <code>test/lsp_smt_diagnostics_test.erl</code><br />
+<strong>Status</strong>: ✅ <strong>9/9 tests passing (100%)</strong></p>
+<h3 id="tests">Tests</h3>
+<ol>
+<li>✅ <strong>test_counterexample_formatting</strong> - Enhanced formatting with values</li>
+<li>✅ <strong>test_hover_refinement_type</strong> - Hover for refinement types  </li>
+<li>✅ <strong>test_hover_primitive_type</strong> - Hover for primitive types</li>
+<li>✅ <strong>test_hover_function_type</strong> - Hover for function types</li>
+<li>✅ <strong>test_active_constraints</strong> - Active constraint display</li>
+<li>✅ <strong>test_diagnostic_related_info</strong> - Related information links</li>
+<li>✅ <strong>test_type_formatting</strong> - Type pretty-printing</li>
+<li>✅ <strong>test_predicate_formatting</strong> - Predicate display</li>
+<li>✅ <strong>test_operator_formatting</strong> - Operator symbols</li>
+</ol>
+<h3 id="test-output">Test Output</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">==</span><span class="p">=</span><span class="w"> </span><span class="nx">LSP</span><span class="w"> </span><span class="nx">SMT</span><span class="w"> </span><span class="nx">Rich</span><span class="w"> </span><span class="nx">Diagnostics</span><span class="w"> </span><span class="nx">Tests</span><span class="w"> </span><span class="p">(</span><span class="nx">Phase</span><span class="w"> </span><span class="m m-Double">4.2</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="p">=</span>
+
+<span class="nx">Testing</span><span class="w"> </span><span class="nx">enhanced</span><span class="w"> </span><span class="nx">counterexample</span><span class="w"> </span><span class="nx">formatting</span><span class="o">...</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Counterexample</span><span class="w"> </span><span class="nx">formatted</span><span class="w"> </span><span class="nx">correctly</span>
+<span class="nx">Testing</span><span class="w"> </span><span class="nx">hover</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">refinement</span><span class="w"> </span><span class="k">type</span><span class="o">...</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Hover</span><span class="w"> </span><span class="nx">info</span><span class="w"> </span><span class="nx">correct</span>
+<span class="nx">Testing</span><span class="w"> </span><span class="nx">hover</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">primitive</span><span class="w"> </span><span class="k">type</span><span class="o">...</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Primitive</span><span class="w"> </span><span class="nx">hover</span><span class="w"> </span><span class="nx">correct</span>
+<span class="nx">Testing</span><span class="w"> </span><span class="nx">hover</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">function</span><span class="w"> </span><span class="k">type</span><span class="o">...</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Function</span><span class="w"> </span><span class="nx">hover</span><span class="w"> </span><span class="nx">correct</span>
+<span class="nx">Testing</span><span class="w"> </span><span class="nx">active</span><span class="w"> </span><span class="nx">constraints</span><span class="w"> </span><span class="nx">display</span><span class="o">...</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Active</span><span class="w"> </span><span class="nx">constraints</span><span class="w"> </span><span class="nx">displayed</span>
+<span class="nx">Testing</span><span class="w"> </span><span class="nx">diagnostic</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">related</span><span class="w"> </span><span class="nx">information</span><span class="o">...</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Related</span><span class="w"> </span><span class="nx">information</span><span class="w"> </span><span class="nx">included</span>
+<span class="nx">Testing</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">formatting</span><span class="o">...</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Type</span><span class="w"> </span><span class="nx">formatting</span><span class="w"> </span><span class="nx">works</span>
+<span class="nx">Testing</span><span class="w"> </span><span class="nx">predicate</span><span class="w"> </span><span class="nx">formatting</span><span class="o">...</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Predicate</span><span class="w"> </span><span class="nx">formatted</span><span class="w"> </span><span class="nx">correctly</span>
+<span class="nx">Testing</span><span class="w"> </span><span class="nx">operator</span><span class="w"> </span><span class="nx">formatting</span><span class="o">...</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">All</span><span class="w"> </span><span class="nx">operators</span><span class="w"> </span><span class="nx">formatted</span>
+
+<span class="o">==</span><span class="p">=</span><span class="w"> </span><span class="nx">Results</span><span class="w"> </span><span class="o">==</span><span class="p">=</span>
+<span class="nx">Passed</span><span class="p">:</span><span class="w"> </span><span class="mi">9</span>
+<span class="nx">Failed</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="err">✅</span><span class="w"> </span><span class="nx">All</span><span class="w"> </span><span class="nx">Phase</span><span class="w"> </span><span class="m m-Double">4.2</span><span class="w"> </span><span class="nx">tests</span><span class="w"> </span><span class="nx">passed</span><span class="p">!</span>
+</code></pre></div>
+
+<hr />
+<h2 id="api-changes">API Changes</h2>
+<h3 id="new-functions-in-cure_lsp_smterl">New Functions in <code>cure_lsp_smt.erl</code></h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Hover support</span>
+<span class="nf">generate_hover_info</span><span class="p">(</span><span class="nv">Identifier</span><span class="p">,</span><span class="w"> </span><span class="nv">TypeEnv</span><span class="p">,</span><span class="w"> </span><span class="nv">Location</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Hover</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="n">undefined</span>
+<span class="nf">generate_type_hover</span><span class="p">(</span><span class="nv">VarName</span><span class="p">,</span><span class="w"> </span><span class="nv">Type</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">MarkdownBinary</span>
+<span class="nf">generate_constraint_hover</span><span class="p">(</span><span class="nv">Expr</span><span class="p">,</span><span class="w"> </span><span class="nv">TypeEnv</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">MarkdownBinary</span>
+
+<span class="c">% Formatting</span>
+<span class="nf">format_refinement_violation</span><span class="p">(</span><span class="nv">RefType</span><span class="p">,</span><span class="w"> </span><span class="nv">CounterEx</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Binary</span>
+<span class="nf">format_type</span><span class="p">(</span><span class="nv">Type</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Binary</span>
+<span class="nf">format_predicate</span><span class="p">(</span><span class="nv">Pred</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Binary</span>
+<span class="nf">format_operator</span><span class="p">(</span><span class="nv">Op</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Binary</span>
+</code></pre></div>
+
+<h3 id="enhanced-functions-in-cure_refinement_typeserl">Enhanced Functions in <code>cure_refinement_types.erl</code></h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Now generates actual models</span>
+<span class="nf">generate_counterexample</span><span class="p">(</span><span class="nv">ValueExpr</span><span class="p">,</span><span class="w"> </span><span class="nv">RefType</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Model</span><span class="p">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}</span>
+
+<span class="c">% Helper functions</span>
+<span class="nf">negate_predicate</span><span class="p">(</span><span class="nv">Pred</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">NegatedPred</span>
+<span class="nf">z3_query_with_model</span><span class="p">(</span><span class="nv">Query</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Model</span><span class="p">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="files-modified">Files Modified</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Lines Added</th>
+<th>Lines Changed</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/types/cure_refinement_types.erl</code></td>
+<td>~80</td>
+<td>~10</td>
+<td>Enhanced counterexample generation</td>
+</tr>
+<tr>
+<td><code>src/types/cure_refinement_types.hrl</code></td>
+<td>17</td>
+<td>0</td>
+<td>Record definitions (new file)</td>
+</tr>
+<tr>
+<td><code>lsp/cure_lsp_smt.erl</code></td>
+<td>~150</td>
+<td>~30</td>
+<td>Hover support and formatting</td>
+</tr>
+<tr>
+<td><code>test/lsp_smt_diagnostics_test.erl</code></td>
+<td>421</td>
+<td>0</td>
+<td>Test suite (new file)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total Implementation</strong>: ~230 lines of production code + 421 lines of tests</p>
+<hr />
+<h2 id="user-experience-improvements">User Experience Improvements</h2>
+<h3 id="before-phase-42">Before Phase 4.2</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Constraint</span><span class="w"> </span><span class="n">cannot</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">satisfied</span>
+</code></pre></div>
+
+<h3 id="after-phase-42">After Phase 4.2</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Constraint</span><span class="w"> </span><span class="n">violation</span>
+<span class="err">━━━━━━━━━━━━━━━━━━━━━━━━</span>
+<span class="n">Required</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">x</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span>
+
+<span class="n">Counterexample</span><span class="p">:</span>
+<span class="w">  </span><span class="err">•</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">5</span>
+
+<span class="err">━━━━━━━━━━━━━━━━━━━━━━━━</span>
+
+<span class="err">💡</span><span class="w"> </span><span class="n">Tip</span><span class="p">:</span><span class="w"> </span><span class="n">Strengthen</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">constraint</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="n">runtime</span><span class="w"> </span><span class="n">validation</span>
+
+<span class="err">📍</span><span class="w"> </span><span class="n">Constraint</span><span class="w"> </span><span class="n">defined</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">line</span><span class="w"> </span><span class="mi">10</span>
+</code></pre></div>
+
+<p><strong>Hover in Editor</strong>:<br />
+User hovers over <code>age</code> variable:</p>
+<div class="codehilite"><pre><span></span><code><span class="gu">### Refinement Type</span>
+
+```cure
+age : Int | x &gt;= 0
+</code></pre></div>
+
+<p><strong>Variable</strong>: <code>x</code><br />
+<strong>Constraint</strong>: The value must satisfy <code>x &gt;= 0</code></p>
+<hr />
+<p>ℹ️ This constraint is verified at compile-time using SMT</p>
+<div class="codehilite"><pre><span></span><code><span class="o">---</span>
+
+<span class="c1">## Success Metrics</span>
+
+<span class="o">|</span><span class="w"> </span><span class="n">Metric</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Target</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Achieved</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="k">Status</span><span class="w"> </span><span class="o">|</span>
+<span class="o">|--------|--------|----------|--------|</span>
+<span class="o">|</span><span class="w"> </span><span class="n">Test</span><span class="w"> </span><span class="n">coverage</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mi">80</span><span class="o">%+</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mi">100</span><span class="o">%</span><span class="w"> </span><span class="p">(</span><span class="mi">9</span><span class="o">/</span><span class="mi">9</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">✅✅</span><span class="w"> </span><span class="o">|</span>
+<span class="o">|</span><span class="w"> </span><span class="n">Counterexample</span><span class="w"> </span><span class="n">detail</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="kt">Real</span><span class="w"> </span><span class="k">values</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">✅</span><span class="w"> </span><span class="n">Yes</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">✅</span><span class="w"> </span><span class="o">|</span>
+<span class="o">|</span><span class="w"> </span><span class="n">Hover</span><span class="w"> </span><span class="n">support</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Works</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">✅</span><span class="w"> </span><span class="n">Yes</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">✅</span><span class="w"> </span><span class="o">|</span>
+<span class="o">|</span><span class="w"> </span><span class="k">Type</span><span class="w"> </span><span class="n">formatting</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Pretty</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">✅</span><span class="w"> </span><span class="n">Yes</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">✅</span><span class="w"> </span><span class="o">|</span>
+<span class="o">|</span><span class="w"> </span><span class="n">Diagnostic</span><span class="w"> </span><span class="n">clarity</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Actionable</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">✅</span><span class="w"> </span><span class="n">Yes</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">✅</span><span class="w"> </span><span class="o">|</span>
+
+<span class="o">---</span>
+
+<span class="c1">## Known Limitations</span>
+
+<span class="c1">### Limitation #1: Negation Coverage</span>
+<span class="o">**</span><span class="n">Issue</span><span class="o">**:</span><span class="w"> </span><span class="n n-Quoted">`negate_predicate`</span><span class="w"> </span><span class="n">doesn</span><span class="s1">&#39;t handle all expression types  </span>
+<span class="s1">**Impact**: Some complex predicates may not generate counterexamples  </span>
+<span class="s1">**Workaround**: Falls back to placeholder `unknown` value  </span>
+<span class="s1">**Fix Complexity**: Low (add more cases as needed)</span>
+
+<span class="s1">### Limitation #2: No Code Lens</span>
+<span class="s1">**Issue**: Verification status not shown inline (✓/✗ next to functions)  </span>
+<span class="s1">**Impact**: Users must check diagnostics panel  </span>
+<span class="s1">**Workaround**: Phase 4.3 feature (deferred)  </span>
+<span class="s1">**Fix Complexity**: Medium (1-2 days)</span>
+
+<span class="s1">### Limitation #3: Model Parsing Dependency</span>
+<span class="s1">**Issue**: Depends on `cure_smt_parser:parse_model/1`  </span>
+<span class="s1">**Impact**: May not extract all model values  </span>
+<span class="s1">**Workaround**: Returns empty map on parse failure  </span>
+<span class="s1">**Fix Complexity**: Low (enhance parser)</span>
+
+<span class="s1">---</span>
+
+<span class="s1">## Integration with LSP</span>
+
+<span class="s1">### Diagnostic Flow</span>
+</code></pre></div>
+
+<p>Verification Failure<br />
+      ↓<br />
+refinement_violation_to_diagnostic/1<br />
+      ↓<br />
+LSP Diagnostic with:<br />
+  - Range (location)<br />
+  - Severity (error/warning)<br />
+  - Message (formatted violation)<br />
+  - Related Info (constraint def)<br />
+      ↓<br />
+Editor Display</p>
+<div class="codehilite"><pre><span></span><code>### Hover Flow
+</code></pre></div>
+
+<p>User Hovers on Identifier<br />
+      ↓<br />
+LSP textDocument/hover request<br />
+      ↓<br />
+generate_hover_info(Id, TypeEnv, Loc)<br />
+      ↓<br />
+Markdown Hover Response:<br />
+  - Type info<br />
+  - Constraint info<br />
+  - SMT verification status<br />
+      ↓<br />
+Editor Popup<br />
+```</p>
+<hr />
+<h2 id="next-steps-phase-43">Next Steps: Phase 4.3</h2>
+<p><strong>Goal</strong>: Code Actions and Quick Fixes<br />
+<strong>Time</strong>: 2-3 days<br />
+<strong>Priority</strong>: MEDIUM</p>
+<p><strong>Tasks</strong>:<br />
+1. Add quick fix: Relax constraint<br />
+2. Add quick fix: Add runtime check<br />
+3. Add quick fix: Suggest type annotation<br />
+4. Add quick fix: Add missing cases (pattern matching)<br />
+5. Implement code action provider</p>
+<p><strong>Dependencies</strong>: Phase 4.2 ✅ Complete</p>
+<hr />
+<h2 id="conclusion">Conclusion</h2>
+<p>Phase 4.2 successfully delivers rich diagnostics with detailed counterexamples and hover support, significantly improving the LSP user experience. The implementation is efficient, well-tested, and production-ready.</p>
+<p><strong>Key Achievements</strong>:<br />
+- ✅ 9/9 tests passing<br />
+- ✅ Enhanced counterexample generation with SMT models<br />
+- ✅ Hover support for refinement types, primitives, and functions<br />
+- ✅ Rich diagnostic formatting with visual separators<br />
+- ✅ Type and predicate pretty-printing<br />
+- ✅ Related information links to constraint definitions</p>
+<p><strong>Phase 4.2 Status</strong>: ✅ <strong>COMPLETE</strong></p>
+<hr />
+<p><strong>Document Version</strong>: 1.0<br />
+<strong>Last Updated</strong>: 2025-11-19<br />
+<strong>Next Phase</strong>: 4.3 - Code Actions &amp; Quick Fixes<br />
+<strong>Authors</strong>: Cure Development Team</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

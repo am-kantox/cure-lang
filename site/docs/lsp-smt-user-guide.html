@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cure LSP with SMT Verification - User Guide - Cure Documentation</title>
+    <meta name="description" content="Version: 0.1.0  
+Last Updated: 2025-11-19">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="cure-lsp-with-smt-verification-user-guide">Cure LSP with SMT Verification - User Guide</h1>
+<p><strong>Version</strong>: 0.1.0<br />
+<strong>Last Updated</strong>: 2025-11-19</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#getting-started">Getting Started</a></li>
+<li><a href="#features">Features</a></li>
+<li><a href="#configuration">Configuration</a></li>
+<li><a href="#using-smt-verification">Using SMT Verification</a></li>
+<li><a href="#quick-fixes">Quick Fixes</a></li>
+<li><a href="#performance-tuning">Performance Tuning</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#advanced-usage">Advanced Usage</a></li>
+</ol>
+<hr />
+<h2 id="overview">Overview</h2>
+<p>Cure's Language Server Protocol (LSP) integration provides real-time SMT-based verification for:</p>
+<ul>
+<li><strong>Refinement types</strong>: Verify constraints like <code>x &gt; 0</code> at compile time</li>
+<li><strong>Dependent types</strong>: Length-indexed vectors, bounded integers</li>
+<li><strong>Pattern exhaustiveness</strong>: Prove all cases are covered</li>
+<li><strong>FSM verification</strong>: Check state machine invariants</li>
+</ul>
+<h3 id="key-benefits">Key Benefits</h3>
+<p>✅ <strong>Real-time feedback</strong> - See errors as you type, no compilation needed<br />
+✅ <strong>Concrete counterexamples</strong> - "x = -5 violates x &gt; 0" instead of generic errors<br />
+✅ <strong>Automated fixes</strong> - One-click quick fixes for common issues<br />
+✅ <strong>Performance optimized</strong> - &lt;100ms for cached checks, &lt;500ms for new code  </p>
+<hr />
+<h2 id="getting-started">Getting Started</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<ol>
+<li><strong>Z3 SMT Solver</strong> (required)<br />
+   ```bash<br />
+   # Ubuntu/Debian<br />
+   sudo apt install z3</li>
+</ol>
+<p># macOS<br />
+   brew install z3</p>
+<p># Or download from: https://github.com/Z3Prover/z3/releases<br />
+   ```</p>
+<ol start="2">
+<li><strong>Verify Z3 installation</strong><br />
+<code>bash
+   z3 --version
+   # Should output: Z3 version 4.x.x</code></li>
+</ol>
+<h3 id="ide-setup">IDE Setup</h3>
+<h4 id="visual-studio-code">Visual Studio Code</h4>
+<ol>
+<li>Install the <strong>Cure Language Support</strong> extension (when available)</li>
+<li>The LSP server will start automatically when you open a <code>.cure</code> file</li>
+<li>SMT verification runs in the background</li>
+</ol>
+<h4 id="neovimvim">Neovim/Vim</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Add to your LSP config</span>
+<span class="nb">require</span><span class="p">(</span><span class="s1">&#39;lspconfig&#39;</span><span class="p">).</span><span class="n">cure_ls</span><span class="p">.</span><span class="n">setup</span><span class="p">{</span>
+  <span class="n">cmd</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cure-lsp-server&#39;</span><span class="p">},</span>
+  <span class="n">filetypes</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cure&#39;</span><span class="p">},</span>
+  <span class="n">settings</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">cure</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="n">smt</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">enabled</span> <span class="o">=</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="n">solver</span> <span class="o">=</span> <span class="s1">&#39;z3&#39;</span><span class="p">,</span>
+        <span class="n">timeout</span> <span class="o">=</span> <span class="mi">500</span>  <span class="c1">-- ms</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="emacs">Emacs</h4>
+<div class="codehilite"><pre><span></span><code><span class="p">(</span><span class="nb">use-package</span><span class="w"> </span><span class="nv">lsp-mode</span>
+<span class="w">  </span><span class="nb">:hook</span><span class="w"> </span><span class="p">(</span><span class="nv">cure-mode</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="nv">lsp</span><span class="p">)</span>
+<span class="w">  </span><span class="nb">:custom</span>
+<span class="w">  </span><span class="p">(</span><span class="nv">lsp-cure-smt-enabled</span><span class="w"> </span><span class="no">t</span><span class="p">)</span>
+<span class="w">  </span><span class="p">(</span><span class="nv">lsp-cure-smt-timeout</span><span class="w"> </span><span class="mi">500</span><span class="p">))</span>
+</code></pre></div>
+
+<hr />
+<h2 id="features">Features</h2>
+<h3 id="1-refinement-type-checking">1. Refinement Type Checking</h3>
+<p><strong>Define constrained types:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Positive</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Percentage</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">100</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">NonEmptyList</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">length</span><span class="p">(</span><span class="nx">xs</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span>
+</code></pre></div>
+
+<p><strong>Get instant feedback:</strong></p>
+<div class="codehilite"><pre><span></span><code>def divide(a: Int, b: Positive): Int = a / b  ✅
+
+def bad_divide(a: Int, b: Int): Int = 
+    divide(a, b)  // ❌ Error: b may not be positive
+    // Counterexample: b = -5 violates b &gt; 0
+</code></pre></div>
+
+<h3 id="2-hover-information">2. Hover Information</h3>
+<p>Hover over any variable to see its refinement type:</p>
+<div class="codehilite"><pre><span></span><code>def process(n: Positive) = 
+    let x = n + 1  // Hover shows: x: Int when x &gt; 1
+</code></pre></div>
+
+<p><strong>Hover display:</strong></p>
+<div class="codehilite"><pre><span></span><code>```cure
+x: Int when x &gt; 1
+</code></pre></div>
+
+<p><strong>Refinement Type</strong></p>
+<p>This variable has a refined type with the constraint:<br />
+- <code>x &gt; 1</code></p>
+<p>The SMT solver will verify this constraint is satisfied.</p>
+<div class="codehilite"><pre><span></span><code><span class="cp">### 3. Pattern Exhaustiveness</span>
+
+<span class="o">**</span><span class="n">Automatic</span><span class="w"> </span><span class="n">checking</span><span class="o">:**</span>
+
+<span class="err">```</span><span class="n">cure</span>
+<span class="n">match</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="n">with</span>
+<span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;zero&quot;</span>
+<span class="o">|</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;positive&quot;</span>
+<span class="kd">end</span>
+
+<span class="c1">// ❌ Error: Pattern match is not exhaustive</span>
+<span class="c1">// Missing case: n when n &lt; 0</span>
+</code></pre></div>
+
+<p><strong>With quick fix:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">match</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="n">with</span>
+<span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;zero&quot;</span>
+<span class="o">|</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;positive&quot;</span>
+<span class="o">|</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;negative&quot;</span><span class="w">  </span><span class="c1">// Quick fix adds this</span>
+<span class="kd">end</span>
+</code></pre></div>
+
+<h3 id="4-quick-fixes">4. Quick Fixes</h3>
+<p>When SMT finds an issue, you get actionable fixes:</p>
+<h4 id="add-guard-clause">Add Guard Clause</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Before</span>
+<span class="n">def</span><span class="w"> </span><span class="n">divide</span><span class="p">(</span><span class="n">a</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">):</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span>
+
+<span class="c1">// Quick fix: Add guard clause</span>
+<span class="n">def</span><span class="w"> </span><span class="n">divide</span><span class="p">(</span><span class="n">a</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">)</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">/</span><span class="p">=</span><span class="w"> </span><span class="mi">0</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span>
+</code></pre></div>
+
+<h4 id="add-assertion">Add Assertion</h4>
+<div class="codehilite"><pre><span></span><code>def divide(a: Int, b: Int): Int =
+    assert b /= 0  // Quick fix adds this
+    a / b
+</code></pre></div>
+
+<h4 id="relax-constraint">Relax Constraint</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Error: Cannot prove n &gt; 10 implies n &gt; 5</span>
+<span class="c1">// Quick fix: Relax n &gt; 10 to n &gt;= 10</span>
+</code></pre></div>
+
+<h4 id="type-conversion">Type Conversion</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Error: Expected Int, got Float</span>
+<span class="c1">// Quick fix: Add to_int(value)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="configuration">Configuration</h2>
+<h3 id="timeout-settings">Timeout Settings</h3>
+<p>Configure timeouts based on your workflow:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% In your LSP config</span>
+<span class="p">#{</span>
+<span class="w">    </span><span class="n">timeouts</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">        </span><span class="n">lsp</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w">        </span><span class="c">% Interactive editing (default)</span>
+<span class="w">        </span><span class="n">compile</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span><span class="w">   </span><span class="c">% Full compilation</span>
+<span class="w">        </span><span class="n">test</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">10000</span><span class="w">      </span><span class="c">% Running tests</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="cache-settings">Cache Settings</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">#{</span>
+<span class="w">    </span><span class="n">cache</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">        </span><span class="n">enabled</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">true</span><span class="p">,</span>
+<span class="w">        </span><span class="n">max_size</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w">      </span><span class="c">% Max cached queries</span>
+<span class="w">        </span><span class="n">ttl_seconds</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">3600</span><span class="w">    </span><span class="c">% Cache lifetime</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="solver-selection">Solver Selection</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">#{</span>
+<span class="w">    </span><span class="n">solver</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">z3</span><span class="p">,</span><span class="w">              </span><span class="c">% Currently only Z3 supported</span>
+<span class="w">    </span><span class="n">solver_path</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;/usr/bin/z3&quot;</span><span class="w">  </span><span class="c">% Custom path if needed</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="using-smt-verification">Using SMT Verification</h2>
+<h3 id="writing-verifiable-code">Writing Verifiable Code</h3>
+<p><strong>✅ Good: Simple constraints</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Positive</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Even</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="nx">mod</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
+</code></pre></div>
+
+<p><strong>✅ Good: Composite constraints</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">PositiveEven</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="nx">mod</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
+</code></pre></div>
+
+<p><strong>⚠️ Careful: Complex constraints</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// May be slow</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Prime</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">is_prime</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span><span class="w">  </span><span class="c1">// Non-linear</span>
+</code></pre></div>
+
+<p><strong>❌ Avoid: Undecidable constraints</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// SMT may timeout</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Halting</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">terminates</span><span class="p">(</span><span class="nx">f</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="constraint-complexity-guidelines">Constraint Complexity Guidelines</h3>
+<table>
+<thead>
+<tr>
+<th>Complexity</th>
+<th>SMT Time</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Simple comparison</td>
+<td>&lt;10ms</td>
+<td><code>x &gt; 0</code>, <code>x &lt;= 100</code></td>
+</tr>
+<tr>
+<td>Linear arithmetic</td>
+<td>&lt;50ms</td>
+<td><code>x + y &gt; z</code>, <code>2*x &lt; y</code></td>
+</tr>
+<tr>
+<td>Quantifiers (bounded)</td>
+<td>&lt;200ms</td>
+<td><code>forall i. 0 &lt;= i &lt; n =&gt; arr[i] &gt; 0</code></td>
+</tr>
+<tr>
+<td>Non-linear</td>
+<td>&lt;500ms</td>
+<td><code>x * y &gt; z</code> (may timeout)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="best-practices">Best Practices</h3>
+<ol>
+<li><strong>Keep constraints simple</strong> - SMT works best with linear arithmetic</li>
+<li><strong>Use type aliases</strong> - Define once, use everywhere</li>
+<li><strong>Combine with guards</strong> - Runtime checks complement SMT verification</li>
+<li><strong>Test edge cases</strong> - SMT proves properties, but test actual values</li>
+</ol>
+<hr />
+<h2 id="quick-fixes">Quick Fixes</h2>
+<h3 id="available-quick-fixes">Available Quick Fixes</h3>
+<h4 id="1-refinement-violations">1. Refinement Violations</h4>
+<p><strong>Problem</strong>: Constraint not satisfied</p>
+<p><strong>Available fixes</strong>:<br />
+- Add guard clause: <code>when x &gt; 0</code><br />
+- Add assertion: <code>assert x &gt; 0</code><br />
+- Relax constraint: <code>x &gt; 0</code> → <code>x &gt;= 0</code></p>
+<h4 id="2-non-exhaustive-patterns">2. Non-Exhaustive Patterns</h4>
+<p><strong>Problem</strong>: Missing pattern cases</p>
+<p><strong>Available fixes</strong>:<br />
+- Add missing case (SMT provides counterexample)<br />
+- Add wildcard: <code>_ -&gt; error("unhandled")</code></p>
+<h4 id="3-type-mismatches">3. Type Mismatches</h4>
+<p><strong>Problem</strong>: Type doesn't match</p>
+<p><strong>Available fixes</strong>:<br />
+- Add type annotation: <code>: Positive</code><br />
+- Add type conversion: <code>to_int()</code>, <code>to_float()</code></p>
+<h4 id="4-undefined-variables">4. Undefined Variables</h4>
+<p><strong>Problem</strong>: Variable not in scope</p>
+<p><strong>Available fixes</strong>:<br />
+- Add as parameter<br />
+- Define with <code>let</code></p>
+<hr />
+<h2 id="performance-tuning">Performance Tuning</h2>
+<h3 id="understanding-performance">Understanding Performance</h3>
+<p><strong>Cache hit</strong> (instant): &lt;10ms<br />
+<strong>Small edit</strong> (incremental): &lt;100ms<br />
+<strong>New constraint</strong> (full solve): &lt;500ms<br />
+<strong>Complex constraint</strong>: May timeout at 500ms  </p>
+<h3 id="optimization-strategies">Optimization Strategies</h3>
+<h4 id="1-structure-code-for-caching">1. Structure Code for Caching</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Good: Stable constraints</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">UserId</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="nx">def</span><span class="w"> </span><span class="nx">process_user</span><span class="p">(</span><span class="nx">id</span><span class="p">:</span><span class="w"> </span><span class="nx">UserId</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">...</span><span class="w">  </span><span class="c1">// Cached after first check</span>
+
+<span class="c1">// Bad: Dynamic constraints</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">DynamicRange</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="nx">n</span><span class="w">  </span><span class="c1">// Re-verified each time</span>
+</code></pre></div>
+
+<h4 id="2-use-batch-processing">2. Use Batch Processing</h4>
+<div class="codehilite"><pre><span></span><code><span class="o">//</span><span class="w"> </span><span class="n">SMT</span><span class="w"> </span><span class="n">batches</span><span class="w"> </span><span class="n">constraints</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="n">same</span><span class="w"> </span><span class="n">context</span>
+<span class="n">def</span><span class="w"> </span><span class="n">process_many</span><span class="p">(</span><span class="n">xs</span><span class="p">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">Positive</span><span class="p">))</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="o">//</span><span class="w"> </span><span class="n">All</span><span class="w"> </span><span class="n">checked</span><span class="w"> </span><span class="n">together</span>
+<span class="w">    </span><span class="n">xs</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">fn</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="3-simplify-constraints">3. Simplify Constraints</h4>
+<div class="codehilite"><pre><span></span><code><span class="o">//</span><span class="w"> </span><span class="n">Faster</span>
+<span class="n">type</span><span class="w"> </span><span class="n">Positive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="o">//</span><span class="w"> </span><span class="n">Slower</span><span class="w"> </span><span class="p">(</span><span class="n">quantifier</span><span class="p">)</span>
+<span class="n">type</span><span class="w"> </span><span class="n">AllPositive</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span>
+<span class="w">    </span><span class="n">forall</span><span class="w"> </span><span class="n">i</span><span class="p">.</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">xs</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+</code></pre></div>
+
+<h3 id="monitoring-performance">Monitoring Performance</h3>
+<p>Check LSP statistics:</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">cure_lsp_performance</span><span class="p">:</span><span class="nf">get_stats</span><span class="p">().</span>
+<span class="c">% =&gt; #{</span>
+<span class="c">%     queued =&gt; 45,</span>
+<span class="c">%     processed =&gt; 120,</span>
+<span class="c">%     avg_verify_time_ms =&gt; 85,</span>
+<span class="c">%     cache_hit_rate =&gt; 0.82</span>
+<span class="c">% }</span>
+</code></pre></div>
+
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<h4 id="z3-not-found">Z3 Not Found</h4>
+<p><strong>Error</strong>: <code>Z3 solver not found</code></p>
+<p><strong>Solution</strong>:<br />
+1. Install Z3: <code>sudo apt install z3</code> or <code>brew install z3</code><br />
+2. Verify: <code>z3 --version</code><br />
+3. Set path in config if in non-standard location</p>
+<h4 id="verification-timeout">Verification Timeout</h4>
+<p><strong>Error</strong>: <code>SMT verification timed out</code></p>
+<p><strong>Solutions</strong>:<br />
+1. Simplify the constraint<br />
+2. Increase timeout in settings<br />
+3. Split complex constraints into simpler ones<br />
+4. Use runtime checks instead: <code>assert x &gt; 0</code></p>
+<h4 id="high-memory-usage">High Memory Usage</h4>
+<p><strong>Symptom</strong>: LSP using &gt;1GB RAM</p>
+<p><strong>Solutions</strong>:<br />
+1. Restart LSP server<br />
+2. Reduce cache size in config<br />
+3. Disable SMT for large files: <code>// @smt-disable</code></p>
+<h4 id="slow-response-time">Slow Response Time</h4>
+<p><strong>Symptom</strong>: Lag when typing</p>
+<p><strong>Solutions</strong>:<br />
+1. Check cache hit rate (should be &gt;80%)<br />
+2. Increase batch timeout<br />
+3. Disable SMT temporarily: Toggle in IDE</p>
+<h3 id="debug-mode">Debug Mode</h3>
+<p>Enable verbose logging:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">CURE_LSP_LOG_LEVEL</span><span class="o">=</span>debug<span class="w"> </span>cure-lsp-server
+</code></pre></div>
+
+<p>Check logs:</p>
+<div class="codehilite"><pre><span></span><code>tail<span class="w"> </span>-f<span class="w"> </span>~/.cure/lsp.log
+</code></pre></div>
+
+<hr />
+<h2 id="advanced-usage">Advanced Usage</h2>
+<h3 id="disabling-smt-for-specific-code">Disabling SMT for Specific Code</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// @smt-disable</span>
+<span class="n">def</span><span class="w"> </span><span class="n">unsafe_operation</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="c1">// SMT verification skipped here</span>
+<span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">0</span><span class="w">  </span><span class="c1">// Would normally error</span>
+</code></pre></div>
+
+<h3 id="custom-solver-flags">Custom Solver Flags</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">#{</span>
+<span class="w">    </span><span class="n">solver_args</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s">&quot;timeout=1000&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;smt.mbqi=false&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="incremental-verification">Incremental Verification</h3>
+<p>LSP automatically uses incremental solving:<br />
+- Persistent Z3 process (avoids 50ms startup)<br />
+- Push/pop scopes for edits<br />
+- Hash-based cache invalidation</p>
+<h3 id="background-verification">Background Verification</h3>
+<p>Large files verified in background:</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">cure_lsp_performance</span><span class="p">:</span><span class="nf">verify_async</span><span class="p">(</span><span class="nv">Uri</span><span class="p">,</span><span class="w"> </span><span class="nv">AST</span><span class="p">,</span><span class="w"> </span><span class="n">lsp</span><span class="p">).</span>
+</code></pre></div>
+
+<p>Results arrive asynchronously without blocking editor.</p>
+<hr />
+<h2 id="resources">Resources</h2>
+<ul>
+<li><strong>SMT-LIB Standard</strong>: http://smtlib.cs.uiowa.edu/</li>
+<li><strong>Z3 Guide</strong>: https://microsoft.github.io/z3guide/</li>
+<li><strong>Refinement Types</strong>: https://ucsd-progsys.github.io/liquidhaskell/</li>
+<li><strong>Cure Documentation</strong>: https://cure-lang.org/docs</li>
+</ul>
+<hr />
+<h2 id="faq">FAQ</h2>
+<p><strong>Q: Does SMT verification guarantee no runtime errors?</strong><br />
+A: SMT proves properties about types, but runtime checks are still needed for:<br />
+- External input validation<br />
+- Resource limits (memory, disk)<br />
+- Concurrent behavior</p>
+<p><strong>Q: Can I use CVC5 instead of Z3?</strong><br />
+A: Not yet. Z3 is currently the only supported solver.</p>
+<p><strong>Q: Does SMT work with separate compilation?</strong><br />
+A: Yes! Constraint verification is modular and works across module boundaries.</p>
+<p><strong>Q: What happens if SMT times out?</strong><br />
+A: The constraint is treated as "unknown" - no error, but no proof either. Use runtime checks as fallback.</p>
+<p><strong>Q: Can SMT verify recursive functions?</strong><br />
+A: Limited support. Simple recursion works, but complex recursion may timeout. Use termination measures explicitly.</p>
+<hr />
+<p><strong>Happy verifying! 🎉</strong></p>
+<p>For issues or questions: https://github.com/cure-lang/cure/issues</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

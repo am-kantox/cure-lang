@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LSP Diagnostic Update Fix - Cure Documentation</title>
+    <meta name="description" content=" Problem">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="lsp-diagnostic-update-fix">LSP Diagnostic Update Fix</h1>
+<h2 id="problem">Problem</h2>
+<p>The Cure LSP was not updating diagnostics when code changed in the editor. When you modified code to fix an error, the editor would continue showing the old error message indefinitely (e.g., <code>cure-lsp: {unexpected_token, identifier}</code>).</p>
+<h2 id="root-cause">Root Cause</h2>
+<p>The issue had multiple contributing factors:</p>
+<h3 id="1-sync-mode-mismatch">1. <strong>Sync Mode Mismatch</strong></h3>
+<ul>
+<li>The LSP advertised support for <strong>incremental sync</strong> (mode 2) in the <code>initialize</code> response</li>
+<li>However, the <code>apply_single_change/2</code> function only handled <strong>full document sync</strong> (mode 1)</li>
+<li>When the editor sent incremental changes with <code>range</code> fields, the LSP couldn't apply them correctly</li>
+</ul>
+<h3 id="2-silent-failures">2. <strong>Silent Failures</strong></h3>
+<ul>
+<li>When <code>apply_changes/2</code> failed, there was no error handling</li>
+<li>Failed document updates would leave stale content in the LSP state</li>
+<li>Diagnostics would continue to analyze old content</li>
+</ul>
+<h3 id="3-missing-error-recovery">3. <strong>Missing Error Recovery</strong></h3>
+<ul>
+<li>If analysis crashed or failed, no diagnostics would be sent</li>
+<li>The editor would keep showing old diagnostics forever</li>
+</ul>
+<h2 id="solution">Solution</h2>
+<h3 id="changes-made-to-lspcure_lsperl">Changes Made to <code>lsp/cure_lsp.erl</code></h3>
+<h4 id="1-changed-to-full-document-sync-simpler-more-reliable">1. Changed to Full Document Sync (Simpler &amp; More Reliable)</h4>
+<p><strong>Line 257</strong> - Changed sync mode from 2 (incremental) to 1 (full):</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Before:</span>
+<span class="n">change</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">  </span><span class="c">% Incremental</span>
+
+<span class="c">% After:</span>
+<span class="n">change</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">  </span><span class="c">% Full document sync (mode 1) - simpler and more reliable</span>
+</code></pre></div>
+
+<p>This means the editor sends the <strong>entire document content</strong> on every change, which is simpler to implement correctly.</p>
+<h4 id="2-enhanced-apply_single_change2-to-handle-both-modes">2. Enhanced <code>apply_single_change/2</code> to Handle Both Modes</h4>
+<p><strong>Lines 489-546</strong> - Added support for both full and incremental sync:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">apply_single_change</span><span class="p">(</span><span class="nv">Change</span><span class="p">,</span><span class="w"> </span><span class="nv">Text</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">range</span><span class="p">,</span><span class="w"> </span><span class="nv">Change</span><span class="p">,</span><span class="w"> </span><span class="n">undefined</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="n">undefined</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="c">% Full document replacement (mode 1)</span>
+<span class="w">            </span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="nv">Change</span><span class="p">,</span><span class="w"> </span><span class="nv">Text</span><span class="p">);</span>
+<span class="w">        </span><span class="nv">Range</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="c">% Incremental change (mode 2) - apply range-based edit</span>
+<span class="w">            </span><span class="nv">StartPos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">start</span><span class="p">,</span><span class="w"> </span><span class="nv">Range</span><span class="p">),</span>
+<span class="w">            </span><span class="nv">EndPos</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">&#39;end&#39;</span><span class="p">,</span><span class="w"> </span><span class="nv">Range</span><span class="p">),</span>
+<span class="w">            </span><span class="nv">NewText</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="nv">Change</span><span class="p">,</span><span class="w"> </span><span class="o">&lt;&lt;&gt;&gt;</span><span class="p">),</span>
+<span class="w">            </span><span class="n">apply_range_change</span><span class="p">(</span><span class="nv">Text</span><span class="p">,</span><span class="w"> </span><span class="nv">StartPos</span><span class="p">,</span><span class="w"> </span><span class="nv">EndPos</span><span class="p">,</span><span class="w"> </span><span class="nv">NewText</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+</code></pre></div>
+
+<p>This handles both sync modes, making the LSP robust to different editor configurations.</p>
+<h4 id="3-added-comprehensive-error-handling-in-handle_did_change2">3. Added Comprehensive Error Handling in <code>handle_did_change/2</code></h4>
+<p><strong>Lines 323-378</strong> - Added error handling and debug logging:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">handle_did_change</span><span class="p">(</span><span class="nv">Params</span><span class="p">,</span><span class="w"> </span><span class="nv">State</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">...</span>
+<span class="w">    </span><span class="nn">io</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="n">standard_error</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[LSP] Document changed: </span><span class="si">~s</span><span class="s"> (version </span><span class="si">~p</span><span class="s">)</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nv">Uri</span><span class="p">,</span><span class="w"> </span><span class="nv">Version</span><span class="p">]),</span>
+
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="nv">Uri</span><span class="p">,</span><span class="w"> </span><span class="nv">State</span><span class="nl">#state.documents</span><span class="p">,</span><span class="w"> </span><span class="n">undefined</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="n">undefined</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="c">% Treat as new document if not found</span>
+<span class="w">            </span><span class="n">handle_did_open</span><span class="p">(...);</span>
+<span class="w">        </span><span class="nv">Doc</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="c">% Apply changes with error recovery</span>
+<span class="w">            </span><span class="nv">NewText</span><span class="w"> </span><span class="o">=</span>
+<span class="w">                </span><span class="k">try</span>
+<span class="w">                    </span><span class="n">apply_changes</span><span class="p">(</span><span class="nv">OldText</span><span class="p">,</span><span class="w"> </span><span class="nv">ContentChanges</span><span class="p">)</span>
+<span class="w">                </span><span class="k">catch</span>
+<span class="w">                    </span><span class="nv">Error</span><span class="p">:</span><span class="nv">Reason</span><span class="p">:</span><span class="nv">Stack</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                        </span><span class="nn">io</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="n">standard_error</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[LSP] Error applying changes: </span><span class="si">~p</span><span class="s">:</span><span class="si">~p~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span>
+<span class="w">                                 </span><span class="p">[</span><span class="nv">Error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">]),</span>
+<span class="w">                        </span><span class="c">% Fall back to full text from changes</span>
+<span class="w">                        </span><span class="n">get_text_from_changes</span><span class="p">(</span><span class="nv">ContentChanges</span><span class="p">)</span>
+<span class="w">                </span><span class="k">end</span><span class="p">,</span>
+
+<span class="w">            </span><span class="c">% Run diagnostics with error handling</span>
+<span class="w">            </span><span class="k">try</span>
+<span class="w">                </span><span class="n">diagnose_document</span><span class="p">(</span><span class="nv">Uri</span><span class="p">,</span><span class="w"> </span><span class="nv">NewText</span><span class="p">,</span><span class="w"> </span><span class="nv">NewState</span><span class="p">),</span>
+<span class="w">                </span><span class="nn">io</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="n">standard_error</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[LSP] Diagnostics sent</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">)</span>
+<span class="w">            </span><span class="k">catch</span>
+<span class="w">                </span><span class="p">_:</span><span class="nv">DiagErr</span><span class="p">:</span><span class="nv">DiagStack</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                    </span><span class="nn">io</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="n">standard_error</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;[LSP] Diagnostic error: </span><span class="si">~p~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nv">DiagErr</span><span class="p">]),</span>
+<span class="w">                    </span><span class="c">% Send empty diagnostics on error to clear stale ones</span>
+<span class="w">                    </span><span class="n">send_empty_diagnostics</span><span class="p">(</span><span class="nv">Uri</span><span class="p">,</span><span class="w"> </span><span class="nv">NewState</span><span class="p">)</span>
+<span class="w">            </span><span class="k">end</span><span class="p">,</span>
+<span class="w">            </span><span class="p">...</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+</code></pre></div>
+
+<p>Key improvements:<br />
+- <strong>Debug logging</strong> at every step<br />
+- <strong>Fallback to full text</strong> if incremental application fails<br />
+- <strong>Empty diagnostics sent</strong> on analysis errors to clear stale diagnostics<br />
+- <strong>Document not found</strong> treated as new document</p>
+<h4 id="4-added-helper-functions">4. Added Helper Functions</h4>
+<p><strong>Lines 593-609</strong> - New helper functions:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">send_empty_diagnostics</span><span class="p">(</span><span class="nv">Uri</span><span class="p">,</span><span class="w"> </span><span class="nv">State</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Send empty diagnostic list to clear errors in editor</span>
+<span class="w">    </span><span class="p">...</span>
+
+<span class="nf">get_text_from_changes</span><span class="p">([</span><span class="nv">Change</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">_])</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Extract full text from changes (for full document sync)</span>
+<span class="w">    </span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">text</span><span class="p">,</span><span class="w"> </span><span class="nv">Change</span><span class="p">,</span><span class="w"> </span><span class="o">&lt;&lt;&gt;&gt;</span><span class="p">).</span>
+</code></pre></div>
+
+<h2 id="testing">Testing</h2>
+<h3 id="command-line-testing">Command-Line Testing</h3>
+<ol>
+<li>
+<p><strong>Build the LSP</strong>:<br />
+<code>bash
+   cd /home/am/Proyectos/Ammotion/cure
+   make lsp</code></p>
+</li>
+<li>
+<p><strong>Test analyzer updates</strong>:<br />
+   ```bash<br />
+   erl -pa _build/ebin -pa _build/lsp -noshell -eval '<br />
+   Code1 = &lt;&lt;"module Test do\n  def foo() = 42\nend"&gt;&gt;,<br />
+   Diag1 = cure_lsp_analyzer:analyze(Code1),<br />
+   io:format("Valid code diagnostics: ~p~n", [length(Diag1)]),</p>
+</li>
+</ol>
+<p>Code2 = &lt;&lt;"module Test do\n  def foo( x y) = 42\nend"&gt;&gt;,<br />
+   Diag2 = cure_lsp_analyzer:analyze(Code2),<br />
+   io:format("Broken code diagnostics: ~p~n", [length(Diag2)]),<br />
+   halt().'<br />
+   ```</p>
+<p>Expected output:<br />
+<code>Valid code diagnostics: 0
+   Broken code diagnostics: 1</code></p>
+<h3 id="editor-testing">Editor Testing</h3>
+<h4 id="prerequisites">Prerequisites</h4>
+<ol>
+<li>
+<p><strong>Restart the LSP server</strong> after rebuilding:<br />
+   - In Neovim: <code>:LspRestart</code><br />
+   - In VS Code: Reload window (Ctrl+Shift+P → "Developer: Reload Window")<br />
+   - Or restart your editor</p>
+</li>
+<li>
+<p><strong>Enable LSP logging</strong> (optional but helpful):<br />
+<code>bash
+   # Redirect LSP stderr to a log file in your editor config
+   # Neovim example:
+   cmd = { "cure-lsp" },
+   handlers = {
+     ["$/logMessage"] = function(_, result, ctx)
+       print(result.message)
+     end,
+   },</code></p>
+</li>
+</ol>
+<h4 id="test-procedure">Test Procedure</h4>
+<ol>
+<li>
+<p><strong>Open a Cure file</strong> with a syntax error:<br />
+<code>cure
+   module Test do
+     def foo( x y) = 42  % Missing comma - syntax error
+   end</code></p>
+</li>
+<li>
+<p><strong>Verify error appears</strong>:<br />
+   - You should see a diagnostic highlighting the syntax error<br />
+   - Hover over the error to see: <code>{unexpected_token, identifier}</code></p>
+</li>
+<li>
+<p><strong>Fix the error</strong>:<br />
+<code>cure
+   module Test do
+     def foo(x, y) = 42  % Fixed: added comma
+   end</code></p>
+</li>
+<li>
+<p><strong>Save the file</strong> (or wait for auto-save)</p>
+</li>
+<li>
+<p><strong>Verify diagnostic clears</strong>:<br />
+   - The error should disappear within 1-2 seconds<br />
+   - No red squiggles should remain</p>
+</li>
+<li>
+<p><strong>Test with type error</strong>:<br />
+<code>cure
+   module Test do
+     def bar(): Int = "string"  % Type error
+   end</code></p>
+</li>
+<li>
+<p><strong>Fix the type error</strong>:<br />
+<code>cure
+   module Test do
+     def bar(): Int = 42  % Fixed
+   end</code></p>
+</li>
+<li>
+<p><strong>Verify type error clears</strong></p>
+</li>
+</ol>
+<h4 id="debug-lsp-issues">Debug LSP Issues</h4>
+<p>If diagnostics still don't update:</p>
+<ol>
+<li>
+<p><strong>Check LSP is running</strong>:<br />
+<code>bash
+   ps aux | grep cure-lsp</code></p>
+</li>
+<li>
+<p><strong>Check stderr output</strong> (if you configured logging):<br />
+<code>bash
+   tail -f /tmp/cure-lsp.log</code></p>
+</li>
+</ol>
+<p>You should see:<br />
+<code>[LSP] Document changed: file:///path/to/file.cure (version 2)
+   [LSP] Text updated, length: 123 bytes
+   [LSP] Diagnostics sent for file:///path/to/file.cure</code></p>
+<ol start="3">
+<li>
+<p><strong>Test analyzer directly</strong>:<br />
+<code>bash
+   erl -pa _build/ebin -pa _build/lsp</code><br />
+<code>erlang
+   1&gt; Code = &lt;&lt;"module Test do\n  def foo() = 42\nend"&gt;&gt;.
+   2&gt; Diag = cure_lsp_analyzer:analyze(Code).
+   3&gt; length(Diag).
+   0</code></p>
+</li>
+<li>
+<p><strong>Restart LSP server</strong> if needed</p>
+</li>
+</ol>
+<h2 id="technical-details">Technical Details</h2>
+<h3 id="lsp-document-sync-modes">LSP Document Sync Modes</h3>
+<p>LSP supports two document synchronization modes:</p>
+<ol>
+<li>
+<p><strong>Full Document Sync (mode 1)</strong>:<br />
+   - Editor sends <strong>entire document content</strong> on every change<br />
+   - Simpler to implement<br />
+   - Slightly higher bandwidth but negligible for typical files</p>
+</li>
+<li>
+<p><strong>Incremental Sync (mode 2)</strong>:<br />
+   - Editor sends only <strong>changed ranges</strong> with start/end positions<br />
+   - More efficient for large files<br />
+   - More complex to implement correctly (need to handle multi-line edits, UTF-8, etc.)</p>
+</li>
+</ol>
+<p>We chose mode 1 for reliability. For typical Cure files (&lt;10KB), the performance difference is negligible.</p>
+<h3 id="error-recovery-strategy">Error Recovery Strategy</h3>
+<p>The fix implements a three-level error recovery strategy:</p>
+<ol>
+<li><strong>Primary Path</strong>: Normal operation with full error handling</li>
+<li><strong>Fallback</strong>: Extract full text from changes if incremental application fails</li>
+<li><strong>Last Resort</strong>: Send empty diagnostics to clear stale errors if analysis crashes</li>
+</ol>
+<p>This ensures the LSP never gets stuck in a bad state.</p>
+<h2 id="verification">Verification</h2>
+<p>Run the provided test script:</p>
+<div class="codehilite"><pre><span></span><code>./test_lsp_changes.sh
+</code></pre></div>
+
+<p>Expected output:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">Testing</span><span class="w"> </span><span class="nx">LSP</span><span class="w"> </span><span class="nx">diagnostic</span><span class="w"> </span><span class="nx">updates</span><span class="o">...</span>
+<span class="o">==================================</span>
+
+<span class="nx">Test</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="w"> </span><span class="nx">Verify</span><span class="w"> </span><span class="nx">cure_lsp_analyzer</span><span class="w"> </span><span class="nx">can</span><span class="w"> </span><span class="nx">handle</span><span class="w"> </span><span class="nx">code</span><span class="w"> </span><span class="nx">changes</span>
+<span class="o">----------------------------------------------------------</span>
+<span class="nx">Analyzing</span><span class="w"> </span><span class="nx">broken</span><span class="w"> </span><span class="nx">code</span><span class="o">...</span>
+<span class="nx">Diagnostics</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="nx">Analyzing</span><span class="w"> </span><span class="nx">fixed</span><span class="w"> </span><span class="nx">code</span><span class="o">...</span>
+<span class="nx">Diagnostics</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="err">✓</span><span class="w"> </span><span class="nx">Analyzer</span><span class="w"> </span><span class="nx">correctly</span><span class="w"> </span><span class="nx">detects</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">clears</span><span class="w"> </span><span class="nx">errors</span>
+
+<span class="nx">Test</span><span class="w"> </span><span class="mi">2</span><span class="p">:</span><span class="w"> </span><span class="nx">Check</span><span class="w"> </span><span class="nx">that</span><span class="w"> </span><span class="nx">analyzer</span><span class="w"> </span><span class="nx">handles</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">errors</span>
+<span class="o">------------------------------------------------</span>
+<span class="nx">Analyzing</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="nx">code</span><span class="o">...</span>
+<span class="nx">Diagnostics</span><span class="w"> </span><span class="nx">count</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">Function</span><span class="w"> </span><span class="nx">body</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">doesn</span><span class="err">&#39;</span><span class="nx">t</span><span class="w"> </span><span class="k">match</span><span class="w"> </span><span class="nx">declared</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">type</span>
+
+<span class="nx">Analyzing</span><span class="w"> </span><span class="nx">fixed</span><span class="w"> </span><span class="k">type</span><span class="o">...</span>
+<span class="nx">Diagnostics</span><span class="w"> </span><span class="nx">count</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="err">✓</span><span class="w"> </span><span class="nx">Analyzer</span><span class="w"> </span><span class="nx">correctly</span><span class="w"> </span><span class="nx">handles</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">error</span><span class="w"> </span><span class="nx">transitions</span>
+
+<span class="o">==================================</span>
+<span class="nx">LSP</span><span class="w"> </span><span class="nx">diagnostic</span><span class="w"> </span><span class="nx">update</span><span class="w"> </span><span class="nx">tests</span><span class="w"> </span><span class="nx">complete</span>
+</code></pre></div>
+
+<h2 id="files-modified">Files Modified</h2>
+<ol>
+<li><code>lsp/cure_lsp.erl</code>:<br />
+   - Lines 254-258: Changed to full document sync<br />
+   - Lines 323-378: Enhanced error handling in <code>handle_did_change/2</code><br />
+   - Lines 486-546: Improved <code>apply_single_change/2</code> with range support<br />
+   - Lines 593-609: Added helper functions</li>
+</ol>
+<h2 id="commit-message">Commit Message</h2>
+<div class="codehilite"><pre><span></span><code><span class="nv">Fix</span><span class="w"> </span><span class="nv">LSP</span><span class="w"> </span><span class="nv">diagnostic</span><span class="w"> </span><span class="nv">updates</span><span class="w"> </span><span class="nv">on</span><span class="w"> </span><span class="nv">document</span><span class="w"> </span><span class="nv">changes</span>
+
+<span class="o">-</span><span class="w"> </span><span class="nv">Change</span><span class="w"> </span><span class="nv">from</span><span class="w"> </span><span class="nv">incremental</span><span class="w"> </span><span class="nv">sync</span><span class="w"> </span><span class="ss">(</span><span class="nv">mode</span><span class="w"> </span><span class="mi">2</span><span class="ss">)</span><span class="w"> </span><span class="nv">to</span><span class="w"> </span><span class="nv">full</span><span class="w"> </span><span class="nv">document</span><span class="w"> </span><span class="nv">sync</span><span class="w"> </span><span class="ss">(</span><span class="nv">mode</span><span class="w"> </span><span class="mi">1</span><span class="ss">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">reliability</span>
+<span class="o">-</span><span class="w"> </span><span class="nv">Add</span><span class="w"> </span><span class="nv">comprehensive</span><span class="w"> </span><span class="nv">error</span><span class="w"> </span><span class="nv">handling</span><span class="w"> </span><span class="nv">in</span><span class="w"> </span><span class="nv">document</span><span class="w"> </span><span class="nv">change</span><span class="w"> </span><span class="nv">handler</span>
+<span class="o">-</span><span class="w"> </span><span class="nv">Implement</span><span class="w"> </span><span class="nv">fallback</span><span class="w"> </span><span class="nv">to</span><span class="w"> </span><span class="nv">full</span><span class="w"> </span><span class="nv">text</span><span class="w"> </span><span class="nv">extraction</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nv">change</span><span class="w"> </span><span class="nv">application</span><span class="w"> </span><span class="nv">fails</span>
+<span class="o">-</span><span class="w"> </span><span class="k">Send</span><span class="w"> </span><span class="nv">empty</span><span class="w"> </span><span class="nv">diagnostics</span><span class="w"> </span><span class="nv">on</span><span class="w"> </span><span class="nv">analysis</span><span class="w"> </span><span class="nv">errors</span><span class="w"> </span><span class="nv">to</span><span class="w"> </span><span class="nv">clear</span><span class="w"> </span><span class="nv">stale</span><span class="w"> </span><span class="nv">diagnostics</span>
+<span class="o">-</span><span class="w"> </span><span class="nv">Add</span><span class="w"> </span><span class="nv">debug</span><span class="w"> </span><span class="nv">logging</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">easier</span><span class="w"> </span><span class="nv">troubleshooting</span>
+
+<span class="nv">This</span><span class="w"> </span><span class="nv">fixes</span><span class="w"> </span><span class="nv">the</span><span class="w"> </span><span class="nv">issue</span><span class="w"> </span><span class="nv">where</span><span class="w"> </span><span class="nv">diagnostics</span><span class="w"> </span><span class="nv">would</span><span class="w"> </span><span class="nv">get</span><span class="w"> </span><span class="nv">stuck</span><span class="w"> </span><span class="nv">with</span><span class="w"> </span><span class="nv">old</span><span class="w"> </span><span class="nv">errors</span>
+<span class="nv">after</span><span class="w"> </span><span class="nv">the</span><span class="w"> </span><span class="nv">code</span><span class="w"> </span><span class="nv">was</span><span class="w"> </span><span class="nv">fixed</span><span class="w"> </span><span class="nv">in</span><span class="w"> </span><span class="nv">the</span><span class="w"> </span><span class="nv">editor</span>.
+</code></pre></div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

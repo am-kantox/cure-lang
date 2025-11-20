@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.4.0">
+
+
+    <title>cure_fsm_verifier — cure v0.4.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-28C2A753.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+    <span translate="no">cure_fsm_verifier</span> 
+    <small class="app-vsn" translate="no">(cure v0.4.0)</small>
+
+  </h1>
+
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-types summary">
+  <h2>
+    <a href="#types">Types</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:counterexample/0" data-no-tooltip translate="no">counterexample/0</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:property_result/0" data-no-tooltip translate="no">property_result/0</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:state_name/0" data-no-tooltip translate="no">state_name/0</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:verification_result/0" data-no-tooltip translate="no">verification_result/0</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_deadlock_via_smt/1" data-no-tooltip translate="no">check_deadlock_via_smt(FsmDef)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check for deadlocks using SMT A deadlock is a state with no outgoing transitions that is reachable</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_deadlocks/1" data-no-tooltip translate="no">check_deadlocks(FsmDef)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if the FSM has any deadlock states</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_liveness/1" data-no-tooltip translate="no">check_liveness(FsmDef)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check liveness properties (system can always make progress)</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_reachability/3" data-no-tooltip translate="no">check_reachability(FsmDef, InitialState, TargetState)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if a target state is reachable from initial state</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_reachability_via_smt/3" data-no-tooltip translate="no">check_reachability_via_smt(FsmDef, InitialState, TargetState)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check reachability using SMT (more precise than BFS for complex guards)</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_safety/2" data-no-tooltip translate="no">check_safety(FsmDef, BadStates)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check safety property (bad states are never reached)</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_state_invariant/2" data-no-tooltip translate="no">check_state_invariant(FsmDef, Invariant)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Check if a state invariant holds in all reachable states Invariant is an expression that should be true in every state</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#format_verification_result/1" data-no-tooltip translate="no">format_verification_result(_)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Format verification results for display</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#verify_all_properties/1" data-no-tooltip translate="no">verify_all_properties(FsmDef)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Verify all properties and generate detailed report</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#verify_fsm/1" data-no-tooltip translate="no">verify_fsm(FsmDef)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Verify all properties of an FSM</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#verify_with_smt/3" data-no-tooltip translate="no">verify_with_smt(Fsm_def, Property, MaxDepth)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Verify FSM properties using Z3 (bounded model checking)</p></div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h1>
+    <div class="types-list">
+<section class="detail" id="t:counterexample/0">
+
+  <div class="detail-header">
+    <a href="#t:counterexample/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">counterexample/0</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L37" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> counterexample() :: #{<a href="#t:state_name/0">state_name</a>() => <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:property_result/0">
+
+  <div class="detail-header">
+    <a href="#t:property_result/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">property_result/0</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L26" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> property_result() ::
+          {deadlock_free} |
+          {has_deadlock, <a href="#t:state_name/0">state_name</a>()} |
+          {reachable, <a href="#t:state_name/0">state_name</a>()} |
+          {unreachable, <a href="#t:state_name/0">state_name</a>()} |
+          {liveness_satisfied} |
+          {liveness_violated, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          {safety_satisfied} |
+          {safety_violated, <a href="#t:counterexample/0">counterexample</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:state_name/0">
+
+  <div class="detail-header">
+    <a href="#t:state_name/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">state_name/0</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L36" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> state_name() :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:verification_result/0">
+
+  <div class="detail-header">
+    <a href="#t:verification_result/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">verification_result/0</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L23" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> verification_result() :: {ok, [<a href="#t:property_result/0">property_result</a>()]} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="check_deadlock_via_smt/1">
+
+  <div class="detail-header">
+    <a href="#check_deadlock_via_smt/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_deadlock_via_smt(FsmDef)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L563" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_deadlock_via_smt(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) ->
+                                {ok, deadlock_free} |
+                                {deadlock, <a href="#t:state_name/0">state_name</a>(), <a href="#t:counterexample/0">counterexample</a>()} |
+                                {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+<p>Check for deadlocks using SMT A deadlock is a state with no outgoing transitions that is reachable</p>
+  </section>
+</section>
+<section class="detail" id="check_deadlocks/1">
+
+  <div class="detail-header">
+    <a href="#check_deadlocks/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_deadlocks(FsmDef)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L77" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_deadlocks(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> [<a href="#t:property_result/0">property_result</a>()].</pre>
+
+      </div>
+
+<p>Check if the FSM has any deadlock states</p>
+  </section>
+</section>
+<section class="detail" id="check_liveness/1">
+
+  <div class="detail-header">
+    <a href="#check_liveness/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_liveness(FsmDef)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L201" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_liveness(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> [<a href="#t:property_result/0">property_result</a>()].</pre>
+
+      </div>
+
+<p>Check liveness properties (system can always make progress)</p>
+  </section>
+</section>
+<section class="detail" id="check_reachability/3">
+
+  <div class="detail-header">
+    <a href="#check_reachability/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_reachability(FsmDef, InitialState, TargetState)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L112" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_reachability(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), InitialState :: <a href="#t:state_name/0">state_name</a>(), TargetState :: <a href="#t:state_name/0">state_name</a>()) ->
+                            <a href="#t:property_result/0">property_result</a>().</pre>
+
+      </div>
+
+<p>Check if a target state is reachable from initial state</p>
+  </section>
+</section>
+<section class="detail" id="check_reachability_via_smt/3">
+
+  <div class="detail-header">
+    <a href="#check_reachability_via_smt/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_reachability_via_smt(FsmDef, InitialState, TargetState)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L641" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_reachability_via_smt(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                 InitialState :: <a href="#t:state_name/0">state_name</a>(),
+                                 TargetState :: <a href="#t:state_name/0">state_name</a>()) ->
+                                    {reachable} | {unreachable} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+<p>Check reachability using SMT (more precise than BFS for complex guards)</p>
+  </section>
+</section>
+<section class="detail" id="check_safety/2">
+
+  <div class="detail-header">
+    <a href="#check_safety/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_safety(FsmDef, BadStates)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L223" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_safety(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), BadStates :: [<a href="#t:state_name/0">state_name</a>()]) -> <a href="#t:property_result/0">property_result</a>().</pre>
+
+      </div>
+
+<p>Check safety property (bad states are never reached)</p>
+  </section>
+</section>
+<section class="detail" id="check_state_invariant/2">
+
+  <div class="detail-header">
+    <a href="#check_state_invariant/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_state_invariant(FsmDef, Invariant)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L502" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_state_invariant(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), Invariant :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) ->
+                               {ok, holds} | {violation, <a href="#t:counterexample/0">counterexample</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+<p>Check if a state invariant holds in all reachable states Invariant is an expression that should be true in every state</p>
+  </section>
+</section>
+<section class="detail" id="format_verification_result/1">
+
+  <div class="detail-header">
+    <a href="#format_verification_result/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">format_verification_result(_)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L380" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> format_verification_result(<a href="#t:verification_result/0">verification_result</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+<p>Format verification results for display</p>
+  </section>
+</section>
+<section class="detail" id="verify_all_properties/1">
+
+  <div class="detail-header">
+    <a href="#verify_all_properties/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">verify_all_properties(FsmDef)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L65" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> verify_all_properties(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> [<a href="#t:property_result/0">property_result</a>()].</pre>
+
+      </div>
+
+<p>Verify all properties and generate detailed report</p>
+  </section>
+</section>
+<section class="detail" id="verify_fsm/1">
+
+  <div class="detail-header">
+    <a href="#verify_fsm/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">verify_fsm(FsmDef)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L45" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> verify_fsm(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="#t:verification_result/0">verification_result</a>().</pre>
+
+      </div>
+
+<p>Verify all properties of an FSM</p>
+  </section>
+</section>
+<section class="detail" id="verify_with_smt/3">
+
+  <div class="detail-header">
+    <a href="#verify_with_smt/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">verify_with_smt(Fsm_def, Property, MaxDepth)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_verifier.erl#L282" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Verify FSM properties using Z3 (bounded model checking)</p>
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.4.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.4.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

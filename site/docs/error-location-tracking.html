@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Location Tracking in Cure Compiler - Cure Documentation</title>
+    <meta name="description" content="This document describes how source location information is tracked and propagated through all stages of the Cure compiler pipeline, ensuring accurate ">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="error-location-tracking-in-cure-compiler">Error Location Tracking in Cure Compiler</h1>
+<p>This document describes how source location information is tracked and propagated through all stages of the Cure compiler pipeline, ensuring accurate error reporting at every level.</p>
+<h2 id="overview">Overview</h2>
+<p>Location tracking is critical for providing useful error messages to developers. The Cure compiler maintains location information from lexical analysis through code generation, and even includes mechanisms for runtime error tracing.</p>
+<h2 id="location-data-structure">Location Data Structure</h2>
+<p>All location information uses the <code>#location{}</code> record defined in <code>cure_ast.hrl</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">-</span><span class="ni">record</span><span class="p">(</span><span class="nl">location</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">line</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">integer</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">column</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">integer</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">file</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">string</span><span class="p">()</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="n">undefined</span>
+<span class="p">}).</span>
+</code></pre></div>
+
+<h2 id="pipeline-stages">Pipeline Stages</h2>
+<h3 id="1-lexer-srclexercure_lexererl">1. Lexer (<code>src/lexer/cure_lexer.erl</code>)</h3>
+<p><strong>Status</strong>: ✅ <strong>Complete</strong></p>
+<p>The lexer tracks line and column for every token and error:</p>
+<ul>
+<li><strong>Token Location</strong>: Each <code>#token{}</code> includes <code>line</code> and <code>column</code> fields</li>
+<li><strong>Error Format</strong>: <code>{error, {Reason, Line, Column}}</code></li>
+<li><strong>Examples</strong>:</li>
+<li><code>{error, {unterminated_string, 5, 12}}</code></li>
+<li><code>{error, {unexpected_character, 10, 3}}</code></li>
+</ul>
+<p><strong>Key Functions</strong>:<br />
+- <code>scan_quoted_atom/4</code> - Now properly tracks line numbers (fixed in commit 88d38d6c)<br />
+- All scan functions update <code>Line</code> and <code>Column</code> as they process input</p>
+<h3 id="2-parser-srcparsercure_parsererl">2. Parser (<code>src/parser/cure_parser.erl</code>)</h3>
+<p><strong>Status</strong>: ✅ <strong>Complete</strong></p>
+<p>The parser extracts location from tokens and includes it in all errors:</p>
+<ul>
+<li><strong>Error Format</strong>: <code>throw({parse_error, {Reason, ...}, Line, Col})</code></li>
+<li><strong>Location Extraction</strong>: Uses <code>get_token_line_col/1</code> and <code>get_token_line_col_with_state/1</code></li>
+<li><strong>Examples</strong>:</li>
+<li><code>throw({parse_error, {unexpected_token, Type}, Line, Col})</code></li>
+<li><code>throw({parse_error, unexpected_end_of_input, Line, Col})</code></li>
+<li><code>throw({parse_error, {missing_return_type_for_curify}, Line, Col})</code></li>
+</ul>
+<p><strong>Key Improvements</strong> (Commit 0ca04f05):<br />
+- Added <code>last_token</code> field to <code>#parser_state{}</code> for EOF error location<br />
+- Fixed 11+ error throwing locations to use actual token positions<br />
+- Handles edge cases like EOF using last valid token location</p>
+<h3 id="3-type-checker-srctypescure_typecheckererl">3. Type Checker (<code>src/types/cure_typechecker.erl</code>)</h3>
+<p><strong>Status</strong>: ✅ <strong>Complete</strong></p>
+<p>The type checker uses <code>Location</code> field from AST nodes in all errors:</p>
+<ul>
+<li><strong>Error Format</strong>: <code>throw({error_type, Reason, Location})</code></li>
+<li><strong>Examples</strong>:</li>
+<li><code>throw({constraint_not_bool, Reason, Location})</code></li>
+<li><code>throw({constraint_inference_failed, Reason, Location})</code></li>
+<li><code>throw({curify_arity_mismatch, ParamCount, ErlArity, Location})</code></li>
+<li><code>throw({missing_return_type_for_curify, Location})</code></li>
+</ul>
+<p><strong>AST Node Locations</strong>: All AST expression records include a <code>location</code> field that gets passed to error handlers.</p>
+<h3 id="4-smt-solver-srcsmtcure_smt_solvererl-lspcure_lsp_smterl">4. SMT Solver (<code>src/smt/cure_smt_solver.erl</code>, <code>lsp/cure_lsp_smt.erl</code>)</h3>
+<p><strong>Status</strong>: ✅ <strong>Complete</strong></p>
+<p>SMT constraint verification errors include source locations:</p>
+<ul>
+<li><strong>LSP Integration</strong>: <code>cure_lsp_smt:verify_refinement_in_body/4</code> receives <code>Loc</code> parameter</li>
+<li><strong>Error Format</strong>:<br />
+<code>erlang
+  #{
+      location =&gt; Loc,
+      severity =&gt; error,
+      message =&gt; &lt;&lt;"Refinement type violated for x"&gt;&gt;
+  }</code></li>
+</ul>
+<p><strong>Constraint Extraction</strong>: When extracting constraints from functions, the <code>location</code> field from <code>#function_def{}</code> is preserved and passed through to diagnostics.</p>
+<h3 id="5-code-generation-srccodegen">5. Code Generation (<code>src/codegen/</code>)</h3>
+<p><strong>Status</strong>: ✅ <strong>Complete</strong> (Updated in current commit)</p>
+<p>Code generation errors now include location information:</p>
+<p><strong>Updated Files</strong>:<br />
+- <code>cure_codegen.erl</code>:<br />
+  - <code>throw({guard_compilation_failed, Reason, Location})</code> - Line 1011<br />
+  - <code>throw({guard_compilation_failed, Reason, ClauseLocation})</code> - Line 1136<br />
+  - <code>throw({curify_arity_mismatch, Name, ActualArity, ErlArity, Location})</code> - Line 1175</p>
+<ul>
+<li><code>cure_beam_compiler.erl</code>:</li>
+<li><code>throw({clause_compilation_failed, Reason, Loc})</code> - Line 1010</li>
+<li>Location extracted from <code>ClauseInfo</code> map or defaults to current line</li>
+</ul>
+<p><strong>Error Examples</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% With location</span>
+<span class="nf">throw</span><span class="p">({</span><span class="n">guard_compilation_failed</span><span class="p">,</span><span class="w"> </span><span class="n">invalid_expression</span><span class="p">,</span><span class="w"> </span><span class="nl">#location</span><span class="p">{</span><span class="n">line</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="n">column</span><span class="o">=</span><span class="mi">10</span><span class="p">}})</span>
+
+<span class="c">% Arity mismatch with location  </span>
+<span class="nf">throw</span><span class="p">({</span><span class="n">curify_arity_mismatch</span><span class="p">,</span><span class="w"> </span><span class="n">foo</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="nl">#location</span><span class="p">{</span><span class="n">line</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="n">column</span><span class="o">=</span><span class="mi">5</span><span class="p">}})</span>
+</code></pre></div>
+
+<h3 id="6-runtime-errors-srcruntime">6. Runtime Errors (<code>src/runtime/</code>)</h3>
+<p><strong>Status</strong>: ⚠️ <strong>Limited</strong> (By Design)</p>
+<p>Runtime errors occur during execution and don't have direct access to source locations. However, Erlang's stack traces provide context:</p>
+<p><strong>Error Context</strong>:<br />
+- Function name and arity<br />
+- Module name<br />
+- Erlang stack trace<br />
+- Call chain</p>
+<p><strong>Examples</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">throw</span><span class="p">({</span><span class="n">lambda_error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">})</span>
+<span class="nf">throw</span><span class="p">({</span><span class="n">unsupported_binary_op</span><span class="p">,</span><span class="w"> </span><span class="nv">Op</span><span class="p">})</span>
+<span class="nf">throw</span><span class="p">(</span><span class="n">function_call_failed</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Stack Traces</strong>: Erlang automatically captures stack traces that can be correlated back to source:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">catch</span><span class="w"> </span><span class="nn">error</span><span class="p">:</span><span class="nv">Reason</span><span class="p">:</span><span class="nv">Stack</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">function_compilation_failed</span><span class="p">,</span><span class="w"> </span><span class="nv">Name</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">,</span><span class="w"> </span><span class="nv">Stack</span><span class="p">}}</span>
+</code></pre></div>
+
+<h2 id="lsp-integration-lspcure_lsp_analyzererl">LSP Integration (<code>lsp/cure_lsp_analyzer.erl</code>)</h2>
+<p><strong>Status</strong>: ✅ <strong>Complete</strong></p>
+<p>The LSP server properly converts all error types to diagnostics with locations:</p>
+<p><strong>Location Handling</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">make_diagnostic</span><span class="p">(</span><span class="nv">Message</span><span class="p">,</span><span class="w"> </span><span class="nv">Line</span><span class="p">,</span><span class="w"> </span><span class="nv">Column</span><span class="p">,</span><span class="w"> </span><span class="nv">Severity</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">#{</span>
+<span class="w">        </span><span class="n">range</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">            </span><span class="n">start</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span><span class="n">line</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nv">Line</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">character</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nv">Column</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">},</span>
+<span class="w">            </span><span class="k">end</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span><span class="n">line</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nv">Line</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">character</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nv">Column</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">length</span><span class="p">(</span><span class="nv">Message</span><span class="p">)}</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="n">severity</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nv">Severity</span><span class="p">,</span>
+<span class="w">        </span><span class="n">source</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s">&quot;cure&quot;</span><span class="o">&gt;&gt;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">message</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">list_to_binary</span><span class="p">(</span><span class="nv">Message</span><span class="p">)</span>
+<span class="w">    </span><span class="p">}.</span>
+</code></pre></div>
+
+<p><strong>Error Type Mapping</strong>:<br />
+- <strong>Parser errors</strong>: <code>{parse_error, Reason, Line, Column}</code> → Diagnostic<br />
+- <strong>Lexer errors</strong>: <code>{Reason, Line, Column}</code> → Diagnostic<br />
+- <strong>Type errors</strong>: <code>#typecheck_error{location=#location{}}</code> → Diagnostic<br />
+- <strong>SMT errors</strong>: <code>#{location =&gt; Loc}</code> → Diagnostic</p>
+<p><strong>Defensive Handling</strong>: <br />
+- Fallback clauses for malformed errors<br />
+- Default locations (0, 0) when location missing<br />
+- Guards to prevent crashes on unexpected formats</p>
+<h2 id="testing-location-tracking">Testing Location Tracking</h2>
+<h3 id="lexer-location-test">Lexer Location Test</h3>
+<div class="codehilite"><pre><span></span><code>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-s<span class="w"> </span>lexer_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+</code></pre></div>
+
+<p><strong>Verified</strong>: ✅ Unterminated strings show correct line/column</p>
+<h3 id="parser-location-test">Parser Location Test</h3>
+<div class="codehilite"><pre><span></span><code>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-s<span class="w"> </span>parser_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+</code></pre></div>
+
+<p><strong>Verified</strong>: ✅ All parse errors include actual token locations</p>
+<h3 id="lsp-integration-test">LSP Integration Test</h3>
+<p><strong>Verified</strong>: ✅ Error diagnostics show at correct positions in editor</p>
+<h3 id="type-checker-test">Type Checker Test</h3>
+<div class="codehilite"><pre><span></span><code>erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-s<span class="w"> </span>types_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+</code></pre></div>
+
+<p><strong>Verified</strong>: ✅ Type errors reference source locations from AST</p>
+<h2 id="best-practices-for-maintainers">Best Practices for Maintainers</h2>
+<h3 id="when-adding-new-errors">When Adding New Errors</h3>
+<ol>
+<li>
+<p><strong>Always extract location from AST node</strong>:<br />
+<code>erlang
+   compile_expr(#some_expr{location = Loc} = Expr, State) -&gt;
+       case validate(Expr) of
+           {error, Reason} -&gt;
+               throw({my_error, Reason, Loc})  % ✅ Include location
+       end</code></p>
+</li>
+<li>
+<p><strong>Use token location for parse errors</strong>:<br />
+<code>erlang
+   {Line, Col} = get_token_line_col(Token),
+   throw({parse_error, {reason, Details}, Line, Col})</code></p>
+</li>
+<li>
+<p><strong>Pass location through function calls</strong>:<br />
+<code>erlang
+   process_function(#function_def{location = Loc} = Func) -&gt;
+       helper_function(Func, Loc).  % Pass location to helpers</code></p>
+</li>
+<li>
+<p><strong>Test your errors</strong>:<br />
+   - Create intentionally malformed code<br />
+   - Verify error points to correct line/column<br />
+   - Check LSP shows error at right position</p>
+</li>
+</ol>
+<h3 id="common-pitfalls-to-avoid">Common Pitfalls to Avoid</h3>
+<p>❌ <strong>DON'T</strong> hardcode locations:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">throw</span><span class="p">({</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">reason</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">})</span><span class="w">  </span><span class="c">% BAD!</span>
+</code></pre></div>
+
+<p>✅ <strong>DO</strong> extract from context:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nv">Line</span><span class="p">,</span><span class="w"> </span><span class="nv">Col</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_token_line_col</span><span class="p">(</span><span class="nv">Token</span><span class="p">),</span>
+<span class="nf">throw</span><span class="p">({</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">reason</span><span class="p">,</span><span class="w"> </span><span class="nv">Line</span><span class="p">,</span><span class="w"> </span><span class="nv">Col</span><span class="p">})</span><span class="w">  </span><span class="c">% GOOD!</span>
+</code></pre></div>
+
+<p>❌ <strong>DON'T</strong> lose location in transformations:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">NewExpr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">transform</span><span class="p">(</span><span class="nv">Expr</span><span class="p">),</span><span class="w">  </span><span class="c">% Lost location!</span>
+</code></pre></div>
+
+<p>✅ <strong>DO</strong> preserve location fields:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">NewExpr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">transform</span><span class="p">(</span><span class="nv">Expr</span><span class="p">),</span>
+<span class="nv">NewExpr2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">NewExpr</span><span class="nl">#expr</span><span class="p">{</span><span class="n">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Expr</span><span class="nl">#expr.location</span><span class="p">}</span><span class="w">  </span><span class="c">% Preserved!</span>
+</code></pre></div>
+
+<h2 id="commit-history">Commit History</h2>
+<ul>
+<li><strong>88d38d6c</strong>: Fixed lexer quoted atom location tracking</li>
+<li><strong>0ca04f05</strong>: Fixed 11 parser error locations, added <code>last_token</code> tracking</li>
+<li><strong>aaba4677</strong>: Added defensive LSP error handling</li>
+<li><strong>Current</strong>: Added location to codegen errors</li>
+</ul>
+<h2 id="future-improvements">Future Improvements</h2>
+<h3 id="potential-enhancements">Potential Enhancements</h3>
+<ol>
+<li>
+<p><strong>Enhanced Runtime Tracing</strong>:<br />
+   - Embed source location metadata in compiled BEAM modules<br />
+   - Use Erlang's line number directives<br />
+   - Build source map for better stack traces</p>
+</li>
+<li>
+<p><strong>Richer Error Context</strong>:<br />
+   - Include surrounding code snippet<br />
+   - Show expected vs actual at error location<br />
+   - Suggest fixes based on error type</p>
+</li>
+<li>
+<p><strong>Cross-file Location Tracking</strong>:<br />
+   - Track import/include file locations<br />
+   - Show error chain across module boundaries<br />
+   - Link dependent type errors to definition sites</p>
+</li>
+</ol>
+<h2 id="summary">Summary</h2>
+<p>✅ <strong>Lexer</strong>: All errors include (Line, Column)<br />
+✅ <strong>Parser</strong>: All errors include (Line, Column) from tokens<br />
+✅ <strong>Type Checker</strong>: All errors include Location from AST<br />
+✅ <strong>SMT Solver</strong>: Constraint errors include source Location<br />
+✅ <strong>Code Generation</strong>: All errors include Location from AST<br />
+⚠️ <strong>Runtime</strong>: Stack traces provide context (no source locations available)<br />
+✅ <strong>LSP Integration</strong>: All error types properly converted to diagnostics</p>
+<p>The Cure compiler maintains comprehensive location tracking throughout the compilation pipeline, ensuring developers receive precise, actionable error messages.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

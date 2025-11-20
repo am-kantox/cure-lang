@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cure Dependent Types - User Guide - Cure Documentation</title>
+    <meta name="description" content=" Table of Contents
+1. [Introduction](introduction)
+2. [Basic Syntax](basic-syntax)
+3. [Common Patterns](common-patterns)
+4. [SMT-Based Verificati">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="cure-dependent-types-user-guide">Cure Dependent Types - User Guide</h1>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#basic-syntax">Basic Syntax</a></li>
+<li><a href="#common-patterns">Common Patterns</a></li>
+<li><a href="#smt-based-verification">SMT-Based Verification</a></li>
+<li><a href="#standard-library-integration">Standard Library Integration</a></li>
+<li><a href="#advanced-examples">Advanced Examples</a></li>
+<li><a href="#best-practices">Best Practices</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+</ol>
+<hr />
+<h2 id="introduction">Introduction</h2>
+<p>Cure's dependent types allow types to depend on <strong>values</strong>, enabling compile-time verification of invariants that traditionally require runtime checks. This leads to:</p>
+<ul>
+<li><strong>Zero-cost safety</strong>: No runtime bounds checks needed</li>
+<li><strong>Compile-time guarantees</strong>: Catch errors before code runs</li>
+<li><strong>Better documentation</strong>: Types express precise contracts</li>
+<li><strong>Verified correctness</strong>: SMT solver proves properties automatically</li>
+</ul>
+<h3 id="example-traditional-vs-dependent-types">Example: Traditional vs Dependent Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Traditional approach: Runtime error possible</span>
+<span class="n">def</span><span class="w"> </span><span class="s">head(xs:</span><span class="w"> </span><span class="s">List(Int)):</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">match</span><span class="w"> </span><span class="n">xs</span><span class="w"> </span><span class="n">with</span>
+<span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="p">[</span><span class="n">x</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">_</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span>
+<span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="p">[]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb">error</span><span class="p">(</span><span class="s">&quot;empty list!&quot;</span><span class="p">)</span><span class="w">  </span><span class="c">% ⚠️ Runtime error!</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="c">%% Dependent types: Compile-time safety</span>
+<span class="n">def</span><span class="w"> </span><span class="s">safe_head&lt;T,</span><span class="w"> </span><span class="s">n:</span><span class="w"> </span><span class="s">Nat&gt;(xs:</span><span class="w"> </span><span class="s">Vector(T,</span><span class="w"> </span><span class="s">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)):</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">match</span><span class="w"> </span><span class="n">xs</span><span class="w"> </span><span class="n">with</span>
+<span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="p">[</span><span class="n">x</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">_</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span>
+<span class="w">    </span><span class="c">% ✓ No error case needed! Compiler proves xs is non-empty</span>
+<span class="w">    </span><span class="k">end</span>
+</code></pre></div>
+
+<hr />
+<h2 id="basic-syntax">Basic Syntax</h2>
+<h3 id="dependent-type-definitions">Dependent Type Definitions</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">%%</span><span class="w"> </span><span class="nx">Syntax</span><span class="p">:</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">Name</span><span class="p">(</span><span class="nx">value_params</span><span class="o">...</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">BaseType</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">constraints</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">length</span><span class="p">(</span><span class="nx">this</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">n</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="nx">Refined</span><span class="w"> </span><span class="nx">types</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">constraints</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">NonEmpty</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">length</span><span class="p">(</span><span class="nx">this</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Index</span><span class="p">(</span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">this</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="nx">n</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Percentage</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">this</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">100</span>
+</code></pre></div>
+
+<h3 id="type-parameters">Type Parameters</h3>
+<p>Cure distinguishes between <strong>type parameters</strong> (types) and <strong>value parameters</strong> (runtime values):</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="s">example&lt;T,</span><span class="w"> </span><span class="s">n:</span><span class="w"> </span><span class="s">Nat&gt;(v:</span><span class="w"> </span><span class="s">Vector(T,</span><span class="w"> </span><span class="s">n))</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="c">%     ^  ^^^^^</span>
+<span class="w">    </span><span class="c">%     |    |</span>
+<span class="w">    </span><span class="c">%  Type  Value parameter (Nat)</span>
+<span class="w">    </span><span class="c">% parameter</span>
+</code></pre></div>
+
+<h3 id="where-clauses">Where Clauses</h3>
+<p>Constraints use <code>where</code> clauses with predicates:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">BoundedInt</span><span class="p">(</span><span class="nx">min</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">max</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span>
+<span class="w">    </span><span class="k">where</span><span class="w"> </span><span class="nx">min</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">this</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">max</span>
+
+<span class="k">type</span><span class="w"> </span><span class="nx">SortedList</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span>
+<span class="w">    </span><span class="k">where</span><span class="w"> </span><span class="k">forall</span><span class="w"> </span><span class="nx">i</span><span class="p">,</span><span class="w"> </span><span class="nx">j</span><span class="p">.</span><span class="w"> </span><span class="p">(</span><span class="nx">i</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="nx">j</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">(</span><span class="nx">nth</span><span class="p">(</span><span class="nx">this</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">nth</span><span class="p">(</span><span class="nx">this</span><span class="p">,</span><span class="w"> </span><span class="nx">j</span><span class="p">))</span>
+</code></pre></div>
+
+<hr />
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="1-safe-headtail-operations">1. Safe Head/Tail Operations</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="s">head&lt;T,</span><span class="w"> </span><span class="s">n:</span><span class="w"> </span><span class="s">Nat&gt;(v:</span><span class="w"> </span><span class="s">Vector(T,</span><span class="w"> </span><span class="s">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)):</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">match</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="n">with</span>
+<span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="p">[</span><span class="n">x</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">_</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="n">def</span><span class="w"> </span><span class="s">tail&lt;T,</span><span class="w"> </span><span class="s">n:</span><span class="w"> </span><span class="s">Nat&gt;(v:</span><span class="w"> </span><span class="s">Vector(T,</span><span class="w"> </span><span class="s">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)):</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">match</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="n">with</span>
+<span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="p">[</span><span class="n">_</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">xs</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">xs</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="c">%% Usage</span>
+<span class="n">let</span><span class="w"> </span><span class="s">v</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="n">in</span><span class="w">  </span><span class="c">% Type: Vector(Int, 3)</span>
+<span class="n">let</span><span class="w"> </span><span class="s">x</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">head</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w">       </span><span class="c">% Safe! 3 = n + 1, so n = 2</span>
+<span class="n">let</span><span class="w"> </span><span class="s">rest</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nb">tail</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w">    </span><span class="c">% Type: Vector(Int, 2)</span>
+</code></pre></div>
+
+<p><strong>Why it works</strong>: The type <code>Vector(T, n + 1)</code> requires <code>n + 1 &gt;= 1</code>, so the vector is provably non-empty.</p>
+<h3 id="2-safe-indexing">2. Safe Indexing</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Index</span><span class="p">(</span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">this</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="nx">n</span>
+
+<span class="nx">def</span><span class="w"> </span><span class="nx">nth</span><span class="p">&lt;</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">&gt;(</span><span class="nx">v</span><span class="p">:</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">),</span><span class="w"> </span><span class="nx">i</span><span class="p">:</span><span class="w"> </span><span class="nx">Index</span><span class="p">(</span><span class="nx">n</span><span class="p">)):</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="nx">nth_impl</span><span class="p">(</span><span class="nx">v</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">)</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="nx">Usage</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">v</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">30</span><span class="p">]</span><span class="w"> </span><span class="k">in</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="nx">Type</span><span class="p">:</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">i</span><span class="p">:</span><span class="w"> </span><span class="nx">Index</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">in</span><span class="w">   </span><span class="o">%</span><span class="w"> </span><span class="nx">Compiler</span><span class="w"> </span><span class="nx">verifies</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="mi">3</span>
+<span class="nx">nth</span><span class="p">(</span><span class="nx">v</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="p">)</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="nx">no</span><span class="w"> </span><span class="nx">bounds</span><span class="w"> </span><span class="nx">check</span><span class="p">!</span>
+</code></pre></div>
+
+<p><strong>Why it works</strong>: <code>Index(n)</code> can only hold values in <code>[0, n)</code>, so indexing is always safe.</p>
+<h3 id="3-length-arithmetic">3. Length Arithmetic</h3>
+<div class="codehilite"><pre><span></span><code>def concat&lt;T, m: Nat, n: Nat&gt;(
+    v1: Vector(T, m),
+    v2: Vector(T, n)
+): Vector(T, m + n) =
+    v1 ++ v2
+
+def split&lt;T, n: Nat, k: Nat where k &lt;= n&gt;(
+    v: Vector(T, n),
+    at: k
+): {Vector(T, k), Vector(T, n - k)} =
+    {take(v, k), drop(v, k)}
+</code></pre></div>
+
+<p><strong>Why it works</strong>: The type system tracks lengths through arithmetic operations (<code>m + n</code>, <code>n - k</code>).</p>
+<h3 id="4-matrix-dimensions">4. Matrix Dimensions</h3>
+<div class="codehilite"><pre><span></span><code><span class="nb">type</span><span class="w"> </span><span class="n">Matrix</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">rows</span><span class="p">:</span><span class="w"> </span><span class="n">Nat</span><span class="p">,</span><span class="w"> </span><span class="n">cols</span><span class="p">:</span><span class="w"> </span><span class="n">Nat</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span>
+<span class="w">    </span><span class="n">Vector</span><span class="p">(</span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">cols</span><span class="p">),</span><span class="w"> </span><span class="n">rows</span><span class="p">)</span>
+
+<span class="n">def</span><span class="w"> </span><span class="s">transpose&lt;T,</span><span class="w"> </span><span class="s">m:</span><span class="w"> </span><span class="s">Nat,</span><span class="w"> </span><span class="s">n:</span><span class="w"> </span><span class="s">Nat&gt;(</span>
+<span class="w">    </span><span class="n">matrix</span><span class="p">:</span><span class="w"> </span><span class="n">Matrix</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span>
+<span class="p">):</span><span class="w"> </span><span class="n">Matrix</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="c">%% Implementation</span>
+
+<span class="n">def</span><span class="w"> </span><span class="s">multiply&lt;T,</span><span class="w"> </span><span class="s">m:</span><span class="w"> </span><span class="s">Nat,</span><span class="w"> </span><span class="s">n:</span><span class="w"> </span><span class="s">Nat,</span><span class="w"> </span><span class="s">p:</span><span class="w"> </span><span class="s">Nat&gt;(</span>
+<span class="w">    </span><span class="n">a</span><span class="p">:</span><span class="w"> </span><span class="n">Matrix</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span>
+<span class="w">    </span><span class="n">b</span><span class="p">:</span><span class="w"> </span><span class="n">Matrix</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">)</span>
+<span class="p">):</span><span class="w"> </span><span class="n">Matrix</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="c">%% Compiler ensures a.cols == b.rows (both are n)</span>
+</code></pre></div>
+
+<p><strong>Why it works</strong>: Matrix dimensions are tracked in types. Incompatible operations (e.g., multiplying 3×2 by 5×4) are rejected at compile time.</p>
+<hr />
+<h2 id="smt-based-verification">SMT-Based Verification</h2>
+<p>Cure uses Z3 (an SMT solver) to prove type constraints automatically.</p>
+<h3 id="how-it-works">How It Works</h3>
+<ol>
+<li><strong>Constraint Generation</strong>: The type checker generates logical formulas (verification conditions)</li>
+<li><strong>SMT Translation</strong>: Formulas are translated to SMT-LIB2 format</li>
+<li><strong>Z3 Verification</strong>: Z3 proves the formula is satisfiable</li>
+<li><strong>Result</strong>: If proven, code compiles; otherwise, type error</li>
+</ol>
+<h3 id="example-proving-non-negativity">Example: Proving Non-Negativity</h3>
+<div class="codehilite"><pre><span></span><code><span class="nb">type</span><span class="w"> </span><span class="n">Balance</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="n">this</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="n">def</span><span class="w"> </span><span class="s">deposit(balance:</span><span class="w"> </span><span class="s">Balance,</span><span class="w"> </span><span class="s">amount:</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="s">where</span><span class="w"> </span><span class="s">amount</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">):</span><span class="w"> </span><span class="n">Balance</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="nb">balance</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">amount</span>
+<span class="w">    </span><span class="c">%% Compiler generates VC: (balance &gt;= 0 ∧ amount &gt; 0) ⇒ (balance + amount &gt;= 0)</span>
+<span class="w">    </span><span class="c">%% Z3 proves: ✓ sat</span>
+</code></pre></div>
+
+<h3 id="smt-logics-used">SMT Logics Used</h3>
+<ul>
+<li><strong>QF_LIA</strong>: Quantifier-free linear integer arithmetic (default)</li>
+<li><strong>QF_LIRA</strong>: Linear integer/real arithmetic (for mixed types)</li>
+<li><strong>AUFLIA</strong>: Arrays with uninterpreted functions (for array theory)</li>
+<li><strong>QF_NIA</strong>: Non-linear integer arithmetic (for multiplication/division)</li>
+</ul>
+<h3 id="controlling-verification">Controlling Verification</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">%%</span><span class="w"> </span><span class="n">Provide</span><span class="w"> </span><span class="n">hints</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">SMT</span><span class="w"> </span><span class="n">solver</span>
+<span class="n">def</span><span class="w"> </span><span class="n">complex_function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">):</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span>
+<span class="w">    </span><span class="n">where</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="n">Multiple</span><span class="w"> </span><span class="n">constraints</span>
+<span class="o">=</span>
+<span class="w">    </span><span class="o">%%</span><span class="w"> </span><span class="n">SMT</span><span class="w"> </span><span class="n">solver</span><span class="w"> </span><span class="n">receives</span><span class="w"> </span><span class="n">all</span><span class="w"> </span><span class="n">constraints</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">assumptions</span>
+<span class="w">    </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">y</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="n">Explicit</span><span class="w"> </span><span class="n">assertions</span><span class="w"> </span><span class="p">(</span><span class="n">checked</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">compile</span><span class="w"> </span><span class="n">time</span><span class="p">)</span>
+<span class="n">def</span><span class="w"> </span><span class="n">verified_property</span><span class="p">(</span><span class="n">n</span><span class="p">:</span><span class="w"> </span><span class="n">Nat</span><span class="p">):</span><span class="w"> </span><span class="n">Nat</span><span class="w"> </span>
+<span class="w">    </span><span class="n">where</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="o">=</span>
+<span class="w">    </span><span class="n">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="ow">in</span>
+<span class="w">    </span><span class="nb">assert</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">n</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="n">Proven</span><span class="w"> </span><span class="n">by</span><span class="w"> </span><span class="n">SMT</span>
+<span class="w">    </span><span class="n">result</span>
+</code></pre></div>
+
+<hr />
+<h2 id="standard-library-integration">Standard Library Integration</h2>
+<h3 id="vector-module">Vector Module</h3>
+<p>The standard library (<code>lib/std/vector.cure</code>) provides common operations:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">module</span> <span class="n">Vector</span> <span class="nb">do</span>
+    <span class="n">def</span> <span class="n">length</span><span class="s">&lt;T&gt;(v: List(T)): Nat</span>
+<span class="s">    def is_empty&lt;T&gt;</span>(<span class="n">v:</span> <span class="nb">List</span>(<span class="n">T</span>)): <span class="nb">Bool</span>
+    <span class="n">def</span> <span class="nb">reverse</span><span class="s">&lt;T, n: Nat&gt;</span>(<span class="n">v:</span> <span class="n">Vector</span>(<span class="n">T</span>, <span class="n">n</span>)): <span class="n">Vector</span>(<span class="n">T</span>, <span class="n">n</span>)
+    <span class="n">def</span> <span class="n">map</span><span class="s">&lt;T, U, n: Nat&gt;</span>(<span class="n">f:</span> <span class="n">T</span> -&gt; <span class="n">U</span>, <span class="n">v:</span> <span class="n">Vector</span>(<span class="n">T</span>, <span class="n">n</span>)): <span class="n">Vector</span>(<span class="n">U</span>, <span class="n">n</span>)
+    <span class="n">def</span> <span class="n">filter</span><span class="s">&lt;T, n: Nat&gt;</span>(<span class="n">pred:</span> <span class="n">T</span> -&gt; <span class="nb">Bool</span>, <span class="n">v:</span> <span class="n">Vector</span>(<span class="n">T</span>, <span class="n">n</span>)): <span class="n">Vector</span>(<span class="n">T</span>, <span class="sr">m) where m &lt;= n</span>
+<span class="sr">    def fold&lt;T, U, n: Nat&gt;(f: (U, T)</span> -&gt; <span class="n">U</span>, <span class="n">init:</span> <span class="n">U</span>, <span class="n">v:</span> <span class="n">Vector</span>(<span class="n">T</span>, <span class="n">n</span>)): <span class="n">U</span>
+    <span class="n">def</span> <span class="n">zip_with</span><span class="s">&lt;T, U, V, n: Nat&gt;</span>(<span class="n">f:</span> (<span class="n">T</span>, <span class="n">U</span>) -&gt; <span class="n">V</span>, <span class="n">v1:</span> <span class="n">Vector</span>(<span class="n">T</span>, <span class="n">n</span>), <span class="n">v2:</span> <span class="n">Vector</span>(<span class="n">U</span>, <span class="n">n</span>)): <span class="n">Vector</span>(<span class="n">V</span>, <span class="n">n</span>)
+    <span class="n">def</span> <span class="nb">contains</span><span class="s">&lt;T, n: Nat&gt;</span>(<span class="n">v:</span> <span class="n">Vector</span>(<span class="n">T</span>, <span class="n">n</span>), <span class="n">elem:</span> <span class="n">T</span>): <span class="nb">Bool</span>
+<span class="nb">end</span>
+</code></pre></div>
+
+<h3 id="using-dependent-types-with-vector">Using Dependent Types with Vector</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Vector</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="n">Safe</span><span class="w"> </span><span class="n">operations</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="nb">compile</span><span class="o">-</span><span class="n">time</span><span class="w"> </span><span class="n">guarantees</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">process_data</span><span class="p">():</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="nb">Int</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">let</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">]</span><span class="w"> </span><span class="ow">in</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="n">Type</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="nb">Int</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<span class="w">    </span><span class="n">let</span><span class="w"> </span><span class="n">doubled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Vector</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">fn</span><span class="w"> </span><span class="nf">x</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="ow">in</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="n">Type</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="nb">Int</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<span class="w">    </span><span class="n">let</span><span class="w"> </span><span class="nb">reversed</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Vector</span><span class="o">.</span><span class="n">reverse</span><span class="p">(</span><span class="n">doubled</span><span class="p">)</span><span class="w"> </span><span class="ow">in</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="n">Type</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="nb">Int</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<span class="w">    </span><span class="nb">reversed</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="n">No</span><span class="w"> </span><span class="n">runtime</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="n">checks</span><span class="w"> </span><span class="n">needed</span><span class="err">!</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_first_three</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">:</span><span class="w"> </span><span class="n">Nat</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">3</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)):</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">Vector</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="n">Compiler</span><span class="w"> </span><span class="n">verifies</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">3</span>
+</code></pre></div>
+
+<hr />
+<h2 id="advanced-examples">Advanced Examples</h2>
+<h3 id="example-1-state-machines-with-invariants">Example 1: State Machines with Invariants</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">fsm</span><span class="w"> </span><span class="n">Counter</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">type</span><span class="w"> </span><span class="n">Count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">this</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">100</span>
+
+<span class="w">    </span><span class="n">payload</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">count</span><span class="p">:</span><span class="w"> </span><span class="n">Count</span><span class="p">}</span>
+
+<span class="w">    </span><span class="n">state</span><span class="w"> </span><span class="n">Counting</span><span class="p">(</span><span class="n">count</span><span class="p">:</span><span class="w"> </span><span class="n">Count</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">        </span><span class="n">on</span><span class="w"> </span><span class="n">increment</span><span class="p">()</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="n">Counting</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
+<span class="w">            </span><span class="o">%%</span><span class="w"> </span><span class="n">Compiler</span><span class="w"> </span><span class="n">proves</span><span class="p">:</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="err">⇒</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">100</span>
+
+<span class="w">        </span><span class="n">on</span><span class="w"> </span><span class="n">decrement</span><span class="p">()</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="n">Counting</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
+<span class="w">            </span><span class="o">%%</span><span class="w"> </span><span class="n">Compiler</span><span class="w"> </span><span class="n">proves</span><span class="p">:</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="err">⇒</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">        </span><span class="n">on</span><span class="w"> </span><span class="n">reset</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Counting</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">end</span>
+
+<span class="w">    </span><span class="n">invariant</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">count</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">100</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="n">Verified</span><span class="w"> </span><span class="n">automatically</span><span class="o">!</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<h3 id="example-2-sorted-lists">Example 2: Sorted Lists</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Sorted</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">is_sorted</span><span class="p">(</span><span class="nx">this</span><span class="p">)</span>
+
+<span class="nx">def</span><span class="w"> </span><span class="nx">merge</span><span class="p">&lt;</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">m</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">&gt;(</span>
+<span class="w">    </span><span class="nx">xs</span><span class="p">:</span><span class="w"> </span><span class="nx">Sorted</span><span class="p">(</span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">m</span><span class="p">)),</span>
+<span class="w">    </span><span class="nx">ys</span><span class="p">:</span><span class="w"> </span><span class="nx">Sorted</span><span class="p">(</span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">))</span>
+<span class="p">):</span><span class="w"> </span><span class="nx">Sorted</span><span class="p">(</span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">n</span><span class="p">))</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="nx">merge_impl</span><span class="p">(</span><span class="nx">xs</span><span class="p">,</span><span class="w"> </span><span class="nx">ys</span><span class="p">)</span>
+<span class="w">    </span><span class="o">%%</span><span class="w"> </span><span class="nx">Compiler</span><span class="w"> </span><span class="nx">verifies</span><span class="p">:</span><span class="w"> </span><span class="nx">sorted</span><span class="p">(</span><span class="nx">xs</span><span class="p">)</span><span class="w"> </span><span class="err">∧</span><span class="w"> </span><span class="nx">sorted</span><span class="p">(</span><span class="nx">ys</span><span class="p">)</span><span class="w"> </span><span class="err">⇒</span><span class="w"> </span><span class="nx">sorted</span><span class="p">(</span><span class="nx">merge</span><span class="p">(</span><span class="nx">xs</span><span class="p">,</span><span class="w"> </span><span class="nx">ys</span><span class="p">))</span>
+
+<span class="nx">def</span><span class="w"> </span><span class="nx">insert</span><span class="p">&lt;</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Nat</span><span class="p">&gt;(</span>
+<span class="w">    </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">T</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">xs</span><span class="p">:</span><span class="w"> </span><span class="nx">Sorted</span><span class="p">(</span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">))</span>
+<span class="p">):</span><span class="w"> </span><span class="nx">Sorted</span><span class="p">(</span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">))</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="nx">insert_impl</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span><span class="w"> </span><span class="nx">xs</span><span class="p">)</span>
+<span class="w">    </span><span class="o">%%</span><span class="w"> </span><span class="nx">Compiler</span><span class="w"> </span><span class="nx">verifies</span><span class="p">:</span><span class="w"> </span><span class="nx">sorted</span><span class="p">(</span><span class="nx">xs</span><span class="p">)</span><span class="w"> </span><span class="err">⇒</span><span class="w"> </span><span class="nx">sorted</span><span class="p">(</span><span class="nx">insert</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span><span class="w"> </span><span class="nx">xs</span><span class="p">))</span>
+</code></pre></div>
+
+<h3 id="example-3-dependent-records">Example 3: Dependent Records</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Person</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">length</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">age</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">age</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">150</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">email</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span><span class="w"> </span><span class="k">where</span><span class="w"> </span><span class="nx">is_valid_email</span><span class="p">(</span><span class="nx">email</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="nx">def</span><span class="w"> </span><span class="nx">create_person</span><span class="p">(</span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span><span class="p">,</span><span class="w"> </span><span class="nx">age</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">email</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span><span class="p">):</span><span class="w"> </span><span class="nx">Option</span><span class="p">(</span><span class="nx">Person</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="o">%%</span><span class="w"> </span><span class="nx">Compiler</span><span class="w"> </span><span class="nx">verifies</span><span class="w"> </span><span class="nx">all</span><span class="w"> </span><span class="nx">constraints</span><span class="w"> </span><span class="nx">before</span><span class="w"> </span><span class="nx">constructing</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="nx">length</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">age</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">150</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">is_valid_email</span><span class="p">(</span><span class="nx">email</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">        </span><span class="nx">Some</span><span class="p">({</span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">age</span><span class="p">,</span><span class="w"> </span><span class="nx">email</span><span class="p">})</span>
+<span class="w">    </span><span class="k">else</span>
+<span class="w">        </span><span class="nx">None</span>
+</code></pre></div>
+
+<hr />
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="1-start-simple">1. Start Simple</h3>
+<p>Begin with basic refinement types, then add dependent types:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Step 1: Basic type</span>
+<span class="n">def</span><span class="w"> </span><span class="s">process(xs:</span><span class="w"> </span><span class="s">List(Int)):</span><span class="w"> </span><span class="s">Int</span>
+
+<span class="c">%% Step 2: Add refinement</span>
+<span class="n">def</span><span class="w"> </span><span class="s">process(xs:</span><span class="w"> </span><span class="s">NonEmpty(Int)):</span><span class="w"> </span><span class="s">Int</span>
+
+<span class="c">%% Step 3: Add dependent type</span>
+<span class="n">def</span><span class="w"> </span><span class="s">process&lt;n:</span><span class="w"> </span><span class="s">Nat&gt;(xs:</span><span class="w"> </span><span class="s">Vector(Int,</span><span class="w"> </span><span class="s">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)):</span><span class="w"> </span><span class="n">Int</span>
+</code></pre></div>
+
+<h3 id="2-use-meaningful-names">2. Use Meaningful Names</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">%% ❌ Bad: Unclear what &#39;n&#39; represents</span>
+<span class="n">def</span><span class="w"> </span><span class="s">foo&lt;T,</span><span class="w"> </span><span class="s">n:</span><span class="w"> </span><span class="s">Nat&gt;(v:</span><span class="w"> </span><span class="s">Vector(T,</span><span class="w"> </span><span class="s">n))</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="k">...</span>
+
+<span class="c">%% ✓ Good: Clear parameter names</span>
+<span class="n">def</span><span class="w"> </span><span class="s">resize&lt;T,</span><span class="w"> </span><span class="s">old_size:</span><span class="w"> </span><span class="s">Nat,</span><span class="w"> </span><span class="s">new_size:</span><span class="w"> </span><span class="s">Nat&gt;(</span>
+<span class="w">    </span><span class="n">v</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">old_size</span><span class="p">),</span>
+<span class="w">    </span><span class="n">target_size</span><span class="p">:</span><span class="w"> </span><span class="n">new_size</span>
+<span class="p">):</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">new_size</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="k">...</span>
+</code></pre></div>
+
+<h3 id="3-document-assumptions">3. Document Assumptions</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">%%</span><span class="w"> </span><span class="n">Document</span><span class="w"> </span><span class="n">why</span><span class="w"> </span><span class="n">constraints</span><span class="w"> </span><span class="n">are</span><span class="w"> </span><span class="n">needed</span>
+<span class="n">def</span><span class="w"> </span><span class="n">binary_search</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">:</span><span class="w"> </span><span class="n">Nat</span><span class="o">&gt;</span><span class="p">(</span>
+<span class="w">    </span><span class="n">v</span><span class="p">:</span><span class="w"> </span><span class="n">Sorted</span><span class="p">(</span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)),</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="n">Must</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">sorted</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">binary</span><span class="w"> </span><span class="n">search</span>
+<span class="w">    </span><span class="n">target</span><span class="p">:</span><span class="w"> </span><span class="n">T</span>
+<span class="p">):</span><span class="w"> </span><span class="n">Option</span><span class="p">(</span><span class="n">Index</span><span class="p">(</span><span class="n">n</span><span class="p">))</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="o">%%</span><span class="w"> </span><span class="n">Implementation</span><span class="w"> </span><span class="n">assumes</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">sorted</span>
+</code></pre></div>
+
+<h3 id="4-leverage-inference">4. Leverage Inference</h3>
+<p>Let the compiler infer types when possible:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Explicit (verbose)</span>
+<span class="n">def</span><span class="w"> </span><span class="s">demo():</span><span class="w"> </span><span class="s">Vector(Int,</span><span class="w"> </span><span class="s">3)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">let</span><span class="w"> </span><span class="n">v</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">]</span><span class="w"> </span><span class="n">in</span>
+<span class="w">    </span><span class="n">let</span><span class="w"> </span><span class="n">result</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">take</span><span class="p">(</span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">in</span>
+<span class="w">    </span><span class="n">result</span>
+
+<span class="c">%% Inferred (concise)</span>
+<span class="n">def</span><span class="w"> </span><span class="s">demo():</span><span class="w"> </span><span class="s">Vector(Int,</span><span class="w"> </span><span class="s">3)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">take</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">],</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w">  </span><span class="c">% Compiler infers all types</span>
+</code></pre></div>
+
+<h3 id="5-balance-precision-and-complexity">5. Balance Precision and Complexity</h3>
+<p>Not every function needs dependent types:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% ✓ Good: Dependent types add value</span>
+<span class="n">def</span><span class="w"> </span><span class="s">head&lt;T,</span><span class="w"> </span><span class="s">n:</span><span class="w"> </span><span class="s">Nat&gt;(v:</span><span class="w"> </span><span class="s">Vector(T,</span><span class="w"> </span><span class="s">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)):</span><span class="w"> </span><span class="n">T</span>
+
+<span class="c">%% ❌ Overkill: Complexity doesn&#39;t justify benefit</span>
+<span class="n">def</span><span class="w"> </span><span class="s">add(x:</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="s">where</span><span class="w"> </span><span class="s">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">):</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">where</span><span class="w"> </span><span class="n">this</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span>
+</code></pre></div>
+
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="error-cannot-prove-constraint">Error: "Cannot prove constraint"</h3>
+<p><strong>Problem</strong>: SMT solver cannot verify a constraint.</p>
+<div class="codehilite"><pre><span></span><code>def example(n: Nat): Nat =
+    n - 1  % ERROR: Cannot prove (n - 1) &gt;= 0
+</code></pre></div>
+
+<p><strong>Solution</strong>: Add explicit bounds:</p>
+<div class="codehilite"><pre><span></span><code>def example(n: Nat where n &gt; 0): Nat =
+    n - 1  % ✓ OK: SMT proves (n &gt; 0) ⇒ (n - 1 &gt;= 0)
+</code></pre></div>
+
+<h3 id="error-type-mismatch-in-dependent-types">Error: "Type mismatch in dependent types"</h3>
+<p><strong>Problem</strong>: Length/dimension mismatch.</p>
+<div class="codehilite"><pre><span></span><code>def bad_concat(): Vector(Int, 5) =
+    concat([1, 2], [3, 4])  % ERROR: 2 + 2 ≠ 5
+</code></pre></div>
+
+<p><strong>Solution</strong>: Fix the expected type:</p>
+<div class="codehilite"><pre><span></span><code>def good_concat(): Vector(Int, 4) =
+    concat([1, 2], [3, 4])  % ✓ OK: 2 + 2 = 4
+</code></pre></div>
+
+<h3 id="error-smt-solver-timeout">Error: "SMT solver timeout"</h3>
+<p><strong>Problem</strong>: Constraint too complex for Z3.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="s">complex(n:</span><span class="w"> </span><span class="s">Nat):</span><span class="w"> </span><span class="s">Nat</span><span class="w"> </span><span class="s">where</span><span class="w"> </span><span class="s">some_very_complex_property(n)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="c">%% Z3 times out</span>
+</code></pre></div>
+
+<p><strong>Solutions</strong>:<br />
+1. <strong>Simplify constraints</strong>: Break into smaller pieces<br />
+2. <strong>Add intermediate assertions</strong>: Guide the solver<br />
+3. <strong>Increase timeout</strong>: Configure solver timeout (default: 5s)<br />
+4. <strong>Use runtime checks</strong>: Fall back to assertions for very complex properties</p>
+<h3 id="debugging-tips">Debugging Tips</h3>
+<ol>
+<li>
+<p><strong>Check SMT output</strong>: Use <code>--dump-smt</code> flag to see generated SMT-LIB2<br />
+<code>bash
+   curc --dump-smt example.cure</code></p>
+</li>
+<li>
+<p><strong>Simplify constraints</strong>: Comment out constraints one by one to isolate the issue</p>
+</li>
+<li>
+<p><strong>Add explicit types</strong>: Help the type checker by annotating intermediate values</p>
+</li>
+<li>
+<p><strong>Use <code>assert</code></strong>: Runtime assertions can complement compile-time checks</p>
+</li>
+</ol>
+<hr />
+<h2 id="performance-considerations">Performance Considerations</h2>
+<h3 id="benefits">Benefits</h3>
+<ul>
+<li><strong>No runtime checks</strong>: Bounds/null checks eliminated by compiler</li>
+<li><strong>Better optimizations</strong>: Static lengths enable SIMD, unrolling</li>
+<li><strong>Smaller binaries</strong>: No error-handling code for proven-safe operations</li>
+</ul>
+<h3 id="costs">Costs</h3>
+<ul>
+<li><strong>Compile time</strong>: SMT verification adds overhead (typically &lt;100ms per function)</li>
+<li><strong>Code size</strong>: Monomorphization may duplicate code for different lengths</li>
+</ul>
+<h3 id="tuning">Tuning</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Control optimization vs. compile time</span>
+<span class="p">@</span><span class="n">optimization_level</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w">  </span><span class="c">% More aggressive optimization</span>
+<span class="n">def</span><span class="w"> </span><span class="s">hot_path&lt;T,</span><span class="w"> </span><span class="s">n:</span><span class="w"> </span><span class="s">Nat&gt;(v:</span><span class="w"> </span><span class="s">Vector(T,</span><span class="w"> </span><span class="s">n)):</span><span class="w"> </span><span class="s">T</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="c">%% Compiler may specialize for common n values (e.g., n=1,2,3,4,8,16)</span>
+
+<span class="p">@</span><span class="n">no_smt_verify</span><span class="w">  </span><span class="c">% Skip SMT verification (use with caution!)</span>
+<span class="n">def</span><span class="w"> </span><span class="s">trusted_function(x:</span><span class="w"> </span><span class="s">Int):</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="c">%% Manual verification performed, skip SMT</span>
+</code></pre></div>
+
+<hr />
+<h2 id="further-reading">Further Reading</h2>
+<ul>
+<li><strong>Design Document</strong>: <code>docs/DEPENDENT_TYPES_DESIGN.md</code> - Detailed design rationale</li>
+<li><strong>Examples</strong>: <code>examples/dependent_types_demo.cure</code> - Comprehensive examples</li>
+<li><strong>Implementation</strong>: <code>src/types/cure_dependent_types.erl</code> - Type checker source</li>
+<li><strong>SMT Integration</strong>: <code>docs/SMT_INTEGRATION.md</code> - SMT solver details</li>
+</ul>
+<hr />
+<h2 id="summary">Summary</h2>
+<p>Cure's dependent types bring the power of formal verification to everyday programming:</p>
+<p>✅ <strong>Safe</strong>: No runtime bounds errors<br />
+✅ <strong>Fast</strong>: Zero-cost abstractions<br />
+✅ <strong>Expressive</strong>: Types document invariants<br />
+✅ <strong>Verified</strong>: SMT proves correctness<br />
+✅ <strong>Practical</strong>: Works with existing BEAM code</p>
+<p>Start using dependent types today to write safer, faster Cure programs!</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

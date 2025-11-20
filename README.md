@@ -2,7 +2,8 @@
 
 A strongly-typed, dependently-typed programming language for the BEAM virtual machine with built-in finite state machines, **complete import system**, and **comprehensive standard library**.
 
-🚀 **Last Updated: October 31, 2025**
+🚀 **Last Updated: November 20, 2025**  
+📦 **Current Version: v0.4.0**
 
 ✅ **Working import system** with full module resolution  
 ✅ **Standard library** with verified runtime execution (12 modules)  

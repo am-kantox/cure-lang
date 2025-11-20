@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cure Programming Language - Complete Status Report - Cure Documentation</title>
+    <meta name="description" content="Date: 2025-11-19  
+Version: 2.0 (Updated)  
+Report Type: Comprehensive Status with Limitations & Postponed Features">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="cure-programming-language-complete-status-report">Cure Programming Language - Complete Status Report</h1>
+<h2 id="smt-solver-and-fsm-integration">SMT-Solver and FSM Integration</h2>
+<p><strong>Date:</strong> 2025-11-19<br />
+<strong>Version:</strong> 2.0 (Updated)<br />
+<strong>Report Type:</strong> Comprehensive Status with Limitations &amp; Postponed Features  </p>
+<hr />
+<h2 id="executive-summary">Executive Summary</h2>
+<p>The Cure Programming Language has made substantial progress on both SMT-solver and FSM integrations. This report provides complete, accurate status of what works, what doesn't, known limitations, and clearly postponed features.</p>
+<h3 id="quick-status">Quick Status</h3>
+<table>
+<thead>
+<tr>
+<th>System</th>
+<th>Overall Progress</th>
+<th>Production Ready?</th>
+<th>Critical Issues</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SMT Integration</strong></td>
+<td>~55% (Phases 1-3 complete)</td>
+<td>✅ Yes (for core features)</td>
+<td>0 critical</td>
+</tr>
+<tr>
+<td><strong>FSM Integration</strong></td>
+<td>~85% (Core complete)</td>
+<td>✅ Yes (with workarounds)</td>
+<td>2 critical</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="part-1-smt-solver-integration">Part 1: SMT-Solver Integration</h1>
+<h2 id="11-what-works-today-production-ready">1.1 What Works Today (Production-Ready) ✅</h2>
+<h3 id="phase-1-core-infrastructure-100-complete">Phase 1: Core Infrastructure (100% Complete)</h3>
+<p><strong>Status</strong>: ✅ FULLY FUNCTIONAL<br />
+<strong>Test Results</strong>: 23/23 tests passing</p>
+<p><strong>Core Capabilities</strong>:<br />
+- Z3/CVC5 SMT solver process management via Erlang ports<br />
+- SMT-LIB2 query generation and execution<br />
+- Model parsing for Int, Bool, Real types<br />
+- Basic constraint solving (arithmetic, comparisons, boolean logic)<br />
+- Automatic solver detection with graceful fallback</p>
+<p><strong>Supported Theories</strong>:<br />
+- QF_LIA (Quantifier-Free Linear Integer Arithmetic)<br />
+- QF_LRA (Quantifier-Free Linear Real Arithmetic)<br />
+- QF_LIRA (Mixed Integer/Real)<br />
+- QF_NIA (Non-linear Integer Arithmetic - basic)</p>
+<p><strong>Performance</strong>:<br />
+- Z3 startup: ~50ms<br />
+- Simple constraint (x &gt; 5): ~10ms<br />
+- Complex constraint: ~100ms<br />
+- Default timeout: 5000ms (configurable)</p>
+<p><strong>Example Usage</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Solve constraint: x &gt; 5</span>
+<span class="nv">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">#{</span><span class="n">op</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">5</span><span class="p">},</span>
+<span class="nv">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">solve_constraints</span><span class="p">([</span><span class="nv">Constraint</span><span class="p">],</span><span class="w"> </span><span class="p">#{</span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">int</span><span class="p">}).</span>
+<span class="c">% =&gt; {sat, #{x =&gt; 6}}</span>
+</code></pre></div>
+
+<hr />
+<h3 id="phase-2-enhanced-features-100-complete">Phase 2: Enhanced Features (100% Complete)</h3>
+<p><strong>Status</strong>: ✅ FULLY FUNCTIONAL<br />
+<strong>Test Results</strong>: 15/15 new tests passing</p>
+<p><strong>CLI Configuration</strong>:</p>
+<div class="codehilite"><pre><span></span><code>./cure<span class="w"> </span>file.cure<span class="w"> </span>--no-smt<span class="w">                </span><span class="c1"># Disable SMT completely</span>
+./cure<span class="w"> </span>file.cure<span class="w"> </span>--smt-solver<span class="w"> </span>z3<span class="w">         </span><span class="c1"># Force specific solver</span>
+./cure<span class="w"> </span>file.cure<span class="w"> </span>--smt-timeout<span class="w"> </span><span class="m">10000</span><span class="w">     </span><span class="c1"># Set 10s timeout</span>
+</code></pre></div>
+
+<p><strong>Quantifier Support</strong>:<br />
+- Universal quantification: <code>∀x. P(x)</code><br />
+- Existential quantification: <code>∃x. P(x)</code><br />
+- Nested quantifiers<br />
+- Logic inference (LIA, LRA, NIA with quantifiers)</p>
+<p><strong>Enhanced Error Messages</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">SMT</span><span class="o">:</span><span class="w"> </span><span class="n">Z3</span><span class="w"> </span><span class="n">timed</span><span class="w"> </span><span class="n">out</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="mi">5000</span><span class="w"> </span><span class="n">ms</span>
+<span class="n">Constraint</span><span class="o">:</span><span class="w"> </span><span class="o">(&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="mi">0</span><span class="o">)</span>
+<span class="n">Hint</span><span class="o">:</span><span class="w"> </span><span class="n">Try</span><span class="w"> </span><span class="n">increasing</span><span class="w"> </span><span class="n">timeout</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="o">--</span><span class="n">smt</span><span class="o">-</span><span class="n">timeout</span><span class="w"> </span><span class="o">&lt;</span><span class="n">ms</span><span class="o">&gt;</span>
+</code></pre></div>
+
+<p><strong>AST Records Added</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">-</span><span class="ni">record</span><span class="p">(</span><span class="nl">forall_expr</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">variables</span><span class="p">,</span><span class="w"> </span><span class="n">body</span><span class="p">,</span><span class="w"> </span><span class="n">location</span><span class="p">}).</span>
+<span class="p">-</span><span class="ni">record</span><span class="p">(</span><span class="nl">exists_expr</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">variables</span><span class="p">,</span><span class="w"> </span><span class="n">body</span><span class="p">,</span><span class="w"> </span><span class="n">location</span><span class="p">}).</span>
+</code></pre></div>
+
+<hr />
+<h3 id="phase-3-refinement-types-100-complete">Phase 3: Refinement Types (100% Complete)</h3>
+<p><strong>Status</strong>: ✅ FULLY FUNCTIONAL<br />
+<strong>Test Results</strong>: 12/12 new tests passing (27/27 total SMT tests)</p>
+<p><strong>Core Features</strong>:<br />
+1. <strong>Parser Support</strong>: <code>type Positive = Int when x &gt; 0</code> syntax works<br />
+2. <strong>Type Unification</strong>: Refinement types integrated into <code>cure_types:unify/2</code><br />
+3. <strong>SMT-based Subtyping</strong>: Automatic proof of <code>Positive &lt;: NonZero</code><br />
+4. <strong>Nat Constraint Generation</strong>: Auto-generates <code>n &gt;= 0</code> for Nat types</p>
+<p><strong>New Module</strong>: <code>src/types/cure_refinement_types.erl</code> (~600 LOC)</p>
+<p><strong>Refinement Type API</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Create refinement type</span>
+<span class="nf">create_refinement_type</span><span class="p">(</span><span class="nv">BaseType</span><span class="p">,</span><span class="w"> </span><span class="nv">VarName</span><span class="p">,</span><span class="w"> </span><span class="nv">Constraint</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">RefinementType</span>
+
+<span class="c">% Check subtyping via SMT</span>
+<span class="nf">check_subtype</span><span class="p">(</span><span class="nv">Type1</span><span class="p">,</span><span class="w"> </span><span class="nv">Type2</span><span class="p">,</span><span class="w"> </span><span class="nv">Options</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="n">true</span><span class="p">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="n">false</span><span class="p">}</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}</span>
+
+<span class="c">% Extract base type</span>
+<span class="nf">base_type</span><span class="p">(</span><span class="nv">RefinementType</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">BaseType</span>
+</code></pre></div>
+
+<p><strong>Example Cure Code</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">type</span><span class="w"> </span><span class="n">Positive</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">NonZero</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="p">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">Percentage</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="p">=</span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span>
+
+<span class="c">% Safe division - compiler proves divisor is non-zero</span>
+<span class="n">def</span><span class="w"> </span><span class="s">safe_divide(a:</span><span class="w"> </span><span class="s">Int,</span><span class="w"> </span><span class="s">b:</span><span class="w"> </span><span class="s">NonZero):</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span>
+
+<span class="c">% Subtyping: Positive &lt;: NonZero proven by SMT</span>
+<span class="n">def</span><span class="w"> </span><span class="s">reciprocal(n:</span><span class="w"> </span><span class="s">NonZero):</span><span class="w"> </span><span class="s">Float</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="mf">1.0</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">n</span>
+
+<span class="c">% Can pass Positive to reciprocal (automatic proof)</span>
+<span class="n">def</span><span class="w"> </span><span class="s">test(p:</span><span class="w"> </span><span class="s">Positive):</span><span class="w"> </span><span class="s">Float</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">reciprocal</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="w">  </span><span class="c">% ✅ Type checks via SMT subtyping</span>
+</code></pre></div>
+
+<p><strong>Integration Points</strong>:<br />
+- ✅ Parser: <code>when</code> clauses in type definitions<br />
+- ✅ Type checker: Creates refinement_type records<br />
+- ✅ Type unification: Checks subtyping via SMT<br />
+- ✅ SMT translator: Generates implication queries</p>
+<hr />
+<h2 id="12-known-limitations-issues">1.2 Known Limitations &amp; Issues</h2>
+<h3 id="limitation-1-refinement-variable-naming">Limitation #1: Refinement Variable Naming</h3>
+<p><strong>Status</strong>: 🟡 MINOR LIMITATION<br />
+<strong>Impact</strong>: Variable in refinement is always <code>x</code> or first parameter name</p>
+<p><strong>Current Behavior</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w">        </span><span class="o">%</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Works</span><span class="p">,</span><span class="w"> </span><span class="nx">uses</span><span class="w"> </span><span class="sc">&#39;x&#39;</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">T</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w">     </span><span class="o">%</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Works</span><span class="p">,</span><span class="w"> </span><span class="nx">uses</span><span class="w"> </span><span class="sc">&#39;n&#39;</span><span class="w"> </span><span class="p">(</span><span class="nx">first</span><span class="w"> </span><span class="nx">param</span><span class="p">)</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">T</span><span class="p">(</span><span class="nx">y</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w">     </span><span class="o">%</span><span class="w"> </span><span class="err">⚠️</span><span class="w">  </span><span class="nx">Still</span><span class="w"> </span><span class="nx">uses</span><span class="w"> </span><span class="sc">&#39;x&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">ignores</span><span class="w"> </span><span class="sc">&#39;y&#39;</span>
+</code></pre></div>
+
+<p><strong>Why</strong>: Parser doesn't allow specifying refinement variable separately from type parameters.</p>
+<p><strong>Workaround</strong>: Name type parameter to match desired refinement variable.</p>
+<p><strong>Fix Complexity</strong>: Low (2-3 days)</p>
+<hr />
+<h3 id="limitation-2-no-multi-variable-refinements">Limitation #2: No Multi-Variable Refinements</h3>
+<p><strong>Status</strong>: 🟡 MINOR LIMITATION<br />
+<strong>Impact</strong>: Cannot express constraints over multiple components</p>
+<p><strong>Cannot Express</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">ValidPair</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Int</span><span class="p">)</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">y</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w">        </span><span class="o">%</span><span class="w"> </span><span class="err">❌</span><span class="w"> </span><span class="nx">Not</span><span class="w"> </span><span class="nx">supported</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">SortedPair</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Int</span><span class="p">)</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">y</span><span class="w">          </span><span class="o">%</span><span class="w"> </span><span class="err">❌</span><span class="w"> </span><span class="nx">Not</span><span class="w"> </span><span class="nx">supported</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Triangle</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Int</span><span class="p">)</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">b</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="nx">c</span><span class="w">    </span><span class="o">%</span><span class="w"> </span><span class="err">❌</span><span class="w"> </span><span class="nx">Not</span><span class="w"> </span><span class="nx">supported</span>
+</code></pre></div>
+
+<p><strong>Why</strong>: Refinement type system currently single-variable only.</p>
+<p><strong>Workaround</strong>: Use function preconditions with guards instead:</p>
+<div class="codehilite"><pre><span></span><code>def process_pair(x: Int, y: Int) when x + y &gt; 0: Result = ...
+</code></pre></div>
+
+<p><strong>Fix Complexity</strong>: Medium (2-3 weeks)</p>
+<hr />
+<h3 id="limitation-3-refinement-inference-not-implemented">Limitation #3: Refinement Inference Not Implemented</h3>
+<p><strong>Status</strong>: 🟡 FEATURE NOT IMPLEMENTED<br />
+<strong>Impact</strong>: Must manually annotate refinement types</p>
+<p><strong>Current</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="s">abs(n:</span><span class="w"> </span><span class="s">Int):</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">then</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="k">end</span>
+<span class="w">    </span><span class="c">% Return type is Int, but could be inferred as Nat (x &gt;= 0)</span>
+</code></pre></div>
+
+<p><strong>Desired</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="s">abs(n:</span><span class="w"> </span><span class="s">Int):</span><span class="w"> </span><span class="s">{x:</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">then</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="k">end</span>
+<span class="w">    </span><span class="c">% Automatically infer that result is always non-negative</span>
+</code></pre></div>
+
+<p><strong>Workaround</strong>: Manually specify refinement types.</p>
+<p><strong>Fix Complexity</strong>: High (4-6 weeks) - requires sophisticated flow analysis</p>
+<hr />
+<h3 id="limitation-4-higher-order-constraints-not-supported">Limitation #4: Higher-Order Constraints Not Supported</h3>
+<p><strong>Status</strong>: 🟡 THEORETICAL LIMITATION<br />
+<strong>Impact</strong>: Cannot express complex list/array properties</p>
+<p><strong>Cannot Express</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Sorted</span><span class="p">&lt;</span><span class="nx">T</span><span class="p">&gt;</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="err">∀</span><span class="nx">i</span><span class="w"> </span><span class="nx">j</span><span class="p">.</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="nx">j</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">elem</span><span class="p">(</span><span class="nx">i</span><span class="p">)</span><span class="w"> </span><span class="err">≤</span><span class="w"> </span><span class="nx">elem</span><span class="p">(</span><span class="nx">j</span><span class="p">)</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">AllPositive</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">Int</span><span class="p">)</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="err">∀</span><span class="nx">x</span><span class="w"> </span><span class="err">∈</span><span class="w"> </span><span class="nx">list</span><span class="p">.</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span>
+</code></pre></div>
+
+<p><strong>Why</strong>: Requires array theory and higher-order logic beyond current SMT integration.</p>
+<p><strong>Workaround</strong>: Validate at runtime or use simpler constraints.</p>
+<p><strong>Fix Complexity</strong>: Very High (8+ weeks) - requires Phase 5 array theory support</p>
+<hr />
+<h2 id="13-postponed-features-clear-roadmap">1.3 Postponed Features (Clear Roadmap)</h2>
+<h3 id="phase-4-lsp-real-time-verification-10-complete">Phase 4: LSP Real-Time Verification (10% Complete)</h3>
+<p><strong>Status</strong>: 🔵 FRAMEWORK EXISTS, NOT ACTIVE<br />
+<strong>Estimated Time</strong>: 2-3 weeks</p>
+<p><strong>Current State</strong>:<br />
+- ✅ LSP module exists (<code>lsp/cure_lsp_smt.erl</code>, ~525 LOC)<br />
+- ✅ Constraint extraction framework<br />
+- ❌ Incremental solving not implemented<br />
+- ❌ Result caching not implemented<br />
+- ❌ Rich diagnostics not implemented</p>
+<p><strong>Planned Features</strong>:<br />
+1. Real-time constraint verification in editor<br />
+2. Inline display of counterexamples<br />
+3. Hover hints showing refinement types<br />
+4. Diagnostics for constraint violations<br />
+5. Quick fixes for type mismatches<br />
+6. Performance optimization for large files</p>
+<p><strong>Workaround</strong>: Run full compilation to see constraint errors.</p>
+<p><strong>Why Postponed</strong>: Core language features prioritized first.</p>
+<hr />
+<h3 id="phase-5-advanced-features-0-complete">Phase 5: Advanced Features (0% Complete)</h3>
+<p><strong>Status</strong>: 🔵 PLANNED, NOT STARTED<br />
+<strong>Estimated Time</strong>: 4-6 weeks</p>
+<p><strong>Planned Features</strong>:</p>
+<ol>
+<li>
+<p><strong>Pattern Exhaustiveness via SMT</strong><br />
+   - Prove pattern matching covers all cases<br />
+   - Suggest missing patterns<br />
+<code>cure
+   match x with
+   | 0 -&gt; "zero"
+   | n when n &gt; 0 -&gt; "positive"
+   % SMT proves: missing case for n &lt; 0</code></p>
+</li>
+<li>
+<p><strong>FSM Verification Integration</strong><br />
+   - Deadlock detection via SMT<br />
+   - Liveness property checking<br />
+   - Reachability analysis<br />
+   - State invariant verification</p>
+</li>
+<li>
+<p><strong>Guard Optimization</strong><br />
+   - Eliminate redundant guards via SMT<br />
+   - Reorder guards for performance<br />
+   - Prove guard implication</p>
+</li>
+<li>
+<p><strong>Theory Extensions</strong><br />
+   - Array theory (for list constraints)<br />
+   - String theory (for string constraints)<br />
+   - Bit-vector theory (for low-level operations)<br />
+   - Algebraic datatypes (for complex patterns)</p>
+</li>
+<li>
+<p><strong>Constraint Synthesis</strong><br />
+   - Generate constraints from examples<br />
+   - Infer refinement types from usage<br />
+   - Automatic precondition inference</p>
+</li>
+</ol>
+<p><strong>Why Postponed</strong>: Requires mature type system foundation (Phases 1-3 complete).</p>
+<hr />
+<h3 id="phase-6-dependent-type-constraints-not-scheduled">Phase 6: Dependent Type Constraints (Not Scheduled)</h3>
+<p><strong>Status</strong>: 🔵 RESEARCH PHASE<br />
+<strong>Estimated Time</strong>: Unknown (4-8 weeks?)</p>
+<p><strong>Desired Features</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">type</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">:</span><span class="w"> </span><span class="n">Nat</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="nb">length</span><span class="p">(</span><span class="n">this</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">n</span>
+
+<span class="n">def</span><span class="w"> </span><span class="s">concat&lt;T,</span><span class="w"> </span><span class="s">m:</span><span class="w"> </span><span class="s">Nat,</span><span class="w"> </span><span class="s">n:</span><span class="w"> </span><span class="s">Nat&gt;(</span>
+<span class="w">    </span><span class="n">v1</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">),</span>
+<span class="w">    </span><span class="n">v2</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">)</span>
+<span class="p">):</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="c">% SMT verifies: length(result) == m + n</span>
+<span class="w">    </span><span class="n">v1</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="n">v2</span>
+</code></pre></div>
+
+<p><strong>Why Postponed</strong>: Requires significant type system redesign.</p>
+<hr />
+<h2 id="14-smt-testing-status">1.4 SMT Testing Status</h2>
+<h3 id="test-coverage">Test Coverage</h3>
+<table>
+<thead>
+<tr>
+<th>Test Suite</th>
+<th>Tests</th>
+<th>Status</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SMT Parser</td>
+<td>5</td>
+<td>✅ 100%</td>
+<td>Model parsing</td>
+</tr>
+<tr>
+<td>SMT Process</td>
+<td>7</td>
+<td>✅ 100%</td>
+<td>Solver communication</td>
+</tr>
+<tr>
+<td>SMT Solver Integration</td>
+<td>6</td>
+<td>✅ 100%</td>
+<td>High-level API</td>
+</tr>
+<tr>
+<td>SMT Typechecker</td>
+<td>5</td>
+<td>✅ 100%</td>
+<td>Type system integration</td>
+</tr>
+<tr>
+<td>SMT Translator Extended</td>
+<td>15</td>
+<td>✅ 100%</td>
+<td>Quantifiers, operators</td>
+</tr>
+<tr>
+<td>SMT Nat Constraints</td>
+<td>4</td>
+<td>✅ 100%</td>
+<td>Nat type generation</td>
+</tr>
+<tr>
+<td>SMT Refinement Subtyping</td>
+<td>4</td>
+<td>✅ 100%</td>
+<td>Subtyping via SMT</td>
+</tr>
+<tr>
+<td>SMT Refinement Integration</td>
+<td>4</td>
+<td>✅ 100%</td>
+<td>Unification integration</td>
+</tr>
+<tr>
+<td><strong>TOTAL</strong></td>
+<td><strong>50</strong></td>
+<td><strong>✅ 100%</strong></td>
+<td><strong>~85% code coverage</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="missing-test-coverage">Missing Test Coverage</h3>
+<ul>
+<li>❌ Array theory (Phase 5)</li>
+<li>❌ String theory (Phase 5)</li>
+<li>❌ Bit-vector theory (Phase 5)</li>
+<li>❌ LSP integration (Phase 4)</li>
+<li>❌ Pattern synthesis (Phase 5)</li>
+</ul>
+<hr />
+<h2 id="15-smt-overall-progress">1.5 SMT Overall Progress</h2>
+<p><strong>Phase Breakdown</strong>:<br />
+- ✅ Phase 1 (Core): 100% - 4-5 weeks of work<br />
+- ✅ Phase 2 (Enhanced): 100% - 2-3 weeks of work<br />
+- ✅ Phase 3 (Type System): 100% - 3-4 weeks of work<br />
+- 🟡 Phase 4 (LSP): 10% - 2-3 weeks remaining<br />
+- ⬜ Phase 5 (Advanced): 0% - 4-6 weeks remaining<br />
+- ⬜ Phase 6 (Dependent): 0% - 4-8 weeks remaining</p>
+<p><strong>Total Progress</strong>: ~55% complete<br />
+<strong>Production Ready</strong>: ✅ Yes (for Phases 1-3 features)<br />
+<strong>Estimated Time to 100%</strong>: 10-17 weeks from now</p>
+<hr />
+<h1 id="part-2-fsm-integration">Part 2: FSM Integration</h1>
+<h2 id="21-what-works-today-production-ready">2.1 What Works Today (Production-Ready) ✅</h2>
+<h3 id="core-fsm-implementation-100-complete">Core FSM Implementation (100% Complete)</h3>
+<p><strong>Status</strong>: ✅ FULLY FUNCTIONAL<br />
+<strong>Test Results</strong>: All FSM tests passing</p>
+<p><strong>FSM Definition</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">fsm</span><span class="w"> </span><span class="n">TrafficLight</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">payload</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">timer_duration</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">states</span><span class="w"> </span><span class="p">[</span><span class="n">Green</span><span class="p">,</span><span class="w"> </span><span class="n">Yellow</span><span class="p">,</span><span class="w"> </span><span class="n">Red</span><span class="p">]</span>
+<span class="w">  </span><span class="n">initial</span><span class="w"> </span><span class="n">Green</span>
+
+<span class="w">  </span><span class="n">state</span><span class="w"> </span><span class="n">Green</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">on</span><span class="w"> </span><span class="n">timer</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Yellow</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">timer_duration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3000</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="n">end</span>
+
+<span class="w">  </span><span class="n">state</span><span class="w"> </span><span class="n">Yellow</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">on</span><span class="w"> </span><span class="n">timer</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Red</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">timer_duration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5000</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="n">end</span>
+
+<span class="w">  </span><span class="n">state</span><span class="w"> </span><span class="n">Red</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">on</span><span class="w"> </span><span class="n">timer</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Green</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">timer_duration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="n">end</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<p><strong>Arrow Syntax</strong> (Modern):</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Green</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Yellow</span>
+<span class="n">Yellow</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+<span class="n">Red</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Green</span>
+</code></pre></div>
+
+<p><strong>FSM Runtime Features</strong>:<br />
+- ✅ gen_server-based execution<br />
+- ✅ Event processing (&lt;200μs average)<br />
+- ✅ State transitions with O(1) lookup<br />
+- ✅ Timeout handling (reliable)<br />
+- ✅ Batch event processing (2-5x speedup)<br />
+- ✅ Error recovery (graceful)<br />
+- ✅ Memory management (bounded history)<br />
+- ✅ Concurrency support (100+ FSMs tested)</p>
+<p><strong>Action Instructions (30+)</strong>:<br />
+- Data structures: <code>make_tuple</code>, <code>make_list</code>, <code>make_map</code><br />
+- Pattern matching: <code>pattern_match</code>, <code>load_var</code>, <code>store_var</code><br />
+- Control flow: <code>load_literal</code>, <code>binary_op</code>, <code>set_payload</code><br />
+- State management: <code>assign_state_var</code>, <code>update_state_field</code></p>
+<p><strong>Guard BIFs (30+)</strong>:<br />
+- Arithmetic: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>div</code>, <code>rem</code>, <code>abs</code>, <code>ceil</code>, <code>floor</code><br />
+- Comparison: <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>=&lt;</code>, <code>&gt;=</code><br />
+- Logic: <code>and</code>, <code>or</code>, <code>not</code>, <code>andalso</code>, <code>orelse</code><br />
+- Type checks: <code>is_atom</code>, <code>is_list</code>, <code>is_number</code>, etc.</p>
+<hr />
+<h3 id="fsm-standard-library-api">FSM Standard Library API</h3>
+<p><strong>Lifecycle</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">fsm_spawn</span><span class="p">(</span><span class="nv">FsmName</span><span class="p">,</span><span class="w"> </span><span class="nv">InitPayload</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Pid</span>
+<span class="nf">fsm_stop</span><span class="p">(</span><span class="nv">Pid</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span>
+</code></pre></div>
+
+<p><strong>Messaging</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">fsm_cast</span><span class="p">(</span><span class="nv">Pid</span><span class="p">,</span><span class="w"> </span><span class="nv">Event</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="w">              </span><span class="c">% Async</span>
+<span class="nf">fsm_call</span><span class="p">(</span><span class="nv">Pid</span><span class="p">,</span><span class="w"> </span><span class="nv">Event</span><span class="p">,</span><span class="w"> </span><span class="nv">Timeout</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Reply</span><span class="w">  </span><span class="c">% Sync</span>
+<span class="nf">fsm_send_batch</span><span class="p">(</span><span class="nv">Pid</span><span class="p">,</span><span class="w"> </span><span class="nv">Events</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="w">       </span><span class="c">% Batch</span>
+</code></pre></div>
+
+<p><strong>State Management</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">fsm_state</span><span class="p">(</span><span class="nv">Pid</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">State</span>
+<span class="nf">fsm_info</span><span class="p">(</span><span class="nv">Pid</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">#{</span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">,</span><span class="w"> </span><span class="n">history</span><span class="p">,</span><span class="w"> </span><span class="p">...}</span>
+<span class="nf">fsm_history</span><span class="p">(</span><span class="nv">Pid</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">[</span><span class="nv">Event</span><span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Registration</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">fsm_advertise</span><span class="p">(</span><span class="nv">Pid</span><span class="p">,</span><span class="w"> </span><span class="nv">Name</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span>
+<span class="nf">fsm_whereis</span><span class="p">(</span><span class="nv">Name</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Pid</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="n">undefined</span>
+</code></pre></div>
+
+<p><strong>Working Examples</strong>:<br />
+- ✅ <code>examples/06_fsm_traffic_light.cure</code> - Basic FSM<br />
+- ✅ <code>examples/06_fsm_traffic_light_enhanced.cure</code> - Advanced FSM<br />
+- ⚠️ <code>examples/07_fsm_verification.cure</code> - BROKEN (see Issue #2)</p>
+<hr />
+<h3 id="fsm-verification-system">FSM Verification System</h3>
+<p><strong>Static Verification</strong> (via <code>cure_fsm_verifier.erl</code>):<br />
+- ✅ Deadlock detection (graph analysis)<br />
+- ✅ Reachability analysis (BFS algorithm)<br />
+- ✅ Liveness checking (terminating states)<br />
+- ✅ Safety property checking (bad states)<br />
+- ✅ SMT integration stub (ready for Phase 5)</p>
+<p><strong>Runtime Monitoring</strong> (via <code>cure_fsm_monitor.erl</code>):<br />
+- ✅ Safety monitors (bad state detection)<br />
+- ✅ Liveness monitors (progress checking)<br />
+- ✅ Deadlock monitors (stuck state detection)<br />
+- ✅ Custom monitors (user-defined properties)<br />
+- ✅ Violation reporting with counterexamples</p>
+<p><strong>Type Safety</strong> (via <code>cure_fsm_typesafety.erl</code>):<br />
+- ✅ Payload type checking (state-dependent)<br />
+- ✅ Event type checking (consistent typing)<br />
+- ✅ Guard constraint checking (boolean refinements)<br />
+- ✅ Action type preservation</p>
+<hr />
+<h2 id="22-critical-issues">2.2 Critical Issues</h2>
+<h3 id="issue-1-fsm-registration-requires-manual-call">Issue #1: FSM Registration Requires Manual Call</h3>
+<p><strong>Status</strong>: 🔴 CRITICAL (BY DESIGN)<br />
+<strong>Impact</strong>: Cannot use FSMs without explicit registration call</p>
+<p><strong>Problem</strong>:<br />
+The <code>on_load</code> module hook was disabled because:<br />
+1. ETS table ownership issue (on_load process is temporary)<br />
+2. Table gets deleted when process exits<br />
+3. <code>{heir, none}</code> doesn't prevent deletion (Erlang limitation)</p>
+<p><strong>Current Requirement</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Must explicitly register FSMs before running</span>
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-eval<span class="w"> </span><span class="s2">&quot;</span>
+<span class="s2">&#39;MyModule&#39;:register_fsms(),</span>
+<span class="s2">&#39;MyModule&#39;:main().</span>
+<span class="s2">&quot;</span><span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+</code></pre></div>
+
+<p><strong>Cannot Do This</strong> (in Cure code):</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">register_fsms</span><span class="p">()</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="err">❌</span><span class="w"> </span><span class="nl">ERROR:</span><span class="w"> </span><span class="n">Not</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="n">scope</span><span class="w"> </span><span class="p">(</span><span class="n">Erlang</span><span class="w"> </span><span class="k">function</span><span class="p">)</span>
+<span class="w">  </span><span class="n">let</span><span class="w"> </span><span class="n">fsm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fsm_spawn</span><span class="p">(</span><span class="o">:</span><span class="n">TrafficLight</span><span class="p">,</span><span class="w"> </span><span class="p">...)</span>
+<span class="w">  </span><span class="p">...</span>
+</code></pre></div>
+
+<p><strong>Workarounds</strong>:</p>
+<ol>
+<li><strong>Shell Script Wrapper</strong>:</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="ch">#!/bin/bash</span>
+./cure<span class="w"> </span>examples/myfsm.cure
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-eval<span class="w"> </span><span class="s2">&quot;&#39;MyModule&#39;:register_fsms(), &#39;MyModule&#39;:main().&quot;</span><span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+</code></pre></div>
+
+<ol start="2">
+<li><strong>Application Supervisor</strong> (production):</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="p">-</span><span class="ni">module</span><span class="p">(</span><span class="n">my_app</span><span class="p">).</span>
+<span class="p">-</span><span class="ni">behaviour</span><span class="p">(</span><span class="n">application</span><span class="p">).</span>
+
+<span class="nf">start</span><span class="p">(_</span><span class="nv">Type</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="nv">Args</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="nn">&#39;MyModule&#39;</span><span class="p">:</span><span class="nf">register_fsms</span><span class="p">(),</span>
+<span class="w">    </span><span class="nn">my_app_sup</span><span class="p">:</span><span class="nf">start_link</span><span class="p">().</span>
+</code></pre></div>
+
+<p><strong>Future Fix Options</strong>:<br />
+1. Create FSM registry application/supervisor<br />
+2. Transfer ETS ownership to persistent process<br />
+3. Use global named process for registry<br />
+4. Implement module initialization callback system</p>
+<p><strong>Estimated Time</strong>: 2-3 days</p>
+<p><strong>Why Not Fixed</strong>: Requires architectural decision on ETS table lifecycle management.</p>
+<hr />
+<h3 id="issue-2-multiple-fsms-per-module-not-supported">Issue #2: Multiple FSMs Per Module Not Supported</h3>
+<p><strong>Status</strong>: 🔴 CRITICAL<br />
+<strong>Impact</strong>: Cannot define multiple FSM types in one module</p>
+<p><strong>Problem</strong>:<br />
+Type inference fails with multiple FSM definitions and long functions (170+ lines):</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="s">ComplexFSMs</span><span class="w"> </span><span class="s">do</span>
+<span class="w">  </span><span class="n">fsm</span><span class="w"> </span><span class="n">CounterState</span><span class="w"> </span><span class="p">{</span><span class="k">...</span><span class="c">} do ... end     % FSM 1</span>
+<span class="w">  </span><span class="n">fsm</span><span class="w"> </span><span class="n">LightState</span><span class="w"> </span><span class="p">{</span><span class="k">...</span><span class="c">} do ... end       % FSM 2</span>
+<span class="w">  </span><span class="n">fsm</span><span class="w"> </span><span class="n">WorkflowState</span><span class="w"> </span><span class="p">{</span><span class="k">...</span><span class="c">} do ... end    % FSM 3</span>
+
+<span class="w">  </span><span class="n">def</span><span class="w"> </span><span class="n">main</span><span class="p">():</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">let</span><span class="w"> </span><span class="n">counter</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">CounterState</span><span class="p">,</span><span class="w"> </span><span class="k">...</span><span class="c">)</span>
+<span class="w">    </span><span class="n">let</span><span class="w"> </span><span class="nb">light</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">fsm_spawn</span><span class="p">(:</span><span class="n">LightState</span><span class="p">,</span><span class="w"> </span><span class="k">...</span><span class="c">)</span>
+<span class="w">    </span><span class="c">% ❌ ERROR: Type checker loses track of bindings</span>
+<span class="w">    </span><span class="k">...</span>
+</code></pre></div>
+
+<p><strong>Error Message</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Type</span><span class="w"> </span><span class="n">Checking</span><span class="w"> </span><span class="n">failed</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">type_check_failed</span><span class="p">,</span>
+<span class="w">    </span><span class="p">{</span><span class="n">inference_failed</span><span class="p">,</span>
+<span class="w">        </span><span class="p">{</span><span class="n">unbound_variable</span><span class="p">,</span><span class="w"> </span><span class="n">counter_fsm</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">location</span><span class="p">,</span><span class="mi">135</span><span class="p">,</span><span class="mi">14</span><span class="p">,</span><span class="n">undefined</span><span class="p">}}}}</span>
+</code></pre></div>
+
+<p><strong>Root Cause</strong>:<br />
+- Type inference has difficulty with multiple FSM type definitions<br />
+- Long functions (170+ lines) with many let bindings<br />
+- Complex variable scoping in the presence of FSMs</p>
+<p><strong>Workaround</strong>: <br />
+Split into separate modules (one FSM per module):</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="n">CounterFSM</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">fsm</span><span class="w"> </span><span class="n">CounterState</span><span class="w"> </span><span class="p">{</span><span class="o">...</span><span class="p">}</span><span class="w"> </span><span class="n">do</span><span class="w"> </span><span class="o">...</span><span class="w"> </span><span class="n">end</span>
+<span class="n">end</span>
+
+<span class="n">module</span><span class="w"> </span><span class="n">LightFSM</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">fsm</span><span class="w"> </span><span class="n">LightState</span><span class="w"> </span><span class="p">{</span><span class="o">...</span><span class="p">}</span><span class="w"> </span><span class="n">do</span><span class="w"> </span><span class="o">...</span><span class="w"> </span><span class="n">end</span>
+<span class="n">end</span>
+
+<span class="n">module</span><span class="w"> </span><span class="n">Main</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="kn">import</span><span class="w"> </span><span class="nn">CounterFSM</span>
+<span class="w">  </span><span class="kn">import</span><span class="w"> </span><span class="nn">LightFSM</span>
+
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">...</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<p><strong>Documented In</strong>: <code>docs/07_FSM_VERIFICATION_KNOWN_ISSUE.md</code></p>
+<p><strong>Estimated Time</strong>: 1-2 weeks (type inference improvement)</p>
+<p><strong>Why Not Fixed</strong>: Requires significant type inference system enhancement.</p>
+<hr />
+<h2 id="23-minor-limitations-postponed-features">2.3 Minor Limitations &amp; Postponed Features</h2>
+<h3 id="limitation-1-no-fsm-verification-tools-ui">Limitation #1: No FSM Verification Tools UI</h3>
+<p><strong>Status</strong>: 🟡 MINOR (PLANNED FEATURE)<br />
+<strong>Impact</strong>: Cannot prove FSM properties at compile time in user-friendly way</p>
+<p><strong>Missing</strong>:</p>
+<div class="codehilite"><pre><span></span><code>fsm TrafficLight {...} do
+  verify deadlock_free      % ❌ Not exposed in language
+  verify all_reachable      % ❌ Not exposed in language
+  verify cyclic             % ❌ Not exposed in language
+end
+</code></pre></div>
+
+<p><strong>Current Status</strong>: <br />
+- Verification code exists in <code>cure_fsm_verifier.erl</code><br />
+- Must call Erlang functions directly<br />
+- Not integrated into compiler pipeline</p>
+<p><strong>Workaround</strong>: Manually inspect FSM definitions or call verifier from Erlang.</p>
+<p><strong>Related</strong>: SMT Phase 5 includes FSM verification integration.</p>
+<p><strong>Estimated Time</strong>: 3-4 weeks (requires SMT Phase 5 completion)</p>
+<hr />
+<h3 id="limitation-2-limited-fsm-timeout-support">Limitation #2: Limited FSM Timeout Support</h3>
+<p><strong>Status</strong>: 🟡 MINOR<br />
+<strong>Impact</strong>: Timeouts work but lack flexibility</p>
+<p><strong>Current Support</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">State1</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timeout</span><span class="o">|</span><span class="w"> </span><span class="n">State2</span><span class="w"> </span><span class="n">after</span><span class="w"> </span><span class="mi">5000</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="n">Fixed</span><span class="w"> </span><span class="n">timeout</span>
+</code></pre></div>
+
+<p><strong>Missing</strong>:<br />
+- Dynamic timeouts based on state data<br />
+- Timeout cancellation<br />
+- Multiple concurrent timeouts per state<br />
+- Timeout priority/ordering</p>
+<p><strong>Workaround</strong>: Use external timer process and send events manually.</p>
+<p><strong>Estimated Time</strong>: 1-2 weeks</p>
+<hr />
+<h3 id="limitation-3-no-hot-code-reloading-for-fsms">Limitation #3: No Hot Code Reloading for FSMs</h3>
+<p><strong>Status</strong>: 🟡 MINOR<br />
+<strong>Impact</strong>: FSM processes don't upgrade on code reload</p>
+<p><strong>Problem</strong>:<br />
+When recompiling FSM definitions:<br />
+1. Old FSM processes continue running old code<br />
+2. No automatic state migration<br />
+3. Must manually restart FSM instances</p>
+<p><strong>Workaround</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">fsm_stop</span><span class="p">(</span><span class="nv">OldPid</span><span class="p">),</span>
+<span class="nv">NewPid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fsm_spawn</span><span class="p">(...).</span>
+</code></pre></div>
+
+<p><strong>Future Enhancement</strong>: Implement FSM upgrade callbacks (similar to gen_server code_change).</p>
+<p><strong>Estimated Time</strong>: 2-3 weeks</p>
+<hr />
+<h3 id="postponed-feature-1-fsm-composition">Postponed Feature #1: FSM Composition</h3>
+<p><strong>Status</strong>: 🔵 PLANNED (NOT IN CURRENT ROADMAP)<br />
+<strong>Impact</strong>: Cannot build hierarchical or concurrent FSM systems</p>
+<p><strong>Desired</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Hierarchical FSMs</span>
+<span class="n">fsm</span><span class="w"> </span><span class="s">ParentSystem</span><span class="w"> </span><span class="s">do</span>
+<span class="w">  </span><span class="n">state</span><span class="w"> </span><span class="n">Active</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">sub_fsm</span><span class="w"> </span><span class="n">ChildSystem</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="k">end</span>
+
+<span class="c">% Parallel FSMs</span>
+<span class="n">fsm</span><span class="w"> </span><span class="s">CompositeSystem</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="n">parallel</span><span class="p">(</span>
+<span class="w">    </span><span class="n">TrafficLight</span><span class="p">,</span>
+<span class="w">    </span><span class="n">PedestrianSignal</span><span class="p">,</span>
+<span class="w">    </span><span class="n">EmergencyOverride</span>
+<span class="w">  </span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Use Cases</strong>:<br />
+- Hierarchical state machines<br />
+- Concurrent FSM coordination<br />
+- FSM inheritance/delegation<br />
+- State chart modeling</p>
+<p><strong>Estimated Time</strong>: 3-4 weeks</p>
+<hr />
+<h3 id="postponed-feature-2-fsm-visual-tools">Postponed Feature #2: FSM Visual Tools</h3>
+<p><strong>Status</strong>: 🔵 PLANNED (NOT IN CURRENT ROADMAP)<br />
+<strong>Impact</strong>: No graphical FSM debugging/visualization</p>
+<p><strong>Desired Tools</strong>:<br />
+- FSM diagram generation (Mermaid/GraphViz)<br />
+- Interactive FSM debugger<br />
+- FSM simulation/testing UI<br />
+- State transition visualizer<br />
+- Event trace analyzer</p>
+<p><strong>Current Status</strong>: Must use external tools or manual inspection.</p>
+<p><strong>Estimated Time</strong>: 4-6 weeks</p>
+<hr />
+<h3 id="postponed-feature-3-fsm-performance-monitoring">Postponed Feature #3: FSM Performance Monitoring</h3>
+<p><strong>Status</strong>: 🟡 PARTIAL (30% COMPLETE)<br />
+<strong>Impact</strong>: Limited performance insights</p>
+<p><strong>Current Support</strong>:<br />
+- ✅ Basic event counters<br />
+- ✅ State history (last N events)<br />
+- ✅ Can use Erlang's <code>:observer</code> application</p>
+<p><strong>Missing</strong>:<br />
+- Detailed performance metrics dashboard<br />
+- Event processing latency tracking<br />
+- State dwell time analysis<br />
+- Transition frequency statistics<br />
+- Memory usage per FSM instance<br />
+- Bottleneck detection</p>
+<p><strong>Estimated Time</strong>: 2-3 weeks</p>
+<hr />
+<h2 id="24-fsm-testing-status">2.4 FSM Testing Status</h2>
+<h3 id="test-coverage_1">Test Coverage</h3>
+<table>
+<thead>
+<tr>
+<th>Test Suite</th>
+<th>Tests</th>
+<th>Status</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FSM Core</td>
+<td>6</td>
+<td>✅ 100%</td>
+<td>Basic functionality</td>
+</tr>
+<tr>
+<td>FSM Enhanced</td>
+<td>6</td>
+<td>✅ 100%</td>
+<td>Advanced features</td>
+</tr>
+<tr>
+<td>FSM Comprehensive</td>
+<td>6</td>
+<td>✅ 100%</td>
+<td>Performance &amp; stress</td>
+</tr>
+<tr>
+<td><strong>TOTAL</strong></td>
+<td><strong>18</strong></td>
+<td><strong>✅ 100%</strong></td>
+<td><strong>~80% code coverage</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="working-examples">Working Examples</h3>
+<ul>
+<li>✅ <code>06_fsm_traffic_light.cure</code> (Basic FSM)</li>
+<li>✅ <code>06_fsm_traffic_light_enhanced.cure</code> (Advanced FSM)</li>
+<li>❌ <code>07_fsm_verification.cure</code> (Multiple FSMs - BROKEN)</li>
+</ul>
+<h3 id="performance-benchmarks">Performance Benchmarks</h3>
+<ul>
+<li>Event processing: ~155 μs/event (target: &lt;200 μs) ✅</li>
+<li>Throughput: ~6,500 events/sec (target: &gt;5K/sec) ✅</li>
+<li>Concurrent FSMs: 100+ tested ✅</li>
+<li>Batch speedup: ~2.3x vs individual ✅</li>
+</ul>
+<hr />
+<h2 id="25-fsm-overall-progress">2.5 FSM Overall Progress</h2>
+<p><strong>Component Breakdown</strong>:<br />
+- ✅ Core Implementation: 100%<br />
+- ✅ Standard Library API: 100%<br />
+- ✅ Runtime System: 100%<br />
+- ✅ Verification Framework: 100%<br />
+- ⚠️ Type System Integration: 90% (multiple FSMs issue)<br />
+- ⬜ Verification Tools UI: 0%<br />
+- ⬜ Advanced Features: 30%<br />
+- ⬜ Visual Tools: 0%</p>
+<p><strong>Total Progress</strong>: ~85% complete<br />
+<strong>Production Ready</strong>: ✅ Yes (with workarounds for critical issues)<br />
+<strong>Estimated Time to 100%</strong>: 4-6 weeks</p>
+<hr />
+<h1 id="part-3-smt-fsm-integration">Part 3: SMT-FSM Integration</h1>
+<h2 id="31-current-status-not-integrated">3.1 Current Status: NOT INTEGRATED</h2>
+<p><strong>Status</strong>: 🔵 PLANNED FOR PHASE 5<br />
+<strong>Estimated Time</strong>: 4-5 weeks (after both systems mature)</p>
+<h3 id="desired-integration">Desired Integration</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">fsm</span><span class="w"> </span><span class="n">VerifiedController</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">payload</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">balance</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">}</span>
+
+<span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="n">SMT</span><span class="o">-</span><span class="n">verified</span><span class="w"> </span><span class="n">invariant</span>
+<span class="w">  </span><span class="n">invariant</span><span class="p">:</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="w">  </span><span class="n">state</span><span class="w"> </span><span class="n">Active</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">on</span><span class="w"> </span><span class="n">withdraw</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Active</span>
+<span class="w">      </span><span class="n">when</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">balance</span><span class="w">     </span><span class="o">%</span><span class="w"> </span><span class="n">SMT</span><span class="o">-</span><span class="n">checked</span><span class="w"> </span><span class="n">precondition</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="n">end</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<h3 id="missing-capabilities">Missing Capabilities</h3>
+<ol>
+<li>
+<p><strong>FSM State Invariant Checking</strong><br />
+   - Prove invariants hold across all transitions<br />
+   - Generate counterexamples for violations</p>
+</li>
+<li>
+<p><strong>FSM Deadlock Detection via SMT</strong><br />
+   - Prove no state lacks outgoing transitions<br />
+   - Prove all states reachable from initial</p>
+</li>
+<li>
+<p><strong>FSM Refinement Verification</strong><br />
+   - Prove one FSM refines another<br />
+   - Check behavioral subtyping</p>
+</li>
+</ol>
+<h3 id="current-workaround">Current Workaround</h3>
+<p>Manually add guards and verify correctness through testing.</p>
+<hr />
+<h1 id="part-4-priority-recommendations">Part 4: Priority Recommendations</h1>
+<h2 id="immediate-next-2-weeks">Immediate (Next 2 Weeks)</h2>
+<ol>
+<li>
+<p>🔴 <strong>FSM Registration Fix</strong> - Proper ETS ownership (2-3 days)<br />
+   - Priority: HIGH<br />
+   - Impact: Removes critical usability issue</p>
+</li>
+<li>
+<p>🔴 <strong>FSM Multiple Definition Fix</strong> - Type inference improvement (1-2 weeks)<br />
+   - Priority: HIGH<br />
+   - Impact: Enables complex FSM applications</p>
+</li>
+</ol>
+<h2 id="short-term-next-4-weeks">Short Term (Next 4 Weeks)</h2>
+<ol start="3">
+<li>
+<p>🟡 <strong>SMT User Guide</strong> - Documentation (3-4 days)<br />
+   - Priority: MEDIUM<br />
+   - Impact: Improves usability</p>
+</li>
+<li>
+<p>🟡 <strong>FSM Best Practices</strong> - Documentation (2-3 days)<br />
+   - Priority: MEDIUM<br />
+   - Impact: Helps users write better FSMs</p>
+</li>
+</ol>
+<h2 id="medium-term-next-8-weeks">Medium Term (Next 8 Weeks)</h2>
+<ol start="5">
+<li>
+<p>🟢 <strong>SMT Phase 4</strong> - LSP integration (2-3 weeks)<br />
+   - Priority: MEDIUM<br />
+   - Impact: Real-time verification in editor</p>
+</li>
+<li>
+<p>🟢 <strong>FSM Verification Tools</strong> - Compile-time checking (3-4 weeks)<br />
+   - Priority: MEDIUM<br />
+   - Impact: Catch FSM bugs earlier</p>
+</li>
+</ol>
+<h2 id="long-term-next-16-weeks">Long Term (Next 16 Weeks)</h2>
+<ol start="7">
+<li>
+<p>🔵 <strong>SMT Phase 5</strong> - Advanced features (4-6 weeks)<br />
+   - Priority: LOW<br />
+   - Impact: Pattern synthesis, array theory</p>
+</li>
+<li>
+<p>🔵 <strong>SMT-FSM Integration</strong> - Deep integration (4-5 weeks)<br />
+   - Priority: LOW<br />
+   - Impact: Formal FSM verification</p>
+</li>
+<li>
+<p>🔵 <strong>FSM Composition</strong> - Hierarchical FSMs (3-4 weeks)<br />
+   - Priority: LOW<br />
+   - Impact: Complex system modeling</p>
+</li>
+</ol>
+<hr />
+<h1 id="part-5-complete-feature-matrix">Part 5: Complete Feature Matrix</h1>
+<h2 id="smt-features">SMT Features</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Phase</th>
+<th>Status</th>
+<th>Tests</th>
+<th>Production Ready</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Basic constraint solving</td>
+<td>1</td>
+<td>✅ 100%</td>
+<td>23/23</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>CLI configuration</td>
+<td>2</td>
+<td>✅ 100%</td>
+<td>Verified</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Enhanced errors</td>
+<td>2</td>
+<td>✅ 100%</td>
+<td>Verified</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Quantifiers (∀, ∃)</td>
+<td>2</td>
+<td>✅ 100%</td>
+<td>15/15</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Refinement types</td>
+<td>3</td>
+<td>✅ 100%</td>
+<td>12/12</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Type unification</td>
+<td>3</td>
+<td>✅ 100%</td>
+<td>4/4</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Nat constraints</td>
+<td>3</td>
+<td>✅ 100%</td>
+<td>4/4</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>LSP integration</td>
+<td>4</td>
+<td>🟡 10%</td>
+<td>-</td>
+<td>❌ No</td>
+</tr>
+<tr>
+<td>Pattern synthesis</td>
+<td>5</td>
+<td>⬜ 0%</td>
+<td>-</td>
+<td>❌ No</td>
+</tr>
+<tr>
+<td>Array theory</td>
+<td>5</td>
+<td>⬜ 0%</td>
+<td>-</td>
+<td>❌ No</td>
+</tr>
+<tr>
+<td>FSM verification</td>
+<td>5</td>
+<td>⬜ 0%</td>
+<td>-</td>
+<td>❌ No</td>
+</tr>
+<tr>
+<td>Dependent types</td>
+<td>6</td>
+<td>⬜ 0%</td>
+<td>-</td>
+<td>❌ No</td>
+</tr>
+</tbody>
+</table>
+<h2 id="fsm-features">FSM Features</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Component</th>
+<th>Status</th>
+<th>Tests</th>
+<th>Production Ready</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FSM definition</td>
+<td>Parser</td>
+<td>✅ 100%</td>
+<td>18/18</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>FSM compilation</td>
+<td>Compiler</td>
+<td>✅ 100%</td>
+<td>18/18</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>FSM runtime</td>
+<td>Runtime</td>
+<td>✅ 100%</td>
+<td>18/18</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Event processing</td>
+<td>Runtime</td>
+<td>✅ 100%</td>
+<td>6/6</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>State transitions</td>
+<td>Runtime</td>
+<td>✅ 100%</td>
+<td>6/6</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Timeout handling</td>
+<td>Runtime</td>
+<td>✅ 100%</td>
+<td>Verified</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Static verification</td>
+<td>Verifier</td>
+<td>✅ 100%</td>
+<td>Verified</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Runtime monitoring</td>
+<td>Monitor</td>
+<td>✅ 100%</td>
+<td>Verified</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Type safety</td>
+<td>Type System</td>
+<td>✅ 100%</td>
+<td>Verified</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Standard library API</td>
+<td>Stdlib</td>
+<td>✅ 100%</td>
+<td>2/3 examples</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>FSM registration</td>
+<td>Runtime</td>
+<td>🔴 ISSUE</td>
+<td>-</td>
+<td>⚠️ With workaround</td>
+</tr>
+<tr>
+<td>Multiple FSMs/module</td>
+<td>Type System</td>
+<td>🔴 ISSUE</td>
+<td>-</td>
+<td>⚠️ Split modules</td>
+</tr>
+<tr>
+<td>Verification UI</td>
+<td>Compiler</td>
+<td>⬜ 0%</td>
+<td>-</td>
+<td>❌ No</td>
+</tr>
+<tr>
+<td>Hot code reload</td>
+<td>Runtime</td>
+<td>🟡 30%</td>
+<td>-</td>
+<td>⚠️ Manual restart</td>
+</tr>
+<tr>
+<td>FSM composition</td>
+<td>Language</td>
+<td>⬜ 0%</td>
+<td>-</td>
+<td>❌ No</td>
+</tr>
+<tr>
+<td>Visual tools</td>
+<td>Tooling</td>
+<td>⬜ 0%</td>
+<td>-</td>
+<td>❌ No</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="part-6-documentation-status">Part 6: Documentation Status</h1>
+<h2 id="existing-documentation">Existing Documentation ✅</h2>
+<h3 id="smt">SMT</h3>
+<ul>
+<li>✅ Phase 1 completion report</li>
+<li>✅ Phase 2 completion report</li>
+<li>✅ Phase 3 completion report</li>
+<li>✅ Integration status report</li>
+<li>✅ Module API documentation</li>
+<li>✅ Test examples</li>
+</ul>
+<h3 id="fsm">FSM</h3>
+<ul>
+<li>✅ Implementation complete report</li>
+<li>✅ API reference</li>
+<li>✅ Syntax guide</li>
+<li>✅ Working examples (2)</li>
+<li>✅ Known issues documentation</li>
+</ul>
+<h2 id="missing-documentation">Missing Documentation ❌</h2>
+<h3 id="smt_1">SMT</h3>
+<ul>
+<li>❌ User guide (how to use refinement types)</li>
+<li>❌ Tutorial (step-by-step examples)</li>
+<li>❌ Best practices</li>
+<li>❌ Troubleshooting guide</li>
+<li>❌ Performance tuning</li>
+</ul>
+<h3 id="fsm_1">FSM</h3>
+<ul>
+<li>❌ Best practices</li>
+<li>❌ Performance tuning</li>
+<li>❌ Production deployment guide</li>
+<li>❌ Migration guide</li>
+</ul>
+<hr />
+<h1 id="part-7-summary-recommendations">Part 7: Summary &amp; Recommendations</h1>
+<h2 id="what-works-today-production-ready">What Works Today (Production-Ready) ✅</h2>
+<p><strong>SMT</strong>:<br />
+- Basic constraint solving (arithmetic, logic, comparisons)<br />
+- Quantified formulas (∀, ∃)<br />
+- Refinement types with SMT-based subtyping<br />
+- CLI configuration and error messages<br />
+- 50/50 tests passing</p>
+<p><strong>FSM</strong>:<br />
+- Complete FSM definition and compilation<br />
+- Production-grade runtime (gen_server-based)<br />
+- Static verification (deadlock, reachability)<br />
+- Runtime monitoring<br />
+- Standard library API<br />
+- 18/18 tests passing</p>
+<h2 id="critical-issues-need-attention">Critical Issues (Need Attention) 🔴</h2>
+<ol>
+<li><strong>FSM registration requires manual call</strong> - 2-3 day fix</li>
+<li><strong>Multiple FSMs per module fail type checking</strong> - 1-2 week fix</li>
+</ol>
+<h2 id="whats-postponed-clear-roadmap">What's Postponed (Clear Roadmap) 📋</h2>
+<p><strong>SMT</strong>:<br />
+- Phase 4: LSP integration (~2-3 weeks)<br />
+- Phase 5: Advanced features (~4-6 weeks)<br />
+- Phase 6: Dependent types (~4-8 weeks)</p>
+<p><strong>FSM</strong>:<br />
+- Verification tools UI (~3-4 weeks)<br />
+- FSM composition (~3-4 weeks)<br />
+- Visual tools (~4-6 weeks)<br />
+- Advanced monitoring (~2-3 weeks)</p>
+<p><strong>Integration</strong>:<br />
+- SMT-FSM deep integration (~4-5 weeks)</p>
+<h2 id="overall-assessment">Overall Assessment</h2>
+<p>Both systems are <strong>production-ready for core use cases</strong>:</p>
+<ul>
+<li>✅ Use SMT for refinement types and constraint solving</li>
+<li>✅ Use FSM for state machine modeling and execution</li>
+<li>✅ ~55% SMT completion, ~85% FSM completion</li>
+<li>✅ Clear roadmap for remaining features</li>
+<li>⚠️ 2 critical FSM issues have workarounds</li>
+</ul>
+<p><strong>Recommendation</strong>: Deploy to production for core features. Critical issues are manageable with documented workarounds. Continue development of advanced features in parallel.</p>
+<hr />
+<p><strong>Total Code</strong>: ~9,000 LOC (compiler + runtime)<br />
+<strong>Total Tests</strong>: 68 tests, 66 passing (97%)<br />
+<strong>Documentation</strong>: 8 comprehensive reports<br />
+<strong>Production Status</strong>: ✅ READY (with workarounds)</p>
+<hr />
+<p><strong>Document Version</strong>: 2.0<br />
+<strong>Last Updated</strong>: 2025-11-19<br />
+<strong>Next Review</strong>: After critical issues resolved (2-3 weeks)<br />
+<strong>Authors</strong>: Cure Development Team</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

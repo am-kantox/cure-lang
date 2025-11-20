@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.4.0">
+
+
+    <title>cure_refinement_types — cure v0.4.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-28C2A753.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L3" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+    <span translate="no">cure_refinement_types</span> 
+    <small class="app-vsn" translate="no">(cure v0.4.0)</small>
+
+  </h1>
+
+
+    <section id="moduledoc">
+<h1>Refinement Types with SMT Verification</h1><p>This module implements refinement types - types augmented with logical predicates
+that are verified at compile-time using the Z3 SMT solver.</p><h2 id="module-refinement-types" class="section-heading">
+  <a href="#module-refinement-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Refinement Types</span>
+</h2>
+<p>A refinement type refines a base type with a logical predicate:</p><pre><code class="cure">type Positive = Int when x &gt; 0
+type NonZero = Int when x /= 0
+type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-subtyping" class="section-heading">
+  <a href="#module-subtyping" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Subtyping</span>
+</h2>
+<p>Refinement subtyping is verified using SMT:</p><pre><code class="makeup erlang" translate="no"><span class="n">Positive</span><span class="w"> </span><span class="o">&lt;</span><span class="p">:</span><span class="w"> </span><span class="n">NonZero</span><span class="w">   </span><span class="p" data-group-id="4196999710-1">(</span><span class="ss">proven</span><span class="w"> </span><span class="ss">by</span><span class="w"> </span><span class="n">Z3</span><span class="p">:</span><span class="w"> </span><span class="ss">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">x</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="4196999710-1">)</span></code></pre><h2 id="module-features" class="section-heading">
+  <a href="#module-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Features</span>
+</h2>
+<ul><li>Extract constraints from refinement type definitions</li><li>Verify subtyping relationships via SMT</li><li>Check function preconditions and postconditions</li><li>Propagate constraints through function calls</li><li>Generate counterexamples for constraint violations</li></ul>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-types summary">
+  <h2>
+    <a href="#types">Types</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:expr/0" data-no-tooltip translate="no">expr()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:location/0" data-no-tooltip translate="no">location()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:refinement_type/0" data-no-tooltip translate="no">refinement_type()</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#t:type_expr/0" data-no-tooltip translate="no">type_expr()</a>
+
+      </div>
+
+    </div>
+
+</div>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#base_type/1" data-no-tooltip translate="no">base_type/1</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_constraint/3" data-no-tooltip translate="no">check_constraint/3</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_subtype/3" data-no-tooltip translate="no">check_subtype(Type1, Type2, Env)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#create_refinement_type/3" data-no-tooltip translate="no">create_refinement_type(BaseType, Var, Predicate)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#extract_constraint/1" data-no-tooltip translate="no">extract_constraint/1</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#format_refinement_error/1" data-no-tooltip translate="no">format_refinement_error/1</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#generate_counterexample/2" data-no-tooltip translate="no">generate_counterexample/2</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#is_refinement_type/1" data-no-tooltip translate="no">is_refinement_type/1</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#propagate_constraints/3" data-no-tooltip translate="no">propagate_constraints(Expr, Env, ConstraintMap)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#refinement_predicate/1" data-no-tooltip translate="no">refinement_predicate/1</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#strengthen_type/3" data-no-tooltip translate="no">strengthen_type(BaseType, AdditionalConstraint, Var)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#verify_postcondition/4" data-no-tooltip translate="no">verify_postcondition(ReturnExpr, ReturnType, Env, Location)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#verify_precondition/4" data-no-tooltip translate="no">verify_precondition(ArgExpr, ParamType, Env, Location)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#verify_subtype_smt/3" data-no-tooltip translate="no">verify_subtype_smt/3</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#weaken_type/2" data-no-tooltip translate="no">weaken_type/2</a>
+
+      </div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="types" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#types">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Types</span>
+    </h1>
+    <div class="types-list">
+<section class="detail" id="t:expr/0">
+
+  <div class="detail-header">
+    <a href="#t:expr/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">expr()</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/parser/cure_ast.hrl#L498" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> expr() ::
+          #literal_expr{value :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #identifier_expr{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #function_call_expr{function :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #match_expr{expr :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), patterns :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #let_expr{bindings :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #binary_op_expr{op :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), left :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), right :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #unary_op_expr{op :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), operand :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #list_expr{elements :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #vector_expr{elements :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #tuple_expr{elements :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #record_expr{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), fields :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #field_access_expr{record :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), field :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #record_update_expr{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), base :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), fields :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #lambda_expr{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #forall_expr{variables :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #exists_expr{variables :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_spawn_expr{fsm_name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                          init_args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                          init_state :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                          location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_send_expr{target :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), message :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_receive_expr{patterns :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), timeout :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_state_expr{location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #qualified_call_expr{trait_name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               type_args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               method_name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               receiver :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                               location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:location/0">
+
+  <div class="detail-header">
+    <a href="#t:location/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">location()</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/parser/cure_ast.hrl#L497" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> location() :: #location{line :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), column :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), file :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:refinement_type/0">
+
+  <div class="detail-header">
+    <a href="#t:refinement_type/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">refinement_type()</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L73" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> refinement_type() ::
+          #refinement_type{base_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                           variable :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
+                           predicate :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                           location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="t:type_expr/0">
+
+  <div class="detail-header">
+    <a href="#t:type_expr/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">type_expr()</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/parser/cure_ast.hrl#L528" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-type</span> type_expr() ::
+          #primitive_type{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #dependent_type{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                          type_params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                          value_params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                          location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #function_type{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #union_type{types :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #list_type{element_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), length :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #tuple_type{element_types :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #fsm_type{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), states :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), message_types :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #process_type{fsm_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), current_state :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="base_type/1">
+
+  <div class="detail-header">
+    <a href="#base_type/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">base_type/1</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L103" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> base_type(<a href="#t:refinement_type/0">refinement_type</a>()) -> <a href="#t:type_expr/0">type_expr</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="check_constraint/3">
+
+  <div class="detail-header">
+    <a href="#check_constraint/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_constraint/3</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L197" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_constraint(<a href="#t:expr/0">expr</a>(), <a href="#t:refinement_type/0">refinement_type</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="check_subtype/3">
+
+  <div class="detail-header">
+    <a href="#check_subtype/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_subtype(Type1, Type2, Env)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L116" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_subtype(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="create_refinement_type/3">
+
+  <div class="detail-header">
+    <a href="#create_refinement_type/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">create_refinement_type(BaseType, Var, Predicate)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L81" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> create_refinement_type(<a href="#t:type_expr/0">type_expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="#t:expr/0">expr</a>()) -> <a href="#t:refinement_type/0">refinement_type</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="extract_constraint/1">
+
+  <div class="detail-header">
+    <a href="#extract_constraint/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">extract_constraint/1</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L91" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> extract_constraint(<a href="#t:refinement_type/0">refinement_type</a>()) -> {ok, <a href="#t:expr/0">expr</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="format_refinement_error/1">
+
+  <div class="detail-header">
+    <a href="#format_refinement_error/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">format_refinement_error/1</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L310" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> format_refinement_error(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="generate_counterexample/2">
+
+  <div class="detail-header">
+    <a href="#generate_counterexample/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_counterexample/2</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L333" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_counterexample(<a href="#t:expr/0">expr</a>(), <a href="#t:refinement_type/0">refinement_type</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="is_refinement_type/1">
+
+  <div class="detail-header">
+    <a href="#is_refinement_type/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">is_refinement_type/1</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L98" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> is_refinement_type(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="propagate_constraints/3">
+
+  <div class="detail-header">
+    <a href="#propagate_constraints/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">propagate_constraints(Expr, Env, ConstraintMap)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L263" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> propagate_constraints(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="refinement_predicate/1">
+
+  <div class="detail-header">
+    <a href="#refinement_predicate/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">refinement_predicate/1</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L107" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> refinement_predicate(<a href="#t:refinement_type/0">refinement_type</a>()) -> <a href="#t:expr/0">expr</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="strengthen_type/3">
+
+  <div class="detail-header">
+    <a href="#strengthen_type/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">strengthen_type(BaseType, AdditionalConstraint, Var)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L294" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> strengthen_type(<a href="#t:type_expr/0">type_expr</a>(), <a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()) -> <a href="#t:refinement_type/0">refinement_type</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="verify_postcondition/4">
+
+  <div class="detail-header">
+    <a href="#verify_postcondition/4" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">verify_postcondition(ReturnExpr, ReturnType, Env, Location)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L253" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> verify_postcondition(<a href="#t:expr/0">expr</a>(), <a href="#t:refinement_type/0">refinement_type</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>(), <a href="#t:location/0">location</a>()) -> ok | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="verify_precondition/4">
+
+  <div class="detail-header">
+    <a href="#verify_precondition/4" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">verify_precondition(ArgExpr, ParamType, Env, Location)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L233" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> verify_precondition(<a href="#t:expr/0">expr</a>(), <a href="#t:refinement_type/0">refinement_type</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>(), <a href="#t:location/0">location</a>()) -> ok | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="verify_subtype_smt/3">
+
+  <div class="detail-header">
+    <a href="#verify_subtype_smt/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">verify_subtype_smt/3</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L138" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> verify_subtype_smt(<a href="#t:refinement_type/0">refinement_type</a>(), <a href="#t:refinement_type/0">refinement_type</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) ->
+                            {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="weaken_type/2">
+
+  <div class="detail-header">
+    <a href="#weaken_type/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">weaken_type/2</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L299" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> weaken_type(<a href="#t:refinement_type/0">refinement_type</a>(), [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()]) -> <a href="#t:type_expr/0">type_expr</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.4.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.4.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

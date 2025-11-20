@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cure MCP Integration - Cure Documentation</title>
+    <meta name="description" content="The Cure programming language now includes a Model Context Protocol (MCP) server that enables AI assistants to interact with the Cure compiler and too">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="cure-mcp-integration">Cure MCP Integration</h1>
+<p>The Cure programming language now includes a Model Context Protocol (MCP) server that enables AI assistants to interact with the Cure compiler and toolchain.</p>
+<h2 id="what-is-mcp">What is MCP?</h2>
+<p>The Model Context Protocol (MCP) is an open standard that allows AI assistants like Claude to:<br />
+- Access specialized tools and compilers<br />
+- Retrieve language-specific documentation<br />
+- Analyze code structure<br />
+- Provide intelligent assistance for domain-specific languages</p>
+<h2 id="features">Features</h2>
+<p>The Cure MCP server provides AI assistants with:</p>
+<h3 id="compilation-tools">Compilation Tools</h3>
+<ul>
+<li><strong>Compile</strong> - Full compilation from source to BEAM bytecode</li>
+<li><strong>Parse</strong> - Syntax parsing and AST generation</li>
+<li><strong>Type Check</strong> - Type verification and error detection</li>
+<li><strong>Validate</strong> - Quick syntax validation</li>
+</ul>
+<h3 id="fsm-tools">FSM Tools</h3>
+<ul>
+<li><strong>Analyze FSM</strong> - Extract and analyze finite state machine definitions</li>
+<li>FSM structure inspection</li>
+<li>State and transition analysis</li>
+</ul>
+<h3 id="documentation-tools">Documentation Tools</h3>
+<ul>
+<li><strong>Syntax Help</strong> - Get syntax examples for language features</li>
+<li><strong>Code Examples</strong> - Access curated example code</li>
+<li><strong>Stdlib Docs</strong> - Standard library documentation</li>
+</ul>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="1-install-and-build">1. Install and Build</h3>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>/opt/Proyectos/Ammotion/cure
+rebar3<span class="w"> </span>get-deps
+rebar3<span class="w"> </span>compile
+</code></pre></div>
+
+<h3 id="2-configure-claude-desktop">2. Configure Claude Desktop</h3>
+<p>Edit your Claude configuration file:<br />
+- <strong>Linux</strong>: <code>~/.config/Claude/claude_desktop_config.json</code><br />
+- <strong>macOS</strong>: <code>~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;cure&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/path/to/cure/mcp/cure-mcp-server.sh&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="3-restart-claude">3. Restart Claude</h3>
+<p>Close and reopen Claude Desktop completely.</p>
+<h3 id="4-try-it-out">4. Try It Out</h3>
+<p>Ask Claude questions about Cure:<br />
+- "Show me how to define an FSM in Cure"<br />
+- "Validate this Cure code: <code>module Test do ... end</code>"<br />
+- "What functions are available in Std.List?"<br />
+- "Compile examples/06_fsm_traffic_light.cure"</p>
+<h2 id="available-tools">Available Tools</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>compile_cure</code></td>
+<td>Compile Cure source to BEAM bytecode</td>
+</tr>
+<tr>
+<td><code>parse_cure</code></td>
+<td>Parse code and return AST information</td>
+</tr>
+<tr>
+<td><code>type_check_cure</code></td>
+<td>Type-check code for errors</td>
+</tr>
+<tr>
+<td><code>validate_syntax</code></td>
+<td>Quick syntax validation</td>
+</tr>
+<tr>
+<td><code>get_ast</code></td>
+<td>Get detailed AST representation</td>
+</tr>
+<tr>
+<td><code>analyze_fsm</code></td>
+<td>Analyze FSM definitions</td>
+</tr>
+<tr>
+<td><code>get_syntax_help</code></td>
+<td>Language syntax reference</td>
+</tr>
+<tr>
+<td><code>get_examples</code></td>
+<td>Example code by category</td>
+</tr>
+<tr>
+<td><code>get_stdlib_docs</code></td>
+<td>Standard library documentation</td>
+</tr>
+</tbody>
+</table>
+<h2 id="documentation">Documentation</h2>
+<p>Comprehensive documentation available in <code>mcp/</code>:<br />
+- <strong><a href="../mcp/README.md">README.md</a></strong> - Complete user guide<br />
+- <strong><a href="../mcp/QUICKSTART.md">QUICKSTART.md</a></strong> - 5-minute setup guide<br />
+- <strong><a href="../mcp/ARCHITECTURE.md">ARCHITECTURE.md</a></strong> - Technical architecture details</p>
+<h2 id="example-usage">Example Usage</h2>
+<h3 id="validate-syntax">Validate Syntax</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">User</span><span class="o">:</span><span class="w"> </span><span class="n">Is</span><span class="w"> </span><span class="k">this</span><span class="w"> </span><span class="n">Cure</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="n">valid</span><span class="o">?</span>
+
+<span class="n">module</span><span class="w"> </span><span class="n">Calculator</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span><span class="n">def</span><span class="w"> </span><span class="n">add</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">):</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<p>Claude will use the <code>validate_syntax</code> tool and report results.</p>
+<h3 id="get-fsm-examples">Get FSM Examples</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">User</span><span class="o">:</span><span class="w"> </span><span class="n">Show</span><span class="w"> </span><span class="n">me</span><span class="w"> </span><span class="n">FSM</span><span class="w"> </span><span class="n">examples</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">Cure</span>
+</code></pre></div>
+
+<p>Claude will use <code>get_examples</code> with category "fsm" to retrieve FSM example code.</p>
+<h3 id="compile-code">Compile Code</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">User</span><span class="o">:</span><span class="w"> </span><span class="n">Compile</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">traffic</span><span class="w"> </span><span class="n">light</span><span class="w"> </span><span class="n">example</span>
+</code></pre></div>
+
+<p>Claude will use <code>compile_cure</code> on the FSM traffic light example.</p>
+<h2 id="architecture">Architecture</h2>
+<p>The MCP server is implemented in Erlang and integrates directly with the Cure compiler:</p>
+<div class="codehilite"><pre><span></span><code>Claude Desktop ←→ JSON-RPC ←→ cure_mcp_server.erl ←→ Cure Compiler
+                   (stdio)                              (modules)
+</code></pre></div>
+
+<p><strong>Key Components:</strong><br />
+- <strong>cure_mcp_server.erl</strong> - Main MCP protocol implementation<br />
+- <strong>cure-mcp-server.sh</strong> - Startup script with dependency checking<br />
+- <strong>Tool handlers</strong> - Direct integration with compiler modules</p>
+<h2 id="benefits">Benefits</h2>
+<h3 id="for-ai-assistants">For AI Assistants</h3>
+<ul>
+<li>Direct access to Cure compiler</li>
+<li>Real-time syntax validation</li>
+<li>Accurate documentation</li>
+<li>FSM-specific analysis tools</li>
+</ul>
+<h3 id="for-developers">For Developers</h3>
+<ul>
+<li>Intelligent code completion suggestions</li>
+<li>Syntax error detection</li>
+<li>Quick documentation lookup</li>
+<li>Example code retrieval</li>
+</ul>
+<h3 id="for-the-cure-project">For the Cure Project</h3>
+<ul>
+<li>Better discoverability</li>
+<li>Enhanced learning experience</li>
+<li>Improved developer onboarding</li>
+<li>AI-assisted development</li>
+</ul>
+<h2 id="testing">Testing</h2>
+<p>Test the MCP server:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>mcp
+./test_mcp.sh
+</code></pre></div>
+
+<p>This runs basic tests for:<br />
+- Protocol initialization<br />
+- Tool listing<br />
+- Syntax help<br />
+- Code validation</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="server-wont-start">Server Won't Start</h3>
+<ul>
+<li>Verify Erlang installation: <code>erl -version</code></li>
+<li>Check dependencies: <code>rebar3 get-deps</code></li>
+<li>Rebuild: <code>make clean &amp;&amp; make all</code></li>
+</ul>
+<h3 id="tools-not-appearing">Tools Not Appearing</h3>
+<ul>
+<li>Verify Claude config path</li>
+<li>Use absolute paths in config</li>
+<li>Restart Claude completely</li>
+<li>Check Claude logs</li>
+</ul>
+<h3 id="compilation-errors">Compilation Errors</h3>
+<p>Ensure all Cure modules are compiled:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>/opt/Proyectos/Ammotion/cure
+make<span class="w"> </span>all
+</code></pre></div>
+
+<h2 id="contributing">Contributing</h2>
+<p>The MCP server is extensible. To add new tools:</p>
+<ol>
+<li>Define tool schema in <code>handle_tools_list/2</code></li>
+<li>Implement handler function</li>
+<li>Register in <code>init_state/1</code></li>
+</ol>
+<p>See <a href="../mcp/ARCHITECTURE.md">ARCHITECTURE.md</a> for details.</p>
+<h2 id="future-enhancements">Future Enhancements</h2>
+<p>Planned improvements:<br />
+- Code formatting tool<br />
+- Multi-file project analysis<br />
+- Interactive debugging support<br />
+- Test generation tools<br />
+- Performance profiling integration</p>
+<h2 id="resources">Resources</h2>
+<ul>
+<li><a href="https://modelcontextprotocol.io/">MCP Protocol Specification</a></li>
+<li><a href="https://claude.ai/desktop">Claude Desktop</a></li>
+<li><a href="../README.md">Cure Language Documentation</a></li>
+<li><a href="../mcp/">MCP Server Source</a></li>
+</ul>
+<h2 id="license">License</h2>
+<p>MIT License - same as the Cure language project.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

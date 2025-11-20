@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cure SMT Troubleshooting Guide - Cure Documentation</title>
+    <meta name="description" content="Version: 0.1.0  
+Last Updated: 2025-11-19">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="cure-smt-troubleshooting-guide">Cure SMT Troubleshooting Guide</h1>
+<p><strong>Version</strong>: 0.1.0<br />
+<strong>Last Updated</strong>: 2025-11-19</p>
+<hr />
+<h2 id="quick-diagnostics">Quick Diagnostics</h2>
+<p>Run these commands to check your setup:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Check Z3 installation</span>
+z3<span class="w"> </span>--version
+
+<span class="c1"># Check Cure compiler</span>
+cure<span class="w"> </span>--version
+
+<span class="c1"># Test SMT integration</span>
+<span class="nb">cd</span><span class="w"> </span>/path/to/cure
+make<span class="w"> </span><span class="nb">test</span>
+
+<span class="c1"># Check LSP server</span>
+cure-lsp-server<span class="w"> </span>--version
+</code></pre></div>
+
+<hr />
+<h2 id="common-issues">Common Issues</h2>
+<h3 id="1-z3-solver-not-found">1. Z3 Solver Not Found</h3>
+<p><strong>Symptoms</strong>:<br />
+- Error: <code>Z3 solver not found</code><br />
+- Error: <code>Failed to start SMT solver</code><br />
+- LSP diagnostics not working</p>
+<p><strong>Diagnosis</strong>:</p>
+<div class="codehilite"><pre><span></span><code>which<span class="w"> </span>z3
+<span class="c1"># If empty, Z3 is not installed or not in PATH</span>
+</code></pre></div>
+
+<p><strong>Solutions</strong>:</p>
+<h4 id="ubuntudebian">Ubuntu/Debian</h4>
+<div class="codehilite"><pre><span></span><code>sudo<span class="w"> </span>apt<span class="w"> </span>update
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>z3
+</code></pre></div>
+
+<h4 id="macos">macOS</h4>
+<div class="codehilite"><pre><span></span><code>brew<span class="w"> </span>install<span class="w"> </span>z3
+</code></pre></div>
+
+<h4 id="manual-installation">Manual Installation</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Download from GitHub</span>
+wget<span class="w"> </span>https://github.com/Z3Prover/z3/releases/download/z3-4.12.2/z3-4.12.2-x64-glibc-2.31.zip
+unzip<span class="w"> </span>z3-4.12.2-x64-glibc-2.31.zip
+sudo<span class="w"> </span>cp<span class="w"> </span>z3-4.12.2-x64-glibc-2.31/bin/z3<span class="w"> </span>/usr/local/bin/
+</code></pre></div>
+
+<h4 id="custom-path">Custom Path</h4>
+<p>If Z3 is in a non-standard location:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% In LSP config</span>
+<span class="p">#{</span>
+<span class="w">    </span><span class="n">solver_path</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;/custom/path/to/z3&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h3 id="2-smt-verification-timeout">2. SMT Verification Timeout</h3>
+<p><strong>Symptoms</strong>:<br />
+- Error: <code>SMT verification timed out</code><br />
+- Slow editor response<br />
+- Diagnostics take &gt;1 second</p>
+<p><strong>Diagnosis</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Check current timeout</span>
+<span class="nn">cure_lsp_smt</span><span class="p">:</span><span class="nf">get_cache_stats</span><span class="p">().</span>
+<span class="c">% Look at avg_verify_time_ms</span>
+</code></pre></div>
+
+<p><strong>Solutions</strong>:</p>
+<h4 id="1-increase-timeout">1. Increase Timeout</h4>
+<div class="codehilite"><pre><span></span><code><span class="c">% For complex constraints</span>
+<span class="nn">cure_lsp_performance</span><span class="p">:</span><span class="nf">set_timeout</span><span class="p">(</span><span class="n">lsp</span><span class="p">,</span><span class="w"> </span><span class="mi">1000</span><span class="p">).</span><span class="w">  </span><span class="c">% 1 second</span>
+</code></pre></div>
+
+<h4 id="2-simplify-constraints">2. Simplify Constraints</h4>
+<div class="codehilite"><pre><span></span><code><span class="o">%</span><span class="w"> </span><span class="nx">Before</span><span class="w"> </span><span class="p">(</span><span class="nx">slow</span><span class="p">)</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Complex</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span>
+<span class="w">    </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="nx">mod</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">is_prime</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span>
+
+<span class="o">%</span><span class="w"> </span><span class="nx">After</span><span class="w"> </span><span class="p">(</span><span class="nx">faster</span><span class="p">)</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Simple</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&lt;</span><span class="w"> </span><span class="mi">100</span>
+</code></pre></div>
+
+<h4 id="3-split-complex-types">3. Split Complex Types</h4>
+<div class="codehilite"><pre><span></span><code><span class="c">% Instead of one complex type</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">PositiveEvenPrime</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="nb">mod</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">is_prime</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="c">% Use composition</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">Positive</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">Even</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="nb">mod</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
+<span class="c">% Check is_prime at runtime</span>
+</code></pre></div>
+
+<h4 id="4-use-runtime-checks">4. Use Runtime Checks</h4>
+<div class="codehilite"><pre><span></span><code><span class="nx">def</span><span class="w"> </span><span class="nx">process</span><span class="p">(</span><span class="nx">n</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">)</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="nx">assert</span><span class="w"> </span><span class="nx">is_prime</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="nx">Runtime</span><span class="w"> </span><span class="nx">check</span><span class="w"> </span><span class="nx">instead</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="k">type</span>
+<span class="w">    </span><span class="o">...</span>
+</code></pre></div>
+
+<hr />
+<h3 id="3-high-memory-usage">3. High Memory Usage</h3>
+<p><strong>Symptoms</strong>:<br />
+- LSP using &gt;1GB RAM<br />
+- System becomes slow<br />
+- Out of memory errors</p>
+<p><strong>Diagnosis</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Check LSP memory</span>
+ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>cure-lsp-server
+</code></pre></div>
+
+<p><strong>Solutions</strong>:</p>
+<h4 id="1-clear-cache">1. Clear Cache</h4>
+<div class="codehilite"><pre><span></span><code><span class="nn">cure_lsp_smt</span><span class="p">:</span><span class="nf">clear_cache</span><span class="p">(</span><span class="nv">State</span><span class="p">).</span>
+</code></pre></div>
+
+<h4 id="2-reduce-cache-size">2. Reduce Cache Size</h4>
+<div class="codehilite"><pre><span></span><code><span class="c">% In config</span>
+<span class="p">#{</span>
+<span class="w">    </span><span class="n">cache</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">        </span><span class="n">max_size</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w">  </span><span class="c">% Default: 1000</span>
+<span class="w">        </span><span class="n">ttl_seconds</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">1800</span><span class="w">  </span><span class="c">% Default: 3600</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="3-restart-lsp-server">3. Restart LSP Server</h4>
+<p>Most IDEs have a "Restart LSP" command:<br />
+- <strong>VS Code</strong>: Cmd+Shift+P → "Reload Window"<br />
+- <strong>Neovim</strong>: <code>:LspRestart</code><br />
+- <strong>Emacs</strong>: <code>M-x lsp-restart-workspace</code></p>
+<h4 id="4-disable-smt-for-large-files">4. Disable SMT for Large Files</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">// @smt-disable</span>
+<span class="n">module</span><span class="w"> </span><span class="n">LargeModule</span>
+</code></pre></div>
+
+<hr />
+<h3 id="4-incorrect-diagnostics">4. Incorrect Diagnostics</h3>
+<p><strong>Symptoms</strong>:<br />
+- False positives (errors that shouldn't be there)<br />
+- False negatives (missing errors)<br />
+- Outdated diagnostics</p>
+<p><strong>Solutions</strong>:</p>
+<h4 id="1-refresh-diagnostics">1. Refresh Diagnostics</h4>
+<p>Save the file or trigger manual verification.</p>
+<h4 id="2-check-cache-validity">2. Check Cache Validity</h4>
+<div class="codehilite"><pre><span></span><code><span class="c">% Invalidate cache for a document</span>
+<span class="nn">cure_lsp_smt</span><span class="p">:</span><span class="nf">invalidate_cache_document</span><span class="p">(</span><span class="nv">Uri</span><span class="p">,</span><span class="w"> </span><span class="nv">State</span><span class="p">).</span>
+</code></pre></div>
+
+<h4 id="3-check-z3-version">3. Check Z3 Version</h4>
+<div class="codehilite"><pre><span></span><code>z3<span class="w"> </span>--version
+<span class="c1"># Should be 4.8.0 or newer</span>
+</code></pre></div>
+
+<p>Older Z3 versions may give incorrect results. Upgrade if needed.</p>
+<h4 id="4-report-bug">4. Report Bug</h4>
+<p>If diagnostics are consistently wrong:<br />
+1. Create minimal reproduction<br />
+2. File issue: https://github.com/cure-lang/cure/issues<br />
+3. Include Z3 version and example code</p>
+<hr />
+<h3 id="5-lsp-server-crashes">5. LSP Server Crashes</h3>
+<p><strong>Symptoms</strong>:<br />
+- LSP suddenly stops responding<br />
+- IDE shows "LSP connection lost"<br />
+- No diagnostics after crash</p>
+<p><strong>Diagnosis</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Check LSP logs</span>
+tail<span class="w"> </span>-f<span class="w"> </span>~/.cure/lsp.log
+
+<span class="c1"># Look for crash reason</span>
+grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;error\|crash\|exception&quot;</span><span class="w"> </span>~/.cure/lsp.log
+</code></pre></div>
+
+<p><strong>Solutions</strong>:</p>
+<h4 id="1-enable-debug-mode">1. Enable Debug Mode</h4>
+<div class="codehilite"><pre><span></span><code><span class="nv">CURE_LSP_LOG_LEVEL</span><span class="o">=</span>debug<span class="w"> </span>cure-lsp-server
+</code></pre></div>
+
+<h4 id="2-check-for-known-issues">2. Check for Known Issues</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Check if it&#39;s a known bug</span>
+cure-lsp-server<span class="w"> </span>--check-known-issues
+</code></pre></div>
+
+<h4 id="3-reduce-concurrent-verification">3. Reduce Concurrent Verification</h4>
+<div class="codehilite"><pre><span></span><code><span class="c">% Limit background tasks</span>
+<span class="p">#{</span>
+<span class="w">    </span><span class="n">max_concurrent</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">2</span><span class="w">  </span><span class="c">% Default: 4</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="4-disable-problematic-features">4. Disable Problematic Features</h4>
+<div class="codehilite"><pre><span></span><code><span class="p">#{</span>
+<span class="w">    </span><span class="n">features</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">        </span><span class="n">hover</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">true</span><span class="p">,</span>
+<span class="w">        </span><span class="n">code_actions</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">true</span><span class="p">,</span>
+<span class="w">        </span><span class="n">diagnostics</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">false</span><span class="w">  </span><span class="c">% Disable if causing crashes</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h3 id="6-slow-editor-performance">6. Slow Editor Performance</h3>
+<p><strong>Symptoms</strong>:<br />
+- Lag when typing<br />
+- Delayed diagnostics<br />
+- Editor feels sluggish</p>
+<p><strong>Diagnosis</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nn">cure_lsp_performance</span><span class="p">:</span><span class="nf">get_stats</span><span class="p">().</span>
+<span class="c">% Check:</span>
+<span class="c">% - cache_hit_rate (should be &gt;0.8)</span>
+<span class="c">% - avg_verify_time_ms (should be &lt;100ms)</span>
+<span class="c">% - queue_size (should be &lt;10)</span>
+</code></pre></div>
+
+<p><strong>Solutions</strong>:</p>
+<h4 id="1-check-cache-hit-rate">1. Check Cache Hit Rate</h4>
+<div class="codehilite"><pre><span></span><code><span class="nv">Stats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_lsp_performance</span><span class="p">:</span><span class="nf">get_stats</span><span class="p">(),</span>
+<span class="nv">HitRate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">cache_hit_rate</span><span class="p">,</span><span class="w"> </span><span class="nv">Stats</span><span class="p">).</span>
+<span class="c">% If &lt;0.8, increase cache size</span>
+</code></pre></div>
+
+<h4 id="2-adjust-batch-timing">2. Adjust Batch Timing</h4>
+<div class="codehilite"><pre><span></span><code><span class="c">% Process batches more frequently</span>
+<span class="nn">cure_lsp_performance</span><span class="p">:</span><span class="nf">start_link</span><span class="p">(#{</span>
+<span class="w">    </span><span class="n">batch_timeout_ms</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">25</span><span class="w">  </span><span class="c">% Default: 50</span>
+<span class="p">}).</span>
+</code></pre></div>
+
+<h4 id="3-disable-real-time-verification">3. Disable Real-time Verification</h4>
+<p>Use on-save verification instead:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">#{</span>
+<span class="w">    </span><span class="n">verify_on_change</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">false</span><span class="p">,</span>
+<span class="w">    </span><span class="n">verify_on_save</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">true</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="4-profile-slow-code">4. Profile Slow Code</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Find slow constraints</span>
+<span class="nv">CURE_LSP_PROFILE</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>cure-lsp-server
+</code></pre></div>
+
+<hr />
+<h3 id="7-pattern-exhaustiveness-false-positives">7. Pattern Exhaustiveness False Positives</h3>
+<p><strong>Symptoms</strong>:<br />
+- "Non-exhaustive pattern" error when all cases covered<br />
+- Suggested missing case doesn't make sense</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">match</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="n">with</span>
+<span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;both&quot;</span>
+<span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;x only&quot;</span>
+<span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;y only&quot;</span>
+<span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;neither&quot;</span>
+<span class="k">end</span>
+<span class="c">% Error: Non-exhaustive (but it is!)</span>
+</code></pre></div>
+
+<p><strong>Solutions</strong>:</p>
+<h4 id="1-check-smt-logic">1. Check SMT Logic</h4>
+<p>Some patterns require specific SMT logics:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Ensure correct logic is used</span>
+<span class="p">#{</span>
+<span class="w">    </span><span class="n">smt_logic</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;QF_LIA&#39;</span><span class="w">  </span><span class="c">% For booleans and integers</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="2-add-redundant-pattern">2. Add Redundant Pattern</h4>
+<div class="codehilite"><pre><span></span><code><span class="c">% Add explicit wildcard to satisfy checker</span>
+<span class="n">match</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="n">with</span>
+<span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;both&quot;</span>
+<span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="nb">true</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;x only&quot;</span>
+<span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;y only&quot;</span>
+<span class="o">|</span><span class="w"> </span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;neither&quot;</span>
+<span class="o">|</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nb">error</span><span class="p">(</span><span class="s">&quot;impossible&quot;</span><span class="p">)</span><span class="w">  </span><span class="c">% Redundant but helps SMT</span>
+<span class="k">end</span>
+</code></pre></div>
+
+<h4 id="3-disable-for-specific-match">3. Disable for Specific Match</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">// @exhaustiveness-disable</span>
+<span class="n">match</span><span class="w"> </span><span class="n">complex_value</span><span class="w"> </span><span class="n">with</span>
+<span class="p">...</span>
+<span class="k">end</span>
+</code></pre></div>
+
+<hr />
+<h3 id="8-counterexample-not-helpful">8. Counterexample Not Helpful</h3>
+<p><strong>Symptoms</strong>:<br />
+- Counterexample shows <code>&lt;unknown&gt;</code><br />
+- Values don't make sense<br />
+- Can't reproduce issue manually</p>
+<p><strong>Example</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Error: Constraint violated</span>
+<span class="c1">// Counterexample: x = &lt;unknown&gt;</span>
+</code></pre></div>
+
+<p><strong>Solutions</strong>:</p>
+<h4 id="1-simplify-constraint">1. Simplify Constraint</h4>
+<p>Complex constraints may not produce good counterexamples:</p>
+<div class="codehilite"><pre><span></span><code><span class="o">%</span><span class="w"> </span><span class="nx">Instead</span><span class="w"> </span><span class="nx">of</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Complex</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">f</span><span class="p">(</span><span class="nx">g</span><span class="p">(</span><span class="nx">h</span><span class="p">(</span><span class="nx">x</span><span class="p">)))</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="o">%</span><span class="w"> </span><span class="nx">Use</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Simple</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="nx">threshold</span>
+</code></pre></div>
+
+<h4 id="2-add-intermediate-variables">2. Add Intermediate Variables</h4>
+<div class="codehilite"><pre><span></span><code>def process(x: Int) =
+    let step1 = f(x)
+    let step2 = g(step1)
+    let step3 = h(step2)
+    assert step3 &gt; 0
+    ...
+</code></pre></div>
+
+<h4 id="3-enable-model-generation">3. Enable Model Generation</h4>
+<div class="codehilite"><pre><span></span><code><span class="p">#{</span>
+<span class="w">    </span><span class="n">solver_options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">        </span><span class="n">produce_models</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">true</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h3 id="9-quick-fixes-not-appearing">9. Quick Fixes Not Appearing</h3>
+<p><strong>Symptoms</strong>:<br />
+- Error shown but no quick fixes offered<br />
+- "No code actions available"</p>
+<p><strong>Solutions</strong>:</p>
+<h4 id="1-check-code-action-support">1. Check Code Action Support</h4>
+<div class="codehilite"><pre><span></span><code><span class="c">% Verify code actions are enabled</span>
+<span class="p">#{</span>
+<span class="w">    </span><span class="n">features</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">        </span><span class="n">code_actions</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">true</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="2-check-diagnostic-code">2. Check Diagnostic Code</h4>
+<p>Quick fixes only work for specific error codes:<br />
+- <code>refinement-violation</code><br />
+- <code>non-exhaustive-pattern</code><br />
+- <code>type-mismatch</code><br />
+- <code>undefined-var</code></p>
+<h4 id="3-cursor-position">3. Cursor Position</h4>
+<p>Ensure cursor is on the error (red squiggle).</p>
+<h4 id="4-restart-lsp">4. Restart LSP</h4>
+<p>Sometimes code actions cache gets stale.</p>
+<hr />
+<h3 id="10-integration-with-build-system">10. Integration with Build System</h3>
+<p><strong>Symptoms</strong>:<br />
+- LSP works but compilation fails<br />
+- Different errors in IDE vs command line</p>
+<p><strong>Solutions</strong>:</p>
+<h4 id="1-sync-configurations">1. Sync Configurations</h4>
+<p>Ensure LSP and compiler use same settings:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% In both .cure-lsp.config and rebar.config</span>
+<span class="p">#{</span>
+<span class="w">    </span><span class="n">smt</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">        </span><span class="n">enabled</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">true</span><span class="p">,</span>
+<span class="w">        </span><span class="n">timeout</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">500</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="2-check-include-paths">2. Check Include Paths</h4>
+<div class="codehilite"><pre><span></span><code><span class="c">% LSP needs same include paths as compiler</span>
+<span class="p">#{</span>
+<span class="w">    </span><span class="n">include_dirs</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s">&quot;src&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;include&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;deps/*/include&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="3-run-full-build">3. Run Full Build</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Clean build to ensure consistency</span>
+make<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>all
+</code></pre></div>
+
+<hr />
+<h2 id="performance-benchmarks">Performance Benchmarks</h2>
+<h3 id="expected-performance">Expected Performance</h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Target</th>
+<th>Acceptable</th>
+<th>Slow</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cache hit</td>
+<td>&lt;10ms</td>
+<td>&lt;50ms</td>
+<td>&gt;100ms</td>
+</tr>
+<tr>
+<td>Simple constraint</td>
+<td>&lt;50ms</td>
+<td>&lt;100ms</td>
+<td>&gt;200ms</td>
+</tr>
+<tr>
+<td>Complex constraint</td>
+<td>&lt;200ms</td>
+<td>&lt;500ms</td>
+<td>&gt;1000ms</td>
+</tr>
+<tr>
+<td>Full document</td>
+<td>&lt;500ms</td>
+<td>&lt;1s</td>
+<td>&gt;2s</td>
+</tr>
+<tr>
+<td>Startup</td>
+<td>&lt;100ms</td>
+<td>&lt;200ms</td>
+<td>&gt;500ms</td>
+</tr>
+</tbody>
+</table>
+<h3 id="measuring-performance">Measuring Performance</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Get detailed stats</span>
+<span class="nv">Stats</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_lsp_performance</span><span class="p">:</span><span class="nf">get_stats</span><span class="p">(),</span>
+<span class="nn">io</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="s">&quot;Cache hit rate: </span><span class="si">~p~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">cache_hit_rate</span><span class="p">,</span><span class="w"> </span><span class="nv">Stats</span><span class="p">)]),</span>
+<span class="nn">io</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="s">&quot;Avg verify time: </span><span class="si">~p</span><span class="s">ms</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">avg_verify_time_ms</span><span class="p">,</span><span class="w"> </span><span class="nv">Stats</span><span class="p">)]),</span>
+<span class="nn">io</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="s">&quot;Queue size: </span><span class="si">~p~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">queue_size</span><span class="p">,</span><span class="w"> </span><span class="nv">Stats</span><span class="p">)]).</span>
+</code></pre></div>
+
+<h3 id="optimization-checklist">Optimization Checklist</h3>
+<ul>
+<li>[ ] Z3 version 4.8.0 or newer</li>
+<li>[ ] Cache hit rate &gt;80%</li>
+<li>[ ] Average verification &lt;100ms</li>
+<li>[ ] Queue size typically &lt;5</li>
+<li>[ ] Memory usage &lt;500MB</li>
+<li>[ ] No timeout errors</li>
+</ul>
+<hr />
+<h2 id="debug-workflows">Debug Workflows</h2>
+<h3 id="workflow-1-trace-specific-error">Workflow 1: Trace Specific Error</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. Enable debug logging</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CURE_LSP_LOG_LEVEL</span><span class="o">=</span>debug
+<span class="nb">export</span><span class="w"> </span><span class="nv">CURE_LSP_TRACE_FILE</span><span class="o">=</span>~/cure-trace.log
+
+<span class="c1"># 2. Reproduce issue</span>
+
+<span class="c1"># 3. Check trace</span>
+grep<span class="w"> </span><span class="s2">&quot;refinement-violation&quot;</span><span class="w"> </span>~/cure-trace.log
+
+<span class="c1"># 4. Extract SMT query</span>
+grep<span class="w"> </span><span class="s2">&quot;SMT Query&quot;</span><span class="w"> </span>~/cure-trace.log<span class="w"> </span>-A<span class="w"> </span><span class="m">20</span>
+</code></pre></div>
+
+<h3 id="workflow-2-profile-slow-constraint">Workflow 2: Profile Slow Constraint</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. Enable profiling</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">CURE_LSP_PROFILE</span><span class="o">=</span><span class="nb">true</span>
+
+<span class="c1"># 2. Open slow file in IDE</span>
+
+<span class="c1"># 3. Check profile</span>
+cat<span class="w"> </span>~/.cure/profile.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-k3<span class="w"> </span>-n
+<span class="c1"># Column 3 is verification time</span>
+</code></pre></div>
+
+<h3 id="workflow-3-test-smt-query-manually">Workflow 3: Test SMT Query Manually</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. Extract query from logs</span>
+grep<span class="w"> </span><span class="s2">&quot;SMT Query&quot;</span><span class="w"> </span>~/.cure/lsp.log<span class="w"> </span>-A<span class="w"> </span><span class="m">30</span><span class="w"> </span>&gt;<span class="w"> </span>query.smt2
+
+<span class="c1"># 2. Run Z3 directly</span>
+z3<span class="w"> </span>query.smt2
+
+<span class="c1"># 3. Check output</span>
+<span class="c1"># sat = constraint satisfiable</span>
+<span class="c1"># unsat = constraint violated</span>
+<span class="c1"># unknown = timeout or undecidable</span>
+</code></pre></div>
+
+<hr />
+<h2 id="getting-help">Getting Help</h2>
+<h3 id="before-filing-an-issue">Before Filing an Issue</h3>
+<ol>
+<li><strong>Check logs</strong>: <code>~/.cure/lsp.log</code></li>
+<li><strong>Verify Z3</strong>: <code>z3 --version</code></li>
+<li><strong>Try minimal example</strong>: Reproduce with smallest code</li>
+<li><strong>Check known issues</strong>: https://github.com/cure-lang/cure/issues</li>
+</ol>
+<h3 id="what-to-include-in-bug-report">What to Include in Bug Report</h3>
+<div class="codehilite"><pre><span></span><code><span class="gs">**Cure Version**</span>: <span class="sb">`cure --version`</span>
+<span class="gs">**Z3 Version**</span>: <span class="sb">`z3 --version`</span>
+<span class="gs">**OS**</span>: Ubuntu 22.04 / macOS 13 / etc.
+<span class="gs">**IDE**</span>: VS Code 1.85 / Neovim 0.9 / etc.
+
+<span class="gs">**Expected**</span>: [what should happen]
+<span class="gs">**Actual**</span>: [what actually happens]
+
+<span class="gs">**Minimal Example**</span>:
+```cure
+type Positive = Int when x &gt; 0
+def test(n: Int) = divide(1, n)  % Error here
+</code></pre></div>
+
+<p><strong>Logs</strong>:<br />
+[attach relevant log section]</p>
+<div class="codehilite"><pre><span></span><code><span class="cp">### Community Resources</span>
+
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="n">GitHub</span><span class="w"> </span><span class="n">Issues</span><span class="o">**:</span><span class="w"> </span><span class="n">https</span><span class="o">:</span><span class="c1">//github.com/cure-lang/cure/issues</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="n">Discussions</span><span class="o">**:</span><span class="w"> </span><span class="n">https</span><span class="o">:</span><span class="c1">//github.com/cure-lang/cure/discussions</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="n">Discord</span><span class="o">**:</span><span class="w"> </span><span class="p">[</span><span class="n">invite</span><span class="w"> </span><span class="n">link</span><span class="p">]</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="n">Stack</span><span class="w"> </span><span class="n">Overflow</span><span class="o">**:</span><span class="w"> </span><span class="n">Tag</span><span class="w"> </span><span class="err">`</span><span class="n">cure</span><span class="o">-</span><span class="n">lang</span><span class="err">`</span>
+
+<span class="o">---</span>
+
+<span class="cp">## Advanced Debugging</span>
+
+<span class="cp">### Attach to Running LSP</span>
+
+<span class="err">```</span><span class="n">bash</span>
+<span class="cp"># Find LSP process</span>
+<span class="n">ps</span><span class="w"> </span><span class="n">aux</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">grep</span><span class="w"> </span><span class="n">cure</span><span class="o">-</span><span class="n">lsp</span><span class="o">-</span><span class="n">server</span>
+
+<span class="cp"># Attach debugger</span>
+<span class="n">gdb</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="o">&lt;</span><span class="n">pid</span><span class="o">&gt;</span>
+
+<span class="cp"># Or use Erlang debugger</span>
+<span class="n">erl</span><span class="w"> </span><span class="o">-</span><span class="n">name</span><span class="w"> </span><span class="n">debug</span><span class="p">@</span><span class="n">localhost</span><span class="w"> </span><span class="o">-</span><span class="n">setcookie</span><span class="w"> </span><span class="n">cure</span>
+<span class="cp"># In Erlang shell:</span>
+<span class="o">&gt;</span><span class="w"> </span><span class="n">net_adm</span><span class="o">:</span><span class="n">ping</span><span class="p">(</span><span class="err">&#39;</span><span class="n">cure</span><span class="o">-</span><span class="n">lsp</span><span class="p">@</span><span class="n">localhost</span><span class="err">&#39;</span><span class="p">).</span>
+<span class="o">&gt;</span><span class="w"> </span><span class="n">debugger</span><span class="o">:</span><span class="n">start</span><span class="p">().</span>
+</code></pre></div>
+
+<h3 id="enable-smt-solver-tracing">Enable SMT Solver Tracing</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% In config</span>
+<span class="p">#{</span>
+<span class="w">    </span><span class="n">solver_options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">        </span><span class="nb">trace</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">true</span><span class="p">,</span>
+<span class="w">        </span><span class="n">trace_file</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;/tmp/z3-trace.log&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="dump-ast-for-debugging">Dump AST for Debugging</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% In Cure code</span>
+<span class="o">//</span><span class="w"> </span><span class="p">@</span><span class="n">dump</span><span class="o">-</span><span class="n">ast</span>
+<span class="n">def</span><span class="w"> </span><span class="n">problematic_function</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...</span>
+</code></pre></div>
+
+<p>This generates <code>function_name.ast.txt</code> with full AST.</p>
+<hr />
+<p><strong>Still stuck? File an issue with details! 🐛</strong></p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

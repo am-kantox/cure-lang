@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z3 SMT Solver User Guide for Cure - Cure Documentation</title>
+    <meta name="description" content="Version: 1.0  
+Date: 2025-11-18  
+Status: Phase 1 Complete - Basic Functionality Available">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="z3-smt-solver-user-guide-for-cure">Z3 SMT Solver User Guide for Cure</h1>
+<p><strong>Version:</strong> 1.0<br />
+<strong>Date:</strong> 2025-11-18<br />
+<strong>Status:</strong> Phase 1 Complete - Basic Functionality Available</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#quick-start">Quick Start</a></li>
+<li><a href="#using-refinement-types">Using Refinement Types</a></li>
+<li><a href="#dependent-types">Dependent Types</a></li>
+<li><a href="#fsm-verification">FSM Verification</a></li>
+<li><a href="#common-patterns">Common Patterns</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#api-reference">API Reference</a></li>
+</ol>
+<hr />
+<h2 id="introduction">Introduction</h2>
+<p>Cure integrates the Z3 SMT solver to provide compile-time verification of:</p>
+<ul>
+<li><strong>Refinement Types</strong>: Types with logical constraints (e.g., <code>x &gt; 0</code>)</li>
+<li><strong>Dependent Types</strong>: Types that depend on values (e.g., <code>List(T, n)</code> where <code>n</code> is length)</li>
+<li><strong>Pattern Exhaustiveness</strong>: Guaranteeing all cases are covered</li>
+<li><strong>FSM Correctness</strong>: Deadlock detection and reachability analysis</li>
+</ul>
+<h3 id="benefits">Benefits</h3>
+<p>✅ <strong>Catch errors at compile time</strong> - No runtime crashes from constraint violations<br />
+✅ <strong>Mathematical proof</strong> - Z3 provides formal guarantees<br />
+✅ <strong>Zero runtime overhead</strong> - Constraints verified during compilation<br />
+✅ <strong>Better documentation</strong> - Types express invariants precisely  </p>
+<hr />
+<h2 id="installation">Installation</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<ol>
+<li><strong>Z3 Solver</strong> (version 4.8+)</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Ubuntu/Debian</span>
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>z3
+
+<span class="c1"># macOS</span>
+brew<span class="w"> </span>install<span class="w"> </span>z3
+
+<span class="c1"># Verify installation</span>
+z3<span class="w"> </span>--version
+<span class="c1"># Should output: Z3 version 4.13.3 - 64 bit (or similar)</span>
+</code></pre></div>
+
+<ol start="2">
+<li><strong>Cure Compiler</strong> with SMT support (included in standard distribution)</li>
+</ol>
+<h3 id="verification">Verification</h3>
+<p>Test that Z3 integration works:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>/path/to/cure
+make<span class="w"> </span>test_smt
+</code></pre></div>
+
+<p>Expected output:</p>
+<div class="codehilite"><pre><span></span><code>✅ SMT Parser Tests: 5/5 passing
+✅ SMT Process Tests: 7/7 passing
+✅ SMT Solver Integration: 6/6 passing
+</code></pre></div>
+
+<hr />
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="your-first-refinement-type">Your First Refinement Type</h3>
+<p>Create a file <code>hello_smt.cure</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">module</span><span class="w"> </span><span class="nx">HelloSmt</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="nx">Define</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="nx">positive</span><span class="w"> </span><span class="nx">integer</span><span class="w"> </span><span class="k">type</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Positive</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="nx">Safe</span><span class="w"> </span><span class="nx">division</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">divisor</span><span class="w"> </span><span class="nx">proven</span><span class="w"> </span><span class="nx">non</span><span class="o">-</span><span class="nx">zero</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">NonZero</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="nx">def</span><span class="w"> </span><span class="nx">safe_div</span><span class="p">(</span><span class="nx">dividend</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">divisor</span><span class="p">:</span><span class="w"> </span><span class="nx">NonZero</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">dividend</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nx">divisor</span><span class="w">  </span><span class="o">%%</span><span class="w"> </span><span class="nx">Z3</span><span class="w"> </span><span class="nx">proves</span><span class="p">:</span><span class="w"> </span><span class="nx">divisor</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span>
+<span class="nx">end</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="nx">This</span><span class="w"> </span><span class="nx">compiles</span><span class="w"> </span><span class="nx">successfully</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">example1</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">safe_div</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w">  </span><span class="o">%%</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="kd">constraint</span><span class="w"> </span><span class="nx">satisfied</span>
+<span class="nx">end</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="nx">This</span><span class="w"> </span><span class="nx">causes</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="nx">compile</span><span class="o">-</span><span class="nx">time</span><span class="w"> </span><span class="nx">error</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">example2</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">safe_div</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w">  </span><span class="o">%%</span><span class="w"> </span><span class="err">❌</span><span class="w"> </span><span class="nx">Error</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="nx">does</span><span class="w"> </span><span class="k">not</span><span class="w"> </span><span class="nx">satisfy</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span>
+<span class="nx">end</span>
+</code></pre></div>
+
+<p>Compile with SMT verification:</p>
+<div class="codehilite"><pre><span></span><code>cure<span class="w"> </span>compile<span class="w"> </span>--smt-verify<span class="w"> </span>hello_smt.cure
+</code></pre></div>
+
+<p>Output:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">✅</span><span class="w"> </span><span class="nx">Module</span><span class="w"> </span><span class="nx">HelloSmt</span><span class="w"> </span><span class="k">type</span><span class="o">-</span><span class="nx">checked</span>
+<span class="err">✅</span><span class="w"> </span><span class="nx">All</span><span class="w"> </span><span class="nx">refinement</span><span class="w"> </span><span class="nx">constraints</span><span class="w"> </span><span class="nx">verified</span>
+<span class="err">❌</span><span class="w"> </span><span class="nx">Error</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">example2</span><span class="w"> </span><span class="nx">at</span><span class="w"> </span><span class="nx">line</span><span class="w"> </span><span class="mi">18</span><span class="p">:</span>
+<span class="w">   </span><span class="nx">Refinement</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">violation</span>
+<span class="w">   </span><span class="nx">Required</span><span class="p">:</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">(</span><span class="nx">NonZero</span><span class="p">)</span>
+<span class="w">   </span><span class="nx">But</span><span class="p">:</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">   </span><span class="nx">Counterexample</span><span class="p">:</span><span class="w"> </span><span class="nx">Division</span><span class="w"> </span><span class="nx">by</span><span class="w"> </span><span class="nx">zero</span>
+</code></pre></div>
+
+<hr />
+<h2 id="using-refinement-types">Using Refinement Types</h2>
+<h3 id="basic-refinement-types">Basic Refinement Types</h3>
+<p>Refinement types add logical constraints to existing types:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Natural numbers (non-negative)</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">Nat</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="c">%% Percentage (0-100)</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">Percentage</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="p">=</span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100</span>
+
+<span class="c">%% Even numbers</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">Even</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="c">% 2 == 0</span>
+
+<span class="c">%% Temperature in Celsius</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">Temperature</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="o">-</span><span class="mi">273</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="p">=</span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1000</span>
+</code></pre></div>
+
+<h3 id="using-refinement-types-in-functions">Using Refinement Types in Functions</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Function requiring positive input</span>
+<span class="n">def</span><span class="w"> </span><span class="s">factorial(n:</span><span class="w"> </span><span class="s">Positive)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Positive</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">then</span>
+<span class="w">    </span><span class="mi">1</span>
+<span class="w">  </span><span class="k">else</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nb">factorial</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="k">end</span>
+
+<span class="c">%% Valid calls</span>
+<span class="nb">factorial</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="w">   </span><span class="c">%% ✅ OK: 5 &gt; 0</span>
+<span class="nb">factorial</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w">   </span><span class="c">%% ✅ OK: 1 &gt; 0</span>
+
+<span class="c">%% Invalid calls (compile-time errors)</span>
+<span class="nb">factorial</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w">   </span><span class="c">%% ❌ Error: 0 does not satisfy x &gt; 0</span>
+<span class="nb">factorial</span><span class="p">(</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span><span class="w">  </span><span class="c">%% ❌ Error: -5 does not satisfy x &gt; 0</span>
+</code></pre></div>
+
+<h3 id="subtyping-with-smt">Subtyping with SMT</h3>
+<p>Z3 automatically proves subtyping relationships:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">type</span><span class="w"> </span><span class="n">Positive</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">NonZero</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">/</span><span class="p">=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="c">%% Z3 proves: Positive &lt;: NonZero</span>
+<span class="c">%% (Every positive number is non-zero)</span>
+
+<span class="n">def</span><span class="w"> </span><span class="s">use_nonzero(x:</span><span class="w"> </span><span class="s">NonZero)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="mi">100</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">x</span>
+<span class="k">end</span>
+
+<span class="n">def</span><span class="w"> </span><span class="s">caller(x:</span><span class="w"> </span><span class="s">Positive)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">use_nonzero</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">  </span><span class="c">%% ✅ OK: Z3 proves Positive &lt;: NonZero</span>
+<span class="k">end</span>
+</code></pre></div>
+
+<hr />
+<h2 id="dependent-types">Dependent Types</h2>
+<p>Dependent types allow types to depend on values:</p>
+<h3 id="length-indexed-lists">Length-Indexed Lists</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">%%</span><span class="w"> </span><span class="n">List</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="k">constraint</span>
+<span class="n">type</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="nl">n</span><span class="p">:</span><span class="w"> </span><span class="n">Nat</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">n</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="n">Safe</span><span class="w"> </span><span class="n">head</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">requires</span><span class="w"> </span><span class="n">non</span><span class="o">-</span><span class="n">empty</span><span class="w"> </span><span class="n">list</span>
+<span class="n">def</span><span class="w"> </span><span class="n">safe_head</span><span class="p">(</span><span class="nl">xs</span><span class="p">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">))</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">xs</span><span class="o">[</span><span class="n">0</span><span class="o">]</span><span class="w">  </span><span class="o">%%</span><span class="w"> </span><span class="n">Z3</span><span class="w"> </span><span class="nl">proves</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">length</span><span class="p">,</span><span class="w"> </span><span class="n">so</span><span class="w"> </span><span class="n">access</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="n">safe</span>
+<span class="k">end</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="n">Safe</span><span class="w"> </span><span class="n">tail</span>
+<span class="n">def</span><span class="w"> </span><span class="n">safe_tail</span><span class="p">(</span><span class="nl">xs</span><span class="p">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">))</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="k">drop</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="n">Safe</span><span class="w"> </span><span class="n">indexing</span>
+<span class="n">def</span><span class="w"> </span><span class="n">safe_get</span><span class="p">(</span><span class="nl">xs</span><span class="p">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="w"> </span><span class="nl">i</span><span class="p">:</span><span class="w"> </span><span class="n">Nat</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">Option</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span><span class="w"> </span><span class="k">then</span>
+<span class="w">    </span><span class="ow">Some</span><span class="p">(</span><span class="n">xs</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">)</span><span class="w">  </span><span class="o">%%</span><span class="w"> </span><span class="n">Z3</span><span class="w"> </span><span class="nl">proves</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">length</span>
+<span class="w">  </span><span class="k">else</span>
+<span class="w">    </span><span class="k">None</span><span class="w">  </span><span class="o">%%</span><span class="w"> </span><span class="n">Unreachable</span><span class="p">,</span><span class="w"> </span><span class="n">but</span><span class="w"> </span><span class="n">required</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">totality</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+
+<h3 id="array-bounds-checking">Array Bounds Checking</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Function that accesses first two elements</span>
+<span class="n">def</span><span class="w"> </span><span class="s">first_two(xs:</span><span class="w"> </span><span class="s">List(T))</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p">}</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="nb">length</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="p">{</span><span class="n">xs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">xs</span><span class="p">[</span><span class="mi">1</span><span class="p">]}</span><span class="w">  </span><span class="c">%% Z3 proves both accesses safe</span>
+<span class="k">end</span>
+
+<span class="c">%% Usage</span>
+<span class="n">let</span><span class="w"> </span><span class="s">list</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">]</span><span class="w"> </span><span class="n">in</span>
+<span class="n">first_two</span><span class="p">(</span><span class="n">list</span><span class="p">)</span><span class="w">  </span><span class="c">%% ✅ OK: length = 3 &gt;= 2</span>
+
+<span class="n">let</span><span class="w"> </span><span class="s">short</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">[</span><span class="mi">42</span><span class="p">]</span><span class="w"> </span><span class="n">in</span>
+<span class="n">first_two</span><span class="p">(</span><span class="n">short</span><span class="p">)</span><span class="w">  </span><span class="c">%% ❌ Error: length = 1, does not satisfy n &gt;= 2</span>
+</code></pre></div>
+
+<hr />
+<h2 id="fsm-verification">FSM Verification</h2>
+<p>Z3 can verify finite state machines for:<br />
+- Reachability (all states accessible)<br />
+- Deadlock-freedom (all states have exits)<br />
+- Safety properties (bad states unreachable)<br />
+- Liveness properties (good states eventually reached)</p>
+<h3 id="basic-fsm-verification">Basic FSM Verification</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">fsm</span><span class="w"> </span><span class="s">TrafficLight</span><span class="w"> </span><span class="s">do</span>
+<span class="w">  </span><span class="n">states</span><span class="w"> </span><span class="p">[</span><span class="n">Green</span><span class="p">,</span><span class="w"> </span><span class="n">Yellow</span><span class="p">,</span><span class="w"> </span><span class="n">Red</span><span class="p">]</span>
+<span class="w">  </span><span class="n">initial</span><span class="w"> </span><span class="n">Green</span>
+
+<span class="w">  </span><span class="n">state</span><span class="w"> </span><span class="n">Green</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">on</span><span class="w"> </span><span class="nb">timer</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Yellow</span>
+<span class="w">  </span><span class="k">end</span>
+
+<span class="w">  </span><span class="n">state</span><span class="w"> </span><span class="n">Yellow</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">on</span><span class="w"> </span><span class="nb">timer</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Red</span>
+<span class="w">  </span><span class="k">end</span>
+
+<span class="w">  </span><span class="n">state</span><span class="w"> </span><span class="n">Red</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">on</span><span class="w"> </span><span class="nb">timer</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Green</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="k">end</span>
+
+<span class="c">%% Z3 automatically verifies:</span>
+<span class="c">%% ✅ All states reachable from Green</span>
+<span class="c">%% ✅ No deadlocks (every state has transitions)</span>
+<span class="c">%% ✅ Cyclic behavior (returns to initial state)</span>
+</code></pre></div>
+
+<h3 id="fsm-with-state-invariants">FSM with State Invariants</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">record</span><span class="w"> </span><span class="n">VendingState</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">balance</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">,</span>
+<span class="w">  </span><span class="n">selected</span><span class="p">:</span><span class="w"> </span><span class="n">Bool</span>
+<span class="p">}</span>
+
+<span class="n">fsm</span><span class="w"> </span><span class="n">VendingMachine</span><span class="p">(</span><span class="n">VendingState</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">states</span><span class="w"> </span><span class="p">[</span><span class="n">Idle</span><span class="p">,</span><span class="w"> </span><span class="n">Accepting</span><span class="p">,</span><span class="w"> </span><span class="n">Ready</span><span class="p">,</span><span class="w"> </span><span class="n">Dispensing</span><span class="p">]</span>
+<span class="w">  </span><span class="n">initial</span><span class="w"> </span><span class="n">Idle</span>
+
+<span class="w">  </span><span class="n">state</span><span class="w"> </span><span class="n">Idle</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="o">%%</span><span class="w"> </span><span class="n">Invariant</span><span class="p">:</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">    </span><span class="n">on</span><span class="w"> </span><span class="n">insert_coin</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Accepting</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">amount</span><span class="p">,</span>
+<span class="w">      </span><span class="n">selected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">false</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="n">end</span>
+
+<span class="w">  </span><span class="n">state</span><span class="w"> </span><span class="n">Accepting</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="o">%%</span><span class="w"> </span><span class="n">Invariant</span><span class="p">:</span><span class="w"> </span><span class="n">balance</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">    </span><span class="n">on</span><span class="w"> </span><span class="n">insert_coin</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">amount</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Accepting</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="o">.</span><span class="n">balance</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">amount</span><span class="p">,</span>
+<span class="w">      </span><span class="n">selected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">false</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="n">on</span><span class="w"> </span><span class="n">select</span><span class="p">(</span><span class="n">price</span><span class="p">)</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">data</span><span class="o">.</span><span class="n">balance</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Ready</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="o">.</span><span class="n">balance</span><span class="p">,</span>
+<span class="w">      </span><span class="n">selected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">true</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="n">on</span><span class="w"> </span><span class="n">cancel</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Idle</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">balance</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">      </span><span class="n">selected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="bp">false</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="n">end</span>
+
+<span class="w">  </span><span class="o">%%</span><span class="w"> </span><span class="o">...</span><span class="w"> </span><span class="n">more</span><span class="w"> </span><span class="n">states</span>
+<span class="n">end</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="n">Z3</span><span class="w"> </span><span class="n">verifies</span><span class="p">:</span>
+<span class="o">%%</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="n">Balance</span><span class="w"> </span><span class="n">never</span><span class="w"> </span><span class="n">negative</span>
+<span class="o">%%</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="n">Can</span><span class="w"> </span><span class="n">always</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">Idle</span><span class="w"> </span><span class="p">(</span><span class="n">via</span><span class="w"> </span><span class="n">cancel</span><span class="p">)</span>
+<span class="o">%%</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="n">Guards</span><span class="w"> </span><span class="n">prevent</span><span class="w"> </span><span class="n">invalid</span><span class="w"> </span><span class="n">transitions</span>
+</code></pre></div>
+
+<hr />
+<h2 id="common-patterns">Common Patterns</h2>
+<h3 id="pattern-1-safe-division">Pattern 1: Safe Division</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">NonZero</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="nx">def</span><span class="w"> </span><span class="nx">safe_div</span><span class="p">(</span><span class="nx">a</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">:</span><span class="w"> </span><span class="nx">NonZero</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nx">b</span>
+<span class="nx">end</span>
+</code></pre></div>
+
+<h3 id="pattern-2-bounded-integers">Pattern 2: Bounded Integers</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Byte</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">=&lt;</span><span class="w"> </span><span class="mi">255</span>
+
+<span class="nx">def</span><span class="w"> </span><span class="nx">make_rgb</span><span class="p">(</span><span class="nx">r</span><span class="p">:</span><span class="w"> </span><span class="nx">Byte</span><span class="p">,</span><span class="w"> </span><span class="nx">g</span><span class="p">:</span><span class="w"> </span><span class="nx">Byte</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">:</span><span class="w"> </span><span class="nx">Byte</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="p">(</span><span class="nx">r</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">65536</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="nx">g</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">b</span>
+<span class="nx">end</span>
+</code></pre></div>
+
+<h3 id="pattern-3-non-empty-collections">Pattern 3: Non-Empty Collections</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="nf">max</span><span class="p">(</span><span class="n">xs</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">Int</span><span class="p">))</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">fold_left</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span><span class="w"> </span><span class="n">xs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">fn</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nf">if</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">then</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">else</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kd">end)</span>
+<span class="kd">end</span>
+</code></pre></div>
+
+<h3 id="pattern-4-sorted-pairs">Pattern 4: Sorted Pairs</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">SortedPair</span><span class="p">(</span><span class="nx">T</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">T</span><span class="p">}</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">fst</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">snd</span>
+
+<span class="nx">def</span><span class="w"> </span><span class="nx">make_sorted</span><span class="p">(</span><span class="nx">a</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">SortedPair</span><span class="p">(</span><span class="nx">Int</span><span class="p">)</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">b</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="p">{</span><span class="nx">a</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="nx">b</span><span class="p">,</span><span class="w"> </span><span class="nx">a</span><span class="p">}</span><span class="w"> </span><span class="nx">end</span>
+<span class="nx">end</span>
+</code></pre></div>
+
+<h3 id="pattern-5-financial-calculations">Pattern 5: Financial Calculations</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">Money</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">InterestRate</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">=&lt;</span><span class="w"> </span><span class="mi">100</span>
+
+<span class="nx">def</span><span class="w"> </span><span class="nx">apply_interest</span><span class="p">(</span><span class="nx">amount</span><span class="p">:</span><span class="w"> </span><span class="nx">Money</span><span class="p">,</span><span class="w"> </span><span class="nx">rate</span><span class="p">:</span><span class="w"> </span><span class="nx">InterestRate</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Money</span><span class="w"> </span><span class="nx">do</span>
+<span class="w">  </span><span class="nx">amount</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="nx">amount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nx">rate</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span>
+<span class="nx">end</span>
+</code></pre></div>
+
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="issue-z3-solver-not-found">Issue: "Z3 solver not found"</h3>
+<p><strong>Solution:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Install Z3</span>
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>z3<span class="w">  </span><span class="c1"># Ubuntu/Debian</span>
+brew<span class="w"> </span>install<span class="w"> </span>z3<span class="w">      </span><span class="c1"># macOS</span>
+
+<span class="c1"># Verify</span>
+z3<span class="w"> </span>--version
+</code></pre></div>
+
+<h3 id="issue-smt-solver-timeout">Issue: "SMT solver timeout"</h3>
+<p><strong>Cause:</strong> Complex constraints taking too long</p>
+<p><strong>Solution:</strong> Increase timeout or simplify constraints</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Increase timeout to 30 seconds</span>
+cure<span class="w"> </span>compile<span class="w"> </span>--smt-timeout<span class="w"> </span><span class="m">30000</span><span class="w"> </span>myfile.cure
+</code></pre></div>
+
+<h3 id="issue-constraint-verification-failed">Issue: "Constraint verification failed"</h3>
+<p><strong>Example Error:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">Error</span><span class="o">:</span><span class="w"> </span><span class="n">Refinement</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="n">violation</span>
+<span class="w">  </span><span class="n">Required</span><span class="o">:</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">  </span><span class="n">Got</span><span class="o">:</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">5</span>
+<span class="w">  </span><span class="n">Counterexample</span><span class="o">:</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">5</span>
+</code></pre></div>
+
+<p><strong>Solution:</strong> Fix the code to satisfy the constraint:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Before (error)</span>
+<span class="n">let</span><span class="w"> </span><span class="s">x:</span><span class="w"> </span><span class="s">Positive</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="o">-</span><span class="mi">5</span>
+
+<span class="c">%% After (correct)</span>
+<span class="n">let</span><span class="w"> </span><span class="s">x:</span><span class="w"> </span><span class="s">Positive</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">5</span>
+
+<span class="c">%% Or add a check</span>
+<span class="n">let</span><span class="w"> </span><span class="s">x</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">read_input</span><span class="p">()</span><span class="w"> </span><span class="n">in</span>
+<span class="k">if</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">then</span>
+<span class="w">  </span><span class="n">process</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w">  </span><span class="c">%% x is Positive here</span>
+<span class="k">else</span>
+<span class="w">  </span><span class="nb">error</span><span class="p">(</span><span class="s">&quot;Invalid input&quot;</span><span class="p">)</span>
+<span class="k">end</span>
+</code></pre></div>
+
+<h3 id="issue-unknown-constraint-result">Issue: "Unknown constraint result"</h3>
+<p><strong>Cause:</strong> Z3 cannot determine satisfiability (timeout or complexity)</p>
+<p><strong>Solution:</strong><br />
+- Simplify constraints<br />
+- Increase timeout<br />
+- Split complex constraints into simpler ones<br />
+- Add type annotations to help Z3</p>
+<hr />
+<h2 id="api-reference">API Reference</h2>
+<h3 id="refinement-type-syntax">Refinement Type Syntax</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="nx">TypeName</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">BaseType</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="kd">constraint</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="nx">Examples</span><span class="p">:</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Positive</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">NonZero</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Even</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span>
+<span class="k">type</span><span class="w"> </span><span class="nx">Range</span><span class="p">(</span><span class="nx">min</span><span class="p">,</span><span class="w"> </span><span class="nx">max</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nx">min</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="p">=&lt;</span><span class="w"> </span><span class="nx">max</span>
+</code></pre></div>
+
+<h3 id="supported-constraints">Supported Constraints</h3>
+<p><strong>Arithmetic:</strong><br />
+- <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>mod</code>, <code>rem</code></p>
+<p><strong>Comparison:</strong><br />
+- <code>==</code>, <code>/=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code></p>
+<p><strong>Boolean:</strong><br />
+- <code>and</code>, <code>or</code>, <code>not</code>, <code>=&gt;</code> (implies)</p>
+<p><strong>Functions (in constraints):</strong><br />
+- <code>length(list)</code> - List length<br />
+- <code>abs(x)</code> - Absolute value<br />
+- (More coming in Phase 2)</p>
+<h3 id="dependent-type-syntax">Dependent Type Syntax</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">function_name</span><span class="p">(</span><span class="n">param</span><span class="p">:</span><span class="w"> </span><span class="n">Type</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">RetType</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">constraint</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">body</span>
+<span class="n">end</span>
+
+<span class="o">%%</span><span class="w"> </span><span class="n">Examples</span><span class="p">:</span>
+<span class="n">def</span><span class="w"> </span><span class="n">safe_head</span><span class="p">(</span><span class="n">xs</span><span class="p">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">))</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">xs</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">xs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">end</span>
+
+<span class="n">def</span><span class="w"> </span><span class="n">bounded_add</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span>
+<span class="w">  </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<hr />
+<h2 id="whats-next">What's Next</h2>
+<h3 id="current-capabilities-phase-1">Current Capabilities (Phase 1)</h3>
+<p>✅ Basic refinement types<br />
+✅ Simple dependent types<br />
+✅ FSM reachability analysis<br />
+✅ Constraint solving with Z3  </p>
+<h3 id="coming-soon-phase-2-3">Coming Soon (Phase 2-3)</h3>
+<p>🚀 Quantifiers (<code>forall</code>, <code>exists</code>)<br />
+🚀 Array theory for collections<br />
+🚀 Refinement type subtyping<br />
+🚀 Pattern exhaustiveness synthesis<br />
+🚀 LSP real-time verification  </p>
+<h3 id="future-phase-4-5">Future (Phase 4-5)</h3>
+<p>📋 Temporal logic (LTL) for FSMs<br />
+📋 Proof term generation<br />
+📋 Verified data structure library<br />
+📋 Automatic invariant inference  </p>
+<hr />
+<h2 id="examples">Examples</h2>
+<p>See comprehensive examples in:</p>
+<ul>
+<li><code>examples/smt_refinement_types.cure</code> - 264 lines of refinement type examples</li>
+<li><code>examples/smt_fsm_verified.cure</code> - 432 lines of FSM verification examples</li>
+</ul>
+<hr />
+<h2 id="further-reading">Further Reading</h2>
+<ul>
+<li><a href="Z3_INTEGRATION_PLAN.md">Z3 Integration Plan</a> - Full integration roadmap</li>
+<li><a href="Z3_INTEGRATION_STATUS.md">Z3 Integration Status</a> - Current status and test results</li>
+<li><a href="SMT_QUICK_REFERENCE.md">SMT Quick Reference</a> - API and usage reference</li>
+<li><a href="TYPE_SYSTEM.md">Type System Documentation</a> - Cure's type system overview</li>
+</ul>
+<hr />
+<p><strong>Questions or Issues?</strong></p>
+<p>Report issues on GitHub or contact the Cure compiler team.</p>
+<p><strong>Last Updated:</strong> 2025-11-18</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

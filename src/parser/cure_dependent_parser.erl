@@ -69,9 +69,9 @@ is_value_param(_) ->
 
 %% @doc Parse type parameters (mix of type and value parameters)
 %% Examples:
-%%   <T> -> [{type, 'T'}]
-%%   <T, n: Nat> -> [{type, 'T'}, {value, n, 'Nat'}]
-%%   <T, m: Nat, n: Nat where n > 0> -> [{type, 'T'}, {value, m, 'Nat'}, {value, n, 'Nat', constraint}]
+%%   Type param T -&gt; [{type, 'T'}]
+%%   Type and value params T, n: Nat -&gt; [{type, 'T'}, {value, n, 'Nat'}]
+%%   With constraint T, m: Nat, n: Nat where n &gt; 0
 -spec parse_type_params([term()]) -> [#type_param{}].
 parse_type_params(Params) ->
     lists:map(fun parse_single_type_param/1, Params).
@@ -140,7 +140,7 @@ is_type_level_op('and') -> true;
 is_type_level_op('or') -> true;
 is_type_level_op(_) -> false.
 
-%% @doc Parse a type-level expression (e.g., m + n, i < n)
+%% @doc Parse a type-level expression (e.g., m + n, i less-than n)
 %% Type-level expressions use the same operators as term-level expressions
 %% but operate on type-level values (e.g., length parameters)
 -spec parse_type_level_expr(term()) -> #type_level_expr{}.

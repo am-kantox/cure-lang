@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.4.0">
+
+
+    <title>cure_fsm_monitor — cure v0.4.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-28C2A753.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="modules" class="page-module">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L3" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+    <span translate="no">cure_fsm_monitor</span> 
+    <small class="app-vsn" translate="no">(cure v0.4.0)</small>
+
+  </h1>
+
+
+    <section id="moduledoc">
+<h1>Cure FSM Runtime Verification</h1><p>This module implements runtime verification for FSMs by generating monitors
+from verified properties and injecting runtime assertions.</p><h2 id="module-features" class="section-heading">
+  <a href="#module-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Features</span>
+</h2>
+<ul><li><strong>Property Monitors</strong>: Generate runtime monitors from safety/liveness properties</li><li><strong>Assertion Injection</strong>: Inject runtime assertions into FSM transitions</li><li><strong>Violation Detection</strong>: Detect and report property violations at runtime</li><li><strong>Counterexample Generation</strong>: Provide traces when properties are violated</li><li><strong>Performance Overhead</strong>: &lt; 5% overhead for monitored FSMs</li></ul><h2 id="module-monitor-types" class="section-heading">
+  <a href="#module-monitor-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Monitor Types</span>
+</h2>
+<ol><li><strong>Safety Monitors</strong>: Ensure bad states are never reached</li><li><strong>Liveness Monitors</strong>: Ensure progress is always possible</li><li><strong>Deadlock Monitors</strong>: Detect deadlock conditions</li><li><strong>Custom Monitors</strong>: User-defined property monitors</li></ol><h2 id="module-usage" class="section-heading">
+  <a href="#module-usage" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Usage</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="c1">% Generate monitor from property</span><span class="w">
+</span><span class="n">Monitor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_monitor</span><span class="p">:</span><span class="nf">generate_monitor</span><span class="p" data-group-id="6774687887-1">(</span><span class="n">FsmDef</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6774687887-2">{</span><span class="ss">safety</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6774687887-3">[</span><span class="n">BadState</span><span class="p" data-group-id="6774687887-3">]</span><span class="p" data-group-id="6774687887-2">}</span><span class="p" data-group-id="6774687887-1">)</span><span class="p">,</span><span class="w">
+
+</span><span class="c1">% Inject monitor into FSM</span><span class="w">
+</span><span class="n">MonitoredFsm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_monitor</span><span class="p">:</span><span class="nf">inject_monitor</span><span class="p" data-group-id="6774687887-4">(</span><span class="n">FsmDef</span><span class="p">,</span><span class="w"> </span><span class="n">Monitor</span><span class="p" data-group-id="6774687887-4">)</span><span class="p">,</span><span class="w">
+
+</span><span class="c1">% Start monitored FSM</span><span class="w">
+</span><span class="p" data-group-id="6774687887-5">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Pid</span><span class="p" data-group-id="6774687887-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">start_fsm</span><span class="p" data-group-id="6774687887-6">(</span><span class="n">MonitoredFsm</span><span class="p">,</span><span class="w"> </span><span class="n">InitData</span><span class="p" data-group-id="6774687887-6">)</span><span class="p">,</span><span class="w">
+
+</span><span class="c1">% Monitor will report violations</span><span class="w">
+</span><span class="k">receive</span><span class="w">
+    </span><span class="p" data-group-id="6774687887-7">{</span><span class="ss">monitor_violation</span><span class="p">,</span><span class="w"> </span><span class="n">Pid</span><span class="p">,</span><span class="w"> </span><span class="n">Violation</span><span class="p" data-group-id="6774687887-7">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+        </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="6774687887-8">(</span><span class="s">&quot;Property violated: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6774687887-9">[</span><span class="n">Violation</span><span class="p" data-group-id="6774687887-9">]</span><span class="p" data-group-id="6774687887-8">)</span><span class="w">
+</span><span class="k">end</span><span class="p">.</span></code></pre>
+    </section>
+
+</div>
+
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Summary</span>
+    </h1>
+<div class="summary-functions summary">
+  <h2>
+    <a href="#functions">Functions</a>
+  </h2>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_assertion/2" data-no-tooltip translate="no">check_assertion(Assertion, Context)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#check_property/3" data-no-tooltip translate="no">check_property(FsmPid, Property, CurrentState)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#disable_monitor/2" data-no-tooltip translate="no">disable_monitor(FsmDef, MonitorId)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#enable_monitor/2" data-no-tooltip translate="no">enable_monitor(FsmDef, MonitorId)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#format_violation/1" data-no-tooltip translate="no">format_violation(Violation)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#generate_deadlock_monitor/1" data-no-tooltip translate="no">generate_deadlock_monitor(FsmDef)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#generate_liveness_monitor/1" data-no-tooltip translate="no">generate_liveness_monitor(FsmDef)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#generate_monitor/2" data-no-tooltip translate="no">generate_monitor(FsmDef, Property)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#generate_safety_monitor/2" data-no-tooltip translate="no">generate_safety_monitor(FsmDef, BadStates)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#inject_monitor/2" data-no-tooltip translate="no">inject_monitor(FsmDef, Monitor)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#inject_monitors/2" data-no-tooltip translate="no">inject_monitors(FsmDef, Monitors)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#list_monitors/1" data-no-tooltip translate="no">list_monitors(FsmDef)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#report_violation/3" data-no-tooltip translate="no">report_violation(State, Monitor, Violation)</a>
+
+      </div>
+
+    </div>
+
+</div>
+
+  </section>
+
+
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+      </a>
+      <span class="text">Functions</span>
+    </h1>
+    <div class="functions-list">
+<section class="detail" id="check_assertion/2">
+
+  <div class="detail-header">
+    <a href="#check_assertion/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_assertion(Assertion, Context)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L310" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_assertion(Assertion :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), Context :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> ok | {violation, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="check_property/3">
+
+  <div class="detail-header">
+    <a href="#check_property/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">check_property(FsmPid, Property, CurrentState)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L294" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> check_property(FsmPid :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:pid/0">pid</a>(), Property :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), CurrentState :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()) ->
+                        ok | {violation, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="disable_monitor/2">
+
+  <div class="detail-header">
+    <a href="#disable_monitor/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">disable_monitor(FsmDef, MonitorId)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L385" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> disable_monitor(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), MonitorId :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="enable_monitor/2">
+
+  <div class="detail-header">
+    <a href="#enable_monitor/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">enable_monitor(FsmDef, MonitorId)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L374" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> enable_monitor(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), MonitorId :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="format_violation/1">
+
+  <div class="detail-header">
+    <a href="#format_violation/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">format_violation(Violation)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L363" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> format_violation(Violation :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="generate_deadlock_monitor/1">
+
+  <div class="detail-header">
+    <a href="#generate_deadlock_monitor/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_deadlock_monitor(FsmDef)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L176" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_deadlock_monitor(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) ->
+                                   #fsm_monitor{id :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
+                                                type :: safety | liveness | deadlock | custom,
+                                                property :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                check_fn ::
+                                                    fun((<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> ok | {violation, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}),
+                                                enabled :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>(),
+                                                violations :: [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="generate_liveness_monitor/1">
+
+  <div class="detail-header">
+    <a href="#generate_liveness_monitor/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_liveness_monitor(FsmDef)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L136" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_liveness_monitor(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) ->
+                                   #fsm_monitor{id :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
+                                                type :: safety | liveness | deadlock | custom,
+                                                property :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                check_fn ::
+                                                    fun((<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> ok | {violation, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}),
+                                                enabled :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>(),
+                                                violations :: [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="generate_monitor/2">
+
+  <div class="detail-header">
+    <a href="#generate_monitor/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_monitor(FsmDef, Property)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L90" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_monitor(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), Property :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) ->
+                          #fsm_monitor{id :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
+                                       type :: safety | liveness | deadlock | custom,
+                                       property :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                       check_fn :: fun((<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> ok | {violation, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}),
+                                       enabled :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>(),
+                                       violations :: [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="generate_safety_monitor/2">
+
+  <div class="detail-header">
+    <a href="#generate_safety_monitor/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_safety_monitor(FsmDef, BadStates)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L108" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_safety_monitor(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), BadStates :: [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()]) ->
+                                 #fsm_monitor{id :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
+                                              type :: safety | liveness | deadlock | custom,
+                                              property :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                              check_fn ::
+                                                  fun((<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> ok | {violation, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}),
+                                              enabled :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>(),
+                                              violations :: [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="inject_monitor/2">
+
+  <div class="detail-header">
+    <a href="#inject_monitor/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">inject_monitor(FsmDef, Monitor)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L210" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> inject_monitor(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                     Monitor ::
+                         #fsm_monitor{id :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
+                                      type :: safety | liveness | deadlock | custom,
+                                      property :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                      check_fn :: fun((<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> ok | {violation, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}),
+                                      enabled :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>(),
+                                      violations :: [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]}) ->
+                        <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="inject_monitors/2">
+
+  <div class="detail-header">
+    <a href="#inject_monitors/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">inject_monitors(FsmDef, Monitors)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L215" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> inject_monitors(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                      Monitors ::
+                          [#fsm_monitor{id :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
+                                        type :: safety | liveness | deadlock | custom,
+                                        property :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                        check_fn :: fun((<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> ok | {violation, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}),
+                                        enabled :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>(),
+                                        violations :: [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]}]) ->
+                         <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="list_monitors/1">
+
+  <div class="detail-header">
+    <a href="#list_monitors/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">list_monitors(FsmDef)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L394" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> list_monitors(FsmDef :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()].</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="report_violation/3">
+
+  <div class="detail-header">
+    <a href="#report_violation/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">report_violation(State, Monitor, Violation)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L338" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> report_violation(State :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                       Monitor ::
+                           #fsm_monitor{id :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
+                                        type :: safety | liveness | deadlock | custom,
+                                        property :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                        check_fn :: fun((<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> ok | {violation, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}),
+                                        enabled :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>(),
+                                        violations :: [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]},
+                       Violation :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) ->
+                          ok.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+    </div>
+  </section>
+
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.4.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.4.0">Hex Preview</a>
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

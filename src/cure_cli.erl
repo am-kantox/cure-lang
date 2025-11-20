@@ -84,7 +84,7 @@ cure input.cure --no-optimize      # Disable optimizations
 -include("parser/cure_ast.hrl").
 
 %% Version information
--define(CURE_VERSION, "0.1.0").
+-define(CURE_VERSION, "0.4.0").
 -define(CURE_DESCRIPTION, "Cure Programming Language Compiler").
 
 %% Exit codes

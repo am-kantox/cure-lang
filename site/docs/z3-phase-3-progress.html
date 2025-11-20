@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z3 Integration - Phase 3: Type System Integration (In Progress) - Cure Documentation</title>
+    <meta name="description" content=" Executive Summary">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="z3-integration-phase-3-type-system-integration-in-progress">Z3 Integration - Phase 3: Type System Integration (In Progress)</h1>
+<h2 id="executive-summary">Executive Summary</h2>
+<p>Phase 3 focuses on deep integration of Z3 SMT solving into Cure's type system to enable refinement types, dependent type constraint checking, and automatic subtype verification.</p>
+<h2 id="current-status">Current Status</h2>
+<h3 id="completed-work">✅ Completed Work</h3>
+<ol>
+<li>
+<p><strong>Refinement Types Module Created</strong> (<code>src/types/cure_refinement_types.erl</code>, 463 LOC)<br />
+   - Refinement type data structure: base type + variable + predicate + location<br />
+   - Subtyping verification framework using SMT<br />
+   - Constraint checking for values against refinement predicates<br />
+   - Precondition/postcondition verification<br />
+   - Constraint propagation infrastructure<br />
+   - Error formatting and counterexample generation</p>
+</li>
+<li>
+<p><strong>Test Suite Created</strong> (<code>test/refinement_types_test.erl</code>, 357 LOC)<br />
+   - 20 comprehensive test cases:</p>
+<ul>
+<li>3 refinement type creation tests (PASSING)</li>
+<li>4 subtyping tests (1 timed out, needs optimization)</li>
+<li>5 constraint checking tests</li>
+<li>2 precondition verification tests</li>
+<li>3 constraint propagation tests</li>
+<li>2 error formatting tests</li>
+<li>2 integration tests</li>
+</ul>
+</li>
+<li>
+<p><strong>Example Code Created</strong> (<code>examples/refinement_types_advanced.cure</code>, 356 LOC)<br />
+   - Safe division with NonZero divisor<br />
+   - Array indexing with bounds checking<br />
+   - Financial calculations with constraints<br />
+   - Temperature conversions with physical constraints<br />
+   - Sorted list invariants<br />
+   - Network protocol state constraints (TCP)<br />
+   - Smart contract Wei amount tracking<br />
+   - Database pagination with size limits<br />
+   - Cryptographic key size validation<br />
+   - Matrix dimension compatibility</p>
+</li>
+</ol>
+<h3 id="issues-encountered">Issues Encountered</h3>
+<h4 id="smt-solver-performance">SMT Solver Performance</h4>
+<p>The internal DPLL-based SMT solver in <code>cure_smt_solver</code> is experiencing performance issues:<br />
+- Subtyping proofs timing out (e.g., proving <code>Positive &lt;: NonZero</code>)<br />
+- Case splitting in DPLL solver getting stuck in infinite loops<br />
+- Need to switch to Z3 process integration (Phase 1-2) for complex proofs</p>
+<p><strong>Root Cause</strong>: The internal solver uses a simple DPLL algorithm that doesn't handle quantified formulas or implications efficiently. For refinement type subtyping <code>∀x. P(x) =&gt; Q(x)</code>, this requires Z3's more advanced proof capabilities.</p>
+<p><strong>Solution</strong>: Update refinement types module to use the Z3 process integration from Phase 1-2:<br />
+- Use <code>cure_smt_translator</code> to convert Cure AST to SMT-LIB format<br />
+- Send queries directly to Z3 via <code>cure_smt_process</code><br />
+- Parse Z3 responses with <code>cure_smt_parser</code></p>
+<h4 id="api-mismatch">API Mismatch</h4>
+<p>Some expected functions weren't exported:<br />
+- <code>check_satisfiable/2</code> → Actually <code>check_satisfiable/1</code> (single constraint)<br />
+- <code>prove_constraint/3</code> → Actually <code>prove_constraint/2</code> (assumptions + goal)<br />
+- <code>expression_term/2</code> → Doesn't exist, use <code>addition_expression/1</code>, <code>subtraction_expression/1</code>, etc.</p>
+<p><strong>Status</strong>: Fixed in refinement types module.</p>
+<h2 id="architecture">Architecture</h2>
+<h3 id="refinement-type-representation">Refinement Type Representation</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">-</span><span class="ni">record</span><span class="p">(</span><span class="nl">refinement_type</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">base_type</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">type_expr</span><span class="p">(),</span><span class="w">      </span><span class="c">% Int, Real, Bool, etc.</span>
+<span class="w">    </span><span class="n">variable</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">atom</span><span class="p">(),</span><span class="w">            </span><span class="c">% x, y, z (refinement variable)</span>
+<span class="w">    </span><span class="n">predicate</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">expr</span><span class="p">(),</span><span class="w">           </span><span class="c">% x &gt; 0, x /= 0, etc.</span>
+<span class="w">    </span><span class="n">location</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">location</span><span class="p">()</span>
+<span class="p">}).</span>
+</code></pre></div>
+
+<h3 id="subtyping-verification-process">Subtyping Verification Process</h3>
+<div class="codehilite"><pre><span></span><code><span class="mi">1</span><span class="p">.</span><span class="w"> </span><span class="nx">Check</span><span class="w"> </span><span class="kd">base</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">compatibility</span><span class="w"> </span><span class="p">(</span><span class="nx">Positive</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">NonZero</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="err">✓</span><span class="p">)</span>
+<span class="mi">2</span><span class="p">.</span><span class="w"> </span><span class="nx">Normalize</span><span class="w"> </span><span class="nx">predicates</span><span class="w"> </span><span class="p">(</span><span class="nx">rename</span><span class="w"> </span><span class="nx">variables</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">consistency</span><span class="p">)</span>
+<span class="mi">3</span><span class="p">.</span><span class="w"> </span><span class="nx">Build</span><span class="w"> </span><span class="nx">implication</span><span class="p">:</span><span class="w"> </span><span class="nx">Pred1</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">Pred2</span>
+<span class="mi">4</span><span class="p">.</span><span class="w"> </span><span class="nx">Convert</span><span class="w"> </span><span class="nx">to</span><span class="w"> </span><span class="nx">SMT</span><span class="o">-</span><span class="nx">LIB</span><span class="w"> </span><span class="nx">format</span>
+<span class="mi">5</span><span class="p">.</span><span class="w"> </span><span class="nx">Ask</span><span class="w"> </span><span class="nx">Z3</span><span class="w"> </span><span class="nx">to</span><span class="w"> </span><span class="nx">prove</span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="nx">assert</span><span class="w"> </span><span class="p">(</span><span class="k">forall</span><span class="w"> </span><span class="p">((</span><span class="nx">x</span><span class="w"> </span><span class="nx">Int</span><span class="p">))</span><span class="w"> </span><span class="p">(</span><span class="o">=&gt;</span><span class="w"> </span><span class="nx">Pred1</span><span class="w"> </span><span class="nx">Pred2</span><span class="p">)))</span>
+<span class="mi">6</span><span class="p">.</span><span class="w"> </span><span class="nx">Check</span><span class="w"> </span><span class="nx">Z3</span><span class="w"> </span><span class="nx">result</span><span class="p">:</span><span class="w"> </span><span class="nx">sat</span><span class="o">/</span><span class="nx">unsat</span><span class="o">/</span><span class="nx">unknown</span>
+</code></pre></div>
+
+<h3 id="current-workflow">Current Workflow</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Cure</span><span class="w"> </span><span class="n">Source</span><span class="w"> </span><span class="n">Code</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="n">Type</span><span class="w"> </span><span class="n">Checker</span><span class="w"> </span><span class="p">(</span><span class="n">finds</span><span class="w"> </span><span class="n">refinement</span><span class="w"> </span><span class="n">type</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="n">Refinement</span><span class="w"> </span><span class="n">Types</span><span class="w"> </span><span class="n">Module</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nl">cure_refinement_types</span><span class="p">:</span><span class="n">check_subtype</span><span class="p">(</span><span class="n">Type1</span><span class="p">,</span><span class="w"> </span><span class="n">Type2</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="n">expr_to_smt_constraint</span><span class="p">(</span><span class="n">Pred1</span><span class="p">),</span><span class="w"> </span><span class="n">expr_to_smt_constraint</span><span class="p">(</span><span class="n">Pred2</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nl">cure_smt_solver</span><span class="p">:</span><span class="n">prove_constraint</span><span class="p">([</span><span class="n">Pred1</span><span class="p">],</span><span class="w"> </span><span class="n">Pred2</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="p">[</span><span class="n">CURRENT</span><span class="w"> </span><span class="n">BOTTLENECK</span><span class="o">:</span><span class="w"> </span><span class="n">Internal</span><span class="w"> </span><span class="n">DPLL</span><span class="w"> </span><span class="n">solver</span><span class="w"> </span><span class="n">times</span><span class="w"> </span><span class="k">out</span><span class="p">]</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="p">{</span><span class="n">proved</span><span class="p">,</span><span class="w"> </span><span class="n">Proof</span><span class="p">}</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="n">disproved</span><span class="p">,</span><span class="w"> </span><span class="n">CounterEx</span><span class="p">}</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">unknown</span>
+</code></pre></div>
+
+<h3 id="target-workflow-using-z3-integration">Target Workflow (Using Z3 Integration)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">Cure</span><span class="w"> </span><span class="nx">Source</span><span class="w"> </span><span class="nx">Code</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">Type</span><span class="w"> </span><span class="nx">Checker</span><span class="w"> </span><span class="p">(</span><span class="nx">finds</span><span class="w"> </span><span class="nx">refinement</span><span class="w"> </span><span class="k">type</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">Refinement</span><span class="w"> </span><span class="nx">Types</span><span class="w"> </span><span class="nx">Module</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">cure_refinement_types</span><span class="p">:</span><span class="nx">check_subtype</span><span class="p">(</span><span class="nx">Type1</span><span class="p">,</span><span class="w"> </span><span class="nx">Type2</span><span class="p">,</span><span class="w"> </span><span class="nx">Env</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">cure_smt_translator</span><span class="p">:</span><span class="nx">translate_refinement_subtype</span><span class="p">(</span><span class="nx">Pred1</span><span class="p">,</span><span class="w"> </span><span class="nx">Pred2</span><span class="p">,</span><span class="w"> </span><span class="nx">Var</span><span class="p">,</span><span class="w"> </span><span class="nx">BaseType</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">SMT</span><span class="o">-</span><span class="nx">LIB</span><span class="w"> </span><span class="nx">Query</span><span class="p">:</span><span class="w"> </span><span class="p">(</span><span class="nx">assert</span><span class="w"> </span><span class="p">(</span><span class="k">forall</span><span class="w"> </span><span class="p">((</span><span class="nx">x</span><span class="w"> </span><span class="nx">Int</span><span class="p">))</span><span class="w"> </span><span class="p">(</span><span class="o">=&gt;</span><span class="w"> </span><span class="p">(&gt;</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="k">not</span><span class="w"> </span><span class="p">(=</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="mi">0</span><span class="p">)))))</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">cure_smt_process</span><span class="p">:</span><span class="nx">query</span><span class="p">(</span><span class="nx">SmtLib</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">Z3</span><span class="w"> </span><span class="nx">Process</span><span class="w"> </span><span class="p">(</span><span class="kd">external</span><span class="p">,</span><span class="w"> </span><span class="nx">fast</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="nx">cure_smt_parser</span><span class="p">:</span><span class="nx">parse_result</span><span class="p">(</span><span class="nx">Z3Output</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↓</span>
+<span class="p">{</span><span class="nx">proved</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="nx">disproved</span><span class="p">,</span><span class="w"> </span><span class="nx">CounterExample</span><span class="p">}</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="nx">unknown</span><span class="p">}</span>
+</code></pre></div>
+
+<h2 id="next-steps">Next Steps</h2>
+<h3 id="immediate-critical-for-phase-3-completion">Immediate (Critical for Phase 3 Completion)</h3>
+<ol>
+<li>
+<p><strong>Switch to Z3 Process Integration</strong><br />
+   - Update <code>cure_refinement_types:verify_subtype_smt/3</code> to use Z3 directly<br />
+   - Add <code>translate_refinement_subtype/4</code> to <code>cure_smt_translator</code><br />
+   - Bypass internal DPLL solver for refinement type proofs</p>
+</li>
+<li>
+<p><strong>Fix Timeout Issues</strong><br />
+   - Set reasonable timeout (e.g., 5 seconds) for Z3 queries<br />
+   - Return <code>{ok, false}</code> on timeout (conservative)<br />
+   - Log timeout events for debugging</p>
+</li>
+<li>
+<p><strong>Complete Test Suite</strong><br />
+   - Run all 20 tests successfully<br />
+   - Add performance benchmarks (target: &lt;100ms per subtype check)<br />
+   - Test with complex refinement chains</p>
+</li>
+</ol>
+<h3 id="short-term-rest-of-phase-3">Short-term (Rest of Phase 3)</h3>
+<ol start="4">
+<li>
+<p><strong>Type Checker Integration</strong><br />
+   - Hook <code>cure_refinement_types</code> into <code>cure_typechecker:process_when_clause_constraint/3</code><br />
+   - Automatically check refinement type assignments<br />
+   - Verify function call arguments against refinement preconditions</p>
+</li>
+<li>
+<p><strong>Dependent Type Constraint Checking</strong><br />
+   - Verify dependent types at compile time (e.g., <code>Vector(T, n)</code> where <code>n &gt; 0</code>)<br />
+   - Check array bounds: <code>xs[i]</code> requires <code>0 &lt;= i &lt; length(xs)</code><br />
+   - Validate FSM state constraints</p>
+</li>
+<li>
+<p><strong>Constraint Environment Management</strong><br />
+   - Track refinement constraints through control flow<br />
+   - Propagate constraints in if/match expressions<br />
+   - Generate proof obligations for each branch</p>
+</li>
+</ol>
+<h3 id="documentation">Documentation</h3>
+<ol start="7">
+<li>
+<p><strong>User Guide Updates</strong><br />
+   - Document refinement type syntax<br />
+   - Show subtyping rules and proofs<br />
+   - Provide debugging tips for failed proofs</p>
+</li>
+<li>
+<p><strong>API Documentation</strong><br />
+   - Export key functions from <code>cure_refinement_types</code><br />
+   - Add EDoc comments with examples<br />
+   - Integration guide for type checker</p>
+</li>
+</ol>
+<h2 id="test-results">Test Results</h2>
+<h3 id="passing-tests-320-15">Passing Tests (3/20, 15%)</h3>
+<ul>
+<li>✅ <code>create_positive_type_test</code></li>
+<li>✅ <code>create_nonzero_type_test</code></li>
+<li>✅ <code>create_percentage_type_test</code></li>
+</ul>
+<h3 id="timeoutfailing-tests-1720-85">Timeout/Failing Tests (17/20, 85%)</h3>
+<ul>
+<li>⏱️ <code>subtyping_positive_is_nonzero_test</code> (TIMEOUT - DPLL bottleneck)</li>
+<li>⏱️ <code>subtyping_nonzero_not_positive_test</code> (TIMEOUT)</li>
+<li>⏱️ <code>subtyping_percentage_is_nonnegative_test</code> (TIMEOUT)</li>
+<li>⏱️ <code>subtyping_reflexive_test</code> (TIMEOUT)</li>
+<li>❓ <code>check_constraint_*</code> tests (untested after timeout)</li>
+<li>❓ <code>verify_precondition_*</code> tests (untested after timeout)</li>
+<li>❓ <code>propagate_constraints_*</code> tests (untested after timeout)</li>
+<li>❓ Integration tests (untested after timeout)</li>
+</ul>
+<p><strong>Target</strong>: 20/20 passing (100%) with Z3 integration</p>
+<h2 id="performance-goals">Performance Goals</h2>
+<ul>
+<li><strong>Subtype Check</strong>: &lt;100ms per check</li>
+<li><strong>Constraint Verification</strong>: &lt;50ms per constraint</li>
+<li><strong>Z3 Startup</strong>: &lt;50ms (cached process)</li>
+<li><strong>Complex Proof</strong>: &lt;500ms (with quantifiers)</li>
+</ul>
+<h2 id="code-metrics">Code Metrics</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Lines of Code</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cure_refinement_types.erl</td>
+<td>463</td>
+<td>Complete (needs Z3 integration)</td>
+</tr>
+<tr>
+<td>refinement_types_test.erl</td>
+<td>357</td>
+<td>Complete (blocked by timeouts)</td>
+</tr>
+<tr>
+<td>refinement_types_advanced.cure</td>
+<td>356</td>
+<td>Complete (examples)</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>1,176</strong></td>
+<td><strong>In Progress</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="integration-points">Integration Points</h2>
+<h3 id="with-existing-code">With Existing Code</h3>
+<ol>
+<li>
+<p><strong>cure_typechecker.erl</strong> (lines 3249-3370)<br />
+   - Hook refinement type checking into when clause processing<br />
+   - Call <code>cure_refinement_types:check_constraint/3</code></p>
+</li>
+<li>
+<p><strong>cure_smt_translator.erl</strong> (Phase 2 complete)<br />
+   - Add <code>translate_refinement_subtype/4</code> function<br />
+   - Generate SMT-LIB for <code>∀x. P(x) =&gt; Q(x)</code></p>
+</li>
+<li>
+<p><strong>cure_smt_process.erl</strong> (Phase 1 complete)<br />
+   - Already working with Z3 process<br />
+   - No changes needed</p>
+</li>
+<li>
+<p><strong>cure_types.erl</strong> (lines 3852-3893)<br />
+   - Constraint solving infrastructure ready<br />
+   - Add refinement type environment tracking</p>
+</li>
+</ol>
+<h2 id="risk-assessment">Risk Assessment</h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Severity</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Z3 process crashes</td>
+<td>Medium</td>
+<td>Restart process automatically, cache results</td>
+</tr>
+<tr>
+<td>Z3 not installed</td>
+<td>High</td>
+<td>Check for Z3 in build/test, provide clear error</td>
+</tr>
+<tr>
+<td>Slow Z3 queries</td>
+<td>Medium</td>
+<td>Implement timeout (5s), cache common proofs</td>
+</tr>
+<tr>
+<td>Complex proofs fail</td>
+<td>Low</td>
+<td>Fall back to conservative typing</td>
+</tr>
+</tbody>
+</table>
+<h2 id="timeline">Timeline</h2>
+<ul>
+<li><strong>Week 1</strong>: Switch to Z3 integration, fix timeouts ← <strong>WE ARE HERE</strong></li>
+<li><strong>Week 2</strong>: Complete test suite, integrate with type checker</li>
+<li><strong>Week 3</strong>: Constraint propagation, dependent types</li>
+<li><strong>Week 4</strong>: Documentation, performance tuning</li>
+</ul>
+<p><strong>Estimated Completion</strong>: 3-4 weeks from now</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Phase 3 has made solid progress with the refinement types infrastructure in place. The main blocker is switching from the internal DPLL solver to Z3 process integration. Once this is done, all tests should pass quickly, and we can proceed with type checker integration and constraint propagation.</p>
+<p><strong>Next Action</strong>: Implement <code>translate_refinement_subtype/4</code> in <code>cure_smt_translator</code> and update <code>verify_subtype_smt/3</code> to use Z3 directly.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

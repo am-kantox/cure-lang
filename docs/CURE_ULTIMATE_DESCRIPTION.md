@@ -1,6 +1,6 @@
 # Cure Language: Ultimate Implementation Description
 
-**Version:** 0.1.0 (October 2025)  
+**Version:** 0.4.0 (November 2025)  
 **Status:** Research/Educational Implementation with Production-Ready Core Components
 
 ---
@@ -729,7 +729,7 @@ All functions properly delegate to Erlang FSM runtime via type-safe `curify` bin
 3. **Parser Error Recovery** (1 week)
 4. **Standard Library Essentials** (1-2 weeks)
 
-**Deliverable:** Cure 0.2.0 - Stable core with verified dependent types
+**Deliverable:** Cure 0.5.0 - Stable core with verified dependent types
 
 ---
 
@@ -739,7 +739,7 @@ All functions properly delegate to Erlang FSM runtime via type-safe `curify` bin
 3. **Package Manager MVP** (3-4 weeks)
 4. **Incremental Compilation** (2-3 weeks)
 
-**Deliverable:** Cure 0.3.0 - Production-ready developer tooling
+**Deliverable:** Cure 0.6.0 - Production-ready developer tooling
 
 ---
 

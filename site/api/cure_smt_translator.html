@@ -5,16 +5,16 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.3.0">
+    <meta name="project" content="cure v0.4.0">
 
 
-    <title>cure_smt_translator — cure v0.3.0</title>
+    <title>cure_smt_translator — cure v0.4.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-DAE95399.js"></script>
+    <script src="dist/sidebar_items-28C2A753.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.3.0
+          v0.4.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.3.0/src/smt/cure_smt_translator.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/smt/cure_smt_translator.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_smt_translator</span> 
-    <small class="app-vsn" translate="no">(cure v0.3.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.4.0)</small>
 
   </h1>
 
@@ -138,9 +138,9 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
   <span class="text">Usage</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Translate a constraint to SMT-LIB query</span><span class="w">
-</span><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="1462186223-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="1462186223-2">(</span><span class="ss">x</span><span class="p" data-group-id="1462186223-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="1462186223-3">(</span><span class="mi">0</span><span class="p" data-group-id="1462186223-3">)</span><span class="p" data-group-id="1462186223-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1462186223-4">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="1462186223-5">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="1462186223-5">}</span><span class="p" data-group-id="1462186223-4">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_translator</span><span class="p">:</span><span class="nf">generate_query</span><span class="p" data-group-id="1462186223-6">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="1462186223-6">)</span><span class="p">.</span><span class="w">
+</span><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="7160408780-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="7160408780-2">(</span><span class="ss">x</span><span class="p" data-group-id="7160408780-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="7160408780-3">(</span><span class="mi">0</span><span class="p" data-group-id="7160408780-3">)</span><span class="p" data-group-id="7160408780-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7160408780-4">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="7160408780-5">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="7160408780-5">}</span><span class="p" data-group-id="7160408780-4">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_translator</span><span class="p">:</span><span class="nf">generate_query</span><span class="p" data-group-id="7160408780-6">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="7160408780-6">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; \&quot;(set-logic QF_LIA)\\n(declare-const x Int)\\n(assert (&gt; x 0))\\n(check-sat)\\n\&quot;</span></code></pre>
     </section>
 
@@ -202,6 +202,16 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
 
     <div class="summary-row">
       <div class="summary-signature">
+        <a href="#generate_constraint_check_query/3" data-no-tooltip translate="no">generate_constraint_check_query(ValueExpr, Predicate, Env)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Generate SMT-LIB query to check if a value satisfies a constraint.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
         <a href="#generate_query/2" data-no-tooltip translate="no">generate_query(Constraint, Env)</a>
 
       </div>
@@ -217,6 +227,16 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
       </div>
 
         <div class="summary-synopsis"><p>Generate SMT-LIB query with options.</p></div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#generate_refinement_subtype_query/4" data-no-tooltip translate="no">generate_refinement_subtype_query(Pred1, Pred2, Var, BaseType)</a>
+
+      </div>
+
+        <div class="summary-synopsis"><p>Generate SMT-LIB query to check refinement type subtyping.</p></div>
 
     </div>
 
@@ -269,7 +289,7 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.3.0/src/parser/cure_ast.hrl#L455" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/parser/cure_ast.hrl#L498" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -295,6 +315,8 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
           #field_access_expr{record :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), field :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
           #record_update_expr{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), base :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), fields :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
           #lambda_expr{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #forall_expr{variables :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #exists_expr{variables :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
           #fsm_spawn_expr{fsm_name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
                           init_args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
                           init_state :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
@@ -322,7 +344,7 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">smt_logic()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.3.0/src/smt/cure_smt_translator.erl#L43" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/smt/cure_smt_translator.erl#L47" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -360,7 +382,7 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">collect_variables(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.3.0/src/smt/cure_smt_translator.erl#L261" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/smt/cure_smt_translator.erl#L360" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -398,7 +420,7 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">declare_variable(VarName, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.3.0/src/smt/cure_smt_translator.erl#L288" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/smt/cure_smt_translator.erl#L387" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -428,6 +450,53 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
 <ul><li><code class="inline">iolist()</code> - SMT-LIB declaration</li></ul>
   </section>
 </section>
+<section class="detail" id="generate_constraint_check_query/3">
+
+  <div class="detail-header">
+    <a href="#generate_constraint_check_query/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_constraint_check_query(ValueExpr, Predicate, Env)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/smt/cure_smt_translator.erl#L580" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_constraint_check_query(<a href="#t:expr/0">expr</a>(), <a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:iolist/0">iolist</a>().</pre>
+
+      </div>
+
+<p>Generate SMT-LIB query to check if a value satisfies a constraint.</p><h2 id="generate_constraint_check_query/3-arguments" class="section-heading">
+  <a href="#generate_constraint_check_query/3-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">ValueExpr</code> - Expression representing the value</li><li><code class="inline">Predicate</code> - Constraint predicate</li><li><code class="inline">Env</code> - Environment with variable types</li></ul><h2 id="generate_constraint_check_query/3-returns" class="section-heading">
+  <a href="#generate_constraint_check_query/3-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">iolist()</code> - SMT-LIB query</li></ul><h2 id="generate_constraint_check_query/3-example" class="section-heading">
+  <a href="#generate_constraint_check_query/3-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="c1">% Check if 5 satisfies (x &gt; 0)</span><span class="w">
+</span><span class="n">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">literal_expr</span><span class="p" data-group-id="6480898765-1">{</span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="6480898765-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Pred</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="6480898765-2">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="6480898765-3">(</span><span class="ss">x</span><span class="p" data-group-id="6480898765-3">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="6480898765-4">(</span><span class="mi">0</span><span class="p" data-group-id="6480898765-4">)</span><span class="p" data-group-id="6480898765-2">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generate_constraint_check_query</span><span class="p" data-group-id="6480898765-5">(</span><span class="n">Value</span><span class="p">,</span><span class="w"> </span><span class="n">Pred</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6480898765-6">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="6480898765-7">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="6480898765-7">}</span><span class="p" data-group-id="6480898765-6">}</span><span class="p" data-group-id="6480898765-5">)</span><span class="p">.</span></code></pre>
+  </section>
+</section>
 <section class="detail" id="generate_query/2">
 
   <div class="detail-header">
@@ -436,7 +505,7 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">generate_query(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.3.0/src/smt/cure_smt_translator.erl#L69" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/smt/cure_smt_translator.erl#L73" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -470,8 +539,8 @@ assertions, and check-sat command.</p><h2 id="generate_query/2-arguments" class=
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="2408964872-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="2408964872-2">(</span><span class="ss">x</span><span class="p" data-group-id="2408964872-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="2408964872-3">(</span><span class="ss">y</span><span class="p" data-group-id="2408964872-3">)</span><span class="p" data-group-id="2408964872-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generate_query</span><span class="p" data-group-id="2408964872-4">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2408964872-5">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="2408964872-6">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="2408964872-6">}</span><span class="p">,</span><span class="w"> </span><span class="ss">y</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="2408964872-7">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="2408964872-7">}</span><span class="p" data-group-id="2408964872-5">}</span><span class="p" data-group-id="2408964872-4">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="3677631516-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="3677631516-2">(</span><span class="ss">x</span><span class="p" data-group-id="3677631516-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="3677631516-3">(</span><span class="ss">y</span><span class="p" data-group-id="3677631516-3">)</span><span class="p" data-group-id="3677631516-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generate_query</span><span class="p" data-group-id="3677631516-4">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3677631516-5">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="3677631516-6">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="3677631516-6">}</span><span class="p">,</span><span class="w"> </span><span class="ss">y</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="3677631516-7">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="3677631516-7">}</span><span class="p" data-group-id="3677631516-5">}</span><span class="p" data-group-id="3677631516-4">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="generate_query/3">
@@ -482,7 +551,7 @@ assertions, and check-sat command.</p><h2 id="generate_query/2-arguments" class=
     </a>
     <h1 class="signature" translate="no">generate_query(Constraint, Env, Opts)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.3.0/src/smt/cure_smt_translator.erl#L81" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/smt/cure_smt_translator.erl#L85" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -506,6 +575,55 @@ assertions, and check-sat command.</p><h2 id="generate_query/2-arguments" class=
 <ul><li><code class="inline">{get_model, boolean()}</code> - Include (get-model) command (default: true)</li><li><code class="inline">{logic, smt_logic()}</code> - Override logic inference</li><li><code class="inline">{timeout, integer()}</code> - Solver timeout hint in milliseconds</li></ul>
   </section>
 </section>
+<section class="detail" id="generate_refinement_subtype_query/4">
+
+  <div class="detail-header">
+    <a href="#generate_refinement_subtype_query/4" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_refinement_subtype_query(Pred1, Pred2, Var, BaseType)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/smt/cure_smt_translator.erl#L513" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_refinement_subtype_query(<a href="#t:expr/0">expr</a>(), <a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:iolist/0">iolist</a>().</pre>
+
+      </div>
+
+<p>Generate SMT-LIB query to check refinement type subtyping.</p><p>Checks if refinement type with predicate Pred1 is a subtype of refinement type
+with predicate Pred2. This is equivalent to proving: ∀Var. Pred1 =&gt; Pred2</p><h2 id="generate_refinement_subtype_query/4-arguments" class="section-heading">
+  <a href="#generate_refinement_subtype_query/4-arguments" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Arguments</span>
+</h2>
+<ul><li><code class="inline">Pred1</code> - Predicate of subtype (e.g., x &gt; 0)</li><li><code class="inline">Pred2</code> - Predicate of supertype (e.g., x /= 0)</li><li><code class="inline">Var</code> - Refinement variable name</li><li><code class="inline">BaseType</code> - Base type (int, real, bool)</li></ul><h2 id="generate_refinement_subtype_query/4-returns" class="section-heading">
+  <a href="#generate_refinement_subtype_query/4-returns" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Returns</span>
+</h2>
+<ul><li><code class="inline">iolist()</code> - SMT-LIB query</li></ul><h2 id="generate_refinement_subtype_query/4-example" class="section-heading">
+  <a href="#generate_refinement_subtype_query/4-example" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example</span>
+</h2>
+<pre><code class="makeup erlang" translate="no"><span class="c1">% Check if Positive &lt;: NonZero</span><span class="w">
+</span><span class="c1">% i.e., ∀x. (x &gt; 0) =&gt; (x ≠ 0)</span><span class="w">
+</span><span class="n">Pred1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="7337363243-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="7337363243-2">(</span><span class="ss">x</span><span class="p" data-group-id="7337363243-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="7337363243-3">(</span><span class="mi">0</span><span class="p" data-group-id="7337363243-3">)</span><span class="p" data-group-id="7337363243-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Pred2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="7337363243-4">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;/=&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="7337363243-5">(</span><span class="ss">x</span><span class="p" data-group-id="7337363243-5">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="7337363243-6">(</span><span class="mi">0</span><span class="p" data-group-id="7337363243-6">)</span><span class="p" data-group-id="7337363243-4">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generate_refinement_subtype_query</span><span class="p" data-group-id="7337363243-7">(</span><span class="n">Pred1</span><span class="p">,</span><span class="w"> </span><span class="n">Pred2</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="7337363243-7">)</span><span class="p">.</span></code></pre>
+  </section>
+</section>
 <section class="detail" id="infer_logic/1">
 
   <div class="detail-header">
@@ -514,7 +632,7 @@ assertions, and check-sat command.</p><h2 id="generate_query/2-arguments" class=
     </a>
     <h1 class="signature" translate="no">infer_logic(Constraint)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.3.0/src/smt/cure_smt_translator.erl#L205" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/smt/cure_smt_translator.erl#L279" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -535,7 +653,7 @@ assertions, and check-sat command.</p><h2 id="generate_query/2-arguments" class=
   </a>
   <span class="text">Logics</span>
 </h2>
-<ul><li><code class="inline">QF_LIA</code> - Quantifier-free linear integer arithmetic</li><li><code class="inline">QF_LRA</code> - Quantifier-free linear real arithmetic  </li><li><code class="inline">QF_LIRA</code> - Quantifier-free linear integer/real arithmetic</li><li><code class="inline">QF_NIA</code> - Quantifier-free nonlinear integer arithmetic</li></ul><h2 id="infer_logic/1-arguments" class="section-heading">
+<ul><li><code class="inline">QF_LIA</code> - Quantifier-free linear integer arithmetic</li><li><code class="inline">QF_LRA</code> - Quantifier-free linear real arithmetic  </li><li><code class="inline">QF_LIRA</code> - Quantifier-free linear integer/real arithmetic</li><li><code class="inline">QF_NIA</code> - Quantifier-free nonlinear integer arithmetic</li><li><code class="inline">LIA</code> - Linear integer arithmetic (with quantifiers)</li><li><code class="inline">LRA</code> - Linear real arithmetic (with quantifiers)</li><li><code class="inline">NIA</code> - Nonlinear integer arithmetic (with quantifiers)</li></ul><h2 id="infer_logic/1-arguments" class="section-heading">
   <a href="#infer_logic/1-arguments" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -558,7 +676,7 @@ assertions, and check-sat command.</p><h2 id="generate_query/2-arguments" class=
     </a>
     <h1 class="signature" translate="no">translate_expr(Expr)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.3.0/src/smt/cure_smt_translator.erl#L125" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/smt/cure_smt_translator.erl#L134" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -596,7 +714,7 @@ assertions, and check-sat command.</p><h2 id="generate_query/2-arguments" class=
     </a>
     <h1 class="signature" translate="no">translate_expr/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.3.0/src/smt/cure_smt_translator.erl#L130" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/smt/cure_smt_translator.erl#L139" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -622,9 +740,9 @@ assertions, and check-sat command.</p><h2 id="generate_query/2-arguments" class=
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.3.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.4.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.3.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.4.0">Hex Preview</a>
 
           </span>
 
