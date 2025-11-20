@@ -111,7 +111,7 @@ extract_param_type_constraints(#param{name = Name, type = Type, location = _Loc}
     case Type of
         undefined ->
             [];
-        #dependent_type{name = _TypeName, params = _Params} ->
+        #dependent_type{name = _TypeName, type_params = _Params} ->
             % Create SMT constraint for dependent type parameters
             % For now, simplified - actual implementation would extract constraints from params
             [];
@@ -187,7 +187,7 @@ extract_pattern_constraints(#match_clause{pattern = Pattern, guard = Guard, body
 %% @doc Extract dependent type constraints (length-indexed vectors, etc.)
 extract_dependent_type_constraints(#dependent_type{
     name = _TypeName,
-    params = Params
+    type_params = Params
 }) ->
     % Extract constraints from type parameters
     ParamConstraints = lists:flatmap(fun extract_type_param_constraints/1, Params),
@@ -259,7 +259,7 @@ extract_dependent_param_constraints(#param{name = Name, type = Type}, Body) ->
         #list_type{length = LengthVar} when LengthVar =/= undefined ->
             % Extract list length constraints from pattern matching
             extract_list_length_constraints(Name, LengthVar, Body);
-        #dependent_type{params = Params} ->
+        #dependent_type{type_params = Params} ->
             % Extract dependent type parameter constraints
             lists:flatmap(fun extract_type_param_constraints/1, Params);
         _ ->
@@ -302,7 +302,7 @@ verify_item_refinements(#function_def{params = Params, body = Body, location = L
     Refinements = lists:filtermap(
         fun(#param{name = Name, type = Type}) ->
             case Type of
-                #dependent_type{params = _Params} ->
+                #dependent_type{type_params = _Params} ->
                     % For now, return empty refinement
                     {true, {Name, undefined}};
                 _ ->
