@@ -17,13 +17,15 @@ syn keyword cureKeyword curify for
 " Boolean literals
 syn keyword cureBoolean true false
 
-" Result/Option constructors
-syn keyword cureConstructor Ok Error Some None Unit ok error
+" Result/Option constructors and special types
+syn keyword cureConstructor Ok Error Some None Unit ok error Nat Atom Zero Succ Pred Self
 
 " Operators
 syn keyword cureOperator and or not
 syn match cureOperator "\v\="
+syn match cureOperator "\v\=\>"
 syn match cureOperator "\v\-\>"
+syn match cureOperator "\v\-\-\>"
 syn match cureOperator "\v\:\:"
 syn match cureOperator "\v\|>"
 syn match cureOperator "\v\+\+"
@@ -35,11 +37,21 @@ syn match cureOperator "\v\/"
 syn match cureOperator "\v\%"
 syn match cureOperator "\v\<\="
 syn match cureOperator "\v\>\="
+syn match cureOperator "\v\<>"
 syn match cureOperator "\v\=\="
 syn match cureOperator "\v\!\="
 syn match cureOperator "\v\<"
 syn match cureOperator "\v\>"
 syn match cureOperator "\v\|"
+" Functor/Applicative operators
+syn match cureOperator "\v\<\$"
+syn match cureOperator "\v\$\>"
+syn match cureOperator "\v\<\*\>"
+syn match cureOperator "\v\*\>"
+syn match cureOperator "\v\<\*"
+" Monad operators
+syn match cureOperator "\v\>\>\="
+syn match cureOperator "\v\>\>"
 
 " Delimiters
 syn match cureDelimiter "\v\("

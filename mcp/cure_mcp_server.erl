@@ -53,6 +53,9 @@ loop(State) ->
 
 loop(State, Buffer) ->
     receive
+        {stdin, eof} ->
+            % Gracefully exit on EOF from stdin so non-interactive usage doesn't hang
+            ok;
         {stdin, Data} ->
             NewBuffer = <<Buffer/binary, Data/binary>>,
             case parse_jsonrpc_messages(NewBuffer) of
@@ -127,7 +130,8 @@ stdin_reader_loop(Port) ->
             ?MODULE ! {stdin, Data},
             stdin_reader_loop(Port);
         {Port, eof} ->
-            % Don't log to avoid interfering with stdio protocol
+            % Signal EOF to main loop to terminate gracefully
+            ?MODULE ! {stdin, eof},
             ok;
         _Other ->
             stdin_reader_loop(Port)
