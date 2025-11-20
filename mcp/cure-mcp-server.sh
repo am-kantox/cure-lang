@@ -47,11 +47,9 @@ for path in "${CODE_PATHS[@]}"; do
 done
 
 # Start the MCP server
-# Use -noshell for stdio communication
-# Use -noinput to prevent interactive mode
+# Use -noshell and -noinput for stdio communication
 cd "$PROJECT_ROOT/mcp"
 exec erl $PATH_ARGS \
     -noshell \
     -noinput \
-    -eval "cure_mcp_server:start()" \
-    -run init stop
+    -s cure_mcp_server start

@@ -19,7 +19,7 @@ start() ->
 
 start(Options) ->
     State = init_state(Options),
-    log_info("Cure MCP Server starting..."),
+    %% Don't log on startup to avoid interfering with JSON-RPC protocol
     loop(State).
 
 %% Initialize server state with tool handlers
@@ -61,12 +61,12 @@ loop(State) ->
 
 %% Read a JSON-RPC request from stdin
 read_jsonrpc_request() ->
-    case io:get_line("") of
+    case file:read_line(standard_io) of
         eof ->
             eof;
         {error, Reason} ->
             {error, Reason};
-        Line ->
+        {ok, Line} ->
             try
                 Request = jsone:decode(list_to_binary(string:trim(Line))),
                 {ok, Request}
@@ -825,12 +825,12 @@ error_response(Id, Code, Message) ->
         }
     }.
 
-%% Logging helpers
-log_info(Msg) ->
-    log_info(Msg, []).
+%% Logging helpers - disabled to avoid terminal issues in MCP mode
+log_info(_Msg) ->
+    ok.
 
-log_info(Fmt, Args) ->
-    error_logger:info_msg("[Cure MCP] " ++ Fmt ++ "~n", Args).
+log_info(_Fmt, _Args) ->
+    ok.
 
-log_error(Fmt, Args) ->
-    error_logger:error_msg("[Cure MCP] " ++ Fmt ++ "~n", Args).
+log_error(_Fmt, _Args) ->
+    ok.

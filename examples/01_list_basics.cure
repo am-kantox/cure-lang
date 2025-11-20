@@ -9,7 +9,7 @@ module ListBasics do
   import Std.Io [println/1]
   
   # Main demonstration function
-  def main(): Int =
+  def main(): List(Int) =
     println("=== List Operations Demo ===")
     println("")
     
@@ -36,6 +36,6 @@ module ListBasics do
     println("")
     
     println("=== Demo Complete ===")
-    sum
+    doubled
 
 end
