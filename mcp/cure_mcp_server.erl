@@ -19,6 +19,9 @@ start() ->
 
 start(Options) ->
     State = init_state(Options),
+    %% Start stdin reader process
+    register(?MODULE, self()),
+    spawn_link(fun() -> stdin_reader() end),
     %% Don't log on startup to avoid interfering with JSON-RPC protocol
     loop(State).
 
@@ -44,42 +47,91 @@ init_state(_Options) ->
         }
     }.
 
-%% Main server loop - read JSON-RPC requests from stdin
+%% Main server loop - receive messages from stdin reader
 loop(State) ->
-    case read_jsonrpc_request() of
-        eof ->
-            log_info("EOF received, shutting down"),
-            ok;
-        {ok, Request} ->
-            Response = handle_request(Request, State),
-            send_jsonrpc_response(Response),
-            loop(State);
-        {error, Reason} ->
-            log_error("Error reading request: ~p", [Reason]),
-            loop(State)
+    loop(State, <<>>).
+
+loop(State, Buffer) ->
+    receive
+        {stdin, Data} ->
+            NewBuffer = <<Buffer/binary, Data/binary>>,
+            case parse_jsonrpc_messages(NewBuffer) of
+                {ok, Requests, Remaining} ->
+                    NewState = lists:foldl(
+                        fun(Request, St) ->
+                            Response = handle_request(Request, St),
+                            send_jsonrpc_response(Response),
+                            St
+                        end,
+                        State,
+                        Requests
+                    ),
+                    loop(NewState, Remaining);
+                {incomplete, _} ->
+                    loop(State, NewBuffer)
+            end;
+        Other ->
+            log_error("Unexpected message: ~p", [Other]),
+            loop(State, Buffer)
     end.
 
-%% Read a JSON-RPC request from stdin
-read_jsonrpc_request() ->
-    case file:read_line(standard_io) of
-        eof ->
-            eof;
-        {error, Reason} ->
-            {error, Reason};
-        {ok, Line} ->
+%% Parse JSON-RPC messages from buffer (can be multiple messages)
+parse_jsonrpc_messages(Buffer) ->
+    parse_jsonrpc_messages(Buffer, []).
+
+parse_jsonrpc_messages(<<>>, Acc) ->
+    {ok, lists:reverse(Acc), <<>>};
+parse_jsonrpc_messages(Buffer, Acc) ->
+    % Try to find a complete JSON message (newline-delimited)
+    case binary:split(Buffer, <<"\n">>) of
+        [Line, Rest] when Line =/= <<>> ->
             try
-                Request = jsone:decode(list_to_binary(string:trim(Line))),
-                {ok, Request}
+                Request = json:decode(Line),
+                parse_jsonrpc_messages(Rest, [Request | Acc])
             catch
-                _:Error ->
-                    {error, {parse_error, Error}}
-            end
+                _:_ ->
+                    % Skip invalid JSON and continue
+                    parse_jsonrpc_messages(Rest, Acc)
+            end;
+        [Line, Rest] ->
+            % Empty line, skip it
+            parse_jsonrpc_messages(Rest, Acc);
+        [Incomplete] ->
+            % No newline found, need more data
+            {incomplete, <<Incomplete/binary>>}
     end.
 
 %% Send a JSON-RPC response to stdout
 send_jsonrpc_response(Response) ->
-    Json = jsone:encode(Response),
+    Json = json:encode(Response),
     io:format("~s~n", [Json]).
+
+%% Stdin reader process using port to avoid terminal crashes
+stdin_reader() ->
+    % Open stdin as a port to read binary data (fd 0 for input, fd 0 for output to avoid conflicts)
+    Port = open_port({fd, 0, 0}, [stream, binary, eof, {line, 8192}]),
+    stdin_reader_loop(Port).
+
+stdin_reader_loop(Port) ->
+    receive
+        {Port, {data, {eol, Data}}} ->
+            % Line-based read, add newline back
+            ?MODULE ! {stdin, <<Data/binary, "\n">>},
+            stdin_reader_loop(Port);
+        {Port, {data, {noeol, Data}}} ->
+            % Partial line without newline
+            ?MODULE ! {stdin, Data},
+            stdin_reader_loop(Port);
+        {Port, {data, Data}} ->
+            % Raw binary data
+            ?MODULE ! {stdin, Data},
+            stdin_reader_loop(Port);
+        {Port, eof} ->
+            % Don't log to avoid interfering with stdio protocol
+            ok;
+        _Other ->
+            stdin_reader_loop(Port)
+    end.
 
 %% Handle incoming JSON-RPC request
 handle_request(Request, State) ->

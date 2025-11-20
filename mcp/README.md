@@ -58,7 +58,7 @@ rebar3 compile
 
 ```bash
 cd mcp
-./cure-mcp-server.sh
+./cure-mcp
 # Press Ctrl+C to exit
 ```
 
@@ -79,7 +79,7 @@ To use the Cure MCP server with Claude Desktop, add it to your Claude configurat
 {
   "mcpServers": {
     "cure": {
-      "command": "/opt/Proyectos/Ammotion/cure/mcp/cure-mcp-server.sh",
+      "command": "/opt/Proyectos/Ammotion/cure/cure-mcp",
       "args": []
     }
   }
@@ -105,7 +105,7 @@ The server uses JSON-RPC 2.0 over stdio, so it works with any MCP-compatible cli
 
 ```bash
 # Start the server
-./cure-mcp-server.sh
+./cure-mcp
 
 # The server reads JSON-RPC requests from stdin
 # and writes responses to stdout
@@ -279,13 +279,13 @@ Test the server manually using echo and pipes:
 
 ```bash
 # Test initialize
-echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./cure-mcp-server.sh
+echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./cure-mcp
 
 # Test tools list
-echo '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":2}' | ./cure-mcp-server.sh
+echo '{"jsonrpc":"2.0","method":"tools/list","params":{},"id":2}' | ./cure-mcp
 
 # Test validate_syntax
-echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"validate_syntax","arguments":{"code":"module Test do\nend"}},"id":3}' | ./cure-mcp-server.sh
+echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"validate_syntax","arguments":{"code":"module Test do\nend"}},"id":3}' | ./cure-mcp
 ```
 
 ### Adding New Tools

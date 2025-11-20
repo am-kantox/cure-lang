@@ -1,0 +1,40 @@
+#!/usr/bin/env escript
+%% -*- erlang -*-
+%%! -noinput
+
+-mode(compile).
+
+main([]) ->
+  main(["start"]);
+main(["start"]) ->
+  % Get script directory
+  ScriptPath = escript:script_name(),
+  ScriptDir = filename:dirname(ScriptPath),
+
+  % Add code paths
+  Paths = [
+    filename:join(ScriptDir, "_build/ebin"),
+    filename:join(ScriptDir, "_build/lsp"),
+    filename:join(ScriptDir, "_build/lib"),
+    filename:join(ScriptDir, "_build/lib/std")
+  ],
+  lists:foreach(fun code:add_pathz/1, Paths),
+
+  % Start the MCP server - this blocks until server exits
+  cure_mcp_server:start();
+main(["--version"]) ->
+  io:format(standard_error, "Cure MCP Server version 0.1.0~n", []),
+  halt(0);
+main(["--help"]) ->
+  io:format(standard_error, "Cure Model Context Protocol (MCP) Server~n", []),
+  io:format(standard_error, "~n", []),
+  io:format(standard_error, "Usage:~n", []),
+  io:format(standard_error, "  cure-mcp [start]     Start the MCP server (default)~n", []),
+  io:format(standard_error, "  cure-mcp --version   Show version information~n", []),
+  io:format(standard_error, "  cure-mcp --help      Show this help message~n", []),
+  io:format(standard_error, "~n", []),
+  io:format(standard_error, "The server communicates via stdin/stdout using JSON-RPC 2.0.~n", []),
+  halt(0);
+main(_) ->
+  io:format(standard_error, "Unknown command. Use --help for usage information.~n", []),
+  halt(1).

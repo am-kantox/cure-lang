@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Model Context Protocol server for the Cure programming language",
   "bin": {
-    "cure-mcp": "./cure-mcp-server.sh"
+    "cure-mcp": "./cure-mcp"
   },
   "keywords": [
     "cure",
@@ -21,7 +21,7 @@
     "url": "https://github.com/am-kantox/cure-lang"
   },
   "scripts": {
-    "start": "./cure-mcp-server.sh"
+    "start": "./cure-mcp"
   },
   "engines": {
     "node": ">=16.0.0"

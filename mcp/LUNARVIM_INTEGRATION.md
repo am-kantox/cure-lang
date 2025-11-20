@@ -40,7 +40,7 @@ Your LunarVim config (`~/.config/lvim/config.lua`) now includes:
     require("mcphub").setup({
       servers = {
         cure = {
-          command = "/opt/Proyectos/Ammotion/cure/mcp/cure-mcp-server.sh",
+          command = "/opt/Proyectos/Ammotion/cure/cure-mcp",
           args = {},
           stdio = true,
           description = "Cure language MCP server - compilation, type-checking, FSM analysis",
@@ -193,14 +193,14 @@ They work together to provide comprehensive Cure language support.
 1. Restart LunarVim completely
 2. Check if the server script is executable:
    ```bash
-   ls -la /opt/Proyectos/Ammotion/cure/mcp/cure-mcp-server.sh
-   chmod +x /opt/Proyectos/Ammotion/cure/mcp/cure-mcp-server.sh
+   ls -la /opt/Proyectos/Ammotion/cure/cure-mcp
+   chmod +x /opt/Proyectos/Ammotion/cure/cure-mcp
    ```
 
 3. Test the server manually:
    ```bash
    echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | \
-     /opt/Proyectos/Ammotion/cure/mcp/cure-mcp-server.sh
+     /opt/Proyectos/Ammotion/cure/cure-mcp
    ```
 
 ### Tools Not Working

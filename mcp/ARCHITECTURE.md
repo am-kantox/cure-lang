@@ -173,7 +173,7 @@ All compiler modules are called directly as Erlang functions, ensuring type safe
 2. Stack traces included in error messages
 3. Location information preserved when available
 
-### 6. Startup Script (`cure-mcp-server.sh`)
+### 6. Startup Script (`cure-mcp`)
 
 Shell script that:
 1. Validates Erlang installation
@@ -344,7 +344,7 @@ No configuration file needed. Server behavior controlled by:
 
 ### Development
 ```bash
-./cure-mcp-server.sh
+./cure-mcp
 ```
 
 ### Production (via npm)
@@ -359,7 +359,7 @@ Add to config file:
 {
   "mcpServers": {
     "cure": {
-      "command": "/path/to/cure-mcp-server.sh"
+      "command": "/path/to/cure-mcp"
     }
   }
 }

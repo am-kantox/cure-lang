@@ -14,7 +14,7 @@ rebar3 compile
 
 ```bash
 cd mcp
-./cure-mcp-server.sh &
+./cure-mcp &
 SERVER_PID=$!
 
 # Send test request
@@ -33,7 +33,7 @@ kill $SERVER_PID
 {
   "mcpServers": {
     "cure": {
-      "command": "/opt/Proyectos/Ammotion/cure/mcp/cure-mcp-server.sh",
+      "command": "/opt/Proyectos/Ammotion/cure/cure-mcp",
       "args": []
     }
   }
@@ -89,7 +89,7 @@ The MCP protocol uses JSON-RPC 2.0. Test manually:
 cd /opt/Proyectos/Ammotion/cure/mcp
 
 # Validate syntax test
-echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"validate_syntax","arguments":{"code":"module Test do\nend"}},"id":1}' | ./cure-mcp-server.sh
+echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"validate_syntax","arguments":{"code":"module Test do\nend"}},"id":1}' | ./cure-mcp
 ```
 
 Expected response should include `"jsonrpc":"2.0"` and a result.
