@@ -540,15 +540,32 @@ handle_code_action(Id, Params, State) ->
     Context = maps:get(context, Params, #{}),
     Diagnostics = maps:get(diagnostics, Context, []),
 
-    % Generate code actions for refinement type diagnostics
+    % Generate code actions for refinement type and type hole diagnostics
     Actions = lists:flatmap(
         fun(Diagnostic) ->
             Code = maps:get(code, Diagnostic, <<>>),
-            case is_refinement_diagnostic(Code) of
-                true ->
-                    cure_lsp_smt:generate_code_actions(Diagnostic, Uri);
-                false ->
-                    []
+            case Code of
+                <<"type-hole">> ->
+                    % Get AST for type hole actions
+                    case maps:get(Uri, State#state.documents, undefined) of
+                        undefined ->
+                            [];
+                        Doc ->
+                            Text = maps:get(text, Doc),
+                            case parse_to_ast(Text) of
+                                {ok, AST} ->
+                                    cure_lsp_type_holes:generate_hole_code_actions(
+                                        Uri, Diagnostic, AST
+                                    );
+                                _ ->
+                                    []
+                            end
+                    end;
+                _ ->
+                    case is_refinement_diagnostic(Code) of
+                        true -> cure_lsp_smt:generate_code_actions(Diagnostic, Uri);
+                        false -> []
+                    end
             end
         end,
         Diagnostics
@@ -564,6 +581,8 @@ handle_code_action(Id, Params, State) ->
 
 %% Check if a diagnostic code is from refinement type checking
 is_refinement_diagnostic(<<"refinement_", _/binary>>) -> true;
+% Add type holes
+is_refinement_diagnostic(<<"type-hole">>) -> true;
 is_refinement_diagnostic(_) -> false.
 
 apply_changes(Text, Changes) ->
@@ -635,8 +654,11 @@ diagnose_document(Uri, Text, State) ->
     % Run SMT verification for refinement type checking
     {SmtDiagnostics, NewSmtState} = run_smt_verification(Uri, Text, State#state.smt_state),
 
+    % Run type holes detection and inference
+    HoleDiagnostics = run_type_holes(Uri, Text),
+
     % Combine all diagnostics
-    AllDiagnostics = BasicDiagnostics ++ SmtDiagnostics,
+    AllDiagnostics = BasicDiagnostics ++ SmtDiagnostics ++ HoleDiagnostics,
 
     Message = #{
         jsonrpc => <<"2.0">>,
@@ -666,32 +688,48 @@ send_empty_diagnostics(Uri, State) ->
 %% Run SMT verification on document
 run_smt_verification(Uri, Text, SmtState) ->
     try
-        % Parse document to get AST for SMT verification
-        TextBin =
-            if
-                is_binary(Text) -> Text;
-                is_list(Text) -> list_to_binary(Text);
-                true -> <<>>
-            end,
-
-        case cure_lexer:tokenize(TextBin) of
-            {ok, Tokens} ->
-                case cure_parser:parse(Tokens) of
-                    {ok, AST} ->
-                        % Run incremental SMT verification
-                        cure_lsp_smt:verify_document_incremental(SmtState, {Uri, AST});
-                    {error, _ParseError} ->
-                        % Parse error - no SMT diagnostics
-                        {[], SmtState}
-                end;
-            {error, _LexError} ->
-                % Lex error - no SMT diagnostics
+        case parse_to_ast(Text) of
+            {ok, AST} ->
+                % Run incremental SMT verification
+                cure_lsp_smt:verify_document_incremental(SmtState, {Uri, AST});
+            {error, _} ->
+                % Parse error - no SMT diagnostics
                 {[], SmtState}
         end
     catch
         _Error:_Reason:_Stack ->
             % SMT verification failed - return no diagnostics, keep old state
             {[], SmtState}
+    end.
+
+%% Run type holes detection and inference
+run_type_holes(Uri, Text) ->
+    try
+        case parse_to_ast(Text) of
+            {ok, AST} ->
+                cure_lsp_type_holes:generate_hole_diagnostics(Uri, AST);
+            {error, _} ->
+                []
+        end
+    catch
+        _:_ ->
+            []
+    end.
+
+%% Helper: Parse text to AST
+parse_to_ast(Text) ->
+    TextBin =
+        if
+            is_binary(Text) -> Text;
+            is_list(Text) -> list_to_binary(Text);
+            true -> <<>>
+        end,
+
+    case cure_lexer:tokenize(TextBin) of
+        {ok, Tokens} ->
+            cure_parser:parse(Tokens);
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 %% Extract text from content changes (for fallback)

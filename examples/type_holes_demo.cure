@@ -1,0 +1,34 @@
+# Type Holes Demo
+# This file demonstrates the new type holes feature
+
+module TypeHolesDemo do
+  export [main/0]
+  
+  import Std.List [map, filter]
+  import Std.Io [println]
+  
+  # Example 1: Use _ as a type hole for return type
+  # The LSP will infer this as List(Int) and offer a code action to fill it in
+  def double_list(numbers: List(Int)): _ =
+    map(numbers, fn(x) -> x * 2 end)
+  
+  # Example 2: Multiple type holes
+  # Hover over each _ to see the inferred type
+  def process_data(xs: _): _ =
+    let doubled = map(xs, fn(x) -> x * 2 end)
+    filter(doubled, fn(x) -> x > 5 end)
+  
+  # Example 3: Already complete types (for comparison)
+  def add_one(numbers: List(Int)): List(Int) =
+    map(numbers, fn(x) -> x + 1 end)
+  
+  def main(): Int =
+    println("Type Holes Demo")
+    
+    # let numbers = [1, 2, 3, 4, 5]
+    # let doubled = double_list(numbers)
+    # let processed = process_data(numbers)
+    
+    0  # Exit code
+
+end

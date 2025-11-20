@@ -302,7 +302,15 @@ get_code_actions(Uri, _Range, Diagnostics, State) ->
             % Generate code actions for each diagnostic
             lists:flatmap(
                 fun(Diagnostic) ->
-                    cure_lsp_code_actions:generate_code_actions(Uri, Diagnostic, AST)
+                    % Try type hole actions first
+                    HoleActions = cure_lsp_type_holes:generate_hole_code_actions(
+                        Uri, Diagnostic, AST
+                    ),
+                    % Then try general code actions
+                    GeneralActions = cure_lsp_code_actions:generate_code_actions(
+                        Uri, Diagnostic, AST
+                    ),
+                    HoleActions ++ GeneralActions
                 end,
                 Diagnostics
             )
@@ -454,7 +462,7 @@ analyze_document(Uri, Version, Content) ->
                 {undefined, [ErrorDiag]}
         end,
 
-    % Run type checker and SMT verification if parsing succeeded
+    % Run type checker, SMT verification, and type holes if parsing succeeded
     AllErrors =
         case AST of
             undefined ->
@@ -462,7 +470,8 @@ analyze_document(Uri, Version, Content) ->
             _ ->
                 TypeErrors = run_type_checker(AST),
                 SmtErrors = run_smt_verification(AST),
-                ParseErrors ++ TypeErrors ++ SmtErrors
+                HoleDiagnostics = run_type_holes(Uri, AST),
+                ParseErrors ++ TypeErrors ++ SmtErrors ++ HoleDiagnostics
         end,
 
     #document{
@@ -655,6 +664,16 @@ run_smt_verification(AST) ->
             []
     end.
 
+%% Run type holes detection and inference
+run_type_holes(Uri, AST) ->
+    try
+        cure_lsp_type_holes:generate_hole_diagnostics(Uri, AST)
+    catch
+        _:_Reason ->
+            % Type holes module not available or crashed - don't fail LSP
+            []
+    end.
+
 %% Check pattern matching exhaustiveness
 check_pattern_exhaustiveness(AST) when is_list(AST) ->
     lists:flatmap(fun check_pattern_exhaustiveness/1, AST);
@@ -803,7 +822,7 @@ extract_location(#function_def{location = Loc}) -> Loc;
 extract_location(_) -> #location{line = 1, column = 1}.
 
 %% Get hover information at position
-%% Now enhanced with refinement type information
+%% Now enhanced with refinement type information and type holes
 get_hover_info(Uri, Line, Character, State) ->
     case maps:get(Uri, State#state.documents, undefined) of
         undefined ->
@@ -811,28 +830,36 @@ get_hover_info(Uri, Line, Character, State) ->
         #document{ast = undefined} ->
             undefined;
         #document{ast = AST, content = Content} ->
-            % Find the AST node at the given position
-            case find_node_at_position(AST, Line + 1, Character + 1) of
+            % First check if hovering over a type hole
+            case cure_lsp_type_holes:generate_hole_hover(Line, Character, AST) of
                 undefined ->
-                    undefined;
-                Node ->
-                    % Check if node has refinement type information
-                    case try_get_refinement_type(Node, AST) of
-                        {ok, VarName, RefinementType} ->
-                            % Use enhanced hover with refinement type
-                            HoverMap = cure_lsp_diagnostics:create_hover_info(
-                                VarName, RefinementType, extract_location(Node)
-                            ),
-                            maps:get(contents, HoverMap);
-                        _ ->
-                            % Fall back to basic type inference
-                            case infer_node_type(Node, State) of
-                                {ok, Type} ->
-                                    format_hover_info(Node, Type);
+                    % Not a type hole, proceed with normal hover
+                    % Find the AST node at the given position
+                    case find_node_at_position(AST, Line + 1, Character + 1) of
+                        undefined ->
+                            undefined;
+                        Node ->
+                            % Check if node has refinement type information
+                            case try_get_refinement_type(Node, AST) of
+                                {ok, VarName, RefinementType} ->
+                                    % Use enhanced hover with refinement type
+                                    HoverMap = cure_lsp_diagnostics:create_hover_info(
+                                        VarName, RefinementType, extract_location(Node)
+                                    ),
+                                    maps:get(contents, HoverMap);
                                 _ ->
-                                    undefined
+                                    % Fall back to basic type inference
+                                    case infer_node_type(Node, State) of
+                                        {ok, Type} ->
+                                            format_hover_info(Node, Type);
+                                        _ ->
+                                            undefined
+                                    end
                             end
-                    end
+                    end;
+                HoleHover ->
+                    % Return type hole hover information
+                    HoleHover
             end
     end.
 

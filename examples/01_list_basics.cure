@@ -38,4 +38,10 @@ module ListBasics do
     println("=== Demo Complete ===")
     doubled
 
+  def double_list(numbers: List(Int)): List(Int) =
+    map(numbers, fn(x) -> x * 2 end)
+
+  def calculate(): Int =
+    42
+
 end
