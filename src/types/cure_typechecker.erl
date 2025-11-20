@@ -1452,11 +1452,14 @@ process_variant(Variant, TypeName, TypeParams, Env) ->
             NewEnv = cure_types:extend_env(Env, ConstructorName, ResultType),
             {ConstructorName, ResultType, NewEnv};
         #dependent_type{
-            name = ConstructorName, type_params = TypeParams, value_params = ValueParams
+            name = ConstructorName, type_params = CtorTypeParams, value_params = ValueParams
         } ->
             % Constructor with arguments: Ok(T), Error(E), Some(T)
             % Use environment-aware conversion to properly resolve type variables
-            AllParams = TypeParams ++ ValueParams,
+            % Note: CtorTypeParams are the constructor's own type params (usually [])
+            %       ValueParams are the constructor's value arguments (e.g., T in Ok(T))
+            %       TypeParams (function param) are the parent type's params (e.g., [T, E] in Result(T, E))
+            AllParams = CtorTypeParams ++ ValueParams,
             ArgTypes = [convert_type_param_with_env(P, Env) || P <- AllParams],
             ResultType = create_result_type_with_env(TypeName, TypeParams, Env),
             % Create function type: (ArgTypes...) -> ResultType

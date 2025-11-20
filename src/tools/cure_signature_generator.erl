@@ -144,7 +144,7 @@ convert_type({function_type, ParamTypes, ReturnType}) when is_list(ParamTypes) -
     {function_type, [convert_type(P) || P <- ParamTypes], convert_type(ReturnType)};
 convert_type({tuple_type, ElemTypes}) when is_list(ElemTypes) ->
     {tuple_type, [convert_type(E) || E <- ElemTypes]};
-convert_type(#dependent_type{name = Name, params = Params}) when is_list(Params) ->
+convert_type(#dependent_type{name = Name, type_params = Params}) when is_list(Params) ->
     %% Handle dependent type records - preserve type parameters
     {dependent_type, Name, [convert_type_param(P) || P <- Params]};
 convert_type({dependent_type, Name, Params}) when is_atom(Name), is_list(Params) ->
@@ -153,10 +153,10 @@ convert_type(_Other) ->
     {type_var, '_'}.
 
 %% Convert type parameter (used in dependent types)
-convert_type_param(#type_param{name = Name, value = Value}) ->
+convert_type_param(#type_param{name = Name, type = Type}) ->
     %% For dependent types like Vector(T, n), we need to preserve the parameter structure
     %% Create a tuple representation that the type system can work with
-    {type_param, Name, convert_type_param_value(Value)};
+    {type_param, Name, convert_type_param_value(Type)};
 convert_type_param(Other) ->
     %% If it's not a type_param record, try to convert it as a type
     convert_type(Other).

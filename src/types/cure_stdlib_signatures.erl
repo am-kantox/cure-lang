@@ -736,10 +736,7 @@ get_function_type('Std.Vector', reverse, 2) ->
                     {type_param, undefined, {identifier_expr, m, undefined}}
                 ]}
             ],
-            {dependent_type, 'Vector', [
-                {type_param, undefined, {type_var, 'T', 'T', []}},
-                {type_param, undefined, {type_var, '_'}}
-            ]}}};
+            {dependent_type, 'Vector', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.Vector', zip_with, 3) ->
     {ok,
         {function_type,
