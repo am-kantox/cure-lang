@@ -130,9 +130,13 @@ test_complex_union_type() ->
     ?assertMatch(#dependent_type{name = 'Ok'}, OkType),
     ?assertMatch(#dependent_type{name = 'Error'}, ErrorType),
 
-    % Check parameters of dependent types
-    ?assertEqual(1, length(OkType#dependent_type.params)),
-    ?assertEqual(1, length(ErrorType#dependent_type.params)).
+    % Check parameters of dependent types (type_params + value_params)
+    ?assertEqual(
+        1, length(OkType#dependent_type.type_params ++ OkType#dependent_type.value_params)
+    ),
+    ?assertEqual(
+        1, length(ErrorType#dependent_type.type_params ++ ErrorType#dependent_type.value_params)
+    ).
 
 %% Test 3: Parser correctly identifies and processes type constructors with parameters
 test_type_constructor_parsing() ->
@@ -167,7 +171,9 @@ test_ok_constructor() ->
 
     Definition = TypeDef#type_def.definition,
     ?assertMatch(#dependent_type{name = 'Ok'}, Definition),
-    ?assertEqual(1, length(Definition#dependent_type.params)).
+    ?assertEqual(
+        1, length(Definition#dependent_type.type_params ++ Definition#dependent_type.value_params)
+    ).
 
 %% Test Error(E) constructor parsing
 test_error_constructor() ->
@@ -181,7 +187,9 @@ test_error_constructor() ->
 
     Definition = TypeDef#type_def.definition,
     ?assertMatch(#dependent_type{name = 'Error'}, Definition),
-    ?assertEqual(1, length(Definition#dependent_type.params)).
+    ?assertEqual(
+        1, length(Definition#dependent_type.type_params ++ Definition#dependent_type.value_params)
+    ).
 
 %% Test Some(T) constructor parsing
 test_some_constructor() ->
@@ -195,7 +203,9 @@ test_some_constructor() ->
 
     Definition = TypeDef#type_def.definition,
     ?assertMatch(#dependent_type{name = 'Some'}, Definition),
-    ?assertEqual(1, length(Definition#dependent_type.params)).
+    ?assertEqual(
+        1, length(Definition#dependent_type.type_params ++ Definition#dependent_type.value_params)
+    ).
 
 %% Test None constructor (no parameters)
 test_none_constructor() ->
@@ -223,7 +233,9 @@ test_complex_constructor() ->
 
     Definition = TypeDef#type_def.definition,
     ?assertMatch(#dependent_type{name = 'Container'}, Definition),
-    ?assertEqual(3, length(Definition#dependent_type.params)).
+    ?assertEqual(
+        3, length(Definition#dependent_type.type_params ++ Definition#dependent_type.value_params)
+    ).
 
 %% Test 4: `xor` function returns the correct boolean result for all possible input combinations
 test_xor_function() ->

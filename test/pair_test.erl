@@ -68,13 +68,15 @@ test_pair_unification() ->
 
     Pair1 = #dependent_type{
         name = 'Pair',
-        params = [StringParam, IntParam],
+        type_params = [],
+        value_params = [StringParam, IntParam],
         location = Location
     },
 
     Pair2 = #dependent_type{
         name = 'Pair',
-        params = [StringParam, IntParam],
+        type_params = [],
+        value_params = [StringParam, IntParam],
         location = Location
     },
 
@@ -89,7 +91,8 @@ test_pair_unification() ->
     % Create Pair(String, Int) and Pair(Int, String) - should not unify
     PairReversed = #dependent_type{
         name = 'Pair',
-        params = [IntParam, StringParam],
+        type_params = [],
+        value_params = [IntParam, StringParam],
         location = Location
     },
 
@@ -124,7 +127,8 @@ test_pair_tuple_equivalence() ->
 
     PairType = #dependent_type{
         name = 'Pair',
-        params = [StringParam, IntParam],
+        type_params = [],
+        value_params = [StringParam, IntParam],
         location = Location
     },
 

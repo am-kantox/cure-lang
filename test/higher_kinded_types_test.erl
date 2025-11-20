@@ -3,14 +3,15 @@
 
 -module(higher_kinded_types_test).
 
-%% Record definitions for higher-kinded types testing
--record(kind, {constructor, args, result, arity, location}).
--record(type_constructor, {name, kind, params, definition, constraints, location}).
+%% Include AST definitions
+-include("../src/parser/cure_ast.hrl").
+
+%% Record definitions for higher-kinded types testing (only those not in AST)
+%% Note: kind, type_constructor, and type_param are from cure_ast.hrl
 -record(higher_kinded_type, {constructor, applied_args, remaining_args, location}).
 -record(type_family, {name, kind, equations, location}).
 -record(type_family_equation, {pattern, result, constraints, location}).
 -record(constraint, {class, args, location}).
--record(type_param, {name, value}).
 -record(type_var, {id}).
 
 %% Test exports

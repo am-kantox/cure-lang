@@ -90,10 +90,13 @@ test_dependent_types() ->
     % Test dependent type creation
     DepType = #dependent_type{
         name = 'Vector',
-        params = [
+        type_params = [],
+        value_params = [
             #type_param{
                 name = 'T',
+                kind = type,
                 type = #primitive_type{name = 'Int', location = #location{line = 1, column = 1}},
+                constraint = undefined,
                 location = #location{line = 4, column = 1}
             }
         ],

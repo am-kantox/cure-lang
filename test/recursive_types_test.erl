@@ -3,11 +3,14 @@
 
 -module(recursive_types_test).
 
+%% Include AST definitions
+-include("../src/parser/cure_ast.hrl").
+
 %% Record definitions for recursive types testing
 -record(recursive_type, {name, params, definition, binding_context, location}).
 -record(mu_type, {var, body, unfold_level, location}).
 -record(cycle_detection, {visited, stack, max_depth}).
--record(type_param, {name, value}).
+%% Note: type_param is now from cure_ast.hrl
 -record(type_var, {id}).
 
 %% Test exports
@@ -76,14 +79,31 @@ test_recursive_type_creation() ->
         {union_type, [
             {primitive_type, 'Nil'},
             {cons_type, [
-                #type_param{name = elem_type, type = #type_var{id = 't'}},
+                #type_param{
+                    name = elem_type,
+                    kind = type,
+                    type = #type_var{id = 't'},
+                    constraint = undefined,
+                    location = undefined
+                },
                 {recursive_type_ref, 'List'}
             ]}
         ]},
 
     case
         cure_types:create_recursive_type(
-            'List', [#type_param{name = elem_type, type = #type_var{id = 't'}}], ListDef, {1, 1}
+            'List',
+            [
+                #type_param{
+                    name = elem_type,
+                    kind = type,
+                    type = #type_var{id = 't'},
+                    constraint = undefined,
+                    location = undefined
+                }
+            ],
+            ListDef,
+            {1, 1}
         )
     of
         RecType when is_record(RecType, recursive_type) ->
@@ -102,7 +122,13 @@ test_tree_recursive_type() ->
         {union_type, [
             {primitive_type, 'Leaf'},
             {node_type, [
-                #type_param{name = value, type = #type_var{id = 't'}},
+                #type_param{
+                    name = value,
+                    kind = type,
+                    type = #type_var{id = 't'},
+                    constraint = undefined,
+                    location = undefined
+                },
                 {recursive_type_ref, 'Tree'},
                 {recursive_type_ref, 'Tree'}
             ]}
@@ -110,7 +136,18 @@ test_tree_recursive_type() ->
 
     case
         cure_types:create_recursive_type(
-            'Tree', [#type_param{name = value, type = #type_var{id = 't'}}], TreeDef, {2, 1}
+            'Tree',
+            [
+                #type_param{
+                    name = value,
+                    kind = type,
+                    type = #type_var{id = 't'},
+                    constraint = undefined,
+                    location = undefined
+                }
+            ],
+            TreeDef,
+            {2, 1}
         )
     of
         RecType when is_record(RecType, recursive_type) ->
@@ -162,7 +199,15 @@ test_type_unfolding() ->
 
     RecType = #recursive_type{
         name = 'List',
-        params = [#type_param{name = elem_type, type = #type_var{id = 't'}}],
+        params = [
+            #type_param{
+                name = elem_type,
+                kind = type,
+                type = #type_var{id = 't'},
+                constraint = undefined,
+                location = undefined
+            }
+        ],
         definition = ListDef,
         binding_context = #{},
         location = {5, 1}
@@ -352,7 +397,15 @@ test_recursive_unification() ->
     % Test unifying identical recursive types
     ListType1 = #recursive_type{
         name = 'List',
-        params = [#type_param{name = elem, type = #type_var{id = 't1'}}],
+        params = [
+            #type_param{
+                name = elem,
+                kind = type,
+                type = #type_var{id = 't1'},
+                constraint = undefined,
+                location = undefined
+            }
+        ],
         definition = {cons_type, [#type_var{id = 't1'}, {recursive_type_ref, 'List'}]},
         binding_context = #{},
         location = {12, 1}
@@ -360,7 +413,15 @@ test_recursive_unification() ->
 
     ListType2 = #recursive_type{
         name = 'List',
-        params = [#type_param{name = elem, type = #type_var{id = 't2'}}],
+        params = [
+            #type_param{
+                name = elem,
+                kind = type,
+                type = #type_var{id = 't2'},
+                constraint = undefined,
+                location = undefined
+            }
+        ],
         definition = {cons_type, [#type_var{id = 't2'}, {recursive_type_ref, 'List'}]},
         binding_context = #{},
         location = {12, 5}

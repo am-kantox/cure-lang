@@ -32,21 +32,21 @@ test_basic_type_inference() ->
 
     % Integer literal
     IntLiteral = #literal_expr{
-        type = 42, location = #location{line = 1, column = 1, file = undefined}
+        value = 42, location = #location{line = 1, column = 1, file = undefined}
     },
     Result1 = cure_typechecker:check_expression(IntLiteral, Env),
     ?assertMatch(#typecheck_result{success = true, type = {primitive_type, 'Int'}}, Result1),
 
     % String literal
     StringLiteral = #literal_expr{
-        type = "hello", location = #location{line = 1, column = 1, file = undefined}
+        value = "hello", location = #location{line = 1, column = 1, file = undefined}
     },
     Result2 = cure_typechecker:check_expression(StringLiteral, Env),
     ?assertMatch(#typecheck_result{success = true, type = {primitive_type, 'String'}}, Result2),
 
     % Boolean literal
     BoolLiteral = #literal_expr{
-        type = true, location = #location{line = 1, column = 1, file = undefined}
+        value = true, location = #location{line = 1, column = 1, file = undefined}
     },
     Result3 = cure_typechecker:check_expression(BoolLiteral, Env),
     ?assertMatch(#typecheck_result{success = true, type = {primitive_type, 'Bool'}}, Result3),
@@ -113,7 +113,8 @@ test_dependent_types() ->
     % For now, just test that the type system handles dependent type annotations
     DependentType = #dependent_type{
         name = 'List',
-        params = [#type_param{type = #primitive_type{name = 'Int'}}]
+        type_params = [],
+        value_params = [#type_param{type = #primitive_type{name = 'Int'}}]
     },
 
     % Convert to tuple format and verify it's handled
