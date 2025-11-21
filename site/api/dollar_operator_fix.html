@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-28C2A753.js"></script>
+    <script src="dist/sidebar_items-3ABA2D2B.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -139,7 +139,7 @@ Pages
   </a>
   <span class="text">Error Message</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Lexical</span><span class="w"> </span><span class="n">Analysis</span><span class="w"> </span><span class="nc">failed</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8653018887-1">{</span><span class="p" data-group-id="8653018887-2">{</span><span class="ss">unexpected_character</span><span class="p">,</span><span class="mi">36</span><span class="p" data-group-id="8653018887-2">}</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">9</span><span class="p" data-group-id="8653018887-1">}</span></code></pre><ul><li>Character 36 is ASCII for <code class="inline">$</code></li><li>Occurred when parsing typeclass specification files</li></ul><h3 id="root-cause" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">Error</span><span class="p">:</span><span class="w"> </span><span class="n">Lexical</span><span class="w"> </span><span class="n">Analysis</span><span class="w"> </span><span class="nc">failed</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2358541163-1">{</span><span class="p" data-group-id="2358541163-2">{</span><span class="ss">unexpected_character</span><span class="p">,</span><span class="mi">36</span><span class="p" data-group-id="2358541163-2">}</span><span class="p">,</span><span class="mi">82</span><span class="p">,</span><span class="mi">9</span><span class="p" data-group-id="2358541163-1">}</span></code></pre><ul><li>Character 36 is ASCII for <code class="inline">$</code></li><li>Occurred when parsing typeclass specification files</li></ul><h3 id="root-cause" class="section-heading">
   <a href="#root-cause" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -180,8 +180,8 @@ Pages
   </a>
   <span class="text">What We Changed</span>
 </h3>
-<p>Added the new operators to the <code class="inline">operators()</code> map in <code class="inline">src/lexer/cure_lexer.erl</code>:</p><pre><code class="makeup erlang" translate="no"><span class="nf">operators</span><span class="p" data-group-id="4881158908-1">(</span><span class="p" data-group-id="4881158908-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
-    </span><span class="p" data-group-id="4881158908-2">#{</span><span class="w">
+<p>Added the new operators to the <code class="inline">operators()</code> map in <code class="inline">src/lexer/cure_lexer.erl</code>:</p><pre><code class="makeup erlang" translate="no"><span class="nf">operators</span><span class="p" data-group-id="9512041875-1">(</span><span class="p" data-group-id="9512041875-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="p" data-group-id="9512041875-2">#{</span><span class="w">
         </span><span class="c1">% ... existing operators ...</span><span class="w">
         </span><span class="p">&lt;&lt;</span><span class="s">&quot;|&gt;&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;|&gt;&#39;</span><span class="p">,</span><span class="w">
         </span><span class="p">&lt;&lt;</span><span class="s">&quot;#{&quot;</span><span class="p">&gt;&gt;</span><span class="p">=&gt;</span><span class="o">&gt;</span><span class="w">  </span><span class="ss">&#39;interpolation_start&#39;</span><span class="p">,</span><span class="w">
@@ -194,7 +194,7 @@ Pages
         </span><span class="c1">% Monad operators</span><span class="w">
         </span><span class="p">&lt;&lt;</span><span class="s">&quot;&gt;&gt;=&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;&gt;&gt;=&#39;</span><span class="p">,</span><span class="w">
         </span><span class="p">&lt;&lt;</span><span class="s">&quot;&gt;&gt;&quot;</span><span class="p">&gt;&gt;</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">&#39;&gt;&gt;&#39;</span><span class="w">
-    </span><span class="p" data-group-id="4881158908-2">}</span><span class="p">.</span></code></pre><h3 id="how-it-works" class="section-heading">
+    </span><span class="p" data-group-id="9512041875-2">}</span><span class="p">.</span></code></pre><h3 id="how-it-works" class="section-heading">
   <a href="#how-it-works" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>

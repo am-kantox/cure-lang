@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Make LSP Fix - Cure Documentation</title>
+    <meta name="description" content=" Problem
+Running make lsp was failing with compilation errors because it was attempting to compile test and script files as regular Erlang modules">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="make-lsp-fix">Make LSP Fix</h1>
+<h2 id="problem">Problem</h2>
+<p>Running <code>make lsp</code> was failing with compilation errors because it was attempting to compile test and script files as regular Erlang modules:</p>
+<div class="codehilite"><pre><span></span><code>lsp/test_code_actions.erl:1:1: syntax error before: &#39;#&#39;
+  Line 1: #!/usr/bin/env escript
+lsp/test_code_actions.erl:5:2: no module definition
+  Line 5: -mode(compile).
+</code></pre></div>
+
+<h2 id="root-cause">Root Cause</h2>
+<p>The <code>LSP_SRC</code> variable in the Makefile was using a wildcard pattern that included ALL <code>.erl</code> files in the <code>lsp/</code> directory:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">LSP_SRC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">$(</span>wildcard<span class="w"> </span><span class="k">$(</span>LSP_DIR<span class="k">)</span>/*.erl<span class="k">)</span>
+</code></pre></div>
+
+<p>This included:<br />
+- <code>test_code_actions.erl</code> - An escript (executable script), not a regular module<br />
+- <code>test_analyzer.erl</code> - Test module<br />
+- <code>test_cure_lsp_comprehensive.erl</code> - Test module</p>
+<p>Escript files start with <code>#!/usr/bin/env escript</code> and use <code>-mode(compile).</code> which are not valid for regular Erlang module compilation.</p>
+<h2 id="solution">Solution</h2>
+<p>Modified the <code>LSP_SRC</code> definition to filter out test files:</p>
+<div class="codehilite"><pre><span></span><code><span class="c"># Before</span>
+<span class="nv">LSP_SRC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">$(</span>wildcard<span class="w"> </span><span class="k">$(</span>LSP_DIR<span class="k">)</span>/*.erl<span class="k">)</span>
+
+<span class="c"># After</span>
+<span class="nv">LSP_SRC</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">$(</span>filter-out<span class="w"> </span><span class="k">$(</span>LSP_DIR<span class="k">)</span>/test_%.erl<span class="w"> </span><span class="k">$(</span>LSP_DIR<span class="k">)</span>/%_test.erl,<span class="w"> </span><span class="k">$(</span>wildcard<span class="w"> </span><span class="k">$(</span>LSP_DIR<span class="k">)</span>/*.erl<span class="k">))</span>
+</code></pre></div>
+
+<p>This filters out:<br />
+- Files starting with <code>test_</code> (e.g., <code>test_code_actions.erl</code>, <code>test_analyzer.erl</code>)<br />
+- Files ending with <code>_test.erl</code> (e.g., <code>*_test.erl</code>)</p>
+<h2 id="files-modified">Files Modified</h2>
+<ul>
+<li><code>/opt/Proyectos/Ammotion/cure/Makefile</code> (line 28)</li>
+</ul>
+<h2 id="verification">Verification</h2>
+<h3 id="before-fix">Before Fix</h3>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>make<span class="w"> </span>lsp
+lsp/test_code_actions.erl:1:1:<span class="w"> </span>syntax<span class="w"> </span>error<span class="w"> </span>before:<span class="w"> </span><span class="s1">&#39;#&#39;</span>
+make:<span class="w"> </span>***<span class="w"> </span><span class="o">[</span>Makefile:164:<span class="w"> </span>_build/lsp/test_code_actions.beam<span class="o">]</span><span class="w"> </span>Error<span class="w"> </span><span class="m">1</span>
+</code></pre></div>
+
+<h3 id="after-fix">After Fix</h3>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>make<span class="w"> </span>lsp
+Compiling<span class="w"> </span>LSP<span class="w"> </span>lsp/cure_lsp_analyzer.erl...
+Compiling<span class="w"> </span>LSP<span class="w"> </span>lsp/cure_lsp_document.erl...
+Compiling<span class="w"> </span>LSP<span class="w"> </span>lsp/cure_lsp_enhanced.erl...
+Compiling<span class="w"> </span>LSP<span class="w"> </span>lsp/cure_lsp.erl...
+Compiling<span class="w"> </span>LSP<span class="w"> </span>lsp/cure_lsp_profiler.erl...
+Compiling<span class="w"> </span>LSP<span class="w"> </span>lsp/cure_lsp_smt.erl...
+Compiling<span class="w"> </span>LSP<span class="w"> </span>lsp/cure_lsp_symbols.erl...
+Compiling<span class="w"> </span>LSP<span class="w"> </span>lsp/cure_lsp_type_holes.erl...
+Creating<span class="w"> </span>LSP<span class="w"> </span>executable<span class="w"> </span>scripts...
+LSP<span class="w"> </span>scripts<span class="w"> </span>are<span class="w"> </span>now<span class="w"> </span>executable
+Cure<span class="w"> </span>LSP<span class="w"> </span>server<span class="w"> </span>built<span class="w"> </span>successfully
+</code></pre></div>
+
+<h3 id="compiled-modules">Compiled Modules</h3>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>ls<span class="w"> </span>-1<span class="w"> </span>_build/lsp/*.beam
+_build/lsp/cure_lsp.beam
+_build/lsp/cure_lsp_analyzer.beam
+_build/lsp/cure_lsp_document.beam
+_build/lsp/cure_lsp_enhanced.beam
+_build/lsp/cure_lsp_profiler.beam
+_build/lsp/cure_lsp_smt.beam
+_build/lsp/cure_lsp_symbols.beam
+_build/lsp/cure_lsp_type_holes.beam
+</code></pre></div>
+
+<p>All 8 production LSP modules compiled successfully, with no test files included.</p>
+<h3 id="full-build-test">Full Build Test</h3>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>make<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>all<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>lsp
+<span class="c1"># Completes successfully with exit code 0</span>
+</code></pre></div>
+
+<h2 id="lsp-script-configuration">LSP Script Configuration</h2>
+<p>The <code>cure-lsp</code> script correctly references the compiled modules:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">Paths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nn">filename</span><span class="p">:</span><span class="nf">join</span><span class="p">(</span><span class="nv">ScriptDir</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;_build/ebin&quot;</span><span class="p">),</span><span class="w">      </span><span class="c">% Core compiler modules</span>
+<span class="w">  </span><span class="nn">filename</span><span class="p">:</span><span class="nf">join</span><span class="p">(</span><span class="nv">ScriptDir</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;_build/lsp&quot;</span><span class="p">),</span><span class="w">       </span><span class="c">% LSP modules</span>
+<span class="w">  </span><span class="nn">filename</span><span class="p">:</span><span class="nf">join</span><span class="p">(</span><span class="nv">ScriptDir</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;_build/lib&quot;</span><span class="p">),</span><span class="w">       </span><span class="c">% Standard library</span>
+<span class="w">  </span><span class="nn">filename</span><span class="p">:</span><span class="nf">join</span><span class="p">(</span><span class="nv">ScriptDir</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;_build/lib/std&quot;</span><span class="p">)</span>
+<span class="p">],</span>
+</code></pre></div>
+
+<h2 id="testing-lsp">Testing LSP</h2>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span>./cure-lsp<span class="w"> </span>--version
+Cure<span class="w"> </span>Language<span class="w"> </span>Server<span class="w"> </span>version<span class="w"> </span><span class="m">0</span>.1.0
+
+$<span class="w"> </span>./cure-lsp<span class="w"> </span>--help
+Cure<span class="w"> </span>Language<span class="w"> </span>Server<span class="w"> </span>Protocol<span class="w"> </span>Implementation
+
+Usage:
+<span class="w">  </span>cure-lsp<span class="w"> </span><span class="o">[</span>start<span class="o">]</span><span class="w">     </span>Start<span class="w"> </span>the<span class="w"> </span>LSP<span class="w"> </span>server<span class="w"> </span><span class="o">(</span>default<span class="o">)</span>
+<span class="w">  </span>cure-lsp<span class="w"> </span>--version<span class="w">   </span>Show<span class="w"> </span>version<span class="w"> </span>information
+<span class="w">  </span>cure-lsp<span class="w"> </span>--help<span class="w">      </span>Show<span class="w"> </span>this<span class="w"> </span><span class="nb">help</span><span class="w"> </span>message
+
+The<span class="w"> </span>server<span class="w"> </span>communicates<span class="w"> </span>via<span class="w"> </span>stdin/stdout<span class="w"> </span>using<span class="w"> </span>the<span class="w"> </span>Language<span class="w"> </span>Server<span class="w"> </span>Protocol.
+</code></pre></div>
+
+<h2 id="test-files">Test Files</h2>
+<p>Test files remain available for manual testing but are not included in the production build:<br />
+- <code>lsp/test_code_actions.erl</code> - Test type hole code actions<br />
+- <code>lsp/test_analyzer.erl</code> - Test analyzer functionality<br />
+- <code>lsp/test_cure_lsp_comprehensive.erl</code> - Comprehensive LSP tests</p>
+<p>These can be run manually using escript:</p>
+<div class="codehilite"><pre><span></span><code>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>lsp
+$<span class="w"> </span>./test_code_actions.erl
+</code></pre></div>
+
+<h2 id="related-work">Related Work</h2>
+<p>This fix was part of the larger type hole code action implementation, which also included:<br />
+- Fixing diagnostic location tracking (see <code>LSP_TYPE_HOLE_CODE_ACTION_FIX.md</code>)<br />
+- Implementing type inference for remote calls<br />
+- Full LSP integration for code actions</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

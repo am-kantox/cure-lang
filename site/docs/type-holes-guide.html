@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Type Holes - Interactive Type Inference - Cure Documentation</title>
+    <meta name="description" content=" Overview">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="type-holes-interactive-type-inference">Type Holes - Interactive Type Inference</h1>
+<h2 id="overview">Overview</h2>
+<p>Type holes provide an interactive way to discover types in Cure, inspired by Idris and Agda. Instead of manually writing type annotations, you can use <strong>holes</strong> and let the SMT-based type checker infer the correct type for you.</p>
+<h2 id="syntax">Syntax</h2>
+<h3 id="anonymous-hole-_">Anonymous Hole: <code>_</code></h3>
+<div class="codehilite"><pre><span></span><code>def double_list(numbers: List(Int)): _ =
+    map(numbers, fn(x) -&gt; x * 2 end)
+</code></pre></div>
+
+<h3 id="named-hole-name">Named Hole: <code>?name</code></h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">def</span><span class="w"> </span><span class="nx">process</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="p">?</span><span class="nx">input_type</span><span class="p">):</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="nx">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+</code></pre></div>
+
+<h2 id="usage-workflow">Usage Workflow</h2>
+<h3 id="1-write-code-with-holes">1. Write code with holes</h3>
+<div class="codehilite"><pre><span></span><code>def double_list(numbers: List(Int)): _ =
+    map(numbers, fn(x) -&gt; x * 2 end)
+</code></pre></div>
+
+<h3 id="2-hover-to-see-inferred-type">2. Hover to see inferred type</h3>
+<p>When you hover over the <code>_</code>, the LSP shows:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">Type</span><span class="w"> </span><span class="nx">hole</span><span class="p">:</span><span class="w"> </span><span class="nx">_</span>
+<span class="nx">Inferred</span><span class="w"> </span><span class="k">type</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">Int</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="3-apply-quick-fix">3. Apply quick fix</h3>
+<p>The LSP provides a code action: <strong>"Fill hole with: List(Int)"</strong></p>
+<p>Click it, and the code becomes:</p>
+<div class="codehilite"><pre><span></span><code>def double_list(numbers: List(Int)): List(Int) =
+    map(numbers, fn(x) -&gt; x * 2 end)
+</code></pre></div>
+
+<h2 id="where-you-can-use-holes">Where You Can Use Holes</h2>
+<h3 id="function-return-types">Function Return Types</h3>
+<div class="codehilite"><pre><span></span><code>def calculate(): _ =
+    42  % Infers: Int
+</code></pre></div>
+
+<h3 id="parameter-types">Parameter Types</h3>
+<div class="codehilite"><pre><span></span><code>def add(x: <span class="ge">_, y: _</span>): Int =
+    x + y  % Infers: x :: Int, y :: Int
+</code></pre></div>
+
+<h3 id="let-bindings">Let Bindings</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">let</span><span class="w"> </span><span class="s">result:</span><span class="w"> </span><span class="s">_</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">some_function</span><span class="p">()</span>
+<span class="c">% Shows inferred type from some_function&#39;s return type</span>
+</code></pre></div>
+
+<h3 id="complex-types">Complex Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="s">process_list(xs:</span><span class="w"> </span><span class="s">_):</span><span class="w"> </span><span class="s">_</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">map</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">end</span><span class="p">)</span>
+<span class="c">% Infers: xs :: List(Int), return :: List(Int)</span>
+</code></pre></div>
+
+<h2 id="lsp-features">LSP Features</h2>
+<h3 id="diagnostics">Diagnostics</h3>
+<p>Type holes appear as <strong>information-level</strong> diagnostics (blue underline in most editors):<br />
+- <strong>Severity</strong>: Info (not an error)<br />
+- <strong>Message</strong>: "Type hole: _ \n Inferred type: List(Int)"<br />
+- <strong>Source</strong>: <code>cure-holes</code></p>
+<h3 id="hover">Hover</h3>
+<p>Hovering shows:</p>
+<div class="codehilite"><pre><span></span><code><span class="gs">**Type Hole: `_`**</span>
+
+Inferred type: <span class="sb">`List(Int)`</span>
+
+Use code action to fill in this type.
+</code></pre></div>
+
+<h3 id="code-actions">Code Actions</h3>
+<p>When your cursor is on a hole, you get a quick fix:<br />
+- <strong>Title</strong>: "Fill hole with: List(Int)"<br />
+- <strong>Kind</strong>: quickfix<br />
+- <strong>Action</strong>: Replaces the hole with the inferred type</p>
+<h2 id="editor-setup">Editor Setup</h2>
+<h3 id="neovim-with-nvim-lspconfig">Neovim with nvim-lspconfig</h3>
+<div class="codehilite"><pre><span></span><code><span class="nb">require</span><span class="p">(</span><span class="s1">&#39;lspconfig&#39;</span><span class="p">).</span><span class="n">cure_ls</span><span class="p">.</span><span class="n">setup</span><span class="p">{</span>
+  <span class="n">capabilities</span> <span class="o">=</span> <span class="n">capabilities</span><span class="p">,</span>
+  <span class="n">settings</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">cure</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="n">typeHoles</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">enabled</span> <span class="o">=</span> <span class="kc">true</span><span class="p">,</span>
+        <span class="n">showDiagnostics</span> <span class="o">=</span> <span class="kc">true</span>  <span class="c1">-- Show info-level diagnostics for holes</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Keybindings</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">vim</span><span class="p">.</span><span class="n">keymap</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;K&#39;</span><span class="p">,</span> <span class="n">vim</span><span class="p">.</span><span class="n">lsp</span><span class="p">.</span><span class="n">buf</span><span class="p">.</span><span class="n">hover</span><span class="p">)</span>  <span class="c1">-- Show hover on &#39;K&#39;</span>
+<span class="n">vim</span><span class="p">.</span><span class="n">keymap</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;leader&gt;ca&#39;</span><span class="p">,</span> <span class="n">vim</span><span class="p">.</span><span class="n">lsp</span><span class="p">.</span><span class="n">buf</span><span class="p">.</span><span class="n">code_action</span><span class="p">)</span>  <span class="c1">-- Code action</span>
+</code></pre></div>
+
+<h3 id="vscode">VSCode</h3>
+<p>The Cure extension automatically enables type holes. To apply a code action:<br />
+1. Place cursor on the hole<br />
+2. Press <code>Ctrl+.</code> (or <code>Cmd+.</code> on Mac)<br />
+3. Select "Fill hole with: ..."</p>
+<h3 id="emacs-with-lsp-mode">Emacs with lsp-mode</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">(</span><span class="nb">use-package</span><span class="w"> </span><span class="nv">lsp-mode</span>
+<span class="w">  </span><span class="nb">:custom</span>
+<span class="w">  </span><span class="p">(</span><span class="nv">lsp-cure-type-holes-enabled</span><span class="w"> </span><span class="no">t</span><span class="p">))</span>
+</code></pre></div>
+
+<h2 id="advanced-usage">Advanced Usage</h2>
+<h3 id="named-holes-for-documentation">Named Holes for Documentation</h3>
+<p>Use named holes to document what type you're looking for:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="s">complex_computation(input:</span><span class="w"> </span><span class="s">List(?element_type)):</span><span class="w"> </span><span class="s">?result</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="c">% ... complex logic ...</span>
+<span class="w">    </span><span class="n">result</span>
+</code></pre></div>
+
+<p>The LSP will show:<br />
+- Hover on <code>?element_type</code>: "Type hole: ?element_type → Inferred: Int"<br />
+- Hover on <code>?result</code>: "Type hole: ?result → Inferred: List(Int)"</p>
+<h3 id="progressive-type-refinement">Progressive Type Refinement</h3>
+<p>Start with holes and progressively fill them in as you understand the code:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Step 1: All holes</span>
+<span class="n">def</span><span class="w"> </span><span class="s">mystery(x:</span><span class="w"> </span><span class="s">_):</span><span class="w"> </span><span class="s">_</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span>
+
+<span class="c">% Step 2: Fill in return type after hovering</span>
+<span class="n">def</span><span class="w"> </span><span class="s">mystery(x:</span><span class="w"> </span><span class="s">_):</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span>
+
+<span class="c">% Step 3: Fill in parameter type</span>
+<span class="n">def</span><span class="w"> </span><span class="s">mystery(x:</span><span class="w"> </span><span class="s">Int):</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span>
+</code></pre></div>
+
+<h3 id="type-holes-with-smt-constraints">Type Holes with SMT Constraints</h3>
+<p>For dependent types, holes can help discover refinement constraints:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">safe_divide</span><span class="p">(</span><span class="n">a</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">:</span><span class="w"> </span><span class="n">_</span><span class="p">):</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span>
+
+<span class="o">%</span><span class="w"> </span><span class="n">Hover</span><span class="w"> </span><span class="n">shows</span><span class="p">:</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span>
+<span class="o">%</span><span class="w"> </span><span class="p">(</span><span class="k">if</span><span class="w"> </span><span class="n">SMT</span><span class="w"> </span><span class="n">solver</span><span class="w"> </span><span class="n">detects</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">constraint</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="how-it-works">How It Works</h2>
+<h3 id="type-inference-algorithm">Type Inference Algorithm</h3>
+<ol>
+<li><strong>AST Analysis</strong>: Parser marks <code>_</code> and <code>?name</code> as type holes</li>
+<li><strong>Context Collection</strong>: LSP collects surrounding type information</li>
+<li><strong>Type Checking</strong>: Runs standard type checker on the AST</li>
+<li><strong>Constraint Solving</strong>: Uses SMT solver for dependent type constraints</li>
+<li><strong>Type Extraction</strong>: Extracts inferred type from type checker result</li>
+</ol>
+<h3 id="smt-integration">SMT Integration</h3>
+<p>For dependent types with refinement constraints:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="s">process(n:</span><span class="w"> </span><span class="s">_):</span><span class="w"> </span><span class="s">Positive</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="c">% SMT solver infers: n :: Int when n &gt; -1</span>
+<span class="c">% (because n + 1 must be &gt; 0)</span>
+</code></pre></div>
+
+<p>The SMT solver works backwards from constraints to infer the tightest possible type.</p>
+<h2 id="limitations">Limitations</h2>
+<h3 id="cannot-infer">Cannot Infer</h3>
+<ol>
+<li>
+<p><strong>Polymorphic types without context</strong>:<br />
+<code>cure
+   def identity(x: _): _ = x  % Too generic, need more context</code></p>
+</li>
+<li>
+<p><strong>Recursive types without annotation</strong>:<br />
+<code>cure
+   def recursive(n: _): _ =
+       if n == 0 then 1 else n * recursive(n - 1)
+   % Needs explicit type to establish recursion</code></p>
+</li>
+<li>
+<p><strong>Higher-rank polymorphism</strong>:<br />
+<code>cure
+   def apply(f: _): _ = f(42)  % f's type is higher-rank</code></p>
+</li>
+</ol>
+<h3 id="workarounds">Workarounds</h3>
+<p>For cases where inference fails:<br />
+1. <strong>Add partial annotations</strong>: Fill in parameter types, leave return type as hole<br />
+2. <strong>Use named holes</strong>: Helps you track what needs to be filled<br />
+3. <strong>Check hover message</strong>: It will tell you why inference failed</p>
+<h2 id="examples">Examples</h2>
+<h3 id="example-1-list-processing">Example 1: List Processing</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="n">Examples</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="kn">import</span><span class="w"> </span><span class="nn">Std.List</span><span class="w"> </span><span class="p">[</span><span class="nb">map</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="p">,</span><span class="w"> </span><span class="n">fold</span><span class="p">]</span>
+
+<span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="n">Before</span><span class="p">:</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">holes</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">process_numbers</span><span class="p">(</span><span class="n">nums</span><span class="p">:</span><span class="w"> </span><span class="n">_</span><span class="p">):</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="o">=</span>
+<span class="w">      </span><span class="n">let</span><span class="w"> </span><span class="n">doubled</span><span class="p">:</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">map</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">end</span><span class="p">)</span>
+<span class="w">      </span><span class="n">let</span><span class="w"> </span><span class="n">evens</span><span class="p">:</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">filter</span><span class="p">(</span><span class="n">doubled</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">end</span><span class="p">)</span>
+<span class="w">      </span><span class="n">fold</span><span class="p">(</span><span class="n">evens</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">acc</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">acc</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">end</span><span class="p">)</span>
+
+<span class="w">  </span><span class="o">%</span><span class="w"> </span><span class="n">After</span><span class="p">:</span><span class="w"> </span><span class="n">hovering</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">applying</span><span class="w"> </span><span class="n">quick</span><span class="w"> </span><span class="n">fixes</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">process_numbers</span><span class="p">(</span><span class="n">nums</span><span class="p">:</span><span class="w"> </span><span class="nb">List</span><span class="p">(</span><span class="nb">Int</span><span class="p">)):</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">      </span><span class="n">let</span><span class="w"> </span><span class="n">doubled</span><span class="p">:</span><span class="w"> </span><span class="nb">List</span><span class="p">(</span><span class="nb">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">map</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">end</span><span class="p">)</span>
+<span class="w">      </span><span class="n">let</span><span class="w"> </span><span class="n">evens</span><span class="p">:</span><span class="w"> </span><span class="nb">List</span><span class="p">(</span><span class="nb">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">filter</span><span class="p">(</span><span class="n">doubled</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">end</span><span class="p">)</span>
+<span class="w">      </span><span class="n">fold</span><span class="p">(</span><span class="n">evens</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">acc</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">acc</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">end</span><span class="p">)</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<h3 id="example-2-dependent-types">Example 2: Dependent Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Use hole for refinement type</span>
+<span class="nb">type</span><span class="w"> </span><span class="n">Positive</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="n">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+
+<span class="n">def</span><span class="w"> </span><span class="s">divide(a:</span><span class="w"> </span><span class="s">Int,</span><span class="w"> </span><span class="s">b:</span><span class="w"> </span><span class="s">_):</span><span class="w"> </span><span class="s">Int</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span>
+
+<span class="c">% Hover on b shows: &quot;Inferred: Positive&quot;</span>
+<span class="c">% Because SMT proves division is safe only when b &gt; 0</span>
+</code></pre></div>
+
+<h3 id="example-3-pattern-matching">Example 3: Pattern Matching</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="s">describe(opt:</span><span class="w"> </span><span class="s">_):</span><span class="w"> </span><span class="s">_</span><span class="w"> </span><span class="p">=</span>
+<span class="w">    </span><span class="n">match</span><span class="w"> </span><span class="n">opt</span><span class="w"> </span><span class="n">do</span>
+<span class="w">        </span><span class="o">|</span><span class="w"> </span><span class="n">Some</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Value: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">to_string</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<span class="w">        </span><span class="o">|</span><span class="w"> </span><span class="n">None</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;No value&quot;</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="c">% Infers: opt :: Option(Int), return :: String</span>
+</code></pre></div>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="cannot-infer-type-message">"Cannot infer type" message</h3>
+<p><strong>Cause</strong>: Not enough context for inference</p>
+<p><strong>Solutions</strong>:<br />
+1. Add more type annotations to surrounding code<br />
+2. Fill in parameter types, use hole for return type only<br />
+3. Check if you're using polymorphic code without constraints</p>
+<h3 id="hole-not-detected">Hole not detected</h3>
+<p><strong>Cause</strong>: Syntax not recognized as hole</p>
+<p><strong>Solutions</strong>:<br />
+1. Use <code>_</code> not <code>__</code> (double underscore)<br />
+2. Ensure <code>?name</code> starts with <code>?</code> character<br />
+3. Restart LSP server: <code>:LspRestart</code> in Neovim</p>
+<h3 id="wrong-type-inferred">Wrong type inferred</h3>
+<p><strong>Cause</strong>: Inference algorithm limitation or bug</p>
+<p><strong>Solutions</strong>:<br />
+1. Check surrounding code for type errors<br />
+2. Add explicit type annotation instead<br />
+3. Report as bug with minimal reproduction</p>
+<h2 id="best-practices">Best Practices</h2>
+<ol>
+<li><strong>Start broad</strong>: Use holes for all types initially</li>
+<li><strong>Refine incrementally</strong>: Fill in types from bottom-up (parameters → return)</li>
+<li><strong>Document intent</strong>: Use named holes like <code>?result_type</code> for clarity</li>
+<li><strong>Verify inference</strong>: Always check the inferred type makes sense</li>
+<li><strong>Keep holes during development</strong>: Remove once code is stable</li>
+</ol>
+<h2 id="comparison-with-other-languages">Comparison with Other Languages</h2>
+<h3 id="idris">Idris</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Idris uses ?hole syntax</span>
+<span class="nf">f</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span><span class="ow">?</span>hole
+f<span class="w"> </span>x<span class="w"> </span><span class="ow">=</span><span class="w"> </span>x<span class="w"> </span><span class="ow">+</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="c1">-- Cure equivalent:</span>
+def<span class="w"> </span>f<span class="ow">(</span>x<span class="ow">:</span><span class="w"> </span><span class="kr">_</span><span class="ow">):</span><span class="w"> </span><span class="kr">_</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span>x<span class="w"> </span><span class="ow">+</span><span class="w"> </span><span class="mi">1</span>
+</code></pre></div>
+
+<h3 id="agda">Agda</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Agda uses {! !} or ?</span>
+<span class="nf">f</span><span class="w"> </span><span class="ow">:</span><span class="w"> </span>?
+f<span class="w"> </span>x<span class="w"> </span><span class="ow">=</span><span class="w"> </span>x<span class="w"> </span>+<span class="w"> </span><span class="mi">1</span>
+
+<span class="c1">-- Cure equivalent:</span>
+def<span class="w"> </span>f<span class="o">(</span>x:<span class="w"> </span>_<span class="o">)</span><span class="ow">:</span><span class="w"> </span>_<span class="w"> </span><span class="ow">=</span><span class="w"> </span>x<span class="w"> </span>+<span class="w"> </span><span class="mi">1</span>
+</code></pre></div>
+
+<h3 id="haskell-with-typed-holes">Haskell (with Typed Holes)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nf">f</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kr">_</span>
+<span class="nf">f</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="c1">-- Direct equivalent in Cure:</span>
+<span class="nf">def</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="kt">:</span><span class="w"> </span><span class="kr">_</span><span class="p">)</span><span class="kt">:</span><span class="w"> </span><span class="kr">_</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
+</code></pre></div>
+
+<h2 id="future-enhancements">Future Enhancements</h2>
+<p>Planned features for type holes:</p>
+<ol>
+<li><strong>Multiple choice inference</strong>: Show several possible types</li>
+<li><strong>Constraint suggestions</strong>: "Consider adding: when x &gt; 0"</li>
+<li><strong>Interactive refinement</strong>: Incrementally refine polymorphic types</li>
+<li><strong>Case splitting</strong>: Generate pattern match cases for sum types</li>
+<li><strong>Proof obligations</strong>: Show what needs to be proven for dependent types</li>
+</ol>
+<hr />
+<p><strong>Happy type hunting! 🎯</strong></p>
+<p>For issues: https://github.com/cure-lang/cure/issues</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

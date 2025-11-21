@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LSP Type Hole Code Action Fix - Cure Documentation</title>
+    <meta name="description" content=" Problem
+LSP code actions for type holes were not appearing in editors (Neovim, VS Code, etc.) even though:
+- Type inference was working correctly
+-">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="lsp-type-hole-code-action-fix">LSP Type Hole Code Action Fix</h1>
+<h2 id="problem">Problem</h2>
+<p>LSP code actions for type holes were not appearing in editors (Neovim, VS Code, etc.) even though:<br />
+- Type inference was working correctly<br />
+- Diagnostics were being generated<br />
+- The <code>generate_hole_code_actions/3</code> function was implemented and exported</p>
+<h2 id="root-cause">Root Cause</h2>
+<p>The diagnostic ranges were <strong>incorrect</strong> - they were using the <strong>function definition location</strong> instead of the <strong>return type location</strong>. This caused a mismatch when LSP clients requested code actions:</p>
+<h3 id="example">Example</h3>
+<div class="codehilite"><pre><span></span><code>def double_list(numbers: List(Int)): _ =
+  map(numbers, fn(x) -&gt; x * 2 end)
+</code></pre></div>
+
+<p>The <code>_</code> is at column 40, but the diagnostic was reporting column 3 (where <code>def</code> starts), resulting in a range that didn't cover the actual underscore.</p>
+<h3 id="filter-logic">Filter Logic</h3>
+<p>The LSP code action handler filters diagnostics to only include those where the <strong>cursor is inside the diagnostic range</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">OnSameLine</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nv">CursorLine</span><span class="w"> </span><span class="o">=:=</span><span class="w"> </span><span class="nv">DiagStartLine</span><span class="w"> </span><span class="ow">andalso</span><span class="w"> </span><span class="nv">CursorLine</span><span class="w"> </span><span class="o">=:=</span><span class="w"> </span><span class="nv">DiagEndLine</span><span class="p">),</span>
+<span class="nv">InsideRange</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nv">CursorChar</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nv">DiagStartChar</span><span class="w"> </span><span class="ow">andalso</span><span class="w"> </span><span class="nv">CursorChar</span><span class="w"> </span><span class="o">=&lt;</span><span class="w"> </span><span class="nv">DiagEndChar</span><span class="p">),</span>
+<span class="nv">OnSameLine</span><span class="w"> </span><span class="ow">andalso</span><span class="w"> </span><span class="nv">InsideRange</span>
+</code></pre></div>
+
+<p>When the user positioned their cursor on the <code>_</code> character and requested a code action, the filter would reject the diagnostic because the cursor wasn't within the incorrectly-positioned range.</p>
+<h2 id="solution">Solution</h2>
+<p>Modified <code>find_type_holes/1</code> in <code>cure_lsp_type_holes.erl</code> to use the <strong>return type's location</strong> instead of the function definition's location:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Before (incorrect - using function location)</span>
+<span class="k">case</span><span class="w"> </span><span class="n">is_type_hole</span><span class="p">(</span><span class="nv">RetType</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">    </span><span class="n">true</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">        </span><span class="nv">HoleName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hole_name</span><span class="p">(</span><span class="nv">RetType</span><span class="p">),</span>
+<span class="w">        </span><span class="p">[{</span><span class="nv">HoleName</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">return_type</span><span class="p">,</span><span class="w"> </span><span class="nv">Func</span><span class="p">},</span><span class="w"> </span><span class="nv">Loc</span><span class="p">}];</span><span class="w">  </span><span class="c">% Loc from function_def</span>
+<span class="w">    </span><span class="p">...</span>
+<span class="k">end</span>
+
+<span class="c">% After (correct - using return type location)</span>
+<span class="k">case</span><span class="w"> </span><span class="n">is_type_hole</span><span class="p">(</span><span class="nv">RetType</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">    </span><span class="n">true</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">        </span><span class="nv">HoleName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">hole_name</span><span class="p">(</span><span class="nv">RetType</span><span class="p">),</span>
+<span class="w">        </span><span class="c">% Use the location from the return type itself</span>
+<span class="w">        </span><span class="nv">HoleLoc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="nv">RetType</span><span class="w"> </span><span class="k">of</span>
+<span class="w">            </span><span class="nl">#primitive_type</span><span class="p">{</span><span class="n">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">TypeLoc</span><span class="p">}</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="nv">TypeLoc</span><span class="w"> </span><span class="o">=/=</span><span class="w"> </span><span class="n">undefined</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">TypeLoc</span><span class="p">;</span>
+<span class="w">            </span><span class="p">_</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Loc</span><span class="w">  </span><span class="c">% Fallback to function location</span>
+<span class="w">        </span><span class="k">end</span><span class="p">,</span>
+<span class="w">        </span><span class="p">[{</span><span class="nv">HoleName</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">return_type</span><span class="p">,</span><span class="w"> </span><span class="nv">Func</span><span class="p">},</span><span class="w"> </span><span class="nv">HoleLoc</span><span class="p">}];</span>
+<span class="w">    </span><span class="p">...</span>
+<span class="k">end</span>
+</code></pre></div>
+
+<h2 id="files-modified">Files Modified</h2>
+<ul>
+<li><code>/opt/Proyectos/Ammotion/cure/lsp/cure_lsp_type_holes.erl</code> (lines 97-103)</li>
+<li>Modified <code>find_type_holes/1</code> to extract and use return type location</li>
+</ul>
+<h2 id="testing">Testing</h2>
+<p>Created <code>/opt/Proyectos/Ammotion/cure/lsp/test_code_actions.erl</code> to verify:</p>
+<p><strong>Before fix:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="o">[</span><span class="n">TYPE_HOLES</span><span class="o">]</span><span class="w"> </span><span class="n">Creating</span><span class="w"> </span><span class="nl">diagnostic</span><span class="p">:</span><span class="w"> </span><span class="n">Line</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="n">Col</span><span class="o">=</span><span class="mi">3</span>
+<span class="n">Diagnostic</span><span class="w"> </span><span class="k">range</span><span class="err">:</span><span class="w"> </span><span class="k">start</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="k">end</span><span class="o">=</span><span class="mi">13</span>
+<span class="nc">Cursor</span><span class="w"> </span><span class="k">position</span><span class="err">:</span><span class="w"> </span><span class="n">line</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span><span class="w"> </span><span class="k">character</span><span class="o">=</span><span class="mi">40</span>
+<span class="nc">Cursor</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="k">range</span><span class="err">:</span><span class="w"> </span><span class="k">false</span><span class="w">  </span><span class="err">❌</span>
+<span class="n">Generated</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">actions</span>
+</code></pre></div>
+
+<p><strong>After fix:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="o">[</span><span class="n">TYPE_HOLES</span><span class="o">]</span><span class="w"> </span><span class="n">Creating</span><span class="w"> </span><span class="nl">diagnostic</span><span class="p">:</span><span class="w"> </span><span class="n">Line</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="n">Col</span><span class="o">=</span><span class="mi">40</span>
+<span class="n">Diagnostic</span><span class="w"> </span><span class="k">range</span><span class="err">:</span><span class="w"> </span><span class="k">start</span><span class="o">=</span><span class="mi">39</span><span class="p">,</span><span class="w"> </span><span class="k">end</span><span class="o">=</span><span class="mi">50</span>
+<span class="nc">Cursor</span><span class="w"> </span><span class="k">position</span><span class="err">:</span><span class="w"> </span><span class="n">line</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span><span class="w"> </span><span class="k">character</span><span class="o">=</span><span class="mi">40</span>
+<span class="nc">Cursor</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="k">range</span><span class="err">:</span><span class="w"> </span><span class="k">true</span><span class="w">  </span><span class="err">✅</span>
+<span class="n">Generated</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">actions</span>
+</code></pre></div>
+
+<h2 id="usage-in-lsp">Usage in LSP</h2>
+<p>Now when users:<br />
+1. Write a function with a type hole: <code>def foo(x: Int): _ = x + 1</code><br />
+2. Position cursor on the <code>_</code><br />
+3. Trigger code actions (Ctrl+. in most editors)</p>
+<p>They will see:</p>
+<div class="codehilite"><pre><span></span><code>💡 Fill hole with: Int
+</code></pre></div>
+
+<p>And applying the action will replace <code>_</code> with the inferred type.</p>
+<h2 id="related-components">Related Components</h2>
+<ul>
+<li>Type inference: Working correctly since previous implementation</li>
+<li>Diagnostic generation: <code>generate_hole_diagnostics/2</code> </li>
+<li>Code action generation: <code>generate_hole_code_actions/3</code></li>
+<li>LSP integration: <code>handle_code_action/3</code> in <code>cure_lsp.erl</code></li>
+</ul>
+<h2 id="parser-context">Parser Context</h2>
+<p>The Cure parser (<code>cure_parser.erl</code>) correctly tracks locations for:<br />
+- <code>#primitive_type{name, location}</code> - Type expressions including <code>_</code><br />
+- <code>#function_def{..., return_type, location}</code> - Function definitions<br />
+- <code>#param{name, type, location}</code> - Function parameters</p>
+<p>The fix simply ensures we use the right location from the AST.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Type Holes - Quick Start Guide - Cure Documentation</title>
+    <meta name="description" content=" What Are Type Holes?">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="type-holes-quick-start-guide">Type Holes - Quick Start Guide</h1>
+<h2 id="what-are-type-holes">What Are Type Holes?</h2>
+<p>Type holes let you write <code>_</code> where a type is expected, and the LSP will automatically <strong>infer and substitute</strong> the correct type for you.</p>
+<h2 id="how-it-works">How It Works</h2>
+<h3 id="1-write-code-with-_-as-placeholder">1. Write Code with <code>_</code> as Placeholder</h3>
+<div class="codehilite"><pre><span></span><code>def double_list(numbers: List(Int)): _ =
+    map(numbers, fn(x) -&gt; x * 2 end)
+</code></pre></div>
+
+<h3 id="2-lsp-shows-diagnostic">2. LSP Shows Diagnostic</h3>
+<p>When you save or the LSP analyzes the file, you'll see:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">💡</span><span class="w"> </span><span class="nx">Type</span><span class="w"> </span><span class="nx">hole</span><span class="p">:</span><span class="w"> </span><span class="nx">_</span>
+<span class="nx">Inferred</span><span class="w"> </span><span class="k">type</span><span class="p">:</span><span class="w"> </span><span class="nx">List</span><span class="p">(</span><span class="nx">Int</span><span class="p">)</span>
+
+<span class="err">💡</span><span class="w"> </span><span class="nx">Click</span><span class="w"> </span><span class="err">&#39;</span><span class="nx">Quick</span><span class="w"> </span><span class="nx">Fix</span><span class="err">&#39;</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="nx">press</span><span class="w"> </span><span class="nx">Ctrl</span><span class="o">+</span><span class="p">.</span><span class="w"> </span><span class="nx">to</span><span class="w"> </span><span class="nx">fill</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">automatically</span>
+</code></pre></div>
+
+<h3 id="3-apply-quick-fix">3. Apply Quick Fix</h3>
+<p><strong>Option A: Keyboard</strong><br />
+- Place cursor on the <code>_</code><br />
+- Press <code>Ctrl+.</code> (or <code>Cmd+.</code> on Mac)<br />
+- Select "Fill hole with: List(Int)"</p>
+<p><strong>Option B: Mouse</strong><br />
+- Click on the diagnostic (lightbulb icon)<br />
+- Click "Fill hole with: List(Int)"</p>
+<p><strong>Option C: Auto-apply (if supported)</strong><br />
+- Some editors auto-apply the "preferred" quick fix<br />
+- Just save the file and the type fills in automatically</p>
+<h3 id="4-result">4. Result</h3>
+<div class="codehilite"><pre><span></span><code>def double_list(numbers: List(Int)): List(Int) =
+    map(numbers, fn(x) -&gt; x * 2 end)
+</code></pre></div>
+
+<p>The <code>_</code> is <strong>automatically replaced</strong> with <code>List(Int)</code>!</p>
+<h2 id="editor-specific-instructions">Editor-Specific Instructions</h2>
+<h3 id="neovim-with-nvim-lspconfig">Neovim with nvim-lspconfig</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- In your config</span>
+<span class="n">vim</span><span class="p">.</span><span class="n">keymap</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;leader&gt;ca&#39;</span><span class="p">,</span> <span class="n">vim</span><span class="p">.</span><span class="n">lsp</span><span class="p">.</span><span class="n">buf</span><span class="p">.</span><span class="n">code_action</span><span class="p">,</span> <span class="p">{</span> <span class="n">desc</span> <span class="o">=</span> <span class="s1">&#39;Code Action&#39;</span> <span class="p">})</span>
+</code></pre></div>
+
+<p><strong>Usage:</strong><br />
+1. Place cursor on <code>_</code><br />
+2. Press <code>&lt;leader&gt;ca</code> (usually Space+c+a)<br />
+3. Select the code action from the menu</p>
+<p><strong>Or use auto-fix:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Automatically apply preferred quick fixes</span>
+<span class="n">vim</span><span class="p">.</span><span class="n">keymap</span><span class="p">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;&lt;leader&gt;qf&#39;</span><span class="p">,</span> <span class="kr">function</span><span class="p">()</span>
+  <span class="n">vim</span><span class="p">.</span><span class="n">lsp</span><span class="p">.</span><span class="n">buf</span><span class="p">.</span><span class="n">code_action</span><span class="p">({</span>
+    <span class="n">filter</span> <span class="o">=</span> <span class="kr">function</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+      <span class="kr">return</span> <span class="n">action</span><span class="p">.</span><span class="n">isPreferred</span>
+    <span class="kr">end</span><span class="p">,</span>
+    <span class="n">apply</span> <span class="o">=</span> <span class="kc">true</span>
+  <span class="p">})</span>
+<span class="kr">end</span><span class="p">,</span> <span class="p">{</span> <span class="n">desc</span> <span class="o">=</span> <span class="s1">&#39;Quick Fix&#39;</span> <span class="p">})</span>
+</code></pre></div>
+
+<h3 id="vs-code">VS Code</h3>
+<p><strong>Automatic:</strong><br />
+- Just type <code>_</code> and save<br />
+- VS Code may auto-suggest the type<br />
+- Accept with <code>Tab</code> or <code>Enter</code></p>
+<p><strong>Manual:</strong><br />
+- Click the lightbulb 💡 icon<br />
+- Or press <code>Ctrl+.</code><br />
+- Select "Fill hole with: ..."</p>
+<h3 id="emacs-with-lsp-mode">Emacs with lsp-mode</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">(</span><span class="nf">define-key</span><span class="w"> </span><span class="nv">lsp-mode-map</span><span class="w"> </span><span class="p">(</span><span class="nv">kbd</span><span class="w"> </span><span class="s">&quot;C-c C-a&quot;</span><span class="p">)</span><span class="w"> </span><span class="ss">&#39;lsp-execute-code-action</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Usage:</strong><br />
+1. Move point to <code>_</code><br />
+2. Press <code>C-c C-a</code><br />
+3. Select the fill action</p>
+<h2 id="examples">Examples</h2>
+<h3 id="example-1-function-return-type">Example 1: Function Return Type</h3>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Before</span>
+<span class="n">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="n">nums</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">Int</span><span class="p">))</span><span class="o">:</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">filter</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="kd">end)</span>
+
+<span class="cp"># After quick fix</span>
+<span class="n">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="n">nums</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">Int</span><span class="p">))</span><span class="o">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">Int</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">filter</span><span class="p">(</span><span class="n">nums</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="kd">end)</span>
+</code></pre></div>
+
+<h3 id="example-2-parameter-types">Example 2: Parameter Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Before  
+def add(x: <span class="ge">_, y: _</span>): Int =
+    x + y
+
+<span class="gh">#</span> After quick fix (both holes filled)
+def add(x: Int, y: Int): Int =
+    x + y
+</code></pre></div>
+
+<h3 id="example-3-complex-types">Example 3: Complex Types</h3>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Before
+def nested_map(lists: <span class="ge">_): _</span> =
+    map(lists, fn(xs) -&gt; map(xs, fn(x) -&gt; x <span class="gs">* 2 end) end)</span>
+
+<span class="gs"># After quick fix</span>
+<span class="gs">def nested_map(lists: List(List(Int))): List(List(Int)) =</span>
+<span class="gs">    map(lists, fn(xs) -&gt; map(xs, fn(x) -&gt; x *</span> 2 end) end)
+</code></pre></div>
+
+<h2 id="workflow-tips">Workflow Tips</h2>
+<h3 id="incremental-type-filling">Incremental Type Filling</h3>
+<p>Start with all <code>_</code>, then fill types one by one:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Step</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="w"> </span><span class="nx">All</span><span class="w"> </span><span class="nx">holes</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">complex</span><span class="p">(</span><span class="nx">a</span><span class="p">:</span><span class="w"> </span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">:</span><span class="w"> </span><span class="nx">_</span><span class="p">):</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="p">=</span><span class="w"> </span>
+<span class="w">    </span><span class="nx">some_function</span><span class="p">(</span><span class="nx">a</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">)</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Step</span><span class="w"> </span><span class="mi">2</span><span class="p">:</span><span class="w"> </span><span class="nx">Fill</span><span class="w"> </span><span class="nx">parameters</span><span class="w"> </span><span class="p">(</span><span class="nx">from</span><span class="w"> </span><span class="nx">hover</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="nx">quick</span><span class="w"> </span><span class="nx">fix</span><span class="p">)</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">complex</span><span class="p">(</span><span class="nx">a</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span><span class="p">):</span><span class="w"> </span><span class="nx">_</span><span class="w"> </span><span class="p">=</span><span class="w"> </span>
+<span class="w">    </span><span class="nx">some_function</span><span class="p">(</span><span class="nx">a</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">)</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Step</span><span class="w"> </span><span class="mi">3</span><span class="p">:</span><span class="w"> </span><span class="nx">Fill</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">type</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">complex</span><span class="p">(</span><span class="nx">a</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span><span class="p">):</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">String</span><span class="p">)</span><span class="w"> </span><span class="p">=</span><span class="w"> </span>
+<span class="w">    </span><span class="nx">some_function</span><span class="p">(</span><span class="nx">a</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="use-hover-for-preview">Use Hover for Preview</h3>
+<p>Before applying the quick fix:<br />
+1. Hover over <code>_</code> to see inferred type<br />
+2. Check if it looks correct<br />
+3. Apply quick fix if satisfied</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="cannot-infer-type">"Cannot infer type"</h3>
+<p><strong>Problem:</strong> LSP can't determine the type</p>
+<p><strong>Solutions:</strong><br />
+1. Fill in parameter types first<br />
+2. Add more context (type annotations nearby)<br />
+3. Check if the expression is too ambiguous<br />
+4. Manually provide the type</p>
+<h3 id="quick-fix-not-appearing">Quick fix not appearing</h3>
+<p><strong>Problem:</strong> No code action shows up</p>
+<p><strong>Checklist:</strong><br />
+- [ ] Is the <code>_</code> actually a type hole (not in an expression)?<br />
+- [ ] Did the LSP server analyze the file? (save/reload)<br />
+- [ ] Check LSP logs: <code>:LspLog</code> (Neovim) or View → Output → Language Server (VS Code)<br />
+- [ ] Restart LSP: <code>:LspRestart</code> (Neovim) or Reload Window (VS Code)</p>
+<h3 id="wrong-type-inferred">Wrong type inferred</h3>
+<p><strong>Problem:</strong> LSP suggests incorrect type</p>
+<p><strong>Solutions:</strong><br />
+1. Provide more context nearby<br />
+2. Add explicit annotations on parameters<br />
+3. Manually fill the type<br />
+4. Report as a bug with minimal reproduction</p>
+<h2 id="advanced-batch-fill">Advanced: Batch Fill</h2>
+<p>Some editors support batch operations:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Multiple holes in one file
+def f1(x: <span class="ge">_): _</span> = x + 1
+def f2(y: <span class="ge">_): _</span> = y * 2  
+def f3(z: <span class="ge">_): _</span> = z / 3
+</code></pre></div>
+
+<p><strong>VS Code:</strong><br />
+- Source Action → Fill all type holes</p>
+<p><strong>Neovim:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Custom command to fill all holes in buffer</span>
+<span class="n">vim</span><span class="p">.</span><span class="n">api</span><span class="p">.</span><span class="n">nvim_create_user_command</span><span class="p">(</span><span class="s1">&#39;FillAllHoles&#39;</span><span class="p">,</span> <span class="kr">function</span><span class="p">()</span>
+  <span class="n">vim</span><span class="p">.</span><span class="n">lsp</span><span class="p">.</span><span class="n">buf</span><span class="p">.</span><span class="n">code_action</span><span class="p">({</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="p">{</span> <span class="n">only</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;quickfix&#39;</span><span class="p">}</span> <span class="p">},</span>
+    <span class="n">filter</span> <span class="o">=</span> <span class="kr">function</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+      <span class="kr">return</span> <span class="nb">string.match</span><span class="p">(</span><span class="n">action</span><span class="p">.</span><span class="n">title</span><span class="p">,</span> <span class="s1">&#39;^Fill hole&#39;</span><span class="p">)</span>
+    <span class="kr">end</span><span class="p">,</span>
+    <span class="n">apply</span> <span class="o">=</span> <span class="kc">true</span>
+  <span class="p">})</span>
+<span class="kr">end</span><span class="p">,</span> <span class="p">{})</span>
+</code></pre></div>
+
+<h2 id="benefits">Benefits</h2>
+<p>✅ <strong>Faster development</strong> - Less typing<br />
+✅ <strong>Fewer typos</strong> - LSP ensures correctness<br />
+✅ <strong>Learn types</strong> - See what types are inferred<br />
+✅ <strong>Refactoring</strong> - Change implementation, let LSP update types<br />
+✅ <strong>Exploration</strong> - Try code, see what type emerges  </p>
+<h2 id="next-steps">Next Steps</h2>
+<ul>
+<li>Read full guide: <code>docs/TYPE_HOLES_GUIDE.md</code></li>
+<li>Try examples: <code>examples/type_holes_demo.cure</code></li>
+<li>Configure editor: See guide for your specific editor</li>
+</ul>
+<hr />
+<p><strong>Happy type-free coding! 🎯</strong></p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="editor-setup.html">Editor Setup</a></li>
+                    <li><a href="project-overview.html">Project Overview</a></li>
+                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+</body>
+</html>
