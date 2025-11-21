@@ -537,25 +537,60 @@ handle_document_symbol(Id, Params, State) ->
 handle_code_action(Id, Params, State) ->
     TextDocument = maps:get(textDocument, Params),
     Uri = maps:get(uri, TextDocument),
+    Range = maps:get(range, Params, undefined),
     Context = maps:get(context, Params, #{}),
-    Diagnostics = maps:get(diagnostics, Context, []),
+    ClientDiagnostics = maps:get(diagnostics, Context, []),
+
+    % Get diagnostics from our state if client didn't provide them
+    AllDiagnostics =
+        case ClientDiagnostics of
+            [] ->
+                % Client didn't send diagnostics, use our stored ones
+                case maps:get(Uri, State#state.diagnostics, undefined) of
+                    undefined ->
+                        % Re-generate diagnostics if we don't have them
+                        case maps:get(Uri, State#state.documents, undefined) of
+                            undefined ->
+                                [];
+                            Doc ->
+                                Text = maps:get(text, Doc),
+                                case parse_to_ast(Text) of
+                                    {ok, AST} ->
+                                        cure_lsp_type_holes:generate_hole_diagnostics(Uri, AST);
+                                    _ ->
+                                        []
+                                end
+                        end;
+                    StoredDiags ->
+                        StoredDiags
+                end;
+            _ ->
+                ClientDiagnostics
+        end,
+
+    % Filter diagnostics to those overlapping with the requested range
+    RelevantDiagnostics =
+        case Range of
+            undefined -> AllDiagnostics;
+            _ -> filter_diagnostics_by_range(AllDiagnostics, Range)
+        end,
 
     % Generate code actions for refinement type and type hole diagnostics
     Actions = lists:flatmap(
         fun(Diagnostic) ->
-            Code = maps:get(code, Diagnostic, <<>>),
+            Code = maps:get(code, Diagnostic, maps:get(<<"code">>, Diagnostic, <<>>)),
             case Code of
                 <<"type-hole">> ->
                     % Get AST for type hole actions
                     case maps:get(Uri, State#state.documents, undefined) of
                         undefined ->
                             [];
-                        Doc ->
-                            Text = maps:get(text, Doc),
-                            case parse_to_ast(Text) of
-                                {ok, AST} ->
+                        Doc1 ->
+                            Text1 = maps:get(text, Doc1),
+                            case parse_to_ast(Text1) of
+                                {ok, AST1} ->
                                     cure_lsp_type_holes:generate_hole_code_actions(
-                                        Uri, Diagnostic, AST
+                                        Uri, Diagnostic, AST1
                                     );
                                 _ ->
                                     []
@@ -568,7 +603,7 @@ handle_code_action(Id, Params, State) ->
                     end
             end
         end,
-        Diagnostics
+        RelevantDiagnostics
     ),
 
     Response = #{
@@ -584,6 +619,45 @@ is_refinement_diagnostic(<<"refinement_", _/binary>>) -> true;
 % Add type holes
 is_refinement_diagnostic(<<"type-hole">>) -> true;
 is_refinement_diagnostic(_) -> false.
+
+%% Filter diagnostics by range - return diagnostics that overlap with the given range
+filter_diagnostics_by_range(Diagnostics, Range) ->
+    % Helper to get value with either atom or binary key
+    GetKey = fun(Key, Map) ->
+        case maps:get(Key, Map, undefined) of
+            undefined -> maps:get(atom_to_binary(Key, utf8), Map, undefined);
+            Val -> Val
+        end
+    end,
+
+    RangeStart = GetKey(start, Range),
+    RangeEnd = GetKey('end', Range),
+    CursorLine = GetKey(line, RangeStart),
+    CursorChar = GetKey(character, RangeStart),
+
+    lists:filter(
+        fun(Diag) ->
+            DiagRange = GetKey(range, Diag),
+            case DiagRange of
+                undefined ->
+                    false;
+                _ ->
+                    DiagStart = GetKey(start, DiagRange),
+                    DiagEnd = GetKey('end', DiagRange),
+                    DiagStartLine = GetKey(line, DiagStart),
+                    DiagEndLine = GetKey(line, DiagEnd),
+                    DiagStartChar = GetKey(character, DiagStart),
+                    DiagEndChar = GetKey(character, DiagEnd),
+
+                    % Cursor must be inside the diagnostic range (not just on same line)
+                    OnSameLine = (CursorLine =:= DiagStartLine andalso CursorLine =:= DiagEndLine),
+                    InsideRange = (CursorChar >= DiagStartChar andalso CursorChar =< DiagEndChar),
+
+                    OnSameLine andalso InsideRange
+            end
+        end,
+        Diagnostics
+    ).
 
 apply_changes(Text, Changes) ->
     lists:foldl(fun apply_single_change/2, Text, Changes).
@@ -671,8 +745,11 @@ diagnose_document(Uri, Text, State) ->
 
     send_message(Message, State),
 
-    % Return updated state with new SMT state
-    State#state{smt_state = NewSmtState}.
+    % Return updated state with new SMT state and stored diagnostics
+    State#state{
+        smt_state = NewSmtState,
+        diagnostics = maps:put(Uri, AllDiagnostics, State#state.diagnostics)
+    }.
 
 send_empty_diagnostics(Uri, State) ->
     Message = #{

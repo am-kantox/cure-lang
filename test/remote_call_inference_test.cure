@@ -1,0 +1,28 @@
+# Test for remote call type inference
+module RemoteCallTest do
+  export [test_map/0, test_filter/0]
+  
+  import Std.List [map, filter]
+  
+  # Test 1: Using map with type hole - should infer List(Int)
+  def double_list(numbers: List(Int)): _ =
+    map(numbers, fn(x) -> x * 2 end)
+  
+  # Test 2: Using filter with type hole - should infer List(Int)  
+  def filter_positive(numbers: List(Int)): _ =
+    filter(numbers, fn(x) -> x > 0 end)
+  
+  # Test 3: Chaining operations with type holes
+  def process_list(numbers: List(Int)): _ =
+    let doubled = map(numbers, fn(x) -> x * 2 end)
+    filter(doubled, fn(x) -> x > 5 end)
+  
+  def test_map(): Int =
+    let result = double_list([1, 2, 3])
+    0
+  
+  def test_filter(): Int =
+    let result = filter_positive([-1, 0, 1, 2])
+    0
+
+end

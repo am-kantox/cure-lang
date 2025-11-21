@@ -25,7 +25,7 @@ FSM_SRC = $(wildcard $(SRC_DIR)/fsm/*.erl)
 RUNTIME_SRC = $(wildcard $(SRC_DIR)/runtime/*.erl)
 SMT_SRC = $(wildcard $(SRC_DIR)/smt/*.erl)
 CLI_SRC = $(SRC_DIR)/cure_cli.erl
-LSP_SRC = $(wildcard $(LSP_DIR)/*.erl)
+LSP_SRC = $(filter-out $(LSP_DIR)/test_%.erl $(LSP_DIR)/%_test.erl, $(wildcard $(LSP_DIR)/*.erl))
 MCP_SRC = $(wildcard $(MCP_DIR)/*.erl)
 
 # Cure standard library files
