@@ -1,0 +1,185 @@
+/*
+ * Cure Theme for highlight.js
+ * Based on the vicure Vim syntax highlighting
+ * 
+ * This theme provides syntax highlighting for Cure code examples
+ * with colors optimized for readability and distinction between
+ * language constructs.
+ */
+
+/* Base styling - required for all highlight.js themes */
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  background: #f9fafb;
+  color: #1f2937;
+}
+
+/* Reset .subst to default color */
+.hljs-subst {
+  color: #1f2937;
+}
+
+/* Keywords (flow control, declarations) - Statement group in vim */
+.hljs-keyword {
+  color: #7c3aed; /* purple-600 - matches Statement */
+  font-weight: 600;
+}
+
+/* Built-in constructors - StorageClass in vim */
+.hljs-built_in {
+  color: #dc2626; /* red-600 - matches StorageClass */
+  font-weight: 500;
+}
+
+/* Literals (true, false) - Boolean in vim */
+.hljs-literal {
+  color: #ea580c; /* orange-600 - matches Boolean */
+  font-weight: 600;
+}
+
+/* Comments */
+.hljs-comment {
+  color: #6b7280; /* gray-500 - standard comment color */
+  font-style: italic;
+}
+
+/* TODO/FIXME/NOTE markers in comments */
+.hljs-doctag {
+  color: #dc2626; /* red-600 - draw attention */
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* Strings */
+.hljs-string {
+  color: #059669; /* emerald-600 - standard string color */
+}
+
+/* String interpolation expressions */
+.hljs-subst {
+  color: #b45309; /* amber-700 - Special in vim */
+}
+
+/* Atoms/symbols (:atom, 'quoted') - Constant in vim */
+.hljs-symbol {
+  color: #0891b2; /* cyan-600 - matches Constant */
+  font-weight: 500;
+}
+
+/* Numbers and floats */
+.hljs-number {
+  color: #dc2626; /* red-600 - matches Number */
+}
+
+/* Operators */
+.hljs-operator {
+  color: #7c3aed; /* purple-600 - matches Operator */
+  font-weight: 500;
+}
+
+/* Type names (Vector, Int, T, etc.) - Type in vim */
+.hljs-type {
+  color: #0284c7; /* sky-600 - matches Type */
+  font-weight: 600;
+}
+
+/* Function names in definitions - Function in vim */
+.hljs-title.hljs-function,
+.hljs-function > .hljs-title {
+  color: #0891b2; /* cyan-600 - matches Function */
+  font-weight: 600;
+}
+
+/* Module/FSM/Record names - PreProc in vim */
+.hljs-title.hljs-class {
+  color: #7c3aed; /* purple-600 - matches PreProc */
+  font-weight: 700;
+}
+
+/* Regular identifiers */
+.hljs-variable,
+.hljs-attr {
+  color: #1f2937; /* gray-800 - default text color */
+}
+
+/* Punctuation/Delimiters */
+.hljs-punctuation {
+  color: #4b5563; /* gray-600 - subtle but visible */
+}
+
+/* Special characters and escape sequences */
+.hljs-char.escape_,
+.hljs-meta {
+  color: #b45309; /* amber-700 - matches SpecialChar */
+  font-weight: 600;
+}
+
+/* Sections and attributes */
+.hljs-section,
+.hljs-attribute {
+  color: #7c3aed; /* purple-600 */
+  font-weight: 600;
+}
+
+/* Template variables and substitutions */
+.hljs-template-variable {
+  color: #b45309; /* amber-700 - matches Special */
+}
+
+/* Strong emphasis */
+.hljs-strong {
+  font-weight: 700;
+}
+
+/* Emphasis */
+.hljs-emphasis {
+  font-style: italic;
+}
+
+/* Links */
+.hljs-link {
+  color: #0891b2; /* cyan-600 */
+  text-decoration: underline;
+}
+
+/* Additions (for diffs) */
+.hljs-addition {
+  color: #059669; /* emerald-600 */
+  background-color: #d1fae5; /* emerald-100 */
+}
+
+/* Deletions (for diffs) */
+.hljs-deletion {
+  color: #dc2626; /* red-600 */
+  background-color: #fee2e2; /* red-100 */
+}
+
+/* Language-specific: Cure */
+
+/* FSM-specific highlighting */
+.language-cure .hljs-keyword:is([data-keyword*="fsm"], 
+                                 [data-keyword*="state"],
+                                 [data-keyword*="transition"]) {
+  color: #7c3aed; /* purple-600 - emphasize FSM constructs */
+  font-weight: 700;
+}
+
+/* Verification keywords */
+.language-cure .hljs-keyword:is([data-keyword*="property"],
+                                 [data-keyword*="invariant"],
+                                 [data-keyword*="always"],
+                                 [data-keyword*="eventually"]) {
+  color: #dc2626; /* red-600 - highlight verification constructs */
+  font-weight: 700;
+}
+
+/* Type system keywords */
+.language-cure .hljs-keyword:is([data-keyword*="type"],
+                                 [data-keyword*="typeclass"],
+                                 [data-keyword*="trait"],
+                                 [data-keyword*="instance"]) {
+  color: #0284c7; /* sky-600 - highlight type constructs */
+  font-weight: 700;
+}

@@ -7,6 +7,7 @@
     <meta name="description" content="Cure v0.4.0: A strongly-typed, dependently-typed programming language for the BEAM with built-in FSMs, SMT verification, and 12 standard library modules">
     <link rel="icon" type="image/png" href="media/logo-128x128.png">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -149,7 +150,7 @@
             </div>
 
             <div class="code-example">
-                <pre><code># The type system proves this is safe—no runtime checks needed
+                <pre><code class="language-cure"># The type system proves this is safe—no runtime checks needed
 def safe_head(v: Vector(T, n)): T when n > 0 =
   head(v)
 
@@ -205,7 +206,7 @@ def classify(x: Int): Atom =
         <h2 class="section-title">Quick Start</h2>
         
         <div class="code-example">
-            <pre><code># Build the compiler
+            <pre><code class="language-bash"># Build the compiler
 make all
 
 # Try an example
@@ -261,5 +262,13 @@ make test</code></pre>
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cure Syntax Highlighting Test</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/cure-theme.css">
+</head>
+<body>
+    <div class="container" style="padding: 2rem;">
+        <h1>Cure Syntax Highlighting Test</h1>
+        
+        <h2>Example 1: Basic Syntax</h2>
+        <div class="code-example">
+            <pre><code class="language-cure"># Basic module with imports
+module Example do
+  export [main/0, process_list/1]
+  
+  import Std.List [map/2, filter/2]
+  import Std.Io [println/1]
+  
+  # Function definition with type annotation
+  def process_list(items: List(Int)): List(Int) =
+    let doubled = map(items, fn(x) -> x * 2 end)
+    filter(doubled, fn(x) -> x > 10 end)
+  
+  def main(): Unit =
+    let result = process_list([1, 5, 10, 15, 20])
+    println("Processing complete!")
+    Unit
+end</code></pre>
+        </div>
+
+        <h2>Example 2: FSM Definition</h2>
+        <div class="code-example">
+            <pre><code class="language-cure"># Traffic light FSM with timeout transitions
+fsm TrafficLight do
+  states [:red, :yellow, :green]
+  initial :red
+  
+  # State transitions with events
+  Red --> |timer| Green
+  Green --> |timer| Yellow
+  Yellow --> |timer| Red
+  
+  # Emergency transition from any state
+  Green --> |emergency| Red
+  Yellow --> |emergency| Red
+end</code></pre>
+        </div>
+
+        <h2>Example 3: Pattern Matching and Guards</h2>
+        <div class="code-example">
+            <pre><code class="language-cure"># Pattern matching with guards and atoms
+def classify(x: Int): Atom =
+  match x do
+    n when n < 0 -> :negative
+    0 -> :zero
+    n when n > 0 -> :positive
+  end
+
+# Result type handling
+def safe_divide(a: Int, b: Int): Result(Int, Atom) =
+  match b do
+    0 -> Error(:division_by_zero)
+    _ -> Ok(a / b)
+  end
+
+# Option type with Some/None
+def find_first(items: List(T), predicate: fn(T) -> Bool): Option(T) =
+  match items do
+    [] -> None
+    [head | tail] ->
+      match predicate(head) do
+        true -> Some(head)
+        false -> find_first(tail, predicate)
+      end
+  end</code></pre>
+        </div>
+
+        <h2>Example 4: Dependent Types</h2>
+        <div class="code-example">
+            <pre><code class="language-cure"># Vector with length-indexed type
+def safe_head(v: Vector(T, n)): T when n > 0 =
+  head(v)
+
+# Type annotation with constraints
+def concat_vectors(v1: Vector(T, n), v2: Vector(T, m)): Vector(T, n + m) =
+  append(v1, v2)
+
+# Record definition
+record Person do
+  name: String
+  age: Nat
+  email: Option(String)
+end
+
+# Typeclass definition
+typeclass Showable(T) do
+  def show(value: T): String
+end
+
+# Instance implementation
+instance Showable(Int) do
+  def show(n: Int): String =
+    int_to_string(n)
+end</code></pre>
+        </div>
+
+        <h2>Example 5: String Interpolation and Atoms</h2>
+        <div class="code-example">
+            <pre><code class="language-cure"># Strings with interpolation
+def greet(name: String, age: Int): String =
+  "Hello, #{name}! You are #{age} years old."
+
+# Atoms and quoted atoms
+def status_message(status: Atom): String =
+  match status do
+    :ok -> "Everything is fine"
+    :error -> "Something went wrong"
+    :pending -> "Please wait..."
+    'special atom' -> "Special case"
+  end
+
+# Numbers and operators
+def calculate(x: Int, y: Int): Int =
+  let sum = x + y
+  let product = x * y
+  let comparison = x >= y
+  sum * 2 + product</code></pre>
+        </div>
+
+        <h2>Example 6: Process and Message Passing</h2>
+        <div class="code-example">
+            <pre><code class="language-cure"># Process spawning and message passing
+process Counter do
+  def init(): Int = 0
+  
+  def loop(count: Int): Unit =
+    receive do
+      :increment -> 
+        loop(count + 1)
+      :decrement when count > 0 -> 
+        loop(count - 1)
+      {:get, pid} ->
+        send(pid, count)
+        loop(count)
+    end
+end
+
+def main(): Unit =
+  let counter_pid = spawn(Counter)
+  send(counter_pid, :increment)
+  send(counter_pid, :increment)
+  send(counter_pid, {:get, self()})
+  Unit</code></pre>
+        </div>
+    </div>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
+</body>
+</html>
