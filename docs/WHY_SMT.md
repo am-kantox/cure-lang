@@ -78,13 +78,13 @@ This architecture combines the efficiency of modern SAT solvers with the express
 
 ```
 ┌─────────────────────────────────────────────┐
-│           User Interface (APIs)              │
+│           User Interface (APIs)             │
 ├─────────────────────────────────────────────┤
-│         SMT-LIB 2.0 Parser                   │
+│         SMT-LIB 2.0 Parser                  │
 ├─────────────────────────────────────────────┤
-│     Preprocessing & Simplification           │
+│     Preprocessing & Simplification          │
 ├─────────────────────────────────────────────┤
-│         Core SAT Solver (DPLL)               │
+│         Core SAT Solver (DPLL)              │
 ├───────────┬─────────────┬───────────────────┤
 │ Arithmetic│   Arrays    │   Datatypes       │
 │  Theory   │   Theory    │   Theory          │
@@ -108,10 +108,10 @@ This architecture combines the efficiency of modern SAT solvers with the express
 ```
 Testing                                    Formal Verification
   │                                              │
-  ├─── Unit Tests                               │
-  ├─── Integration Tests                        │
-  ├─── Property-Based Tests                     │
-  ├─── Symbolic Execution ───────────────────┐  │
+  ├─── Unit Tests                                │
+  ├─── Integration Tests                         │
+  ├─── Property-Based Tests                      │
+  ├─── Symbolic Execution ────────────────────┐  │
   │                                           │  │
   │                                           ▼  ▼
   │                                         SMT Solver

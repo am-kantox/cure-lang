@@ -132,6 +132,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.
 """.
 
 -include("../parser/cure_ast.hrl").
+-include("cure_refinement_types.hrl").
 
 -export([
     % Type operations
@@ -2063,6 +2064,7 @@ infer_expr({lambda_expr, Params, Body, _Location}, Env) ->
     end;
 infer_expr({cons_expr, Elements, Tail, Location}, Env) ->
     % Type a cons expression [h1, h2, ... | tail]
+    % Enhanced to support dependent types with length arithmetic
     case Elements of
         [] ->
             % Empty head list - just return the tail type
@@ -2082,6 +2084,26 @@ infer_expr({cons_expr, Elements, Tail, Location}, Env) ->
                             % Infer tail type and ensure it's a list of the same element type
                             case infer_expr(Tail, Env) of
                                 {ok, TailType, TailConstraints} ->
+                                    % Extract tail length for dependent types
+                                    TailLength = extract_list_length(TailType),
+                                    NumHeadElems = length(Elements),
+
+                                    % Create length expression for result: head_count + tail_length
+                                    ResultLength =
+                                        case TailLength of
+                                            undefined ->
+                                                % Unknown tail length, result length is unknown
+                                                new_type_var();
+                                            {literal_expr, N, _} when is_integer(N) ->
+                                                % Known tail length, compute result length
+                                                {literal_expr, NumHeadElems + N, Location};
+                                            TailLenExpr ->
+                                                % Symbolic tail length, create arithmetic expression
+                                                {binary_op_expr, '+',
+                                                    {literal_expr, NumHeadElems, Location},
+                                                    TailLenExpr, Location}
+                                        end,
+
                                     % Create constraint: tail must be List(ElemType)
                                     ExpectedTailType = {list_type, ElemType, new_type_var()},
                                     TailConstraint = #type_constraint{
@@ -2090,8 +2112,8 @@ infer_expr({cons_expr, Elements, Tail, Location}, Env) ->
                                         right = ExpectedTailType,
                                         location = Location
                                     },
-                                    % Result type is also List(ElemType) with unknown length
-                                    ResultType = {list_type, ElemType, new_type_var()},
+                                    % Result type with computed length
+                                    ResultType = {list_type, ElemType, ResultLength},
                                     AllConstraints =
                                         ElemConstraints ++ TailConstraints ++ [TailConstraint],
                                     {ok, ResultType, AllConstraints};
@@ -2286,6 +2308,119 @@ infer_expr({tuple_expr, Elements, Location}, Env) ->
         Error ->
             Error
     end;
+infer_expr(#forall_expr{variables = Variables, body = Body, location = Location}, Env) ->
+    % Type a forall expression: forall<T, U>(body)
+    % Variables is a list of {VarName, Type} tuples or #param{} records
+    % Add variables to the environment as type variables
+    TypeVars = [{extract_var_name(V), new_type_var(extract_var_name(V))} || V <- Variables],
+    NewEnv = lists:foldl(
+        fun({VarName, TypeVar}, AccEnv) ->
+            extend_env(AccEnv, VarName, TypeVar)
+        end,
+        Env,
+        TypeVars
+    ),
+    % Infer the body type in the extended environment
+    case infer_expr(Body, NewEnv) of
+        {ok, BodyType, BodyConstraints} ->
+            % Create a polymorphic type for the forall expression
+            % Extract variable names for poly_type
+            VarNames = [extract_var_name(V) || V <- Variables],
+            PolyType = #poly_type{
+                type_params = VarNames,
+                constraints = [],
+                body_type = BodyType,
+                location = Location
+            },
+            {ok, PolyType, BodyConstraints};
+        Error ->
+            Error
+    end;
+infer_expr({forall_expr, Variables, Body, Location}, Env) ->
+    % Handle tuple format for backward compatibility
+    infer_expr(#forall_expr{variables = Variables, body = Body, location = Location}, Env);
+infer_expr(#exists_expr{variables = Variables, body = Body, location = Location}, Env) ->
+    % Type an exists expression: exists<T>(body)
+    % Similar to forall but creates an existential type
+    % Variables is a list of {VarName, Type} tuples or #param{} records
+    % Add variables as type variables (they will be hidden/abstract in the result)
+    TypeVars = [{extract_var_name(V), new_type_var(extract_var_name(V))} || V <- Variables],
+    NewEnv = lists:foldl(
+        fun({VarName, TypeVar}, AccEnv) ->
+            extend_env(AccEnv, VarName, TypeVar)
+        end,
+        Env,
+        TypeVars
+    ),
+    % Infer the body type
+    case infer_expr(Body, NewEnv) of
+        {ok, BodyType, BodyConstraints} ->
+            % For now, treat existential types similarly to polymorphic types
+            % A full implementation would need existential type unification
+            VarNames = [extract_var_name(V) || V <- Variables],
+            ExistentialType = #poly_type{
+                type_params = VarNames,
+                constraints = [],
+                body_type = BodyType,
+                location = Location
+            },
+            {ok, ExistentialType, BodyConstraints};
+        Error ->
+            Error
+    end;
+infer_expr({exists_expr, Variables, Body, Location}, Env) ->
+    % Handle tuple format for backward compatibility
+    infer_expr(#exists_expr{variables = Variables, body = Body, location = Location}, Env);
+infer_expr(
+    #qualified_call_expr{
+        receiver = Receiver,
+        trait_name = TraitName,
+        method_name = MethodName,
+        args = Args,
+        location = Location
+    },
+    Env
+) ->
+    % Type a qualified trait method call: receiver.Trait::method(args)
+    % This is Phase 4 trait system feature
+    case infer_expr(Receiver, Env) of
+        {ok, ReceiverType, ReceiverConstraints} ->
+            % Look up the trait in the environment
+            case lookup_trait_method(TraitName, MethodName, ReceiverType, Env) of
+                {ok, MethodType} ->
+                    % Infer argument types
+                    case infer_args(Args, Env) of
+                        {ok, ArgTypes, ArgConstraints} ->
+                            % Apply the method type to the arguments
+                            infer_curried_application(
+                                MethodType,
+                                [ReceiverType | ArgTypes],
+                                Location,
+                                ReceiverConstraints ++ ArgConstraints
+                            );
+                        Error ->
+                            Error
+                    end;
+                {error, Reason} ->
+                    {error,
+                        {unresolved_trait_method, TraitName, MethodName, ReceiverType, Reason,
+                            Location}}
+            end;
+        Error ->
+            Error
+    end;
+infer_expr({qualified_call_expr, Receiver, TraitName, MethodName, Args, Location}, Env) ->
+    % Handle tuple format for backward compatibility
+    infer_expr(
+        #qualified_call_expr{
+            receiver = Receiver,
+            trait_name = TraitName,
+            method_name = MethodName,
+            args = Args,
+            location = Location
+        },
+        Env
+    );
 infer_expr(Expr, _Env) ->
     {error, {unsupported_expression, Expr}}.
 
@@ -2460,13 +2595,14 @@ infer_and_validate_record_fields(
     end.
 
 %% Validate that a value satisfies refined type constraints
+%% Enhanced with SMT solver integration for symbolic checking
 validate_refined_type_assignment(
     {literal_expr, Value, _},
     _InferredType,
     {refined_type, _BaseType, Predicate},
     Location
 ) when is_function(Predicate, 1) ->
-    % For literal expressions assigned to refined types, check the predicate
+    % For literal expressions assigned to refined types, check the predicate directly
     try
         case Predicate(Value) of
             true ->
@@ -2479,6 +2615,42 @@ validate_refined_type_assignment(
     catch
         _:_ ->
             {error, {refined_type_check_failed, Value, Location}}
+    end;
+validate_refined_type_assignment(
+    ValueExpr,
+    InferredType,
+    {refined_type, BaseType, Predicate},
+    Location
+) when is_function(Predicate, 1) ->
+    % For non-literal expressions, try to validate using SMT solver
+    % if the predicate can be represented symbolically
+    case try_convert_predicate_to_smt(Predicate, ValueExpr, BaseType) of
+        {ok, SmtConstraint} ->
+            % Check if the constraint is satisfiable
+            case cure_smt_solver:check_satisfiability([SmtConstraint]) of
+                {sat, _Model} ->
+                    % Constraint is satisfiable, but we need to prove it always holds
+                    % For now, accept if type unifies with base type
+                    case unify(InferredType, BaseType) of
+                        {ok, _} -> ok;
+                        {error, _} -> {error, {type_mismatch, InferredType, BaseType, Location}}
+                    end;
+                unsat ->
+                    % Constraint is unsatisfiable
+                    {error, {refined_type_constraint_unsatisfiable, ValueExpr, Location}};
+                unknown ->
+                    % Cannot determine, accept if base type matches
+                    case unify(InferredType, BaseType) of
+                        {ok, _} -> ok;
+                        {error, _} -> {error, {type_mismatch, InferredType, BaseType, Location}}
+                    end
+            end;
+        not_convertible ->
+            % Cannot convert to SMT, just check base type compatibility
+            case unify(InferredType, BaseType) of
+                {ok, _} -> ok;
+                {error, _} -> {error, {type_mismatch, InferredType, BaseType, Location}}
+            end
     end;
 validate_refined_type_assignment(
     {unary_op_expr, '-', {literal_expr, Value, _}, _},
@@ -2955,6 +3127,13 @@ extract_param_name(#type_param_decl{name = Name}) -> Name;
 extract_param_name(Name) when is_atom(Name) -> Name;
 extract_param_name(_) -> undefined.
 
+%% Extract variable name from forall/exists expression variables
+%% Variables can be: {VarName, Type}, #param{}, or just atoms
+extract_var_name({VarName, _Type}) when is_atom(VarName) -> VarName;
+extract_var_name(#param{name = Name}) -> Name;
+extract_var_name(Name) when is_atom(Name) -> Name;
+extract_var_name(_) -> undefined.
+
 %% Apply polymorphic substitution to a type
 apply_poly_substitution({primitive_type, Name}, Subst) ->
     case maps:get(Name, Subst, undefined) of
@@ -3272,14 +3451,61 @@ infer_binary_op('*', LeftType, RightType, Location, Constraints) ->
     ],
     {ok, ResultType, Constraints ++ NumConstraints};
 infer_binary_op('/', LeftType, RightType, Location, Constraints) ->
-    % Division: operands must be numeric; result is Float
+    % Division: operands must be numeric
+    % IMPORTANT: Division safety - divisor must be non-zero
+    % Check if right operand type guarantees non-zero
+    case check_nonzero_guarantee(RightType) of
+        true ->
+            % Safe: divisor type guarantees non-zero
+            ok;
+        false ->
+            % Unsafe: divisor might be zero
+            % For now, emit a warning via debug (in future, should be a proper error/warning)
+            cure_utils:debug(
+                "Warning: Division at ~p:~p may be unsafe - divisor type ~p does not guarantee non-zero~n",
+                [Location#location.line, Location#location.column, RightType]
+            )
+    end,
+
+    % Result type depends on operand types:
+    %   Int / Int -> Int (integer division)
+    %   Float / _ -> Float
+    %   _ / Float -> Float
+    ResultType = new_type_var(),
     NumericLeft = #type_constraint{
         left = LeftType, op = 'numeric', right = undefined, location = Location
     },
     NumericRight = #type_constraint{
         left = RightType, op = 'numeric', right = undefined, location = Location
     },
-    {ok, ?TYPE_FLOAT, Constraints ++ [NumericLeft, NumericRight]};
+    % Result type equals left type (will be Int if both are Int, Float if either is Float)
+    ResultConstraint = #type_constraint{
+        left = LeftType, op = '=', right = RightType, location = Location
+    },
+    TypeConstraint = #type_constraint{
+        left = ResultType, op = '=', right = LeftType, location = Location
+    },
+
+    % Add division safety constraint if not guaranteed
+    SafetyConstraints =
+        case check_nonzero_guarantee(RightType) of
+            true ->
+                [];
+            false ->
+                [
+                    % Generate a constraint that divisor must be non-zero
+                    #type_constraint{
+                        left = RightType,
+                        op = 'nonzero',
+                        right = undefined,
+                        location = Location
+                    }
+                ]
+        end,
+
+    {ok, ResultType,
+        Constraints ++ [NumericLeft, NumericRight, ResultConstraint, TypeConstraint] ++
+            SafetyConstraints};
 infer_binary_op('%', LeftType, RightType, Location, Constraints) ->
     % Modulo operator: both operands must be integers, result is integer
     ResultType = new_type_var(),
@@ -3725,6 +3951,31 @@ infer_pattern_type({constructor_pattern, ConstructorName, Args, _Location}, _Mat
                     infer_constructor_args_generic(ArgPatterns, Env, [])
             end
     end;
+infer_pattern_type({tuple_pattern, ElementPatterns, _Location}, MatchType, Env) ->
+    % Handle tuple patterns like (a, b, c)
+    % Extract expected element types from match type
+    ElementTypes =
+        case MatchType of
+            #tuple_type{element_types = Types} ->
+                % Match type is a tuple with known element types
+                Types;
+            {tuple_type, Types, _Loc} ->
+                % Tuple format compatibility
+                Types;
+            _ ->
+                % Match type is not a tuple - create fresh type variables
+                [new_type_var() || _ <- ElementPatterns]
+        end,
+
+    % Check arity match
+    case length(ElementPatterns) =:= length(ElementTypes) of
+        true ->
+            % Infer types for each element pattern
+            infer_tuple_pattern_elements(ElementPatterns, ElementTypes, Env, []);
+        false ->
+            % Arity mismatch - error or use generic types
+            {error, {tuple_pattern_arity_mismatch, length(ElementPatterns), length(ElementTypes)}}
+    end;
 infer_pattern_type({record_pattern, RecordName, FieldPatterns, _Location}, _MatchType, Env) ->
     % Handle record patterns like Person{name: n, age: a}
     case lookup_env(Env, RecordName) of
@@ -3775,6 +4026,23 @@ infer_list_pattern_elements([Element | RestElements], Tail, MatchType, Env, Cons
         Error ->
             Error
     end.
+
+%% Helper for tuple pattern elements
+infer_tuple_pattern_elements([], [], Env, Constraints) ->
+    {ok, Env, Constraints};
+infer_tuple_pattern_elements([Pattern | RestPatterns], [ElemType | RestTypes], Env, Constraints) ->
+    case infer_pattern_type(Pattern, ElemType, Env) of
+        {ok, NewEnv, PatternConstraints} ->
+            infer_tuple_pattern_elements(
+                RestPatterns, RestTypes, NewEnv, Constraints ++ PatternConstraints
+            );
+        Error ->
+            Error
+    end;
+infer_tuple_pattern_elements(Patterns, Types, _Env, _Constraints) when
+    length(Patterns) =/= length(Types)
+->
+    {error, {tuple_pattern_arity_mismatch, length(Patterns), length(Types)}}.
 
 %% Helper for constructor pattern arguments with known types
 infer_constructor_args([], [], Env, Constraints) ->
@@ -3965,7 +4233,16 @@ solve_constraint(#type_constraint{left = Left, op = 'contravariant', right = Rig
     solve_variance_constraint(Left, Right, contravariant, Subst);
 solve_constraint(#type_constraint{left = Left, op = 'numeric', right = _}, Subst) ->
     % Handle numeric type constraint - type must be Int or Float
-    case apply_substitution(Left, Subst) of
+    AppliedType = apply_substitution(Left, Subst),
+    % Extract base type from refinement types if needed
+    TypeToCheck =
+        case AppliedType of
+            #refinement_type{base_type = BaseType} ->
+                BaseType;
+            Other ->
+                Other
+        end,
+    case TypeToCheck of
         ?TYPE_INT ->
             {ok, Subst};
         ?TYPE_FLOAT ->
@@ -3979,6 +4256,20 @@ solve_constraint(#type_constraint{left = Left, op = 'numeric', right = _}, Subst
             {ok, Subst};
         _Other ->
             {error, {non_numeric_type, Left}}
+    end;
+solve_constraint(
+    #type_constraint{left = Left, op = 'nonzero', right = _, location = Location}, Subst
+) ->
+    % Handle nonzero constraint - type must guarantee value is non-zero
+    % This is crucial for division safety
+    AppliedType = apply_substitution(Left, Subst),
+    case check_nonzero_guarantee(AppliedType) of
+        true ->
+            % Type guarantees non-zero
+            {ok, Subst};
+        false ->
+            % Type does not guarantee non-zero - this is a division safety error
+            {error, {division_by_potentially_zero, AppliedType, Location}}
     end;
 solve_constraint(#type_constraint{op = Op}, _Subst) ->
     % For now, accept arithmetic constraints without solving them
@@ -4143,6 +4434,140 @@ create_derived_length_var(#type_param{type = {identifier_expr, BaseVar, _}}, Suf
 create_derived_length_var(_, Suffix) ->
     list_to_atom("derived_" ++ Suffix).
 
+%% Extract length expression from list type
+extract_list_length({list_type, _ElemType, Length}) ->
+    Length;
+extract_list_length({dependent_type, 'List', [_TypeParam, LengthParam]}) ->
+    extract_type_param_value(LengthParam);
+extract_list_length({dependent_type, 'Vector', [_TypeParam, LengthParam]}) ->
+    extract_type_param_value(LengthParam);
+extract_list_length(_) ->
+    undefined.
+
+%% Discriminate union type - find which variant a value matches
+%% Returns the specific variant type from a union
+discriminate_union_type(ValueType, {union_type, Variants}, _Env) ->
+    % Try to find a variant that unifies with the value type
+    case find_matching_union_variant(ValueType, Variants) of
+        {ok, Variant} -> {ok, Variant};
+        not_found -> {error, {no_matching_variant, ValueType, Variants}}
+    end;
+discriminate_union_type(ValueType, _NonUnionType, _Env) ->
+    % Not a union type, return the type as-is
+    {ok, ValueType}.
+
+%% Find a variant in a union that matches the value type
+find_matching_union_variant(_ValueType, []) ->
+    not_found;
+find_matching_union_variant(ValueType, [Variant | RestVariants]) ->
+    case unify(ValueType, Variant, #{}) of
+        {ok, _Subst} ->
+            % This variant unifies with the value type
+            {ok, Variant};
+        {error, _} ->
+            % Try next variant
+            find_matching_union_variant(ValueType, RestVariants)
+    end.
+
+%% Check if a type is a union type
+is_union_type({union_type, _, _}) -> true;
+is_union_type({union_type, _}) -> true;
+is_union_type(#union_type{}) -> true;
+is_union_type(_) -> false.
+
+%% Get variants from a union type
+get_union_variants({union_type, Variants, _Location}) -> Variants;
+get_union_variants({union_type, Variants}) -> Variants;
+get_union_variants(#union_type{types = Variants}) -> Variants;
+get_union_variants(_) -> [].
+
+%% Try to convert a refined type predicate to an SMT constraint
+%% This enables symbolic checking of refined types
+try_convert_predicate_to_smt(Predicate, ValueExpr, BaseType) when is_function(Predicate, 1) ->
+    % Attempt to extract constraint information from the predicate
+    % by testing with sample values and inferring the constraint
+    case infer_predicate_constraint(Predicate, BaseType) of
+        {ok, Constraint} ->
+            % Apply the constraint to the value expression
+            case convert_constraint_to_smt(ValueExpr, Constraint) of
+                {ok, SmtConstraint} -> {ok, SmtConstraint};
+                {error, _} -> not_convertible
+            end;
+        not_inferrable ->
+            not_convertible
+    end;
+try_convert_predicate_to_smt(_Predicate, _ValueExpr, _BaseType) ->
+    not_convertible.
+
+%% Infer the constraint from a predicate by testing
+infer_predicate_constraint(Predicate, {primitive_type, 'Int'}) ->
+    % For integer predicates, try common patterns
+    try
+        % Test if it's a lower bound constraint (>= n)
+        TestNegative = Predicate(-1000),
+        TestZero = Predicate(0),
+        TestPositive = Predicate(1000),
+
+        case {TestNegative, TestZero, TestPositive} of
+            {false, true, true} ->
+                % Likely >= 0 (Nat type)
+                {ok, {ge, 0}};
+            {false, false, true} ->
+                % Likely > 0 (Pos type)
+                {ok, {gt, 0}};
+            {true, false, false} ->
+                % Likely < 0
+                {ok, {lt, 0}};
+            {true, true, false} ->
+                % Likely <= 0
+                {ok, {le, 0}};
+            _ ->
+                % Pattern not recognized
+                not_inferrable
+        end
+    catch
+        _:_ -> not_inferrable
+    end;
+infer_predicate_constraint(_Predicate, _BaseType) ->
+    % Only support Int predicates for now
+    not_inferrable.
+
+%% Convert a constraint and value expression to SMT
+convert_constraint_to_smt(ValueExpr, {Op, Bound}) when
+    Op =:= ge; Op =:= gt; Op =:= lt; Op =:= le; Op =:= eq
+->
+    % Create SMT constraint: ValueExpr Op Bound
+    try
+        SmtValue = convert_expr_to_smt_term(ValueExpr),
+        SmtBound = cure_smt_solver:constant_term(Bound),
+        SmtOp =
+            case Op of
+                ge -> '>=';
+                gt -> '>';
+                lt -> '<';
+                le -> '=<';
+                eq -> '=='
+            end,
+        SmtConstraint = cure_smt_solver:arithmetic_constraint(SmtValue, SmtOp, SmtBound),
+        {ok, SmtConstraint}
+    catch
+        _:_ -> {error, cannot_convert}
+    end;
+convert_constraint_to_smt(_ValueExpr, _Constraint) ->
+    {error, unsupported_constraint}.
+
+%% Convert an expression to an SMT term
+convert_expr_to_smt_term({literal_expr, Value, _}) when is_integer(Value) ->
+    cure_smt_solver:constant_term(Value);
+convert_expr_to_smt_term({identifier_expr, Name, _}) ->
+    cure_smt_solver:variable_term(Name);
+convert_expr_to_smt_term({binary_op_expr, Op, Left, Right, _}) ->
+    LeftTerm = convert_expr_to_smt_term(Left),
+    RightTerm = convert_expr_to_smt_term(Right),
+    cure_smt_solver:binary_op_term(Op, LeftTerm, RightTerm);
+convert_expr_to_smt_term(_Expr) ->
+    throw({cannot_convert_expr, _Expr}).
+
 %% Type well-formedness checking
 is_well_formed_type({primitive_type, Name}) when
     Name =:= 'Int' orelse Name =:= 'Float' orelse Name =:= 'String' orelse
@@ -4236,6 +4661,59 @@ enhance_with_dependent_info({list_type, ElemType, LenExpr}, {list_expr, Elements
     end;
 enhance_with_dependent_info(Type, _Expr, _Env) ->
     {ok, Type}.
+
+%% Check if a type guarantees non-zero values
+%% This is crucial for division safety
+check_nonzero_guarantee(#refinement_type{base_type = _BaseType, predicate = Predicate}) ->
+    % Check if the refinement predicate guarantees non-zero
+    % Common patterns: x > 0, x < 0, x != 0, x >= 1, x <= -1
+    check_predicate_guarantees_nonzero(Predicate);
+check_nonzero_guarantee(_Type) ->
+    % Non-refinement types don't guarantee non-zero
+    false.
+
+%% Check if a predicate guarantees non-zero
+check_predicate_guarantees_nonzero(
+    {binary_op_expr, '>', {identifier_expr, _, _}, {literal_expr, 0, _}, _}
+) ->
+    % x > 0 guarantees non-zero
+    true;
+check_predicate_guarantees_nonzero(
+    {binary_op_expr, '<', {identifier_expr, _, _}, {literal_expr, 0, _}, _}
+) ->
+    % x < 0 guarantees non-zero
+    true;
+check_predicate_guarantees_nonzero(
+    {binary_op_expr, '>=', {identifier_expr, _, _}, {literal_expr, N, _}, _}
+) when N > 0 ->
+    % x >= 1 (or higher) guarantees non-zero
+    true;
+check_predicate_guarantees_nonzero(
+    {binary_op_expr, '=<', {identifier_expr, _, _}, {literal_expr, N, _}, _}
+) when N < 0 ->
+    % x <= -1 (or lower) guarantees non-zero
+    true;
+check_predicate_guarantees_nonzero(
+    {binary_op_expr, '<=', {identifier_expr, _, _}, {literal_expr, N, _}, _}
+) when N < 0 ->
+    % x <= -1 (or lower) guarantees non-zero
+    true;
+check_predicate_guarantees_nonzero(
+    {binary_op_expr, '!=', {identifier_expr, _, _}, {literal_expr, 0, _}, _}
+) ->
+    % x != 0 guarantees non-zero
+    true;
+check_predicate_guarantees_nonzero(
+    {binary_op_expr, '/=', {identifier_expr, _, _}, {literal_expr, 0, _}, _}
+) ->
+    % x /= 0 guarantees non-zero (Erlang-style inequality)
+    true;
+check_predicate_guarantees_nonzero({binary_op_expr, 'and', Left, Right, _}) ->
+    % (P && Q) guarantees non-zero if either P or Q does
+    check_predicate_guarantees_nonzero(Left) orelse check_predicate_guarantees_nonzero(Right);
+check_predicate_guarantees_nonzero(_) ->
+    % Other predicates don't guarantee non-zero
+    false.
 
 %% Enhanced constraint solving functions
 solve_length_constraint(Left, Right, Subst) ->
@@ -7910,3 +8388,147 @@ find_method_in_typeclass_info(Name, TypeclassInfo) when is_map(TypeclassInfo) ->
     end;
 find_method_in_typeclass_info(_Name, _TypeclassInfo) ->
     not_found.
+
+-doc """
+Lookup a trait method for qualified method calls.
+
+Handles Phase 4 trait system where methods can be called using
+qualified syntax: receiver.Trait::method(args).
+
+## Arguments
+- `TraitName` - Name of the trait (atom)
+- `MethodName` - Name of the method (atom)
+- `ReceiverType` - Type of the receiver object
+- `Env` - Type environment
+
+## Returns
+- `{ok, MethodType}` - If the method is found
+- `{error, Reason}` - If the method cannot be resolved
+
+## Example
+```erlang
+{ok, ShowMethod} = lookup_trait_method('Show', show, IntType, Env).
+```
+""".
+lookup_trait_method(TraitName, MethodName, ReceiverType, Env) when
+    is_record(Env, type_env)
+->
+    cure_utils:debug("[TRAIT_METHOD] Looking up ~p::~p for type ~p~n", [
+        TraitName, MethodName, ReceiverType
+    ]),
+
+    % First, check if there's a trait definition in the environment
+    case lookup_trait_definition(TraitName, Env) of
+        {ok, TraitDef} ->
+            % Look for the method in the trait definition
+            case find_trait_method(MethodName, TraitDef) of
+                {ok, MethodType} ->
+                    % Check if the receiver type implements the trait
+                    case check_trait_implementation(TraitName, ReceiverType, Env) of
+                        ok ->
+                            {ok, MethodType};
+                        {error, Reason} ->
+                            {error, {trait_not_implemented, TraitName, ReceiverType, Reason}}
+                    end;
+                not_found ->
+                    {error, {method_not_in_trait, MethodName, TraitName}}
+            end;
+        {error, Reason} ->
+            % Trait not found - try typeclass resolution as fallback
+            case try_resolve_typeclass_method(MethodName, Env) of
+                {ok, MethodType} ->
+                    {ok, MethodType};
+                not_found ->
+                    {error, {trait_not_found, TraitName, Reason}}
+            end
+    end;
+lookup_trait_method(_TraitName, _MethodName, _ReceiverType, _Env) ->
+    {error, invalid_environment}.
+
+%% Helper: Lookup trait definition in environment
+lookup_trait_definition(TraitName, Env) ->
+    % Traits are stored similarly to typeclasses
+    case lookup_env(Env, TraitName) of
+        undefined ->
+            {error, trait_not_found};
+        #trait_def{} = TraitDef ->
+            {ok, TraitDef};
+        {trait_def, _, _, _, _, _} = TraitDef ->
+            {ok, TraitDef};
+        _Other ->
+            {error, not_a_trait}
+    end.
+
+%% Helper: Find a method in a trait definition
+find_trait_method(MethodName, TraitDef) when is_tuple(TraitDef) ->
+    % Extract methods from trait_def record
+    % #trait_def{name, type_params, methods, supertraits, associated_types, location}
+    try
+        Methods =
+            case TraitDef of
+                {trait_def, _, _, M, _, _, _} -> M;
+                % methods is field 4
+                #trait_def{methods = M} -> M;
+                _ -> element(4, TraitDef)
+            end,
+
+        % Methods is a list of #method_signature{}
+        case lists:keyfind(MethodName, 2, Methods) of
+            false ->
+                not_found;
+            MethodSig when is_tuple(MethodSig) ->
+                % Extract type from method_signature
+                % #method_signature{name, type_params, params, return_type, default_impl, location}
+                try
+                    Params = element(4, MethodSig),
+                    ReturnType = element(5, MethodSig),
+                    % Build function type from params and return
+                    ParamTypes = [PT || #param{type = PT} <- Params],
+                    MethodType = {function_type, ParamTypes, ReturnType},
+                    {ok, MethodType}
+                catch
+                    _:_ -> not_found
+                end;
+            _ ->
+                not_found
+        end
+    catch
+        _:_ -> not_found
+    end;
+find_trait_method(_MethodName, _TraitDef) ->
+    not_found.
+
+%% Helper: Check if a type implements a trait
+check_trait_implementation(TraitName, ReceiverType, Env) ->
+    cure_utils:debug("[TRAIT_IMPL] Checking if ~p implements ~p~n", [ReceiverType, TraitName]),
+
+    % For now, assume all primitive types implement basic traits
+    % Full implementation would check for trait_impl definitions in environment
+    case ReceiverType of
+        {primitive_type, _} ->
+            % Primitive types auto-implement basic traits
+            ok;
+        {dependent_type, _, _} ->
+            % Dependent types inherit trait implementations from their base
+            ok;
+        _ ->
+            % Check for explicit trait implementation
+            case lookup_trait_impl(TraitName, ReceiverType, Env) of
+                {ok, _Impl} -> ok;
+                {error, Reason} -> {error, Reason}
+            end
+    end.
+
+%% Helper: Lookup trait implementation for a type
+lookup_trait_impl(TraitName, ReceiverType, Env) when is_record(Env, type_env) ->
+    % Look for trait_impl in environment bindings
+    % Trait implementations are indexed by {trait_name, type}
+    ImplKey = {trait_impl, TraitName, ReceiverType},
+    case lookup_env(Env, ImplKey) of
+        undefined ->
+            {error, no_implementation_found};
+        TraitImpl ->
+            {ok, TraitImpl}
+    end;
+lookup_trait_impl(_TraitName, _ReceiverType, _Env) ->
+    {error, invalid_environment}.

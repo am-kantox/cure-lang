@@ -7,6 +7,8 @@ module TypeHolesDemo do
   import Std.List [map, filter]
   import Std.Io [println]
   
+  type PositiveInt = Int when n > 0
+
   # Example 1: Use _ as a type hole for return type
   # The LSP will infer this as List(Int) and offer a code action to fill it in
   def double_list(numbers: List(Int)): List(Int) =
@@ -17,6 +19,9 @@ module TypeHolesDemo do
   def process_data(xs: List(Float)): List(Float) =
     let doubled = map(xs, fn(x) -> x * 2 end)
     filter(doubled, fn(x) -> x > 5 end)
+
+  def safe_div(x: Int, y: PositiveInt) -> Int =
+    x / y  # OK: y is guaranteed > 0
   
   # Example 3: Already complete types (for comparison)
   def add_one(numbers: List(Int)): List(Int) =

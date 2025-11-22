@@ -1,0 +1,190 @@
+# Comprehensive Records Example
+# Demonstrates record usage in Cure:
+# - Record declaration
+# - Record construction  
+# - Pattern matching on records
+# - Field access using dot notation
+# - Record updates
+
+module RecordsComprehensive do
+  export [main/0]
+
+  import Std.Io [println/1]
+
+  # =========================================
+  # 1. RECORD DECLARATIONS
+  # =========================================
+
+  # Basic record with primitive fields
+  record Person do
+    name: String
+    age: Int
+    email: String
+  end
+
+  # Record with Float fields
+  record Point do
+    x: Float
+    y: Float
+  end
+
+  # =========================================
+  # 2. RECORD CONSTRUCTION
+  # =========================================
+
+  def create_person(): _ =
+    Person{name: "Alice", age: 30, email: "alice@example.com"}
+
+  def create_point(x_val: Float, y_val: Float): Point =
+    Point{x: x_val, y: y_val}
+
+  # =========================================
+  # 3. PATTERN MATCHING ON RECORDS
+  # =========================================
+
+  # Extract all fields
+  def get_name(person: Person): String =
+    match person do
+      Person{name: n, age: _, email: _} -> n
+    end
+
+  # Pattern matching with guards
+  def classify_point(p: Point): String =
+    match p do
+      Point{x: x, y: y} when x == 0.0 and y == 0.0 ->
+        "Origin"
+      Point{x: x, y: y} when x > 0.0 and y > 0.0 ->
+        "First quadrant"
+      Point{x: x, y: y} when x < 0.0 and y > 0.0 ->
+        "Second quadrant"
+      Point{x: x, y: y} when x < 0.0 and y < 0.0 ->
+        "Third quadrant"
+      Point{x: x, y: y} when x > 0.0 and y < 0.0 ->
+        "Fourth quadrant"
+      Point{x: _, y: y} when y == 0.0 ->
+        "On X-axis"
+      Point{x: x, y: _} when x == 0.0 ->
+        "On Y-axis"
+    end
+
+  # Partial pattern matching
+  def is_adult(person: Person): Bool =
+    match person do
+      Person{age: age} when age >= 18 -> true
+      Person{age: _} -> false
+    end
+
+  # =========================================
+  # 4. FIELD ACCESS WITH DOT NOTATION
+  # =========================================
+
+  def get_age(p: Person): Int =
+    p.age
+
+  def get_email(p: Person): String =
+    p.email
+
+  def get_x(pt: Point): Float =
+    pt.x
+
+  def get_y(pt: Point): Float =
+    pt.y
+
+  # =========================================
+  # 5. HELPER: Creating new records from existing
+  # =========================================
+
+  # Create a new Person with modified age
+  def with_age(n: String, a: Int, e: String, new_age: Int): Person =
+    Person{name: n, age: new_age, email: e}
+
+  # Create a new Point with modified coordinates
+  def with_coords(new_x: Float, new_y: Float): Point =
+    Point{x: new_x, y: new_y}
+
+  # =========================================
+  # 6. HELPER FUNCTIONS
+  # =========================================
+
+  def show_int(n: Int): String =
+    match n do
+      x when x == 0 -> "0"
+      x when x == 3 -> "3"
+      x when x == 4 -> "4"
+      x when x == 30 -> "30"
+      x when x == 31 -> "31"
+      _ -> "[int]"
+    end
+
+  def show_float(f: Float): String =
+    match f do
+      x when x == 0.0 -> "0.0"
+      x when x == 1.0 -> "1.0"
+      x when x == 2.0 -> "2.0"
+      x when x == 3.0 -> "3.0"
+      x when x == 4.0 -> "4.0"
+      x when x == 5.0 -> "5.0"
+      x when x == 6.0 -> "6.0"
+      _ -> "[float]"
+    end
+
+  def show_bool(b: Bool): String =
+    match b do
+      true -> "true"
+      false -> "false"
+    end
+
+  # =========================================
+  # 7. MAIN DEMONSTRATION
+  # =========================================
+
+  def main(): Int =
+    println("=== CURE RECORDS EXAMPLE ===")
+    
+    # Record Construction
+    println("1. Record Construction")
+    let alice = create_person()
+    println("Created person: Alice")
+    let pt1 = create_point(3.0, 4.0)
+    println("Created point (3.0, 4.0)")
+
+    # Field Access
+    println("2. Field Access")
+    let age = get_age(alice)
+    println("Age: " <> show_int(age))
+    let email = get_email(alice)
+    println("Email: " <> email)
+    let x = get_x(pt1)
+    println("Point X: " <> show_float(x))
+    let y = get_y(pt1)
+    println("Point Y: " <> show_float(y))
+
+    # Pattern Matching
+    println("3. Pattern Matching")
+    let name = get_name(alice)
+    println("Name: " <> name)
+    let adult = is_adult(alice)
+    println("Is adult: " <> show_bool(adult))
+    let classification = classify_point(pt1)
+    println("Point class: " <> classification)
+    let origin = Point{x: 0.0, y: 0.0}
+    let origin_class = classify_point(origin)
+    println("Origin class: " <> origin_class)
+
+    # Creating New Records
+    println("4. Creating New Records from Existing")
+    let name_val = get_name(alice)
+    let old_age = get_age(alice)
+    let email_val = get_email(alice)
+    let alice_older = with_age(name_val, old_age, email_val, 31)
+    let new_age = get_age(alice_older)
+    println("Created new person with age: " <> show_int(new_age))
+    let pt2 = with_coords(4.0, 5.0)
+    let new_x = get_x(pt2)
+    let new_y = get_y(pt2)
+    println("Created new point: (" <> show_float(new_x) <> ", " <> show_float(new_y) <> ")")
+
+    println("=== All operations completed! ===")
+    0
+
+end
