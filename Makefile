@@ -55,7 +55,7 @@ ERLC_OPTS = +debug_info -I include -I src/parser -I src/fsm -I src/types -o $(EB
 
 .PHONY: all clean clean-all test test-basic test-integration test-performance test-smt test-fsm docs setup compiler tests compile-file stdlib stdlib-clean stdlib-check lsp lsp-deps lsp-scripts lsp-shell gen-signatures mcp
 
-all: setup gen-signatures compiler stdlib mcp
+all: setup gen-signatures compiler stdlib lsp mcp
 
 setup:
 	@mkdir -p $(BUILD_DIR)

@@ -70,6 +70,13 @@ The LSP provides:
 
 -include("../parser/cure_ast.hrl").
 
+%% Record definition for cure_types:infer_type/2 return value
+-record(inference_result, {
+    type :: term(),
+    constraints :: [term()],
+    substitution :: #{term() => term()}
+}).
+
 %%% ============================================================================
 %%% Type Hole Detection
 %%% ============================================================================
@@ -246,28 +253,38 @@ infer_function_return_type(
                     location = Location
                 },
 
-                case cure_typechecker:check_function(SyntheticFuncDef, EnvWithImports) of
-                    {ok, NewEnv, {typecheck_result, true, ResultType, _Errors, _Warnings}} ->
-                        % Look up the function in the environment
-                        FunType = cure_types:lookup_env(NewEnv, Name),
-                        case FunType of
-                            undefined ->
-                                % Function not in environment, use ResultType directly
-                                RetType = extract_return_type(ResultType),
-                                ReturnAstType = convert_type_to_ast_format(RetType),
-                                {ok, ReturnAstType};
-                            _ ->
-                                % Extract return type from function type in environment
-                                RetType = extract_return_type(FunType),
-                                % Try to resolve type variables by looking at parameter types
-                                ResolvedRetType = resolve_type_variables(RetType, FunType),
-                                ReturnAstType = convert_type_to_ast_format(ResolvedRetType),
-                                {ok, ReturnAstType}
-                        end;
-                    {ok, _NewEnv, {typecheck_result, false, _ResultType, Errors, _Warnings}} ->
-                        {error, {typecheck_failed, Errors}};
-                    {error, Reason} = Error ->
-                        Error
+                %  Instead of using check_function which adds the function to env,
+                % directly infer the body expression type
+                case infer_body_type(CheckBody, CheckParams, EnvWithImports) of
+                    {ok, BodyType} ->
+                        ReturnAstType = convert_type_to_ast_format(BodyType),
+                        {ok, ReturnAstType};
+                    {error, _Reason} = Error ->
+                        % Fallback: try with check_function
+                        case cure_typechecker:check_function(SyntheticFuncDef, EnvWithImports) of
+                            {ok, NewEnv, {typecheck_result, true, ResultType, _Errors, _Warnings}} ->
+                                % Look up the function in the environment
+                                FunType = cure_types:lookup_env(NewEnv, Name),
+                                case FunType of
+                                    undefined ->
+                                        % Function not in environment, use ResultType directly
+                                        RetType = extract_return_type(ResultType),
+                                        ReturnAstType = convert_type_to_ast_format(RetType),
+                                        {ok, ReturnAstType};
+                                    _ ->
+                                        % Extract return type from function type in environment
+                                        RetType = extract_return_type(FunType),
+                                        % Try to resolve type variables by looking at parameter types
+                                        ResolvedRetType = resolve_type_variables(RetType, FunType),
+                                        ReturnAstType = convert_type_to_ast_format(ResolvedRetType),
+                                        {ok, ReturnAstType}
+                                end;
+                            {ok, _NewEnv,
+                                {typecheck_result, false, _ResultType, Errors, _Warnings}} ->
+                                {error, {typecheck_failed, Errors}};
+                            {error, Reason2} ->
+                                {error, Reason2}
+                        end
                 end;
             {error, Reason} = Error ->
                 Error
@@ -290,40 +307,87 @@ infer_function_return_type(_FuncDef, _AST) ->
     % Cannot infer - body and clauses both undefined
     {error, cannot_infer}.
 
-%% @doc Build type environment from module (including imports)
+%% @doc Infer type of function body directly
+infer_body_type(Body, Params, Env) ->
+    % Add function parameters to environment
+    EnvWithParams = add_params_to_env(Params, Env),
+    % Infer the body expression type using the public API
+    case cure_types:infer_type(Body, EnvWithParams) of
+        {ok, #inference_result{type = BodyType}} ->
+            {ok, BodyType};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% @doc Build type environment from module (including imports and record types)
 build_module_env(AST) when is_list(AST) ->
     % Check if AST contains a module_def
     case [M || M <- AST, is_record(M, module_def)] of
         [#module_def{items = Items} | _] ->
-            % Module items include imports - extract them
+            % Module items include imports and records - extract them
             BaseEnv = cure_typechecker:builtin_env(),
             Imports = [Item || Item <- Items, is_record(Item, import_def)],
+            Records = [Item || Item <- Items, is_record(Item, record_def)],
             case process_imports_for_env(Imports, BaseEnv) of
                 {ok, EnvWithImports} ->
-                    {ok, EnvWithImports};
+                    % Add record types to environment
+                    case process_records_for_env(Records, EnvWithImports) of
+                        {ok, EnvWithRecords} ->
+                            {ok, EnvWithRecords};
+                        {error, _} ->
+                            {ok, EnvWithImports}
+                    end;
                 {error, _Reason} ->
-                    {ok, BaseEnv}
+                    % Still try to add records even if imports fail
+                    case process_records_for_env(Records, BaseEnv) of
+                        {ok, EnvWithRecords} ->
+                            {ok, EnvWithRecords};
+                        {error, _} ->
+                            {ok, BaseEnv}
+                    end
             end;
         [] ->
-            % No module_def, try to find import_def records in list
+            % No module_def, try to find import_def and record_def records in list
             BaseEnv = cure_typechecker:builtin_env(),
             Imports = [Item || Item <- AST, is_record(Item, import_def)],
+            Records = [Item || Item <- AST, is_record(Item, record_def)],
             case process_imports_for_env(Imports, BaseEnv) of
                 {ok, EnvWithImports} ->
-                    {ok, EnvWithImports};
+                    case process_records_for_env(Records, EnvWithImports) of
+                        {ok, EnvWithRecords} ->
+                            {ok, EnvWithRecords};
+                        {error, _} ->
+                            {ok, EnvWithImports}
+                    end;
                 {error, _} ->
-                    {ok, BaseEnv}
+                    case process_records_for_env(Records, BaseEnv) of
+                        {ok, EnvWithRecords} ->
+                            {ok, EnvWithRecords};
+                        {error, _} ->
+                            {ok, BaseEnv}
+                    end
             end
     end;
 build_module_env(#module_def{items = Items}) ->
-    % Module record passed directly - get imports from items
+    % Module record passed directly - get imports and records from items
     BaseEnv = cure_typechecker:builtin_env(),
     Imports = [Item || Item <- Items, is_record(Item, import_def)],
+    Records = [Item || Item <- Items, is_record(Item, record_def)],
     case process_imports_for_env(Imports, BaseEnv) of
         {ok, EnvWithImports} ->
-            {ok, EnvWithImports};
+            case process_records_for_env(Records, EnvWithImports) of
+                {ok, EnvWithRecords} ->
+                    {ok, EnvWithRecords};
+                {error, _} ->
+                    {ok, EnvWithImports}
+            end;
         {error, _} ->
-            {ok, BaseEnv}
+            case process_records_for_env(Records, BaseEnv) of
+                {ok, EnvWithRecords} ->
+                    {ok, EnvWithRecords};
+                {error, _} ->
+                    {ok, BaseEnv}
+            end
     end;
 build_module_env(_) ->
     {ok, cure_typechecker:builtin_env()}.
@@ -368,6 +432,42 @@ is_concrete_type({dependent_type, _, _}) -> true;
 is_concrete_type({type_var, _, _, _}) -> false;
 is_concrete_type({type_param, _, Type}) -> is_concrete_type(Type);
 is_concrete_type(_) -> false.
+
+%% @doc Process record definitions to build environment
+process_records_for_env([], Env) ->
+    {ok, Env};
+process_records_for_env([RecordDef | Rest], Env) ->
+    case process_single_record(RecordDef, Env) of
+        {ok, NewEnv} ->
+            process_records_for_env(Rest, NewEnv);
+        {error, _} ->
+            % Continue with current env if record processing fails
+            process_records_for_env(Rest, Env)
+    end;
+process_records_for_env(undefined, Env) ->
+    {ok, Env}.
+
+%% @doc Process a single record definition
+process_single_record(#record_def{name = Name, fields = Fields}, Env) ->
+    % Convert record fields to tuple format with converted types
+    % Format: {record_field_def, FieldName, Type, DefaultValue, Location}
+    ConvertedFields = lists:map(
+        fun(
+            #record_field_def{
+                name = FieldName, type = TypeExpr, default_value = Default, location = Loc
+            }
+        ) ->
+            ConvertedType = convert_type_expr(TypeExpr),
+            {record_field_def, FieldName, ConvertedType, Default, Loc}
+        end,
+        Fields
+    ),
+    % Create a record type and add it to the environment
+    RecordType = {record_type, Name, ConvertedFields},
+    NewEnv = cure_types:extend_env(Env, Name, RecordType),
+    {ok, NewEnv};
+process_single_record(_, Env) ->
+    {ok, Env}.
 
 %% @doc Process imports to build environment
 process_imports_for_env([], Env) ->
@@ -435,7 +535,11 @@ create_imported_function_type(Module, Name, Arity) ->
     end.
 
 %% @doc Add function parameters to environment
-add_params_to_env(Params, Env) ->
+add_params_to_env(undefined, Env) ->
+    Env;
+add_params_to_env([], Env) ->
+    Env;
+add_params_to_env(Params, Env) when is_list(Params) ->
     lists:foldl(
         fun(#param{name = Name, type = TypeExpr}, AccEnv) ->
             % Convert type expression to internal type
@@ -478,6 +582,9 @@ convert_type_to_ast_format({dependent_type, Name, Params}) ->
         value_params = [],
         location = undefined
     };
+convert_type_to_ast_format({record_type, Name, _Fields}) ->
+    % For record types, just return the record name as a primitive type
+    #primitive_type{name = Name, location = undefined};
 convert_type_to_ast_format({function_type, _ParamTypes, ReturnType}) ->
     % For function types, we typically care about the return type in holes
     convert_type_to_ast_format(ReturnType);

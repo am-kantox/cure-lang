@@ -8,18 +8,20 @@ main(_) ->
 
     % Test code with a type hole
     Code =
-        <<"\n"
-        "module Test do\n"
-        "  export [create_person/0]\n"
-        "  \n"
-        "  record Person do\n"
-        "    name: String\n"
-        "    age: Int\n"
-        "  end\n"
-        "  \n"
-        "  def create_person(): _ =\n"
-        "    Person{name: \"Alice\", age: 30}\n"
-        "end\n">>,
+        <<
+            "\n"
+            "module Test do\n"
+            "  export [create_person/0]\n"
+            "  \n"
+            "  record Person do\n"
+            "    name: String\n"
+            "    age: Int\n"
+            "  end\n"
+            "  \n"
+            "  def create_person(): _ =\n"
+            "    Person{name: \"Alice\", age: 30}\n"
+            "end\n"
+        >>,
 
     io:format("Testing type hole detection...~n"),
 

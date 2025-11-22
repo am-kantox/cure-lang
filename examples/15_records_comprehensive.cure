@@ -32,7 +32,7 @@ module RecordsComprehensive do
   # 2. RECORD CONSTRUCTION
   # =========================================
 
-  def create_person(): _ =
+  def create_person(): Person =
     Person{name: "Alice", age: 30, email: "alice@example.com"}
 
   def create_point(x_val: Float, y_val: Float): Point =
