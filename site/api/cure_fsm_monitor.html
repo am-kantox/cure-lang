@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.4.0">
+    <meta name="project" content="cure v0.5.0">
 
 
-    <title>cure_fsm_monitor — cure v0.4.0</title>
+    <title>cure_fsm_monitor — cure v0.5.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.4.0
+          v0.5.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_fsm_monitor</span> 
-    <small class="app-vsn" translate="no">(cure v0.4.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.5.0)</small>
 
   </h1>
 
@@ -144,18 +144,18 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
   <span class="text">Usage</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Generate monitor from property</span><span class="w">
-</span><span class="n">Monitor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_monitor</span><span class="p">:</span><span class="nf">generate_monitor</span><span class="p" data-group-id="5504057221-1">(</span><span class="n">FsmDef</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5504057221-2">{</span><span class="ss">safety</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5504057221-3">[</span><span class="n">BadState</span><span class="p" data-group-id="5504057221-3">]</span><span class="p" data-group-id="5504057221-2">}</span><span class="p" data-group-id="5504057221-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Monitor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_monitor</span><span class="p">:</span><span class="nf">generate_monitor</span><span class="p" data-group-id="5595731690-1">(</span><span class="n">FsmDef</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5595731690-2">{</span><span class="ss">safety</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5595731690-3">[</span><span class="n">BadState</span><span class="p" data-group-id="5595731690-3">]</span><span class="p" data-group-id="5595731690-2">}</span><span class="p" data-group-id="5595731690-1">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">% Inject monitor into FSM</span><span class="w">
-</span><span class="n">MonitoredFsm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_monitor</span><span class="p">:</span><span class="nf">inject_monitor</span><span class="p" data-group-id="5504057221-4">(</span><span class="n">FsmDef</span><span class="p">,</span><span class="w"> </span><span class="n">Monitor</span><span class="p" data-group-id="5504057221-4">)</span><span class="p">,</span><span class="w">
+</span><span class="n">MonitoredFsm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_monitor</span><span class="p">:</span><span class="nf">inject_monitor</span><span class="p" data-group-id="5595731690-4">(</span><span class="n">FsmDef</span><span class="p">,</span><span class="w"> </span><span class="n">Monitor</span><span class="p" data-group-id="5595731690-4">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">% Start monitored FSM</span><span class="w">
-</span><span class="p" data-group-id="5504057221-5">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Pid</span><span class="p" data-group-id="5504057221-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">start_fsm</span><span class="p" data-group-id="5504057221-6">(</span><span class="n">MonitoredFsm</span><span class="p">,</span><span class="w"> </span><span class="n">InitData</span><span class="p" data-group-id="5504057221-6">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="5595731690-5">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Pid</span><span class="p" data-group-id="5595731690-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">start_fsm</span><span class="p" data-group-id="5595731690-6">(</span><span class="n">MonitoredFsm</span><span class="p">,</span><span class="w"> </span><span class="n">InitData</span><span class="p" data-group-id="5595731690-6">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">% Monitor will report violations</span><span class="w">
 </span><span class="k">receive</span><span class="w">
-    </span><span class="p" data-group-id="5504057221-7">{</span><span class="ss">monitor_violation</span><span class="p">,</span><span class="w"> </span><span class="n">Pid</span><span class="p">,</span><span class="w"> </span><span class="n">Violation</span><span class="p" data-group-id="5504057221-7">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
-        </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="5504057221-8">(</span><span class="s">&quot;Property violated: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5504057221-9">[</span><span class="n">Violation</span><span class="p" data-group-id="5504057221-9">]</span><span class="p" data-group-id="5504057221-8">)</span><span class="w">
+    </span><span class="p" data-group-id="5595731690-7">{</span><span class="ss">monitor_violation</span><span class="p">,</span><span class="w"> </span><span class="n">Pid</span><span class="p">,</span><span class="w"> </span><span class="n">Violation</span><span class="p" data-group-id="5595731690-7">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+        </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="5595731690-8">(</span><span class="s">&quot;Property violated: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5595731690-9">[</span><span class="n">Violation</span><span class="p" data-group-id="5595731690-9">]</span><span class="p" data-group-id="5595731690-8">)</span><span class="w">
 </span><span class="k">end</span><span class="p">.</span></code></pre>
     </section>
 
@@ -298,7 +298,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">check_assertion(Assertion, Context)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L310" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L310" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -324,7 +324,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">check_property(FsmPid, Property, CurrentState)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L294" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L294" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -351,7 +351,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">disable_monitor(FsmDef, MonitorId)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L385" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L385" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -377,7 +377,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">enable_monitor(FsmDef, MonitorId)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L374" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L374" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -403,7 +403,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">format_violation(Violation)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L363" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L363" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -429,7 +429,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">generate_deadlock_monitor(FsmDef)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L176" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L176" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -462,7 +462,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">generate_liveness_monitor(FsmDef)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L136" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L136" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -495,7 +495,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">generate_monitor(FsmDef, Property)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L90" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L90" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -527,7 +527,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">generate_safety_monitor(FsmDef, BadStates)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L108" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L108" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -560,7 +560,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">inject_monitor(FsmDef, Monitor)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L210" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L210" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -594,7 +594,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">inject_monitors(FsmDef, Monitors)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L215" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L215" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -628,7 +628,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">list_monitors(FsmDef)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L394" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L394" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -654,7 +654,7 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
     </a>
     <h1 class="signature" translate="no">report_violation(State, Monitor, Violation)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/fsm/cure_fsm_monitor.erl#L338" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/fsm/cure_fsm_monitor.erl#L338" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -689,9 +689,9 @@ from verified properties and injecting runtime assertions.</p><h2 id="module-fea
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.4.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.5.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.4.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.5.0">Hex Preview</a>
 
           </span>
 

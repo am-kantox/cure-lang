@@ -1,6 +1,6 @@
 {application, cure,
  [{description, "Cure Programming Language Compiler"},
-  {vsn, "0.4.0"},
+  {vsn, "0.5.0"},
   {registered, []},
   {applications, [kernel, stdlib]},
   {env, []},
