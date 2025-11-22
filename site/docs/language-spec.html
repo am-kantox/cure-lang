@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cure Language Specification - Cure Documentation</title>
     <meta name="description" content="Version: 0.1.0  
-Last Updated: October 31, 2025  
+Last Updated: November 22, 2025
 Status: Implementation Complete ✅ PRODUCTION READY  
-Test Success Rate: 100% (8/">
+Test Success Rate: 100% (8/8">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -40,7 +41,7 @@ Test Success Rate: 100% (8/">
         
         <h1 id="cure-language-specification">Cure Language Specification</h1>
 <p><strong>Version</strong>: 0.1.0<br />
-<strong>Last Updated</strong>: October 31, 2025<br />
+<strong>Last Updated</strong>: November 22, 2025<br />
 <strong>Status</strong>: Implementation Complete ✅ <strong>PRODUCTION READY</strong><br />
 <strong>Test Success Rate</strong>: 100% (8/8 test suites passing)<br />
 <strong>Runtime Verification</strong>: ✅ Working examples with import system</p>
@@ -93,8 +94,17 @@ Test Success Rate: 100% (8/">
 <span class="w">    </span><span class="p">[</span><span class="nx">_</span><span class="o">|</span><span class="nx">tail</span><span class="p">]</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">length</span><span class="p">(</span><span class="nx">tail</span><span class="p">)</span>
 <span class="w">  </span><span class="nx">end</span>
 
-<span class="err">#</span><span class="w"> </span><span class="nx">Function</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">constraints</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Function</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">guards</span><span class="w"> </span><span class="p">(</span><span class="nx">constraints</span><span class="w"> </span><span class="nx">on</span><span class="w"> </span><span class="nx">parameters</span><span class="p">)</span>
 <span class="nx">def</span><span class="w"> </span><span class="nx">safe_divide</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">y</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">y</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nx">y</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Multi</span><span class="o">-</span><span class="nx">clause</span><span class="w"> </span><span class="nx">function</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">guards</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">abs</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">x</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">abs</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">x</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Guards</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">AND</span><span class="o">/</span><span class="nx">OR</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">in_range</span><span class="p">(</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">min</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">max</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">Bool</span><span class="w"> </span>
+<span class="w">  </span><span class="nx">when</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nx">min</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="nx">max</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">in_range</span><span class="p">(</span><span class="nx">_x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">_min</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">_max</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">Bool</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="kc">false</span>
 
 <span class="err">#</span><span class="w"> </span><span class="nx">Function</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">Unit</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">type</span>
 <span class="nx">def</span><span class="w"> </span><span class="nx">print_message</span><span class="p">(</span><span class="nx">msg</span><span class="p">:</span><span class="w"> </span><span class="nx">String</span><span class="p">):</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="p">=</span>
@@ -367,123 +377,126 @@ Test Success Rate: 100% (8/">
        <span class="p">|</span> <span class="k">process_def </span><span class="p">|</span> <span class="k">import_def </span><span class="p">|</span> <span class="k">let_binding</span>
 
 <span class="err">#</span> <span class="k">Function definitions</span>
-<span class="k">function_def </span><span class="err">::=</span> <span class="p">(</span><span class="s1">&#39;def&#39;</span><span class="p">)</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;(&#39;</span> <span class="k">param_list</span><span class="ni">? &#39;)&#39; type_annotation?</span> <span class="k">constraint</span><span class="ni">? &#39;=&#39; expr</span>
-<span class="ni">def_erl_def ::= &#39;def_erl&#39; IDENTIFIER &#39;(&#39; param_list?</span> <span class="s1">&#39;)&#39;</span> <span class="k">type_annotation</span><span class="ni">? constraint?</span> <span class="s1">&#39;=&#39;</span> <span class="k">expr</span>
+<span class="k">function_def </span><span class="err">::=</span> <span class="p">(</span><span class="s1">&#39;def&#39;</span><span class="p">)</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;(&#39;</span> <span class="k">param_list</span><span class="ni">? &#39;)&#39; type_annotation?</span> <span class="k">guard</span><span class="ni">? &#39;=&#39; expr</span>
+<span class="ni">              | (&#39;def&#39;) IDENTIFIER &#39;(&#39; param_list?</span> <span class="s1">&#39;)&#39;</span> <span class="k">type_annotation</span><span class="ni">? guard?</span> <span class="s1">&#39;do&#39;</span> <span class="k">expr </span><span class="s1">&#39;end&#39;</span>
+<span class="k">def_erl_def </span><span class="err">::=</span> <span class="s1">&#39;def_erl&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;(&#39;</span> <span class="k">param_list</span><span class="ni">? &#39;)&#39; type_annotation?</span> <span class="k">guard</span><span class="ni">? &#39;=&#39; expr</span>
 
-<span class="k">param_list </span><span class="err">::=</span> <span class="k">param </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">param</span><span class="p">)</span><span class="err">*</span>
-<span class="k">param </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;:&#39;</span> <span class="k">type</span>
+<span class="ni">param_list ::= param (&#39;,&#39; param)*</span>
+<span class="ni">param ::= IDENTIFIER &#39;:&#39; type</span>
 
-<span class="k">type_annotation </span><span class="err">::=</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">type </span><span class="p">|</span> <span class="s1">&#39;:&#39;</span> <span class="k">type</span>
+<span class="ni">type_annotation ::= &#39;-&gt;&#39; type | &#39;:&#39; type</span>
 
-<span class="k">constraint </span><span class="err">::=</span> <span class="s1">&#39;when&#39;</span> <span class="k">expr</span>
+<span class="ni">guard ::= &#39;when&#39; guard_expr</span>
+<span class="ni">guard_expr ::= comparison | guard_expr &#39;and&#39; guard_expr | guard_expr &#39;or&#39; guard_expr</span>
+<span class="ni">comparison ::= expr (&#39;&lt;&#39; | &#39;&gt;&#39; | &#39;&lt;=&#39; | &#39;&gt;=&#39; | &#39;==&#39; | &#39;!=&#39;) expr</span>
 
-<span class="err">#</span> <span class="k">Type definitions</span>
-<span class="k">type_def </span><span class="err">::=</span> <span class="s1">&#39;type&#39;</span> <span class="k">IDENTIFIER type_params</span><span class="ni">? &#39;=&#39; type_expr</span>
-<span class="ni">record_def ::= &#39;record&#39; IDENTIFIER type_params?</span> <span class="s1">&#39;do&#39;</span> <span class="k">field_list </span><span class="s1">&#39;end&#39;</span>
+<span class="ni"># Type definitions</span>
+<span class="ni">type_def ::= &#39;type&#39; IDENTIFIER type_params?</span> <span class="s1">&#39;=&#39;</span> <span class="k">type_expr</span>
+<span class="k">record_def </span><span class="err">::=</span> <span class="s1">&#39;record&#39;</span> <span class="k">IDENTIFIER type_params</span><span class="ni">? &#39;do&#39; field_list &#39;end&#39;</span>
 
-<span class="k">type_params </span><span class="err">::=</span> <span class="s1">&#39;(&#39;</span> <span class="k">type_param </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">type_param</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;)&#39;</span>
-<span class="k">type_param </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="p">|</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;:&#39;</span> <span class="k">type</span>
+<span class="ni">type_params ::= &#39;(&#39; type_param (&#39;,&#39; type_param)* &#39;)&#39;</span>
+<span class="ni">type_param ::= IDENTIFIER | IDENTIFIER &#39;:&#39; type</span>
 
-<span class="k">field_list </span><span class="err">::=</span> <span class="k">field</span><span class="err">*</span>
-<span class="k">field </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;:&#39;</span> <span class="k">type</span>
+<span class="ni">field_list ::= field*</span>
+<span class="ni">field ::= IDENTIFIER &#39;:&#39; type</span>
 
-<span class="err">#</span> <span class="k">FSM definitions </span><span class="p">(</span><span class="k">arrow-based transitions</span><span class="p">)</span>
-<span class="k">fsm_def </span><span class="err">::=</span> <span class="s1">&#39;fsm&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;{&#39;</span> <span class="k">field_init </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">field_init</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;}&#39;</span> <span class="s1">&#39;do&#39;</span> <span class="k">fsm_transition</span><span class="err">*</span> <span class="s1">&#39;end&#39;</span>
-<span class="k">field_init </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;:&#39;</span> <span class="k">expr</span>
-<span class="k">fsm_transition </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;--&gt;&#39;</span> <span class="s1">&#39;|&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;|&#39;</span> <span class="k">IDENTIFIER  </span><span class="err">#</span> <span class="k">FromState --</span><span class="err">&gt;</span> <span class="p">|</span><span class="k">event</span><span class="p">|</span> <span class="k">ToState</span>
+<span class="ni"># FSM definitions (arrow-based transitions)</span>
+<span class="ni">fsm_def ::= &#39;fsm&#39; IDENTIFIER &#39;{&#39; field_init (&#39;,&#39; field_init)* &#39;}&#39; &#39;do&#39; fsm_transition* &#39;end&#39;</span>
+<span class="ni">field_init ::= IDENTIFIER &#39;:&#39; expr</span>
+<span class="ni">fsm_transition ::= IDENTIFIER &#39;--&gt;&#39; &#39;|&#39; IDENTIFIER &#39;|&#39; IDENTIFIER  # FromState --&gt; |event| ToState</span>
 
-<span class="err">#</span> <span class="k">Process definitions</span>
-<span class="k">process_def </span><span class="err">::=</span> <span class="s1">&#39;process&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;(&#39;</span> <span class="k">param_list</span><span class="ni">? &#39;)&#39; &#39;do&#39; process_body &#39;end&#39;</span>
-<span class="ni">process_body ::= item* expr</span>
+<span class="ni"># Process definitions</span>
+<span class="ni">process_def ::= &#39;process&#39; IDENTIFIER &#39;(&#39; param_list?</span> <span class="s1">&#39;)&#39;</span> <span class="s1">&#39;do&#39;</span> <span class="k">process_body </span><span class="s1">&#39;end&#39;</span>
+<span class="k">process_body </span><span class="err">::=</span> <span class="k">item</span><span class="err">*</span> <span class="k">expr</span>
 
-<span class="ni"># Import definitions ✅ WORKING!</span>
-<span class="ni">import_def ::= &#39;import&#39; IDENTIFIER import_list?</span>
-<span class="k">import_list </span><span class="err">::=</span> <span class="s1">&#39;[&#39;</span> <span class="k">import_item </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">import_item</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;]&#39;</span>
-<span class="k">import_item </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="p">(</span><span class="s1">&#39;/&#39;</span> <span class="k">INTEGER</span><span class="p">)</span><span class="ni">? | IDENTIFIER &#39;as&#39; IDENTIFIER  # Function name, arity, or alias</span>
+<span class="err">#</span> <span class="k">Import definitions </span><span class="err">✅</span> <span class="k">WORKING</span><span class="err">!</span>
+<span class="k">import_def </span><span class="err">::=</span> <span class="s1">&#39;import&#39;</span> <span class="k">IDENTIFIER import_list</span><span class="ni">?</span>
+<span class="ni">import_list ::= &#39;[&#39; import_item (&#39;,&#39; import_item)* &#39;]&#39;</span>
+<span class="ni">import_item ::= IDENTIFIER (&#39;/&#39; INTEGER)?</span> <span class="p">|</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;as&#39;</span> <span class="k">IDENTIFIER  </span><span class="err">#</span> <span class="k">Function name</span><span class="p">,</span> <span class="k">arity</span><span class="p">,</span> <span class="k">or alias</span>
 
-<span class="ni"># Let bindings</span>
-<span class="ni">let_binding ::= &#39;let&#39; IDENTIFIER &#39;=&#39; expr</span>
+<span class="err">#</span> <span class="k">Let bindings</span>
+<span class="k">let_binding </span><span class="err">::=</span> <span class="s1">&#39;let&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;=&#39;</span> <span class="k">expr</span>
 
-<span class="ni"># Types</span>
-<span class="ni">type ::= primitive_type | compound_type | dependent_type | function_type </span>
-<span class="ni">       | union_type | refinement_type</span>
+<span class="err">#</span> <span class="k">Types</span>
+<span class="k">type </span><span class="err">::=</span> <span class="k">primitive_type </span><span class="p">|</span> <span class="k">compound_type </span><span class="p">|</span> <span class="k">dependent_type </span><span class="p">|</span> <span class="k">function_type </span>
+       <span class="p">|</span> <span class="k">union_type </span><span class="p">|</span> <span class="k">refinement_type</span>
 
-<span class="ni">primitive_type ::= &#39;Int&#39; | &#39;Float&#39; | &#39;Atom&#39; | &#39;Bool&#39; | &#39;String&#39; | &#39;Binary&#39;</span>
-<span class="ni">                 | &#39;Nat&#39; | &#39;Pos&#39; | &#39;Pid&#39; | &#39;Unit&#39;</span>
+<span class="k">primitive_type </span><span class="err">::=</span> <span class="s1">&#39;Int&#39;</span> <span class="p">|</span> <span class="s1">&#39;Float&#39;</span> <span class="p">|</span> <span class="s1">&#39;Atom&#39;</span> <span class="p">|</span> <span class="s1">&#39;Bool&#39;</span> <span class="p">|</span> <span class="s1">&#39;String&#39;</span> <span class="p">|</span> <span class="s1">&#39;Binary&#39;</span>
+                 <span class="p">|</span> <span class="s1">&#39;Nat&#39;</span> <span class="p">|</span> <span class="s1">&#39;Pos&#39;</span> <span class="p">|</span> <span class="s1">&#39;Pid&#39;</span> <span class="p">|</span> <span class="s1">&#39;Unit&#39;</span>
 
-<span class="ni">compound_type ::= IDENTIFIER type_args?</span>
-                <span class="p">|</span> <span class="s1">&#39;[&#39;</span> <span class="k">type </span><span class="s1">&#39;]&#39;</span>  <span class="err">#</span> <span class="k">List type</span>
-                <span class="p">|</span> <span class="s1">&#39;{&#39;</span> <span class="k">type </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">type</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;}&#39;</span>  <span class="err">#</span> <span class="k">Tuple type</span>
+<span class="k">compound_type </span><span class="err">::=</span> <span class="k">IDENTIFIER type_args</span><span class="ni">?</span>
+<span class="ni">                | &#39;[&#39; type &#39;]&#39;  # List type</span>
+<span class="ni">                | &#39;{&#39; type (&#39;,&#39; type)* &#39;}&#39;  # Tuple type</span>
 
-<span class="k">dependent_type </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;(&#39;</span> <span class="k">type_arg </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">type_arg</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;)&#39;</span>
-<span class="k">type_arg </span><span class="err">::=</span> <span class="k">type </span><span class="p">|</span> <span class="k">expr</span>
+<span class="ni">dependent_type ::= IDENTIFIER &#39;(&#39; type_arg (&#39;,&#39; type_arg)* &#39;)&#39;</span>
+<span class="ni">type_arg ::= type | expr</span>
 
-<span class="k">function_type </span><span class="err">::=</span> <span class="s1">&#39;(&#39;</span> <span class="k">param_list </span><span class="s1">&#39;)&#39;</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">type</span>
+<span class="ni">function_type ::= &#39;(&#39; param_list &#39;)&#39; &#39;-&gt;&#39; type</span>
 
-<span class="k">union_type </span><span class="err">::=</span> <span class="k">type </span><span class="p">(</span><span class="s1">&#39;|&#39;</span> <span class="k">type</span><span class="p">)</span><span class="err">+</span>
+<span class="ni">union_type ::= type (&#39;|&#39; type)+</span>
 
-<span class="k">refinement_type </span><span class="err">::=</span> <span class="k">type </span><span class="s1">&#39;when&#39;</span> <span class="k">expr</span>
-                  <span class="p">|</span> <span class="s1">&#39;{&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;:&#39;</span> <span class="k">type </span><span class="s1">&#39;|&#39;</span> <span class="k">expr </span><span class="s1">&#39;}&#39;</span>
+<span class="ni">refinement_type ::= type &#39;when&#39; expr</span>
+<span class="ni">                  | &#39;{&#39; IDENTIFIER &#39;:&#39; type &#39;|&#39; expr &#39;}&#39;</span>
 
-<span class="err">#</span> <span class="k">Expressions</span>
-<span class="k">expr </span><span class="err">::=</span> <span class="k">literal </span><span class="p">|</span> <span class="k">identifier </span><span class="p">|</span> <span class="k">function_call </span><span class="p">|</span> <span class="k">match_expr</span>
-       <span class="p">|</span> <span class="k">receive_expr </span><span class="p">|</span> <span class="k">record_expr </span><span class="p">|</span> <span class="k">list_expr </span><span class="p">|</span> <span class="k">tuple_expr </span>
-       <span class="p">|</span> <span class="k">binary_op </span><span class="p">|</span> <span class="k">unary_op </span><span class="p">|</span> <span class="k">lambda_expr </span><span class="p">|</span> <span class="k">spawn_expr </span><span class="p">|</span> <span class="k">send_expr </span><span class="p">|</span> <span class="k">fsm_expr</span>
+<span class="ni"># Expressions</span>
+<span class="ni">expr ::= literal | identifier | function_call | match_expr</span>
+<span class="ni">       | receive_expr | record_expr | list_expr | tuple_expr </span>
+<span class="ni">       | binary_op | unary_op | lambda_expr | spawn_expr | send_expr | fsm_expr</span>
 
-<span class="k">literal </span><span class="err">::=</span> <span class="k">INTEGER </span><span class="p">|</span> <span class="k">FLOAT </span><span class="p">|</span> <span class="k">STRING </span><span class="p">|</span> <span class="k">ATOM </span><span class="p">|</span> <span class="k">BOOLEAN </span><span class="p">|</span> <span class="s1">&#39;Ok&#39;</span> <span class="p">|</span> <span class="s1">&#39;Error&#39;</span> <span class="p">|</span> <span class="s1">&#39;Some&#39;</span> <span class="p">|</span> <span class="s1">&#39;None&#39;</span>
+<span class="ni">literal ::= INTEGER | FLOAT | STRING | ATOM | BOOLEAN | &#39;Ok&#39; | &#39;Error&#39; | &#39;Some&#39; | &#39;None&#39;</span>
 
-<span class="k">identifier </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="p">|</span> <span class="k">qualified_identifier</span>
-<span class="k">qualified_identifier </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;.&#39;</span> <span class="k">IDENTIFIER</span>
+<span class="ni">identifier ::= IDENTIFIER | qualified_identifier</span>
+<span class="ni">qualified_identifier ::= IDENTIFIER &#39;.&#39; IDENTIFIER</span>
 
-<span class="k">function_call </span><span class="err">::=</span> <span class="k">expr </span><span class="s1">&#39;(&#39;</span> <span class="k">arg_list</span><span class="ni">? &#39;)&#39;</span>
-<span class="ni">arg_list ::= expr (&#39;,&#39; expr)*</span>
+<span class="ni">function_call ::= expr &#39;(&#39; arg_list?</span> <span class="s1">&#39;)&#39;</span>
+<span class="k">arg_list </span><span class="err">::=</span> <span class="k">expr </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">expr</span><span class="p">)</span><span class="err">*</span>
 
-<span class="ni"># Pattern matching</span>
-<span class="ni">match_expr ::= &#39;match&#39; expr &#39;do&#39; match_clause* &#39;end&#39;</span>
-<span class="ni">match_clause ::= pattern guard?</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">expr</span>
-<span class="k">pattern </span><span class="err">::=</span> <span class="k">literal </span><span class="p">|</span> <span class="k">identifier </span><span class="p">|</span> <span class="k">constructor_pattern </span><span class="p">|</span> <span class="k">list_pattern </span>
-          <span class="p">|</span> <span class="k">tuple_pattern </span><span class="p">|</span> <span class="k">record_pattern </span><span class="p">|</span> <span class="k">wildcard</span>
-<span class="k">constructor_pattern </span><span class="err">::=</span> <span class="k">IDENTIFIER pattern_args</span><span class="ni">?</span>
-<span class="ni">pattern_args ::= &#39;(&#39; pattern (&#39;,&#39; pattern)* &#39;)&#39;</span>
-<span class="ni">list_pattern ::= &#39;[&#39; &#39;]&#39; | &#39;[&#39; pattern (&#39;,&#39; pattern)* &#39;]&#39; </span>
-<span class="ni">               | &#39;[&#39; pattern &#39;|&#39; pattern &#39;]&#39;</span>
-<span class="ni">tuple_pattern ::= &#39;{&#39; pattern (&#39;,&#39; pattern)* &#39;}&#39;</span>
-<span class="ni">record_pattern ::= IDENTIFIER &#39;{&#39; field_pattern (&#39;,&#39; field_pattern)* &#39;}&#39;</span>
-<span class="ni">field_pattern ::= IDENTIFIER &#39;:&#39; pattern | IDENTIFIER</span>
-<span class="ni">wildcard ::= &#39;_&#39;</span>
-<span class="ni">guard ::= &#39;when&#39; expr</span>
+<span class="err">#</span> <span class="k">Pattern matching</span>
+<span class="k">match_expr </span><span class="err">::=</span> <span class="s1">&#39;match&#39;</span> <span class="k">expr </span><span class="s1">&#39;do&#39;</span> <span class="k">match_clause</span><span class="err">*</span> <span class="s1">&#39;end&#39;</span>
+<span class="k">match_clause </span><span class="err">::=</span> <span class="k">pattern guard</span><span class="ni">? &#39;-&gt;&#39; expr</span>
+<span class="ni">pattern ::= literal | identifier | constructor_pattern | list_pattern </span>
+<span class="ni">          | tuple_pattern | record_pattern | wildcard</span>
+<span class="ni">constructor_pattern ::= IDENTIFIER pattern_args?</span>
+<span class="k">pattern_args </span><span class="err">::=</span> <span class="s1">&#39;(&#39;</span> <span class="k">pattern </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">pattern</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;)&#39;</span>
+<span class="k">list_pattern </span><span class="err">::=</span> <span class="s1">&#39;[&#39;</span> <span class="s1">&#39;]&#39;</span> <span class="p">|</span> <span class="s1">&#39;[&#39;</span> <span class="k">pattern </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">pattern</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;]&#39;</span> 
+               <span class="p">|</span> <span class="s1">&#39;[&#39;</span> <span class="k">pattern </span><span class="s1">&#39;|&#39;</span> <span class="k">pattern </span><span class="s1">&#39;]&#39;</span>
+<span class="k">tuple_pattern </span><span class="err">::=</span> <span class="s1">&#39;{&#39;</span> <span class="k">pattern </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">pattern</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;}&#39;</span>
+<span class="k">record_pattern </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;{&#39;</span> <span class="k">field_pattern </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">field_pattern</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;}&#39;</span>
+<span class="k">field_pattern </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;:&#39;</span> <span class="k">pattern </span><span class="p">|</span> <span class="k">IDENTIFIER</span>
+<span class="k">wildcard </span><span class="err">::=</span> <span class="s1">&#39;_&#39;</span>
+<span class="k">guard </span><span class="err">::=</span> <span class="s1">&#39;when&#39;</span> <span class="k">expr</span>
 
-<span class="ni"># Process communication</span>
-<span class="ni">receive_expr ::= &#39;receive&#39; &#39;do&#39; receive_clause* &#39;end&#39;</span>
-<span class="ni">receive_clause ::= pattern guard?</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">expr</span>
+<span class="err">#</span> <span class="k">Process communication</span>
+<span class="k">receive_expr </span><span class="err">::=</span> <span class="s1">&#39;receive&#39;</span> <span class="s1">&#39;do&#39;</span> <span class="k">receive_clause</span><span class="err">*</span> <span class="s1">&#39;end&#39;</span>
+<span class="k">receive_clause </span><span class="err">::=</span> <span class="k">pattern guard</span><span class="ni">? &#39;-&gt;&#39; expr</span>
 
-<span class="k">spawn_expr </span><span class="err">::=</span> <span class="s1">&#39;spawn&#39;</span> <span class="s1">&#39;(&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;,&#39;</span> <span class="s1">&#39;[&#39;</span> <span class="k">arg_list</span><span class="ni">? &#39;]&#39; &#39;)&#39;</span>
-<span class="ni">send_expr ::= &#39;send&#39; &#39;(&#39; expr &#39;,&#39; expr &#39;)&#39;</span>
+<span class="ni">spawn_expr ::= &#39;spawn&#39; &#39;(&#39; IDENTIFIER &#39;,&#39; &#39;[&#39; arg_list?</span> <span class="s1">&#39;]&#39;</span> <span class="s1">&#39;)&#39;</span>
+<span class="k">send_expr </span><span class="err">::=</span> <span class="s1">&#39;send&#39;</span> <span class="s1">&#39;(&#39;</span> <span class="k">expr </span><span class="s1">&#39;,&#39;</span> <span class="k">expr </span><span class="s1">&#39;)&#39;</span>
 
-<span class="ni"># FSM operations</span>
-<span class="ni">fsm_expr ::= &#39;fsm_spawn&#39; &#39;(&#39; IDENTIFIER &#39;)&#39;</span>
-<span class="ni">           | &#39;fsm_send&#39; &#39;(&#39; expr &#39;,&#39; expr &#39;)&#39;</span>
+<span class="err">#</span> <span class="k">FSM operations</span>
+<span class="k">fsm_expr </span><span class="err">::=</span> <span class="s1">&#39;fsm_spawn&#39;</span> <span class="s1">&#39;(&#39;</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;)&#39;</span>
+           <span class="p">|</span> <span class="s1">&#39;fsm_send&#39;</span> <span class="s1">&#39;(&#39;</span> <span class="k">expr </span><span class="s1">&#39;,&#39;</span> <span class="k">expr </span><span class="s1">&#39;)&#39;</span>
 
-<span class="ni"># Data structures</span>
-<span class="ni">record_expr ::= IDENTIFIER &#39;{&#39; field_assign (&#39;,&#39; field_assign)* &#39;}&#39;</span>
-<span class="ni">field_assign ::= IDENTIFIER &#39;:&#39; expr</span>
+<span class="err">#</span> <span class="k">Data structures</span>
+<span class="k">record_expr </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;{&#39;</span> <span class="k">field_assign </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">field_assign</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;}&#39;</span>
+<span class="k">field_assign </span><span class="err">::=</span> <span class="k">IDENTIFIER </span><span class="s1">&#39;:&#39;</span> <span class="k">expr</span>
 
-<span class="ni">list_expr ::= &#39;[&#39; &#39;]&#39; | &#39;[&#39; expr (&#39;,&#39; expr)* &#39;]&#39;</span>
+<span class="k">list_expr </span><span class="err">::=</span> <span class="s1">&#39;[&#39;</span> <span class="s1">&#39;]&#39;</span> <span class="p">|</span> <span class="s1">&#39;[&#39;</span> <span class="k">expr </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">expr</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;]&#39;</span>
 
-<span class="ni">tuple_expr ::= &#39;{&#39; expr (&#39;,&#39; expr)* &#39;}&#39;</span>
+<span class="k">tuple_expr </span><span class="err">::=</span> <span class="s1">&#39;{&#39;</span> <span class="k">expr </span><span class="p">(</span><span class="s1">&#39;,&#39;</span> <span class="k">expr</span><span class="p">)</span><span class="err">*</span> <span class="s1">&#39;}&#39;</span>
 
-<span class="ni"># Operators</span>
-<span class="ni">binary_op ::= expr binary_operator expr</span>
-<span class="ni">unary_op ::= unary_operator expr</span>
+<span class="err">#</span> <span class="k">Operators</span>
+<span class="k">binary_op </span><span class="err">::=</span> <span class="k">expr binary_operator expr</span>
+<span class="k">unary_op </span><span class="err">::=</span> <span class="k">unary_operator expr</span>
 
-<span class="ni">binary_operator ::= &#39;+&#39; | &#39;-&#39; | &#39;*&#39; | &#39;/&#39; | &#39;==&#39; | &#39;!=&#39; | &#39;&lt;&#39; | &#39;&gt;&#39; </span>
-<span class="ni">                  | &#39;&lt;=&#39; | &#39;&gt;=&#39; | &#39;&amp;&amp;&#39; | &#39;||&#39; | &#39;|&#39; | &#39;&lt;&gt;&#39; | &#39;|&gt;&#39;</span>
-<span class="ni">                  # Note: &#39;|&#39; is list cons operator, &#39;&lt;&gt;&#39; is string concatenation</span>
-<span class="ni">unary_operator ::= &#39;-&#39; | &#39;!&#39;</span>
+<span class="k">binary_operator </span><span class="err">::=</span> <span class="s1">&#39;+&#39;</span> <span class="p">|</span> <span class="s1">&#39;-&#39;</span> <span class="p">|</span> <span class="s1">&#39;*&#39;</span> <span class="p">|</span> <span class="s1">&#39;/&#39;</span> <span class="p">|</span> <span class="s1">&#39;==&#39;</span> <span class="p">|</span> <span class="s1">&#39;!=&#39;</span> <span class="p">|</span> <span class="s1">&#39;&lt;&#39;</span> <span class="p">|</span> <span class="s1">&#39;&gt;&#39;</span> 
+                  <span class="p">|</span> <span class="s1">&#39;&lt;=&#39;</span> <span class="p">|</span> <span class="s1">&#39;&gt;=&#39;</span> <span class="p">|</span> <span class="s1">&#39;&amp;&amp;&#39;</span> <span class="p">|</span> <span class="s1">&#39;||&#39;</span> <span class="p">|</span> <span class="s1">&#39;|&#39;</span> <span class="p">|</span> <span class="s1">&#39;&lt;&gt;&#39;</span> <span class="p">|</span> <span class="s1">&#39;|&gt;&#39;</span>
+                  <span class="err">#</span> <span class="k">Note</span><span class="err">:</span> <span class="s1">&#39;|&#39;</span> <span class="k">is list cons operator</span><span class="p">,</span> <span class="s1">&#39;&lt;&gt;&#39;</span> <span class="k">is string concatenation</span>
+<span class="k">unary_operator </span><span class="err">::=</span> <span class="s1">&#39;-&#39;</span> <span class="p">|</span> <span class="s1">&#39;!&#39;</span>
 
-<span class="ni"># Lambda expressions</span>
-<span class="ni">lambda_expr ::= &#39;fn&#39; &#39;(&#39; param_list?</span> <span class="s1">&#39;)&#39;</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">expr </span><span class="p">(</span><span class="s1">&#39;end&#39;</span><span class="p">)</span><span class="ni">?</span>
-<span class="ni">              | &#39;fn&#39; &#39;(&#39; param_list?</span> <span class="s1">&#39;)&#39;</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">expr_block </span><span class="s1">&#39;end&#39;</span>
+<span class="err">#</span> <span class="k">Lambda expressions</span>
+<span class="k">lambda_expr </span><span class="err">::=</span> <span class="s1">&#39;fn&#39;</span> <span class="s1">&#39;(&#39;</span> <span class="k">param_list</span><span class="ni">? &#39;)&#39; &#39;-&gt;&#39; expr (&#39;end&#39;)?</span>
+              <span class="p">|</span> <span class="s1">&#39;fn&#39;</span> <span class="s1">&#39;(&#39;</span> <span class="k">param_list</span><span class="err">?</span> <span class="s1">&#39;)&#39;</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="k">expr_block </span><span class="s1">&#39;end&#39;</span>
 
 <span class="k">expr_block </span><span class="err">::=</span> <span class="k">expr</span><span class="err">+</span>
 
@@ -526,7 +539,7 @@ Test Success Rate: 100% (8/">
 </li>
 <li>
 <p><strong>Pi Types</strong>: Dependent function types<br />
-<code>cure
+<code class="language-cure">cure
    def replicate(n: Nat, x: T): List(T, n)  # Return type depends on input</code></p>
 </li>
 <li>
@@ -541,7 +554,7 @@ Test Success Rate: 100% (8/">
    ```</p>
 <ol start="5">
 <li><strong>FSM Types</strong>: State machines with type-safe transitions<br />
-<code>cure
+<code class="language-cure">cure
    fsm Counter(max: Int) do
      states: [Zero, Counting(n: Int) where 0 &lt; n &lt;= max]
      # Compiler verifies all transitions maintain constraints
@@ -678,11 +691,23 @@ Test Success Rate: 100% (8/">
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -691,5 +716,13 @@ Test Success Rate: 100% (8/">
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

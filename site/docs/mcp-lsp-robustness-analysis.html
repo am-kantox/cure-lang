@@ -7,6 +7,7 @@
     <meta name="description" content="This document provides a comprehensive review of the MCP (Model Context Protocol) and LSP (Language Server Protocol) implementations in the Cure proje">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -573,7 +574,7 @@ vector_sum(v1, v2)  # Should this work?
 <p>Reviewed 3 example files:<br />
 1. <strong><code>01_list_basics.cure</code></strong>: ✅ Clear, well-commented<br />
 2. <strong><code>06_fsm_traffic_light.cure</code></strong>: ✅ Comprehensive FSM demo<br />
-3. <strong><code>08_typeclasses.cure</code></strong>: ✅ Typeclass basics with instances</p>
+3. <strong><code class="language-cure">08_typeclasses.cure</code></strong>: ✅ Typeclass basics with instances</p>
 <p>All examples are <strong>production-quality</strong> with:<br />
 - Inline documentation<br />
 - Expected output comments<br />
@@ -879,7 +880,7 @@ vector_sum(v1, v2)  # Should this work?
 2. ⚠️ Fix MCP tool execution timeout (add <code>initialized</code> handling)<br />
 3. ⚠️ Update LSP symbol table to track trait implementations</p>
 <p><strong>Medium Priority</strong>:<br />
-1. Add MCP tools: <code>check_trait_impl</code>, <code>find_instances</code>, <code>check_fsm_safety</code><br />
+1. Add MCP tools: <code>check_trait_impl</code>, <code class="language-cure">find_instances</code>, <code>check_fsm_safety</code><br />
 2. Enhance LSP diagnostics for derive clauses<br />
 3. Add LSP code actions for common refactorings</p>
 <p><strong>Low Priority</strong>:<br />
@@ -1004,11 +1005,23 @@ make<span class="w"> </span>test-mcp
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -1017,5 +1030,13 @@ make<span class="w"> </span>test-mcp
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

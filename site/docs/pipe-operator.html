@@ -7,6 +7,7 @@
     <meta name="description" content="The pipe operator (|>) is a fundamental feature of Cure that provides elegant error handling and function composition through monadic semantics with">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -109,12 +110,11 @@
 - Non-monadic return values are wrapped in Result<T></p>
 <h2 id="examples">Examples</h2>
 <h3 id="basic-piping">Basic Piping</h3>
-<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">example1</span><span class="bp">()</span><span class="w"> </span><span class="k">do</span>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">example1</span><span class="bp">()</span><span class="o">:</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">=</span>
 <span class="w">  </span><span class="mi">5</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="kt">double</span><span class="w">      </span><span class="o">#</span><span class="w"> </span><span class="mi">10</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">increment</span><span class="w">   </span><span class="o">#</span><span class="w"> </span><span class="mi">11</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="kt">double</span><span class="w">      </span><span class="o">#</span><span class="w"> </span><span class="mi">10</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">increment</span><span class="w">   </span><span class="o">#</span><span class="w"> </span><span class="mi">11</span>
 <span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Result</span><span class="o">:</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="mi">11</span><span class="o">)</span>
-<span class="k">end</span>
 
 <span class="n">def</span><span class="w"> </span><span class="kt">double</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span>
 <span class="n">def</span><span class="w"> </span><span class="n">increment</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
@@ -132,44 +132,40 @@
 
 <h3 id="piping-with-arguments">Piping with Arguments</h3>
 <p>The piped value becomes the first argument:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">example2</span><span class="bp">()</span><span class="w"> </span><span class="k">do</span>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">example2</span><span class="bp">()</span><span class="o">:</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">=</span>
 <span class="w">  </span><span class="mi">10</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">add</span><span class="o">(</span><span class="mi">5</span><span class="o">)</span><span class="w">       </span><span class="o">#</span><span class="w"> </span><span class="n">add</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span><span class="w"> </span><span class="mi">5</span><span class="o">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">15</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">multiply</span><span class="o">(</span><span class="mi">3</span><span class="o">)</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">multiply</span><span class="o">(</span><span class="mi">15</span><span class="o">,</span><span class="w"> </span><span class="mi">3</span><span class="o">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">45</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">add</span><span class="o">(</span><span class="mi">5</span><span class="o">)</span><span class="w">       </span><span class="o">#</span><span class="w"> </span><span class="n">add</span><span class="o">(</span><span class="mi">10</span><span class="o">,</span><span class="w"> </span><span class="mi">5</span><span class="o">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">15</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">multiply</span><span class="o">(</span><span class="mi">3</span><span class="o">)</span><span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">multiply</span><span class="o">(</span><span class="mi">15</span><span class="o">,</span><span class="w"> </span><span class="mi">3</span><span class="o">)</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">45</span>
 <span class="w">  </span><span class="o">#</span><span class="w"> </span><span class="n">Result</span><span class="o">:</span><span class="w"> </span><span class="n">Ok</span><span class="o">(</span><span class="mi">45</span><span class="o">)</span>
-<span class="k">end</span>
 
 <span class="n">def</span><span class="w"> </span><span class="n">add</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span>
 <span class="n">def</span><span class="w"> </span><span class="n">multiply</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">y</span>
 </code></pre></div>
 
 <h3 id="real-world-example">Real-World Example</h3>
-<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">process_user_input</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">User</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="k">do</span>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">process_user_input</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">):</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">User</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="k">do</span>
 <span class="w">  </span><span class="n">input</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">trim_whitespace</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate_email</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">normalize_email</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">check_not_taken</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">create_user</span>
-<span class="k">end</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">trim_whitespace</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate_email</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">normalize_email</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">check_not_taken</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">create_user</span>
 </code></pre></div>
 
 <h3 id="error-recovery">Error Recovery</h3>
-<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">safe_divide</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="k">do</span>
-<span class="w">  </span><span class="k">let</span><span class="w"> </span><span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">divide_by</span><span class="o">(</span><span class="n">y</span><span class="o">)</span><span class="w"> </span><span class="k">in</span>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">safe_divide</span><span class="o">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="o">):</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="k">let</span><span class="w"> </span><span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">divide_by</span><span class="o">(</span><span class="n">y</span><span class="o">)</span>
 <span class="w">  </span><span class="k">match</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="k">do</span>
 <span class="w">    </span><span class="n">Ok</span><span class="o">(</span><span class="n">value</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Result: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">show</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
 <span class="w">    </span><span class="n">Error</span><span class="o">(</span><span class="n">reason</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Error: &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">reason</span>
 <span class="w">  </span><span class="k">end</span>
-<span class="k">end</span>
 </code></pre></div>
 
 <h3 id="combining-operators">Combining Operators</h3>
-<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">complex_computation</span><span class="bp">()</span><span class="w"> </span><span class="k">do</span>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">complex_computation</span><span class="bp">()</span><span class="o">:</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">String</span><span class="o">,</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">=</span>
 <span class="w">  </span><span class="o">(</span><span class="n">calculate_base</span><span class="bp">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">10</span><span class="o">)</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">apply_discount</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">format_price</span>
-<span class="k">end</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">apply_discount</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">format_price</span>
 </code></pre></div>
 
 <h2 id="implementation-details">Implementation Details</h2>
@@ -204,7 +200,7 @@
 <h2 id="best-practices">Best Practices</h2>
 <h3 id="do-use-for-sequential-transformations">Do: Use for Sequential Transformations</h3>
 <div class="codehilite"><pre><span></span><code><span class="o">#</span><span class="w"> </span><span class="n">Good</span><span class="o">:</span><span class="w"> </span><span class="n">Clear</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="n">flow</span>
-<span class="n">input</span>
+<span class="w">  </span><span class="n">input</span>
 <span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">step1</span>
 <span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">step2</span>
 <span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">step3</span>
@@ -220,7 +216,7 @@
 
 <h3 id="do-handle-errors-at-pipeline-end">Do: Handle Errors at Pipeline End</h3>
 <div class="codehilite"><pre><span></span><code><span class="o">#</span><span class="w"> </span><span class="n">Good</span><span class="o">:</span><span class="w"> </span><span class="n">Single</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="n">handling</span><span class="w"> </span><span class="n">point</span>
-<span class="k">let</span><span class="w"> </span><span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">pipeline</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">operations</span><span class="w"> </span><span class="k">in</span>
+<span class="k">let</span><span class="w"> </span><span class="nv">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">pipeline</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">operations</span>
 <span class="k">match</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="k">do</span>
 <span class="w">  </span><span class="n">Ok</span><span class="o">(</span><span class="n">value</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_success</span><span class="o">(</span><span class="n">value</span><span class="o">)</span>
 <span class="w">  </span><span class="n">Error</span><span class="o">(</span><span class="n">e</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handle_error</span><span class="o">(</span><span class="n">e</span><span class="o">)</span>
@@ -229,23 +225,22 @@
 
 <h3 id="do-use-with-result-returning-functions">Do: Use with Result-Returning Functions</h3>
 <div class="codehilite"><pre><span></span><code><span class="o">#</span><span class="w"> </span><span class="n">Good</span><span class="o">:</span><span class="w"> </span><span class="n">Natural</span><span class="w"> </span><span class="n">error</span><span class="w"> </span><span class="n">propagation</span>
-<span class="n">def</span><span class="w"> </span><span class="k">process</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Output</span><span class="o">,</span><span class="w"> </span><span class="n">Error</span><span class="o">)</span><span class="w"> </span><span class="k">do</span>
+<span class="n">def</span><span class="w"> </span><span class="k">process</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">):</span><span class="w"> </span><span class="n">Result</span><span class="o">(</span><span class="n">Output</span><span class="o">,</span><span class="w"> </span><span class="n">Error</span><span class="o">)</span><span class="w"> </span><span class="o">=</span>
 <span class="w">  </span><span class="n">input</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">parse</span><span class="w">         </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="w"> </span><span class="n">Result</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate</span><span class="w">      </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="w"> </span><span class="n">Result</span>
-<span class="w">    </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">transform</span><span class="w">     </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="w"> </span><span class="n">Result</span>
-<span class="k">end</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">parse</span><span class="w">         </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="w"> </span><span class="n">Result</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate</span><span class="w">      </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="w"> </span><span class="n">Result</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">transform</span><span class="w">     </span><span class="o">#</span><span class="w"> </span><span class="n">Returns</span><span class="w"> </span><span class="n">Result</span>
 </code></pre></div>
 
 <h3 id="dont-mix-with-non-result-returns-unnecessarily">Don't: Mix with Non-Result Returns Unnecessarily</h3>
 <div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Inconsistent</span><span class="p">:</span><span class="w"> </span><span class="nx">mix</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">Result</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">non</span><span class="o">-</span><span class="nx">Result</span>
-<span class="nx">input</span>
+<span class="w">  </span><span class="nx">input</span>
 <span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">operation1</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="nx">Int</span>
 <span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">operation2</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Error</span><span class="p">)</span>
 <span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">operation3</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="nx">Int</span>
 
 <span class="err">#</span><span class="w"> </span><span class="nx">Better</span><span class="p">:</span><span class="w"> </span><span class="nx">Consistent</span><span class="w"> </span><span class="nx">Result</span><span class="w"> </span><span class="nx">types</span>
-<span class="nx">input</span>
+<span class="w">  </span><span class="nx">input</span>
 <span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">operation1_safe</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Error</span><span class="p">)</span>
 <span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">operation2</span><span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Error</span><span class="p">)</span>
 <span class="w">  </span><span class="o">|</span><span class="p">&gt;</span><span class="w"> </span><span class="nx">operation3_safe</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="nx">Returns</span><span class="w"> </span><span class="nx">Result</span><span class="p">(</span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">Error</span><span class="p">)</span>
@@ -296,12 +291,11 @@
 - Prove error-free pipelines and generate direct calls</p>
 <h3 id="debugging-pipelines">Debugging Pipelines</h3>
 <p>Use <code>let</code> bindings to inspect intermediate values:</p>
-<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">debug_pipeline</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">)</span><span class="w"> </span><span class="k">do</span>
-<span class="w">  </span><span class="k">let</span><span class="w"> </span><span class="nv">step1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">parse</span><span class="w"> </span><span class="k">in</span>
-<span class="w">  </span><span class="k">let</span><span class="w"> </span><span class="nv">step2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">step1</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate</span><span class="w"> </span><span class="k">in</span>
-<span class="w">  </span><span class="k">let</span><span class="w"> </span><span class="nv">step3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">step2</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">process</span><span class="w"> </span><span class="k">in</span>
+<div class="codehilite"><pre><span></span><code><span class="n">def</span><span class="w"> </span><span class="n">debug_pipeline</span><span class="o">(</span><span class="n">input</span><span class="o">:</span><span class="w"> </span><span class="n">String</span><span class="o">):</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="k">let</span><span class="w"> </span><span class="nv">step1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">parse</span>
+<span class="w">  </span><span class="k">let</span><span class="w"> </span><span class="nv">step2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">step1</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">validate</span>
+<span class="w">  </span><span class="k">let</span><span class="w"> </span><span class="nv">step3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">step2</span><span class="w"> </span><span class="o">|&gt;</span><span class="w"> </span><span class="k">process</span>
 <span class="w">  </span><span class="n">step3</span>
-<span class="k">end</span>
 </code></pre></div>
 
 <h2 id="see-also">See Also</h2>
@@ -337,11 +331,23 @@
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -350,5 +356,13 @@
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

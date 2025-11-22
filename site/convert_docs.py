@@ -22,6 +22,7 @@ DOC_TEMPLATE = """<!DOCTYPE html>
     <meta name="description" content="{description}">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -77,11 +78,9 @@ DOC_TEMPLATE = """<!DOCTYPE html>
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+{footer_links}
                 </ul>
             </div>
         </div>
@@ -90,12 +89,64 @@ DOC_TEMPLATE = """<!DOCTYPE html>
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>
 """
 
+def fix_cure_code_blocks(html_content):
+    """Fix code blocks to use language-cure class for syntax highlighting"""
+    # Replace <code class="language-erlang"> with <code class="language-cure"> for cure code
+    # This handles fenced code blocks marked as ```cure
+    html_content = re.sub(
+        r'<code class="([^"]*)">',
+        lambda m: f'<code class="language-cure">' if 'cure' in m.group(0).lower() else m.group(0),
+        html_content
+    )
+    
+    # Also handle unmarked code blocks that look like Cure code
+    # Look for patterns like: def, module, fsm, record, typeclass, instance
+    def is_cure_code(code_text):
+        cure_keywords = ['module', 'def ', 'fsm ', 'record ', 'typeclass', 'instance', 'export', 'import', ' when ', ' -> ']
+        return any(keyword in code_text for keyword in cure_keywords)
+    
+    # Find all code blocks and check if they're cure
+    def check_code_block(match):
+        full_match = match.group(0)
+        code_content = match.group(1) if match.lastindex else ''
+        
+        # If already has language class, keep it
+        if 'class="language-' in full_match:
+            # But if it's bash/shell and has cure patterns, mark as cure
+            if 'language-bash' in full_match or 'language-sh' in full_match:
+                return full_match
+            return full_match
+        
+        # If no language specified, check content
+        if is_cure_code(code_content):
+            return f'<code class="language-cure">{code_content}</code>'
+        return full_match
+    
+    html_content = re.sub(
+        r'<code>([^<]+)</code>',
+        check_code_block,
+        html_content
+    )
+    
+    return html_content
+
 def markdown_to_html(markdown_text):
     """Convert Markdown to HTML using python-markdown"""
+    # Pre-process: ensure cure code blocks are marked
+    markdown_text = re.sub(r'```cure', r'```cure', markdown_text)
+    
     md = markdown.Markdown(
         extensions=[
             'extra',  # Includes tables, fenced code, etc.
@@ -111,7 +162,12 @@ def markdown_to_html(markdown_text):
             },
         }
     )
-    return md.convert(markdown_text)
+    html_content = md.convert(markdown_text)
+    
+    # Post-process: fix cure code blocks
+    html_content = fix_cure_code_blocks(html_content)
+    
+    return html_content
 
 def slugify(text):
     """Convert text to URL-friendly slug"""
@@ -120,7 +176,7 @@ def slugify(text):
     text = text.strip('-')
     return text
 
-def convert_doc(markdown_file, output_dir):
+def convert_doc(markdown_file, output_dir, footer_links=''):
     """Convert a single markdown file to HTML"""
     with open(markdown_file, 'r', encoding='utf-8') as f:
         markdown_content = f.read()
@@ -144,7 +200,8 @@ def convert_doc(markdown_file, output_dir):
     html = DOC_TEMPLATE.format(
         title=title,
         description=description,
-        content=html_content
+        content=html_content,
+        footer_links=footer_links
     )
     
     # Write output
@@ -153,7 +210,7 @@ def convert_doc(markdown_file, output_dir):
         f.write(html)
     
     print(f"Converted: {markdown_file} -> {output_file}")
-    return filename
+    return filename, title
 
 def main():
     """Main conversion function"""
@@ -164,19 +221,33 @@ def main():
     # Create output directory
     docs_output.mkdir(exist_ok=True)
     
-    # Find all markdown files
-    markdown_files = list(docs_source.glob('*.md'))
+    # Find all markdown files (exclude DEV subdirectory)
+    markdown_files = [f for f in docs_source.glob('*.md') if f.parent.name != 'DEV']
     
     print(f"Found {len(markdown_files)} markdown files")
     print(f"Converting from: {docs_source}")
     print(f"Converting to: {docs_output}")
     print("-" * 60)
     
+    # First pass: collect all files to generate footer links
+    doc_list = []
+    for md_file in sorted(markdown_files):
+        title_match = re.search(r'^#\s+(.+)$', md_file.read_text(), re.MULTILINE)
+        title = title_match.group(1) if title_match else md_file.stem
+        filename = slugify(md_file.stem) + '.html'
+        doc_list.append((filename, title))
+    
+    # Generate footer links HTML (limit to reasonable number)
+    footer_links_html = '\n'.join(
+        f'                    <li><a href="{fname}">{title[:40]}</a></li>'
+        for fname, title in sorted(doc_list, key=lambda x: x[1])[:15]  # Top 15 alphabetically
+    )
+    
     # Convert each file
     converted = []
     for md_file in sorted(markdown_files):
         try:
-            html_file = convert_doc(md_file, docs_output)
+            html_file, title = convert_doc(md_file, docs_output, footer_links_html)
             converted.append(html_file)
         except Exception as e:
             print(f"Error converting {md_file}: {e}")

@@ -7,6 +7,7 @@
     <meta name="description" content=" Overview">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -93,12 +94,12 @@ cure<span class="w"> </span>clean<span class="w">                         </span
 </code></pre></div>
 
 <p>Programmatically compile a .cure file.</p>
-<h4 id="cure_cliadd_automatic_stdlib_imports2"><code>cure_cli:add_automatic_stdlib_imports/2</code></h4>
+<h4 id="cure_cliadd_automatic_stdlib_imports2"><code class="language-cure">cure_cli:add_automatic_stdlib_imports/2</code></h4>
 <div class="codehilite"><pre><span></span><code><span class="nf">add_automatic_stdlib_imports</span><span class="p">(</span><span class="nv">Source</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">string</span><span class="p">(),</span><span class="w"> </span><span class="nv">Options</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">compile_options</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">string</span><span class="p">().</span>
 </code></pre></div>
 
 <p>Automatically add standard library imports to source code that lacks explicit imports.</p>
-<h4 id="cure_clihas_explicit_module_or_imports1"><code>cure_cli:has_explicit_module_or_imports/1</code></h4>
+<h4 id="cure_clihas_explicit_module_or_imports1"><code class="language-cure">cure_cli:has_explicit_module_or_imports/1</code></h4>
 <div class="codehilite"><pre><span></span><code><span class="nf">has_explicit_module_or_imports</span><span class="p">(</span><span class="nv">Source</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">string</span><span class="p">())</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">boolean</span><span class="p">().</span>
 </code></pre></div>
 
@@ -167,7 +168,7 @@ cure<span class="w"> </span>clean<span class="w">                         </span
 <p><strong>AST Node Types:</strong><br />
 - <code>#function{}</code> - Function definitions<br />
 - <code>#fsm{}</code> - FSM definitions<br />
-- <code>#module{}</code> - Module definitions<br />
+- <code class="language-cure">#module{}</code> - Module definitions<br />
 - <code>#expression{}</code> - Expressions<br />
 - <code>#type{}</code> - Type expressions</p>
 <p><strong>Example:</strong></p>
@@ -645,7 +646,7 @@ make<span class="w"> </span>compile-file<span class="w"> </span><span class="nv"
 </code></pre></div>
 
 <p>Focused tests for wrapper script build command and error reporting.</p>
-<h4 id="cure_cli_stdlib_imports_testrun0"><code>cure_cli_stdlib_imports_test:run/0</code></h4>
+<h4 id="cure_cli_stdlib_imports_testrun0"><code class="language-cure">cure_cli_stdlib_imports_test:run/0</code></h4>
 <div class="codehilite"><pre><span></span><code><span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">ok</span><span class="p">.</span>
 </code></pre></div>
 
@@ -711,11 +712,23 @@ erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -724,5 +737,13 @@ erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

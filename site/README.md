@@ -27,25 +27,43 @@ site/
 
 ## Building the Site
 
+### Quick Build (Recommended)
+
+```bash
+cd site
+./build_site.sh
+```
+
+This automated script will:
+1. Convert all Markdown documentation from `../docs/` to HTML
+2. Apply proper `class="language-cure"` to all Cure code blocks
+3. Include highlight.js and cure-language.js for syntax highlighting
+4. Update `index.html` footer with links to all documentation pages
+5. Verify the build completed successfully
+
+### Manual Steps
+
 1. **Generate API documentation:**
    ```bash
    cd ..
    rebar3 ex_doc
    ```
 
-2. **Copy assets and convert docs:**
+2. **Convert documentation:**
    ```bash
-   # From the project root:
-   ./build_site.sh
+   cd site
+   python3 convert_docs.py      # Converts MD to HTML
+   python3 update_footer.py     # Updates index.html footer
    ```
-   
-   Or manually:
-   ```bash
-   mkdir -p site/api site/docs site/media site/css
-   cp -r docs/_build/* site/api/
-   cp media/*.png site/media/
-   python3 site/convert_docs.py
-   ```
+
+### Build Features
+
+- ✅ All HTML files include highlight.js (v11.11.1)
+- ✅ Custom Cure language syntax highlighting
+- ✅ Proper `<code class="language-cure">` markup for all Cure code
+- ✅ Responsive cure-theme.css included
+- ✅ Footer links to all 35+ documentation pages
+- ✅ Auto-detection of Cure code patterns in unmarked blocks
 
 ## Deploying
 
@@ -90,7 +108,10 @@ Then visit http://localhost:8000
 When you update markdown files in `docs/`:
 
 ```bash
-python3 site/convert_docs.py
+cd site
+./build_site.sh  # Full rebuild
+# or
+python3 convert_docs.py && python3 update_footer.py  # Just docs
 ```
 
 When you update the Erlang implementation:
@@ -99,6 +120,18 @@ When you update the Erlang implementation:
 rebar3 ex_doc
 cp -r docs/_build/* site/api/
 ```
+
+## Scripts
+
+- **build_site.sh** - Complete site build with verification
+- **convert_docs.py** - Convert Markdown to HTML with syntax highlighting
+- **update_footer.py** - Update index.html footer with all doc links
+
+All scripts automatically:
+- Mark Cure code blocks with `language-cure` class
+- Include highlight.js and cure-language.js
+- Generate responsive HTML from Markdown
+- Create proper footer links
 
 ## Features
 

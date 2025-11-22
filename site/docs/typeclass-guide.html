@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TYPECLASS_GUIDE - Cure Documentation</title>
     <meta name="description" content="Version: 1.0  
-Last Updated: November 5, 2025">
+Last Updated: November 22, 2025">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -38,7 +39,7 @@ Last Updated: November 5, 2025">
         
         <h2 id="typeclass-guide-for-cure">Typeclass Guide for Cure</h2>
 <p><strong>Version</strong>: 1.0<br />
-<strong>Last Updated</strong>: November 5, 2025</p>
+<strong>Last Updated</strong>: November 22, 2025</p>
 <hr />
 <h2 id="table-of-contents">Table of Contents</h2>
 <ol>
@@ -148,7 +149,7 @@ end
 <hr />
 <h2 id="instance-definitions">Instance Definitions</h2>
 <h3 id="basic-instance">Basic Instance</h3>
-<div class="codehilite"><pre><span></span><code>instance Show(Int) do
+<div class="codehilite"><pre><span></span><code class="language-cure">instance Show(Int) do
     def show(x: Int): String = int_to_string(x)
 end
 </code></pre></div>
@@ -260,7 +261,7 @@ end
 <h2 id="using-typeclasses">Using Typeclasses</h2>
 <h3 id="function-constraints">Function Constraints</h3>
 <p>Single constraint:</p>
-<div class="codehilite"><pre><span></span><code>def print_value(x: T): Unit where Show(T) =
+<div class="codehilite"><pre><span></span><code class="language-cure">def print_value(x: T): Unit where Show(T) =
     println(show(x))
 </code></pre></div>
 
@@ -480,7 +481,7 @@ end
 </code></pre></div>
 
 <p><strong>Solution</strong>: Add Eq constraint</p>
-<div class="codehilite"><pre><span></span><code>def contains(x: T, list: List(T)) where Eq(T) = ...
+<div class="codehilite"><pre><span></span><code class="language-cure">def contains(x: T, list: List(T)) where Eq(T) = ...
 </code></pre></div>
 
 <p><strong>4. Orphan Instance</strong></p>
@@ -522,7 +523,7 @@ end
 </code></pre></div>
 
 <p><strong>Impact</strong>:<br />
-- The <code>Ord</code> typeclass and <code>Ordering</code> type are commented out in <code>lib/std/typeclasses.cure</code><br />
+- The <code>Ord</code> typeclass and <code>Ordering</code> type are commented out in <code class="language-cure">lib/std/typeclasses.cure</code><br />
 - You cannot use <code>compare()</code> method or derive <code>Ord</code> instances<br />
 - <code>Show</code>, <code>Eq</code>, and <code>Serializable</code> typeclasses work correctly</p>
 <p><strong>Workaround</strong>:<br />
@@ -540,7 +541,7 @@ Use comparison operators (<code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</cod
 <hr />
 <h2 id="examples">Examples</h2>
 <p>See these files for complete examples:<br />
-- <code>examples/08_typeclasses.cure</code> - Basic typeclass usage<br />
+- <code class="language-cure">examples/08_typeclasses.cure</code> - Basic typeclass usage<br />
 - <code>examples/09_derive.cure</code> - Automatic derivation<br />
 - <code>examples/10_generic_algorithms.cure</code> - Real-world generic code</p>
 <hr />
@@ -578,11 +579,23 @@ Use comparison operators (<code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</cod
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -591,5 +604,13 @@ Use comparison operators (<code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</cod
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

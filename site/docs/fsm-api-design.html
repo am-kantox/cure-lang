@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cure FSM API Design - Cure Documentation</title>
-    <meta name="description" content="Last Updated: October 31, 2025">
+    <meta name="description" content="Last Updated: November 22, 2025">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -36,7 +37,7 @@
         </div>
         
         <h1 id="cure-fsm-api-design">Cure FSM API Design</h1>
-<p><strong>Last Updated</strong>: October 31, 2025</p>
+<p><strong>Last Updated</strong>: November 22, 2025</p>
 <p>This document describes the design of the Finite State Machine (FSM) API in Cure.</p>
 <h2 id="overview">Overview</h2>
 <p>FSMs in Cure are first-class language constructs that compile to BEAM <code>gen_statem</code> processes. They provide:</p>
@@ -80,7 +81,7 @@
 </code></pre></div>
 
 <h2 id="api-functions">API Functions</h2>
-<h3 id="start_fsmmodule-atom-pid"><code>start_fsm(module: Atom): Pid</code></h3>
+<h3 id="start_fsmmodule-atom-pid"><code class="language-cure">start_fsm(module: Atom): Pid</code></h3>
 <p>Spawns a new FSM process using the FSM definition from the given module.</p>
 <ul>
 <li><strong>Initial state</strong>: First state in the transition list</li>
@@ -253,7 +254,7 @@ let fsm_pid = start_fsm(:TrafficLightFSM)
 - <code>fsm_call/2</code>: Synchronous event sending with reply<br />
 - Timeout support: <code>State --&gt; |timeout(1000)| NextState</code><br />
 - State entry/exit actions with explicit handler functions<br />
-- Guards on transitions: <code>State --&gt; |event| when condition State2</code><br />
+- Guards on transitions: <code class="language-cure">State --&gt; |event| when condition State2</code><br />
 - FSM supervision trees integration<br />
 - FSM serialization/deserialization for persistence<br />
 - Pattern matching on event data in transitions</p>
@@ -283,11 +284,23 @@ let fsm_pid = start_fsm(:TrafficLightFSM)
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -296,5 +309,13 @@ let fsm_pid = start_fsm(:TrafficLightFSM)
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

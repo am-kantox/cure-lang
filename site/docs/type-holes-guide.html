@@ -7,6 +7,7 @@
     <meta name="description" content=" Overview">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -40,7 +41,7 @@
 <p>Type holes provide an interactive way to discover types in Cure, inspired by Idris and Agda. Instead of manually writing type annotations, you can use <strong>holes</strong> and let the SMT-based type checker infer the correct type for you.</p>
 <h2 id="syntax">Syntax</h2>
 <h3 id="anonymous-hole-_">Anonymous Hole: <code>_</code></h3>
-<div class="codehilite"><pre><span></span><code>def double_list(numbers: List(Int)): _ =
+<div class="codehilite"><pre><span></span><code class="language-cure">def double_list(numbers: List(Int)): _ =
     map(numbers, fn(x) -&gt; x * 2 end)
 </code></pre></div>
 
@@ -51,7 +52,7 @@
 
 <h2 id="usage-workflow">Usage Workflow</h2>
 <h3 id="1-write-code-with-holes">1. Write code with holes</h3>
-<div class="codehilite"><pre><span></span><code>def double_list(numbers: List(Int)): _ =
+<div class="codehilite"><pre><span></span><code class="language-cure">def double_list(numbers: List(Int)): _ =
     map(numbers, fn(x) -&gt; x * 2 end)
 </code></pre></div>
 
@@ -64,13 +65,13 @@
 <h3 id="3-apply-quick-fix">3. Apply quick fix</h3>
 <p>The LSP provides a code action: <strong>"Fill hole with: List(Int)"</strong></p>
 <p>Click it, and the code becomes:</p>
-<div class="codehilite"><pre><span></span><code>def double_list(numbers: List(Int)): List(Int) =
+<div class="codehilite"><pre><span></span><code class="language-cure">def double_list(numbers: List(Int)): List(Int) =
     map(numbers, fn(x) -&gt; x * 2 end)
 </code></pre></div>
 
 <h2 id="where-you-can-use-holes">Where You Can Use Holes</h2>
 <h3 id="function-return-types">Function Return Types</h3>
-<div class="codehilite"><pre><span></span><code>def calculate(): _ =
+<div class="codehilite"><pre><span></span><code class="language-cure">def calculate(): _ =
     42  % Infers: Int
 </code></pre></div>
 
@@ -197,19 +198,19 @@ Use code action to fill in this type.
 <ol>
 <li>
 <p><strong>Polymorphic types without context</strong>:<br />
-<code>cure
+<code class="language-cure">cure
    def identity(x: _): _ = x  % Too generic, need more context</code></p>
 </li>
 <li>
 <p><strong>Recursive types without annotation</strong>:<br />
-<code>cure
+<code class="language-cure">cure
    def recursive(n: _): _ =
        if n == 0 then 1 else n * recursive(n - 1)
    % Needs explicit type to establish recursion</code></p>
 </li>
 <li>
 <p><strong>Higher-rank polymorphism</strong>:<br />
-<code>cure
+<code class="language-cure">cure
    def apply(f: _): _ = f(42)  % f's type is higher-rank</code></p>
 </li>
 </ol>
@@ -350,11 +351,23 @@ def<span class="w"> </span>f<span class="o">(</span>x:<span class="w"> </span>_<
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -363,5 +376,13 @@ def<span class="w"> </span>f<span class="o">(</span>x:<span class="w"> </span>_<
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

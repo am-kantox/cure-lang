@@ -7,6 +7,7 @@
     <meta name="description" content=" Summary">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -48,27 +49,27 @@
 </ul>
 <h4 id="2-parser-srcparsercure_parsererl">2. Parser (<code>src/parser/cure_parser.erl</code>)</h4>
 <ul>
-<li><strong>Operator function definitions</strong>: <code>def (op)(params): ReturnType</code></li>
+<li><strong>Operator function definitions</strong>: <code class="language-cure">def (op)(params): ReturnType</code></li>
 <li><strong>Added functions</strong>:</li>
 <li><code>expect_operator/1</code> - Validates and consumes operator tokens</li>
 <li><code>is_operator_token/1</code> - Checks if token is a valid operator</li>
 <li><strong>Updated functions</strong>:</li>
 <li><code>parse_function/1</code> - Regular function definitions support operators</li>
-<li><code>parse_typeclass_method/1</code> - Typeclass method signatures support operators</li>
-<li><code>parse_instance_method/1</code> - Instance method implementations support operators</li>
+<li><code class="language-cure">parse_typeclass_method/1</code> - Typeclass method signatures support operators</li>
+<li><code class="language-cure">parse_instance_method/1</code> - Instance method implementations support operators</li>
 <li><strong>Operator precedence</strong> in <code>get_operator_info/1</code>:</li>
 <li>Functor operators (<code>&lt;$</code>, <code>$&gt;</code>) - precedence 8</li>
 <li>Applicative operators (<code>&lt;*&gt;</code>, <code>*&gt;</code>, <code>&lt;*</code>) - precedence 7</li>
 <li>Monad operators (<code>&gt;&gt;=</code>, <code>&gt;&gt;</code>) - precedence 1</li>
 </ul>
-<h4 id="3-code-generation-srccodegencure_typeclass_codegenerl">3. Code Generation (<code>src/codegen/cure_typeclass_codegen.erl</code>)</h4>
+<h4 id="3-code-generation-srccodegencure_typeclass_codegenerl">3. Code Generation (<code class="language-cure">src/codegen/cure_typeclass_codegen.erl</code>)</h4>
 <ul>
 <li>Typeclasses compile to behaviour modules with <code>behaviour_info/1</code></li>
 <li>Instance methods compile to mangled Erlang functions</li>
 <li>Default method implementations compile to actual BEAM code</li>
 <li>Proper state threading throughout compilation</li>
 </ul>
-<h4 id="4-syntax-files-libtypeclass_spec">4. Syntax Files (<code>lib/typeclass_spec/</code>)</h4>
+<h4 id="4-syntax-files-libtypeclass_spec">4. Syntax Files (<code class="language-cure">lib/typeclass_spec/</code>)</h4>
 <ul>
 <li>All function types parenthesized: <code>(A -&gt; B)</code> instead of <code>A -&gt; B</code></li>
 <li>Files parse successfully</li>
@@ -77,14 +78,14 @@
 <h2 id="syntax-requirements">Syntax Requirements</h2>
 <h3 id="function-types-must-be-parenthesized">Function Types Must Be Parenthesized</h3>
 <p>When function types appear as:<br />
-- <strong>Function parameters</strong>: <code>def foo(f: (A -&gt; B))</code><br />
-- <strong>Type arguments</strong>: <code>def bar(x: F((A -&gt; B)))</code></p>
+- <strong>Function parameters</strong>: <code class="language-cure">def foo(f: (A -&gt; B))</code><br />
+- <strong>Type arguments</strong>: <code class="language-cure">def bar(x: F((A -&gt; B)))</code></p>
 <p>This matches standard practice in:<br />
 - Haskell: <code>f :: (a -&gt; b) -&gt; c</code><br />
 - OCaml: <code>val f : (a -&gt; b) -&gt; c</code><br />
-- Scala: <code>def f(g: A =&gt; B): C</code></p>
+- Scala: <code class="language-cure">def f(g: A =&gt; B): C</code></p>
 <h3 id="operator-function-definitions">Operator Function Definitions</h3>
-<div class="codehilite"><pre><span></span><code># Regular function
+<div class="codehilite"><pre><span></span><code class="language-cure"># Regular function
 def add(x: Int, y: Int): Int = x + y
 
 # Operator function
@@ -118,7 +119,7 @@ def (&lt;$)(value: A, fb: F(B)): F(A) = ...
 <p><strong>Problem</strong>: Parser only accepted identifiers for function names</p>
 <p><strong>Solution</strong>: <br />
 1. Added <code>expect_operator/1</code> to parse and validate operators<br />
-2. Updated <code>parse_function/1</code> to check for <code>def (op)(...)</code> syntax<br />
+2. Updated <code>parse_function/1</code> to check for <code class="language-cure">def (op)(...)</code> syntax<br />
 3. Updated typeclass and instance parsing similarly</p>
 <h3 id="issue-3-function-type-ambiguity">Issue 3: Function Type Ambiguity</h3>
 <p><strong>Problem</strong>: <code>F(A -&gt; B)</code> was ambiguous - is <code>-&gt;</code> part of the type or return marker?</p>
@@ -127,9 +128,9 @@ def (&lt;$)(value: A, fb: F(B)): F(A) = ...
 - Removes all ambiguity<br />
 - Clearer for readers</p>
 <h3 id="issue-4-codegen-was-incomplete">Issue 4: Codegen Was Incomplete</h3>
-<p><strong>Problem</strong>: <code>cure_typeclass_codegen</code> returned metadata instead of compiled code</p>
+<p><strong>Problem</strong>: <code class="language-cure">cure_typeclass_codegen</code> returned metadata instead of compiled code</p>
 <p><strong>Solution</strong>: <br />
-- Made <code>compile_instance_method</code> call <code>cure_codegen:compile_function_impl</code><br />
+- Made <code class="language-cure">compile_instance_method</code> call <code>cure_codegen:compile_function_impl</code><br />
 - Made <code>compile_default_methods</code> compile to actual BEAM functions<br />
 - Fixed state threading throughout</p>
 <h2 id="files-modified">Files Modified</h2>
@@ -142,13 +143,13 @@ def (&lt;$)(value: A, fb: F(B)): F(A) = ...
 <li><code>src/parser/cure_parser.erl</code></li>
 <li>Added <code>expect_operator/1</code> and <code>is_operator_token/1</code></li>
 <li>Modified <code>parse_function/1</code></li>
-<li>Modified <code>parse_typeclass_method/1</code></li>
-<li>Modified <code>parse_instance_method/1</code></li>
+<li>Modified <code class="language-cure">parse_typeclass_method/1</code></li>
+<li>Modified <code class="language-cure">parse_instance_method/1</code></li>
 <li>Added operator precedence in <code>get_operator_info/1</code></li>
 </ul>
 <h3 id="code-generation">Code Generation</h3>
 <ul>
-<li><code>src/codegen/cure_typeclass_codegen.erl</code></li>
+<li><code class="language-cure">src/codegen/cure_typeclass_codegen.erl</code></li>
 <li>Implemented actual BEAM compilation</li>
 <li>Fixed state threading</li>
 <li>Added proper function metadata</li>
@@ -161,7 +162,7 @@ def (&lt;$)(value: A, fb: F(B)): F(A) = ...
 </ul>
 <h3 id="typeclass-specifications">Typeclass Specifications</h3>
 <ul>
-<li><code>lib/typeclass_spec/typeclass.cure</code></li>
+<li><code class="language-cure">lib/typeclass_spec/typeclass.cure</code></li>
 <li>Parenthesized all function types</li>
 <li>Commented out module-level helper functions (not yet supported)</li>
 </ul>
@@ -202,7 +203,7 @@ def (&lt;$)(value: A, fb: F(B)): F(A) = ...
 </li>
 <li>
 <p><strong>Module-level where clauses</strong> for helper functions<br />
-   - Functions like <code>def sequence(...) where Monad(M)</code> at module level<br />
+   - Functions like <code class="language-cure">def sequence(...) where Monad(M)</code> at module level<br />
    - Currently only supported in typeclass/instance contexts</p>
 </li>
 <li>
@@ -235,8 +236,8 @@ def (&lt;$)(value: A, fb: F(B)): F(A) = ...
 </ol>
 <h2 id="conclusion">Conclusion</h2>
 <p><strong>The typeclass operator infrastructure is complete and working.</strong> You can now:<br />
-- Define operators in typeclasses: <code>def (&lt;$)(...)</code><br />
-- Implement operators in instances: <code>def (&gt;&gt;=)(...)</code><br />
+- Define operators in typeclasses: <code class="language-cure">def (&lt;$)(...)</code><br />
+- Implement operators in instances: <code class="language-cure">def (&gt;&gt;=)(...)</code><br />
 - Use operators in expressions with proper precedence<br />
 - Parse complex operator expressions correctly</p>
 <p>The remaining work is in the type system (higher-kinded types) and runtime (instance dispatch), not in the lexer, parser, or basic codegen.</p>
@@ -267,11 +268,23 @@ def (&lt;$)(value: A, fb: F(B)): F(A) = ...
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -280,5 +293,13 @@ def (&lt;$)(value: A, fb: F(B)): F(A) = ...
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

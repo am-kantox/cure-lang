@@ -6,9 +6,10 @@
     <title>Cure Language Syntax Guide - Cure Documentation</title>
     <meta name="description" content="Based on: Actual Cure implementation (Standard Library v1.0)  
 Purpose: Reference for creating correct Cure examples  
-Last Updated: Octob">
+Last Updated: Novem">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -40,7 +41,7 @@ Last Updated: Octob">
         <h1 id="cure-language-syntax-guide">Cure Language Syntax Guide</h1>
 <p><strong>Based on</strong>: Actual Cure implementation (Standard Library v1.0)<br />
 <strong>Purpose</strong>: Reference for creating correct Cure examples<br />
-<strong>Last Updated</strong>: October 30, 2025</p>
+<strong>Last Updated</strong>: November 22, 2025</p>
 <hr />
 <h2 id="1-module-structure">1. Module Structure</h2>
 <p>Every Cure file should define a module:</p>
@@ -124,7 +125,7 @@ Last Updated: Octob">
 <hr />
 <h2 id="4-function-definitions">4. Function Definitions</h2>
 <h3 id="basic-function-syntax">Basic Function Syntax</h3>
-<div class="codehilite"><pre><span></span><code>def function_name(param1: Type1, param2: Type2): ReturnType =
+<div class="codehilite"><pre><span></span><code class="language-cure">def function_name(param1: Type1, param2: Type2): ReturnType =
   expression
 </code></pre></div>
 
@@ -162,6 +163,47 @@ Last Updated: Octob">
 <span class="n">partial_func</span><span class="p">(</span><span class="n">fold</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">,</span><span class="w"> </span><span class="k">func</span><span class="p">))</span>
 </code></pre></div>
 
+<h3 id="function-guards">Function Guards ✅</h3>
+<p>Function-level guards use <code>when</code> clauses to specify preconditions:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Basic guard
+def is_positive(x: Int): Bool when x &gt; 0 = true
+def is_positive(_x: Int): Bool = false
+
+<span class="gh">#</span> Multi-clause with guards
+def abs(x: Int): Int when x &gt;= 0 = x
+def abs(x: Int): Int = 0 - x
+
+<span class="gh">#</span> Sign function with complete coverage
+def sign(x: Int): Int when x &gt; 0 = 1
+def sign(x: Int): Int when x == 0 = 0
+def sign(x: Int): Int = -1
+
+<span class="gh">#</span> Guards with AND
+def in_range(x: Int, min: Int, max: Int): Bool 
+  when x &gt;= min and x &lt;= max = true
+def in_range(_x: Int, _min: Int, _max: Int): Bool = false
+
+<span class="gh">#</span> Guards with OR
+def is_extreme(x: Int): Bool 
+  when x &gt; 100 or x &lt; -100 = true
+def is_extreme(_x: Int): Bool = false
+
+<span class="gh">#</span> Real-world example: tax brackets
+def tax_rate(income: Int): Float when income &lt;= 10000 = 0.0
+def tax_rate(income: Int): Float 
+  when income &gt; 10000 and income &lt;= 40000 = 0.1
+def tax_rate(income: Int): Float 
+  when income &gt; 40000 and income &lt;= 100000 = 0.2
+def tax_rate(_income: Int): Float = 0.3
+</code></pre></div>
+
+<p><strong>Guard Features</strong>:<br />
+- Comparison operators: <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code>, <code>==</code>, <code>!=</code><br />
+- Logical operators: <code>and</code>, <code>or</code><br />
+- Type refinement: Guards narrow types in function bodies<br />
+- SMT verification: Completeness and consistency checking<br />
+- Coverage analysis: Detects unreachable clauses</p>
+<p><strong>See</strong>: <code>examples/06_comprehensive_guards_demo.cure</code> for complete examples</p>
 <hr />
 <h2 id="5-pattern-matching">5. Pattern Matching</h2>
 <h3 id="match-expression-structure">Match Expression Structure</h3>
@@ -308,7 +350,7 @@ x &gt;= y          # Greater than or equal
 <h2 id="10-special-constructs">10. Special Constructs</h2>
 <h3 id="curify-erlang-ffi">Curify (Erlang FFI)</h3>
 <p>Declare Erlang FFI functions:</p>
-<div class="codehilite"><pre><span></span><code>curify function_name(param: Type): ReturnType = {module, function, arity}
+<div class="codehilite"><pre><span></span><code class="language-cure">curify function_name(param: Type): ReturnType = {module, function, arity}
 </code></pre></div>
 
 <p>Example:</p>
@@ -426,7 +468,7 @@ Succ(n)         # Successor of n
 <hr />
 <h2 id="13-key-syntactic-rules">13. Key Syntactic Rules</h2>
 <ol>
-<li><strong>Module Required</strong>: Every file needs a <code>module ModuleName do ... end</code></li>
+<li><strong>Module Required</strong>: Every file needs a <code class="language-cure">module ModuleName do ... end</code></li>
 <li><strong>Type Annotations</strong>: All function parameters and return types must be annotated</li>
 <li><strong>Pattern Matching</strong>: Use <code>match ... do ... end</code> blocks</li>
 <li><strong>Lambdas</strong>: Use <code>fn(params) -&gt; body end</code> syntax</li>
@@ -514,11 +556,23 @@ Succ(n)         # Successor of n
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -527,5 +581,13 @@ Succ(n)         # Successor of n
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

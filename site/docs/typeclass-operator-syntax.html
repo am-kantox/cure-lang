@@ -7,6 +7,7 @@
     <meta name="description" content=" Summary">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -42,7 +43,7 @@
 <h3 id="completed">Completed</h3>
 <ol>
 <li><strong>Lexer</strong>: Added all Functor/Applicative/Monad operators (<code>&lt;$</code>, <code>$&gt;</code>, <code>&lt;*&gt;</code>, <code>*&gt;</code>, <code>&lt;*</code>, <code>&gt;&gt;=</code>, <code>&gt;&gt;</code>)</li>
-<li><strong>Parser</strong>: Operator function definitions work with <code>def (op)(params)</code> syntax</li>
+<li><strong>Parser</strong>: Operator function definitions work with <code class="language-cure">def (op)(params)</code> syntax</li>
 <li><strong>Precedence</strong>: Operators have proper precedence (Functor &gt; Applicative &gt; Monad)</li>
 <li><strong>Codegen</strong>: Operators compile to BEAM code</li>
 </ol>
@@ -101,7 +102,7 @@
 </code></pre></div>
 
 <h2 id="changes-needed-in-typeclass-spec-files">Changes Needed in Typeclass Spec Files</h2>
-<h3 id="file-libtypeclass_spectypeclasscure">File: <code>lib/typeclass_spec/typeclass.cure</code></h3>
+<h3 id="file-libtypeclass_spectypeclasscure">File: <code class="language-cure">lib/typeclass_spec/typeclass.cure</code></h3>
 <h4 id="line-79">Line 79</h4>
 <div class="codehilite"><pre><span></span><code><span class="cp"># Before:</span>
 <span class="n">def</span><span class="w"> </span><span class="nf">map</span><span class="p">(</span><span class="n">f</span><span class="o">:</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">fa</span><span class="o">:</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">A</span><span class="p">))</span><span class="o">:</span><span class="w"> </span><span class="n">F</span><span class="p">(</span><span class="n">B</span><span class="p">)</span>
@@ -191,7 +192,7 @@
 <p>In most type systems with function types:<br />
 - Haskell requires parentheses: <code>f :: (a -&gt; b) -&gt; c</code><br />
 - OCaml requires parentheses: <code>val f : (a -&gt; b) -&gt; c</code><br />
-- Scala requires parentheses: <code>def f(g: A =&gt; B): C</code></p>
+- Scala requires parentheses: <code class="language-cure">def f(g: A =&gt; B): C</code></p>
 <h2 id="alternative-parser-enhancement-future">Alternative: Parser Enhancement (Future)</h2>
 <p>We <em>could</em> enhance the parser to understand context, but it adds complexity:</p>
 <div class="codehilite"><pre><span></span><code><span class="c">% In parse_type, when inside type arguments:</span>
@@ -225,7 +226,7 @@ erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"
 
 <h2 id="next-steps">Next Steps</h2>
 <ol>
-<li>Update <code>lib/typeclass_spec/typeclass.cure</code> with parenthesized function types</li>
+<li>Update <code class="language-cure">lib/typeclass_spec/typeclass.cure</code> with parenthesized function types</li>
 <li>Update other typeclass spec files similarly</li>
 <li>Test parsing: All files should parse successfully</li>
 <li>Move files to <code>lib/std/</code> once they parse</li>
@@ -233,7 +234,7 @@ erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"
 </ol>
 <h2 id="summary_1">Summary</h2>
 <ul>
-<li>✅ Operator names work: <code>def (&lt;$)(...)</code></li>
+<li>✅ Operator names work: <code class="language-cure">def (&lt;$)(...)</code></li>
 <li>✅ Operator precedence works</li>
 <li>✅ Typeclass/instance syntax works</li>
 <li>⚠️  <strong>Function types as type arguments need parentheses</strong>: <code>F((A -&gt; B))</code> not <code>F(A -&gt; B)</code></li>
@@ -265,11 +266,23 @@ erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -278,5 +291,13 @@ erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

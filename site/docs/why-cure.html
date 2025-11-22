@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Why Cure? - Cure Documentation</title>
+    <meta name="description" content="A principled language for the BEAM that focuses on what's missing, not what's already there.">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="why-cure">Why Cure?</h1>
+<p><strong>A principled language for the BEAM that focuses on what's missing, not what's already there.</strong></p>
+<h2 id="the-problem">The Problem</h2>
+<p>The BEAM ecosystem is rich with excellent languages: Erlang's battle-tested reliability, Elixir's developer ergonomics, LFE's Lisp elegance, Gleam's type safety. Each excels at what it does.</p>
+<p>But something was missing.</p>
+<h2 id="the-vision">The Vision</h2>
+<p>Cure isn't trying to replace these languages—it's designed to <strong>complement</strong> them. Think of it as a specialized tool that fills specific gaps while leveraging the vast BEAM ecosystem through interoperability.</p>
+<h3 id="what-cure-brings-to-beam">What Cure Brings to BEAM</h3>
+<h4 id="1-dependent-types-with-smt-verification">🎯 <strong>1. Dependent Types with SMT Verification</strong></h4>
+<p>For the first time on BEAM, you can express and <strong>verify</strong> invariants at compile time:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">The</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">system</span><span class="w"> </span><span class="nx">proves</span><span class="w"> </span><span class="nx">this</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="nx">safe</span><span class="err">—</span><span class="nx">no</span><span class="w"> </span><span class="nx">runtime</span><span class="w"> </span><span class="nx">checks</span><span class="w"> </span><span class="nx">needed</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">safe_head</span><span class="p">(</span><span class="nx">v</span><span class="p">:</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)):</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="nx">head</span><span class="p">(</span><span class="nx">v</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Vector operations that can't fail. Array access that's proven safe. Constraints that the <strong>solver</strong> validates, not you.</p>
+<h4 id="2-fsms-as-first-class-citizens">🎆 <strong>2. FSMs as First-Class Citizens</strong></h4>
+<p>State machines aren't a pattern in Cure—they're <strong>native syntax</strong> with compile-time safety:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">fsm</span><span class="w"> </span><span class="n">TrafficLight</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Red</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Green</span>
+<span class="w">  </span><span class="n">Green</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Yellow</span><span class="w">  </span>
+<span class="w">  </span><span class="n">Yellow</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+
+<span class="w">  </span><span class="n">Green</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">emergency</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+<span class="kd">end</span>
+</code></pre></div>
+
+<p>The SMT solver verifies your state machine properties: reachability, deadlock freedom, invariant preservation. Before you even run it.</p>
+<h4 id="3-no-if-then-else-seriously">🚫 <strong>3. No If-Then-Else. Seriously.</strong></h4>
+<p>Cure forces you to think in <strong>pattern matching</strong> and <strong>exhaustive cases</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># This is an error—non-exhaustive match</span>
+<span class="n">def</span><span class="w"> </span><span class="n">classify</span><span class="p">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">Atom</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">match</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">:</span><span class="n">positive</span>
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="n">Compiler</span><span class="w"> </span><span class="nf">error</span><span class="o">:</span><span class="w"> </span><span class="n">missing</span><span class="w"> </span><span class="n">cases</span><span class="o">!</span><span class="w"> </span><span class="p">(</span><span class="n">Use</span><span class="w"> </span><span class="err">`</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Nat</span><span class="err">`</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">compile</span><span class="p">)</span>
+<span class="w">  </span><span class="kd">end</span>
+
+<span class="cp"># This compiles—all cases handled</span>
+<span class="n">def</span><span class="w"> </span><span class="n">classify</span><span class="p">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">Atom</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">match</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">:</span><span class="n">negative</span>
+<span class="w">    </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">:</span><span class="n">zero</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">:</span><span class="n">positive</span>
+<span class="w">  </span><span class="kd">end</span>
+</code></pre></div>
+
+<p>No forgotten edge cases. No hidden branches. Every decision point is <strong>explicit and proven complete</strong>.</p>
+<h2 id="the-philosophy">The Philosophy</h2>
+<h3 id="half-general-purpose-half-dsl">Half General-Purpose, Half DSL</h3>
+<p>Cure is intentionally <strong>opinionated</strong>:</p>
+<ul>
+<li><strong>General-purpose</strong> enough for real applications</li>
+<li><strong>Specialized</strong> enough to enforce correctness by construction</li>
+<li><strong>Interoperable</strong> enough to use Erlang/Elixir libraries for everything else</li>
+</ul>
+<p>Need JSON parsing? Use an Erlang library. Need web routing? Call Elixir's Phoenix. Need <strong>mathematically verified state machines with dependent types</strong>? That's what Cure is for.</p>
+<h3 id="focus-on-verification-not-features">Focus on Verification, Not Features</h3>
+<p>Other BEAM languages compete on features. Cure competes on <strong>correctness guarantees</strong>:</p>
+<ul>
+<li><strong>SMT-backed type checking</strong>: Your types are theorems, proven by Z3/CVC5</li>
+<li><strong>FSM verification</strong>: State machines validated for safety properties</li>
+<li><strong>Exhaustive patterns</strong>: The compiler proves you handled every case</li>
+</ul>
+<h2 id="when-to-use-cure">When to Use Cure</h2>
+<p>✅ <strong>Perfect for:</strong><br />
+- Safety-critical finite state machines<br />
+- Systems with complex invariants<br />
+- Domains where correctness &gt; convenience<br />
+- Embedded systems requiring BEAM's reliability + mathematical guarantees<br />
+- Trading systems, industrial control, medical devices, aerospace</p>
+<p>❌ <strong>Not ideal for:</strong><br />
+- Rapid prototyping (use Elixir)<br />
+- Scripts and glue code (use Elixir/Erlang)<br />
+- When you need maximum ecosystem libraries (stick to Erlang/Elixir)<br />
+- General web development (Phoenix is excellent)</p>
+<h2 id="the-trade-off">The Trade-Off</h2>
+<p>You give up:<br />
+- Some syntactic flexibility<br />
+- <code>if-then-else</code> convenience<br />
+- A few language features better implemented elsewhere</p>
+<p>You gain:<br />
+- <strong>Mathematical proofs</strong> of correctness<br />
+- <strong>Verified state machines</strong> that can't reach invalid states<br />
+- <strong>Dependent types</strong> that prevent entire classes of bugs<br />
+- Code that <strong>provably</strong> handles all cases</p>
+<h2 id="the-beam-advantage">The BEAM Advantage</h2>
+<p>Because Cure compiles to BEAM bytecode, you get all of this:</p>
+<ul>
+<li>✅ OTP's fault tolerance and supervision trees</li>
+<li>✅ Hot code reloading in production</li>
+<li>✅ Distributed computing primitives</li>
+<li>✅ Interoperability with the entire Erlang/Elixir ecosystem</li>
+<li>✅ Battle-tested VM with 30+ years of production hardening</li>
+</ul>
+<p>Plus verification guarantees no other BEAM language provides.</p>
+<h2 id="the-bottom-line">The Bottom Line</h2>
+<p><strong>Cure isn't trying to be the only language you use on BEAM. It's trying to be the language you reach for when correctness matters more than convenience.</strong></p>
+<p>If you're building a traffic control system, not a todo app. If you're managing financial transactions, not rendering HTML. If you're controlling industrial equipment, not parsing CSV files.</p>
+<p>If you need to <strong>prove</strong> your code is correct, not just test it.</p>
+<p>That's why Cure exists.</p>
+<hr />
+<h2 id="additional-goodness">Additional Goodness</h2>
+<p><code>Cure</code> comes with LSP for any editor.</p>
+<hr />
+<p><strong>Cure: Verification-first programming for the BEAM.</strong></p>
+<p><em>For everything else, there's Erlang, Elixir, LFE, and Gleam. Use them. They're excellent. But when you need dependent types, SMT-verified FSMs, and exhaustive pattern matching—Cure is here for you.</em></p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>All Documentation</h4>
+                <ul>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

@@ -7,6 +7,7 @@
     <meta name="description" content="✅ COMPLETE & WORKING: The Cure compiler provides a production-ready command-line interface for compiling .cure source files to BEAM bytecode">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -203,7 +204,7 @@ cure<span class="w"> </span>shell<span class="w">      </span><span class="c1">#
 <p>The Cure compiler processes files through a multi-stage pipeline:</p>
 <h3 id="1-lexical-analysis">1. Lexical Analysis</h3>
 <p>Tokenizes Cure source code, recognizing:<br />
-- Keywords (<code>def</code>, <code>module</code>, <code>fsm</code>, <code>if</code>, <code>then</code>, <code>else</code>, etc.)<br />
+- Keywords (<code>def</code>, <code class="language-cure">module</code>, <code>fsm</code>, <code>if</code>, <code>then</code>, <code>else</code>, etc.)<br />
 - Operators (<code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>==</code>, <code>-&gt;</code>, etc.) <br />
 - Literals (numbers, strings, atoms)<br />
 - Identifiers and type annotations<br />
@@ -303,6 +304,7 @@ make<span class="w"> </span>test-performance<span class="w">       </span><span 
 <p>Cure provides comprehensive support for a dependently-typed functional programming language:</p>
 <p>✅ <strong>Fully Supported</strong><br />
 - Function definitions with dependent types and constraints<br />
+- <strong>Function-level guards</strong> with <code>when</code> clauses on function definitions<br />
 - <strong>Multi-clause functions</strong> with automatic union type derivation (Erlang-style pattern matching)<br />
 - Module definitions with exports and imports<br />
 - <strong>Record types</strong> with named fields and type parameters<br />
@@ -310,7 +312,8 @@ make<span class="w"> </span>test-performance<span class="w">       </span><span 
 - Dependent types with refinement and constraint solving<br />
 - Type classes and instances with automatic derivation<br />
 - Pattern matching including dependent patterns<br />
-- <strong>Pattern guards</strong> with <code>when</code> keyword and logical operators (and, or)<br />
+- <strong>Pattern guards</strong> with <code>when</code> keyword in match expressions<br />
+- <strong>Guard sequences</strong> with logical operators (and, or)<br />
 - Let bindings and where clauses<br />
 - Conditional expressions and guards<br />
 - Higher-order functions and closures<br />
@@ -427,6 +430,17 @@ make<span class="w"> </span>test-performance<span class="w">       </span><span 
 <p>Complex multi-condition guards</p>
 </li>
 <li>
+<p><strong>06_comprehensive_guards_demo.cure</strong> - Complete function guards demonstration</p>
+</li>
+<li>Function-level guards with <code>when</code> clauses</li>
+<li>Multi-clause functions with guards</li>
+<li>Guard sequences (AND/OR combinations)</li>
+<li>Type refinement examples</li>
+<li>Real-world applications (tax brackets, discounts, shipping)</li>
+<li>
+<p>SMT-verified guard completeness</p>
+</li>
+<li>
 <p><strong>06_fsm_traffic_light.cure</strong> - Finite State Machine implementation</p>
 </li>
 <li>FSM definition with record payload</li>
@@ -478,11 +492,23 @@ make<span class="w"> </span>test-performance<span class="w">       </span><span 
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -491,5 +517,13 @@ make<span class="w"> </span>test-performance<span class="w">       </span><span 
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

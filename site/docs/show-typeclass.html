@@ -7,6 +7,7 @@
     <meta name="description" content=" Overview">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -293,7 +294,7 @@ show_tuple({1, 2, 3})    # =&gt; &quot;{1, 2, 3}&quot;
 
 <h3 id="multiple-constraints">Multiple Constraints</h3>
 <p>Functions can require multiple typeclass constraints:</p>
-<div class="codehilite"><pre><span></span><code>def debug_compare(a: T, b: T): String where Show(T), Eq(T) =
+<div class="codehilite"><pre><span></span><code class="language-cure">def debug_compare(a: T, b: T): String where Show(T), Eq(T) =
   let equal_str = if eq(a, b) then &quot;equal&quot; else &quot;not equal&quot;
   string_concat(show(a),
     string_concat(&quot; and &quot;,
@@ -342,7 +343,7 @@ def show_complex(x: ComplexType): String =
 </li>
 <li>
 <p><strong>Completeness</strong>: Ensure all cases in sum types are handled:<br />
-<code>cure
+<code class="language-cure">cure
    instance Show(Result(T, E)) where Show(T), Show(E) do
      def show(result: Result(T, E)): String =
        match result do
@@ -353,7 +354,7 @@ def show_complex(x: ComplexType): String =
 </li>
 <li>
 <p><strong>Polymorphism</strong>: Add constraints only when needed:<br />
-<code>cure
+<code class="language-cure">cure
    # Good: Only requires Show for the element type
    instance Show(List(T)) where Show(T) do
      ...
@@ -377,13 +378,13 @@ def show_complex(x: ComplexType): String =
 </code></pre></div>
 
 <h3 id="with-logging">With Logging</h3>
-<div class="codehilite"><pre><span></span><code>def log_debug(value: T): T where Show(T) =
+<div class="codehilite"><pre><span></span><code class="language-cure">def log_debug(value: T): T where Show(T) =
   Logger.debug(show(value))
   value
 </code></pre></div>
 
 <h3 id="with-testing">With Testing</h3>
-<div class="codehilite"><pre><span></span><code>def assert_eq(actual: T, expected: T): Result((), String) where Show(T), Eq(T) =
+<div class="codehilite"><pre><span></span><code class="language-cure">def assert_eq(actual: T, expected: T): Result((), String) where Show(T), Eq(T) =
   if eq(actual, expected) then
     Ok(())
   else
@@ -403,10 +404,10 @@ def show_complex(x: ComplexType): String =
 <p>By implementing <code>Show</code> for your custom types and using the constraint <code>where Show(T)</code> in your functions, you get powerful, type-safe string formatting that works across your entire codebase.</p>
 <h2 id="see-also">See Also</h2>
 <ul>
-<li><code>examples/12_show_typeclass.cure</code> - Complete working examples</li>
+<li><code class="language-cure">examples/12_show_typeclass.cure</code> - Complete working examples</li>
 <li><code>lib/std/show.cure</code> - Standard library implementation</li>
-<li><code>examples/08_typeclasses.cure</code> - Basic typeclass introduction</li>
-<li><code>examples/11_advanced_typeclasses.cure</code> - Advanced typeclass patterns</li>
+<li><code class="language-cure">examples/08_typeclasses.cure</code> - Basic typeclass introduction</li>
+<li><code class="language-cure">examples/11_advanced_typeclasses.cure</code> - Advanced typeclass patterns</li>
 </ul>
     </div>
 
@@ -434,11 +435,23 @@ def show_complex(x: ComplexType): String =
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -447,5 +460,13 @@ def show_complex(x: ComplexType): String =
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

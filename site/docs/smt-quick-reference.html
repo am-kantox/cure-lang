@@ -9,6 +9,7 @@ Solver: Z3 4.13.3
 Test Coverage: 100% (12/12 tests passing)">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -182,6 +183,51 @@ erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"
 <span class="c">% =&gt; true (proven!)</span>
 </code></pre></div>
 
+<h3 id="example-5-guard-completeness-verification">Example 5: Guard Completeness Verification ✅</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Verify that guards cover all possible integer values</span>
+<span class="c">% Guards: (x &gt; 0) ∨ (x == 0) ∨ (x &lt; 0)</span>
+
+<span class="c">% Build guard disjunction</span>
+<span class="nv">GuardConjunction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span>
+<span class="w">    </span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;or&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span>
+<span class="w">        </span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;or&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lit</span><span class="p">(</span><span class="mi">0</span><span class="p">)},</span>
+<span class="w">        </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;==&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lit</span><span class="p">(</span><span class="mi">0</span><span class="p">)}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;&lt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lit</span><span class="p">(</span><span class="mi">0</span><span class="p">)}</span>
+<span class="p">},</span>
+
+<span class="nv">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">#{</span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">int</span><span class="p">}},</span>
+
+<span class="c">% Prove this is always true (tautology)</span>
+<span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_constraint</span><span class="p">(</span><span class="nv">GuardConjunction</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">).</span>
+<span class="c">% =&gt; true (complete coverage!)</span>
+
+<span class="c">% Check for unreachable clause: (x &gt; 10) when we already have (x &gt;= 0)</span>
+<span class="nv">Unreachable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span>
+<span class="w">    </span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;and&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;&gt;=&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lit</span><span class="p">(</span><span class="mi">0</span><span class="p">)},</span>
+<span class="w">    </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lit</span><span class="p">(</span><span class="mi">10</span><span class="p">)}</span>
+<span class="p">},</span>
+
+<span class="c">% Check if (x &gt; 10) is subsumed by (x &gt;= 0)</span>
+<span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">check_constraint</span><span class="p">(</span>
+<span class="w">    </span><span class="nl">#binary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;=&gt;&#39;</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;&gt;=&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lit</span><span class="p">(</span><span class="mi">0</span><span class="p">)},</span>
+<span class="w">        </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">var</span><span class="p">(</span><span class="n">x</span><span class="p">),</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lit</span><span class="p">(</span><span class="mi">10</span><span class="p">)}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nv">Env</span>
+<span class="p">).</span>
+<span class="c">% =&gt; unsat (not all x &gt;= 0 satisfy x &gt; 10, clause is reachable)</span>
+</code></pre></div>
+
+<p><strong>Guard Verification Use Cases</strong>:<br />
+- <strong>Completeness</strong>: Verify all possible values are covered<br />
+- <strong>Subsumption</strong>: Detect unreachable clauses<br />
+- <strong>Consistency</strong>: Check guards aren't contradictory<br />
+- <strong>Counterexamples</strong>: Find values that violate coverage</p>
+<p>See <code>cure_guard_smt.erl</code> for implementation details.</p>
 <hr />
 <h2 id="constraint-translation">Constraint Translation</h2>
 <h3 id="supported-operators">Supported Operators</h3>
@@ -380,11 +426,23 @@ Result
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -393,5 +451,13 @@ Result
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>

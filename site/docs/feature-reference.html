@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cure Language Features Reference - Cure Documentation</title>
     <meta name="description" content="Version: Current Implementation Status  
-Last Updated: October 31, 2025">
+Last Updated: November 22, 2025">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
 </head>
 <body>
     <!-- Header -->
@@ -38,7 +39,7 @@ Last Updated: October 31, 2025">
         
         <h1 id="cure-language-features-reference">Cure Language Features Reference</h1>
 <p><strong>Version</strong>: Current Implementation Status<br />
-<strong>Last Updated</strong>: October 31, 2025</p>
+<strong>Last Updated</strong>: November 22, 2025</p>
 <p>This document provides a comprehensive reference for all Cure language features, including current implementation status, syntax examples, and usage patterns.</p>
 <h2 id="table-of-contents">Table of Contents</h2>
 <ol>
@@ -403,9 +404,58 @@ None                       # Absent optional value
 <span class="kd">end</span>
 </code></pre></div>
 
+<h3 id="function-level-guards-complete-implementation">Function-Level Guards ✅ <strong>Complete Implementation</strong></h3>
+<p>Cure supports guards on function definitions with <code>when</code> clauses, enabling elegant multi-clause functions with preconditions:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Basic guard on function parameter
+def is_positive(x: Int): Bool when x &gt; 0 = true
+def is_positive(_x: Int): Bool = false
+
+<span class="gh">#</span> Multi-clause function with guards
+def abs(x: Int): Int when x &gt;= 0 = x
+def abs(x: Int): Int = 0 - x
+
+<span class="gh">#</span> Sign function with complete coverage
+def sign(x: Int): Int when x &gt; 0 = 1
+def sign(x: Int): Int when x == 0 = 0
+def sign(x: Int): Int = -1
+
+<span class="gh">#</span> Guards with AND/OR sequences
+def in_range(x: Int, min: Int, max: Int): Bool 
+  when x &gt;= min and x &lt;= max = true
+def in_range(_x: Int, _min: Int, _max: Int): Bool = false
+
+def is_extreme(x: Int): Bool 
+  when x &gt; 100 or x &lt; -100 = true
+def is_extreme(_x: Int): Bool = false
+
+<span class="gh">#</span> Real-world example: tax brackets
+def tax_rate(income: Int): Float when income &lt;= 10000 = 0.0
+def tax_rate(income: Int): Float 
+  when income &gt; 10000 and income &lt;= 40000 = 0.1
+def tax_rate(income: Int): Float 
+  when income &gt; 40000 and income &lt;= 100000 = 0.2
+def tax_rate(_income: Int): Float = 0.3
+</code></pre></div>
+
+<p><strong>Guard Features</strong>:<br />
+- All comparison operators: <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code>, <code>==</code>, <code>!=</code><br />
+- Logical combinations: <code>and</code>, <code>or</code><br />
+- Type refinement: Guards narrow parameter types in function bodies<br />
+- SMT verification: Guards verified for completeness and consistency<br />
+- Coverage analysis: Compiler detects unreachable clauses<br />
+- Optimization: Guard-specific optimizations for performance</p>
+<p><strong>Example: Comprehensive Guards Demo</strong></p>
+<p>See <code>examples/06_comprehensive_guards_demo.cure</code> for a complete demonstration including:<br />
+- Basic comparisons with all operators<br />
+- Multi-clause functions<br />
+- Guard sequences (AND/OR combinations)<br />
+- Type refinement examples<br />
+- Real-world applications (discounts, tax brackets, shipping costs)<br />
+- Recursive functions with guards<br />
+- Performance-ordered guard clauses</p>
 <h2 id="error-handling-patterns">Error Handling Patterns</h2>
 <h3 id="result-types">Result Types</h3>
-<div class="codehilite"><pre><span></span><code>def safe_operation(input: Int): Result(Int, String) =
+<div class="codehilite"><pre><span></span><code class="language-cure">def safe_operation(input: Int): Result(Int, String) =
   match input &lt; 0 do
     true -&gt; error(&quot;Negative input not allowed&quot;)
     false -&gt; ok(input * 2)
@@ -744,11 +794,23 @@ erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"
             </div>
 
             <div class="footer-section">
-                <h4>Resources</h4>
+                <h4>All Documentation</h4>
                 <ul>
-                    <li><a href="editor-setup.html">Editor Setup</a></li>
-                    <li><a href="project-overview.html">Project Overview</a></li>
-                    <li><a href="cure-ultimate-description.html">Ultimate Guide</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>
@@ -757,5 +819,13 @@ erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"
             <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
         </div>
     </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
 </body>
 </html>
