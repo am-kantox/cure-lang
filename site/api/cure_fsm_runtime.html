@@ -166,14 +166,14 @@ and performance optimizations, all built on top of the BEAM virtual machine.</p>
 <p>The FSM runtime is built as a gen_server behavior that manages individual FSM
 instances. Each FSM process maintains its own state, transition table, timeout
 handlers, and performance statistics.</p><pre><code class="makeup erlang" translate="no"><span class="c1">%% Start a traffic light FSM</span><span class="w">
-</span><span class="p" data-group-id="7228048897-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">FSM</span><span class="p" data-group-id="7228048897-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">start_fsm</span><span class="p" data-group-id="7228048897-2">(</span><span class="ss">traffic_light</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7228048897-3">#{</span><span class="p" data-group-id="7228048897-3">}</span><span class="p" data-group-id="7228048897-2">)</span><span class="p">.</span><span class="w">
+</span><span class="p" data-group-id="8329744786-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">FSM</span><span class="p" data-group-id="8329744786-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">start_fsm</span><span class="p" data-group-id="8329744786-2">(</span><span class="ss">traffic_light</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8329744786-3">#{</span><span class="p" data-group-id="8329744786-3">}</span><span class="p" data-group-id="8329744786-2">)</span><span class="p">.</span><span class="w">
 
 </span><span class="c1">%% Send events to the FSM</span><span class="w">
-</span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">send_event</span><span class="p" data-group-id="7228048897-4">(</span><span class="n">FSM</span><span class="p">,</span><span class="w"> </span><span class="ss">timer_expired</span><span class="p" data-group-id="7228048897-4">)</span><span class="p">,</span><span class="w">
-</span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">send_event</span><span class="p" data-group-id="7228048897-5">(</span><span class="n">FSM</span><span class="p">,</span><span class="w"> </span><span class="ss">emergency_stop</span><span class="p" data-group-id="7228048897-5">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">send_event</span><span class="p" data-group-id="8329744786-4">(</span><span class="n">FSM</span><span class="p">,</span><span class="w"> </span><span class="ss">timer_expired</span><span class="p" data-group-id="8329744786-4">)</span><span class="p">,</span><span class="w">
+</span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">send_event</span><span class="p" data-group-id="8329744786-5">(</span><span class="n">FSM</span><span class="p">,</span><span class="w"> </span><span class="ss">emergency_stop</span><span class="p" data-group-id="8329744786-5">)</span><span class="p">.</span><span class="w">
 
 </span><span class="c1">%% Get current state</span><span class="w">
-</span><span class="p" data-group-id="7228048897-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="7228048897-6">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">get_state</span><span class="p" data-group-id="7228048897-7">(</span><span class="n">FSM</span><span class="p" data-group-id="7228048897-7">)</span><span class="p">.</span></code></pre><h2 id="module-event-processing-model" class="section-heading">
+</span><span class="p" data-group-id="8329744786-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="8329744786-6">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">get_state</span><span class="p" data-group-id="8329744786-7">(</span><span class="n">FSM</span><span class="p" data-group-id="8329744786-7">)</span><span class="p">.</span></code></pre><h2 id="module-event-processing-model" class="section-heading">
   <a href="#module-event-processing-model" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -574,7 +574,7 @@ handlers, and performance statistics.</p><pre><code class="makeup erlang" transl
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">clear_fsm_registry</span><span class="p" data-group-id="3402231501-1">(</span><span class="p" data-group-id="3402231501-1">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">clear_fsm_registry</span><span class="p" data-group-id="9417120274-1">(</span><span class="p" data-group-id="9417120274-1">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="clear_timeout/1">
@@ -612,7 +612,7 @@ handlers, and performance statistics.</p><pre><code class="makeup erlang" transl
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">clear_timeout</span><span class="p" data-group-id="1347031251-1">(</span><span class="n">FSMPid</span><span class="p" data-group-id="1347031251-1">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">clear_timeout</span><span class="p" data-group-id="0126941427-1">(</span><span class="n">FSMPid</span><span class="p" data-group-id="0126941427-1">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="code_change/3">
@@ -677,8 +677,8 @@ representation with pre-compiled guards, actions, and optimized transition looku
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">CompiledDef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">compile_fsm_definition</span><span class="p" data-group-id="1645259582-1">(</span><span class="n">ParsedFSM</span><span class="p" data-group-id="1645259582-1">)</span><span class="p">,</span><span class="w">
-</span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">register_fsm_type</span><span class="p" data-group-id="1645259582-2">(</span><span class="ss">my_fsm</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledDef</span><span class="p" data-group-id="1645259582-2">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">CompiledDef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">compile_fsm_definition</span><span class="p" data-group-id="7531038863-1">(</span><span class="n">ParsedFSM</span><span class="p" data-group-id="7531038863-1">)</span><span class="p">,</span><span class="w">
+</span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">register_fsm_type</span><span class="p" data-group-id="7531038863-2">(</span><span class="ss">my_fsm</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledDef</span><span class="p" data-group-id="7531038863-2">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get_current_state/1">
@@ -736,8 +736,8 @@ representation with pre-compiled guards, actions, and optimized transition looku
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="2126374962-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2126374962-2">#{</span><span class="ss">fsm_type</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="n">Type</span><span class="p">,</span><span class="w"> </span><span class="ss">current_state</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="2126374962-2">}</span><span class="p" data-group-id="2126374962-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> 
-    </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">get_fsm_info</span><span class="p" data-group-id="2126374962-3">(</span><span class="n">FSMPid</span><span class="p" data-group-id="2126374962-3">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="9842442114-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9842442114-2">#{</span><span class="ss">fsm_type</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="n">Type</span><span class="p">,</span><span class="w"> </span><span class="ss">current_state</span><span class="w"> </span><span class="p">:=</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="9842442114-2">}</span><span class="p" data-group-id="9842442114-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> 
+    </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">get_fsm_info</span><span class="p" data-group-id="9842442114-3">(</span><span class="n">FSMPid</span><span class="p" data-group-id="9842442114-3">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get_performance_stats/1">
@@ -775,7 +775,7 @@ representation with pre-compiled guards, actions, and optimized transition looku
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4580552391-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Stats</span><span class="p" data-group-id="4580552391-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">get_performance_stats</span><span class="p" data-group-id="4580552391-2">(</span><span class="n">FSMPid</span><span class="p" data-group-id="4580552391-2">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="2286899282-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Stats</span><span class="p" data-group-id="2286899282-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">get_performance_stats</span><span class="p" data-group-id="2286899282-2">(</span><span class="n">FSMPid</span><span class="p" data-group-id="2286899282-2">)</span><span class="p">,</span><span class="w">
 </span><span class="n">AvgTime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Stats</span><span class="o">#</span><span class="ss">fsm_perf_stats</span><span class="p">.</span><span class="ss">avg_event_time</span><span class="p">.</span></code></pre>
   </section>
 </section>
@@ -808,7 +808,7 @@ representation with pre-compiled guards, actions, and optimized transition looku
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">get_registered_fsm_types</span><span class="p" data-group-id="9307068870-1">(</span><span class="p" data-group-id="9307068870-1">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">Types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">get_registered_fsm_types</span><span class="p" data-group-id="9278608759-1">(</span><span class="p" data-group-id="9278608759-1">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">%% Types might be [counter, traffic_light, state_machine]</span></code></pre>
   </section>
 </section>
@@ -847,7 +847,7 @@ representation with pre-compiled guards, actions, and optimized transition looku
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="5895594975-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CurrentState</span><span class="p" data-group-id="5895594975-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">get_state</span><span class="p" data-group-id="5895594975-2">(</span><span class="n">FSMPid</span><span class="p" data-group-id="5895594975-2">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="9448560728-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CurrentState</span><span class="p" data-group-id="9448560728-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">get_state</span><span class="p" data-group-id="9448560728-2">(</span><span class="n">FSMPid</span><span class="p" data-group-id="9448560728-2">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="handle_call/3">
@@ -1005,9 +1005,9 @@ representation with pre-compiled guards, actions, and optimized transition looku
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="k">case</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">lookup_fsm_definition</span><span class="p" data-group-id="7245116732-1">(</span><span class="ss">counter</span><span class="p" data-group-id="7245116732-1">)</span><span class="w"> </span><span class="k">of</span><span class="w">
-    </span><span class="p" data-group-id="7245116732-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Definition</span><span class="p" data-group-id="7245116732-2">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="7245116732-3">(</span><span class="s">&quot;Found FSM definition</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="7245116732-3">)</span><span class="p">;</span><span class="w">
-    </span><span class="p" data-group-id="7245116732-4">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="ss">not_found</span><span class="p" data-group-id="7245116732-4">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="7245116732-5">(</span><span class="s">&quot;FSM type not registered</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="7245116732-5">)</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="k">case</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">lookup_fsm_definition</span><span class="p" data-group-id="7215253053-1">(</span><span class="ss">counter</span><span class="p" data-group-id="7215253053-1">)</span><span class="w"> </span><span class="k">of</span><span class="w">
+    </span><span class="p" data-group-id="7215253053-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Definition</span><span class="p" data-group-id="7215253053-2">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="7215253053-3">(</span><span class="s">&quot;Found FSM definition</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="7215253053-3">)</span><span class="p">;</span><span class="w">
+    </span><span class="p" data-group-id="7215253053-4">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="ss">not_found</span><span class="p" data-group-id="7215253053-4">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="7215253053-5">(</span><span class="s">&quot;FSM type not registered</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="7215253053-5">)</span><span class="w">
 </span><span class="k">end</span><span class="p">.</span></code></pre>
   </section>
 </section>
@@ -1086,8 +1086,8 @@ representation with pre-compiled guards, actions, and optimized transition looku
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Definition</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">fsm_definition</span><span class="p" data-group-id="1932280988-1">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">counter</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="1932280988-1">}</span><span class="p">,</span><span class="w">
-</span><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">register_fsm_type</span><span class="p" data-group-id="1932280988-2">(</span><span class="ss">counter</span><span class="p">,</span><span class="w"> </span><span class="n">Definition</span><span class="p" data-group-id="1932280988-2">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">Definition</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">fsm_definition</span><span class="p" data-group-id="7302572540-1">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">counter</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="7302572540-1">}</span><span class="p">,</span><span class="w">
+</span><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">register_fsm_type</span><span class="p" data-group-id="7302572540-2">(</span><span class="ss">counter</span><span class="p">,</span><span class="w"> </span><span class="n">Definition</span><span class="p" data-group-id="7302572540-2">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="register_fsm_type/4">
@@ -1152,8 +1152,8 @@ event sends when processing large numbers of events.</p><h2 id="send_batch_event
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Events</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="0193302106-1">[</span><span class="ss">start</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0193302106-2">{</span><span class="ss">increment</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="0193302106-2">}</span><span class="p">,</span><span class="w"> </span><span class="ss">stop</span><span class="p" data-group-id="0193302106-1">]</span><span class="p">,</span><span class="w">
-</span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">send_batch_events</span><span class="p" data-group-id="0193302106-3">(</span><span class="n">FSMPid</span><span class="p">,</span><span class="w"> </span><span class="n">Events</span><span class="p" data-group-id="0193302106-3">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">Events</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="4603491678-1">[</span><span class="ss">start</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4603491678-2">{</span><span class="ss">increment</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="4603491678-2">}</span><span class="p">,</span><span class="w"> </span><span class="ss">stop</span><span class="p" data-group-id="4603491678-1">]</span><span class="p">,</span><span class="w">
+</span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">send_batch_events</span><span class="p" data-group-id="4603491678-3">(</span><span class="n">FSMPid</span><span class="p">,</span><span class="w"> </span><span class="n">Events</span><span class="p" data-group-id="4603491678-3">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="send_event/2">
@@ -1191,7 +1191,7 @@ event sends when processing large numbers of events.</p><h2 id="send_batch_event
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">send_event</span><span class="p" data-group-id="1711791652-1">(</span><span class="n">FSMPid</span><span class="p">,</span><span class="w"> </span><span class="ss">start</span><span class="p" data-group-id="1711791652-1">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">send_event</span><span class="p" data-group-id="4618619059-1">(</span><span class="n">FSMPid</span><span class="p">,</span><span class="w"> </span><span class="ss">start</span><span class="p" data-group-id="4618619059-1">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="send_event/3">
@@ -1229,7 +1229,7 @@ event sends when processing large numbers of events.</p><h2 id="send_batch_event
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">send_event</span><span class="p" data-group-id="3655054506-1">(</span><span class="n">FSMPid</span><span class="p">,</span><span class="w"> </span><span class="ss">button_pressed</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3655054506-2">#{</span><span class="ss">button</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">ok</span><span class="p" data-group-id="3655054506-2">}</span><span class="p" data-group-id="3655054506-1">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">send_event</span><span class="p" data-group-id="5934266670-1">(</span><span class="n">FSMPid</span><span class="p">,</span><span class="w"> </span><span class="ss">button_pressed</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5934266670-2">#{</span><span class="ss">button</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">ok</span><span class="p" data-group-id="5934266670-2">}</span><span class="p" data-group-id="5934266670-1">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="send_message/2">
@@ -1307,7 +1307,7 @@ event sends when processing large numbers of events.</p><h2 id="send_batch_event
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">set_timeout</span><span class="p" data-group-id="0357029008-1">(</span><span class="n">FSMPid</span><span class="p">,</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span><span class="w"> </span><span class="ss">timeout_expired</span><span class="p" data-group-id="0357029008-1">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">set_timeout</span><span class="p" data-group-id="8919340585-1">(</span><span class="n">FSMPid</span><span class="p">,</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span><span class="w"> </span><span class="ss">timeout_expired</span><span class="p" data-group-id="8919340585-1">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="spawn_fsm/1">
@@ -1405,7 +1405,7 @@ event sends when processing large numbers of events.</p><h2 id="send_batch_event
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="9075413429-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">FSM</span><span class="p" data-group-id="9075413429-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">start_fsm</span><span class="p" data-group-id="9075413429-2">(</span><span class="ss">counter</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9075413429-3">#{</span><span class="ss">count</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="9075413429-3">}</span><span class="p" data-group-id="9075413429-2">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4264614074-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">FSM</span><span class="p" data-group-id="4264614074-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">start_fsm</span><span class="p" data-group-id="4264614074-2">(</span><span class="ss">counter</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4264614074-3">#{</span><span class="ss">count</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="4264614074-3">}</span><span class="p" data-group-id="4264614074-2">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="start_fsm/3">
@@ -1443,7 +1443,7 @@ event sends when processing large numbers of events.</p><h2 id="send_batch_event
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="9767115024-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">FSM</span><span class="p" data-group-id="9767115024-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">start_fsm</span><span class="p" data-group-id="9767115024-2">(</span><span class="ss">traffic_light</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9767115024-3">#{</span><span class="p" data-group-id="9767115024-3">}</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9767115024-4">[</span><span class="p" data-group-id="9767115024-4">]</span><span class="p" data-group-id="9767115024-2">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="8368131514-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">FSM</span><span class="p" data-group-id="8368131514-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">start_fsm</span><span class="p" data-group-id="8368131514-2">(</span><span class="ss">traffic_light</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8368131514-3">#{</span><span class="p" data-group-id="8368131514-3">}</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8368131514-4">[</span><span class="p" data-group-id="8368131514-4">]</span><span class="p" data-group-id="8368131514-2">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="stop_fsm/1">
@@ -1481,7 +1481,7 @@ event sends when processing large numbers of events.</p><h2 id="send_batch_event
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">stop_fsm</span><span class="p" data-group-id="0736750263-1">(</span><span class="n">FSMPid</span><span class="p" data-group-id="0736750263-1">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="ss">ok</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">stop_fsm</span><span class="p" data-group-id="6135647071-1">(</span><span class="n">FSMPid</span><span class="p" data-group-id="6135647071-1">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="terminate/2">
@@ -1539,7 +1539,7 @@ event sends when processing large numbers of events.</p><h2 id="send_batch_event
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">unregister_fsm_type</span><span class="p" data-group-id="8072096526-1">(</span><span class="ss">old_counter</span><span class="p" data-group-id="8072096526-1">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_fsm_runtime</span><span class="p">:</span><span class="nf">unregister_fsm_type</span><span class="p" data-group-id="4924252508-1">(</span><span class="ss">old_counter</span><span class="p" data-group-id="4924252508-1">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 
