@@ -108,24 +108,27 @@ module Std.List do
       _ -> nth(tail(list), Pred(index), default)
     end
 
-  # def take(list: List(T), n: Int): List(T) =
-  #   match n do
-  #     0 ->
-  #       match list do
-  #         [] -> []
-  #         [h | t] -> [h | take(t, n - 1)]
-  #       end
-  #     _ -> []
-  #   end
+  def take(list: List(T), n: Nat): List(T) =
+    match n do
+      0 ->
+        []
+      _ ->
+        match list do
+          [] -> []
+          [h | t] -> [h | take(t, Pred(n))]
+        end
+    end
 
-  # def drop(list: List(T), n: Int): List(T) =
-  #   if n <= 0 then list
-  #   else
-  #     match list do
-  #       [] -> []
-  #       [_ | t] -> drop(t, n - 1)
-  #     end
-  #  end
+  def drop(list: List(T), n: Nat): List(T) =
+    match n do
+      0 ->
+        list
+      _ ->
+        match list do
+          [] -> []
+          [_ | t] -> drop(t, Pred(n))
+        end
+   end
 
   # Simple predicates
   def contains(list: List(T), element: T): Bool =

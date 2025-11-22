@@ -291,6 +291,14 @@ get_function_type('Std.List', contains, 2) ->
                 {primitive_type, 'T'}
             ],
             {primitive_type, 'Bool'}}};
+get_function_type('Std.List', drop, 2) ->
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {primitive_type, 'Nat'}
+            ],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.List', filter, 2) ->
     {ok,
         {function_type,
@@ -356,6 +364,14 @@ get_function_type('Std.List', tail, 1) ->
     {ok,
         {function_type,
             [{dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}],
+            {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
+get_function_type('Std.List', take, 2) ->
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]},
+                {primitive_type, 'Nat'}
+            ],
             {dependent_type, 'List', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.List', zip_with, 3) ->
     {ok,
@@ -817,6 +833,7 @@ all_signatures() ->
         {'Std.List', concat, 1},
         {'Std.List', cons, 2},
         {'Std.List', contains, 2},
+        {'Std.List', drop, 2},
         {'Std.List', filter, 2},
         {'Std.List', fold, 3},
         {'Std.List', head, 2},
@@ -826,6 +843,7 @@ all_signatures() ->
         {'Std.List', nth, 3},
         {'Std.List', reverse, 2},
         {'Std.List', tail, 1},
+        {'Std.List', take, 2},
         {'Std.List', zip_with, 3},
         {'Std.Math', abs, 1},
         {'Std.Math', add, 2},

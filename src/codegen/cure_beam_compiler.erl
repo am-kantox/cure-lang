@@ -539,20 +539,85 @@ compile_guard_check([CheckType], Context) ->
     case pop_stack(Context) of
         {_GuardResult, NewContext} ->
             Line = NewContext#compile_context.line,
-            % For now, we'll assume guard checks always pass at runtime
-            % In a full implementation, this would generate proper guard validation
+            % Guard check is only used in single-clause functions with embedded guards
+            % For multi-clause functions, guards are handled separately in compile_guard_instructions_to_guards
             case CheckType of
                 function_clause_error ->
                     % This is a guard that should cause function_clause error if it fails
-                    % For dependent types, we'll assume the type system has validated this
-                    PlaceholderForm = {atom, Line, guard_passed},
+                    % For now, we'll assume the guard was validated at compile time
+                    PlaceholderForm = {atom, Line, ok},
                     {ok, [], push_stack(PlaceholderForm, NewContext)};
                 _ ->
-                    PlaceholderForm = {atom, Line, guard_passed},
+                    PlaceholderForm = {atom, Line, ok},
                     {ok, [], push_stack(PlaceholderForm, NewContext)}
             end;
         Error ->
             Error
+    end.
+
+%% Compile guard instructions to Erlang guard expressions
+%% This converts Cure guard BEAM instructions to proper Erlang guard abstract forms
+compile_guard_instructions_to_guards(GuardInstructions, Context) ->
+    % Filter out the guard_check instruction and compile the rest
+    FilteredInstructions = lists:filter(
+        fun(#beam_instr{op = Op}) -> Op =/= guard_check end,
+        GuardInstructions
+    ),
+
+    case compile_guard_instructions_to_guard_exprs(FilteredInstructions, Context, []) of
+        {ok, GuardExprs} ->
+            {ok, GuardExprs};
+        {error, Reason} ->
+            {error, Reason}
+    end.
+
+%% Convert guard instructions to guard expressions (accumulator-based)
+compile_guard_instructions_to_guard_exprs([], _Context, Acc) ->
+    % Return the guards in the correct order
+    {ok, lists:reverse(Acc)};
+compile_guard_instructions_to_guard_exprs(
+    [#beam_instr{op = Op, args = Args, location = Location} | Rest],
+    Context,
+    Acc
+) ->
+    Line = get_line_from_location(Location, Context#compile_context.line),
+
+    case Op of
+        load_literal ->
+            [Value] = Args,
+            Form = compile_value_to_form(Value, Line),
+            compile_guard_instructions_to_guard_exprs(Rest, Context, [Form | Acc]);
+        load_param ->
+            [ParamName] = Args,
+            case maps:get(ParamName, Context#compile_context.variables, undefined) of
+                undefined ->
+                    {error, {undefined_parameter_in_guard, ParamName}};
+                VarForm ->
+                    compile_guard_instructions_to_guard_exprs(Rest, Context, [VarForm | Acc])
+            end;
+        guard_bif ->
+            [GuardOp | _BifArgs] = Args,
+            % Get the number of arguments for this BIF
+            Arity = length(Acc),
+            GuardArgs = lists:sublist(Acc, min(Arity, 2)),
+            RestAcc = lists:nthtail(min(Arity, 2), Acc),
+
+            % Build guard expression
+            GuardExpr =
+                case length(GuardArgs) of
+                    2 ->
+                        [Right, Left] = GuardArgs,
+                        compile_guard_bif_op(GuardOp, [Left, Right], Line);
+                    1 ->
+                        [Operand] = GuardArgs,
+                        {call, Line, {atom, Line, GuardOp}, [Operand]};
+                    _ ->
+                        {call, Line, {atom, Line, GuardOp}, GuardArgs}
+                end,
+
+            compile_guard_instructions_to_guard_exprs(Rest, Context, [GuardExpr | RestAcc]);
+        _ ->
+            {error, {unsupported_guard_instruction, Op}}
     end.
 
 %% Compile specific guard BIF operations
@@ -988,9 +1053,14 @@ compile_multiple_clauses(
             [] ->
                 [];
             _ ->
-                % For now, guards are not fully supported in this path
-                % Guards would need special compilation - placeholder for future implementation
-                []
+                % Compile guard instructions to Erlang guard expressions
+                case compile_guard_instructions_to_guards(GuardInstructions, Context) of
+                    {ok, GuardExprs} ->
+                        % Guards in Erlang clauses are [[Guard1, Guard2, ...]] (list of guard sequences)
+                        [GuardExprs];
+                    {error, Reason} ->
+                        throw({guard_compilation_failed, Reason, CurrentLine})
+                end
         end,
 
     % Compile body
@@ -1001,14 +1071,14 @@ compile_multiple_clauses(
             compile_multiple_clauses(
                 Rest, CurrentLine + 5, ModuleName, LocalFunctions, ImportedFunctions, [Clause | Acc]
             );
-        {error, Reason} ->
+        {error, BodyCompilationReason} ->
             % Extract location from first clause if available
             Loc =
                 case ClauseInfo of
                     #{location := L} -> L;
                     _ -> #location{line = CurrentLine, column = 0}
                 end,
-            throw({clause_compilation_failed, Reason, Loc})
+            throw({clause_compilation_failed, BodyCompilationReason, Loc})
     end.
 
 %% Tagged tuple matching (for records like Ok(value), Error(msg))

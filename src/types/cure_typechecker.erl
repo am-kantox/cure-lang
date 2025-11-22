@@ -879,7 +879,7 @@ check_single_clause_function(
             end,
 
         % Check and process constraint if present
-        FinalEnv =
+        EnvAfterConstraintCheck =
             case Constraint of
                 undefined ->
                     EnvWithTypeclass;
@@ -904,6 +904,18 @@ check_single_clause_function(
                         {error, Reason} ->
                             throw({constraint_inference_failed, Reason, Location})
                     end
+            end,
+
+        % Phase 3: Apply guard refinements for flow-sensitive typing
+        FinalEnv =
+            case Constraint of
+                undefined ->
+                    EnvAfterConstraintCheck;
+                _ ->
+                    % Narrow parameter types based on guard constraints
+                    cure_guard_refinement:apply_guard_refinements(
+                        EnvAfterConstraintCheck, Params, Constraint
+                    )
             end,
 
         % Check function body with constraint-enhanced environment
@@ -990,11 +1002,46 @@ check_single_clause_function(
             {ok, Env, error_result(ThrownError)}
     end.
 
-%% Check multi-clause function
+%% Check multi-clause function with Phase 3 enhancements
 check_multiclause_function(Name, Clauses, Location, Env) ->
     cure_utils:debug("[MULTICLAUSE] Checking ~p clauses for function ~p~n", [
         length(Clauses), Name
     ]),
+
+    % Phase 3: Check for unreachable clauses
+    UnreachableClauses = cure_guard_refinement:detect_unreachable_clauses(Clauses),
+    UnreachableWarnings = lists:map(
+        fun(ClauseIdx) ->
+            #typecheck_warning{
+                message = io_lib:format(
+                    "Clause ~p of function ~p is unreachable (guard subsumed by earlier clauses)",
+                    [ClauseIdx, Name]
+                ),
+                location = Location,
+                details = {unreachable_clause, ClauseIdx}
+            }
+        end,
+        UnreachableClauses
+    ),
+
+    % Phase 3: Check guard coverage
+    CoverageResult = cure_guard_refinement:check_guard_coverage(Clauses, Env),
+    CoverageWarnings =
+        case CoverageResult of
+            complete ->
+                [];
+            {incomplete, _UncoveredCases} ->
+                [
+                    #typecheck_warning{
+                        message = io_lib:format(
+                            "Function ~p may not cover all input cases (no catch-all clause)",
+                            [Name]
+                        ),
+                        location = Location,
+                        details = incomplete_coverage
+                    }
+                ]
+        end,
 
     % Check each clause individually
     ClauseResults = lists:map(
@@ -1028,19 +1075,65 @@ check_multiclause_function(Name, Clauses, Location, Env) ->
         )
     ),
 
+    % Phase 3: Verify return type compatibility across clauses
+    ReturnTypeResult =
+        case ClauseErrors of
+            [] ->
+                % All clauses passed - check return type unification
+                cure_guard_refinement:compute_function_return_type(Clauses, Env);
+            _ ->
+                % Skip return type check if clauses have errors
+                {error, has_clause_errors}
+        end,
+
+    ReturnTypeErrors =
+        case ReturnTypeResult of
+            {ok, _UnifiedReturnType} ->
+                [];
+            {error, has_clause_errors} ->
+                [];
+            {error, {clause_inference_failed, InferErrors}} ->
+                lists:map(
+                    fun({error, Reason}) ->
+                        #typecheck_error{
+                            message = "Failed to infer return type for clause",
+                            location = Location,
+                            details = Reason
+                        }
+                    end,
+                    InferErrors
+                );
+            {error, OtherReason} ->
+                [
+                    #typecheck_error{
+                        message = "Failed to unify return types across clauses",
+                        location = Location,
+                        details = OtherReason
+                    }
+                ]
+        end,
+
+    AllErrors = ClauseErrors ++ ReturnTypeErrors,
+    AllWarnings = UnreachableWarnings ++ CoverageWarnings,
+
     % If all clauses pass, the function signature was already added during signature collection
-    case ClauseErrors of
+    case AllErrors of
         [] ->
             % All clauses type-checked successfully
             % The function signature with union types was already added to Env
-            {ok, Env, success_result({multiclause_function, Name})};
+            {ok, Env, #typecheck_result{
+                success = true,
+                type = {multiclause_function, Name},
+                errors = [],
+                warnings = AllWarnings
+            }};
         Errors ->
             % Some clauses failed
             {ok, Env, #typecheck_result{
                 success = false,
                 type = undefined,
                 errors = Errors,
-                warnings = []
+                warnings = AllWarnings
             }}
     end.
 
