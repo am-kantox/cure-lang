@@ -2,7 +2,7 @@
 
 **Based on**: Actual Cure implementation (Standard Library v1.0)  
 **Purpose**: Reference for creating correct Cure examples  
-**Last Updated**: October 30, 2025
+**Last Updated**: November 22, 2025
 
 ---
 
@@ -162,6 +162,52 @@ let add = fn(x, y) -> x + y end
 let partial_func = func(h)
 partial_func(fold(t, init, func))
 ```
+
+### Function Guards ✅
+
+Function-level guards use `when` clauses to specify preconditions:
+
+```cure
+# Basic guard
+def is_positive(x: Int): Bool when x > 0 = true
+def is_positive(_x: Int): Bool = false
+
+# Multi-clause with guards
+def abs(x: Int): Int when x >= 0 = x
+def abs(x: Int): Int = 0 - x
+
+# Sign function with complete coverage
+def sign(x: Int): Int when x > 0 = 1
+def sign(x: Int): Int when x == 0 = 0
+def sign(x: Int): Int = -1
+
+# Guards with AND
+def in_range(x: Int, min: Int, max: Int): Bool 
+  when x >= min and x <= max = true
+def in_range(_x: Int, _min: Int, _max: Int): Bool = false
+
+# Guards with OR
+def is_extreme(x: Int): Bool 
+  when x > 100 or x < -100 = true
+def is_extreme(_x: Int): Bool = false
+
+# Real-world example: tax brackets
+def tax_rate(income: Int): Float when income <= 10000 = 0.0
+def tax_rate(income: Int): Float 
+  when income > 10000 and income <= 40000 = 0.1
+def tax_rate(income: Int): Float 
+  when income > 40000 and income <= 100000 = 0.2
+def tax_rate(_income: Int): Float = 0.3
+```
+
+**Guard Features**:
+- Comparison operators: `>`, `<`, `>=`, `<=`, `==`, `!=`
+- Logical operators: `and`, `or`
+- Type refinement: Guards narrow types in function bodies
+- SMT verification: Completeness and consistency checking
+- Coverage analysis: Detects unreachable clauses
+
+**See**: `examples/06_comprehensive_guards_demo.cure` for complete examples
 
 ---
 

@@ -236,6 +236,7 @@ Cure provides comprehensive support for a dependently-typed functional programmi
 
 ✅ **Fully Supported**
 - Function definitions with dependent types and constraints
+- **Function-level guards** with `when` clauses on function definitions
 - **Multi-clause functions** with automatic union type derivation (Erlang-style pattern matching)
 - Module definitions with exports and imports
 - **Record types** with named fields and type parameters
@@ -243,7 +244,8 @@ Cure provides comprehensive support for a dependently-typed functional programmi
 - Dependent types with refinement and constraint solving
 - Type classes and instances with automatic derivation
 - Pattern matching including dependent patterns
-- **Pattern guards** with `when` keyword and logical operators (and, or)
+- **Pattern guards** with `when` keyword in match expressions
+- **Guard sequences** with logical operators (and, or)
 - Let bindings and where clauses
 - Conditional expressions and guards
 - Higher-order functions and closures
@@ -382,6 +384,14 @@ The `examples/` directory contains working Cure programs demonstrating key featu
   - Logical operators (and, or)
   - Guards with record patterns
   - Complex multi-condition guards
+
+- **06_comprehensive_guards_demo.cure** - Complete function guards demonstration
+  - Function-level guards with `when` clauses
+  - Multi-clause functions with guards
+  - Guard sequences (AND/OR combinations)
+  - Type refinement examples
+  - Real-world applications (tax brackets, discounts, shipping)
+  - SMT-verified guard completeness
 
 - **06_fsm_traffic_light.cure** - Finite State Machine implementation
   - FSM definition with record payload
