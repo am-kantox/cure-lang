@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-3ABA2D2B.js"></script>
+    <script src="dist/sidebar_items-DC6CD34D.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -121,7 +121,7 @@ Pages
     <span>Cure Language Syntax Guide</span>
   </h1>
 
-<p><strong>Based on</strong>: Actual Cure implementation (Standard Library v1.0)<br/><strong>Purpose</strong>: Reference for creating correct Cure examples<br/><strong>Last Updated</strong>: October 30, 2025</p><hr class="thin"/><h2 id="1-module-structure" class="section-heading">
+<p><strong>Based on</strong>: Actual Cure implementation (Standard Library v1.0)<br/><strong>Purpose</strong>: Reference for creating correct Cure examples<br/><strong>Last Updated</strong>: November 22, 2025</p><hr class="thin"/><h2 id="1-module-structure" class="section-heading">
   <a href="#1-module-structure" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -250,7 +250,42 @@ let add = fn(x, y) -&gt; x + y end
 
 # Curried function application
 let partial_func = func(h)
-partial_func(fold(t, init, func))</code></pre><hr class="thin"/><h2 id="5-pattern-matching" class="section-heading">
+partial_func(fold(t, init, func))</code></pre><h3 id="function-guards" class="section-heading">
+  <a href="#function-guards" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function Guards ✅</span>
+</h3>
+<p>Function-level guards use <code class="inline">when</code> clauses to specify preconditions:</p><pre><code class="cure"># Basic guard
+def is_positive(x: Int): Bool when x &gt; 0 = true
+def is_positive(_x: Int): Bool = false
+
+# Multi-clause with guards
+def abs(x: Int): Int when x &gt;= 0 = x
+def abs(x: Int): Int = 0 - x
+
+# Sign function with complete coverage
+def sign(x: Int): Int when x &gt; 0 = 1
+def sign(x: Int): Int when x == 0 = 0
+def sign(x: Int): Int = -1
+
+# Guards with AND
+def in_range(x: Int, min: Int, max: Int): Bool 
+  when x &gt;= min and x &lt;= max = true
+def in_range(_x: Int, _min: Int, _max: Int): Bool = false
+
+# Guards with OR
+def is_extreme(x: Int): Bool 
+  when x &gt; 100 or x &lt; -100 = true
+def is_extreme(_x: Int): Bool = false
+
+# Real-world example: tax brackets
+def tax_rate(income: Int): Float when income &lt;= 10000 = 0.0
+def tax_rate(income: Int): Float 
+  when income &gt; 10000 and income &lt;= 40000 = 0.1
+def tax_rate(income: Int): Float 
+  when income &gt; 40000 and income &lt;= 100000 = 0.2
+def tax_rate(_income: Int): Float = 0.3</code></pre><p><strong>Guard Features</strong>:</p><ul><li>Comparison operators: <code class="inline">&gt;</code>, <code class="inline">&lt;</code>, <code class="inline">&gt;=</code>, <code class="inline">&lt;=</code>, <code class="inline">==</code>, <code class="inline">!=</code></li><li>Logical operators: <code class="inline">and</code>, <code class="inline">or</code></li><li>Type refinement: Guards narrow types in function bodies</li><li>SMT verification: Completeness and consistency checking</li><li>Coverage analysis: Detects unreachable clauses</li></ul><p><strong>See</strong>: <code class="inline">examples/06_comprehensive_guards_demo.cure</code> for complete examples</p><hr class="thin"/><h2 id="5-pattern-matching" class="section-heading">
   <a href="#5-pattern-matching" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>

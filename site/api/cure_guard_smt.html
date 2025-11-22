@@ -8,7 +8,7 @@
     <meta name="project" content="cure v0.4.0">
 
 
-    <title>cure_guard_codegen — cure v0.4.0</title>
+    <title>cure_guard_smt — cure v0.4.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -112,57 +112,62 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/codegen/cure_guard_codegen.erl#L1" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_smt.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
-    <span translate="no">cure_guard_codegen</span> 
+    <span translate="no">cure_guard_smt</span> 
     <small class="app-vsn" translate="no">(cure v0.4.0)</small>
 
   </h1>
 
 
     <section id="moduledoc">
-<h1>Guard Validation Code Generation</h1><p>This module generates runtime validation code for dependent type guards.
-It translates guard constraints into executable BEAM code that validates
-values against dependent type requirements.</p><h2 id="module-features" class="section-heading">
+<h1>Enhanced SMT Guard Verification</h1><p>Phase 4 enhancement for guard analysis using Z3 SMT solver.</p><h2 id="module-features" class="section-heading">
   <a href="#module-features" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Features</span>
 </h2>
-<ul><li><strong>Dependent Type Validation</strong>: Generate checks for dependent type constraints</li><li><strong>Optimized Code</strong>: Efficient guard code with minimal runtime overhead</li><li><strong>SMT Integration</strong>: Use SMT solver results to optimize guard checks</li><li><strong>Error Reporting</strong>: Generate informative error messages for failed guards</li></ul><h2 id="module-guard-types" class="section-heading">
-  <a href="#module-guard-types" class="hover-link">
+<h3 id="module-guard-completeness-verification" class="section-heading">
+  <a href="#module-guard-completeness-verification" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
-  <span class="text">Guard Types</span>
+  <span class="text">Guard Completeness Verification</span>
+</h3>
+<p>Prove that guards cover all possible input cases:</p><pre><code class="cure">def abs(x: Int): Int when x &gt;= 0 = x
+def abs(x: Int): Int when x &lt; 0 = -x
+% SMT proves: ∀x. (x &gt;= 0) ∨ (x &lt; 0)  ✅ Complete</code></pre><h3 id="module-counterexample-generation" class="section-heading">
+  <a href="#module-counterexample-generation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Counterexample Generation</span>
+</h3>
+<p>Find inputs not covered by any guard:</p><pre><code class="cure">def sign(x: Int): Int when x &gt; 0 = 1
+def sign(x: Int): Int when x &lt; 0 = -1
+% SMT finds: x = 0 is uncovered  ⚠️</code></pre><h3 id="module-guard-consistency-verification" class="section-heading">
+  <a href="#module-guard-consistency-verification" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Guard Consistency Verification</span>
+</h3>
+<p>Detect contradictory or unreachable guards:</p><pre><code class="cure">def foo(x: Int): Int when x &gt; 0 and x &lt; 0 = 1
+% SMT proves: ∀x. ¬(x &gt; 0 ∧ x &lt; 0)  ❌ Inconsistent</code></pre><h3 id="module-subsumption-detection" class="section-heading">
+  <a href="#module-subsumption-detection" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Subsumption Detection</span>
+</h3>
+<p>Find guards subsumed by earlier guards:</p><pre><code class="cure">def foo(x: Int): Int when x &gt; 0 = x
+def foo(x: Int): Int when x &gt; 5 = x * 2
+% SMT proves: (x &gt; 5) ⊆ (x &gt; 0)  ⚠️ Clause 2 unreachable</code></pre><h2 id="module-smt-integration" class="section-heading">
+  <a href="#module-smt-integration" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">SMT Integration</span>
 </h2>
-<h3 id="module-numeric-constraints" class="section-heading">
-  <a href="#module-numeric-constraints" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Numeric Constraints</span>
-</h3>
-<pre><code class="cure">Vector(T, n: Nat) when n &gt; 0</code></pre><p>Generates: Runtime check that n &gt; 0</p><h3 id="module-refinement-types" class="section-heading">
-  <a href="#module-refinement-types" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Refinement Types</span>
-</h3>
-<pre><code class="cure">NonEmpty(T) = List(T, n) when n &gt; 0</code></pre><p>Generates: Length check for lists</p><h3 id="module-complex-constraints" class="section-heading">
-  <a href="#module-complex-constraints" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Complex Constraints</span>
-</h3>
-<pre><code class="cure">Matrix(T, rows: Nat, cols: Nat) when rows &gt; 0 and cols &gt; 0</code></pre><p>Generates: Multiple validation checks</p><h2 id="module-code-generation-strategy" class="section-heading">
-  <a href="#module-code-generation-strategy" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Code Generation Strategy</span>
-</h2>
-<ol><li><strong>Static Analysis</strong>: Use SMT solver to prove constraints at compile time</li><li><strong>Runtime Guards</strong>: Generate checks for constraints that can't be proven</li><li><strong>Optimization</strong>: Eliminate redundant checks through dataflow analysis</li><li><strong>Caching</strong>: Cache validation results for expensive computations</li></ol>
+<p>Uses Z3 via the <code class="inline">cure_smt_process</code> module:</p><ul><li>Generates SMT-LIB 2.0 queries</li><li>Handles integer and boolean constraints</li><li>Provides counterexamples when available</li></ul>
     </section>
 
 </div>
@@ -195,7 +200,7 @@ values against dependent type requirements.</p><h2 id="module-features" class="s
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#clear_proof_cache/0" data-no-tooltip translate="no">clear_proof_cache()</a>
+        <a href="#check_guard_satisfiability/1" data-no-tooltip translate="no">check_guard_satisfiability(Guard)</a>
 
       </div>
 
@@ -203,7 +208,7 @@ values against dependent type requirements.</p><h2 id="module-features" class="s
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#compile_constraint/2" data-no-tooltip translate="no">compile_constraint(Constraint, Env)</a>
+        <a href="#find_subsumed_clauses/1" data-no-tooltip translate="no">find_subsumed_clauses(Clauses)</a>
 
       </div>
 
@@ -211,7 +216,7 @@ values against dependent type requirements.</p><h2 id="module-features" class="s
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#generate_guard/2" data-no-tooltip translate="no">generate_guard(Constraint, Env)</a>
+        <a href="#find_uncovered_inputs/2" data-no-tooltip translate="no">find_uncovered_inputs(Clauses, TypeEnv)</a>
 
       </div>
 
@@ -219,7 +224,7 @@ values against dependent type requirements.</p><h2 id="module-features" class="s
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#generate_guard/3" data-no-tooltip translate="no">generate_guard(Constraint, Env, Opts)</a>
+        <a href="#format_counterexample/1" data-no-tooltip translate="no">format_counterexample/1</a>
 
       </div>
 
@@ -227,7 +232,7 @@ values against dependent type requirements.</p><h2 id="module-features" class="s
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#generate_validation_function/3" data-no-tooltip translate="no">generate_validation_function(TypeName, Params, Constraint)</a>
+        <a href="#generate_completeness_query/2" data-no-tooltip translate="no">generate_completeness_query(Guards, TypeEnv)</a>
 
       </div>
 
@@ -235,7 +240,47 @@ values against dependent type requirements.</p><h2 id="module-features" class="s
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#optimize_guard/2" data-no-tooltip translate="no">optimize_guard(GuardAST, Env)</a>
+        <a href="#generate_consistency_query/1" data-no-tooltip translate="no">generate_consistency_query(Guard)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#generate_counterexample/2" data-no-tooltip translate="no">generate_counterexample/2</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#generate_subsumption_query/2" data-no-tooltip translate="no">generate_subsumption_query(Guard1, Guard2)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#verify_guard_completeness/2" data-no-tooltip translate="no">verify_guard_completeness(Clauses, TypeEnv)</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#verify_guard_consistency/1" data-no-tooltip translate="no">verify_guard_consistency/1</a>
+
+      </div>
+
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-signature">
+        <a href="#verify_guard_subsumption/2" data-no-tooltip translate="no">verify_guard_subsumption(Guard1, Guard2)</a>
 
       </div>
 
@@ -321,35 +366,15 @@ values against dependent type requirements.</p><h2 id="module-features" class="s
       <span class="text">Functions</span>
     </h1>
     <div class="functions-list">
-<section class="detail" id="clear_proof_cache/0">
+<section class="detail" id="check_guard_satisfiability/1">
 
   <div class="detail-header">
-    <a href="#clear_proof_cache/0" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#check_guard_satisfiability/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">clear_proof_cache()</h1>
+    <h1 class="signature" translate="no">check_guard_satisfiability(Guard)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/codegen/cure_guard_codegen.erl#L650" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-
-  </section>
-</section>
-<section class="detail" id="compile_constraint/2">
-
-  <div class="detail-header">
-    <a href="#compile_constraint/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">compile_constraint(Constraint, Env)</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/codegen/cure_guard_codegen.erl#L117" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_smt.erl#L174" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -360,22 +385,22 @@ values against dependent type requirements.</p><h2 id="module-features" class="s
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> compile_constraint(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/syntax_tools/erl_syntax.html#t:syntaxTree/0">erl_syntax:syntaxTree</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> check_guard_satisfiability(<a href="#t:expr/0">expr</a>()) -> {satisfiable, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} | unsatisfiable | unknown.</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="generate_guard/2">
+<section class="detail" id="find_subsumed_clauses/1">
 
   <div class="detail-header">
-    <a href="#generate_guard/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#find_subsumed_clauses/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">generate_guard(Constraint, Env)</h1>
+    <h1 class="signature" translate="no">find_subsumed_clauses(Clauses)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/codegen/cure_guard_codegen.erl#L60" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_smt.erl#L223" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -386,22 +411,27 @@ values against dependent type requirements.</p><h2 id="module-features" class="s
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> generate_guard(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/syntax_tools/erl_syntax.html#t:syntaxTree/0">erl_syntax:syntaxTree</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> find_subsumed_clauses([#function_clause{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                              return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                              constraint :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                              body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                              location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}]) ->
+                               [{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>()}].</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="generate_guard/3">
+<section class="detail" id="find_uncovered_inputs/2">
 
   <div class="detail-header">
-    <a href="#generate_guard/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#find_uncovered_inputs/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">generate_guard(Constraint, Env, Opts)</h1>
+    <h1 class="signature" translate="no">find_uncovered_inputs(Clauses, TypeEnv)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/codegen/cure_guard_codegen.erl#L65" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_smt.erl#L142" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -412,22 +442,28 @@ values against dependent type requirements.</p><h2 id="module-features" class="s
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> generate_guard(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/syntax_tools/erl_syntax.html#t:syntaxTree/0">erl_syntax:syntaxTree</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> find_uncovered_inputs([#function_clause{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                              return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                              constraint :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                              body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                              location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}],
+                            <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) ->
+                               [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()].</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="generate_validation_function/3">
+<section class="detail" id="format_counterexample/1">
 
   <div class="detail-header">
-    <a href="#generate_validation_function/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#format_counterexample/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">generate_validation_function(TypeName, Params, Constraint)</h1>
+    <h1 class="signature" translate="no">format_counterexample/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/codegen/cure_guard_codegen.erl#L81" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_smt.erl#L298" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -438,25 +474,22 @@ values against dependent type requirements.</p><h2 id="module-features" class="s
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> generate_validation_function(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
-                                   [#param{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}],
-                                   <a href="#t:expr/0">expr</a>()) ->
-                                      {ok, <a href="https://www.erlang.org/doc/apps/syntax_tools/erl_syntax.html#t:syntaxTree/0">erl_syntax:syntaxTree</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> format_counterexample(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="optimize_guard/2">
+<section class="detail" id="generate_completeness_query/2">
 
   <div class="detail-header">
-    <a href="#optimize_guard/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#generate_completeness_query/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">optimize_guard(GuardAST, Env)</h1>
+    <h1 class="signature" translate="no">generate_completeness_query(Guards, TypeEnv)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/codegen/cure_guard_codegen.erl#L108" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_smt.erl#L315" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -467,7 +500,169 @@ values against dependent type requirements.</p><h2 id="module-features" class="s
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> optimize_guard(<a href="https://www.erlang.org/doc/apps/syntax_tools/erl_syntax.html#t:syntaxTree/0">erl_syntax:syntaxTree</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> <a href="https://www.erlang.org/doc/apps/syntax_tools/erl_syntax.html#t:syntaxTree/0">erl_syntax:syntaxTree</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> generate_completeness_query([<a href="#t:expr/0">expr</a>()], <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:iolist/0">iolist</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="generate_consistency_query/1">
+
+  <div class="detail-header">
+    <a href="#generate_consistency_query/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_consistency_query(Guard)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_smt.erl#L372" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_consistency_query(<a href="#t:expr/0">expr</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:iolist/0">iolist</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="generate_counterexample/2">
+
+  <div class="detail-header">
+    <a href="#generate_counterexample/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_counterexample/2</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_smt.erl#L267" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_counterexample([<a href="#t:expr/0">expr</a>()], <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()].</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="generate_subsumption_query/2">
+
+  <div class="detail-header">
+    <a href="#generate_subsumption_query/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">generate_subsumption_query(Guard1, Guard2)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_smt.erl#L351" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> generate_subsumption_query(<a href="#t:expr/0">expr</a>(), <a href="#t:expr/0">expr</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:iolist/0">iolist</a>().</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="verify_guard_completeness/2">
+
+  <div class="detail-header">
+    <a href="#verify_guard_completeness/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">verify_guard_completeness(Clauses, TypeEnv)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_smt.erl#L84" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> verify_guard_completeness([#function_clause{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  constraint :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}],
+                                <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) ->
+                                   {complete, []} | {incomplete, [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]}.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="verify_guard_consistency/1">
+
+  <div class="detail-header">
+    <a href="#verify_guard_consistency/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">verify_guard_consistency/1</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_smt.erl#L162" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> verify_guard_consistency(<a href="#t:expr/0">expr</a>()) -> consistent | inconsistent | unknown.</pre>
+
+      </div>
+
+
+  </section>
+</section>
+<section class="detail" id="verify_guard_subsumption/2">
+
+  <div class="detail-header">
+    <a href="#verify_guard_subsumption/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+    </a>
+    <h1 class="signature" translate="no">verify_guard_subsumption(Guard1, Guard2)</h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_smt.erl#L199" class="icon-action" rel="help" aria-label="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">-spec</span> verify_guard_subsumption(<a href="#t:expr/0">expr</a>(), <a href="#t:expr/0">expr</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>() | unknown.</pre>
 
       </div>
 

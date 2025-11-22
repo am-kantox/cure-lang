@@ -8,7 +8,7 @@
     <meta name="project" content="cure v0.4.0">
 
 
-    <title>cure_refinement_types — cure v0.4.0</title>
+    <title>cure_guard_refinement — cure v0.4.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -112,40 +112,61 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
-    <span translate="no">cure_refinement_types</span> 
+    <span translate="no">cure_guard_refinement</span> 
     <small class="app-vsn" translate="no">(cure v0.4.0)</small>
 
   </h1>
 
 
     <section id="moduledoc">
-<h1>Refinement Types with SMT Verification</h1><p>This module implements refinement types - types augmented with logical predicates
-that are verified at compile-time using the Z3 SMT solver.</p><h2 id="module-refinement-types" class="section-heading">
-  <a href="#module-refinement-types" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Refinement Types</span>
-</h2>
-<p>A refinement type refines a base type with a logical predicate:</p><pre><code class="cure">type Positive = Int when x &gt; 0
-type NonZero = Int when x /= 0
-type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-subtyping" class="section-heading">
-  <a href="#module-subtyping" class="hover-link">
-    <i class="ri-link-m" aria-hidden="true"></i>
-  </a>
-  <span class="text">Subtyping</span>
-</h2>
-<p>Refinement subtyping is verified using SMT:</p><pre><code class="makeup erlang" translate="no"><span class="n">Positive</span><span class="w"> </span><span class="o">&lt;</span><span class="p">:</span><span class="w"> </span><span class="n">NonZero</span><span class="w">   </span><span class="p" data-group-id="3184808459-1">(</span><span class="ss">proven</span><span class="w"> </span><span class="ss">by</span><span class="w"> </span><span class="n">Z3</span><span class="p">:</span><span class="w"> </span><span class="ss">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">x</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="3184808459-1">)</span></code></pre><h2 id="module-features" class="section-heading">
+<h1>Guard-Based Type Refinement</h1><p>This module implements Phase 3 of the guard support implementation:
+type system integration for guard constraints.</p><h2 id="module-features" class="section-heading">
   <a href="#module-features" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Features</span>
 </h2>
-<ul><li>Extract constraints from refinement type definitions</li><li>Verify subtyping relationships via SMT</li><li>Check function preconditions and postconditions</li><li>Propagate constraints through function calls</li><li>Generate counterexamples for constraint violations</li></ul>
+<h3 id="module-guard-constraint-extraction" class="section-heading">
+  <a href="#module-guard-constraint-extraction" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Guard Constraint Extraction</span>
+</h3>
+<p>Extract constraints from function guards and convert them to refinement type predicates:</p><pre><code class="cure">def abs(x: Int): Int when x &gt;= 0 = x
+% Refines x's type to: Int when x &gt;= 0</code></pre><h3 id="module-flow-sensitive-type-narrowing" class="section-heading">
+  <a href="#module-flow-sensitive-type-narrowing" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Flow-Sensitive Type Narrowing</span>
+</h3>
+<p>Within a function body, parameters have their types refined based on the guard:</p><pre><code class="cure">def process(x: Int) when x &gt; 0 = 
+    % Here, x has type: Int when x &gt; 0 (i.e., Positive)
+    requires_positive(x)</code></pre><h3 id="module-cross-clause-type-checking" class="section-heading">
+  <a href="#module-cross-clause-type-checking" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Cross-Clause Type Checking</span>
+</h3>
+<p>Verify that all clauses of a multi-clause function have compatible return types:</p><pre><code class="cure">def abs(x: Int): Int when x &gt;= 0 = x
+def abs(x: Int): Int when x &lt; 0 = -x
+% Return type unifies to: Int</code></pre><h2 id="module-integration" class="section-heading">
+  <a href="#module-integration" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Integration</span>
+</h2>
+<p>This module integrates with:</p><ul><li><code class="inline">cure_refinement_types</code> - For creating refinement type predicates</li><li><code class="inline">cure_typechecker</code> - For enhancing function clause type checking</li><li><code class="inline">cure_guard_optimizer</code> - For guard simplification and SMT encoding</li><li><code class="inline">cure_smt_solver</code> - For constraint verification</li></ul><h2 id="module-implementation-approach" class="section-heading">
+  <a href="#module-implementation-approach" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Implementation Approach</span>
+</h2>
+<ol><li><strong>Extract Guard Constraints</strong>: Parse guard expressions to identify parameter constraints</li><li><strong>Create Refinement Types</strong>: Convert guards to refinement type predicates</li><li><strong>Narrow Parameter Types</strong>: Replace parameter types with refined versions in function body scope</li><li><strong>Unify Return Types</strong>: Compute union type of all clause return types</li><li><strong>Verify Consistency</strong>: Use SMT to check guards are consistent and complete</li></ol>
     </section>
 
 </div>
@@ -172,22 +193,6 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#t:location/0" data-no-tooltip translate="no">location()</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#t:refinement_type/0" data-no-tooltip translate="no">refinement_type()</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
         <a href="#t:type_expr/0" data-no-tooltip translate="no">type_expr()</a>
 
       </div>
@@ -202,7 +207,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#base_type/1" data-no-tooltip translate="no">base_type/1</a>
+        <a href="#apply_guard_refinements/3" data-no-tooltip translate="no">apply_guard_refinements(Env, Params, Guard)</a>
 
       </div>
 
@@ -210,7 +215,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#check_constraint/3" data-no-tooltip translate="no">check_constraint/3</a>
+        <a href="#check_clause_compatibility/2" data-no-tooltip translate="no">check_clause_compatibility(Clause1, Clause2)</a>
 
       </div>
 
@@ -218,7 +223,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#check_subtype/3" data-no-tooltip translate="no">check_subtype(Type1, Type2, Env)</a>
+        <a href="#check_guard_coverage/2" data-no-tooltip translate="no">check_guard_coverage(Clauses, Env)</a>
 
       </div>
 
@@ -226,7 +231,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#create_refinement_type/3" data-no-tooltip translate="no">create_refinement_type(BaseType, Var, Predicate)</a>
+        <a href="#compute_function_return_type/2" data-no-tooltip translate="no">compute_function_return_type(Clauses, Env)</a>
 
       </div>
 
@@ -234,7 +239,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#extract_constraint/1" data-no-tooltip translate="no">extract_constraint/1</a>
+        <a href="#create_refinement_from_guard/3" data-no-tooltip translate="no">create_refinement_from_guard(ParamName, BaseType, Constraints)</a>
 
       </div>
 
@@ -242,7 +247,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#format_refinement_error/1" data-no-tooltip translate="no">format_refinement_error/1</a>
+        <a href="#detect_unreachable_clauses/1" data-no-tooltip translate="no">detect_unreachable_clauses(Clauses)</a>
 
       </div>
 
@@ -250,7 +255,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#generate_counterexample/2" data-no-tooltip translate="no">generate_counterexample/2</a>
+        <a href="#extract_guard_constraints/1" data-no-tooltip translate="no">extract_guard_constraints/1</a>
 
       </div>
 
@@ -258,7 +263,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#is_refinement_type/1" data-no-tooltip translate="no">is_refinement_type/1</a>
+        <a href="#extract_param_constraints/2" data-no-tooltip translate="no">extract_param_constraints(ParamName, Guard)</a>
 
       </div>
 
@@ -266,7 +271,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#propagate_constraints/3" data-no-tooltip translate="no">propagate_constraints(Expr, Env, ConstraintMap)</a>
+        <a href="#find_uncovered_cases/2" data-no-tooltip translate="no">find_uncovered_cases(Clauses, Env)</a>
 
       </div>
 
@@ -274,7 +279,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#refinement_predicate/1" data-no-tooltip translate="no">refinement_predicate/1</a>
+        <a href="#identify_constrained_params/1" data-no-tooltip translate="no">identify_constrained_params(Guard)</a>
 
       </div>
 
@@ -282,7 +287,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#strengthen_type/3" data-no-tooltip translate="no">strengthen_type(BaseType, AdditionalConstraint, Var)</a>
+        <a href="#narrow_param_types_in_body/3" data-no-tooltip translate="no">narrow_param_types_in_body(Env, Params, Guard)</a>
 
       </div>
 
@@ -290,7 +295,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#verify_postcondition/4" data-no-tooltip translate="no">verify_postcondition(ReturnExpr, ReturnType, Env, Location)</a>
+        <a href="#refine_param_type/3" data-no-tooltip translate="no">refine_param_type(ParamName, BaseType, Guard)</a>
 
       </div>
 
@@ -298,7 +303,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#verify_precondition/4" data-no-tooltip translate="no">verify_precondition(ArgExpr, ParamType, Env, Location)</a>
+        <a href="#strengthen_environment/3" data-no-tooltip translate="no">strengthen_environment(Env, ParamName, Constraint)</a>
 
       </div>
 
@@ -306,15 +311,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
     <div class="summary-row">
       <div class="summary-signature">
-        <a href="#verify_subtype_smt/3" data-no-tooltip translate="no">verify_subtype_smt/3</a>
-
-      </div>
-
-    </div>
-
-    <div class="summary-row">
-      <div class="summary-signature">
-        <a href="#weaken_type/2" data-no-tooltip translate="no">weaken_type/2</a>
+        <a href="#unify_clause_return_types/2" data-no-tooltip translate="no">unify_clause_return_types(Clauses, Env)</a>
 
       </div>
 
@@ -388,62 +385,6 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
   </section>
 </section>
-<section class="detail" id="t:location/0">
-
-  <div class="detail-header">
-    <a href="#t:location/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">location()</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/parser/cure_ast.hrl#L497" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">-type</span> location() :: #location{line :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), column :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), file :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
-
-      </div>
-
-
-  </section>
-</section>
-<section class="detail" id="t:refinement_type/0">
-
-  <div class="detail-header">
-    <a href="#t:refinement_type/0" class="detail-link" data-no-tooltip aria-label="Link to this type">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">refinement_type()</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L73" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">-type</span> refinement_type() ::
-          #refinement_type{base_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
-                           variable :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(),
-                           predicate :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
-                           location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
-
-      </div>
-
-
-  </section>
-</section>
 <section class="detail" id="t:type_expr/0">
 
   <div class="detail-header">
@@ -493,15 +434,15 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
       <span class="text">Functions</span>
     </h1>
     <div class="functions-list">
-<section class="detail" id="base_type/1">
+<section class="detail" id="apply_guard_refinements/3">
 
   <div class="detail-header">
-    <a href="#base_type/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#apply_guard_refinements/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">base_type/1</h1>
+    <h1 class="signature" translate="no">apply_guard_refinements(Env, Params, Guard)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L103" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L469" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -512,22 +453,25 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> base_type(<a href="#t:refinement_type/0">refinement_type</a>()) -> <a href="#t:type_expr/0">type_expr</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> apply_guard_refinements(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>(),
+                              [#param{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}],
+                              <a href="#t:expr/0">expr</a>()) ->
+                                 <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>().</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="check_constraint/3">
+<section class="detail" id="check_clause_compatibility/2">
 
   <div class="detail-header">
-    <a href="#check_constraint/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#check_clause_compatibility/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">check_constraint/3</h1>
+    <h1 class="signature" translate="no">check_clause_compatibility(Clause1, Clause2)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L197" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L359" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -538,22 +482,32 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> check_constraint(<a href="#t:expr/0">expr</a>(), <a href="#t:refinement_type/0">refinement_type</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> check_clause_compatibility(#function_clause{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  constraint :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()},
+                                 #function_clause{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  constraint :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}) ->
+                                    compatible | overlapping | unreachable.</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="check_subtype/3">
+<section class="detail" id="check_guard_coverage/2">
 
   <div class="detail-header">
-    <a href="#check_subtype/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#check_guard_coverage/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">check_subtype(Type1, Type2, Env)</h1>
+    <h1 class="signature" translate="no">check_guard_coverage(Clauses, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L116" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L420" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -564,22 +518,28 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> check_subtype(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> check_guard_coverage([#function_clause{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                             return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                             constraint :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                             body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                             location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}],
+                           <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) ->
+                              complete | {incomplete, [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()]}.</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="create_refinement_type/3">
+<section class="detail" id="compute_function_return_type/2">
 
   <div class="detail-header">
-    <a href="#create_refinement_type/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#compute_function_return_type/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">create_refinement_type(BaseType, Var, Predicate)</h1>
+    <h1 class="signature" translate="no">compute_function_return_type(Clauses, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L81" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L410" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -590,22 +550,28 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> create_refinement_type(<a href="#t:type_expr/0">type_expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="#t:expr/0">expr</a>()) -> <a href="#t:refinement_type/0">refinement_type</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> compute_function_return_type([#function_clause{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                     return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                     constraint :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                     body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                     location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}],
+                                   <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) ->
+                                      {ok, <a href="#t:type_expr/0">type_expr</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="extract_constraint/1">
+<section class="detail" id="create_refinement_from_guard/3">
 
   <div class="detail-header">
-    <a href="#extract_constraint/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#create_refinement_from_guard/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">extract_constraint/1</h1>
+    <h1 class="signature" translate="no">create_refinement_from_guard(ParamName, BaseType, Constraints)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L91" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L197" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -616,22 +582,22 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> extract_constraint(<a href="#t:refinement_type/0">refinement_type</a>()) -> {ok, <a href="#t:expr/0">expr</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> create_refinement_from_guard(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="#t:type_expr/0">type_expr</a>(), [<a href="#t:expr/0">expr</a>()]) -> <a href="#t:type_expr/0">type_expr</a>().</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="format_refinement_error/1">
+<section class="detail" id="detect_unreachable_clauses/1">
 
   <div class="detail-header">
-    <a href="#format_refinement_error/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#detect_unreachable_clauses/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">format_refinement_error/1</h1>
+    <h1 class="signature" translate="no">detect_unreachable_clauses(Clauses)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L310" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L440" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -642,22 +608,27 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> format_refinement_error(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:binary/0">binary</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> detect_unreachable_clauses([#function_clause{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                   return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                   constraint :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                   body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                   location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}]) ->
+                                    [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:integer/0">integer</a>()].</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="generate_counterexample/2">
+<section class="detail" id="extract_guard_constraints/1">
 
   <div class="detail-header">
-    <a href="#generate_counterexample/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#extract_guard_constraints/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">generate_counterexample/2</h1>
+    <h1 class="signature" translate="no">extract_guard_constraints/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L333" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L92" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -668,22 +639,22 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> generate_counterexample(<a href="#t:expr/0">expr</a>(), <a href="#t:refinement_type/0">refinement_type</a>()) -> {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> extract_guard_constraints(<a href="#t:expr/0">expr</a>()) -> [{<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="#t:expr/0">expr</a>()}].</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="is_refinement_type/1">
+<section class="detail" id="extract_param_constraints/2">
 
   <div class="detail-header">
-    <a href="#is_refinement_type/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#extract_param_constraints/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">is_refinement_type/1</h1>
+    <h1 class="signature" translate="no">extract_param_constraints(ParamName, Guard)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L98" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L169" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -694,22 +665,22 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> is_refinement_type(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> extract_param_constraints(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="#t:expr/0">expr</a>()) -> [<a href="#t:expr/0">expr</a>()].</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="propagate_constraints/3">
+<section class="detail" id="find_uncovered_cases/2">
 
   <div class="detail-header">
-    <a href="#propagate_constraints/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#find_uncovered_cases/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">propagate_constraints(Expr, Env, ConstraintMap)</h1>
+    <h1 class="signature" translate="no">find_uncovered_cases(Clauses, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L263" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L433" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -720,22 +691,28 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> propagate_constraints(<a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> find_uncovered_cases([#function_clause{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                             return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                             constraint :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                             body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                             location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}],
+                           <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) ->
+                              [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()].</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="refinement_predicate/1">
+<section class="detail" id="identify_constrained_params/1">
 
   <div class="detail-header">
-    <a href="#refinement_predicate/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#identify_constrained_params/1" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">refinement_predicate/1</h1>
+    <h1 class="signature" translate="no">identify_constrained_params(Guard)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L107" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L175" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -746,22 +723,22 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> refinement_predicate(<a href="#t:refinement_type/0">refinement_type</a>()) -> <a href="#t:expr/0">expr</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> identify_constrained_params(<a href="#t:expr/0">expr</a>()) -> [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()].</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="strengthen_type/3">
+<section class="detail" id="narrow_param_types_in_body/3">
 
   <div class="detail-header">
-    <a href="#strengthen_type/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#narrow_param_types_in_body/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">strengthen_type(BaseType, AdditionalConstraint, Var)</h1>
+    <h1 class="signature" translate="no">narrow_param_types_in_body(Env, Params, Guard)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L294" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L229" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -772,22 +749,25 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> strengthen_type(<a href="#t:type_expr/0">type_expr</a>(), <a href="#t:expr/0">expr</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()) -> <a href="#t:refinement_type/0">refinement_type</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> narrow_param_types_in_body(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>(),
+                                 [#param{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}],
+                                 <a href="#t:expr/0">expr</a>()) ->
+                                    <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>().</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="verify_postcondition/4">
+<section class="detail" id="refine_param_type/3">
 
   <div class="detail-header">
-    <a href="#verify_postcondition/4" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#refine_param_type/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">verify_postcondition(ReturnExpr, ReturnType, Env, Location)</h1>
+    <h1 class="signature" translate="no">refine_param_type(ParamName, BaseType, Guard)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L253" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L185" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -798,22 +778,22 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> verify_postcondition(<a href="#t:expr/0">expr</a>(), <a href="#t:refinement_type/0">refinement_type</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>(), <a href="#t:location/0">location</a>()) -> ok | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> refine_param_type(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="#t:type_expr/0">type_expr</a>(), <a href="#t:expr/0">expr</a>()) -> <a href="#t:type_expr/0">type_expr</a>().</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="verify_precondition/4">
+<section class="detail" id="strengthen_environment/3">
 
   <div class="detail-header">
-    <a href="#verify_precondition/4" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#strengthen_environment/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">verify_precondition(ArgExpr, ParamType, Env, Location)</h1>
+    <h1 class="signature" translate="no">strengthen_environment(Env, ParamName, Constraint)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L233" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L474" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -824,22 +804,22 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> verify_precondition(<a href="#t:expr/0">expr</a>(), <a href="#t:refinement_type/0">refinement_type</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>(), <a href="#t:location/0">location</a>()) -> ok | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+          <pre translate="no"><span class="attribute">-spec</span> strengthen_environment(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="#t:expr/0">expr</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>().</pre>
 
       </div>
 
 
   </section>
 </section>
-<section class="detail" id="verify_subtype_smt/3">
+<section class="detail" id="unify_clause_return_types/2">
 
   <div class="detail-header">
-    <a href="#verify_subtype_smt/3" class="detail-link" data-no-tooltip aria-label="Link to this function">
+    <a href="#unify_clause_return_types/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
       <i class="ri-link-m" aria-hidden="true"></i>
     </a>
-    <h1 class="signature" translate="no">verify_subtype_smt/3</h1>
+    <h1 class="signature" translate="no">unify_clause_return_types(Clauses, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L138" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_guard_refinement.erl#L274" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -850,34 +830,13 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> verify_subtype_smt(<a href="#t:refinement_type/0">refinement_type</a>(), <a href="#t:refinement_type/0">refinement_type</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) ->
-                            {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:boolean/0">boolean</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
-
-      </div>
-
-
-  </section>
-</section>
-<section class="detail" id="weaken_type/2">
-
-  <div class="detail-header">
-    <a href="#weaken_type/2" class="detail-link" data-no-tooltip aria-label="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-    </a>
-    <h1 class="signature" translate="no">weaken_type/2</h1>
-
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/src/types/cure_refinement_types.erl#L299" class="icon-action" rel="help" aria-label="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">-spec</span> weaken_type(<a href="#t:refinement_type/0">refinement_type</a>(), [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>()]) -> <a href="#t:type_expr/0">type_expr</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> unify_clause_return_types([#function_clause{params :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  return_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  constraint :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  body :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
+                                                  location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}],
+                                <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:map/0">map</a>()) ->
+                                   {ok, <a href="#t:type_expr/0">type_expr</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
 
       </div>
 

@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-3ABA2D2B.js"></script>
+    <script src="dist/sidebar_items-DC6CD34D.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -121,7 +121,8 @@ Pages
     <span>Cure Language Specification</span>
   </h1>
 
-<p><strong>Version</strong>: 0.1.0<br/><strong>Last Updated</strong>: October 31, 2025<br/><strong>Status</strong>: Implementation Complete ✅ <strong>PRODUCTION READY</strong><br/><strong>Test Success Rate</strong>: 100% (8/8 test suites passing)<br/><strong>Runtime Verification</strong>: ✅ Working examples with import system</p><h2 id="overview" class="section-heading">
+<p><strong>Version</strong>: 0.1.0<br/><strong>Last Updated</strong>: November 22, 2025
+<strong>Status</strong>: Implementation Complete ✅ <strong>PRODUCTION READY</strong><br/><strong>Test Success Rate</strong>: 100% (8/8 test suites passing)<br/><strong>Runtime Verification</strong>: ✅ Working examples with import system</p><h2 id="overview" class="section-heading">
   <a href="#overview" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -182,8 +183,17 @@ def length(list: List(T)): Nat =
     [_|tail] -&gt; 1 + length(tail)
   end
 
-# Function with constraints
+# Function with guards (constraints on parameters)
 def safe_divide(x: Int, y: Int): Int when y != 0 = x / y
+
+# Multi-clause function with guards
+def abs(x: Int): Int when x &gt;= 0 = x
+def abs(x: Int): Int = 0 - x
+
+# Guards with AND/OR
+def in_range(x: Int, min: Int, max: Int): Bool 
+  when x &gt;= min and x &lt;= max = true
+def in_range(_x: Int, _min: Int, _max: Int): Bool = false
 
 # Function with Unit return type
 def print_message(msg: String): Int =
@@ -469,15 +479,18 @@ item ::= function_def | def_erl_def | type_def | record_def | fsm_def
        | process_def | import_def | let_binding
 
 # Function definitions
-function_def ::= ('def') IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
-def_erl_def ::= 'def_erl' IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
+function_def ::= ('def') IDENTIFIER '(' param_list? ')' type_annotation? guard? '=' expr
+              | ('def') IDENTIFIER '(' param_list? ')' type_annotation? guard? 'do' expr 'end'
+def_erl_def ::= 'def_erl' IDENTIFIER '(' param_list? ')' type_annotation? guard? '=' expr
 
 param_list ::= param (',' param)*
 param ::= IDENTIFIER ':' type
 
 type_annotation ::= '-&gt;' type | ':' type
 
-constraint ::= 'when' expr
+guard ::= 'when' guard_expr
+guard_expr ::= comparison | guard_expr 'and' guard_expr | guard_expr 'or' guard_expr
+comparison ::= expr ('&lt;' | '&gt;' | '&lt;=' | '&gt;=' | '==' | '!=') expr
 
 # Type definitions
 type_def ::= 'type' IDENTIFIER type_params? '=' type_expr
@@ -746,12 +759,12 @@ Function Types
   </div>
   <div class="bottom-actions-item">
 
-      <a href="lsp_status.html" class="bottom-actions-button" rel="next">
+      <a href="lexer_error_format.html" class="bottom-actions-button" rel="next">
         <span class="subheader">
           Next Page →
         </span>
         <span class="title">
-LSP Status
+Lexer Error Format
         </span>
       </a>
 

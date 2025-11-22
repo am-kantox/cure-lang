@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.4.0">
+
+
+    <title>LSP SMT User Guide — cure v0.4.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-DC6CD34D.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/docs/LSP_SMT_USER_GUIDE.md#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+
+    <span>Cure LSP with SMT Verification - User Guide</span>
+  </h1>
+
+<p><strong>Version</strong>: 0.1.0<br/><strong>Last Updated</strong>: 2025-11-19</p><hr class="thin"/><h2 id="table-of-contents" class="section-heading">
+  <a href="#table-of-contents" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Table of Contents</span>
+</h2>
+<ol><li><a href="#overview">Overview</a></li><li><a href="#getting-started">Getting Started</a></li><li><a href="#features">Features</a></li><li><a href="#configuration">Configuration</a></li><li><a href="#using-smt-verification">Using SMT Verification</a></li><li><a href="#quick-fixes">Quick Fixes</a></li><li><a href="#performance-tuning">Performance Tuning</a></li><li><a href="#troubleshooting">Troubleshooting</a></li><li><a href="#advanced-usage">Advanced Usage</a></li></ol><hr class="thin"/><h2 id="overview" class="section-heading">
+  <a href="#overview" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Overview</span>
+</h2>
+<p>Cure's Language Server Protocol (LSP) integration provides real-time SMT-based verification for:</p><ul><li><strong>Refinement types</strong>: Verify constraints like <code class="inline">x &gt; 0</code> at compile time</li><li><strong>Dependent types</strong>: Length-indexed vectors, bounded integers</li><li><strong>Pattern exhaustiveness</strong>: Prove all cases are covered</li><li><strong>FSM verification</strong>: Check state machine invariants</li></ul><h3 id="key-benefits" class="section-heading">
+  <a href="#key-benefits" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Key Benefits</span>
+</h3>
+<p>✅ <strong>Real-time feedback</strong> - See errors as you type, no compilation needed<br/>✅ <strong>Concrete counterexamples</strong> - &quot;x = -5 violates x &gt; 0&quot; instead of generic errors<br/>✅ <strong>Automated fixes</strong> - One-click quick fixes for common issues<br/>✅ <strong>Performance optimized</strong> - &lt;100ms for cached checks, &lt;500ms for new code  </p><hr class="thin"/><h2 id="getting-started" class="section-heading">
+  <a href="#getting-started" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Getting Started</span>
+</h2>
+<h3 id="prerequisites" class="section-heading">
+  <a href="#prerequisites" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Prerequisites</span>
+</h3>
+<ol><li><p><strong>Z3 SMT Solver</strong> (required)</p><pre><code class="makeup bash" translate="no"><span class=""># Ubuntu/Debian
+</span><span class="">sudo apt install z3
+</span><span class="">
+</span><span class=""># macOS
+</span><span class="">brew install z3
+</span><span class="">
+</span><span class=""># Or download from: https://github.com/Z3Prover/z3/releases
+</span></code></pre></li><li><p><strong>Verify Z3 installation</strong></p><pre><code class="makeup bash" translate="no"><span class="">z3 --version
+</span><span class=""># Should output: Z3 version 4.x.x
+</span></code></pre></li></ol><h3 id="ide-setup" class="section-heading">
+  <a href="#ide-setup" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">IDE Setup</span>
+</h3>
+<h4>Visual Studio Code</h4><ol><li>Install the <strong>Cure Language Support</strong> extension (when available)</li><li>The LSP server will start automatically when you open a <code class="inline">.cure</code> file</li><li>SMT verification runs in the background</li></ol><h4>Neovim/Vim</h4><pre><code class="lua">-- Add to your LSP config
+require('lspconfig').cure_ls.setup{
+  cmd = {'cure-lsp-server'},
+  filetypes = {'cure'},
+  settings = {
+    cure = {
+      smt = {
+        enabled = true,
+        solver = 'z3',
+        timeout = 500  -- ms
+      }
+    }
+  }
+}</code></pre><h4>Emacs</h4><pre><code class="elisp">(use-package lsp-mode
+  :hook (cure-mode . lsp)
+  :custom
+  (lsp-cure-smt-enabled t)
+  (lsp-cure-smt-timeout 500))</code></pre><hr class="thin"/><h2 id="features" class="section-heading">
+  <a href="#features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Features</span>
+</h2>
+<h3 id="1-refinement-type-checking" class="section-heading">
+  <a href="#1-refinement-type-checking" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">1. Refinement Type Checking</span>
+</h3>
+<p><strong>Define constrained types:</strong></p><pre><code class="cure">type Positive = Int when x &gt; 0
+type Percentage = Int when x &gt;= 0 and x &lt;= 100
+type NonEmptyList(T) = List(T) when length(xs) &gt; 0</code></pre><p><strong>Get instant feedback:</strong></p><pre><code class="cure">def divide(a: Int, b: Positive): Int = a / b  ✅
+
+def bad_divide(a: Int, b: Int): Int = 
+    divide(a, b)  // ❌ Error: b may not be positive
+    // Counterexample: b = -5 violates b &gt; 0</code></pre><h3 id="2-hover-information" class="section-heading">
+  <a href="#2-hover-information" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">2. Hover Information</span>
+</h3>
+<p>Hover over any variable to see its refinement type:</p><pre><code class="cure">def process(n: Positive) = 
+    let x = n + 1  // Hover shows: x: Int when x &gt; 1</code></pre><p><strong>Hover display:</strong></p><pre><code class="markdown"></code></pre><p>x: Int when x &gt; 1</p><pre><code class="makeup erlang" translate="no"><span class="w">
+</span><span class="o">*</span><span class="o">*</span><span class="n">Refinement</span><span class="w"> </span><span class="n">Type</span><span class="o">*</span><span class="o">*</span><span class="w">
+
+</span><span class="n">This</span><span class="w"> </span><span class="ss">variable</span><span class="w"> </span><span class="ss">has</span><span class="w"> </span><span class="ss">a</span><span class="w"> </span><span class="ss">refined</span><span class="w"> </span><span class="ss">type</span><span class="w"> </span><span class="ss">with</span><span class="w"> </span><span class="ss">the</span><span class="w"> </span><span class="nc">constraint</span><span class="p">:</span><span class="w">
+</span><span class="o">-</span><span class="w"> </span><span class="err">`</span><span class="ss">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="err">`</span><span class="w">
+
+</span><span class="n">The</span><span class="w"> </span><span class="n">SMT</span><span class="w"> </span><span class="ss">solver</span><span class="w"> </span><span class="ss">will</span><span class="w"> </span><span class="ss">verify</span><span class="w"> </span><span class="ss">this</span><span class="w"> </span><span class="ss">constraint</span><span class="w"> </span><span class="ss">is</span><span class="w"> </span><span class="ss">satisfied</span><span class="p">.</span></code></pre><h3 id="3-pattern-exhaustiveness" class="section-heading">
+  <a href="#3-pattern-exhaustiveness" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">3. Pattern Exhaustiveness</span>
+</h3>
+<p><strong>Automatic checking:</strong></p><pre><code class="cure">match n with
+| 0 -&gt; &quot;zero&quot;
+| n when n &gt; 0 -&gt; &quot;positive&quot;
+end
+
+// ❌ Error: Pattern match is not exhaustive
+// Missing case: n when n &lt; 0</code></pre><p><strong>With quick fix:</strong></p><pre><code class="cure">match n with
+| 0 -&gt; &quot;zero&quot;
+| n when n &gt; 0 -&gt; &quot;positive&quot;
+| n when n &lt; 0 -&gt; &quot;negative&quot;  // Quick fix adds this
+end</code></pre><h3 id="4-quick-fixes" class="section-heading">
+  <a href="#4-quick-fixes" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">4. Quick Fixes</span>
+</h3>
+<p>When SMT finds an issue, you get actionable fixes:</p><h4>Add Guard Clause</h4><pre><code class="cure">// Before
+def divide(a: Int, b: Int): Int = a / b
+
+// Quick fix: Add guard clause
+def divide(a: Int, b: Int) when b /= 0: Int = a / b</code></pre><h4>Add Assertion</h4><pre><code class="cure">def divide(a: Int, b: Int): Int =
+    assert b /= 0  // Quick fix adds this
+    a / b</code></pre><h4>Relax Constraint</h4><pre><code class="cure">// Error: Cannot prove n &gt; 10 implies n &gt; 5
+// Quick fix: Relax n &gt; 10 to n &gt;= 10</code></pre><h4>Type Conversion</h4><pre><code class="cure">// Error: Expected Int, got Float
+// Quick fix: Add to_int(value)</code></pre><hr class="thin"/><h2 id="configuration" class="section-heading">
+  <a href="#configuration" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Configuration</span>
+</h2>
+<h3 id="timeout-settings" class="section-heading">
+  <a href="#timeout-settings" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Timeout Settings</span>
+</h3>
+<p>Configure timeouts based on your workflow:</p><pre><code class="makeup erlang" translate="no"><span class="c1">% In your LSP config</span><span class="w">
+</span><span class="p" data-group-id="6729888314-1">#{</span><span class="w">
+    </span><span class="ss">timeouts</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="6729888314-2">#{</span><span class="w">
+        </span><span class="ss">lsp</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w">        </span><span class="c1">% Interactive editing (default)</span><span class="w">
+        </span><span class="ss">compile</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span><span class="w">   </span><span class="c1">% Full compilation</span><span class="w">
+        </span><span class="ss">test</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">10000</span><span class="w">      </span><span class="c1">% Running tests</span><span class="w">
+    </span><span class="p" data-group-id="6729888314-2">}</span><span class="w">
+</span><span class="p" data-group-id="6729888314-1">}</span></code></pre><h3 id="cache-settings" class="section-heading">
+  <a href="#cache-settings" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Cache Settings</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="1573390131-1">#{</span><span class="w">
+    </span><span class="ss">cache</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="1573390131-2">#{</span><span class="w">
+        </span><span class="ss">enabled</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">true</span><span class="p">,</span><span class="w">
+        </span><span class="ss">max_size</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w">      </span><span class="c1">% Max cached queries</span><span class="w">
+        </span><span class="ss">ttl_seconds</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">3600</span><span class="w">    </span><span class="c1">% Cache lifetime</span><span class="w">
+    </span><span class="p" data-group-id="1573390131-2">}</span><span class="w">
+</span><span class="p" data-group-id="1573390131-1">}</span></code></pre><h3 id="solver-selection" class="section-heading">
+  <a href="#solver-selection" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Solver Selection</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="7741401865-1">#{</span><span class="w">
+    </span><span class="ss">solver</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">z3</span><span class="p">,</span><span class="w">              </span><span class="c1">% Currently only Z3 supported</span><span class="w">
+    </span><span class="ss">solver_path</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="s">&quot;/usr/bin/z3&quot;</span><span class="w">  </span><span class="c1">% Custom path if needed</span><span class="w">
+</span><span class="p" data-group-id="7741401865-1">}</span></code></pre><hr class="thin"/><h2 id="using-smt-verification" class="section-heading">
+  <a href="#using-smt-verification" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Using SMT Verification</span>
+</h2>
+<h3 id="writing-verifiable-code" class="section-heading">
+  <a href="#writing-verifiable-code" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Writing Verifiable Code</span>
+</h3>
+<p><strong>✅ Good: Simple constraints</strong></p><pre><code class="cure">type Positive = Int when x &gt; 0
+type Even = Int when x mod 2 == 0</code></pre><p><strong>✅ Good: Composite constraints</strong></p><pre><code class="cure">type PositiveEven = Int when x &gt; 0 and x mod 2 == 0</code></pre><p><strong>⚠️ Careful: Complex constraints</strong></p><pre><code class="cure">// May be slow
+type Prime = Int when is_prime(x)  // Non-linear</code></pre><p><strong>❌ Avoid: Undecidable constraints</strong></p><pre><code class="cure">// SMT may timeout
+type Halting = Int when terminates(f, x)</code></pre><h3 id="constraint-complexity-guidelines" class="section-heading">
+  <a href="#constraint-complexity-guidelines" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Constraint Complexity Guidelines</span>
+</h3>
+<table><thead><tr><th style="text-align: left;">Complexity</th><th style="text-align: left;">SMT Time</th><th style="text-align: left;">Example</th></tr></thead><tbody><tr><td style="text-align: left;">Simple comparison</td><td style="text-align: left;">&lt;10ms</td><td style="text-align: left;"><code class="inline">x &gt; 0</code>, <code class="inline">x &lt;= 100</code></td></tr><tr><td style="text-align: left;">Linear arithmetic</td><td style="text-align: left;">&lt;50ms</td><td style="text-align: left;"><code class="inline">x + y &gt; z</code>, <code class="inline">2*x &lt; y</code></td></tr><tr><td style="text-align: left;">Quantifiers (bounded)</td><td style="text-align: left;">&lt;200ms</td><td style="text-align: left;"><code class="inline">forall i. 0 &lt;= i &lt; n =&gt; arr[i] &gt; 0</code></td></tr><tr><td style="text-align: left;">Non-linear</td><td style="text-align: left;">&lt;500ms</td><td style="text-align: left;"><code class="inline">x * y &gt; z</code> (may timeout)</td></tr></tbody></table><h3 id="best-practices" class="section-heading">
+  <a href="#best-practices" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Best Practices</span>
+</h3>
+<ol><li><strong>Keep constraints simple</strong> - SMT works best with linear arithmetic</li><li><strong>Use type aliases</strong> - Define once, use everywhere</li><li><strong>Combine with guards</strong> - Runtime checks complement SMT verification</li><li><strong>Test edge cases</strong> - SMT proves properties, but test actual values</li></ol><hr class="thin"/><h2 id="quick-fixes" class="section-heading">
+  <a href="#quick-fixes" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Quick Fixes</span>
+</h2>
+<h3 id="available-quick-fixes" class="section-heading">
+  <a href="#available-quick-fixes" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Available Quick Fixes</span>
+</h3>
+<h4>1. Refinement Violations</h4><p><strong>Problem</strong>: Constraint not satisfied</p><p><strong>Available fixes</strong>:</p><ul><li>Add guard clause: <code class="inline">when x &gt; 0</code></li><li>Add assertion: <code class="inline">assert x &gt; 0</code></li><li>Relax constraint: <code class="inline">x &gt; 0</code> → <code class="inline">x &gt;= 0</code></li></ul><h4>2. Non-Exhaustive Patterns</h4><p><strong>Problem</strong>: Missing pattern cases</p><p><strong>Available fixes</strong>:</p><ul><li>Add missing case (SMT provides counterexample)</li><li>Add wildcard: <code class="inline">_ -&gt; error(&quot;unhandled&quot;)</code></li></ul><h4>3. Type Mismatches</h4><p><strong>Problem</strong>: Type doesn't match</p><p><strong>Available fixes</strong>:</p><ul><li>Add type annotation: <code class="inline">: Positive</code></li><li>Add type conversion: <code class="inline">to_int()</code>, <code class="inline">to_float()</code></li></ul><h4>4. Undefined Variables</h4><p><strong>Problem</strong>: Variable not in scope</p><p><strong>Available fixes</strong>:</p><ul><li>Add as parameter</li><li>Define with <code class="inline">let</code></li></ul><hr class="thin"/><h2 id="performance-tuning" class="section-heading">
+  <a href="#performance-tuning" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Performance Tuning</span>
+</h2>
+<h3 id="understanding-performance" class="section-heading">
+  <a href="#understanding-performance" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Understanding Performance</span>
+</h3>
+<p><strong>Cache hit</strong> (instant): &lt;10ms<br/><strong>Small edit</strong> (incremental): &lt;100ms<br/><strong>New constraint</strong> (full solve): &lt;500ms<br/><strong>Complex constraint</strong>: May timeout at 500ms  </p><h3 id="optimization-strategies" class="section-heading">
+  <a href="#optimization-strategies" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Optimization Strategies</span>
+</h3>
+<h4>1. Structure Code for Caching</h4><pre><code class="cure">// Good: Stable constraints
+type UserId = Int when x &gt; 0
+
+def process_user(id: UserId) = ...  // Cached after first check
+
+// Bad: Dynamic constraints
+type DynamicRange(n) = Int when x &gt;= 0 and x &lt; n  // Re-verified each time</code></pre><h4>2. Use Batch Processing</h4><pre><code class="cure">// SMT batches constraints from same context
+def process_many(xs: List(Positive)) =  // All checked together
+    xs.map(fn x -&gt; x + 1)</code></pre><h4>3. Simplify Constraints</h4><pre><code class="cure">// Faster
+type Positive = Int when x &gt; 0
+
+// Slower (quantifier)
+type AllPositive = List(Int) when 
+    forall i. 0 &lt;= i &lt; length(xs) =&gt; xs[i] &gt; 0</code></pre><h3 id="monitoring-performance" class="section-heading">
+  <a href="#monitoring-performance" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Monitoring Performance</span>
+</h3>
+<p>Check LSP statistics:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_lsp_performance</span><span class="p">:</span><span class="nf">get_stats</span><span class="p" data-group-id="2363290511-1">(</span><span class="p" data-group-id="2363290511-1">)</span><span class="p">.</span><span class="w">
+</span><span class="c1">% =&gt; #{</span><span class="w">
+</span><span class="c1">%     queued =&gt; 45,</span><span class="w">
+</span><span class="c1">%     processed =&gt; 120,</span><span class="w">
+</span><span class="c1">%     avg_verify_time_ms =&gt; 85,</span><span class="w">
+</span><span class="c1">%     cache_hit_rate =&gt; 0.82</span><span class="w">
+</span><span class="c1">% }</span></code></pre><hr class="thin"/><h2 id="troubleshooting" class="section-heading">
+  <a href="#troubleshooting" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Troubleshooting</span>
+</h2>
+<h3 id="common-issues" class="section-heading">
+  <a href="#common-issues" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Common Issues</span>
+</h3>
+<h4>Z3 Not Found</h4><p><strong>Error</strong>: <code class="inline">Z3 solver not found</code></p><p><strong>Solution</strong>:</p><ol><li>Install Z3: <code class="inline">sudo apt install z3</code> or <code class="inline">brew install z3</code></li><li>Verify: <code class="inline">z3 --version</code></li><li>Set path in config if in non-standard location</li></ol><h4>Verification Timeout</h4><p><strong>Error</strong>: <code class="inline">SMT verification timed out</code></p><p><strong>Solutions</strong>:</p><ol><li>Simplify the constraint</li><li>Increase timeout in settings</li><li>Split complex constraints into simpler ones</li><li>Use runtime checks instead: <code class="inline">assert x &gt; 0</code></li></ol><h4>High Memory Usage</h4><p><strong>Symptom</strong>: LSP using &gt;1GB RAM</p><p><strong>Solutions</strong>:</p><ol><li>Restart LSP server</li><li>Reduce cache size in config</li><li>Disable SMT for large files: <code class="inline">// @smt-disable</code></li></ol><h4>Slow Response Time</h4><p><strong>Symptom</strong>: Lag when typing</p><p><strong>Solutions</strong>:</p><ol><li>Check cache hit rate (should be &gt;80%)</li><li>Increase batch timeout</li><li>Disable SMT temporarily: Toggle in IDE</li></ol><h3 id="debug-mode" class="section-heading">
+  <a href="#debug-mode" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Debug Mode</span>
+</h3>
+<p>Enable verbose logging:</p><pre><code class="makeup bash" translate="no"><span class="">CURE_LSP_LOG_LEVEL=debug cure-lsp-server
+</span></code></pre><p>Check logs:</p><pre><code class="makeup bash" translate="no"><span class="">tail -f ~/.cure/lsp.log
+</span></code></pre><hr class="thin"/><h2 id="advanced-usage" class="section-heading">
+  <a href="#advanced-usage" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Advanced Usage</span>
+</h2>
+<h3 id="disabling-smt-for-specific-code" class="section-heading">
+  <a href="#disabling-smt-for-specific-code" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Disabling SMT for Specific Code</span>
+</h3>
+<pre><code class="cure">// @smt-disable
+def unsafe_operation(x: Int) =
+    // SMT verification skipped here
+    x / 0  // Would normally error</code></pre><h3 id="custom-solver-flags" class="section-heading">
+  <a href="#custom-solver-flags" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Custom Solver Flags</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4786377561-1">#{</span><span class="w">
+    </span><span class="ss">solver_args</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="4786377561-2">[</span><span class="w">
+        </span><span class="s">&quot;timeout=1000&quot;</span><span class="p">,</span><span class="w">
+        </span><span class="s">&quot;smt.mbqi=false&quot;</span><span class="w">
+    </span><span class="p" data-group-id="4786377561-2">]</span><span class="w">
+</span><span class="p" data-group-id="4786377561-1">}</span></code></pre><h3 id="incremental-verification" class="section-heading">
+  <a href="#incremental-verification" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Incremental Verification</span>
+</h3>
+<p>LSP automatically uses incremental solving:</p><ul><li>Persistent Z3 process (avoids 50ms startup)</li><li>Push/pop scopes for edits</li><li>Hash-based cache invalidation</li></ul><h3 id="background-verification" class="section-heading">
+  <a href="#background-verification" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Background Verification</span>
+</h3>
+<p>Large files verified in background:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_lsp_performance</span><span class="p">:</span><span class="nf">verify_async</span><span class="p" data-group-id="5181751424-1">(</span><span class="n">Uri</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="ss">lsp</span><span class="p" data-group-id="5181751424-1">)</span><span class="p">.</span></code></pre><p>Results arrive asynchronously without blocking editor.</p><hr class="thin"/><h2 id="resources" class="section-heading">
+  <a href="#resources" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Resources</span>
+</h2>
+<ul><li><strong>SMT-LIB Standard</strong>: <a href="http://smtlib.cs.uiowa.edu/">http://smtlib.cs.uiowa.edu/</a></li><li><strong>Z3 Guide</strong>: <a href="https://microsoft.github.io/z3guide/">https://microsoft.github.io/z3guide/</a></li><li><strong>Refinement Types</strong>: <a href="https://ucsd-progsys.github.io/liquidhaskell/">https://ucsd-progsys.github.io/liquidhaskell/</a></li><li><strong>Cure Documentation</strong>: <a href="https://cure-lang.org/docs">https://cure-lang.org/docs</a></li></ul><hr class="thin"/><h2 id="faq" class="section-heading">
+  <a href="#faq" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">FAQ</span>
+</h2>
+<p><strong>Q: Does SMT verification guarantee no runtime errors?</strong><br/>A: SMT proves properties about types, but runtime checks are still needed for:</p><ul><li>External input validation</li><li>Resource limits (memory, disk)</li><li>Concurrent behavior</li></ul><p><strong>Q: Can I use CVC5 instead of Z3?</strong><br/>A: Not yet. Z3 is currently the only supported solver.</p><p><strong>Q: Does SMT work with separate compilation?</strong><br/>A: Yes! Constraint verification is modular and works across module boundaries.</p><p><strong>Q: What happens if SMT times out?</strong><br/>A: The constraint is treated as &quot;unknown&quot; - no error, but no proof either. Use runtime checks as fallback.</p><p><strong>Q: Can SMT verify recursive functions?</strong><br/>A: Limited support. Simple recursion works, but complex recursion may timeout. Use termination measures explicitly.</p><hr class="thin"/><p><strong>Happy verifying! 🎉</strong></p><p>For issues or questions: <a href="https://github.com/cure-lang/cure/issues">https://github.com/cure-lang/cure/issues</a></p>
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="lexer_error_format.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+Lexer Error Format
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="mcp_integration.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+MCP Integration
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.4.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.4.0">Hex Preview</a>
+
+              (<a href="https://preview.hex.pm/preview/cure/0.4.0/show/docs/LSP_SMT_USER_GUIDE.md">current file</a>)
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

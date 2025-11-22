@@ -27,19 +27,37 @@ site/
 
 ## Building the Site
 
-### Quick Build (Recommended)
+### Complete Build (Recommended)
+
+```bash
+# From project root
+./build_site.sh
+```
+
+This does a **complete build**:
+1. Generate API documentation with `rebar3 ex_doc`
+2. Create site directory structure
+3. Copy API documentation to site
+4. Copy media assets
+5. Convert all Markdown documentation to HTML
+6. Apply `class="language-cure"` to all Cure code blocks
+7. Include highlight.js and cure-language.js
+8. Update index.html footer with all doc links
+9. Verify build with detailed statistics
+
+### Quick Docs-Only Rebuild
+
+When you only update documentation (no code changes):
 
 ```bash
 cd site
 ./build_site.sh
 ```
 
-This automated script will:
-1. Convert all Markdown documentation from `../docs/` to HTML
-2. Apply proper `class="language-cure"` to all Cure code blocks
-3. Include highlight.js and cure-language.js for syntax highlighting
-4. Update `index.html` footer with links to all documentation pages
-5. Verify the build completed successfully
+This **only rebuilds documentation** (faster):
+- Skips API generation
+- Skips asset copying
+- Just converts docs and updates footer
 
 ### Manual Steps
 

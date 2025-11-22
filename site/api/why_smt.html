@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.35.1">
+    <meta name="project" content="cure v0.4.0">
+
+
+    <title>Why SMT — cure v0.4.0</title>
+    <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
+
+
+    <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
+    <script src="dist/handlebars.templates-K7URE6B4.js"></script>
+    <script src="dist/sidebar_items-DC6CD34D.js"></script>
+    <script src="docs_config.js"></script>
+    <script async src="dist/html-PVRIOB7F.js"></script>
+
+  </head>
+  <body data-type="extras" class="page-extra">
+    <script>
+
+      try {
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
+        }
+      } catch (error) { }
+    </script>
+
+<div class="body-wrapper">
+
+<button id="sidebar-menu" class="sidebar-button sidebar-toggle" aria-label="toggle sidebar" aria-controls="sidebar">
+  <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+</button>
+
+<nav id="sidebar" class="sidebar">
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectInfo">
+
+      <div>
+        <a href="readme.html" class="sidebar-projectName" translate="no">
+cure
+        </a>
+        <div class="sidebar-projectVersion" translate="no">
+          v0.4.0
+        </div>
+      </div>
+    </div>
+    <ul id="sidebar-listNav" class="sidebar-listNav" role="tablist">
+      <li>
+        <button id="extras-list-tab-button" role="tab" data-type="extras" aria-controls="extras-tab-panel" aria-selected="true" tabindex="0">
+Pages
+        </button>
+      </li>
+
+        <li>
+          <button id="modules-list-tab-button" role="tab" data-type="modules" aria-controls="modules-tab-panel" aria-selected="false" tabindex="-1">
+            Modules
+          </button>
+        </li>
+
+
+    </ul>
+  </div>
+
+  <div id="extras-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="extras-list-tab-button">
+    <ul id="extras-full-list" class="full-list"></ul>
+  </div>
+
+    <div id="modules-tab-panel" class="sidebar-tabpanel" role="tabpanel" aria-labelledby="modules-list-tab-button" hidden>
+      <ul id="modules-full-list" class="full-list"></ul>
+    </div>
+
+
+</nav>
+
+<main class="content">
+  <output role="status" id="toast"></output>
+
+  <div id="content" class="content-inner">
+    <div class="top-search">
+      <div class="search-settings">
+        <form class="search-bar" action="search.html">
+          <label class="search-label">
+            <span class="sr-only">Search documentation of cure</span>
+            <input name="q" type="text" class="search-input" placeholder="Press / to search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+          </label>
+          <button type="submit" class="search-button" aria-label="Submit Search">
+            <i class="ri-search-2-line ri-lg" aria-hidden="true" title="Submit search"></i>
+          </button>
+          <button type="button" tabindex="-1" class="search-close-button" aria-hidden="true">
+            <i class="ri-close-line ri-lg" title="Cancel search"></i>
+          </button>
+        </form>
+        <div class="autocomplete">
+        </div>
+        <button class="icon-settings display-settings">
+          <i class="ri-settings-3-line"></i>
+          <span class="sr-only">Settings</span>
+        </button>
+      </div>
+    </div>
+
+<div id="top-content">
+  <h1>
+
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/docs/WHY_SMT.md#L1" title="View Source" class="icon-action" rel="help">
+        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+        <span class="sr-only">View Source</span>
+      </a>
+
+
+    <span>Why SMT Solvers? A Deep Dive into Formal Verification</span>
+  </h1>
+
+<h2 id="table-of-contents" class="section-heading">
+  <a href="#table-of-contents" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Table of Contents</span>
+</h2>
+<ol><li><a href="#introduction">Introduction</a></li><li><a href="#what-is-an-smt-solver">What is an SMT Solver?</a></li><li><a href="#z3-the-state-of-the-art-smt-solver">Z3: The State-of-the-Art SMT Solver</a></li><li><a href="#smt-solvers-and-code-quality">SMT Solvers and Code Quality</a></li><li><a href="#verification-of-data-aware-processes">Verification of Data-Aware Processes</a></li><li><a href="#fsm-verification-in-cure">FSM Verification in Cure</a></li><li><a href="#practical-examples">Practical Examples</a></li><li><a href="#integration-strategy">Integration Strategy</a></li><li><a href="#further-reading">Further Reading</a></li></ol><hr class="thin"/><h2 id="introduction" class="section-heading">
+  <a href="#introduction" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Introduction</span>
+</h2>
+<p>Modern software systems are growing increasingly complex, with state machines, concurrent processes, and intricate data dependencies. Traditional testing approaches—while valuable—cannot exhaustively verify all possible execution paths and states. This is where <strong>Satisfiability Modulo Theories (SMT)</strong> solvers become indispensable tools for formal verification.</p><p>The Cure language, with its built-in support for finite state machines (FSMs), dependent types, and refinement types, is uniquely positioned to benefit from SMT-based verification. This document explores how SMT solvers, particularly <strong>Z3</strong>, can dramatically improve code quality and provide mathematical guarantees about program correctness.</p><h3 id="understanding-smt-solvers-a-simple-introduction" class="section-heading">
+  <a href="#understanding-smt-solvers-a-simple-introduction" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Understanding SMT-Solvers: A Simple Introduction</span>
+</h3>
+<p>Imagine a puzzle where certain rules must always be obeyed, and the goal is to find out if there’s any way to make all the pieces fit without breaking any rules. SMT-solvers, short for Satisfiability Modulo Theories solvers, are special computer programs designed to solve these rule-based puzzles automatically[^1][^2]. </p><p>In practical terms, SMT-solvers answer questions like: &quot;Given all the rules (mathematical, logical, or data-related), is there any combination of values that keeps everything true and consistent?&quot; For example, they can check if a set of formulas describing a piece of software will ever run into errors, if a digital circuit will always work correctly, or even if a robot can safely move given complicated obstacles and instructions[^1]. </p><p>What makes SMT-solvers powerful is that rather than just working with basic true/false logic, they also understand deeper mathematical topics—like arithmetic, relationships between data, and more. They look at every part of the puzzle, combining logic and math, to figure out whether a solution exists or not. If the puzzle can’t be solved, they can even help you pinpoint exactly why it fails[^1][^2].</p><hr class="thin"/><h3 id="satisfiability-modulo-theories-smt-solvers-in-critical-development" class="section-heading">
+  <a href="#satisfiability-modulo-theories-smt-solvers-in-critical-development" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Satisfiability Modulo Theories (SMT) Solvers in Critical Development</span>
+</h3>
+<p>SMT-solvers are computational systems that determine whether statements involving variables and constraints are satisfiable under a range of mathematical theories (such as arithmetic, arrays, bit-vectors, and more)[^3][^4].</p><h4>What Are SMT-Solvers?</h4><p>SMT-solvers generalize SAT-solvers (Boolean satisfiability) to additional, expressive theories. This enables the automated analysis of formulas that capture constraints and properties found in realistic software, hardware, and business systems.[^3][^4]</p><ul><li><strong>Defining Role:</strong> They solve logic formulas containing variables and constraints from chosen mathematical theories, checking if any satisfying assignment exists.[^3]</li><li><strong>Use Domains:</strong> These include data-aware workflows, software correctness, circuit design, security analysis, and AI planning.[^3][^4]</li></ul><p>See below for more detailed description.</p><h4>Why SMT-Solvers Matter in Critical Development</h4><p>SMT-solvers are fundamental in modern software and systems engineering, particularly for safety-critical and high-assurance domains:</p><ul><li><strong>Rigorous Verification:</strong> They automate model checking and formal verification, proving that systems behave correctly in all cases—essential in aviation, medicine, and finance.[^3][^4]</li><li><strong>Bug &amp; Vulnerability Discovery:</strong> Developers encode requirements and invariants as logical formulas; SMT-solvers uncover bugs, unreachable states or vulnerabilities automatically.[^3][^4]</li><li><strong>Design Optimization &amp; Synthesis:</strong> They search huge design spaces for feasible solutions under constraints.</li><li><strong>Productivity &amp; Reliability:</strong> Engineers delegate difficult formal reasoning, focusing on design and innovation.[^3][^4]</li></ul><h4>Key Educational Source: Alessandro Gianola’s Research</h4><p>A foundational resource for using SMT-solvers in system verification is Alessandro Gianola’s work, especially his dissertation “SMT-based Safety Verification of Data-Aware Processes: Foundations and Applications.”[^3]</p><ul><li><strong>Summary:</strong> Gianola’s research bridges the gap between model checking for infinite-state systems and verification of data-aware business processes. It shows how SMT-solvers (and their underlying logic frameworks) enable verification of workflows and processes that depend on both control flow and rich data.[^3][^4]</li><li><strong>Practical Impact:</strong> Gianola’s methods use SMT to encode and verify properties (like safety) for processes with both data and state logic, allowing exhaustive and scalable analysis even when manual checking is impossible.[^3][^4]</li><li><strong>Additional Reading:</strong> See Gianola’s thesis and related publications for algorithms, theoretical models, and benchmarking of SMT-verification tools.</li></ul><h4>Z3: Leading SMT-Solver</h4><p>Currently, Z3 from Microsoft Research is seen as the most advanced and robust SMT-solver:</p><ul><li><strong>Theory Coverage:</strong> Supports integers, reals, arrays, bit-vectors, and uninterpreted functions.</li><li><strong>Performance &amp; Integration:</strong> Fast solving engines, modern APIs for Python, C++, Java, and more.</li><li><strong>Community Usage:</strong> Z3 is open-source and prominent in both academic research and industrial applications.[^4]</li></ul><hr class="thin"/><h2 id="what-is-an-smt-solver-part-ii" class="section-heading">
+  <a href="#what-is-an-smt-solver-part-ii" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">What is an SMT Solver (Part II)?</span>
+</h2>
+<h3 id="the-foundation-sat-solvers" class="section-heading">
+  <a href="#the-foundation-sat-solvers" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">The Foundation: SAT Solvers</span>
+</h3>
+<p>A <strong>SAT (Boolean Satisfiability) solver</strong> determines whether a Boolean formula can be satisfied—that is, whether there exists an assignment of variables that makes the formula true. For example:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="0511880333-1">(</span><span class="n">A</span><span class="w"> </span><span class="err">∨</span><span class="w"> </span><span class="n">B</span><span class="p" data-group-id="0511880333-1">)</span><span class="w"> </span><span class="err">∧</span><span class="w"> </span><span class="p" data-group-id="0511880333-2">(</span><span class="err">¬</span><span class="n">A</span><span class="w"> </span><span class="err">∨</span><span class="w"> </span><span class="n">C</span><span class="p" data-group-id="0511880333-2">)</span><span class="w"> </span><span class="err">∧</span><span class="w"> </span><span class="p" data-group-id="0511880333-3">(</span><span class="err">¬</span><span class="n">B</span><span class="w"> </span><span class="err">∨</span><span class="w"> </span><span class="err">¬</span><span class="n">C</span><span class="p" data-group-id="0511880333-3">)</span></code></pre><p>A SAT solver would find that <code class="inline">A = true, B = false, C = true</code> satisfies this formula.</p><h3 id="beyond-boolean-smt-solvers" class="section-heading">
+  <a href="#beyond-boolean-smt-solvers" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Beyond Boolean: SMT Solvers</span>
+</h3>
+<p><strong>SMT (Satisfiability Modulo Theories)</strong> solvers extend SAT solvers to handle richer logical theories beyond pure Boolean logic. These theories include:</p><ul><li><strong>Linear Arithmetic</strong>: <code class="inline">x + 2y ≤ 5</code>, <code class="inline">3a - b = 7</code></li><li><strong>Arrays</strong>: <code class="inline">select(store(a, i, v), i) = v</code></li><li><strong>Bit-vectors</strong>: Operations on fixed-width integers</li><li><strong>Uninterpreted Functions</strong>: Abstract function symbols</li><li><strong>Algebraic Datatypes</strong>: Recursive structures like lists and trees</li><li><strong>Strings</strong>: String operations and constraints</li><li><strong>Quantifiers</strong>: ∀x, ∃y predicates</li></ul><h3 id="how-smt-solvers-work" class="section-heading">
+  <a href="#how-smt-solvers-work" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">How SMT Solvers Work</span>
+</h3>
+<p>SMT solvers typically employ a <strong>lazy SMT</strong> approach:</p><ol><li><strong>Abstract</strong> the problem into a Boolean SAT formula</li><li><strong>Solve</strong> the Boolean formula using an efficient SAT solver</li><li><strong>Check</strong> if the solution is consistent with the background theories</li><li>If inconsistent, add <strong>theory lemmas</strong> and repeat</li></ol><p>This architecture combines the efficiency of modern SAT solvers with the expressiveness of domain-specific theories.</p><hr class="thin"/><h2 id="z3-the-state-of-the-art-smt-solver" class="section-heading">
+  <a href="#z3-the-state-of-the-art-smt-solver" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Z3: The State-of-the-Art SMT Solver</span>
+</h2>
+<h3 id="overview" class="section-heading">
+  <a href="#overview" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Overview</span>
+</h3>
+<p><strong>Z3</strong> is a high-performance SMT solver developed by Microsoft Research. It has become the de facto standard for program verification, symbolic execution, and formal methods research.</p><h3 id="key-features" class="section-heading">
+  <a href="#key-features" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Key Features</span>
+</h3>
+<ol><li><strong>Multiple Theories</strong>: Supports arithmetic, arrays, bit-vectors, algebraic datatypes, and more</li><li><strong>Quantifier Support</strong>: Sophisticated instantiation heuristics for universal/existential quantifiers</li><li><strong>Optimization</strong>: Can find optimal solutions (maximize/minimize objectives)</li><li><strong>Proof Generation</strong>: Produces proofs that solutions are correct</li><li><strong>Multiple Interfaces</strong>: APIs for C, C++, Python, OCaml, Java, .NET, and more</li><li><strong>Active Development</strong>: Continuously improved with cutting-edge research</li></ol><h3 id="z3-architecture" class="section-heading">
+  <a href="#z3-architecture" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Z3 Architecture</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="err">┌</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┐</span><span class="w">
+</span><span class="err">│</span><span class="w">           </span><span class="n">User</span><span class="w"> </span><span class="n">Interface</span><span class="w"> </span><span class="p" data-group-id="7759859551-1">(</span><span class="n">APIs</span><span class="p" data-group-id="7759859551-1">)</span><span class="w">             </span><span class="err">│</span><span class="w">
+</span><span class="err">├</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┤</span><span class="w">
+</span><span class="err">│</span><span class="w">         </span><span class="n">SMT</span><span class="o">-</span><span class="n">LIB</span><span class="w"> </span><span class="mf">2.0</span><span class="w"> </span><span class="n">Parser</span><span class="w">                  </span><span class="err">│</span><span class="w">
+</span><span class="err">├</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┤</span><span class="w">
+</span><span class="err">│</span><span class="w">     </span><span class="n">Preprocessing</span><span class="w"> </span><span class="err">&amp;</span><span class="w"> </span><span class="n">Simplification</span><span class="w">          </span><span class="err">│</span><span class="w">
+</span><span class="err">├</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┤</span><span class="w">
+</span><span class="err">│</span><span class="w">         </span><span class="n">Core</span><span class="w"> </span><span class="n">SAT</span><span class="w"> </span><span class="n">Solver</span><span class="w"> </span><span class="p" data-group-id="7759859551-2">(</span><span class="n">DPLL</span><span class="p" data-group-id="7759859551-2">)</span><span class="w">              </span><span class="err">│</span><span class="w">
+</span><span class="err">├</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┬</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┬</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┤</span><span class="w">
+</span><span class="err">│</span><span class="w"> </span><span class="n">Arithmetic</span><span class="err">│</span><span class="w">   </span><span class="n">Arrays</span><span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="n">Datatypes</span><span class="w">       </span><span class="err">│</span><span class="w">
+</span><span class="err">│</span><span class="w">  </span><span class="n">Theory</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="n">Theory</span><span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="n">Theory</span><span class="w">          </span><span class="err">│</span><span class="w">
+</span><span class="err">│</span><span class="w">  </span><span class="n">Solver</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="n">Solver</span><span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="n">Solver</span><span class="w">          </span><span class="err">│</span><span class="w">
+</span><span class="err">└</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┴</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┴</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┘</span></code></pre><h3 id="why-z3" class="section-heading">
+  <a href="#why-z3" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Why Z3?</span>
+</h3>
+<ul><li><strong>Proven Track Record</strong>: Used in Windows driver verification, .NET static analysis, and numerous academic projects</li><li><strong>Performance</strong>: Consistently wins SMT-COMP competitions</li><li><strong>Extensibility</strong>: Easy to integrate into custom verification tools</li><li><strong>Documentation</strong>: Comprehensive guides and active community</li></ul><hr class="thin"/><h2 id="smt-solvers-and-code-quality" class="section-heading">
+  <a href="#smt-solvers-and-code-quality" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">SMT Solvers and Code Quality</span>
+</h2>
+<h3 id="the-testing-vs-verification-spectrum" class="section-heading">
+  <a href="#the-testing-vs-verification-spectrum" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">The Testing vs. Verification Spectrum</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="n">Testing</span><span class="w">                                    </span><span class="n">Formal</span><span class="w"> </span><span class="n">Verification</span><span class="w">
+  </span><span class="err">│</span><span class="w">                                              </span><span class="err">│</span><span class="w">
+  </span><span class="err">├</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="w"> </span><span class="n">Unit</span><span class="w"> </span><span class="n">Tests</span><span class="w">                                </span><span class="err">│</span><span class="w">
+  </span><span class="err">├</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="w"> </span><span class="n">Integration</span><span class="w"> </span><span class="n">Tests</span><span class="w">                         </span><span class="err">│</span><span class="w">
+  </span><span class="err">├</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="w"> </span><span class="n">Property</span><span class="o">-</span><span class="n">Based</span><span class="w"> </span><span class="n">Tests</span><span class="w">                      </span><span class="err">│</span><span class="w">
+  </span><span class="err">├</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="w"> </span><span class="n">Symbolic</span><span class="w"> </span><span class="n">Execution</span><span class="w"> </span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┐</span><span class="w">  </span><span class="err">│</span><span class="w">
+  </span><span class="err">│</span><span class="w">                                           </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="w">
+  </span><span class="err">│</span><span class="w">                                           </span><span class="err">▼</span><span class="w">  </span><span class="err">▼</span><span class="w">
+  </span><span class="err">│</span><span class="w">                                         </span><span class="n">SMT</span><span class="w"> </span><span class="n">Solver</span><span class="w">
+  </span><span class="err">│</span><span class="w">                                               </span><span class="err">│</span><span class="w">
+  </span><span class="err">└</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┘</span><span class="w">
+         </span><span class="n">Partial</span><span class="w"> </span><span class="n">Coverage</span><span class="w">              </span><span class="n">Complete</span><span class="w"> </span><span class="n">Guarantees</span></code></pre><h3 id="how-smt-improves-code-quality" class="section-heading">
+  <a href="#how-smt-improves-code-quality" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">How SMT Improves Code Quality</span>
+</h3>
+<h4>1. <strong>Exhaustive Path Coverage</strong></h4><p>Traditional testing explores a finite set of execution paths. SMT-based verification considers <em>all possible paths</em> symbolically.</p><p><strong>Example</strong>: Verifying array bounds (below is pseudocode)</p><pre><code class="cure"># Without SMT: Hope you tested enough edge cases
+def access_array(arr: Vector(Int, n), idx: Int): Int =
+  arr[idx]  # Runtime check: idx &lt; n ?
+
+# With SMT: Compile-time guarantee
+def access_array(arr: Array(Int, n), idx: {i: Int | 0 &lt;= i &lt; n}): Int =
+  arr[idx]  # Provably safe - no runtime check needed!</code></pre><h4>2. <strong>Finding Subtle Bugs</strong></h4><p>SMT solvers excel at finding corner cases that humans miss.</p><p>[TODO] Fins an example for that</p><h4>3. <strong>Proving Absence of Errors</strong></h4><p>Instead of finding bugs, SMT can prove <em>no bugs exist</em> under specified conditions.</p><p><strong>Example</strong>: Division by zero</p><pre><code class="cure"># Without SMT: Runtime check required
+def divide(x: Int, y: Int): Int =
+  match y == 0 do
+    true -&gt; error(&quot;Division by zero&quot;)
+    false -&gt; ok(x / y)
+  end
+
+# With SMT: Compile-time guarantee via guard
+def safe_divide(x: Int, y: Int): Int when y != 0 = x / y
+# SMT solver verifies y != 0 before allowing division</code></pre><h4>4. <strong>Guard Completeness Verification</strong> ✅</h4><p>Cure uses SMT solvers to verify that function guards cover all possible input values:</p><p><strong>Example</strong>: Complete guard coverage</p><pre><code class="cure"># Guards for sign function
+def sign(x: Int): Int when x &gt; 0 = 1
+def sign(x: Int): Int when x == 0 = 0
+def sign(x: Int): Int when x &lt; 0 = -1
+
+# SMT verification: (x &gt; 0) ∨ (x == 0) ∨ (x &lt; 0) ≡ true ✓
+# Compiler proves all Int values are covered</code></pre><p><strong>Example</strong>: Detecting unreachable clauses</p><pre><code class="cure"># Redundant guard warning
+def classify(x: Int): String when x &gt;= 0 = &quot;non-negative&quot;
+def classify(x: Int): String when x &gt; 10 = &quot;large&quot;  # Unreachable!
+def classify(x: Int): String = &quot;negative&quot;
+
+# SMT detection: (x &gt;= 0) subsumes (x &gt; 10)
+# Compiler warning: Second clause will never execute</code></pre><p><strong>Implementation</strong>: See <code class="inline">cure_guard_smt.erl</code> for:</p><ul><li>Guard completeness checking</li><li>Subsumption detection</li><li>Counterexample generation</li><li>Inconsistent guard detection</li></ul><pre><code class="cure">type NonZero = x: Int when x != 0
+
+def safe_divide(a: Int, b: NonZero): Int =
+  a / b  # Provably safe - Z3 verifies b /= 0 always holds</code></pre><h4>4. <strong>Validating Optimizations</strong></h4><p>Compilers can use SMT to verify that optimizations preserve semantics.</p><pre><code class="cure"># Original
+def compute_original(x: Int): Int =
+  (x + 1) * (x + 1) - x * x - 2 * x
+
+# Optimized
+def compute_optimized(x: Int): Int =
+  1
+
+# SMT verification: ∀x. compute_original(x) = compute_optimized(x) ✓</code></pre><h4>5. <strong>Specification Compliance</strong></h4><p>SMT verifies implementations match formal specifications.</p><pre><code class="cure"># Specification: sorting produces ordered array with same elements
+spec def is_sorted(v: Vector(Int, n)): Bool =
+  ∀i j. 0 &lt;= i &lt; j &lt; n → v[i] &lt;= v[j]
+
+spec def same_multiset(v1: Vector(Int, n), v2: Vector(Int, n)): Bool =
+  ∀x. count(v1, x) = count(v2, x)
+
+# Implementation must satisfy both properties
+def sort(arr: Vector(Int, n)): Vector(Int, n)
+  ensures is_sorted(result) ∧ same_multiset(arr, result)
+  = ...</code></pre><hr class="thin"/><h2 id="verification-of-data-aware-processes" class="section-heading">
+  <a href="#verification-of-data-aware-processes" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Verification of Data-Aware Processes</span>
+</h2>
+<h3 id="background-the-gianola-framework" class="section-heading">
+  <a href="#background-the-gianola-framework" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Background: The Gianola Framework</span>
+</h3>
+<p><strong>&quot;Verification of Data-Aware Processes via Satisfiability Modulo Theories&quot;</strong> by Alessandro Gianola presents a comprehensive framework for verifying systems that combine:</p><ul><li><strong>Control flow</strong>: State machines, workflows, business processes</li><li><strong>Data manipulation</strong>: Variables, databases, external state</li><li><strong>Infinite state spaces</strong>: Unbounded integers, arrays, data structures</li></ul><p>This is precisely the problem domain that Cure FSMs inhabit.</p><h3 id="key-insights-from-gianola-s-work" class="section-heading">
+  <a href="#key-insights-from-gianola-s-work" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Key Insights from Gianola's Work</span>
+</h3>
+<h4>1. <strong>Data-Aware Processes</strong></h4><p>A <strong>data-aware process</strong> consists of:</p><ul><li>A finite set of <strong>control states</strong> (FSM states)</li><li>A <strong>data schema</strong> (variables, types, constraints)</li><li><strong>Transition guards</strong> (conditions on data)</li><li><strong>Actions</strong> (data transformations)</li></ul><p>This maps directly to Cure's FSM model:</p><pre><code class="cure">record TrafficPayload do
+  cycles_completed: Int        # Data schema
+  timer_events: Int
+  emergency_stops: Int
+end
+
+fsm TrafficPayload{...} do
+  Red --&gt; |timer| Green        # Control states and transitions
+  Green --&gt; |timer| Yellow
+  Yellow --&gt; |timer| Red
+end</code></pre><h4>2. <strong>Verification Problems</strong></h4><p>Gianola identifies critical verification problems:</p><ul><li><strong>Reachability</strong>: Can we reach a specific state?</li><li><strong>Safety</strong>: Do we always avoid bad states?</li><li><strong>Liveness</strong>: Do we eventually reach good states?</li><li><strong>Deadlock Freedom</strong>: Can the system always make progress?</li></ul><h4>3. <strong>SMT-Based Decision Procedures</strong></h4><p>The book presents algorithms that reduce these problems to SMT queries:</p><pre><code class="makeup erlang" translate="no"><span class="n">Reachability</span><span class="p" data-group-id="1513903290-1">(</span><span class="ss">s0</span><span class="p">,</span><span class="w"> </span><span class="ss">sf</span><span class="p" data-group-id="1513903290-1">)</span><span class="p">:</span><span class="w">
+  </span><span class="err">∃</span><span class="w"> </span><span class="ss">path</span><span class="p">.</span><span class="w"> </span><span class="ss">path</span><span class="p" data-group-id="1513903290-2">[</span><span class="mi">0</span><span class="p" data-group-id="1513903290-2">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">s0</span><span class="w"> </span><span class="err">∧</span><span class="w"> </span><span class="ss">path</span><span class="p" data-group-id="1513903290-3">[</span><span class="ss">n</span><span class="p" data-group-id="1513903290-3">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">sf</span><span class="w"> </span><span class="err">∧</span><span class="w">
+          </span><span class="err">∀</span><span class="ss">i</span><span class="p">.</span><span class="w"> </span><span class="nf">valid_transition</span><span class="p" data-group-id="1513903290-4">(</span><span class="ss">path</span><span class="p" data-group-id="1513903290-5">[</span><span class="ss">i</span><span class="p" data-group-id="1513903290-5">]</span><span class="p">,</span><span class="w"> </span><span class="ss">path</span><span class="p" data-group-id="1513903290-6">[</span><span class="ss">i</span><span class="o">+</span><span class="mi">1</span><span class="p" data-group-id="1513903290-6">]</span><span class="p" data-group-id="1513903290-4">)</span><span class="w">
+
+</span><span class="n">Safety</span><span class="p" data-group-id="1513903290-7">(</span><span class="ss">s0</span><span class="p">,</span><span class="w"> </span><span class="ss">bad</span><span class="p" data-group-id="1513903290-7">)</span><span class="p">:</span><span class="w">
+  </span><span class="err">¬</span><span class="err">∃</span><span class="w"> </span><span class="ss">path</span><span class="p">.</span><span class="w"> </span><span class="ss">path</span><span class="p" data-group-id="1513903290-8">[</span><span class="mi">0</span><span class="p" data-group-id="1513903290-8">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">s0</span><span class="w"> </span><span class="err">∧</span><span class="w"> </span><span class="err">∃</span><span class="ss">i</span><span class="p">.</span><span class="w"> </span><span class="ss">path</span><span class="p" data-group-id="1513903290-9">[</span><span class="ss">i</span><span class="p" data-group-id="1513903290-9">]</span><span class="w"> </span><span class="err">∈</span><span class="w"> </span><span class="ss">bad</span><span class="w">
+
+</span><span class="n">Liveness</span><span class="p" data-group-id="1513903290-10">(</span><span class="ss">s0</span><span class="p">,</span><span class="w"> </span><span class="ss">good</span><span class="p" data-group-id="1513903290-10">)</span><span class="p">:</span><span class="w">
+  </span><span class="err">∀</span><span class="w"> </span><span class="ss">path</span><span class="w"> </span><span class="ss">from</span><span class="w"> </span><span class="ss">s0</span><span class="p">.</span><span class="w"> </span><span class="err">∃</span><span class="ss">i</span><span class="p">.</span><span class="w"> </span><span class="ss">path</span><span class="p" data-group-id="1513903290-11">[</span><span class="ss">i</span><span class="p" data-group-id="1513903290-11">]</span><span class="w"> </span><span class="err">∈</span><span class="w"> </span><span class="ss">good</span></code></pre><p>Z3 can solve these queries even with complex data constraints.</p><h4>4. <strong>Bounded Model Checking</strong></h4><p>For infinite-state systems, <strong>bounded model checking</strong> explores up to depth <em>k</em>:</p><pre><code class="makeup erlang" translate="no"><span class="n">Reachable_k</span><span class="p" data-group-id="4749613031-1">(</span><span class="ss">s0</span><span class="p">,</span><span class="w"> </span><span class="ss">sf</span><span class="p" data-group-id="4749613031-1">)</span><span class="p">:</span><span class="w">
+  </span><span class="n">Check</span><span class="w"> </span><span class="ss">all</span><span class="w"> </span><span class="ss">paths</span><span class="w"> </span><span class="k">of</span><span class="w"> </span><span class="nb">length</span><span class="w"> </span><span class="err">≤</span><span class="w"> </span><span class="ss">k</span><span class="w"> </span><span class="ss">from</span><span class="w"> </span><span class="ss">s0</span><span class="w"> </span><span class="ss">to</span><span class="w"> </span><span class="ss">sf</span></code></pre><p>If no bug found up to depth <em>k</em>, increase <em>k</em>. SMT solvers efficiently handle increasing bounds.</p><h4>5. <strong>Invariant Synthesis</strong></h4><p>Gianola describes techniques to automatically discover <strong>invariants</strong>—properties that hold in all reachable states:</p><pre><code class="cure"># Synthesized invariant for traffic light
+invariant TrafficLight:
+  ∀ state. cycles_completed &gt;= 0 ∧
+           timer_events &gt;= cycles_completed * 3 ∧
+           emergency_stops &gt;= 0</code></pre><p>Z3's quantifier reasoning helps discover such invariants automatically.</p><hr class="thin"/><h2 id="fsm-verification-in-cure" class="section-heading">
+  <a href="#fsm-verification-in-cure" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">FSM Verification in Cure</span>
+</h2>
+<h3 id="cure-s-verification-opportunities" class="section-heading">
+  <a href="#cure-s-verification-opportunities" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Cure's Verification Opportunities</span>
+</h3>
+<p>Cure's design makes it ideal for SMT-based verification:</p><ol><li><strong>Explicit FSM Definitions</strong>: Clear state space and transitions</li><li><strong>Dependent Types</strong>: Rich type system with refinements</li><li><strong>Guards and Actions</strong>: Explicitly stated data constraints</li><li><strong>Immutability</strong>: Functional core simplifies reasoning</li></ol><h3 id="verification-properties-for-cure-fsms" class="section-heading">
+  <a href="#verification-properties-for-cure-fsms" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Verification Properties for Cure FSMs</span>
+</h3>
+<h4>Property 1: State Reachability</h4><p><strong>Problem</strong>: Can state <code class="inline">S</code> be reached from the initial state?</p><p><strong>Cure Example</strong> (from <code class="inline">07_fsm_verification.cure</code>):</p><pre><code class="cure">fsm LightState{cycle_count: 0} do
+  Red --&gt; |timer| Green {cycle_count = cycle_count + 1}
+  Green --&gt; |timer| Yellow
+  Yellow --&gt; |timer| Red
+  Red --&gt; |emergency| Red
+  Green --&gt; |emergency| Red
+  Yellow --&gt; |emergency| Red
+end
+
+# Verification query:
+# Is Yellow reachable from Red?
+# Answer: Yes, via path Red → Green → Yellow</code></pre><p><strong>Z3 Encoding</strong>:</p><pre><code class="smt2">(declare-datatypes () ((State Red Green Yellow)))
+(declare-fun step (State) State)
+
+(assert (or
+  (= (step Red) Green)
+  (= (step Red) Red)))
+(assert (or
+  (= (step Green) Yellow)
+  (= (step Green) Red)))
+(assert (= (step Yellow) Red))
+
+(assert (= Yellow (step (step Red))))  ; Can reach Yellow in 2 steps?
+(check-sat)  ; sat → yes, reachable</code></pre><h4>Property 2: Deadlock Detection</h4><p><strong>Problem</strong>: Is there a state with no outgoing transitions?</p><p><strong>Cure Example</strong>:</p><pre><code class="cure">fsm CounterState{count: 0, max_count: 5} do
+  Counting --&gt; |increment| Counting {count = count + 1}
+  Counting --&gt; |check| Done {when count &gt;= max_count}
+  # Done state has no outgoing transitions → DEADLOCK
+end</code></pre><p><strong>Z3 Encoding</strong>:</p><pre><code class="smt2">(declare-datatypes () ((State Counting Done)))
+(declare-fun next (State) State)
+
+; Define transitions
+(assert (or
+  (= (next Counting) Counting)
+  (= (next Counting) Done)))
+
+; Check if Done is a deadlock
+(assert (= (next Done) Done))  ; No real transition, self-loop
+(assert (distinct Done (next Done)))  ; Try to find different next state
+(check-sat)  ; unsat → deadlock confirmed</code></pre><h4>Property 3: Safety Properties</h4><p><strong>Problem</strong>: Can we reach a &quot;bad&quot; state?</p><p><strong>Cure Example</strong> (from <code class="inline">07_fsm_verification.cure</code>):</p><pre><code class="cure">record DoorState do
+  is_locked: Int      # 1 = locked, 0 = unlocked
+  alarm_active: Int   # 1 = active, 0 = inactive
+end
+
+fsm DoorState{is_locked: 1, alarm_active: 0} do
+  Locked --&gt; |unlock| Unlocked {is_locked = 0, when alarm_active = 0}
+  Unlocked --&gt; |lock| Locked {is_locked = 1}
+  Locked --&gt; |activate_alarm| LockedWithAlarm {alarm_active = 1}
+  LockedWithAlarm --&gt; |deactivate_alarm| Locked {alarm_active = 0}
+  # NO transition from LockedWithAlarm to Unlocked
+end
+
+# Safety property: ¬(is_locked = 0 ∧ alarm_active = 1)
+# &quot;Never unlocked while alarm is active&quot;</code></pre><p><strong>Z3 Verification</strong>:</p><pre><code class="smt2">(declare-datatypes () ((State Locked Unlocked LockedWithAlarm)))
+(declare-fun is_locked (State) Int)
+(declare-fun alarm_active (State) Int)
+
+; Define state invariants
+(assert (= (is_locked Locked) 1))
+(assert (= (alarm_active Locked) 0))
+(assert (= (is_locked Unlocked) 0))
+(assert (= (alarm_active Unlocked) 0))
+(assert (= (is_locked LockedWithAlarm) 1))
+(assert (= (alarm_active LockedWithAlarm) 1))
+
+; Check safety property violation
+(declare-const s State)
+(assert (and (= (is_locked s) 0) (= (alarm_active s) 1)))
+(check-sat)  ; unsat → safety property holds!</code></pre><h4>Property 4: Liveness Properties</h4><p><strong>Problem</strong>: Do we eventually reach a desired state?</p><p><strong>Cure Example</strong>:</p><pre><code class="cure">fsm WorkflowState{tasks_completed: 0, total_tasks: 3} do
+  Pending --&gt; |start| InProgress {tasks_completed = 0}
+  InProgress --&gt; |complete_task| InProgress {
+    tasks_completed = tasks_completed + 1
+  }
+  InProgress --&gt; |finish| Completed {
+    when tasks_completed &gt;= total_tasks
+  }
+end
+
+# Liveness property: ◇Completed
+# &quot;Eventually reach Completed state&quot;</code></pre><p><strong>Z3 Encoding</strong> (using bounded model checking):</p><pre><code class="smt2">; Check if Completed is reachable within k steps
+(declare-datatypes () ((State Pending InProgress Completed)))
+(declare-fun state (Int) State)
+(declare-fun tasks (Int) Int)
+
+; Initial state
+(assert (= (state 0) Pending))
+(assert (= (tasks 0) 0))
+
+; Transition constraints for k=10 steps
+(define-fun transition ((i Int)) Bool
+  (or
+    (and (= (state i) Pending)
+         (= (state (+ i 1)) InProgress)
+         (= (tasks (+ i 1)) 0))
+    (and (= (state i) InProgress)
+         (= (state (+ i 1)) InProgress)
+         (= (tasks (+ i 1)) (+ (tasks i) 1)))
+    (and (= (state i) InProgress)
+         (&gt;= (tasks i) 3)
+         (= (state (+ i 1)) Completed))))
+
+; Check if Completed is reachable
+(assert (exists ((i Int)) (and (&lt;= 0 i) (&lt;= i 10) (= (state i) Completed))))
+(check-sat)  ; sat → liveness holds</code></pre><h4>Property 5: Data Invariants</h4><p><strong>Problem</strong>: Do data constraints always hold?</p><p><strong>Cure Example</strong>:</p><pre><code class="cure">record CounterData do
+  count: Int
+  max_count: Int
+end
+
+fsm CounterData{count: 0, max_count: 10} do
+  Active --&gt; |increment| Active {
+    count = count + 1,
+    when count &lt; max_count  # Guard prevents overflow
+  }
+end
+
+# Invariant: ∀ state. 0 &lt;= count &lt;= max_count</code></pre><p><strong>Z3 Verification</strong>:</p><pre><code class="smt2">(declare-const count_before Int)
+(declare-const max_count Int)
+(declare-const count_after Int)
+
+; Initial invariant
+(assert (= count_before 0))
+(assert (= max_count 10))
+(assert (&lt;= 0 count_before))
+(assert (&lt;= count_before max_count))
+
+; Transition preserves invariant
+(assert (&lt; count_before max_count))  ; Guard
+(assert (= count_after (+ count_before 1)))  ; Action
+
+; Check invariant after transition
+(assert (or (&lt; count_after 0) (&gt; count_after max_count)))
+(check-sat)  ; unsat → invariant preserved!</code></pre><hr class="thin"/><h2 id="practical-examples" class="section-heading">
+  <a href="#practical-examples" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Practical Examples</span>
+</h2>
+<h3 id="example-1-verifying-refinement-types" class="section-heading">
+  <a href="#example-1-verifying-refinement-types" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example 1: Verifying Refinement Types</span>
+</h3>
+<p>Cure supports refinement types (from <code class="inline">refinement_types.cure</code>):</p><pre><code class="cure">type Positive = Int when x &gt; 0
+type NonZero = Int when x /= 0
+type Percentage = Int when x &gt;= 0 and x =&lt; 100
+
+def safe_divide(a: Int, b: NonZero): Int =
+  a / b</code></pre><p><strong>Z3 Verification of Type Safety</strong>:</p><pre><code class="smt2">(declare-const a Int)
+(declare-const b Int)
+
+; Precondition: b is NonZero
+(assert (not (= b 0)))
+
+; Division is safe
+(declare-const result Int)
+(assert (= result (div a b)))
+
+; Check if division by zero is possible
+(assert (= b 0))
+(check-sat)  ; unsat → division is safe</code></pre><h3 id="example-2-verifying-fsm-transition-guards" class="section-heading">
+  <a href="#example-2-verifying-fsm-transition-guards" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example 2: Verifying FSM Transition Guards</span>
+</h3>
+<pre><code class="cure">record BankAccount do
+  balance: Int
+  overdraft_limit: Int
+end
+
+fsm BankAccount{balance: 1000, overdraft_limit: 500} do
+  Active --&gt; |withdraw| Active {
+    balance = balance - amount,
+    when balance - amount &gt;= -overdraft_limit
+  }
+end</code></pre><p><strong>Z3 Verification</strong>: Prove balance never exceeds overdraft limit</p><pre><code class="smt2">(declare-const balance_before Int)
+(declare-const overdraft_limit Int)
+(declare-const amount Int)
+(declare-const balance_after Int)
+
+; Initial condition
+(assert (= balance_before 1000))
+(assert (= overdraft_limit 500))
+
+; Transition guard
+(assert (&gt;= (- balance_before amount) (- overdraft_limit)))
+
+; Action
+(assert (= balance_after (- balance_before amount)))
+
+; Verify invariant: balance &gt;= -overdraft_limit
+(assert (&lt; balance_after (- overdraft_limit)))
+(check-sat)  ; unsat → invariant holds</code></pre><h3 id="example-3-proving-equivalence-of-fsm-refactorings" class="section-heading">
+  <a href="#example-3-proving-equivalence-of-fsm-refactorings" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example 3: Proving Equivalence of FSM Refactorings</span>
+</h3>
+<p>Original FSM:</p><pre><code class="cure">fsm TrafficLight1{...} do
+  Red --&gt; |timer| Green
+  Green --&gt; |timer| Yellow
+  Yellow --&gt; |timer| Red
+end</code></pre><p>Refactored FSM:</p><pre><code class="cure">fsm TrafficLight2{...} do
+  State0 --&gt; |timer| State1
+  State1 --&gt; |timer| State2
+  State2 --&gt; |timer| State0
+end</code></pre><p><strong>Z3 Verification</strong>: Prove both FSMs are isomorphic</p><pre><code class="smt2">; Define mapping: Red ↔ State0, Green ↔ State1, Yellow ↔ State2
+(declare-fun map (State1) State2)
+
+(assert (= (map Red) State0))
+(assert (= (map Green) State1))
+(assert (= (map Yellow) State2))
+
+; Verify transitions are preserved
+(assert (= (map (transition1 Red)) (transition2 (map Red))))
+; ... (similar for all transitions)
+
+(check-sat)  ; sat → FSMs are equivalent</code></pre><h3 id="example-4-detecting-race-conditions-in-concurrent-fsms" class="section-heading">
+  <a href="#example-4-detecting-race-conditions-in-concurrent-fsms" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Example 4: Detecting Race Conditions in Concurrent FSMs</span>
+</h3>
+<pre><code class="cure">record SharedCounter do
+  value: Int
+end
+
+fsm Counter1{value: 0} do
+  Idle --&gt; |increment| Idle {value = value + 1}
+end
+
+fsm Counter2{value: 0} do
+  Idle --&gt; |increment| Idle {value = value + 1}
+end
+
+# Both FSMs share the same `value` variable
+# Can concurrent increments lead to lost updates?</code></pre><p><strong>Z3 Verification</strong>:</p><pre><code class="smt2">(declare-const value_initial Int)
+(declare-const value_fsm1 Int)
+(declare-const value_fsm2 Int)
+(declare-const value_final Int)
+
+(assert (= value_initial 0))
+
+; FSM1 increments
+(assert (= value_fsm1 (+ value_initial 1)))
+
+; FSM2 increments (reads initial value due to race)
+(assert (= value_fsm2 (+ value_initial 1)))
+
+; Final value (last write wins)
+(assert (or (= value_final value_fsm1) (= value_final value_fsm2)))
+
+; Check if final value could be 1 instead of 2
+(assert (= value_final 1))
+(check-sat)  ; sat → race condition detected!
+; Model: both FSMs read value=0, both write value=1, last write wins</code></pre><hr class="thin"/><h2 id="integration-strategy" class="section-heading">
+  <a href="#integration-strategy" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Integration Strategy</span>
+</h2>
+<h3 id="compile-time-verification" class="section-heading">
+  <a href="#compile-time-verification" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Compile-Time Verification</span>
+</h3>
+<p>Integrate Z3 into the Cure compiler pipeline:</p><pre><code class="makeup erlang" translate="no"><span class="n">Cure</span><span class="w"> </span><span class="n">Source</span><span class="w"> </span><span class="n">Code</span><span class="w">
+      </span><span class="err">│</span><span class="w">
+      </span><span class="err">▼</span><span class="w">
+  </span><span class="n">Lexer</span><span class="o">/</span><span class="n">Parser</span><span class="w">
+      </span><span class="err">│</span><span class="w">
+      </span><span class="err">▼</span><span class="w">
+   </span><span class="n">Type</span><span class="w"> </span><span class="n">Checker</span><span class="w">  </span><span class="err">◄</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┐</span><span class="w">
+      </span><span class="err">│</span><span class="w">                  </span><span class="err">│</span><span class="w">
+      </span><span class="err">▼</span><span class="w">                  </span><span class="err">│</span><span class="w">
+  </span><span class="n">FSM</span><span class="w"> </span><span class="n">Analyzer</span><span class="w">           </span><span class="err">│</span><span class="w">
+      </span><span class="err">│</span><span class="w">                  </span><span class="err">│</span><span class="w">
+      </span><span class="err">▼</span><span class="w">                  </span><span class="err">│</span><span class="w">
+ </span><span class="n">Generate</span><span class="w"> </span><span class="n">Z3</span><span class="w"> </span><span class="n">Queries</span><span class="w">     </span><span class="err">│</span><span class="w">
+      </span><span class="err">│</span><span class="w">                  </span><span class="err">│</span><span class="w">
+      </span><span class="err">▼</span><span class="w">                  </span><span class="err">│</span><span class="w">
+  </span><span class="n">Z3</span><span class="w"> </span><span class="n">Solver</span><span class="w">              </span><span class="err">│</span><span class="w">
+      </span><span class="err">│</span><span class="w">                  </span><span class="err">│</span><span class="w">
+      </span><span class="err">├</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┘</span><span class="w">
+      </span><span class="err">│</span><span class="w"> </span><span class="p" data-group-id="1912747512-1">(</span><span class="ss">unsat</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="ss">verify</span><span class="w"> </span><span class="ss">next</span><span class="w"> </span><span class="ss">property</span><span class="p" data-group-id="1912747512-1">)</span><span class="w">
+      </span><span class="err">▼</span><span class="w">
+ </span><span class="n">Report</span><span class="w"> </span><span class="n">Errors</span><span class="o">/</span><span class="n">Proofs</span><span class="w">
+      </span><span class="err">│</span><span class="w">
+      </span><span class="err">▼</span><span class="w">
+  </span><span class="n">Code</span><span class="w"> </span><span class="n">Generation</span></code></pre><h3 id="verification-workflow" class="section-heading">
+  <a href="#verification-workflow" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Verification Workflow</span>
+</h3>
+<ol><li><strong>Extract FSM Structure</strong>: Parse FSM definitions, states, transitions, guards</li><li><strong>Generate Verification Conditions</strong>: Create Z3 queries for each property</li><li><strong>Invoke Z3</strong>: Check satisfiability of queries</li><li><strong>Report Results</strong>:<ul><li><code class="inline">unsat</code> → Property holds ✓</li><li><code class="inline">sat</code> → Counterexample found ✗</li><li><code class="inline">unknown</code> → Timeout or undecidable</li></ul></li></ol><h3 id="cure-compiler-integration-points" class="section-heading">
+  <a href="#cure-compiler-integration-points" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Cure Compiler Integration Points</span>
+</h3>
+<pre><code class="makeup erlang" translate="no"><span class="c1">%% In cure_fsm_verifier.erl</span><span class="w">
+</span><span class="w">
+</span><span class="p">-</span><span class="na">export</span><span class="p" data-group-id="4039357475-1">(</span><span class="p" data-group-id="4039357475-2">[</span><span class="ss">verify_fsm</span><span class="p">/</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">check_deadlock</span><span class="p">/</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">check_safety</span><span class="p">/</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="ss">check_liveness</span><span class="p">/</span><span class="mi">2</span><span class="p" data-group-id="4039357475-2">]</span><span class="p" data-group-id="4039357475-1">)</span><span class="p">.</span><span class="w">
+
+</span><span class="nf">verify_fsm</span><span class="p" data-group-id="4039357475-3">(</span><span class="n">FSM</span><span class="p" data-group-id="4039357475-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="c1">%% Extract FSM structure</span><span class="w">
+    </span><span class="n">States</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">extract_states</span><span class="p" data-group-id="4039357475-4">(</span><span class="n">FSM</span><span class="p" data-group-id="4039357475-4">)</span><span class="p">,</span><span class="w">
+    </span><span class="n">Transitions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">extract_transitions</span><span class="p" data-group-id="4039357475-5">(</span><span class="n">FSM</span><span class="p" data-group-id="4039357475-5">)</span><span class="p">,</span><span class="w">
+    </span><span class="n">Guards</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">extract_guards</span><span class="p" data-group-id="4039357475-6">(</span><span class="n">FSM</span><span class="p" data-group-id="4039357475-6">)</span><span class="p">,</span><span class="w">
+    
+    </span><span class="c1">%% Generate Z3 context</span><span class="w">
+    </span><span class="n">Z3Context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">z3</span><span class="p">:</span><span class="nf">mk_context</span><span class="p" data-group-id="4039357475-7">(</span><span class="p" data-group-id="4039357475-8">[</span><span class="p" data-group-id="4039357475-8">]</span><span class="p" data-group-id="4039357475-7">)</span><span class="p">,</span><span class="w">
+    
+    </span><span class="c1">%% Encode FSM in Z3</span><span class="w">
+    </span><span class="n">StateSort</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">encode_states</span><span class="p" data-group-id="4039357475-9">(</span><span class="n">Z3Context</span><span class="p">,</span><span class="w"> </span><span class="n">States</span><span class="p" data-group-id="4039357475-9">)</span><span class="p">,</span><span class="w">
+    </span><span class="n">TransitionAssertions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">encode_transitions</span><span class="p" data-group-id="4039357475-10">(</span><span class="n">Z3Context</span><span class="p">,</span><span class="w"> </span><span class="n">StateSort</span><span class="p">,</span><span class="w"> </span><span class="n">Transitions</span><span class="p" data-group-id="4039357475-10">)</span><span class="p">,</span><span class="w">
+    
+    </span><span class="c1">%% Check properties</span><span class="w">
+    </span><span class="n">DeadlockResult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">check_deadlock</span><span class="p" data-group-id="4039357475-11">(</span><span class="n">Z3Context</span><span class="p">,</span><span class="w"> </span><span class="n">StateSort</span><span class="p">,</span><span class="w"> </span><span class="n">Transitions</span><span class="p" data-group-id="4039357475-11">)</span><span class="p">,</span><span class="w">
+    </span><span class="n">SafetyResult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">check_safety_properties</span><span class="p" data-group-id="4039357475-12">(</span><span class="n">Z3Context</span><span class="p">,</span><span class="w"> </span><span class="n">FSM</span><span class="p" data-group-id="4039357475-12">)</span><span class="p">,</span><span class="w">
+    </span><span class="n">LivenessResult</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">check_liveness_properties</span><span class="p" data-group-id="4039357475-13">(</span><span class="n">Z3Context</span><span class="p">,</span><span class="w"> </span><span class="n">FSM</span><span class="p" data-group-id="4039357475-13">)</span><span class="p">,</span><span class="w">
+    
+    </span><span class="c1">%% Report</span><span class="w">
+    </span><span class="p" data-group-id="4039357475-14">{</span><span class="n">DeadlockResult</span><span class="p">,</span><span class="w"> </span><span class="n">SafetyResult</span><span class="p">,</span><span class="w"> </span><span class="n">LivenessResult</span><span class="p" data-group-id="4039357475-14">}</span><span class="p">.</span><span class="w">
+
+</span><span class="nf">check_deadlock</span><span class="p" data-group-id="4039357475-15">(</span><span class="n">Z3Context</span><span class="p">,</span><span class="w"> </span><span class="n">StateSort</span><span class="p">,</span><span class="w"> </span><span class="n">Transitions</span><span class="p" data-group-id="4039357475-15">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="n">Solver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">z3</span><span class="p">:</span><span class="nf">mk_solver</span><span class="p" data-group-id="4039357475-16">(</span><span class="n">Z3Context</span><span class="p" data-group-id="4039357475-16">)</span><span class="p">,</span><span class="w">
+    
+    </span><span class="c1">%% For each state, check if it has outgoing transitions</span><span class="w">
+    </span><span class="nc">lists</span><span class="p">:</span><span class="nf">map</span><span class="p" data-group-id="4039357475-17">(</span><span class="nf">fun</span><span class="p" data-group-id="4039357475-18">(</span><span class="n">State</span><span class="p" data-group-id="4039357475-18">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+        </span><span class="n">HasTransition</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">has_outgoing_transition</span><span class="p" data-group-id="4039357475-19">(</span><span class="n">State</span><span class="p">,</span><span class="w"> </span><span class="n">Transitions</span><span class="p" data-group-id="4039357475-19">)</span><span class="p">,</span><span class="w">
+        </span><span class="k">case</span><span class="w"> </span><span class="n">HasTransition</span><span class="w"> </span><span class="k">of</span><span class="w">
+            </span><span class="ss">false</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="p" data-group-id="4039357475-20">{</span><span class="ss">deadlock</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="4039357475-20">}</span><span class="p">;</span><span class="w">
+            </span><span class="ss">true</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="ss">ok</span><span class="w">
+        </span><span class="k">end</span><span class="w">
+    </span><span class="k">end</span><span class="p">,</span><span class="w"> </span><span class="nf">get_all_states</span><span class="p" data-group-id="4039357475-21">(</span><span class="n">StateSort</span><span class="p" data-group-id="4039357475-21">)</span><span class="p" data-group-id="4039357475-17">)</span><span class="p">.</span></code></pre><h3 id="optimization-incremental-verification" class="section-heading">
+  <a href="#optimization-incremental-verification" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Optimization: Incremental Verification</span>
+</h3>
+<p>For large FSMs, use Z3's <strong>incremental solving</strong>:</p><pre><code class="makeup erlang" translate="no"><span class="nf">verify_incremental</span><span class="p" data-group-id="9267076231-1">(</span><span class="n">FSM</span><span class="p" data-group-id="9267076231-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="n">Z3Ctx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">z3</span><span class="p">:</span><span class="nf">mk_context</span><span class="p" data-group-id="9267076231-2">(</span><span class="p" data-group-id="9267076231-3">[</span><span class="p" data-group-id="9267076231-3">]</span><span class="p" data-group-id="9267076231-2">)</span><span class="p">,</span><span class="w">
+    </span><span class="n">Solver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">z3</span><span class="p">:</span><span class="nf">mk_solver</span><span class="p" data-group-id="9267076231-4">(</span><span class="n">Z3Ctx</span><span class="p" data-group-id="9267076231-4">)</span><span class="p">,</span><span class="w">
+    
+    </span><span class="c1">%% Add base constraints</span><span class="w">
+    </span><span class="nc">z3</span><span class="p">:</span><span class="nf">solver_assert</span><span class="p" data-group-id="9267076231-5">(</span><span class="n">Solver</span><span class="p">,</span><span class="w"> </span><span class="nf">base_constraints</span><span class="p" data-group-id="9267076231-6">(</span><span class="n">FSM</span><span class="p" data-group-id="9267076231-6">)</span><span class="p" data-group-id="9267076231-5">)</span><span class="p">,</span><span class="w">
+    
+    </span><span class="c1">%% Check properties incrementally</span><span class="w">
+    </span><span class="nc">lists</span><span class="p">:</span><span class="nf">map</span><span class="p" data-group-id="9267076231-7">(</span><span class="nf">fun</span><span class="p" data-group-id="9267076231-8">(</span><span class="n">Property</span><span class="p" data-group-id="9267076231-8">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+        </span><span class="nc">z3</span><span class="p">:</span><span class="nf">solver_push</span><span class="p" data-group-id="9267076231-9">(</span><span class="n">Solver</span><span class="p" data-group-id="9267076231-9">)</span><span class="p">,</span><span class="w">  </span><span class="c1">% Save state</span><span class="w">
+        </span><span class="nc">z3</span><span class="p">:</span><span class="nf">solver_assert</span><span class="p" data-group-id="9267076231-10">(</span><span class="n">Solver</span><span class="p">,</span><span class="w"> </span><span class="nf">property_constraint</span><span class="p" data-group-id="9267076231-11">(</span><span class="n">Property</span><span class="p" data-group-id="9267076231-11">)</span><span class="p" data-group-id="9267076231-10">)</span><span class="p">,</span><span class="w">
+        </span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">z3</span><span class="p">:</span><span class="nf">solver_check</span><span class="p" data-group-id="9267076231-12">(</span><span class="n">Solver</span><span class="p" data-group-id="9267076231-12">)</span><span class="p">,</span><span class="w">
+        </span><span class="nc">z3</span><span class="p">:</span><span class="nf">solver_pop</span><span class="p" data-group-id="9267076231-13">(</span><span class="n">Solver</span><span class="p" data-group-id="9267076231-13">)</span><span class="p">,</span><span class="w">   </span><span class="c1">% Restore state</span><span class="w">
+        </span><span class="p" data-group-id="9267076231-14">{</span><span class="n">Property</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="9267076231-14">}</span><span class="w">
+    </span><span class="k">end</span><span class="p">,</span><span class="w"> </span><span class="nf">properties_to_check</span><span class="p" data-group-id="9267076231-15">(</span><span class="n">FSM</span><span class="p" data-group-id="9267076231-15">)</span><span class="p" data-group-id="9267076231-7">)</span><span class="p">.</span></code></pre><h3 id="ide-integration" class="section-heading">
+  <a href="#ide-integration" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">IDE Integration</span>
+</h3>
+<p>Provide real-time verification feedback in development:</p><pre><code class="makeup erlang" translate="no"><span class="err">┌</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┐</span><span class="w">
+</span><span class="err">│</span><span class="w"> </span><span class="ss">fsm</span><span class="w"> </span><span class="n">DoorLock</span><span class="p" data-group-id="9023470668-1">{</span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="9023470668-1">}</span><span class="w"> </span><span class="ss">do</span><span class="w">                        </span><span class="err">│</span><span class="w">
+</span><span class="err">│</span><span class="w">   </span><span class="n">Locked</span><span class="w"> </span><span class="o">--</span><span class="o">&gt;</span><span class="w"> </span><span class="p">|</span><span class="ss">unlock</span><span class="p">|</span><span class="w"> </span><span class="n">Unlocked</span><span class="w">              </span><span class="err">│</span><span class="w">
+</span><span class="err">│</span><span class="w">   </span><span class="n">LockedWithAlarm</span><span class="w"> </span><span class="o">--</span><span class="o">&gt;</span><span class="w"> </span><span class="p">|</span><span class="ss">unlock</span><span class="p">|</span><span class="w"> </span><span class="n">Unlocked</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="err">⚠</span><span class="err">️</span><span class="w"> </span><span class="n">Safety</span><span class="w"> </span><span class="ss">violation</span><span class="w">
+</span><span class="err">│</span><span class="w">   </span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="err">^</span><span class="w">   </span><span class="err">│</span><span class="w">    </span><span class="n">Can</span><span class="w"> </span><span class="ss">unlock</span><span class="w"> </span><span class="ss">with</span><span class="w">
+</span><span class="err">│</span><span class="w">   </span><span class="n">Warning</span><span class="p">:</span><span class="w"> </span><span class="n">Violates</span><span class="w"> </span><span class="ss">safety</span><span class="w"> </span><span class="ss">property</span><span class="w">         </span><span class="err">│</span><span class="w">    </span><span class="ss">alarm</span><span class="w"> </span><span class="ss">active</span><span class="w">
+</span><span class="err">│</span><span class="w"> </span><span class="k">end</span><span class="w">                                         </span><span class="err">│</span><span class="w">
+</span><span class="err">└</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">─</span><span class="err">┘</span></code></pre><h3 id="testing-and-verification-combined" class="section-heading">
+  <a href="#testing-and-verification-combined" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Testing and Verification Combined</span>
+</h3>
+<p>Generate test cases from Z3 counterexamples:</p><pre><code class="makeup erlang" translate="no"><span class="nf">generate_test_from_counterexample</span><span class="p" data-group-id="0417916168-1">(</span><span class="n">FSM</span><span class="p">,</span><span class="w"> </span><span class="n">Property</span><span class="p">,</span><span class="w"> </span><span class="n">Counterexample</span><span class="p" data-group-id="0417916168-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="c1">%% Z3 provides: [Red, Green, Yellow, Failure]</span><span class="w">
+    </span><span class="n">TestSteps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">lists</span><span class="p">:</span><span class="nf">map</span><span class="p" data-group-id="0417916168-2">(</span><span class="nf">fun</span><span class="p" data-group-id="0417916168-3">(</span><span class="n">State</span><span class="p" data-group-id="0417916168-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+        </span><span class="n">Event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">get_transition_event</span><span class="p" data-group-id="0417916168-4">(</span><span class="n">State</span><span class="p">,</span><span class="w"> </span><span class="n">Counterexample</span><span class="p" data-group-id="0417916168-4">)</span><span class="p">,</span><span class="w">
+        </span><span class="p" data-group-id="0417916168-5">{</span><span class="ss">send_event</span><span class="p">,</span><span class="w"> </span><span class="n">Event</span><span class="p">,</span><span class="w"> </span><span class="ss">expect_state</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="0417916168-5">}</span><span class="w">
+    </span><span class="k">end</span><span class="p">,</span><span class="w"> </span><span class="n">Counterexample</span><span class="p" data-group-id="0417916168-2">)</span><span class="p">,</span><span class="w">
+    
+    </span><span class="c1">%% Generate EUnit test</span><span class="w">
+    </span><span class="nf">generate_eunit_test</span><span class="p" data-group-id="0417916168-6">(</span><span class="n">FSM</span><span class="p">,</span><span class="w"> </span><span class="n">Property</span><span class="p">,</span><span class="w"> </span><span class="n">TestSteps</span><span class="p" data-group-id="0417916168-6">)</span><span class="p">.</span></code></pre><hr class="thin"/><h2 id="further-reading" class="section-heading">
+  <a href="#further-reading" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Further Reading</span>
+</h2>
+<h3 id="books" class="section-heading">
+  <a href="#books" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Books</span>
+</h3>
+<ol><li><p><strong>&quot;Verification of Data-Aware Processes via Satisfiability Modulo Theories&quot;</strong> by Alessandro Gianola</p><ul><li>Comprehensive treatment of SMT-based verification for stateful systems</li><li>Covers reachability, safety, liveness, and deadlock detection</li><li>Presents decision procedures and complexity results</li><li>Essential reading for understanding Cure FSM verification</li></ul></li><li><p><strong>&quot;The Calculus of Computation&quot;</strong> by Aaron R. Bradley and Zohar Manna</p><ul><li>Foundations of program verification</li><li>SMT-based verification techniques</li><li>Temporal logic and model checking</li></ul></li><li><p><strong>&quot;Decision Procedures&quot;</strong> by Daniel Kroening and Ofer Strichman</p><ul><li>In-depth treatment of SAT and SMT algorithms</li><li>Theory solvers and their combination</li><li>Practical implementation details</li></ul></li></ol><h3 id="papers" class="section-heading">
+  <a href="#papers" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Papers</span>
+</h3>
+<ol><li><p><strong>&quot;Z3: An Efficient SMT Solver&quot;</strong> by Leonardo de Moura and Nikolaj Bjørner</p><ul><li>Architecture and algorithms of Z3</li><li>Performance optimizations</li></ul></li><li><p><strong>&quot;Satisfiability Modulo Theories: Introduction and Applications&quot;</strong> by Clark Barrett et al.</p><ul><li>Overview of SMT landscape</li><li>Applications in verification</li></ul></li><li><p><strong>&quot;Temporal Verification of Reactive Systems: Safety&quot;</strong> by Zohar Manna and Amir Pnueli</p><ul><li>Safety properties and their verification</li><li>Temporal logic foundations</li></ul></li></ol><h3 id="online-resources" class="section-heading">
+  <a href="#online-resources" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Online Resources</span>
+</h3>
+<ol><li><strong>Z3 Tutorial</strong>: <a href="https://rise4fun.com/z3/tutorial">https://rise4fun.com/z3/tutorial</a></li><li><strong>SMT-LIB Standard</strong>: <a href="http://smtlib.cs.uiowa.edu/">http://smtlib.cs.uiowa.edu/</a></li><li><strong>Z3 API Documentation</strong>: <a href="https://z3prover.github.io/api/html/">https://z3prover.github.io/api/html/</a></li><li><strong>Z3 GitHub Repository</strong>: <a href="https://github.com/Z3Prover/z3">https://github.com/Z3Prover/z3</a></li></ol><h3 id="related-tools" class="section-heading">
+  <a href="#related-tools" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Related Tools</span>
+</h3>
+<ol><li><strong>Dafny</strong>: Verification-aware programming language using Z3</li><li><strong>CBMC</strong>: Bounded model checker for C/C++ using SAT/SMT</li><li><strong>Boogie</strong>: Intermediate verification language with Z3 backend</li><li><strong>Why3</strong>: Platform for deductive program verification with SMT support</li></ol><hr class="thin"/><h2 id="conclusion" class="section-heading">
+  <a href="#conclusion" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Conclusion</span>
+</h2>
+<p>SMT solvers, particularly Z3, represent a transformative technology for ensuring software correctness. By integrating Z3 into the Cure compiler, we can:</p><ul><li><strong>Eliminate entire classes of bugs</strong> through compile-time verification</li><li><strong>Provide mathematical guarantees</strong> about FSM behavior</li><li><strong>Catch subtle errors</strong> that testing would miss</li><li><strong>Enable confident refactoring</strong> with equivalence proofs</li><li><strong>Generate high-quality test cases</strong> from counterexamples</li></ul><p>As Cure evolves, SMT-based verification will become increasingly valuable, especially for mission-critical systems where correctness is paramount. The combination of Cure's expressive type system, built-in FSMs, and Z3's powerful reasoning capabilities creates a uniquely robust platform for building reliable concurrent systems.</p><p>The insights from Gianola's &quot;Verification of Data-Aware Processes via Satisfiability Modulo Theories&quot; provide a solid theoretical foundation for implementing these verification techniques in Cure. By following the frameworks and algorithms presented in that work, we can build a world-class verification system that makes Cure a leader in verified systems programming for the BEAM.</p><hr class="thin"/><h2 id="references" class="section-heading">
+  <a href="#references" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">References</span>
+</h2>
+<p>[^1]: <a href="https://4m4.it/posts/satisfiability-modulo-theories-sudoku/index.html">Sudoku and Satisfiability Modulo Theories: Layman’s Example</a>
+[^2]: <a href="https://hanielbarbosa.com/papers/fm2024.pdf">Satisfiability Modulo Theories: A Beginner's Tutorial</a>
+[^3]: Alessandro Gianola, &quot;SMT-based Safety Verification of Data-Aware Processes: Foundations and Applications,&quot; <a href="https://gianola.people.unibz.it/wp-content/uploads/2022/03/PhD-dissertation-Gianola.pdf">PDF</a>.
+[^4]: Alessandro Gianola et al., “SMT-based Safety Verification of Data-Aware Processes,” CEUR Workshop Proceedings. <a href="https://ceur-ws.org/Vol-3216/paper_133.pdf">PDF</a>.</p><hr class="thin"/><p><em>For questions or contributions to Cure's verification infrastructure, please see the project repository and documentation.</em></p>
+</div>
+
+<div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions-item">
+
+      <a href="why_cure.html" class="bottom-actions-button" rel="prev">
+        <span class="subheader">
+          ← Previous Page
+        </span>
+        <span class="title">
+Why Cure
+        </span>
+      </a>
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="api_reference.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+API Reference
+        </span>
+      </a>
+
+  </div>
+</div>
+    <footer class="footer">
+      <p>
+
+          <span class="line">
+            <a href="https://hex.pm/packages/cure/0.4.0" class="footer-hex-package">Hex Package</a>
+
+            <a href="https://preview.hex.pm/preview/cure/0.4.0">Hex Preview</a>
+
+              (<a href="https://preview.hex.pm/preview/cure/0.4.0/show/docs/WHY_SMT.md">current file</a>)
+
+          </span>
+
+        <span class="line">
+          <button class="a-main footer-button display-quick-switch" title="Search HexDocs packages">
+            Search HexDocs
+          </button>
+
+            <a href="cure.epub" title="ePub version">
+              Download ePub version
+            </a>
+
+        </span>
+      </p>
+
+      <p class="built-using">
+        Built using
+        <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.35.1) for the
+
+          <a href="https://erlang.org" title="Erlang" target="_blank" translate="no">Erlang programming language</a>
+
+      </p>
+
+    </footer>
+  </div>
+</main>
+</div>
+
+  </body>
+</html>

@@ -1,12 +1,15 @@
 #!/bin/bash
-# Build script for Cure website
-# Converts all documentation to HTML with syntax highlighting
+# Quick rebuild script for Cure documentation
+# Only rebuilds docs (no API generation or asset copying)
+# For full build including API docs, use ../build_site.sh from project root
 
 set -e  # Exit on error
 
 echo "======================================"
-echo "Building Cure Website"
+echo "Rebuilding Cure Documentation (Quick)"
 echo "======================================"
+echo ""
+echo "Note: For full build with API docs, run ../build_site.sh from project root"
 echo ""
 
 # Get script directory

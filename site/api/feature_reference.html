@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-3ABA2D2B.js"></script>
+    <script src="dist/sidebar_items-DC6CD34D.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -121,7 +121,7 @@ Pages
     <span>Cure Language Features Reference</span>
   </h1>
 
-<p><strong>Version</strong>: Current Implementation Status<br/><strong>Last Updated</strong>: October 31, 2025</p><p>This document provides a comprehensive reference for all Cure language features, including current implementation status, syntax examples, and usage patterns.</p><h2 id="table-of-contents" class="section-heading">
+<p><strong>Version</strong>: Current Implementation Status<br/><strong>Last Updated</strong>: November 22, 2025</p><p>This document provides a comprehensive reference for all Cure language features, including current implementation status, syntax examples, and usage patterns.</p><h2 id="table-of-contents" class="section-heading">
   <a href="#table-of-contents" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -525,7 +525,41 @@ case number do
   n when n &gt; 100 -&gt; &quot;large&quot;
   n when n &gt; 10 -&gt; &quot;medium&quot; 
   _ -&gt; &quot;small&quot;
-end</code></pre><h2 id="error-handling-patterns" class="section-heading">
+end</code></pre><h3 id="function-level-guards-complete-implementation" class="section-heading">
+  <a href="#function-level-guards-complete-implementation" class="hover-link">
+    <i class="ri-link-m" aria-hidden="true"></i>
+  </a>
+  <span class="text">Function-Level Guards ✅ <strong>Complete Implementation</strong></span>
+</h3>
+<p>Cure supports guards on function definitions with <code class="inline">when</code> clauses, enabling elegant multi-clause functions with preconditions:</p><pre><code class="cure"># Basic guard on function parameter
+def is_positive(x: Int): Bool when x &gt; 0 = true
+def is_positive(_x: Int): Bool = false
+
+# Multi-clause function with guards
+def abs(x: Int): Int when x &gt;= 0 = x
+def abs(x: Int): Int = 0 - x
+
+# Sign function with complete coverage
+def sign(x: Int): Int when x &gt; 0 = 1
+def sign(x: Int): Int when x == 0 = 0
+def sign(x: Int): Int = -1
+
+# Guards with AND/OR sequences
+def in_range(x: Int, min: Int, max: Int): Bool 
+  when x &gt;= min and x &lt;= max = true
+def in_range(_x: Int, _min: Int, _max: Int): Bool = false
+
+def is_extreme(x: Int): Bool 
+  when x &gt; 100 or x &lt; -100 = true
+def is_extreme(_x: Int): Bool = false
+
+# Real-world example: tax brackets
+def tax_rate(income: Int): Float when income &lt;= 10000 = 0.0
+def tax_rate(income: Int): Float 
+  when income &gt; 10000 and income &lt;= 40000 = 0.1
+def tax_rate(income: Int): Float 
+  when income &gt; 40000 and income &lt;= 100000 = 0.2
+def tax_rate(_income: Int): Float = 0.3</code></pre><p><strong>Guard Features</strong>:</p><ul><li>All comparison operators: <code class="inline">&gt;</code>, <code class="inline">&lt;</code>, <code class="inline">&gt;=</code>, <code class="inline">&lt;=</code>, <code class="inline">==</code>, <code class="inline">!=</code></li><li>Logical combinations: <code class="inline">and</code>, <code class="inline">or</code></li><li>Type refinement: Guards narrow parameter types in function bodies</li><li>SMT verification: Guards verified for completeness and consistency</li><li>Coverage analysis: Compiler detects unreachable clauses</li><li>Optimization: Guard-specific optimizations for performance</li></ul><p><strong>Example: Comprehensive Guards Demo</strong></p><p>See <code class="inline">examples/06_comprehensive_guards_demo.cure</code> for a complete demonstration including:</p><ul><li>Basic comparisons with all operators</li><li>Multi-clause functions</li><li>Guard sequences (AND/OR combinations)</li><li>Type refinement examples</li><li>Real-world applications (discounts, tax brackets, shipping costs)</li><li>Recursive functions with guards</li><li>Performance-ordered guard clauses</li></ul><h2 id="error-handling-patterns" class="section-heading">
   <a href="#error-handling-patterns" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>

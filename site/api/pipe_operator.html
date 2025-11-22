@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-3ABA2D2B.js"></script>
+    <script src="dist/sidebar_items-DC6CD34D.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -112,7 +112,7 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/docs/pipe_operator.md#L1" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.4.0/docs/PIPE_OPERATOR.md#L1" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
@@ -204,12 +204,11 @@ end</code></pre><p>Type inference ensures:</p><ul><li>The piped value's type mat
   </a>
   <span class="text">Basic Piping</span>
 </h3>
-<pre><code class="cure">def example1() do
+<pre><code class="cure">def example1(): Result(Int, String) =
   5
-    |&gt; double      # 10
-    |&gt; increment   # 11
+  |&gt; double      # 10
+  |&gt; increment   # 11
   # Result: Ok(11)
-end
 
 def double(x: Int) -&gt; Int = x * 2
 def increment(x: Int) -&gt; Int = x + 1</code></pre><h3 id="error-handling" class="section-heading">
@@ -230,12 +229,11 @@ end</code></pre><h3 id="piping-with-arguments" class="section-heading">
   </a>
   <span class="text">Piping with Arguments</span>
 </h3>
-<p>The piped value becomes the first argument:</p><pre><code class="cure">def example2() do
+<p>The piped value becomes the first argument:</p><pre><code class="cure">def example2(): Result(Int, String) =
   10
-    |&gt; add(5)       # add(10, 5) =&gt; 15
-    |&gt; multiply(3)  # multiply(15, 3) =&gt; 45
+  |&gt; add(5)       # add(10, 5) =&gt; 15
+  |&gt; multiply(3)  # multiply(15, 3) =&gt; 45
   # Result: Ok(45)
-end
 
 def add(x: Int, y: Int) -&gt; Int = x + y
 def multiply(x: Int, y: Int) -&gt; Int = x * y</code></pre><h3 id="real-world-example" class="section-heading">
@@ -244,36 +242,33 @@ def multiply(x: Int, y: Int) -&gt; Int = x * y</code></pre><h3 id="real-world-ex
   </a>
   <span class="text">Real-World Example</span>
 </h3>
-<pre><code class="cure">def process_user_input(input: String) -&gt; Result(User, String) do
+<pre><code class="cure">def process_user_input(input: String): Result(User, String) do
   input
-    |&gt; trim_whitespace
-    |&gt; validate_email
-    |&gt; normalize_email
-    |&gt; check_not_taken
-    |&gt; create_user
-end</code></pre><h3 id="error-recovery" class="section-heading">
+  |&gt; trim_whitespace
+  |&gt; validate_email
+  |&gt; normalize_email
+  |&gt; check_not_taken
+  |&gt; create_user</code></pre><h3 id="error-recovery" class="section-heading">
   <a href="#error-recovery" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Error Recovery</span>
 </h3>
-<pre><code class="cure">def safe_divide(x: Int, y: Int) -&gt; String do
-  let result = x |&gt; divide_by(y) in
+<pre><code class="cure">def safe_divide(x: Int, y: Int): String =
+  let result = x |&gt; divide_by(y)
   match result do
     Ok(value) -&gt; &quot;Result: &quot; &lt;&gt; show(value)
     Error(reason) -&gt; &quot;Error: &quot; &lt;&gt; reason
-  end
-end</code></pre><h3 id="combining-operators" class="section-heading">
+  end</code></pre><h3 id="combining-operators" class="section-heading">
   <a href="#combining-operators" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Combining Operators</span>
 </h3>
-<pre><code class="cure">def complex_computation() do
+<pre><code class="cure">def complex_computation(): Result(String, String) =
   (calculate_base() + 10)
-    |&gt; apply_discount
-    |&gt; format_price
-end</code></pre><h2 id="implementation-details" class="section-heading">
+  |&gt; apply_discount
+  |&gt; format_price</code></pre><h2 id="implementation-details" class="section-heading">
   <a href="#implementation-details" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -297,15 +292,15 @@ end</code></pre><h2 id="implementation-details" class="section-heading">
   </a>
   <span class="text">Code Generation</span>
 </h3>
-<p>The compiler generates a <code class="inline">monadic_pipe_call</code> instruction that is translated to BEAM bytecode as a call to <a href="cure_std.html#pipe/2"><code class="inline">cure_std:pipe/2</code></a>:</p><pre><code class="makeup erlang" translate="no"><span class="nf">generate_monadic_pipe_form</span><span class="p" data-group-id="8208399079-1">(</span><span class="n">Function</span><span class="p">,</span><span class="w"> </span><span class="n">PipedValue</span><span class="p">,</span><span class="w"> </span><span class="n">RestArgs</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p" data-group-id="8208399079-1">)</span></code></pre><p>This creates Erlang code that:</p><ol><li>Wraps the piped value with <code class="inline">ok()</code> if not already a Result</li><li>Checks if it's <code class="inline">Ok(value)</code> or <code class="inline">Error(reason)</code></li><li>If Ok, unwraps and calls the function</li><li>If Error, propagates without calling the function</li><li>Wraps non-monadic results in <code class="inline">Ok()</code></li></ol><h3 id="runtime" class="section-heading">
+<p>The compiler generates a <code class="inline">monadic_pipe_call</code> instruction that is translated to BEAM bytecode as a call to <a href="cure_std.html#pipe/2"><code class="inline">cure_std:pipe/2</code></a>:</p><pre><code class="makeup erlang" translate="no"><span class="nf">generate_monadic_pipe_form</span><span class="p" data-group-id="2143545184-1">(</span><span class="n">Function</span><span class="p">,</span><span class="w"> </span><span class="n">PipedValue</span><span class="p">,</span><span class="w"> </span><span class="n">RestArgs</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p" data-group-id="2143545184-1">)</span></code></pre><p>This creates Erlang code that:</p><ol><li>Wraps the piped value with <code class="inline">ok()</code> if not already a Result</li><li>Checks if it's <code class="inline">Ok(value)</code> or <code class="inline">Error(reason)</code></li><li>If Ok, unwraps and calls the function</li><li>If Error, propagates without calling the function</li><li>Wraps non-monadic results in <code class="inline">Ok()</code></li></ol><h3 id="runtime" class="section-heading">
   <a href="#runtime" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Runtime</span>
 </h3>
-<p>The runtime function <a href="cure_std.html#pipe/2"><code class="inline">cure_std:pipe/2</code></a> implements the three semantic rules:</p><pre><code class="makeup erlang" translate="no"><span class="nf">pipe</span><span class="p" data-group-id="7148464380-1">(</span><span class="p" data-group-id="7148464380-2">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="7148464380-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Err</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="n">RHO</span><span class="p" data-group-id="7148464380-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">Err</span><span class="p">;</span><span class="w">  </span><span class="c1">% Rule 1</span><span class="w">
-</span><span class="nf">pipe</span><span class="p" data-group-id="7148464380-3">(</span><span class="p" data-group-id="7148464380-4">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">V</span><span class="p" data-group-id="7148464380-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">RHO</span><span class="p" data-group-id="7148464380-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">wrap_result</span><span class="p" data-group-id="7148464380-5">(</span><span class="n">RHO</span><span class="p" data-group-id="7148464380-6">(</span><span class="n">V</span><span class="p" data-group-id="7148464380-6">)</span><span class="p" data-group-id="7148464380-5">)</span><span class="p">;</span><span class="w">  </span><span class="c1">% Rule 2</span><span class="w">
-</span><span class="nf">pipe</span><span class="p" data-group-id="7148464380-7">(</span><span class="n">LHO</span><span class="p">,</span><span class="w"> </span><span class="n">RHO</span><span class="p" data-group-id="7148464380-7">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">wrap_result</span><span class="p" data-group-id="7148464380-8">(</span><span class="n">RHO</span><span class="p" data-group-id="7148464380-9">(</span><span class="n">LHO</span><span class="p" data-group-id="7148464380-9">)</span><span class="p" data-group-id="7148464380-8">)</span><span class="p">.</span><span class="w">  </span><span class="c1">% Rule 3</span></code></pre><h2 id="best-practices" class="section-heading">
+<p>The runtime function <a href="cure_std.html#pipe/2"><code class="inline">cure_std:pipe/2</code></a> implements the three semantic rules:</p><pre><code class="makeup erlang" translate="no"><span class="nf">pipe</span><span class="p" data-group-id="2525619297-1">(</span><span class="p" data-group-id="2525619297-2">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="2525619297-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Err</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="n">RHO</span><span class="p" data-group-id="2525619297-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">Err</span><span class="p">;</span><span class="w">  </span><span class="c1">% Rule 1</span><span class="w">
+</span><span class="nf">pipe</span><span class="p" data-group-id="2525619297-3">(</span><span class="p" data-group-id="2525619297-4">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">V</span><span class="p" data-group-id="2525619297-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">RHO</span><span class="p" data-group-id="2525619297-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">wrap_result</span><span class="p" data-group-id="2525619297-5">(</span><span class="n">RHO</span><span class="p" data-group-id="2525619297-6">(</span><span class="n">V</span><span class="p" data-group-id="2525619297-6">)</span><span class="p" data-group-id="2525619297-5">)</span><span class="p">;</span><span class="w">  </span><span class="c1">% Rule 2</span><span class="w">
+</span><span class="nf">pipe</span><span class="p" data-group-id="2525619297-7">(</span><span class="n">LHO</span><span class="p">,</span><span class="w"> </span><span class="n">RHO</span><span class="p" data-group-id="2525619297-7">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">wrap_result</span><span class="p" data-group-id="2525619297-8">(</span><span class="n">RHO</span><span class="p" data-group-id="2525619297-9">(</span><span class="n">LHO</span><span class="p" data-group-id="2525619297-9">)</span><span class="p" data-group-id="2525619297-8">)</span><span class="p">.</span><span class="w">  </span><span class="c1">% Rule 3</span></code></pre><h2 id="best-practices" class="section-heading">
   <a href="#best-practices" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -318,7 +313,7 @@ end</code></pre><h2 id="implementation-details" class="section-heading">
   <span class="text">Do: Use for Sequential Transformations</span>
 </h3>
 <pre><code class="cure"># Good: Clear data flow
-input
+  input
   |&gt; step1
   |&gt; step2
   |&gt; step3</code></pre><h3 id="don-t-overuse-in-simple-cases" class="section-heading">
@@ -338,7 +333,7 @@ function(value)</code></pre><h3 id="do-handle-errors-at-pipeline-end" class="sec
   <span class="text">Do: Handle Errors at Pipeline End</span>
 </h3>
 <pre><code class="cure"># Good: Single error handling point
-let result = data |&gt; pipeline |&gt; of |&gt; operations in
+let result = data |&gt; pipeline |&gt; of |&gt; operations
 match result do
   Ok(value) -&gt; handle_success(value)
   Error(e) -&gt; handle_error(e)
@@ -349,25 +344,24 @@ end</code></pre><h3 id="do-use-with-result-returning-functions" class="section-h
   <span class="text">Do: Use with Result-Returning Functions</span>
 </h3>
 <pre><code class="cure"># Good: Natural error propagation
-def process(input: String) -&gt; Result(Output, Error) do
+def process(input: String): Result(Output, Error) =
   input
-    |&gt; parse         # Returns Result
-    |&gt; validate      # Returns Result
-    |&gt; transform     # Returns Result
-end</code></pre><h3 id="don-t-mix-with-non-result-returns-unnecessarily" class="section-heading">
+  |&gt; parse         # Returns Result
+  |&gt; validate      # Returns Result
+  |&gt; transform     # Returns Result</code></pre><h3 id="don-t-mix-with-non-result-returns-unnecessarily" class="section-heading">
   <a href="#don-t-mix-with-non-result-returns-unnecessarily" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Don't: Mix with Non-Result Returns Unnecessarily</span>
 </h3>
 <pre><code class="cure"># Inconsistent: mix of Result and non-Result
-input
+  input
   |&gt; operation1    # Returns Int
   |&gt; operation2    # Returns Result(Int, Error)
   |&gt; operation3    # Returns Int
 
 # Better: Consistent Result types
-input
+  input
   |&gt; operation1_safe   # Returns Result(Int, Error)
   |&gt; operation2        # Returns Result(Int, Error)
   |&gt; operation3_safe   # Returns Result(Int, Error)</code></pre><h2 id="performance-considerations" class="section-heading">
@@ -424,12 +418,11 @@ input
   </a>
   <span class="text">Debugging Pipelines</span>
 </h3>
-<p>Use <code class="inline">let</code> bindings to inspect intermediate values:</p><pre><code class="cure">def debug_pipeline(input: String) do
-  let step1 = input |&gt; parse in
-  let step2 = step1 |&gt; validate in
-  let step3 = step2 |&gt; process in
-  step3
-end</code></pre><h2 id="see-also" class="section-heading">
+<p>Use <code class="inline">let</code> bindings to inspect intermediate values:</p><pre><code class="cure">def debug_pipeline(input: String): String =
+  let step1 = input |&gt; parse
+  let step2 = step1 |&gt; validate
+  let step3 = step2 |&gt; process
+  step3</code></pre><h2 id="see-also" class="section-heading">
   <a href="#see-also" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -441,17 +434,26 @@ end</code></pre><h2 id="see-also" class="section-heading">
 <div class="bottom-actions" id="bottom-actions">
   <div class="bottom-actions-item">
 
-      <a href="type_system.html" class="bottom-actions-button" rel="prev">
+      <a href="mcp_integration.html" class="bottom-actions-button" rel="prev">
         <span class="subheader">
           ← Previous Page
         </span>
         <span class="title">
-Type System
+MCP Integration
         </span>
       </a>
 
   </div>
   <div class="bottom-actions-item">
+
+      <a href="project_overview.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Project Overview
+        </span>
+      </a>
 
   </div>
 </div>
@@ -463,7 +465,7 @@ Type System
 
             <a href="https://preview.hex.pm/preview/cure/0.4.0">Hex Preview</a>
 
-              (<a href="https://preview.hex.pm/preview/cure/0.4.0/show/docs/pipe_operator.md">current file</a>)
+              (<a href="https://preview.hex.pm/preview/cure/0.4.0/show/docs/PIPE_OPERATOR.md">current file</a>)
 
           </span>
 
