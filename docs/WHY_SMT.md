@@ -199,6 +199,53 @@ Instead of finding bugs, SMT can prove *no bugs exist* under specified condition
 **Example**: Division by zero
 
 ```cure
+# Without SMT: Runtime check required
+def divide(x: Int, y: Int): Int =
+  match y == 0 do
+    true -> error("Division by zero")
+    false -> ok(x / y)
+  end
+
+# With SMT: Compile-time guarantee via guard
+def safe_divide(x: Int, y: Int): Int when y != 0 = x / y
+# SMT solver verifies y != 0 before allowing division
+```
+
+#### 4. **Guard Completeness Verification** ✅
+
+Cure uses SMT solvers to verify that function guards cover all possible input values:
+
+**Example**: Complete guard coverage
+
+```cure
+# Guards for sign function
+def sign(x: Int): Int when x > 0 = 1
+def sign(x: Int): Int when x == 0 = 0
+def sign(x: Int): Int when x < 0 = -1
+
+# SMT verification: (x > 0) ∨ (x == 0) ∨ (x < 0) ≡ true ✓
+# Compiler proves all Int values are covered
+```
+
+**Example**: Detecting unreachable clauses
+
+```cure
+# Redundant guard warning
+def classify(x: Int): String when x >= 0 = "non-negative"
+def classify(x: Int): String when x > 10 = "large"  # Unreachable!
+def classify(x: Int): String = "negative"
+
+# SMT detection: (x >= 0) subsumes (x > 10)
+# Compiler warning: Second clause will never execute
+```
+
+**Implementation**: See `cure_guard_smt.erl` for:
+- Guard completeness checking
+- Subsumption detection
+- Counterexample generation
+- Inconsistent guard detection
+
+```cure
 type NonZero = x: Int when x != 0
 
 def safe_divide(a: Int, b: NonZero): Int =

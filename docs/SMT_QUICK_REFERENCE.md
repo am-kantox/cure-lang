@@ -166,6 +166,54 @@ cure_smt_solver:prove_constraint(Constraint, Env).
 % => true (proven!)
 ```
 
+### Example 5: Guard Completeness Verification ✅
+```erlang
+% Verify that guards cover all possible integer values
+% Guards: (x > 0) ∨ (x == 0) ∨ (x < 0)
+
+% Build guard disjunction
+GuardConjunction = #binary_op_expr{
+    op = 'or',
+    left = #binary_op_expr{
+        op = 'or',
+        left = #binary_op_expr{op = '>', left = var(x), right = lit(0)},
+        right = #binary_op_expr{op = '==', left = var(x), right = lit(0)}
+    },
+    right = #binary_op_expr{op = '<', left = var(x), right = lit(0)}
+},
+
+Env = #{x => {type, int}},
+
+% Prove this is always true (tautology)
+cure_smt_solver:prove_constraint(GuardConjunction, Env).
+% => true (complete coverage!)
+
+% Check for unreachable clause: (x > 10) when we already have (x >= 0)
+Unreachable = #binary_op_expr{
+    op = 'and',
+    left = #binary_op_expr{op = '>=', left = var(x), right = lit(0)},
+    right = #binary_op_expr{op = '>', left = var(x), right = lit(10)}
+},
+
+% Check if (x > 10) is subsumed by (x >= 0)
+cure_smt_solver:check_constraint(
+    #binary_op_expr{op = '=>', 
+        left = #binary_op_expr{op = '>=', left = var(x), right = lit(0)},
+        right = #binary_op_expr{op = '>', left = var(x), right = lit(10)}
+    },
+    Env
+).
+% => unsat (not all x >= 0 satisfy x > 10, clause is reachable)
+```
+
+**Guard Verification Use Cases**:
+- **Completeness**: Verify all possible values are covered
+- **Subsumption**: Detect unreachable clauses  
+- **Consistency**: Check guards aren't contradictory
+- **Counterexamples**: Find values that violate coverage
+
+See `cure_guard_smt.erl` for implementation details.
+
 ---
 
 ## Constraint Translation
