@@ -1,7 +1,7 @@
 # Cure Language Features Reference
 
 **Version**: Current Implementation Status  
-**Last Updated**: October 31, 2025
+**Last Updated**: November 22, 2025
 
 This document provides a comprehensive reference for all Cure language features, including current implementation status, syntax examples, and usage patterns.
 
@@ -414,6 +414,61 @@ case number do
   _ -> "small"
 end
 ```
+
+### Function-Level Guards ✅ **Complete Implementation**
+
+Cure supports guards on function definitions with `when` clauses, enabling elegant multi-clause functions with preconditions:
+
+```cure
+# Basic guard on function parameter
+def is_positive(x: Int): Bool when x > 0 = true
+def is_positive(_x: Int): Bool = false
+
+# Multi-clause function with guards
+def abs(x: Int): Int when x >= 0 = x
+def abs(x: Int): Int = 0 - x
+
+# Sign function with complete coverage
+def sign(x: Int): Int when x > 0 = 1
+def sign(x: Int): Int when x == 0 = 0
+def sign(x: Int): Int = -1
+
+# Guards with AND/OR sequences
+def in_range(x: Int, min: Int, max: Int): Bool 
+  when x >= min and x <= max = true
+def in_range(_x: Int, _min: Int, _max: Int): Bool = false
+
+def is_extreme(x: Int): Bool 
+  when x > 100 or x < -100 = true
+def is_extreme(_x: Int): Bool = false
+
+# Real-world example: tax brackets
+def tax_rate(income: Int): Float when income <= 10000 = 0.0
+def tax_rate(income: Int): Float 
+  when income > 10000 and income <= 40000 = 0.1
+def tax_rate(income: Int): Float 
+  when income > 40000 and income <= 100000 = 0.2
+def tax_rate(_income: Int): Float = 0.3
+```
+
+**Guard Features**:
+- All comparison operators: `>`, `<`, `>=`, `<=`, `==`, `!=`
+- Logical combinations: `and`, `or`
+- Type refinement: Guards narrow parameter types in function bodies
+- SMT verification: Guards verified for completeness and consistency
+- Coverage analysis: Compiler detects unreachable clauses
+- Optimization: Guard-specific optimizations for performance
+
+**Example: Comprehensive Guards Demo**
+
+See `examples/06_comprehensive_guards_demo.cure` for a complete demonstration including:
+- Basic comparisons with all operators
+- Multi-clause functions
+- Guard sequences (AND/OR combinations)
+- Type refinement examples
+- Real-world applications (discounts, tax brackets, shipping costs)
+- Recursive functions with guards
+- Performance-ordered guard clauses
 
 ## Error Handling Patterns
 

@@ -1,7 +1,7 @@
 # Cure Language Specification
 
 **Version**: 0.1.0  
-**Last Updated**: October 31, 2025  
+**Last Updated**: November 22, 2025
 **Status**: Implementation Complete ✅ **PRODUCTION READY**  
 **Test Success Rate**: 100% (8/8 test suites passing)  
 **Runtime Verification**: ✅ Working examples with import system
@@ -62,8 +62,17 @@ def length(list: List(T)): Nat =
     [_|tail] -> 1 + length(tail)
   end
 
-# Function with constraints
+# Function with guards (constraints on parameters)
 def safe_divide(x: Int, y: Int): Int when y != 0 = x / y
+
+# Multi-clause function with guards
+def abs(x: Int): Int when x >= 0 = x
+def abs(x: Int): Int = 0 - x
+
+# Guards with AND/OR
+def in_range(x: Int, min: Int, max: Int): Bool 
+  when x >= min and x <= max = true
+def in_range(_x: Int, _min: Int, _max: Int): Bool = false
 
 # Function with Unit return type
 def print_message(msg: String): Int =
@@ -355,15 +364,18 @@ item ::= function_def | def_erl_def | type_def | record_def | fsm_def
        | process_def | import_def | let_binding
 
 # Function definitions
-function_def ::= ('def') IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
-def_erl_def ::= 'def_erl' IDENTIFIER '(' param_list? ')' type_annotation? constraint? '=' expr
+function_def ::= ('def') IDENTIFIER '(' param_list? ')' type_annotation? guard? '=' expr
+              | ('def') IDENTIFIER '(' param_list? ')' type_annotation? guard? 'do' expr 'end'
+def_erl_def ::= 'def_erl' IDENTIFIER '(' param_list? ')' type_annotation? guard? '=' expr
 
 param_list ::= param (',' param)*
 param ::= IDENTIFIER ':' type
 
 type_annotation ::= '->' type | ':' type
 
-constraint ::= 'when' expr
+guard ::= 'when' guard_expr
+guard_expr ::= comparison | guard_expr 'and' guard_expr | guard_expr 'or' guard_expr
+comparison ::= expr ('<' | '>' | '<=' | '>=' | '==' | '!=') expr
 
 # Type definitions
 type_def ::= 'type' IDENTIFIER type_params? '=' type_expr

@@ -1,6 +1,6 @@
 # Cure Programming Language - Project Overview
 
-**Last Updated**: October 31, 2025
+**Last Updated**: November 22, 2025
 
 ✅ **PRODUCTION READY**: Complete implementation of a strongly-typed, dependently-typed programming language for the BEAM virtual machine with built-in finite state machines, working module system, and comprehensive development toolchain.
 
@@ -34,6 +34,7 @@ Cure represents a **breakthrough** in programming language design, successfully 
 - **🎆 Working Module System**: `import Module [func1/1, func2/2]` with selective imports
 - **🎆 Standard Library**: Essential modules (Std.Io, Std.List, Std.Fsm, Std.Show, etc.)
 - **🎆 Dependent Types**: Type system supporting dependent types and refinement types
+- **🎆 Function Guards**: Complete guard system with `when` clauses, multi-clause functions, SMT verification
 - **🎆 FSM Runtime**: Complete `gen_statem` integration with arrow-based transition syntax
 - **🎆 CLI Toolchain**: Comprehensive command-line interface with build automation
 
@@ -230,6 +231,7 @@ cure/                               # Complete programming language implementati
 │   ├── 03_option_type.cure       # ✅ Option type usage
 │   ├── 04_pattern_guards.cure    # ✅ Pattern matching with guards
 │   ├── 05_recursion.cure         # ✅ Recursive functions
+│   ├── 06_comprehensive_guards_demo.cure # ✅ Comprehensive function guards demonstration
 │   └── 06_fsm_traffic_light.cure # ✅ FSM demonstration
 ├── docs/                         # ✅ Complete documentation
 │   ├── README.md                 # ✅ Architecture and implementation overview
