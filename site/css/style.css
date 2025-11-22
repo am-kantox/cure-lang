@@ -1,5 +1,9 @@
 /* Cure Language Website - Main Stylesheet */
 
+/* Import fancy fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Victor+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap');
+
 :root {
   --cure-primary: #6366f1;
   --cure-secondary: #8b5cf6;
@@ -22,10 +26,11 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;
   color: var(--cure-text);
   background: var(--cure-bg);
+  font-feature-settings: 'liga' 1, 'calt' 1; /* Enable ligatures */
 }
 
 /* Header & Navigation */
@@ -256,13 +261,16 @@ body {
 
 .code-example pre {
   margin: 0;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'Victor Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Courier New', monospace;
   font-size: 0.9rem;
   line-height: 1.6;
+  font-variant-ligatures: common-ligatures;
+  font-feature-settings: 'liga' 1, 'calt' 1;
 }
 
 .code-example code {
   color: var(--cure-text);
+  font-family: 'Victor Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Courier New', monospace;
 }
 
 /* Ad Banner */
@@ -452,7 +460,8 @@ body {
   padding: 0.2rem 0.4rem;
   border-radius: 0.25rem;
   font-size: 0.9em;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'Victor Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Courier New', monospace;
+  font-variant-ligatures: common-ligatures;
 }
 
 .doc-page pre {

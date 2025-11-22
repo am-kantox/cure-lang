@@ -14,6 +14,10 @@
   padding: 0.5em;
   background: #f9fafb;
   color: #1f2937;
+  font-family: 'Victor Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Courier New', monospace;
+  font-variant-ligatures: common-ligatures;
+  font-feature-settings: 'liga' 1, 'calt' 1;
+  line-height: 1.6;
 }
 
 /* Reset .subst to default color */
