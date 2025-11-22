@@ -1,6 +1,6 @@
 # Cure FSM API Design
 
-**Last Updated**: October 31, 2025
+**Last Updated**: November 22, 2025
 
 This document describes the design of the Finite State Machine (FSM) API in Cure.
 

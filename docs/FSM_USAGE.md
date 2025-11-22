@@ -1,6 +1,6 @@
 # Cure FSM Usage Guide
 
-**Last Updated**: October 31, 2025
+**Last Updated**: November 22, 2025
 
 This document provides comprehensive guidance on using Finite State Machines (FSMs) in the Cure programming language.
 
