@@ -33,26 +33,26 @@
   - Listed implementation components and test coverage
   - Updated to November 22, 2025
 
+- ✅ **CURE_SYNTAX_GUIDE.md**: Added Function Guards section
+  - Comprehensive guard syntax with all operators
+  - Multi-clause function patterns
+  - Real-world tax bracket example  
+  - Guard features list and reference to demo
+  - Updated to November 22, 2025
+
+- ✅ **CLI_USAGE.md**: Updated with guard information
+  - Added function-level guards to feature list
+  - Distinguished pattern guards vs function guards
+  - Added 06_comprehensive_guards_demo.cure to examples
+  - Documented guard sequences and SMT verification
+
+- ✅ **SMT Documentation**: Guard verification examples added
+  - **SMT_QUICK_REFERENCE.md**: Example 5 for guard completeness
+  - **WHY_SMT.md**: Guard completeness verification section
+  - Demonstrated unreachable clause detection
+  - Referenced cure_guard_smt.erl implementation
+
 ## Remaining Updates 📝
-
-### High Priority
-
-1. **CURE_SYNTAX_GUIDE.md**
-   - Add guard syntax examples
-   - Include multi-clause function patterns
-   - Document guard best practices
-   - Status: Not started
-
-2. **CURE_SYNTAX_GUIDE.md**
-   - Add guard syntax examples
-   - Include multi-clause function patterns
-   - Document guard best practices
-   - Status: Not started
-
-3. **CLI_USAGE.md**
-   - Verify all CLI flags are documented
-   - Check if guard-specific flags exist
-   - Status: Not started
 
 ### Medium Priority
 
