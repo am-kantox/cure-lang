@@ -101,12 +101,11 @@ Type inference ensures:
 ### Basic Piping
 
 ```cure
-def example1() do
+def example1(): Result(Int, String) =
   5
-    |> double      # 10
-    |> increment   # 11
+  |> double      # 10
+  |> increment   # 11
   # Result: Ok(11)
-end
 
 def double(x: Int) -> Int = x * 2
 def increment(x: Int) -> Int = x + 1
@@ -129,12 +128,11 @@ end
 The piped value becomes the first argument:
 
 ```cure
-def example2() do
+def example2(): Result(Int, String) =
   10
-    |> add(5)       # add(10, 5) => 15
-    |> multiply(3)  # multiply(15, 3) => 45
+  |> add(5)       # add(10, 5) => 15
+  |> multiply(3)  # multiply(15, 3) => 45
   # Result: Ok(45)
-end
 
 def add(x: Int, y: Int) -> Int = x + y
 def multiply(x: Int, y: Int) -> Int = x * y
@@ -143,36 +141,33 @@ def multiply(x: Int, y: Int) -> Int = x * y
 ### Real-World Example
 
 ```cure
-def process_user_input(input: String) -> Result(User, String) do
+def process_user_input(input: String): Result(User, String) do
   input
-    |> trim_whitespace
-    |> validate_email
-    |> normalize_email
-    |> check_not_taken
-    |> create_user
-end
+  |> trim_whitespace
+  |> validate_email
+  |> normalize_email
+  |> check_not_taken
+  |> create_user
 ```
 
 ### Error Recovery
 
 ```cure
-def safe_divide(x: Int, y: Int) -> String do
-  let result = x |> divide_by(y) in
+def safe_divide(x: Int, y: Int): String =
+  let result = x |> divide_by(y)
   match result do
     Ok(value) -> "Result: " <> show(value)
     Error(reason) -> "Error: " <> reason
   end
-end
 ```
 
 ### Combining Operators
 
 ```cure
-def complex_computation() do
+def complex_computation(): Result(String, String) =
   (calculate_base() + 10)
-    |> apply_discount
-    |> format_price
-end
+  |> apply_discount
+  |> format_price
 ```
 
 ## Implementation Details
@@ -224,7 +219,7 @@ pipe(LHO, RHO) -> wrap_result(RHO(LHO)).  % Rule 3
 
 ```cure
 # Good: Clear data flow
-input
+  input
   |> step1
   |> step2
   |> step3
@@ -244,7 +239,7 @@ function(value)
 
 ```cure
 # Good: Single error handling point
-let result = data |> pipeline |> of |> operations in
+let result = data |> pipeline |> of |> operations
 match result do
   Ok(value) -> handle_success(value)
   Error(e) -> handle_error(e)
@@ -255,25 +250,24 @@ end
 
 ```cure
 # Good: Natural error propagation
-def process(input: String) -> Result(Output, Error) do
+def process(input: String): Result(Output, Error) =
   input
-    |> parse         # Returns Result
-    |> validate      # Returns Result
-    |> transform     # Returns Result
-end
+  |> parse         # Returns Result
+  |> validate      # Returns Result
+  |> transform     # Returns Result
 ```
 
 ### Don't: Mix with Non-Result Returns Unnecessarily
 
 ```cure
 # Inconsistent: mix of Result and non-Result
-input
+  input
   |> operation1    # Returns Int
   |> operation2    # Returns Result(Int, Error)
   |> operation3    # Returns Int
 
 # Better: Consistent Result types
-input
+  input
   |> operation1_safe   # Returns Result(Int, Error)
   |> operation2        # Returns Result(Int, Error)
   |> operation3_safe   # Returns Result(Int, Error)
@@ -344,12 +338,11 @@ The type checker and optimizer can:
 Use `let` bindings to inspect intermediate values:
 
 ```cure
-def debug_pipeline(input: String) do
-  let step1 = input |> parse in
-  let step2 = step1 |> validate in
-  let step3 = step2 |> process in
+def debug_pipeline(input: String): String =
+  let step1 = input |> parse
+  let step2 = step1 |> validate
+  let step3 = step2 |> process
   step3
-end
 ```
 
 ## See Also

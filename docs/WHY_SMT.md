@@ -20,9 +20,57 @@ Modern software systems are growing increasingly complex, with state machines, c
 
 The Cure language, with its built-in support for finite state machines (FSMs), dependent types, and refinement types, is uniquely positioned to benefit from SMT-based verification. This document explores how SMT solvers, particularly **Z3**, can dramatically improve code quality and provide mathematical guarantees about program correctness.
 
+### Understanding SMT-Solvers: A Simple Introduction
+
+Imagine a puzzle where certain rules must always be obeyed, and the goal is to find out if there’s any way to make all the pieces fit without breaking any rules. SMT-solvers, short for Satisfiability Modulo Theories solvers, are special computer programs designed to solve these rule-based puzzles automatically[^1][^2]. 
+
+In practical terms, SMT-solvers answer questions like: "Given all the rules (mathematical, logical, or data-related), is there any combination of values that keeps everything true and consistent?" For example, they can check if a set of formulas describing a piece of software will ever run into errors, if a digital circuit will always work correctly, or even if a robot can safely move given complicated obstacles and instructions[^1]. 
+
+What makes SMT-solvers powerful is that rather than just working with basic true/false logic, they also understand deeper mathematical topics—like arithmetic, relationships between data, and more. They look at every part of the puzzle, combining logic and math, to figure out whether a solution exists or not. If the puzzle can’t be solved, they can even help you pinpoint exactly why it fails[^1][^2].
+
 ---
 
-## What is an SMT Solver?
+### Satisfiability Modulo Theories (SMT) Solvers in Critical Development
+
+SMT-solvers are computational systems that determine whether statements involving variables and constraints are satisfiable under a range of mathematical theories (such as arithmetic, arrays, bit-vectors, and more)[^3][^4].
+
+#### What Are SMT-Solvers?
+
+SMT-solvers generalize SAT-solvers (Boolean satisfiability) to additional, expressive theories. This enables the automated analysis of formulas that capture constraints and properties found in realistic software, hardware, and business systems.[^3][^4]
+
+- **Defining Role:** They solve logic formulas containing variables and constraints from chosen mathematical theories, checking if any satisfying assignment exists.[^3]
+- **Use Domains:** These include data-aware workflows, software correctness, circuit design, security analysis, and AI planning.[^3][^4]
+
+See below for more detailed description.
+
+#### Why SMT-Solvers Matter in Critical Development
+
+SMT-solvers are fundamental in modern software and systems engineering, particularly for safety-critical and high-assurance domains:
+
+- **Rigorous Verification:** They automate model checking and formal verification, proving that systems behave correctly in all cases—essential in aviation, medicine, and finance.[^3][^4]
+- **Bug & Vulnerability Discovery:** Developers encode requirements and invariants as logical formulas; SMT-solvers uncover bugs, unreachable states or vulnerabilities automatically.[^3][^4]
+- **Design Optimization & Synthesis:** They search huge design spaces for feasible solutions under constraints.
+- **Productivity & Reliability:** Engineers delegate difficult formal reasoning, focusing on design and innovation.[^3][^4]
+
+#### Key Educational Source: Alessandro Gianola’s Research
+
+A foundational resource for using SMT-solvers in system verification is Alessandro Gianola’s work, especially his dissertation “SMT-based Safety Verification of Data-Aware Processes: Foundations and Applications.”[^3]
+
+- **Summary:** Gianola’s research bridges the gap between model checking for infinite-state systems and verification of data-aware business processes. It shows how SMT-solvers (and their underlying logic frameworks) enable verification of workflows and processes that depend on both control flow and rich data.[^3][^4]
+- **Practical Impact:** Gianola’s methods use SMT to encode and verify properties (like safety) for processes with both data and state logic, allowing exhaustive and scalable analysis even when manual checking is impossible.[^3][^4]
+- **Additional Reading:** See Gianola’s thesis and related publications for algorithms, theoretical models, and benchmarking of SMT-verification tools.
+
+#### Z3: Leading SMT-Solver
+
+Currently, Z3 from Microsoft Research is seen as the most advanced and robust SMT-solver:
+
+- **Theory Coverage:** Supports integers, reals, arrays, bit-vectors, and uninterpreted functions.
+- **Performance & Integration:** Fast solving engines, modern APIs for Python, C++, Java, and more.
+- **Community Usage:** Z3 is open-source and prominent in both academic research and industrial applications.[^4]
+
+---
+
+## What is an SMT Solver (Part II)?
 
 ### The Foundation: SAT Solvers
 
@@ -126,11 +174,11 @@ Testing                                    Formal Verification
 
 Traditional testing explores a finite set of execution paths. SMT-based verification considers *all possible paths* symbolically.
 
-**Example**: Verifying array bounds
+**Example**: Verifying array bounds (below is pseudocode)
 
 ```cure
 # Without SMT: Hope you tested enough edge cases
-def access_array(arr: Array(Int, n), idx: Int): Int =
+def access_array(arr: Vector(Int, n), idx: Int): Int =
   arr[idx]  # Runtime check: idx < n ?
 
 # With SMT: Compile-time guarantee
@@ -142,20 +190,7 @@ def access_array(arr: Array(Int, n), idx: {i: Int | 0 <= i < n}): Int =
 
 SMT solvers excel at finding corner cases that humans miss.
 
-**Example**: Integer overflow
-
-```cure
-# Bug: Can overflow when x + y > MAX_INT
-def average_buggy(x: Int, y: Int): Int =
-  (x + y) / 2
-
-# SMT verification would produce counterexample:
-# x = 2147483647, y = 1 → overflow!
-
-# Fixed version
-def average_safe(x: Int, y: Int): Int =
-  x + (y - x) / 2  # Algebraically equivalent, no overflow
-```
+[TODO] Fins an example for that
 
 #### 3. **Proving Absence of Errors**
 
@@ -164,7 +199,7 @@ Instead of finding bugs, SMT can prove *no bugs exist* under specified condition
 **Example**: Division by zero
 
 ```cure
-type NonZero = {x: Int | x /= 0}
+type NonZero = x: Int when x != 0
 
 def safe_divide(a: Int, b: NonZero): Int =
   a / b  # Provably safe - Z3 verifies b /= 0 always holds
@@ -192,14 +227,14 @@ SMT verifies implementations match formal specifications.
 
 ```cure
 # Specification: sorting produces ordered array with same elements
-spec def is_sorted(arr: Array(Int, n)): Bool =
-  ∀i j. 0 <= i < j < n → arr[i] <= arr[j]
+spec def is_sorted(v: Vector(Int, n)): Bool =
+  ∀i j. 0 <= i < j < n → v[i] <= v[j]
 
-spec def same_multiset(arr1: Array(Int, n), arr2: Array(Int, n)): Bool =
-  ∀x. count(arr1, x) = count(arr2, x)
+spec def same_multiset(v1: Vector(Int, n), v2: Vector(Int, n)): Bool =
+  ∀x. count(v1, x) = count(v2, x)
 
 # Implementation must satisfy both properties
-def sort(arr: Array(Int, n)): Array(Int, n)
+def sort(arr: Vector(Int, n)): Vector(Int, n)
   ensures is_sorted(result) ∧ same_multiset(arr, result)
   = ...
 ```
@@ -704,7 +739,7 @@ Cure Source Code
       ▼                  │
   Z3 Solver              │
       │                  │
-      ├─────────────────┘
+      ├──────────────────┘
       │ (unsat → verify next property)
       ▼
  Report Errors/Proofs
@@ -882,6 +917,15 @@ SMT solvers, particularly Z3, represent a transformative technology for ensuring
 As Cure evolves, SMT-based verification will become increasingly valuable, especially for mission-critical systems where correctness is paramount. The combination of Cure's expressive type system, built-in FSMs, and Z3's powerful reasoning capabilities creates a uniquely robust platform for building reliable concurrent systems.
 
 The insights from Gianola's "Verification of Data-Aware Processes via Satisfiability Modulo Theories" provide a solid theoretical foundation for implementing these verification techniques in Cure. By following the frameworks and algorithms presented in that work, we can build a world-class verification system that makes Cure a leader in verified systems programming for the BEAM.
+
+---
+
+## References
+
+[^1]: [Sudoku and Satisfiability Modulo Theories: Layman’s Example](https://4m4.it/posts/satisfiability-modulo-theories-sudoku/index.html)
+[^2]: [Satisfiability Modulo Theories: A Beginner's Tutorial](https://hanielbarbosa.com/papers/fm2024.pdf)
+[^3]: Alessandro Gianola, "SMT-based Safety Verification of Data-Aware Processes: Foundations and Applications," [PDF](https://gianola.people.unibz.it/wp-content/uploads/2022/03/PhD-dissertation-Gianola.pdf).
+[^4]: Alessandro Gianola et al., “SMT-based Safety Verification of Data-Aware Processes,” CEUR Workshop Proceedings. [PDF](https://ceur-ws.org/Vol-3216/paper_133.pdf).
 
 ---
 

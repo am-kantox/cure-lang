@@ -1,0 +1,256 @@
+# Comprehensive Guard Features Demonstration
+# Shows all supported guard capabilities in Cure
+
+module ComprehensiveGuardsDemo do
+  export [main/0]
+
+  import Std.Io [println/1]
+
+  # =============================================================================
+  # SECTION 1: Basic Comparison Guards
+  # =============================================================================
+
+  # Guards with literals - fully supported
+  def is_positive(x: Int): Bool when x > 0 = true
+  def is_positive(_x: Int): Bool = false
+
+  def is_negative(x: Int): Bool when x < 0 = true
+  def is_negative(_x: Int): Bool = false
+
+  def is_zero(x: Int): Bool when x == 0 = true
+  def is_zero(_x: Int): Bool = false
+
+  def is_nonzero(x: Int): Bool when x != 0 = true
+  def is_nonzero(_x: Int): Bool = false
+
+  # =============================================================================
+  # SECTION 2: Multi-Clause Functions
+  # =============================================================================
+
+  # Absolute value
+  def abs(x: Int): Int when x >= 0 = x
+  def abs(x: Int): Int = 0 - x
+
+  # Sign function
+  def sign(x: Int): Int when x > 0 = 1
+  def sign(x: Int): Int when x == 0 = 0
+  def sign(x: Int): Int = -1
+
+  # Fibonacci
+  def fib(n: Int): Int when n == 0 = 0
+  def fib(n: Int): Int when n == 1 = 1
+  def fib(n: Int): Int = fib(n - 1) + fib(n - 2)
+
+  # =============================================================================
+  # SECTION 3: Guard Sequences (AND/OR with literals)
+  # =============================================================================
+
+  # Small numbers (0-10)
+  def is_small(x: Int): Bool when x >= 0 and x <= 10 = true
+  def is_small(_x: Int): Bool = false
+
+  # Medium numbers (11-100)
+  def is_medium(x: Int): Bool when x > 10 and x <= 100 = true
+  def is_medium(_x: Int): Bool = false
+
+  # Extreme values
+  def is_extreme(x: Int): Bool when x < -100 or x > 100 = true
+  def is_extreme(_x: Int): Bool = false
+
+  # =============================================================================
+  # SECTION 4: Type Refinement with Guards
+  # =============================================================================
+
+  # Temperature classification
+  def classify_temp(celsius: Int): String
+    when celsius < -40 or celsius > 50 = "extreme"
+  def classify_temp(celsius: Int): String
+    when celsius >= 20 and celsius <= 25 = "comfortable"
+  def classify_temp(celsius: Int): String
+    when celsius < 0 = "freezing"
+  def classify_temp(celsius: Int): String
+    when celsius > 30 = "hot"
+  def classify_temp(_celsius: Int): String = "moderate"
+
+  # Age groups
+  def age_group(age: Int): String
+    when age < 0 = "invalid"
+  def age_group(age: Int): String
+    when age < 13 = "child"
+  def age_group(age: Int): String
+    when age < 20 = "teenager"
+  def age_group(age: Int): String
+    when age < 65 = "adult"
+  def age_group(_age: Int): String = "senior"
+
+  # Grade letters
+  def grade_letter(score: Int): String
+    when score >= 90 = "A"
+  def grade_letter(score: Int): String
+    when score >= 80 = "B"
+  def grade_letter(score: Int): String
+    when score >= 70 = "C"
+  def grade_letter(score: Int): String
+    when score >= 60 = "D"
+  def grade_letter(_score: Int): String = "F"
+
+  # =============================================================================
+  # SECTION 5: Real-World Applications
+  # =============================================================================
+
+  # Discount by age
+  def discount(age: Int): Float
+    when age < 12 = 0.5
+  def discount(age: Int): Float
+    when age >= 65 = 0.3
+  def discount(_age: Int): Float = 0.0
+
+  # Tax brackets
+  def tax_bracket(income: Int): Float
+    when income <= 10000 = 0.0
+  def tax_bracket(income: Int): Float
+    when income <= 40000 = 0.1
+  def tax_bracket(income: Int): Float
+    when income <= 100000 = 0.2
+  def tax_bracket(_income: Int): Float = 0.3
+
+  # Shipping weight
+  def shipping_cost(kg: Int): Int
+    when kg <= 0 = 0
+  def shipping_cost(kg: Int): Int
+    when kg <= 5 = 5
+  def shipping_cost(kg: Int): Int
+    when kg <= 20 = 10
+  def shipping_cost(_kg: Int): Int = 20
+
+  # =============================================================================
+  # SECTION 6: Comparison Operators
+  # =============================================================================
+
+  def test_gt(x: Int): String when x > 10 = "GT"
+  def test_gt(_x: Int): String = "LE"
+
+  def test_lt(x: Int): String when x < 10 = "LT"
+  def test_lt(_x: Int): String = "GE"
+
+  def test_gte(x: Int): String when x >= 10 = "GTE"
+  def test_gte(_x: Int): String = "LT"
+
+  def test_lte(x: Int): String when x <= 10 = "LTE"
+  def test_lte(_x: Int): String = "GT"
+
+  def test_eq(x: Int): String when x == 10 = "EQ"
+  def test_eq(_x: Int): String = "NE"
+
+  def test_neq(x: Int): String when x != 10 = "NE"
+  def test_neq(_x: Int): String = "EQ"
+
+  # =============================================================================
+  # SECTION 7: Utility Functions
+  # =============================================================================
+
+  # Clamp to 0-100
+  def clamp100(x: Int): Int when x < 0 = 0
+  def clamp100(x: Int): Int when x > 100 = 100
+  def clamp100(x: Int): Int = x
+
+  # =============================================================================
+  # SECTION 8: Recursive Functions
+  # =============================================================================
+
+  # Sum 0 to n
+  def sum_to(n: Int): Int when n <= 0 = 0
+  def sum_to(n: Int): Int = n + sum_to(n - 1)
+
+  # Factorial
+  def factorial(n: Int): Int when n <= 1 = 1
+  def factorial(n: Int): Int = n * factorial(n - 1)
+
+  # Power
+  def power(base: Int, exp: Int): Int when exp == 0 = 1
+  def power(base: Int, exp: Int): Int when exp == 1 = base
+  def power(base: Int, exp: Int): Int = base * power(base, exp - 1)
+
+  # =============================================================================
+  # SECTION 9: Guard Coverage
+  # =============================================================================
+
+  # Complete coverage
+  def classify(x: Int): String when x > 0 = "POS"
+  def classify(x: Int): String when x < 0 = "NEG"
+  def classify(_x: Int): String = "ZERO"
+
+  # Performance-ordered
+  def perf_test(x: Int): String when x == 42 = "ANSWER"
+  def perf_test(x: Int): String when x > 100 = "BIG"
+  def perf_test(x: Int): String when x > 0 = "POS"
+  def perf_test(x: Int): String when x < 0 = "NEG"
+  def perf_test(_x: Int): String = "ZERO"
+
+  # =============================================================================
+  # SECTION 10: Main Demo
+  # =============================================================================
+
+  def main(): Int =
+    println("=== COMPREHENSIVE GUARDS DEMO ===\n")
+    
+    println("== Basic Comparisons ==")
+    println(is_positive(5))
+    println(is_negative(-3))
+    println(is_zero(0))
+    println(is_nonzero(7))
+    
+    println("\n== Multi-Clause ==")
+    println(abs(5))
+    println(abs(-5))
+    println(sign(10))
+    println(sign(0))
+    println(sign(-10))
+    println(fib(7))
+    
+    println("\n== Guard Sequences ==")
+    println(is_small(5))
+    println(is_medium(50))
+    println(is_extreme(200))
+    
+    println("\n== Type Refinement ==")
+    println(classify_temp(22))
+    println(classify_temp(-50))
+    println(age_group(10))
+    println(age_group(70))
+    println(grade_letter(85))
+    
+    println("\n== Real-World ==")
+    println(discount(10))
+    println(discount(70))
+    println(tax_bracket(25000))
+    println(shipping_cost(3))
+    
+    println("\n== Comparisons ==")
+    println(test_gt(15))
+    println(test_lt(5))
+    println(test_gte(10))
+    println(test_eq(10))
+    println(test_neq(7))
+    
+    println("\n== Utilities ==")
+    println(clamp100(-10))
+    println(clamp100(50))
+    println(clamp100(150))
+    
+    println("\n== Recursive ==")
+    println(sum_to(10))
+    println(factorial(5))
+    println(power(2, 4))
+    
+    println("\n== Coverage ==")
+    println(classify(5))
+    println(classify(-5))
+    println(classify(0))
+    println(perf_test(42))
+    println(perf_test(200))
+    
+    println("\n=== ALL FEATURES COMPLETE! ===")
+    0
+
+end

@@ -15,6 +15,18 @@ module Std.Vector do
 
   def is_empty(v: Vector(T, n)): Bool = n == 0
 
+  def head(list: Vector(T, n), default: T): T =
+    match list do
+      [] -> default
+      [h | _] -> h
+    end
+
+  def tail(list: Vector(T, n)): Vector(T, n - 1) =
+    match list do
+      [] -> []
+      [_ | t] -> t
+    end
+
   def reverse(v: Vector(T, n), acc: Vector(T, m)): Vector(T, m + n) =
     match v do
       [] -> acc
@@ -56,6 +68,35 @@ module Std.Vector do
             [partial_func(h2) | zip_with(t1, t2, func)]
         end
     end
+
+  # Access
+  def nth(list: Vector(T, n), index: Nat, default: T): T =
+    match index do
+      0 -> head(list, default)
+      _ -> nth(tail(list), Pred(index), default)
+    end
+
+  def take(list: Vector(T, _), count: Nat): Vector(T, count) =
+    match count do
+      0 ->
+        []
+      _ ->
+        match list do
+          [] -> []
+          [h | t] -> [h | take(t, Pred(count))]
+        end
+    end
+
+  def drop(list: Vector(T, n), count: Nat): Vector(T, n - count) =
+    match count do
+      0 ->
+        list
+      _ ->
+        match list do
+          [] -> []
+          [_ | t] -> drop(t, Pred(count))
+        end
+   end
 
   # Simple predicates
   def contains(v: Vector(T, n), element: T): Bool =
