@@ -81,6 +81,22 @@ erl -pa _build/ebin -pa lib/_build -noshell -s PatternGuards main -s init stop
 erl -pa _build/ebin -pa lib/_build -noshell -s Recursion main -s init stop
 ```
 
+### 06_comprehensive_guards_demo.cure
+**Demonstrates**: Function-level guards and type refinement ✅
+- All comparison operators (`>`, `<`, `>=`, `<=`, `==`, `!=`)
+- Logical operators (`and`, `or`)
+- Multi-clause functions with guards
+- Guard-based type refinement
+- Real-world applications (tax rates, discounts, shipping)
+- SMT-based guard verification
+- Coverage analysis and optimization
+
+**Run**:
+```bash
+./cure examples/06_comprehensive_guards_demo.cure
+erl -pa _build/ebin -pa lib/_build -noshell -s GuardsDemo main -s init stop
+```
+
 ### 06_fsm_traffic_light.cure
 **Demonstrates**: Finite State Machine (FSM) with full runtime support ✅
 - FSM definition with `fsm` keyword
@@ -173,7 +189,8 @@ end
 
 ## Notes
 
-- All examples (1-6) compile and run successfully ✅
+- Core examples (01-06) compile and run successfully ✅
+- Multiple variations exist for some examples (e.g., 05_function_guards.cure, 05_recursion.cure)
 - Optimization warnings can be safely ignored
 - Examples use only features from the standard library
 - Pattern matching requires all cases to be handled or a wildcard `_`

@@ -1,7 +1,7 @@
 ## Typeclass Guide for Cure
 
 **Version**: 1.0  
-**Last Updated**: November 5, 2025
+**Last Updated**: November 22, 2025
 
 ---
 
