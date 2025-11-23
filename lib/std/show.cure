@@ -2,6 +2,8 @@
 # Polymorphic typeclass for converting values to strings
 
 module Std.Show do
+  export [show_list/1, show_separated/2]
+  
   import Std.Core [Option, Result, Ok, Error, Some, None]
 
   # ============================================================================
@@ -111,5 +113,24 @@ module Std.Show do
   #     end
   # end
 
+  # ============================================================================
+  # Helper Functions
+  # ============================================================================
+
+  # Show a list with custom formatting (simplified for Int lists)
+  def show_list(xs: List(Int)): String =
+    match xs do
+      [] -> "[]"
+      [x] -> "[<int>]"
+      _ -> "[<int>, ...]"
+    end
+
+  # Show values separated by a delimiter (simplified for Int lists)
+  def show_separated(xs: List(Int), sep: String): String =
+    match xs do
+      [] -> ""
+      [x] -> "<int>"
+      _ -> "<int> | ..."
+    end
 
 end

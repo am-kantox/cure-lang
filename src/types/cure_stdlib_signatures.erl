@@ -464,6 +464,19 @@ get_function_type('Std.Result', map_result, 2) ->
             {primitive_type, 'Int'}}};
 get_function_type('Std.Result', ok, 1) ->
     {ok, {function_type, [{primitive_type, 'Int'}], {primitive_type, 'Int'}}};
+get_function_type('Std.Show', show_list, 1) ->
+    {ok,
+        {function_type,
+            [{dependent_type, 'List', [{type_param, undefined, {type_var, 'Int', 'Int', []}}]}],
+            {primitive_type, 'String'}}};
+get_function_type('Std.Show', show_separated, 2) ->
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'List', [{type_param, undefined, {type_var, 'Int', 'Int', []}}]},
+                {primitive_type, 'String'}
+            ],
+            {primitive_type, 'String'}}};
 get_function_type('Std.String', all_of, 2) ->
     {ok,
         {function_type,
@@ -927,6 +940,8 @@ all_signatures() ->
         {'Std.Result', map_error, 2},
         {'Std.Result', map_result, 2},
         {'Std.Result', ok, 1},
+        {'Std.Show', show_list, 1},
+        {'Std.Show', show_separated, 2},
         {'Std.String', all_of, 2},
         {'Std.String', any_of, 2},
         {'Std.String', at, 2},

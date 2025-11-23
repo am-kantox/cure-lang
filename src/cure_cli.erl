@@ -1156,6 +1156,7 @@ check_stdlib_compiled(_StdlibPaths) ->
         "lib/std/list.cure",
         "lib/std/math.cure",
         "lib/std/result.cure",
+        "lib/std/show.cure",
         "lib/std/vector.cure"
     ],
     % Filter to only check files that exist in the source tree

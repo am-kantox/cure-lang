@@ -153,8 +153,8 @@ module FunctionGuards do
   end
   
   def max_list(list: List(Int)): Option(Int) =
-    let first = head(list) in
-    let rest_max = max_list(tail(list)) in
+    let first = head(list)
+    let rest_max = max_list(tail(list))
     match rest_max do
       Some(m) when first > m -> Some(first)
       Some(m) -> Some(m)

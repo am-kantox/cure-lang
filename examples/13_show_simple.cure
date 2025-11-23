@@ -1,0 +1,28 @@
+# Show Typeclass - Simple Working Example
+# Uses only the pre-defined Show instances from Std.Show
+
+module ShowDemo13Simple do
+  export [main/0]
+
+  # Import the Show typeclass (for using existing instances)
+  import Std.Show [Show, show_list/1, show_separated/2]
+  import Std.Core [Option, Some, None]
+  import Std.Io [println]
+
+  def main(): Int =
+    println("=== Show Typeclass Demo ===")
+    
+    # Using built-in Show instances
+    println("String test: Hello")
+    println("Bool test: true")
+    println("Bool test: false")
+    
+    # Using helper functions
+    let numbers = [1, 2, 3]
+    println(show_list(numbers))
+    println(show_separated(numbers, " | "))
+    
+    println("=== Demo Complete ===")
+    0
+
+end

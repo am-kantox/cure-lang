@@ -1,0 +1,12 @@
+# Test Show Typeclass Import
+module TestShowImport do
+  export [main/0]
+  
+  import Std.Show [Show]
+  import Std.Io [println]
+  
+  # Just use Show, don't define new instances
+  def main(): Int =
+    println("Test passed")
+    0
+end
