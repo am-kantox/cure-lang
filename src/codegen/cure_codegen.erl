@@ -3105,11 +3105,18 @@ convert_to_erlang_forms(Module) ->
             3 + length(CompileAttrs) + length(RecordForms)
         ),
 
-        % NOTE: on_load hook disabled for FSM registration due to ETS table ownership issues
-        % The on_load process is temporary and the ETS table gets deleted when it exits
-        % Users should call ModuleName:register_fsms() explicitly at application startup
-        % or in their main() function before using FSMs
-        LoadHook = [],
+        % Add on_load hook for FSM registration
+        % The ETS table is created with {heir, none} to persist after the on_load process exits
+        LoadHook =
+            case FSMDefinitions of
+                [] ->
+                    [];
+                _ ->
+                    [
+                        {attribute, 3 + length(CompileAttrs) + length(RecordForms), on_load,
+                            {register_fsms, 0}}
+                    ]
+            end,
 
         % Set current module name for function reference generation
         put(current_module_name, ModuleName),

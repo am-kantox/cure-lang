@@ -595,6 +595,15 @@ compile_guard_instructions_to_guard_exprs(
                 VarForm ->
                     compile_guard_instructions_to_guard_exprs(Rest, Context, [VarForm | Acc])
             end;
+        load_var ->
+            % load_var is similar to load_param - it loads a variable that's in scope
+            [VarName] = Args,
+            case maps:get(VarName, Context#compile_context.variables, undefined) of
+                undefined ->
+                    {error, {undefined_variable_in_guard, VarName}};
+                VarForm ->
+                    compile_guard_instructions_to_guard_exprs(Rest, Context, [VarForm | Acc])
+            end;
         guard_bif ->
             [GuardOp | _BifArgs] = Args,
             % Get the number of arguments for this BIF
@@ -629,10 +638,24 @@ compile_guard_bif_op('>=', [Left, Right], Line) ->
     {op, Line, '>=', Left, Right};
 compile_guard_bif_op('=<', [Left, Right], Line) ->
     {op, Line, '=<', Left, Right};
+compile_guard_bif_op('<=', [Left, Right], Line) ->
+    % Cure uses <= but Erlang uses =<
+    {op, Line, '=<', Left, Right};
 compile_guard_bif_op('==', [Left, Right], Line) ->
     {op, Line, '==', Left, Right};
+compile_guard_bif_op('!=', [Left, Right], Line) ->
+    % Cure uses != but Erlang uses /=
+    {op, Line, '/=', Left, Right};
 compile_guard_bif_op('/=', [Left, Right], Line) ->
     {op, Line, '/=', Left, Right};
+compile_guard_bif_op('and', [Left, Right], Line) ->
+    {op, Line, 'andalso', Left, Right};
+compile_guard_bif_op('or', [Left, Right], Line) ->
+    {op, Line, 'orelse', Left, Right};
+compile_guard_bif_op('andalso', [Left, Right], Line) ->
+    {op, Line, 'andalso', Left, Right};
+compile_guard_bif_op('orelse', [Left, Right], Line) ->
+    {op, Line, 'orelse', Left, Right};
 compile_guard_bif_op(BifOp, Args, Line) ->
     % Generic BIF call for other guard operations
     {call, Line, {atom, Line, BifOp}, Args}.

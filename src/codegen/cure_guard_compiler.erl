@@ -63,7 +63,17 @@ compile_guard_expr(#literal_expr{value = Value, location = Location}, State) ->
     {ok, [Instruction], State};
 compile_guard_expr(#identifier_expr{name = Name, location = Location}, State) ->
     case resolve_variable(Name, State) of
-        {ok, VarRef} ->
+        {ok, {param, VarName}} ->
+            % Variable is a parameter, extract the name from {param, VarName} tuple
+            Instruction =
+                #beam_instr{
+                    op = load_var,
+                    args = [VarName],
+                    location = Location
+                },
+            {ok, [Instruction], State};
+        {ok, VarRef} when is_atom(VarRef) ->
+            % Direct variable reference
             Instruction =
                 #beam_instr{
                     op = load_var,
