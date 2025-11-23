@@ -587,9 +587,11 @@ infer_message_type(Message) ->
 init_fsm_registry() ->
     case ets:info(?FSM_REGISTRY) of
         undefined ->
-            % Create ETS table with heir=none so it persists even when owner dies
+            % Create ETS table with init process as heir so it persists
+            % When the creating process dies, the table transfers to init
             % This is critical for on_load hooks which run in temporary processes
-            ets:new(?FSM_REGISTRY, [named_table, public, set, {heir, none}]),
+            InitPid = whereis(init),
+            ets:new(?FSM_REGISTRY, [named_table, public, set, {heir, InitPid, []}]),
             ok;
         _ ->
             ok
