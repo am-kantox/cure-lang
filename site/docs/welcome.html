@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cure: A Programming Language with Dependent Types and Formal Verification for BEAM - Cure Documentation</title>
+    <meta name="description" content="TL;DR: Cure is a functional programming language for the BEAM virtual machine (Erlang/Elixir) that brings mathematical proofs of code correctnes">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="cure-a-programming-language-with-dependent-types-and-formal-verification-for-beam">Cure: A Programming Language with Dependent Types and Formal Verification for BEAM</h1>
+<p><strong>TL;DR</strong>: <code>Cure</code> is a functional programming language for the BEAM virtual machine (Erlang/Elixir) that brings mathematical proofs of code correctness directly at compile time. Using SMT solvers (<a href="https://github.com/Z3Prover/z3">Z3</a>/<a href="https://github.com/cvc5/cvc5">CVC5</a>), <code>Cure</code> checks value-dependent types, verifies finite state machines, and guarantees the absence of entire classes of bugs before the program even runs.</p>
+<hr />
+<h2 id="what-is-cure-and-why-do-we-need-it">What is Cure and Why Do We Need It?</h2>
+<h3 id="the-problem-with-modern-development">The Problem with Modern Development</h3>
+<p>Testing is unavoidable, but for some mission-critical parts of code, we'd like stronger guarantees—like proofs of correctness. All things being equal, this doesn't make sense for small e-commerce sites or landing pages, but a trading platform, drone control system, or medical software deserve something more serious than slapdash tests.</p>
+<p>At the same time, all existing languages that allow proving correctness are either not production-ready, written by aliens for aliens, or force you to write the entire project under the same conditions (an HTTP request from a user doesn't need type checking and correctness guarantees, and the overhead—like compilation time and actual writing time—is quite significant to ignore).</p>
+<p>For years I wrote critical subsystems in Idris, manually translated to Elixir, and it worked for me—but was terribly annoying. Yes, during translation (at any boundary with the external world)—mathematical provability is lost, but it's an acceptable risk (for me). I know for sure that if the "interface" is carefully checked, the code inside will work as needed.</p>
+<p>But Idris has its own problems, I don't consider Haskell-like syntax acceptable for adult programming, and translating back and forth each time is quite tedious. And I thought: what if I write my own language that compiles to BEAM and transparently links with Erlang, Elixir, Gleam, and even LFE?</p>
+<p>I only need three things from a language:</p>
+<ul>
+<li>Dependent types and solvers</li>
+<li>FSMs in the core, with all the bells and whistles</li>
+<li>No <code>if</code>-<code>then</code>-<code>else</code></li>
+</ul>
+<p>And I simply created <a href="https://cure-lang.org">Cure</a></p>
+<p><strong>Traditional approach</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Erlang - checks only at runtime</span>
+<span class="nf">safe_divide</span><span class="p">(</span><span class="nv">A</span><span class="p">,</span><span class="w"> </span><span class="nv">B</span><span class="p">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="nv">B</span><span class="w"> </span><span class="o">=/=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">A</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">B</span><span class="p">};</span>
+<span class="nf">safe_divide</span><span class="p">(_,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">division_by_zero</span><span class="p">}.</span>
+</code></pre></div>
+
+<p>Yes, it works. But what if you forget the check? What if the logic becomes more complex and a new execution path appears?</p>
+<p><strong>Cure's approach</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Cure</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">mathematical</span><span class="w"> </span><span class="nx">proof</span><span class="w"> </span><span class="nx">at</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">level</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">safe_divide</span><span class="p">(</span><span class="nx">a</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">b</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">}):</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="nx">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nx">b</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">The</span><span class="w"> </span><span class="nx">compiler</span><span class="w"> </span><span class="nx">will</span><span class="w"> </span><span class="nx">PROVE</span><span class="w"> </span><span class="nx">that</span><span class="w"> </span><span class="nx">b</span><span class="w"> </span><span class="nx">will</span><span class="w"> </span><span class="nx">never</span><span class="w"> </span><span class="nx">be</span><span class="w"> </span><span class="nx">zero</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">Or</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">program</span><span class="w"> </span><span class="nx">won</span><span class="err">&#39;</span><span class="nx">t</span><span class="w"> </span><span class="nx">compile</span>
+</code></pre></div>
+
+<h3 id="cures-philosophy">Cure's Philosophy</h3>
+<p>Cure stands on three pillars:</p>
+<ol>
+<li><strong>Verification over convenience</strong> — when correctness is critical, syntactic sugar is secondary</li>
+<li><strong>Mathematical proofs instead of hopes</strong> — the compiler doesn't just check types, it PROVES program properties</li>
+<li><strong>BEAM as foundation</strong> — all the power of Erlang OTP, but with type-level correctness guarantees</li>
+</ol>
+<hr />
+<h2 id="dependent-types-what-and-why">Dependent Types: What and Why?</h2>
+<h3 id="simple-example">Simple Example</h3>
+<p>Regular types say: "this is an integer." Dependent types say: "this is an integer greater than zero and less than the list length."</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Type</span><span class="w"> </span><span class="nx">depends</span><span class="w"> </span><span class="nx">on</span><span class="w"> </span><span class="nx">VALUE</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">head</span><span class="p">(</span><span class="nx">v</span><span class="p">:</span><span class="w"> </span><span class="nx">Vector</span><span class="p">(</span><span class="nx">T</span><span class="p">,</span><span class="w"> </span><span class="nx">n</span><span class="p">)):</span><span class="w"> </span><span class="nx">T</span><span class="w"> </span><span class="nx">when</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="nx">nth</span><span class="p">(</span><span class="nx">v</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Compiler</span><span class="w"> </span><span class="nx">will</span><span class="w"> </span><span class="nx">PROVE</span><span class="w"> </span><span class="nx">that</span><span class="p">:</span>
+<span class="err">#</span><span class="w"> </span><span class="mi">1</span><span class="p">.</span><span class="w"> </span><span class="nx">Vector</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="nx">non</span><span class="o">-</span><span class="nx">empty</span><span class="w"> </span><span class="p">(</span><span class="nx">n</span><span class="w"> </span><span class="p">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="err">#</span><span class="w"> </span><span class="mi">2</span><span class="p">.</span><span class="w"> </span><span class="nx">Index</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="nx">always</span><span class="w"> </span><span class="nx">valid</span>
+<span class="err">#</span><span class="w"> </span><span class="mi">3</span><span class="p">.</span><span class="w"> </span><span class="nx">Result</span><span class="w"> </span><span class="nx">has</span><span class="w"> </span><span class="k">type</span><span class="w"> </span><span class="nx">T</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Trying</span><span class="w"> </span><span class="nx">to</span><span class="w"> </span><span class="nx">call</span><span class="w"> </span><span class="nx">head</span><span class="w"> </span><span class="nx">on</span><span class="w"> </span><span class="nx">an</span><span class="w"> </span><span class="nx">empty</span><span class="w"> </span><span class="nx">vector</span><span class="p">?</span>
+<span class="err">#</span><span class="w"> </span><span class="err">❌</span><span class="w"> </span><span class="nx">COMPILATION</span><span class="w"> </span><span class="nx">ERROR</span>
+</code></pre></div>
+
+<h3 id="real-example-safe-list-access">Real Example: Safe List Access</h3>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Safe access - mathematically proven
+def safe_access(v: Vector(Int, n), idx: {i: Int | 0 &lt;= i &lt; n}): Int =
+  nth(v, idx)  # No checks - compiler ALREADY proved safety!
+
+<span class="gh">#</span> Usage
+let my_vector = ‹5, 10, 15, 20›  # Vector(Int, 4)
+
+safe_access(my_vector, 2)   # ✅ OK - 2 &lt; 4
+safe_access(my_vector, 10)  # ❌ COMPILATION ERROR - 10 &gt;= 4
+</code></pre></div>
+
+<p>Notice: <strong>no runtime checks</strong>. The compiler mathematically proved that <code>idx</code> is always valid. This isn't just "type checking"—it's a <strong>mathematical proof</strong>.</p>
+<hr />
+<h2 id="smt-solvers-and-formal-verification">SMT Solvers and Formal Verification</h2>
+<h3 id="what-is-an-smt-solver">What is an SMT Solver?</h3>
+<p>SMT (Satisfiability Modulo Theories) is a mathematical engine that checks whether a solution exists for a system of logical equations.</p>
+<p>Imagine the problem:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">Given</span><span class="o">:</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="o">,</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="o">,</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span>
+<span class="n">Question</span><span class="o">:</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">15</span><span class="o">?</span>
+</code></pre></div>
+
+<p>An SMT solver will <strong>mathematically prove</strong> that no—if x = 15, then y = -5, which violates the condition y &gt; 0.</p>
+<h3 id="how-cure-uses-z3">How Cure Uses Z3</h3>
+<p>Cure integrates Z3—the most powerful SMT solver from Microsoft Research—directly into the compiler:</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Function with guards</span>
+<span class="n">def</span><span class="w"> </span><span class="n">classify_age</span><span class="p">(</span><span class="n">age</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">Atom</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">match</span><span class="w"> </span><span class="n">age</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">:</span><span class="n">invalid</span>
+<span class="w">    </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">:</span><span class="n">newborn</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">18</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">:</span><span class="n">minor</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">65</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">:</span><span class="n">adult</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">65</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="o">:</span><span class="n">senior</span>
+<span class="w">  </span><span class="kd">end</span>
+</code></pre></div>
+
+<p><strong>What the compiler does with Z3</strong>:</p>
+<ol>
+<li>
+<p>Translates guards into SMT formulas:<br />
+<code>smt
+   (assert (&lt; n 0))      ; first case
+   (assert (= n 0))      ; second case
+   (assert (and (&gt;= n 0) (&lt; n 18)))  ; third case
+   ...</code></p>
+</li>
+<li>
+<p>Z3 checks <strong>coverage completeness</strong>:<br />
+   - Are all cases covered?<br />
+   - Are there overlaps?<br />
+   - Are there unreachable branches?</p>
+</li>
+<li>
+<p>Guarantees:<br />
+<code>✓ All integers are covered
+   ✓ Each number will fall into exactly one case
+   ✓ No dead code</code></p>
+</li>
+</ol>
+<h3 id="finite-state-machine-verification">Finite State Machine Verification</h3>
+<p>FSMs (Finite State Machines) are the heart of many BEAM systems. I personally wrote a whole <a href="https://hexdocs.pm/finitomata">library</a> for FSM support with "verifications" in Elixir, but those were, of course, crutches made from sticks. Cure has real <strong>verifiable finite state machines</strong> out of the box:</p>
+<div class="codehilite"><pre><span></span><code><span class="kd">record </span><span class="n">TrafficLight</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">cycles</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="w">  </span><span class="n">emergency_stops</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span>
+<span class="kd">end</span>
+
+<span class="n">fsm</span><span class="w"> </span><span class="n">TrafficLight</span><span class="p">{</span><span class="n">cycles</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">emergency_stops</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Red</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Green</span>
+<span class="w">  </span><span class="n">Green</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Yellow</span>
+<span class="w">  </span><span class="n">Yellow</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+
+<span class="w">  </span><span class="n">Green</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">emergency</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+<span class="w">  </span><span class="n">Yellow</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">emergency</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+<span class="kd">end</span>
+</code></pre></div>
+
+<p>Z3 will check that: ① there are no deadlocks, ② all states are reachable, ③ there are no undefined transitions, and ④ invariants are preserved. And all this <strong>at compile time</strong>!</p>
+<h3 id="pipes">Pipes</h3>
+<p>I'm not a purist, I just made pipes monadic. More details <a href="https://github.com/am-kantox/cure-lang/blob/main/docs/PIPE_OPERATOR.md">here</a>.</p>
+<hr />
+<h2 id="current-project-status">Current Project Status</h2>
+<h3 id="what-works-version-050-november-2025">✅ What Works (Version 0.5.0 — November 2025)</h3>
+<p><strong>Fully functional implementation:</strong></p>
+<ol>
+<li>
+<p><strong>Compiler (100% functional)</strong><br />
+   - Lexical analysis with position tracking<br />
+   - Parsing to AST with error recovery<br />
+   - Dependent type system with constraint checking<br />
+   - BEAM bytecode generation<br />
+   - OTP integration</p>
+</li>
+<li>
+<p><strong>Standard Library (12 modules)</strong><br />
+   - <code>Std.Core</code> — basic types and functions<br />
+   - <code>Std.Io</code> — input-output (in embryonic state, I can't figure out if I need it at all)<br />
+   - <code>Std.List</code> — list operations (<code>map/2</code>, <code>filter/2</code>, <code>fold/3</code>, <code>zip_with/2</code>)<br />
+   - <code>Std.Vector</code> — operations on lists of specific length<br />
+   - <code>Std.Fsm</code> — finite state machine operations<br />
+   - <code>Std.Result</code> / <code>Std.Option</code> — error handling<br />
+   - <code>Std.Vector</code> — indexed vectors<br />
+   - And others...</p>
+</li>
+<li>
+<p><strong>FSM Runtime</strong><br />
+   - FSM compilation to <code>gen_statem</code> behaviors<br />
+   - Mermaid notation for FSM (<code>State1 --&gt; |event| State2</code>)<br />
+   - Runtime operations (spawn, cast, state query)<br />
+   - Integration with OTP supervision trees</p>
+</li>
+<li>
+<p><strong>Type Optimization (25-60% speedup)</strong><br />
+   - Monomorphization<br />
+   - Function specialization<br />
+   - Inlining<br />
+   - Dead code elimination</p>
+</li>
+<li>
+<p><strong>Function Guards with SMT Verification</strong><br />
+<code class="language-cure">cure
+   def abs(x: Int): Int =
+     match x do
+       n when n &lt; 0 -&gt; -n
+       n when n &gt;= 0 -&gt; n
+     end
+   # Z3 will check coverage completeness!</code></p>
+</li>
+<li>
+<p><strong>BEAM Integration</strong><br />
+   - [×] Full compatibility with Erlang/Elixir<br />
+   - [ ] Hot code loading<br />
+   - [?] Distributed computing — ahem :) almost<br />
+   - [×] OTP behaviours</p>
+</li>
+</ol>
+<h3 id="in-development">🚧 In Development</h3>
+<ul>
+<li><strong>Type Classes/Traits</strong> — polymorphic interfaces (parser ready, awaiting implementation)</li>
+<li><strong>String interpolation</strong> — template strings</li>
+<li><strong>CLI SMT integration</strong> — running Z3 from command line (API ready)</li>
+</ul>
+<h3 id="statistics">📊 Statistics</h3>
+<ul>
+<li><strong>~15,000 lines</strong> of compiler code (Erlang)</li>
+<li><strong>~2,000 lines</strong> of standard library (Cure)</li>
+<li><strong>35+ documents</strong> of technical documentation</li>
+<li><strong>6 working examples</strong> in <code>examples/</code></li>
+<li><strong>100% coverage</strong> of core function tests</li>
+</ul>
+<hr />
+<h2 id="lsp-and-mcp-development-comfort">LSP and MCP: Development Comfort</h2>
+<p><strong>And that's not all, surprisingly. I have to work quite a lot with Cure code myself, so a full-fledged LSP and MCP are being developed in parallel.</strong></p>
+<h3 id="language-server-protocol-lsp">Language Server Protocol (LSP)</h3>
+<p>Cure comes with a full-fledged LSP server for IDEs:</p>
+<p><strong>Features:</strong><br />
+- <strong>Real-time diagnostics</strong> — errors right in the editor<br />
+- <strong>Hover information</strong> — types and documentation on Ctrl+hover<br />
+- <strong>Go to definition</strong> — code navigation<br />
+- <strong>Code completion</strong> (still quite average)<br />
+- <strong>Code actions</strong> (everything the solver can output — out of the box)<br />
+- <strong>Type holes</strong> — <code>_</code> for type inference (like holes in Idris)</p>
+<p><strong>Integration:</strong> Hypothetically, should work in any editor with LSP support. Tested only in <code>NeoVim</code>.</p>
+<p><strong>Example:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Hole                  ⇓</span>
+<span class="n">def</span><span class="w"> </span><span class="n">factorial</span><span class="p">(</span><span class="n">n</span><span class="o">:</span><span class="w"> </span><span class="kt">Int</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="k">match</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="n">n</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">factorial</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">  </span><span class="k">end</span>
+
+<span class="c1"># Hover will show inferred `Int`, and `&lt;leader&gt;ca` will insert it in place</span>
+</code></pre></div>
+
+<h3 id="model-context-protocol-mcp">Model Context Protocol (MCP)</h3>
+<p>Cure supports MCP — Anthropic's new protocol for integration with AI assistants:</p>
+<p><strong>What this provides:</strong><br />
+- 🤖 <strong>AI-assisted coding</strong> — Claude/GPT understands project context<br />
+- 📚 <strong>Smart search</strong> — semantic search through codebase<br />
+- 🔍 <strong>Type-aware refactoring</strong> — AI knows about types<br />
+- 📖 <strong>Documentation on the fly</strong> — generating docs from code</p>
+<p><strong>Architecture:</strong></p>
+<div class="codehilite"><pre><span></span><code>┌─────────────┐
+│   Claude    │ ← MCP Protocol
+│   /GPT      │
+└──────┬──────┘
+       │
+┌──────▼──────────────┐
+│   MCP Server        │
+│  (Cure integration) │
+├─────────────────────┤
+│ • Code search       │
+│ • Type queries      │
+│ • Documentation     │
+│ • Refactoring hints │
+└─────────────────────┘
+</code></pre></div>
+
+<hr />
+<h2 id="how-to-try-cure">How to Try Cure</h2>
+<h3 id="installation">Installation</h3>
+<p><strong>Requirements:</strong><br />
+- Erlang/OTP 28+<br />
+- Make<br />
+- Git<br />
+- (Optional) Z3 for SMT verification</p>
+<p><strong>Steps:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. Clone the repository</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/am-kantox/cure-lang.git
+<span class="nb">cd</span><span class="w"> </span>cure-lang
+
+<span class="c1"># 2. Build the compiler</span>
+make<span class="w"> </span>all
+
+<span class="c1"># 3. Check installation</span>
+./cure<span class="w"> </span>--version
+<span class="c1"># Cure v0.5.0 (November 2025)</span>
+
+<span class="c1"># 4. Run tests</span>
+make<span class="w"> </span><span class="nb">test</span>
+<span class="c1"># ✓ All tests passed</span>
+</code></pre></div>
+
+<h3 id="first-program">First Program</h3>
+<p>Create <code>hello.cure</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="n">Hello</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">export</span><span class="w"> </span><span class="p">[</span><span class="n">main</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="w">  </span><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Io</span><span class="w"> </span><span class="p">[</span><span class="n">println</span><span class="p">]</span>
+
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">println</span><span class="p">(</span><span class="s2">&quot;Hello from Cure!&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="mi">0</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<p>Compile and run:</p>
+<div class="codehilite"><pre><span></span><code>./run_cure.sh<span class="w"> </span>hello.cure
+<span class="c1"># Hello from Cure!</span>
+</code></pre></div>
+
+<h3 id="examples-out-of-the-box-they-sometimes-break">Examples Out of the Box (they sometimes break)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># FSM: traffic light</span>
+./cure<span class="w"> </span>examples/06_fsm_traffic_light.cure
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-noshell<span class="w"> </span>-eval<span class="w"> </span><span class="s2">&quot;&#39;TrafficLightFSM&#39;:main(), init:stop().&quot;</span>
+
+<span class="c1"># List operations</span>
+./cure<span class="w"> </span>examples/01_list_basics.cure
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-noshell<span class="w"> </span>-eval<span class="w"> </span><span class="s2">&quot;&#39;ListBasics&#39;:main(), init:stop().&quot;</span>
+
+<span class="c1"># Pattern matching with guards</span>
+./cure<span class="w"> </span>examples/04_pattern_guards.cure
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-noshell<span class="w"> </span>-eval<span class="w"> </span><span class="s2">&quot;&#39;PatternGuards&#39;:main(), init:stop().&quot;</span>
+
+<span class="c1"># Error handling through Result</span>
+./cure<span class="w"> </span>examples/02_result_handling.cure
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-noshell<span class="w"> </span>-eval<span class="w"> </span><span class="s2">&quot;&#39;ResultHandling&#39;:main(), init:stop().&quot;</span>
+</code></pre></div>
+
+<hr />
+<h2 id="compiler-architecture">Compiler Architecture</h2>
+<h3 id="compilation-pipeline">Compilation Pipeline</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">┌──────────────┐</span>
+<span class="err">│</span><span class="w">  </span><span class="nx">hello</span><span class="p">.</span><span class="nx">cure</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="nx">Source</span><span class="w"> </span><span class="nx">File</span>
+<span class="err">└──────┬───────┘</span>
+<span class="w">       </span><span class="err">│</span>
+<span class="w">       </span><span class="err">▼</span>
+<span class="err">┌──────────────────┐</span>
+<span class="err">│</span><span class="w">   </span><span class="nx">Lexer</span><span class="w">          </span><span class="err">│</span><span class="w"> </span><span class="nx">Tokenization</span>
+<span class="err">│</span><span class="w">  </span><span class="p">(</span><span class="nx">cure_lexer</span><span class="p">)</span><span class="w">    </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">Keywords</span><span class="p">,</span><span class="w"> </span><span class="nx">operators</span>
+<span class="err">└──────┬───────────┘</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">Position</span><span class="w"> </span><span class="nx">tracking</span>
+<span class="w">       </span><span class="err">│</span>
+<span class="w">       </span><span class="err">▼</span>
+<span class="err">┌──────────────────┐</span>
+<span class="err">│</span><span class="w">   </span><span class="nx">Parser</span><span class="w">         </span><span class="err">│</span><span class="w"> </span><span class="nx">AST</span><span class="w"> </span><span class="nx">Generation</span>
+<span class="err">│</span><span class="w"> </span><span class="p">(</span><span class="nx">cure_parser</span><span class="p">)</span><span class="w">    </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">Syntax</span><span class="w"> </span><span class="nx">analysis</span>
+<span class="err">└──────┬───────────┘</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">Error</span><span class="w"> </span><span class="nx">recovery</span>
+<span class="w">       </span><span class="err">│</span>
+<span class="w">       </span><span class="err">▼</span>
+<span class="err">┌──────────────────┐</span>
+<span class="err">│</span><span class="w">  </span><span class="nx">Type</span><span class="w"> </span><span class="nx">Checker</span><span class="w">    </span><span class="err">│</span><span class="w"> </span><span class="nx">Type</span><span class="w"> </span><span class="nx">Inference</span>
+<span class="err">│</span><span class="p">(</span><span class="nx">cure_typechecker</span><span class="p">)</span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">Dependent</span><span class="w"> </span><span class="nx">types</span>
+<span class="err">│</span><span class="w">                  </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">Constraint</span><span class="w"> </span><span class="nx">solving</span>
+<span class="err">│</span><span class="w">  </span><span class="err">┌─────────────┐</span><span class="w"> </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="nx">Z3</span><span class="w"> </span><span class="nx">Solver</span><span class="w">   </span><span class="err">│</span><span class="w"> </span><span class="err">│</span><span class="w"> </span><span class="nx">SMT</span><span class="w"> </span><span class="nx">Verification</span>
+<span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="p">(</span><span class="nx">cure_smt</span><span class="p">)</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="err">└─────────────┘</span><span class="w"> </span><span class="err">│</span>
+<span class="err">└──────┬───────────┘</span>
+<span class="w">       </span><span class="err">│</span>
+<span class="w">       </span><span class="err">▼</span>
+<span class="err">┌──────────────────┐</span>
+<span class="err">│</span><span class="w">  </span><span class="nx">Optimizer</span><span class="w">       </span><span class="err">│</span><span class="w"> </span><span class="nx">Type</span><span class="o">-</span><span class="nx">Directed</span><span class="w"> </span><span class="nx">Opts</span>
+<span class="err">│</span><span class="p">(</span><span class="nx">cure_optimizer</span><span class="p">)</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">Monomorphization</span>
+<span class="err">└──────┬───────────┘</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">Inlining</span>
+<span class="w">       </span><span class="err">│</span>
+<span class="w">       </span><span class="err">▼</span>
+<span class="err">┌──────────────────┐</span>
+<span class="err">│</span><span class="w">  </span><span class="nx">Code</span><span class="w"> </span><span class="nx">Generator</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="nx">BEAM</span><span class="w"> </span><span class="nx">Bytecode</span>
+<span class="err">│</span><span class="w"> </span><span class="p">(</span><span class="nx">cure_codegen</span><span class="p">)</span><span class="w">   </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">Module</span><span class="w"> </span><span class="nx">generation</span>
+<span class="err">└──────┬───────────┘</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">OTP</span><span class="w"> </span><span class="nx">integration</span>
+<span class="w">       </span><span class="err">│</span>
+<span class="w">       </span><span class="err">▼</span>
+<span class="err">┌──────────────────┐</span>
+<span class="err">│</span><span class="w">   </span><span class="nx">Hello</span><span class="p">.</span><span class="nx">beam</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="nx">Executable</span>
+<span class="err">└──────────────────┘</span>
+</code></pre></div>
+
+<h3 id="z3-integration">Z3 Integration</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Simplified example from cure_guard_smt.erl</span>
+<span class="nf">verify_guard_completeness</span><span class="p">(</span><span class="nv">Guards</span><span class="p">,</span><span class="w"> </span><span class="nv">Type</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">%% 1. Generate SMT formulas</span>
+<span class="w">    </span><span class="nv">SMTFormulas</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">lists</span><span class="p">:</span><span class="nf">map</span><span class="p">(</span><span class="k">fun</span><span class="w"> </span><span class="n">guard_to_smt</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nv">Guards</span><span class="p">),</span>
+
+<span class="w">    </span><span class="c">%% 2. Check coverage</span>
+<span class="w">    </span><span class="nv">Coverage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">z3_check_coverage</span><span class="p">(</span><span class="nv">SMTFormulas</span><span class="p">,</span><span class="w"> </span><span class="nv">Type</span><span class="p">),</span>
+
+<span class="w">    </span><span class="c">%% 3. Find gaps</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="nv">Coverage</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="n">complete</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span>
+<span class="w">            </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="n">verified</span><span class="p">};</span>
+<span class="w">        </span><span class="p">{</span><span class="n">incomplete</span><span class="p">,</span><span class="w"> </span><span class="nv">Gap</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span>
+<span class="w">            </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">missing_case</span><span class="p">,</span><span class="w"> </span><span class="nv">Gap</span><span class="p">}};</span>
+<span class="w">        </span><span class="p">{</span><span class="n">overlapping</span><span class="p">,</span><span class="w"> </span><span class="nv">Cases</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span>
+<span class="w">            </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">redundant_guards</span><span class="p">,</span><span class="w"> </span><span class="nv">Cases</span><span class="p">}}</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+</code></pre></div>
+
+<h3 id="fsm-compilation">FSM Compilation</h3>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Original FSM</span>
+<span class="n">fsm</span><span class="w"> </span><span class="n">Light</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Red</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Green</span>
+<span class="w">  </span><span class="n">Green</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="o">|</span><span class="n">timer</span><span class="o">|</span><span class="w"> </span><span class="n">Red</span>
+<span class="kd">end</span>
+
+<span class="cp"># Compiles to gen_statem</span>
+<span class="o">-</span><span class="kr">module</span><span class="p">(</span><span class="s">&#39;Light&#39;</span><span class="p">).</span>
+<span class="o">-</span><span class="n">behaviour</span><span class="p">(</span><span class="n">gen_statem</span><span class="p">).</span>
+
+<span class="n">callback_mode</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">state_functions</span><span class="p">.</span>
+
+<span class="n">red</span><span class="p">({</span><span class="n">call</span><span class="p">,</span><span class="w"> </span><span class="n">From</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="nf">event</span><span class="p">,</span><span class="w"> </span><span class="n">timer</span><span class="p">},</span><span class="w"> </span><span class="n">Data</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">{</span><span class="n">next_state</span><span class="p">,</span><span class="w"> </span><span class="n">green</span><span class="p">,</span><span class="w"> </span><span class="n">Data</span><span class="p">,</span><span class="w"> </span><span class="p">[{</span><span class="n">reply</span><span class="p">,</span><span class="w"> </span><span class="n">From</span><span class="p">,</span><span class="w"> </span><span class="n">ok</span><span class="p">}]}.</span>
+
+<span class="n">green</span><span class="p">({</span><span class="n">call</span><span class="p">,</span><span class="w"> </span><span class="n">From</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="nf">event</span><span class="p">,</span><span class="w"> </span><span class="n">timer</span><span class="p">},</span><span class="w"> </span><span class="n">Data</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">{</span><span class="n">next_state</span><span class="p">,</span><span class="w"> </span><span class="n">red</span><span class="p">,</span><span class="w"> </span><span class="n">Data</span><span class="p">,</span><span class="w"> </span><span class="p">[{</span><span class="n">reply</span><span class="p">,</span><span class="w"> </span><span class="n">From</span><span class="p">,</span><span class="w"> </span><span class="n">ok</span><span class="p">}]}.</span>
+</code></pre></div>
+
+<hr />
+<h3 id="what-cure-is-not-good-for">What Cure is NOT Good For</h3>
+<ul>
+<li>Rapid prototyping (use Elixir)</li>
+<li>General-purpose web development (Phoenix does it great)</li>
+<li>Scripts and glue code</li>
+<li>Projects with frequently changing requirements</li>
+</ul>
+<h3 id="comparison-with-other-languages">Comparison with Other Languages</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Cure</th>
+<th>Erlang</th>
+<th>Elixir</th>
+<th>Idris/Agda</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dependent types</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>SMT verification</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+<td>Partially</td>
+</tr>
+<tr>
+<td>BEAM VM</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>FSM as primitive</td>
+<td>✅</td>
+<td>Libraries</td>
+<td>Libraries</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>OTP compatibility</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Production ready</td>
+<td>🚧</td>
+<td>✅</td>
+<td>✅</td>
+<td>Research</td>
+</tr>
+<tr>
+<td>Learning curve</td>
+<td>High</td>
+<td>Medium</td>
+<td>Low</td>
+<td>Very high</td>
+</tr>
+</tbody>
+</table>
+<h3 id="project-philosophy">Project Philosophy</h3>
+<p>Cure doesn't try to replace Erlang or Elixir. It's a <strong>specialized tool</strong> for tasks where:</p>
+<ol>
+<li><strong>Correctness &gt; Development Speed</strong></li>
+<li><strong>Mathematical Proofs &gt; Unit Tests</strong></li>
+<li><strong>Compile-time Guarantees &gt; Runtime Checks</strong></li>
+</ol>
+<p>As Tony Hoare said:</p>
+<blockquote>
+<p>There are two ways of constructing a software design: One way is to make it so simple that there are obviously no deficiencies, and the other way is to make it so complicated that there are no obvious deficiencies.</p>
+</blockquote>
+<hr />
+<h2 id="roadmap-and-future">Roadmap and Future</h2>
+<h3 id="short-term-plans-20252026">Short-term Plans (2025–2026)</h3>
+<ul>
+<li>[ ] <strong>Typeclasses/Traits</strong> — polymorphic interfaces</li>
+<li>[ ] <strong>CLI SMT integration</strong> — Z3 directly from command line</li>
+<li>[ ] <strong>LSP improvements</strong> — code completion, refactoring</li>
+<li>[ ] <strong>Stdlib expansion</strong> — more utility functions</li>
+</ul>
+<h3 id="medium-term-2026">Medium-term (2026)</h3>
+<ul>
+<li>[?] <strong>Effect system</strong> — tracking effects like in Koka</li>
+<li>[ ] <strong>Package manager</strong> — dependency management</li>
+<li>[ ] <strong>Distributed FSMs</strong> — verifiable distributed state machines</li>
+<li>[ ] <strong>Gradual typing</strong> — compatibility with dynamic Erlang</li>
+<li>[?] <strong>Macro system</strong> — compile-time metaprogramming</li>
+</ul>
+<h3 id="long-term-vision">Long-term Vision</h3>
+<p>Cure aims to become the <strong>language of choice</strong> for critical systems on BEAM:</p>
+<ol>
+<li><strong>Formal methods become mainstream</strong> — not a niche for academics, but an industry standard</li>
+<li><strong>Mathematical guarantees on BEAM</strong> — Erlang reliability + Cure correctness</li>
+<li><strong>Verification tooling</strong> — like unit tests today, SMT checks tomorrow</li>
+</ol>
+<hr />
+<h2 id="resources-and-links">Resources and Links</h2>
+<h3 id="documentation">Documentation</h3>
+<ul>
+<li><strong>Official documentation</strong>: <code>/docs</code> in repository</li>
+<li><strong>Language specification</strong>: <code>docs/LANGUAGE_SPEC.md</code></li>
+<li><strong>Type system guide</strong>: <code>docs/TYPE_SYSTEM.md</code></li>
+<li><strong>FSM</strong>: <code>docs/FSM_USAGE.md</code></li>
+<li><strong>Standard library</strong>: <code>docs/STD_SUMMARY.md</code></li>
+</ul>
+<h3 id="code-examples">Code Examples</h3>
+<ul>
+<li><strong>Basic examples</strong>: <code>examples/01_list_basics.cure</code></li>
+<li><strong>FSM demo</strong>: <code>examples/06_fsm_traffic_light.cure</code></li>
+<li><strong>Guards and pattern matching</strong>: <code>examples/04_pattern_guards.cure</code></li>
+<li><strong>Dependent types</strong>: <code>examples/dependent_types_demo.cure</code></li>
+</ul>
+<h3 id="scientific-foundations">Scientific Foundations</h3>
+<ul>
+<li>(<strong>I owe this book the existence of the language in principle</strong>) Alessandro Gianola: "SMT-based Safety Verification of Data-Aware Processes"</li>
+<li>Z3 Solver: https://github.com/Z3Prover/z3</li>
+<li>SMT-LIB Standard: http://smtlib.cs.uiowa.edu/</li>
+<li>Idris tutorial: https://docs.idris-lang.org/</li>
+</ul>
+<hr />
+<h2 id="ps-frequently-asked-questions">P.S. Frequently Asked Questions</h2>
+<p><strong>Q: Is Cure production-ready?</strong><br />
+A: The compiler is functional, stdlib works, but the project is young. For critical systems, thorough testing is recommended. Version 1.0 is expected in 2026.</p>
+<p><strong>Q: Do I need to know type theory?</strong><br />
+A: Basic usage doesn't require deep knowledge. For advanced features (dependent types, SMT), understanding the basics is desirable.</p>
+<p><strong>Q: Is it compatible with Erlang/Elixir?</strong><br />
+A: Yes! Cure compiles to BEAM bytecode and is fully compatible with OTP. You can call Erlang modules and vice versa.</p>
+<p><strong>Q: Why not extend Elixir instead of a new language?</strong><br />
+A: Dependent types require a fundamentally different compiler architecture. Adding them to a dynamic language is impossible without losing guarantees.</p>
+<p><strong>Q: How fast is Cure code?</strong><br />
+A: Comparable to Erlang. Type optimizations provide 25-60% speedup. Zero runtime overhead from types.</p>
+<p><strong>Q: Can I write web apps in Cure?</strong><br />
+A: Take Phoenix, write critical pieces in Cure and link BEAM from Elixir. I'll make this process transparent for <code>mix</code>. In principle, Cure makes sense to use <strong>only</strong> for systems where verification is needed. A website or app will do fine without it.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>All Documentation</h4>
+                <ul>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refinement Type Syntax Implementation Plan - Cure Documentation</title>
+    <meta name="description" content="Status: Planned  
+Priority: High  
+Estimated Effort: 2-3 days">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="refinement-type-syntax-implementation-plan">Refinement Type Syntax Implementation Plan</h1>
+<p><strong>Status</strong>: Planned<br />
+<strong>Priority</strong>: High<br />
+<strong>Estimated Effort</strong>: 2-3 days</p>
+<h2 id="goal">Goal</h2>
+<p>Implement full parser and typechecker support for refinement type syntax:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="k">var</span><span class="p">:</span><span class="w"> </span><span class="n">Type</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">constraint</span><span class="p">}</span>
+</code></pre></div>
+
+<h3 id="examples">Examples</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="n">Simple</span><span class="w"> </span><span class="n">refinement</span>
+<span class="n">def</span><span class="w"> </span><span class="n">divide</span><span class="p">(</span><span class="nl">a</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">,</span><span class="w"> </span><span class="nl">b</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="nl">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="err">}</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span>
+
+<span class="err">#</span><span class="w"> </span><span class="n">Bounds</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">variables</span>
+<span class="n">def</span><span class="w"> </span><span class="n">safe_access</span><span class="p">(</span><span class="nl">arr</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="nc">Int</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="nl">idx</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="nl">i</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="err">}</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">arr</span><span class="o">[</span><span class="n">idx</span><span class="o">]</span>
+
+<span class="err">#</span><span class="w"> </span><span class="n">Multiple</span><span class="w"> </span><span class="k">constraints</span>
+<span class="n">def</span><span class="w"> </span><span class="n">percentage</span><span class="p">(</span><span class="nl">x</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="nl">p</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">100</span><span class="err">}</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span>
+
+<span class="err">#</span><span class="w"> </span><span class="n">Nested</span><span class="w"> </span><span class="k">constraints</span>
+<span class="n">def</span><span class="w"> </span><span class="n">safe_list_access</span><span class="p">(</span><span class="nl">lst</span><span class="p">:</span><span class="w"> </span><span class="n">List</span><span class="p">(</span><span class="n">T</span><span class="p">),</span><span class="w"> </span><span class="nl">idx</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="nl">i</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="err">}</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="k">Option</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="p">...</span>
+</code></pre></div>
+
+<h2 id="current-state">Current State</h2>
+<h3 id="existing-infrastructure">Existing Infrastructure ✅</h3>
+<ul>
+<li><strong>cure_refinement_types.erl</strong> (609 lines) - Runtime refinement type checking</li>
+<li><strong>cure_refinement_types.hrl</strong> - Record definitions for #refinement_type{}</li>
+<li><strong>cure_guard_refinement.erl</strong> - Guard-based type refinement</li>
+<li><strong>cure_smt_translator.erl</strong> - SMT translation support</li>
+<li><strong>cure_smt_solver.erl</strong> - Z3 integration</li>
+</ul>
+<h3 id="whats-missing">What's Missing ❌</h3>
+<ol>
+<li><strong>Parser Support</strong>: <code>parse_primary_type</code> doesn't handle <code>{var: Type | constraint}</code></li>
+<li><strong>AST Integration</strong>: Need to wire refinement_type records into type checking</li>
+<li><strong>Constraint Verification</strong>: SMT calls need to be integrated</li>
+<li><strong>Error Messages</strong>: User-friendly errors for constraint violations</li>
+</ol>
+<h2 id="implementation-steps">Implementation Steps</h2>
+<h3 id="step-1-parser-support-4-6-hours">Step 1: Parser Support (4-6 hours)</h3>
+<p><strong>File</strong>: <code>src/parser/cure_parser.erl</code></p>
+<p><strong>Current</strong>: <code>{</code> token starts tuple type parsing (line 2858)</p>
+<p><strong>Change Needed</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% In parse_primary_type, when encountering &#39;{&#39;</span>
+<span class="n">&#39;{&#39;</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">{_,</span><span class="w"> </span><span class="nv">State1</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expect</span><span class="p">(</span><span class="nv">State</span><span class="p">,</span><span class="w"> </span><span class="n">&#39;{&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="nv">Location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_token_location</span><span class="p">(</span><span class="n">current_token</span><span class="p">(</span><span class="nv">State</span><span class="p">)),</span>
+
+<span class="w">    </span><span class="c">% Look ahead to distinguish {var: Type | constraint} from {T, U, V}</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">is_refinement_type_syntax</span><span class="p">(</span><span class="nv">State1</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="n">true</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="c">% Parse refinement: {var: Type | constraint}</span>
+<span class="w">            </span><span class="n">parse_refinement_type</span><span class="p">(</span><span class="nv">State1</span><span class="p">,</span><span class="w"> </span><span class="nv">Location</span><span class="p">);</span>
+<span class="w">        </span><span class="n">false</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="c">% Parse tuple: {T, U, V}</span>
+<span class="w">            </span><span class="p">{</span><span class="nv">ElementTypes</span><span class="p">,</span><span class="w"> </span><span class="nv">State2</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parse_tuple_type_elements</span><span class="p">(</span><span class="nv">State1</span><span class="p">,</span><span class="w"> </span><span class="p">[]),</span>
+<span class="w">            </span><span class="p">{_,</span><span class="w"> </span><span class="nv">State3</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expect</span><span class="p">(</span><span class="nv">State2</span><span class="p">,</span><span class="w"> </span><span class="n">&#39;}&#39;</span><span class="p">),</span>
+<span class="w">            </span><span class="nv">Type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#tuple_type</span><span class="p">{</span>
+<span class="w">                </span><span class="n">element_types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ElementTypes</span><span class="p">,</span>
+<span class="w">                </span><span class="n">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Location</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span><span class="nv">Type</span><span class="p">,</span><span class="w"> </span><span class="nv">State3</span><span class="p">}</span>
+<span class="w">    </span><span class="k">end</span><span class="p">;</span>
+</code></pre></div>
+
+<p><strong>New Functions Needed</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Check if &#39;{&#39; starts refinement type</span>
+<span class="nf">is_refinement_type_syntax</span><span class="p">(</span><span class="nv">State</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Look for pattern: identifier : Type |</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">current_token</span><span class="p">(</span><span class="nv">State</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="nv">Token</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">is_identifier</span><span class="p">(</span><span class="nv">Token</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="nv">State1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">advance</span><span class="p">(</span><span class="nv">State</span><span class="p">),</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="n">match_token</span><span class="p">(</span><span class="nv">State1</span><span class="p">,</span><span class="w"> </span><span class="n">&#39;:&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">                </span><span class="n">true</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">true</span><span class="p">;</span><span class="w">  </span><span class="c">% Looks like refinement</span>
+<span class="w">                </span><span class="n">false</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">false</span><span class="w"> </span><span class="c">% Looks like tuple</span>
+<span class="w">            </span><span class="k">end</span><span class="p">;</span>
+<span class="w">        </span><span class="p">_</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="n">false</span><span class="w">  </span><span class="c">% Tuple element</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+
+<span class="c">%% Parse {var: Type | constraint}</span>
+<span class="nf">parse_refinement_type</span><span class="p">(</span><span class="nv">State</span><span class="p">,</span><span class="w"> </span><span class="nv">Location</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Parse: identifier : Type | constraint }</span>
+<span class="w">    </span><span class="p">{</span><span class="nv">VarToken</span><span class="p">,</span><span class="w"> </span><span class="nv">State1</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expect</span><span class="p">(</span><span class="nv">State</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">),</span>
+<span class="w">    </span><span class="nv">Var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">token_value_to_atom</span><span class="p">(</span><span class="n">get_token_value</span><span class="p">(</span><span class="nv">VarToken</span><span class="p">)),</span>
+
+<span class="w">    </span><span class="p">{_,</span><span class="w"> </span><span class="nv">State2</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expect</span><span class="p">(</span><span class="nv">State1</span><span class="p">,</span><span class="w"> </span><span class="n">&#39;:&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">{</span><span class="nv">BaseType</span><span class="p">,</span><span class="w"> </span><span class="nv">State3</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parse_type</span><span class="p">(</span><span class="nv">State2</span><span class="p">),</span>
+<span class="w">    </span><span class="p">{_,</span><span class="w"> </span><span class="nv">State4</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expect</span><span class="p">(</span><span class="nv">State3</span><span class="p">,</span><span class="w"> </span><span class="n">&#39;|&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">{</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">State5</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parse_constraint_expression</span><span class="p">(</span><span class="nv">State4</span><span class="p">),</span>
+<span class="w">    </span><span class="p">{_,</span><span class="w"> </span><span class="nv">State6</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expect</span><span class="p">(</span><span class="nv">State5</span><span class="p">,</span><span class="w"> </span><span class="n">&#39;}&#39;</span><span class="p">),</span>
+
+<span class="w">    </span><span class="nv">RefinementType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#refinement_type</span><span class="p">{</span>
+<span class="w">        </span><span class="n">base_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">BaseType</span><span class="p">,</span>
+<span class="w">        </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Var</span><span class="p">,</span>
+<span class="w">        </span><span class="n">predicate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Constraint</span><span class="p">,</span>
+<span class="w">        </span><span class="n">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Location</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nv">RefinementType</span><span class="p">,</span><span class="w"> </span><span class="nv">State6</span><span class="p">}.</span>
+
+<span class="c">%% Parse constraint expression (stops at &#39;}&#39;)</span>
+<span class="nf">parse_constraint_expression</span><span class="p">(</span><span class="nv">State</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Parse binary expression but stop at &#39;}&#39;</span>
+<span class="w">    </span><span class="n">parse_constraint_binary_expression</span><span class="p">(</span><span class="nv">State</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">).</span>
+
+<span class="nf">parse_constraint_binary_expression</span><span class="p">(</span><span class="nv">State</span><span class="p">,</span><span class="w"> </span><span class="nv">MinPrec</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">{</span><span class="nv">Left</span><span class="p">,</span><span class="w"> </span><span class="nv">State1</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parse_primary_expression</span><span class="p">(</span><span class="nv">State</span><span class="p">),</span>
+<span class="w">    </span><span class="n">parse_constraint_binary_rest</span><span class="p">(</span><span class="nv">State1</span><span class="p">,</span><span class="w"> </span><span class="nv">Left</span><span class="p">,</span><span class="w"> </span><span class="nv">MinPrec</span><span class="p">).</span>
+
+<span class="nf">parse_constraint_binary_rest</span><span class="p">(</span><span class="nv">State</span><span class="p">,</span><span class="w"> </span><span class="nv">Left</span><span class="p">,</span><span class="w"> </span><span class="nv">MinPrec</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">current_token</span><span class="p">(</span><span class="nv">State</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="n">eof</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="p">{</span><span class="nv">Left</span><span class="p">,</span><span class="w"> </span><span class="nv">State</span><span class="p">};</span>
+<span class="w">        </span><span class="nv">Token</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="nv">TokenType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_token_type</span><span class="p">(</span><span class="nv">Token</span><span class="p">),</span>
+<span class="w">            </span><span class="c">% Stop at &#39;}&#39;</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nv">TokenType</span><span class="w"> </span><span class="k">of</span>
+<span class="w">                </span><span class="n">&#39;}&#39;</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                    </span><span class="p">{</span><span class="nv">Left</span><span class="p">,</span><span class="w"> </span><span class="nv">State</span><span class="p">};</span>
+<span class="w">                </span><span class="p">_</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                    </span><span class="c">% Continue parsing operators</span>
+<span class="w">                    </span><span class="k">case</span><span class="w"> </span><span class="n">get_operator_info</span><span class="p">(</span><span class="nv">TokenType</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">                        </span><span class="p">{</span><span class="nv">Prec</span><span class="p">,</span><span class="w"> </span><span class="nv">Assoc</span><span class="p">}</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="nv">Prec</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="nv">MinPrec</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                            </span><span class="p">{_,</span><span class="w"> </span><span class="nv">State1</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expect</span><span class="p">(</span><span class="nv">State</span><span class="p">,</span><span class="w"> </span><span class="nv">TokenType</span><span class="p">),</span>
+<span class="w">                            </span><span class="nv">NextMinPrec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">case</span><span class="w"> </span><span class="nv">Assoc</span><span class="w"> </span><span class="k">of</span>
+<span class="w">                                </span><span class="n">left</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Prec</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">                                </span><span class="n">right</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Prec</span>
+<span class="w">                            </span><span class="k">end</span><span class="p">,</span>
+<span class="w">                            </span><span class="p">{</span><span class="nv">Right</span><span class="p">,</span><span class="w"> </span><span class="nv">State2</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parse_constraint_binary_expression</span><span class="p">(</span><span class="nv">State1</span><span class="p">,</span><span class="w"> </span><span class="nv">NextMinPrec</span><span class="p">),</span>
+<span class="w">                            </span><span class="nv">Location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_token_location</span><span class="p">(</span><span class="nv">Token</span><span class="p">),</span>
+<span class="w">                            </span><span class="nv">BinOp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span>
+<span class="w">                                </span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">TokenType</span><span class="p">,</span>
+<span class="w">                                </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Left</span><span class="p">,</span>
+<span class="w">                                </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Right</span><span class="p">,</span>
+<span class="w">                                </span><span class="n">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Location</span>
+<span class="w">                            </span><span class="p">},</span>
+<span class="w">                            </span><span class="n">parse_constraint_binary_rest</span><span class="p">(</span><span class="nv">State2</span><span class="p">,</span><span class="w"> </span><span class="nv">BinOp</span><span class="p">,</span><span class="w"> </span><span class="nv">MinPrec</span><span class="p">);</span>
+<span class="w">                        </span><span class="p">_</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                            </span><span class="p">{</span><span class="nv">Left</span><span class="p">,</span><span class="w"> </span><span class="nv">State</span><span class="p">}</span>
+<span class="w">                    </span><span class="k">end</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+</code></pre></div>
+
+<p><strong>Test Cases</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="n">Simple</span>
+<span class="n">def</span><span class="w"> </span><span class="n">f</span><span class="p">(</span><span class="nl">x</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="nl">i</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="err">}</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span>
+
+<span class="err">#</span><span class="w"> </span><span class="k">With</span><span class="w"> </span><span class="k">variable</span><span class="w"> </span><span class="n">reference</span>
+<span class="n">def</span><span class="w"> </span><span class="n">g</span><span class="p">(</span><span class="nl">arr</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="nl">idx</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="nl">i</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="err">}</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">arr</span><span class="o">[</span><span class="n">i</span><span class="o">]</span>
+
+<span class="err">#</span><span class="w"> </span><span class="n">Complex</span><span class="w"> </span><span class="k">constraint</span>
+<span class="n">def</span><span class="w"> </span><span class="n">h</span><span class="p">(</span><span class="nl">x</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="nl">p</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">100</span><span class="err">}</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span>
+
+<span class="err">#</span><span class="w"> </span><span class="n">Edge</span><span class="w"> </span><span class="n">cases</span>
+<span class="n">def</span><span class="w"> </span><span class="n">i</span><span class="p">(</span><span class="nl">x</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="nl">a</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="err">}</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="nc">Int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span>
+</code></pre></div>
+
+<h3 id="step-2-ast-integration-2-3-hours">Step 2: AST Integration (2-3 hours)</h3>
+<p><strong>File</strong>: <code>src/parser/cure_ast.hrl</code></p>
+<p><strong>Check</strong>: Ensure <code>refinement_type</code> record is exported and available:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">-</span><span class="ni">record</span><span class="p">(</span><span class="nl">refinement_type</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">base_type</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">term</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">variable</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">atom</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">predicate</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="n">term</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">location</span><span class="w"> </span><span class="p">::</span><span class="w"> </span><span class="nl">#location</span><span class="p">{}</span>
+<span class="p">}).</span>
+</code></pre></div>
+
+<p><strong>File</strong>: <code>src/types/cure_types.erl</code></p>
+<p><strong>Add</strong> refinement type handling in key functions:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% In type_to_string</span>
+<span class="nf">type_to_string</span><span class="p">(</span><span class="nl">#refinement_type</span><span class="p">{</span><span class="n">base_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Base</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Var</span><span class="p">,</span><span class="w"> </span><span class="n">predicate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Pred</span><span class="p">})</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="nv">BaseStr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">type_to_string</span><span class="p">(</span><span class="nv">Base</span><span class="p">),</span>
+<span class="w">    </span><span class="nv">PredStr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expr_to_string</span><span class="p">(</span><span class="nv">Pred</span><span class="p">),</span>
+<span class="w">    </span><span class="nn">io_lib</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="s">&quot;{</span><span class="si">~s</span><span class="s">: </span><span class="si">~s</span><span class="s"> | </span><span class="si">~s</span><span class="s">}&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nv">Var</span><span class="p">,</span><span class="w"> </span><span class="nv">BaseStr</span><span class="p">,</span><span class="w"> </span><span class="nv">PredStr</span><span class="p">]);</span>
+
+<span class="c">%% In unify</span>
+<span class="nf">unify</span><span class="p">(</span><span class="nl">#refinement_type</span><span class="p">{</span><span class="n">base_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Base1</span><span class="p">,</span><span class="w"> </span><span class="n">predicate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Pred1</span><span class="p">},</span>
+<span class="w">      </span><span class="nl">#refinement_type</span><span class="p">{</span><span class="n">base_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Base2</span><span class="p">,</span><span class="w"> </span><span class="n">predicate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Pred2</span><span class="p">},</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Check if Pred1 =&gt; Pred2 using SMT</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">unify</span><span class="p">(</span><span class="nv">Base1</span><span class="p">,</span><span class="w"> </span><span class="nv">Base2</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">UnifiedBase</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nn">cure_refinement_types</span><span class="p">:</span><span class="nf">check_subtype</span><span class="p">(</span>
+<span class="w">                </span><span class="nl">#refinement_type</span><span class="p">{</span><span class="n">base_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Base1</span><span class="p">,</span><span class="w"> </span><span class="n">predicate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Pred1</span><span class="p">},</span>
+<span class="w">                </span><span class="nl">#refinement_type</span><span class="p">{</span><span class="n">base_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Base2</span><span class="p">,</span><span class="w"> </span><span class="n">predicate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Pred2</span><span class="p">},</span>
+<span class="w">                </span><span class="nv">Env</span>
+<span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">                </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="n">true</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                    </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nl">#refinement_type</span><span class="p">{</span>
+<span class="w">                        </span><span class="n">base_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">UnifiedBase</span><span class="p">,</span>
+<span class="w">                        </span><span class="n">predicate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Pred2</span><span class="w">  </span><span class="c">% Use stronger constraint</span>
+<span class="w">                    </span><span class="p">}};</span>
+<span class="w">                </span><span class="p">_</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                    </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">refinement_mismatch</span><span class="p">}</span>
+<span class="w">            </span><span class="k">end</span><span class="p">;</span>
+<span class="w">        </span><span class="nv">Error</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="nv">Error</span>
+<span class="w">    </span><span class="k">end</span><span class="p">;</span>
+</code></pre></div>
+
+<h3 id="step-3-typechecker-integration-4-5-hours">Step 3: Typechecker Integration (4-5 hours)</h3>
+<p><strong>File</strong>: <code>src/types/cure_typechecker.erl</code></p>
+<p><strong>Add</strong> constraint checking when values are assigned to refined types:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% When checking function application</span>
+<span class="nf">check_function_application</span><span class="p">(</span><span class="nv">FuncType</span><span class="p">,</span><span class="w"> </span><span class="nv">ArgTypes</span><span class="p">,</span><span class="w"> </span><span class="nv">ArgExprs</span><span class="p">,</span><span class="w"> </span><span class="nv">Location</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% ... existing code ...</span>
+
+<span class="w">    </span><span class="c">% For each parameter with refinement type</span>
+<span class="w">    </span><span class="nn">lists</span><span class="p">:</span><span class="nf">foreach</span><span class="p">(</span>
+<span class="w">        </span><span class="k">fun</span><span class="p">({</span><span class="nv">ParamType</span><span class="p">,</span><span class="w"> </span><span class="nv">ArgExpr</span><span class="p">})</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="nv">ParamType</span><span class="w"> </span><span class="k">of</span>
+<span class="w">                </span><span class="nl">#refinement_type</span><span class="p">{</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Var</span><span class="p">,</span><span class="w"> </span><span class="n">predicate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Pred</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                    </span><span class="c">% Verify constraint holds for argument</span>
+<span class="w">                    </span><span class="k">case</span><span class="w"> </span><span class="n">verify_refinement_constraint</span><span class="p">(</span><span class="nv">ArgExpr</span><span class="p">,</span><span class="w"> </span><span class="nv">Var</span><span class="p">,</span><span class="w"> </span><span class="nv">Pred</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">                        </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="n">true</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                            </span><span class="n">ok</span><span class="p">;</span>
+<span class="w">                        </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="n">false</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                            </span><span class="n">throw</span><span class="p">({</span><span class="n">refinement_violation</span><span class="p">,</span><span class="w"> </span><span class="nv">ArgExpr</span><span class="p">,</span><span class="w"> </span><span class="nv">Pred</span><span class="p">,</span><span class="w"> </span><span class="nv">Location</span><span class="p">});</span>
+<span class="w">                        </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                            </span><span class="c">% Conservative: warn but allow</span>
+<span class="w">                            </span><span class="n">add_warning</span><span class="p">({</span><span class="n">cannot_verify_refinement</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">},</span><span class="w"> </span><span class="nv">Location</span><span class="p">)</span>
+<span class="w">                    </span><span class="k">end</span><span class="p">;</span>
+<span class="w">                </span><span class="p">_</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                    </span><span class="n">ok</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">        </span><span class="k">end</span><span class="p">,</span>
+<span class="w">        </span><span class="nn">lists</span><span class="p">:</span><span class="nf">zip</span><span class="p">(</span><span class="nv">ParamTypes</span><span class="p">,</span><span class="w"> </span><span class="nv">ArgExprs</span><span class="p">)</span>
+<span class="w">    </span><span class="p">).</span>
+
+<span class="c">%% Verify refinement constraint</span>
+<span class="nf">verify_refinement_constraint</span><span class="p">(</span><span class="nv">Expr</span><span class="p">,</span><span class="w"> </span><span class="nv">Var</span><span class="p">,</span><span class="w"> </span><span class="nv">Predicate</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Substitute Expr for Var in Predicate</span>
+<span class="w">    </span><span class="nv">SubstitutedPred</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">substitute_in_expr</span><span class="p">(</span><span class="nv">Predicate</span><span class="p">,</span><span class="w"> </span><span class="nv">Var</span><span class="p">,</span><span class="w"> </span><span class="nv">Expr</span><span class="p">),</span>
+
+<span class="w">    </span><span class="c">% Try to evaluate or verify via SMT</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">try_static_eval</span><span class="p">(</span><span class="nv">SubstitutedPred</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="n">true</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="n">true</span><span class="p">};</span>
+<span class="w">        </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="n">false</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="n">false</span><span class="p">};</span>
+<span class="w">        </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="n">cannot_eval</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="c">% Use SMT to verify</span>
+<span class="w">            </span><span class="n">verify_with_smt</span><span class="p">(</span><span class="nv">SubstitutedPred</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+</code></pre></div>
+
+<h3 id="step-4-smt-verification-3-4-hours">Step 4: SMT Verification (3-4 hours)</h3>
+<p><strong>File</strong>: <code>src/types/cure_refinement_types.erl</code></p>
+<p><strong>Enhance</strong> existing verification functions:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Already exists, but needs integration</span>
+<span class="nf">verify_subtype_smt</span><span class="p">(</span><span class="nv">Refinement1</span><span class="p">,</span><span class="w"> </span><span class="nv">Refinement2</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Generates SMT query: ∀x. Pred1(x) =&gt; Pred2(x)</span>
+<span class="w">    </span><span class="c">% Uses cure_smt_translator and Z3</span>
+<span class="w">    </span><span class="p">...</span>
+</code></pre></div>
+
+<p><strong>File</strong>: <code>src/smt/cure_smt_translator.erl</code></p>
+<p><strong>Add</strong> (if not exists):</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% Generate SMT query for refinement constraint</span>
+<span class="nf">generate_refinement_check_query</span><span class="p">(</span><span class="nv">Var</span><span class="p">,</span><span class="w"> </span><span class="nv">BaseType</span><span class="p">,</span><span class="w"> </span><span class="nv">Predicate</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="nv">TypeDecl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">base_type_to_smt</span><span class="p">(</span><span class="nv">BaseType</span><span class="p">),</span>
+<span class="w">    </span><span class="nv">PredSMT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expr_to_smt</span><span class="p">(</span><span class="nv">Predicate</span><span class="p">),</span>
+
+<span class="w">    </span><span class="p">[</span>
+<span class="w">        </span><span class="s">&quot;(declare-const &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">atom_to_list</span><span class="p">(</span><span class="nv">Var</span><span class="p">),</span><span class="w"> </span><span class="s">&quot; &quot;</span><span class="p">,</span><span class="w"> </span><span class="nv">TypeDecl</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;(assert (not &quot;</span><span class="p">,</span><span class="w"> </span><span class="nv">PredSMT</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;))</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;(check-sat)</span><span class="se">\n</span><span class="s">&quot;</span>
+<span class="w">    </span><span class="p">].</span>
+
+<span class="c">%% Generate SMT query for subtype checking</span>
+<span class="nf">generate_refinement_subtype_query</span><span class="p">(</span><span class="nv">Pred1</span><span class="p">,</span><span class="w"> </span><span class="nv">Pred2</span><span class="p">,</span><span class="w"> </span><span class="nv">Var</span><span class="p">,</span><span class="w"> </span><span class="nv">BaseType</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="nv">TypeDecl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">base_type_to_smt</span><span class="p">(</span><span class="nv">BaseType</span><span class="p">),</span>
+<span class="w">    </span><span class="nv">Pred1SMT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expr_to_smt</span><span class="p">(</span><span class="nv">Pred1</span><span class="p">),</span>
+<span class="w">    </span><span class="nv">Pred2SMT</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expr_to_smt</span><span class="p">(</span><span class="nv">Pred2</span><span class="p">),</span>
+
+<span class="w">    </span><span class="p">[</span>
+<span class="w">        </span><span class="s">&quot;(declare-const &quot;</span><span class="p">,</span><span class="w"> </span><span class="nb">atom_to_list</span><span class="p">(</span><span class="nv">Var</span><span class="p">),</span><span class="w"> </span><span class="s">&quot; &quot;</span><span class="p">,</span><span class="w"> </span><span class="nv">TypeDecl</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;(assert &quot;</span><span class="p">,</span><span class="w"> </span><span class="nv">Pred1SMT</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;)</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;(assert (not &quot;</span><span class="p">,</span><span class="w"> </span><span class="nv">Pred2SMT</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;))</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;(check-sat)</span><span class="se">\n</span><span class="s">&quot;</span><span class="w">  </span><span class="c">% unsat means implication holds</span>
+<span class="w">    </span><span class="p">].</span>
+</code></pre></div>
+
+<h3 id="step-5-error-messages-1-2-hours">Step 5: Error Messages (1-2 hours)</h3>
+<p><strong>File</strong>: <code>src/parser/cure_error_reporter.erl</code></p>
+<p><strong>Add</strong> user-friendly error formatting:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">format_error</span><span class="p">({</span><span class="n">refinement_violation</span><span class="p">,</span><span class="w"> </span><span class="nv">Expr</span><span class="p">,</span><span class="w"> </span><span class="nv">Predicate</span><span class="p">,</span><span class="w"> </span><span class="nv">Location</span><span class="p">})</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="nv">ExprStr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expr_to_string</span><span class="p">(</span><span class="nv">Expr</span><span class="p">),</span>
+<span class="w">    </span><span class="nv">PredStr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">expr_to_string</span><span class="p">(</span><span class="nv">Predicate</span><span class="p">),</span>
+<span class="w">    </span><span class="p">#{{</span>
+<span class="w">        </span><span class="s">&quot;message&quot;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nn">io_lib</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span>
+<span class="w">            </span><span class="s">&quot;Refinement constraint violated: </span><span class="si">~s</span><span class="s"> does not satisfy </span><span class="si">~s</span><span class="s">&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="p">[</span><span class="nv">ExprStr</span><span class="p">,</span><span class="w"> </span><span class="nv">PredStr</span><span class="p">]</span>
+<span class="w">        </span><span class="p">),</span>
+<span class="w">        </span><span class="s">&quot;location&quot;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">format_location</span><span class="p">(</span><span class="nv">Location</span><span class="p">),</span>
+<span class="w">        </span><span class="s">&quot;severity&quot;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;error&quot;</span>
+<span class="w">    </span><span class="p">}};</span>
+
+<span class="nf">format_error</span><span class="p">({</span><span class="n">cannot_verify_refinement</span><span class="p">,</span><span class="w"> </span><span class="nv">Reason</span><span class="p">})</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="p">#{{</span>
+<span class="w">        </span><span class="s">&quot;message&quot;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nn">io_lib</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span>
+<span class="w">            </span><span class="s">&quot;Cannot verify refinement constraint: </span><span class="si">~p</span><span class="s"> (using conservative approximation)&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="p">[</span><span class="nv">Reason</span><span class="p">]</span>
+<span class="w">        </span><span class="p">),</span>
+<span class="w">        </span><span class="s">&quot;severity&quot;</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">&quot;warning&quot;</span>
+<span class="w">    </span><span class="p">}}.</span>
+</code></pre></div>
+
+<h3 id="step-6-testing-3-4-hours">Step 6: Testing (3-4 hours)</h3>
+<p><strong>Create</strong>: <code>examples/07_refinement_types_demo.cure</code></p>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="n">RefinementDemo</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">export</span><span class="w"> </span><span class="p">[</span><span class="n">main</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="w">  </span><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Io</span><span class="w"> </span><span class="p">[</span><span class="n">println</span><span class="p">]</span>
+
+<span class="w">  </span><span class="c1"># Example 1: NonZero division</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">safe_divide</span><span class="p">(</span><span class="n">a</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">}):</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span>
+
+<span class="w">  </span><span class="c1"># Example 2: Positive numbers</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">sqrt_positive</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">n</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">}):</span><span class="w"> </span><span class="n">Float</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="c1"># Implementation would go here</span>
+<span class="w">    </span><span class="mf">0.0</span>
+
+<span class="w">  </span><span class="c1"># Example 3: Bounded array access</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">get_element</span><span class="p">(</span><span class="n">arr</span><span class="p">:</span><span class="w"> </span><span class="n">Vector</span><span class="p">(</span><span class="nb">Int</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">),</span><span class="w"> </span><span class="n">idx</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">i</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">n</span><span class="p">}):</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">arr</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+<span class="w">  </span><span class="c1"># Example 4: Percentage validation</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">make_percentage</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">p</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">100</span><span class="p">}):</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">p</span>
+
+<span class="w">  </span><span class="c1"># Example 5: Compound constraints</span>
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">process_year</span><span class="p">(</span><span class="n">year</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">1900</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">2100</span><span class="p">}):</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">year</span>
+
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span><span class="w"> </span><span class="nb">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">println</span><span class="p">(</span><span class="s2">&quot;=== Refinement Types Demo ===&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c1"># These should work</span>
+<span class="w">    </span><span class="n">let</span><span class="w"> </span><span class="n">result1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">safe_divide</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w">    </span><span class="n">println</span><span class="p">(</span><span class="s2">&quot;10 / 2 = &quot;</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">result1</span><span class="p">))</span>
+
+<span class="w">    </span><span class="c1"># This should FAIL at compile time</span>
+<span class="w">    </span><span class="c1"># let result2 = safe_divide(10, 0)  # ERROR: 0 does not satisfy {x: Int | x != 0}</span>
+
+<span class="w">    </span><span class="mi">0</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<p><strong>Create</strong>: <code>test/refinement_types_test.erl</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">-</span><span class="ni">module</span><span class="p">(</span><span class="n">refinement_types_test</span><span class="p">).</span>
+<span class="p">-</span><span class="ni">export</span><span class="p">([</span><span class="n">run</span><span class="o">/</span><span class="mi">0</span><span class="p">]).</span>
+
+<span class="nf">run</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="n">test_parser</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">test_typechecker</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">test_smt_verification</span><span class="p">(),</span>
+<span class="w">    </span><span class="nn">io</span><span class="p">:</span><span class="nf">format</span><span class="p">(</span><span class="s">&quot;All refinement type tests passed!</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">).</span>
+
+<span class="nf">test_parser</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Test parsing {var: Type | constraint}</span>
+<span class="w">    </span><span class="nv">Source</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;{x: Int | x &gt; 0}&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Tokens</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p">(</span><span class="nv">Source</span><span class="p">),</span>
+<span class="w">    </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">AST</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_parser</span><span class="p">:</span><span class="nf">parse_type_from_tokens</span><span class="p">(</span><span class="nv">Tokens</span><span class="p">),</span>
+
+<span class="w">    </span><span class="c">% Verify AST structure</span>
+<span class="w">    </span><span class="nl">#refinement_type</span><span class="p">{</span>
+<span class="w">        </span><span class="n">base_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#primitive_type</span><span class="p">{</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;Int&#39;</span><span class="p">},</span>
+<span class="w">        </span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span>
+<span class="w">        </span><span class="n">predicate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Pred</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">AST</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ok</span><span class="p">.</span>
+
+<span class="nf">test_typechecker</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Test constraint verification</span>
+<span class="w">    </span><span class="n">ok</span><span class="p">.</span>
+
+<span class="nf">test_smt_verification</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Test SMT-based subtype checking</span>
+<span class="w">    </span><span class="n">ok</span><span class="p">.</span>
+</code></pre></div>
+
+<h2 id="testing-strategy">Testing Strategy</h2>
+<h3 id="unit-tests">Unit Tests</h3>
+<ol>
+<li><strong>Parser tests</strong>: Various refinement syntax forms</li>
+<li><strong>Type unification</strong>: Refinement type compatibility</li>
+<li><strong>SMT queries</strong>: Verify generated SMT-LIB is correct</li>
+<li><strong>Error cases</strong>: Invalid constraints, violated refinements</li>
+</ol>
+<h3 id="integration-tests">Integration Tests</h3>
+<ol>
+<li>Compile <code>07_refinement_types_demo.cure</code></li>
+<li>Verify compile-time errors for violated constraints</li>
+<li>Verify successful compilation for valid constraints</li>
+<li>Test with Z3 installed and without (graceful degradation)</li>
+</ol>
+<h3 id="edge-cases">Edge Cases</h3>
+<ul>
+<li>Nested refinements: <code>{{i: Int | i &gt; 0} | x &gt; 5}</code></li>
+<li>Multiple variable references: <code>{i: Int | 0 &lt;= i &lt; n}</code> where <code>n</code> is in scope</li>
+<li>Complex predicates: <code>{x: Int | x &gt; 0 and x &lt; 100 or x == -1}</code></li>
+<li>Refinement in return types</li>
+<li>Refinement in record fields</li>
+</ul>
+<h2 id="success-criteria">Success Criteria</h2>
+<ul>
+<li>[ ] Parser handles <code>{var: Type | constraint}</code> syntax</li>
+<li>[ ] Typechecker verifies constraints at call sites</li>
+<li>[ ] SMT integration proves/disproves constraints</li>
+<li>[ ] <code>examples/07_refinement_types_demo.cure</code> compiles</li>
+<li>[ ] Error messages are clear and actionable</li>
+<li>[ ] Tests pass for all basic cases</li>
+<li>[ ] Documentation updated (TYPE_SYSTEM.md, FEATURE_REFERENCE.md)</li>
+</ul>
+<h2 id="estimated-timeline">Estimated Timeline</h2>
+<ul>
+<li><strong>Day 1</strong>: Parser implementation and testing (Steps 1-2)</li>
+<li><strong>Day 2</strong>: Typechecker and SMT integration (Steps 3-4)</li>
+<li><strong>Day 3</strong>: Error messages, testing, documentation (Steps 5-6)</li>
+</ul>
+<h2 id="dependencies">Dependencies</h2>
+<ul>
+<li>Z3 solver (optional, for SMT verification)</li>
+<li>Existing cure_refinement_types module</li>
+<li>cure_smt_translator for SMT-LIB generation</li>
+</ul>
+<h2 id="notes">Notes</h2>
+<ul>
+<li>The infrastructure is already 70% there (cure_refinement_types.erl exists)</li>
+<li>Main work is parser support and wiring everything together</li>
+<li>SMT verification should gracefully degrade if Z3 not available</li>
+<li>Conservative approach: warn if can't verify, don't block compilation</li>
+</ul>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>All Documentation</h4>
+                <ul>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
+                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
+                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
+                    <li><a href="type-system.html">Cure Type System</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

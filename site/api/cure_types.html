@@ -170,30 +170,30 @@ type checking and dependent type verification.</p><h2 id="module-key-features" c
   <span class="text">Type Variables</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Create new type variables</span><span class="w">
-</span><span class="n">TVar1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="1984675417-1">(</span><span class="p" data-group-id="1984675417-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">TVar2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="1984675417-2">(</span><span class="ss">custom_name</span><span class="p" data-group-id="1984675417-2">)</span><span class="p">.</span><span class="w">
+</span><span class="n">TVar1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="6980253333-1">(</span><span class="p" data-group-id="6980253333-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">TVar2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="6980253333-2">(</span><span class="ss">custom_name</span><span class="p" data-group-id="6980253333-2">)</span><span class="p">.</span><span class="w">
 
 </span><span class="c1">%% Check type variable properties</span><span class="w">
-</span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_type_var</span><span class="p" data-group-id="1984675417-3">(</span><span class="n">TVar1</span><span class="p" data-group-id="1984675417-3">)</span><span class="p">,</span><span class="w">
-</span><span class="ss">false</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">occurs_check</span><span class="p" data-group-id="1984675417-4">(</span><span class="n">TVar1</span><span class="p">,</span><span class="w"> </span><span class="n">IntType</span><span class="p" data-group-id="1984675417-4">)</span><span class="p">.</span></code></pre><h3 id="module-type-unification" class="section-heading">
+</span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_type_var</span><span class="p" data-group-id="6980253333-3">(</span><span class="n">TVar1</span><span class="p" data-group-id="6980253333-3">)</span><span class="p">,</span><span class="w">
+</span><span class="ss">false</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">occurs_check</span><span class="p" data-group-id="6980253333-4">(</span><span class="n">TVar1</span><span class="p">,</span><span class="w"> </span><span class="n">IntType</span><span class="p" data-group-id="6980253333-4">)</span><span class="p">.</span></code></pre><h3 id="module-type-unification" class="section-heading">
   <a href="#module-type-unification" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Type Unification</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Unify two types</span><span class="w">
-</span><span class="p" data-group-id="1390928643-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Substitution</span><span class="p" data-group-id="1390928643-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="1390928643-2">(</span><span class="n">Type1</span><span class="p">,</span><span class="w"> </span><span class="n">Type2</span><span class="p" data-group-id="1390928643-2">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="1390928643-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Sub</span><span class="p">,</span><span class="w"> </span><span class="n">Constraints</span><span class="p" data-group-id="1390928643-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="1390928643-4">(</span><span class="n">Type1</span><span class="p">,</span><span class="w"> </span><span class="n">Type2</span><span class="p">,</span><span class="w"> </span><span class="n">Environment</span><span class="p" data-group-id="1390928643-4">)</span><span class="p">.</span></code></pre><h3 id="module-type-inference" class="section-heading">
+</span><span class="p" data-group-id="3590949688-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Substitution</span><span class="p" data-group-id="3590949688-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="3590949688-2">(</span><span class="n">Type1</span><span class="p">,</span><span class="w"> </span><span class="n">Type2</span><span class="p" data-group-id="3590949688-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="3590949688-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Sub</span><span class="p">,</span><span class="w"> </span><span class="n">Constraints</span><span class="p" data-group-id="3590949688-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="3590949688-4">(</span><span class="n">Type1</span><span class="p">,</span><span class="w"> </span><span class="n">Type2</span><span class="p">,</span><span class="w"> </span><span class="n">Environment</span><span class="p" data-group-id="3590949688-4">)</span><span class="p">.</span></code></pre><h3 id="module-type-inference" class="section-heading">
   <a href="#module-type-inference" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Type Inference</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Basic type inference</span><span class="w">
-</span><span class="p" data-group-id="6861389434-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">InferredType</span><span class="p" data-group-id="6861389434-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">infer_type</span><span class="p" data-group-id="6861389434-2">(</span><span class="n">Expression</span><span class="p">,</span><span class="w"> </span><span class="n">Environment</span><span class="p" data-group-id="6861389434-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="9062127175-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">InferredType</span><span class="p" data-group-id="9062127175-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">infer_type</span><span class="p" data-group-id="9062127175-2">(</span><span class="n">Expression</span><span class="p">,</span><span class="w"> </span><span class="n">Environment</span><span class="p" data-group-id="9062127175-2">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">%% Enhanced inference with alternatives</span><span class="w">
-</span><span class="p" data-group-id="6861389434-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="6861389434-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">enhanced_infer_type</span><span class="p" data-group-id="6861389434-4">(</span><span class="n">Expression</span><span class="p">,</span><span class="w"> </span><span class="n">Environment</span><span class="p" data-group-id="6861389434-4">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="9062127175-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="9062127175-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">enhanced_infer_type</span><span class="p" data-group-id="9062127175-4">(</span><span class="n">Expression</span><span class="p">,</span><span class="w"> </span><span class="n">Environment</span><span class="p" data-group-id="9062127175-4">)</span><span class="p">,</span><span class="w">
 </span><span class="n">Confidence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Result</span><span class="o">#</span><span class="ss">enhanced_inference_result</span><span class="p">.</span><span class="ss">confidence</span><span class="p">,</span><span class="w">
 </span><span class="n">Alternatives</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Result</span><span class="o">#</span><span class="ss">enhanced_inference_result</span><span class="p">.</span><span class="ss">alternatives</span><span class="p">.</span></code></pre><h2 id="module-type-environment" class="section-heading">
   <a href="#module-type-environment" class="hover-link">
@@ -202,9 +202,9 @@ type checking and dependent type verification.</p><h2 id="module-key-features" c
   <span class="text">Type Environment</span>
 </h2>
 <p>The type environment maintains variable bindings and constraints:</p><ul><li><strong>Hierarchical Scoping</strong>: Supports nested scopes with parent environments</li><li><strong>Constraint Accumulation</strong>: Collects and manages type constraints</li><li><strong>Efficient Lookup</strong>: Fast variable resolution with scope traversal</li></ul><pre><code class="makeup erlang" translate="no"><span class="c1">%% Environment operations</span><span class="w">
-</span><span class="n">Env1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_env</span><span class="p" data-group-id="0737381464-1">(</span><span class="p" data-group-id="0737381464-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Env2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env</span><span class="p" data-group-id="0737381464-2">(</span><span class="n">Env1</span><span class="p">,</span><span class="w"> </span><span class="ss">variable_name</span><span class="p">,</span><span class="w"> </span><span class="n">VariableType</span><span class="p" data-group-id="0737381464-2">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="0737381464-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Type</span><span class="p" data-group-id="0737381464-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">lookup_env</span><span class="p" data-group-id="0737381464-4">(</span><span class="n">Env2</span><span class="p">,</span><span class="w"> </span><span class="ss">variable_name</span><span class="p" data-group-id="0737381464-4">)</span><span class="p">.</span></code></pre><h2 id="module-constraint-solving" class="section-heading">
+</span><span class="n">Env1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_env</span><span class="p" data-group-id="3115611566-1">(</span><span class="p" data-group-id="3115611566-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Env2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env</span><span class="p" data-group-id="3115611566-2">(</span><span class="n">Env1</span><span class="p">,</span><span class="w"> </span><span class="ss">variable_name</span><span class="p">,</span><span class="w"> </span><span class="n">VariableType</span><span class="p" data-group-id="3115611566-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="3115611566-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Type</span><span class="p" data-group-id="3115611566-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">lookup_env</span><span class="p" data-group-id="3115611566-4">(</span><span class="n">Env2</span><span class="p">,</span><span class="w"> </span><span class="ss">variable_name</span><span class="p" data-group-id="3115611566-4">)</span><span class="p">.</span></code></pre><h2 id="module-constraint-solving" class="section-heading">
   <a href="#module-constraint-solving" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -217,12 +217,12 @@ type checking and dependent type verification.</p><h2 id="module-key-features" c
   <span class="text">Higher-Kinded Types</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Create type constructors</span><span class="w">
-</span><span class="n">ListKind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">create_kind</span><span class="p" data-group-id="5386738824-1">(</span><span class="ss">&#39;*&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5386738824-2">[</span><span class="p" data-group-id="5386738824-2">]</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;*&#39;</span><span class="p" data-group-id="5386738824-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">FunctorKind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">create_kind</span><span class="p" data-group-id="5386738824-3">(</span><span class="ss">&#39;-&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5386738824-4">[</span><span class="n">ListKind</span><span class="p" data-group-id="5386738824-4">]</span><span class="p">,</span><span class="w"> </span><span class="n">ListKind</span><span class="p" data-group-id="5386738824-3">)</span><span class="p">,</span><span class="w">
+</span><span class="n">ListKind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">create_kind</span><span class="p" data-group-id="2228427308-1">(</span><span class="ss">&#39;*&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2228427308-2">[</span><span class="p" data-group-id="2228427308-2">]</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;*&#39;</span><span class="p" data-group-id="2228427308-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">FunctorKind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">create_kind</span><span class="p" data-group-id="2228427308-3">(</span><span class="ss">&#39;-&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2228427308-4">[</span><span class="n">ListKind</span><span class="p" data-group-id="2228427308-4">]</span><span class="p">,</span><span class="w"> </span><span class="n">ListKind</span><span class="p" data-group-id="2228427308-3">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">%% Type families</span><span class="w">
-</span><span class="n">Family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">create_type_family</span><span class="p" data-group-id="5386738824-5">(</span><span class="ss">map</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5386738824-6">[</span><span class="n">F</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p" data-group-id="5386738824-6">]</span><span class="p">,</span><span class="w"> </span><span class="n">Dependencies</span><span class="p">,</span><span class="w"> </span><span class="n">Constraints</span><span class="p" data-group-id="5386738824-5">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">evaluate_type_family</span><span class="p" data-group-id="5386738824-7">(</span><span class="n">Family</span><span class="p">,</span><span class="w"> </span><span class="n">Arguments</span><span class="p" data-group-id="5386738824-7">)</span><span class="p">.</span></code></pre><h2 id="module-performance-characteristics" class="section-heading">
+</span><span class="n">Family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">create_type_family</span><span class="p" data-group-id="2228427308-5">(</span><span class="ss">map</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2228427308-6">[</span><span class="n">F</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p" data-group-id="2228427308-6">]</span><span class="p">,</span><span class="w"> </span><span class="n">Dependencies</span><span class="p">,</span><span class="w"> </span><span class="n">Constraints</span><span class="p" data-group-id="2228427308-5">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">evaluate_type_family</span><span class="p" data-group-id="2228427308-7">(</span><span class="n">Family</span><span class="p">,</span><span class="w"> </span><span class="n">Arguments</span><span class="p" data-group-id="2228427308-7">)</span><span class="p">.</span></code></pre><h2 id="module-performance-characteristics" class="section-heading">
   <a href="#module-performance-characteristics" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -1119,7 +1119,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.</p>
     </a>
     <h1 class="signature" translate="no">add_type_constructor(Constructor, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7062" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7080" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1139,7 +1139,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.</p>
     </a>
     <h1 class="signature" translate="no">add_typeclass_info(TypeclassInfo, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7242" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7260" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1159,7 +1159,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.</p>
     </a>
     <h1 class="signature" translate="no">apply_type_constructor(TypeConstructor, Args, Location)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6686" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6704" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1179,7 +1179,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.</p>
     </a>
     <h1 class="signature" translate="no">bidirectional_infer(Expr, ExpectedType, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5396" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5414" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1199,7 +1199,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.</p>
     </a>
     <h1 class="signature" translate="no">check_constraint_satisfaction(Constraint, KindEnv)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6773" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6791" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1219,7 +1219,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.</p>
     </a>
     <h1 class="signature" translate="no">check_dependent_constraint(Constraint, Value, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4624" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4642" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1239,7 +1239,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.</p>
     </a>
     <h1 class="signature" translate="no">check_higher_kinded_well_formed(HKType)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6782" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6800" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1259,7 +1259,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.</p>
     </a>
     <h1 class="signature" translate="no">check_instance_kinds(InstanceDef, TypeclassInfo, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7252" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7270" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1279,7 +1279,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.</p>
     </a>
     <h1 class="signature" translate="no">check_kind(Type, ExpectedKind, KindEnv)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6636" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6654" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1299,7 +1299,7 @@ concurrent environments. The module is otherwise stateless and thread-safe.</p>
     </a>
     <h1 class="signature" translate="no">check_recursive_convergence(OldSubst, NewSubst, RecState)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7622" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7640" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1332,7 +1332,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">check_recursive_type_well_formed/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6158" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6176" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1352,7 +1352,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">check_type(Expr, ExpectedType, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4119" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4117" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1372,7 +1372,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">check_type/4</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4122" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4120" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1392,7 +1392,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">check_typeclass_def(TypeclassDef, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7117" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7135" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1412,7 +1412,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">constraint_propagation(Constraints, InitialSubst)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5627" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5645" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1432,7 +1432,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">create_kind(Constructor, Args, Location)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6552" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6570" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1452,7 +1452,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">create_recursive_type(Name, Params, Definition, Location)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6099" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6117" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1472,7 +1472,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">create_type_constructor(Name, Kind, Params, Definition, Location)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6670" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6688" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1492,7 +1492,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">create_type_family(Name, Kind, Equations, Location)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6716" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6734" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1512,7 +1512,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">detect_cycles/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6232" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6250" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1532,7 +1532,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">enhanced_constraint_solving(Constraints, InitialSubst)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5725" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5743" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1552,7 +1552,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">enhanced_infer_type(Expr, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5346" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5364" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1572,7 +1572,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">enhanced_infer_type(Expr, Env, Constraints)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5349" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5367" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1592,7 +1592,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">evaluate_type_family(TypeFamily, Args)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6730" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6748" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1612,7 +1612,7 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
     </a>
     <h1 class="signature" translate="no">evaluate_type_predicate/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5120" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5138" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1665,9 +1665,9 @@ between iterations.</p><h2 id="check_recursive_convergence/3-arguments" class="s
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Env1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_env</span><span class="p" data-group-id="0508543768-1">(</span><span class="p" data-group-id="0508543768-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Env2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env</span><span class="p" data-group-id="0508543768-2">(</span><span class="n">Env1</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0508543768-3">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Int&#39;</span><span class="p" data-group-id="0508543768-3">}</span><span class="p" data-group-id="0508543768-2">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Env3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env</span><span class="p" data-group-id="0508543768-4">(</span><span class="n">Env2</span><span class="p">,</span><span class="w"> </span><span class="ss">y</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0508543768-5">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;String&#39;</span><span class="p" data-group-id="0508543768-5">}</span><span class="p" data-group-id="0508543768-4">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">Env1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_env</span><span class="p" data-group-id="2156391028-1">(</span><span class="p" data-group-id="2156391028-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Env2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env</span><span class="p" data-group-id="2156391028-2">(</span><span class="n">Env1</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2156391028-3">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Int&#39;</span><span class="p" data-group-id="2156391028-3">}</span><span class="p" data-group-id="2156391028-2">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Env3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env</span><span class="p" data-group-id="2156391028-4">(</span><span class="n">Env2</span><span class="p">,</span><span class="w"> </span><span class="ss">y</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2156391028-5">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;String&#39;</span><span class="p" data-group-id="2156391028-5">}</span><span class="p" data-group-id="2156391028-4">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="extend_env_with_typeclass_constraints/2">
@@ -1706,8 +1706,8 @@ during type checking of function bodies.</p><h2 id="extend_env_with_typeclass_co
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Constraints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="6244484677-1">[</span><span class="o">#</span><span class="ss">typeclass_constraint</span><span class="p" data-group-id="6244484677-2">{</span><span class="ss">typeclass</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;Show&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">type_args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="6244484677-3">[</span><span class="n">T</span><span class="p" data-group-id="6244484677-3">]</span><span class="p" data-group-id="6244484677-2">}</span><span class="p" data-group-id="6244484677-1">]</span><span class="p">,</span><span class="w">
-</span><span class="n">Env2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env_with_typeclass_constraints</span><span class="p" data-group-id="6244484677-4">(</span><span class="n">Env</span><span class="p">,</span><span class="w"> </span><span class="n">Constraints</span><span class="p" data-group-id="6244484677-4">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">Constraints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="6792865934-1">[</span><span class="o">#</span><span class="ss">typeclass_constraint</span><span class="p" data-group-id="6792865934-2">{</span><span class="ss">typeclass</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;Show&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">type_args</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="6792865934-3">[</span><span class="n">T</span><span class="p" data-group-id="6792865934-3">]</span><span class="p" data-group-id="6792865934-2">}</span><span class="p" data-group-id="6792865934-1">]</span><span class="p">,</span><span class="w">
+</span><span class="n">Env2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env_with_typeclass_constraints</span><span class="p" data-group-id="6792865934-4">(</span><span class="n">Env</span><span class="p">,</span><span class="w"> </span><span class="n">Constraints</span><span class="p" data-group-id="6792865934-4">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="extract_param_info/2">
@@ -1718,7 +1718,7 @@ during type checking of function bodies.</p><h2 id="extend_env_with_typeclass_co
     </a>
     <h1 class="signature" translate="no">extract_param_info(Param1, Param2)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L1730" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L1728" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1738,7 +1738,7 @@ during type checking of function bodies.</p><h2 id="extend_env_with_typeclass_co
     </a>
     <h1 class="signature" translate="no">extract_type_param_names(TypeParams)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3122" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3120" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1770,7 +1770,7 @@ during type checking of function bodies.</p><h2 id="extend_env_with_typeclass_co
     </a>
     <h1 class="signature" translate="no">extract_vector_params/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L1678" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L1676" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1790,7 +1790,7 @@ during type checking of function bodies.</p><h2 id="extend_env_with_typeclass_co
     </a>
     <h1 class="signature" translate="no">fold_recursive_type(Type, Name)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6143" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6161" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1810,7 +1810,7 @@ during type checking of function bodies.</p><h2 id="extend_env_with_typeclass_co
     </a>
     <h1 class="signature" translate="no">free_type_vars/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3236" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3234" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1842,7 +1842,7 @@ during type checking of function bodies.</p><h2 id="extend_env_with_typeclass_co
     </a>
     <h1 class="signature" translate="no">free_type_vars_in_env/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3292" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3290" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1874,7 +1874,7 @@ during type checking of function bodies.</p><h2 id="extend_env_with_typeclass_co
     </a>
     <h1 class="signature" translate="no">fresh_type_vars_for_params(TypeParams)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3107" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3105" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1901,7 +1901,7 @@ during type checking of function bodies.</p><h2 id="extend_env_with_typeclass_co
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">FreshVars</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">fresh_type_vars_for_params</span><span class="p" data-group-id="9780784518-1">(</span><span class="p" data-group-id="9780784518-2">[</span><span class="ss">&#39;T&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;U&#39;</span><span class="p" data-group-id="9780784518-2">]</span><span class="p" data-group-id="9780784518-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">FreshVars</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">fresh_type_vars_for_params</span><span class="p" data-group-id="7318185720-1">(</span><span class="p" data-group-id="7318185720-2">[</span><span class="ss">&#39;T&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;U&#39;</span><span class="p" data-group-id="7318185720-2">]</span><span class="p" data-group-id="7318185720-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% Result: #{&#39;T&#39; =&gt; TypeVar1, &#39;U&#39; =&gt; TypeVar2}</span></code></pre>
   </section>
 </section>
@@ -1913,7 +1913,7 @@ during type checking of function bodies.</p><h2 id="extend_env_with_typeclass_co
     </a>
     <h1 class="signature" translate="no">generalize_type(Type, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3206" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3204" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1945,8 +1945,8 @@ not free in the environment.</p><h2 id="generalize_type/2-arguments" class="sect
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Type: T -&gt; T where T is free</span><span class="w">
 </span><span class="c1">% Env: {x: Int}</span><span class="w">
 </span><span class="c1">% Result: forall T. T -&gt; T</span><span class="w">
-</span><span class="n">Type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="2641192920-1">{</span><span class="ss">function_type</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2641192920-2">[</span><span class="n">TypeVar</span><span class="p" data-group-id="2641192920-2">]</span><span class="p">,</span><span class="w"> </span><span class="n">TypeVar</span><span class="p" data-group-id="2641192920-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Generalized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generalize_type</span><span class="p" data-group-id="2641192920-3">(</span><span class="n">Type</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="2641192920-3">)</span><span class="p">.</span></code></pre>
+</span><span class="n">Type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="8233297096-1">{</span><span class="ss">function_type</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8233297096-2">[</span><span class="n">TypeVar</span><span class="p" data-group-id="8233297096-2">]</span><span class="p">,</span><span class="w"> </span><span class="n">TypeVar</span><span class="p" data-group-id="8233297096-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Generalized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generalize_type</span><span class="p" data-group-id="8233297096-3">(</span><span class="n">Type</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="8233297096-3">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="generate_list_alternatives/3">
@@ -1957,7 +1957,7 @@ not free in the environment.</p><h2 id="generalize_type/2-arguments" class="sect
     </a>
     <h1 class="signature" translate="no">generate_list_alternatives/3</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5807" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5825" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1977,7 +1977,7 @@ not free in the environment.</p><h2 id="generalize_type/2-arguments" class="sect
     </a>
     <h1 class="signature" translate="no">generate_type_alternatives(Expr, InferredType, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5791" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5809" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1997,7 +1997,7 @@ not free in the environment.</p><h2 id="generalize_type/2-arguments" class="sect
     </a>
     <h1 class="signature" translate="no">get_tuple_param_info/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L1741" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L1739" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2017,7 +2017,7 @@ not free in the environment.</p><h2 id="generalize_type/2-arguments" class="sect
     </a>
     <h1 class="signature" translate="no">infer_constructor_kind(Name, NumParams, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7084" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7102" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2037,7 +2037,7 @@ not free in the environment.</p><h2 id="generalize_type/2-arguments" class="sect
     </a>
     <h1 class="signature" translate="no">infer_dependent_type(Expr, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4640" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4658" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2057,7 +2057,7 @@ not free in the environment.</p><h2 id="generalize_type/2-arguments" class="sect
     </a>
     <h1 class="signature" translate="no">infer_kind(Type, KindEnv)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6571" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6589" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2077,7 +2077,7 @@ not free in the environment.</p><h2 id="generalize_type/2-arguments" class="sect
     </a>
     <h1 class="signature" translate="no">infer_pattern_type/3</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3890" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3888" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2097,7 +2097,7 @@ not free in the environment.</p><h2 id="generalize_type/2-arguments" class="sect
     </a>
     <h1 class="signature" translate="no">infer_recursive_function_call(FunctionName, Args, Env, RecState)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7427" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7445" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2136,7 +2136,7 @@ properly handles dependent types across recursive boundaries.</p><h2 id="infer_r
     </a>
     <h1 class="signature" translate="no">infer_type(Expr, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L1913" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L1911" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2156,7 +2156,7 @@ properly handles dependent types across recursive boundaries.</p><h2 id="infer_r
     </a>
     <h1 class="signature" translate="no">infer_type(Expr, Env, Constraints)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L1916" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L1914" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2176,7 +2176,7 @@ properly handles dependent types across recursive boundaries.</p><h2 id="infer_r
     </a>
     <h1 class="signature" translate="no">infer_with_alternatives(Expr, ExpectedType, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5828" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5846" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2196,7 +2196,7 @@ properly handles dependent types across recursive boundaries.</p><h2 id="infer_r
     </a>
     <h1 class="signature" translate="no">instantiate_poly_type/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3064" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3062" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2229,7 +2229,7 @@ polymorphic types with forall quantification.</p><h2 id="instantiate_poly_type/1
     </a>
     <h1 class="signature" translate="no">instantiate_poly_type/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3083" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3081" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2262,7 +2262,7 @@ for type parameters (e.g., id&lt;Int&gt; applies Int to identity function).</p><
     </a>
     <h1 class="signature" translate="no">instantiate_polymorphic_type/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3043" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L3041" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2290,8 +2290,8 @@ type with fresh type variables replacing all type parameters.</p><h2 id="instant
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">PolyType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="0099365284-1">{</span><span class="ss">function_type</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0099365284-2">[</span><span class="p" data-group-id="0099365284-3">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;T&#39;</span><span class="p" data-group-id="0099365284-3">}</span><span class="p" data-group-id="0099365284-2">]</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0099365284-4">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;T&#39;</span><span class="p" data-group-id="0099365284-4">}</span><span class="p" data-group-id="0099365284-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">InstType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">instantiate_polymorphic_type</span><span class="p" data-group-id="0099365284-5">(</span><span class="n">PolyType</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0099365284-6">[</span><span class="ss">&#39;T&#39;</span><span class="p" data-group-id="0099365284-6">]</span><span class="p" data-group-id="0099365284-5">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">PolyType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="3664008019-1">{</span><span class="ss">function_type</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3664008019-2">[</span><span class="p" data-group-id="3664008019-3">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;T&#39;</span><span class="p" data-group-id="3664008019-3">}</span><span class="p" data-group-id="3664008019-2">]</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3664008019-4">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;T&#39;</span><span class="p" data-group-id="3664008019-4">}</span><span class="p" data-group-id="3664008019-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">InstType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">instantiate_polymorphic_type</span><span class="p" data-group-id="3664008019-5">(</span><span class="n">PolyType</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3664008019-6">[</span><span class="ss">&#39;T&#39;</span><span class="p" data-group-id="3664008019-6">]</span><span class="p" data-group-id="3664008019-5">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% Result: {function_type, [TypeVar1], TypeVar1} where TypeVar1 is fresh</span></code></pre>
   </section>
 </section>
@@ -2303,7 +2303,7 @@ type with fresh type variables replacing all type parameters.</p><h2 id="instant
     </a>
     <h1 class="signature" translate="no">instantiate_polymorphic_type_if_needed/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L2702" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L2700" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2336,7 +2336,7 @@ It handles:</p><ul><li>poly_type records: Instantiates with fresh type variables
     </a>
     <h1 class="signature" translate="no">instantiate_type_if_function(Type)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L2681" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L2679" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2356,7 +2356,7 @@ It handles:</p><ul><li>poly_type records: Instantiates with fresh type variables
     </a>
     <h1 class="signature" translate="no">is_generic_type_variable_name(Name)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L2941" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L2939" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2376,7 +2376,7 @@ It handles:</p><ul><li>poly_type records: Instantiates with fresh type variables
     </a>
     <h1 class="signature" translate="no">is_nat_type/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L8203" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L8221" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2404,9 +2404,9 @@ and the refined Nat type (non-negative integers).</p><h2 id="is_nat_type/1-argum
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_nat_type</span><span class="p" data-group-id="6750688534-1">(</span><span class="p" data-group-id="6750688534-2">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Nat&#39;</span><span class="p" data-group-id="6750688534-2">}</span><span class="p" data-group-id="6750688534-1">)</span><span class="p">,</span><span class="w">
-</span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_nat_type</span><span class="p" data-group-id="6750688534-3">(</span><span class="p" data-group-id="6750688534-4">{</span><span class="ss">union_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Nat&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="6750688534-4">}</span><span class="p" data-group-id="6750688534-3">)</span><span class="p">,</span><span class="w">
-</span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_nat_type</span><span class="p" data-group-id="6750688534-5">(</span><span class="p" data-group-id="6750688534-6">{</span><span class="ss">refined_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Int&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="6750688534-6">}</span><span class="p" data-group-id="6750688534-5">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_nat_type</span><span class="p" data-group-id="9462675092-1">(</span><span class="p" data-group-id="9462675092-2">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Nat&#39;</span><span class="p" data-group-id="9462675092-2">}</span><span class="p" data-group-id="9462675092-1">)</span><span class="p">,</span><span class="w">
+</span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_nat_type</span><span class="p" data-group-id="9462675092-3">(</span><span class="p" data-group-id="9462675092-4">{</span><span class="ss">union_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Nat&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="9462675092-4">}</span><span class="p" data-group-id="9462675092-3">)</span><span class="p">,</span><span class="w">
+</span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_nat_type</span><span class="p" data-group-id="9462675092-5">(</span><span class="p" data-group-id="9462675092-6">{</span><span class="ss">refined_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Int&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="9462675092-6">}</span><span class="p" data-group-id="9462675092-5">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="is_saturated_type/1">
@@ -2417,7 +2417,7 @@ and the refined Nat type (non-negative integers).</p><h2 id="is_nat_type/1-argum
     </a>
     <h1 class="signature" translate="no">is_saturated_type(Type)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6805" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6823" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2464,9 +2464,9 @@ and the refined Nat type (non-negative integers).</p><h2 id="is_nat_type/1-argum
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">TVar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="1114269138-1">(</span><span class="p" data-group-id="1114269138-1">)</span><span class="p">,</span><span class="w">
-</span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_type_var</span><span class="p" data-group-id="1114269138-2">(</span><span class="n">TVar</span><span class="p" data-group-id="1114269138-2">)</span><span class="p">,</span><span class="w">
-</span><span class="ss">false</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_type_var</span><span class="p" data-group-id="1114269138-3">(</span><span class="ss">my_atom</span><span class="p" data-group-id="1114269138-3">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">TVar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="3904676117-1">(</span><span class="p" data-group-id="3904676117-1">)</span><span class="p">,</span><span class="w">
+</span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_type_var</span><span class="p" data-group-id="3904676117-2">(</span><span class="n">TVar</span><span class="p" data-group-id="3904676117-2">)</span><span class="p">,</span><span class="w">
+</span><span class="ss">false</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_type_var</span><span class="p" data-group-id="3904676117-3">(</span><span class="ss">my_atom</span><span class="p" data-group-id="3904676117-3">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="is_well_formed_type/1">
@@ -2477,7 +2477,7 @@ and the refined Nat type (non-negative integers).</p><h2 id="is_nat_type/1-argum
     </a>
     <h1 class="signature" translate="no">is_well_formed_type/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4572" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4590" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2497,7 +2497,7 @@ and the refined Nat type (non-negative integers).</p><h2 id="is_nat_type/1-argum
     </a>
     <h1 class="signature" translate="no">kind_arity(Kind)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6798" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6816" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2517,7 +2517,7 @@ and the refined Nat type (non-negative integers).</p><h2 id="is_nat_type/1-argum
     </a>
     <h1 class="signature" translate="no">local_type_inference(Expr, InferredType, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5751" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5769" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2571,9 +2571,9 @@ is not found in the current scope.</p><h2 id="lookup_env/2-example" class="secti
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env</span><span class="p" data-group-id="0463444460-1">(</span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_env</span><span class="p" data-group-id="0463444460-2">(</span><span class="p" data-group-id="0463444460-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="n">IntType</span><span class="p" data-group-id="0463444460-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">IntType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">lookup_env</span><span class="p" data-group-id="0463444460-3">(</span><span class="n">Env</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p" data-group-id="0463444460-3">)</span><span class="p">,</span><span class="w">
-</span><span class="ss">undefined</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">lookup_env</span><span class="p" data-group-id="0463444460-4">(</span><span class="n">Env</span><span class="p">,</span><span class="w"> </span><span class="ss">unbound_var</span><span class="p" data-group-id="0463444460-4">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env</span><span class="p" data-group-id="2100730632-1">(</span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_env</span><span class="p" data-group-id="2100730632-2">(</span><span class="p" data-group-id="2100730632-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="n">IntType</span><span class="p" data-group-id="2100730632-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">IntType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">lookup_env</span><span class="p" data-group-id="2100730632-3">(</span><span class="n">Env</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p" data-group-id="2100730632-3">)</span><span class="p">,</span><span class="w">
+</span><span class="ss">undefined</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">lookup_env</span><span class="p" data-group-id="2100730632-4">(</span><span class="n">Env</span><span class="p">,</span><span class="w"> </span><span class="ss">unbound_var</span><span class="p" data-group-id="2100730632-4">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="lookup_type_constructor/2">
@@ -2584,7 +2584,7 @@ is not found in the current scope.</p><h2 id="lookup_env/2-example" class="secti
     </a>
     <h1 class="signature" translate="no">lookup_type_constructor(Name, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7072" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7090" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2604,7 +2604,7 @@ is not found in the current scope.</p><h2 id="lookup_env/2-example" class="secti
     </a>
     <h1 class="signature" translate="no">nat_from_int/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L8146" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L8164" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2632,7 +2632,7 @@ representing the given non-negative integer.</p><h2 id="nat_from_int/1-arguments
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="1193511735-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Three</span><span class="p" data-group-id="1193511735-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_from_int</span><span class="p" data-group-id="1193511735-2">(</span><span class="mi">3</span><span class="p" data-group-id="1193511735-2">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4382064526-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Three</span><span class="p" data-group-id="4382064526-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_from_int</span><span class="p" data-group-id="4382064526-2">(</span><span class="mi">3</span><span class="p" data-group-id="4382064526-2">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">%% Results in Succ(Succ(Succ(Zero)))</span></code></pre>
   </section>
 </section>
@@ -2644,7 +2644,7 @@ representing the given non-negative integer.</p><h2 id="nat_from_int/1-arguments
     </a>
     <h1 class="signature" translate="no">nat_succ(Nat)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L8124" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L8142" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2672,8 +2672,8 @@ similar to Idris's S constructor.</p><h2 id="nat_succ/1-arguments" class="sectio
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">One</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_succ</span><span class="p" data-group-id="1711747650-1">(</span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_zero</span><span class="p" data-group-id="1711747650-2">(</span><span class="p" data-group-id="1711747650-2">)</span><span class="p" data-group-id="1711747650-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Two</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_succ</span><span class="p" data-group-id="1711747650-3">(</span><span class="n">One</span><span class="p" data-group-id="1711747650-3">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">One</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_succ</span><span class="p" data-group-id="0311368111-1">(</span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_zero</span><span class="p" data-group-id="0311368111-2">(</span><span class="p" data-group-id="0311368111-2">)</span><span class="p" data-group-id="0311368111-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Two</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_succ</span><span class="p" data-group-id="0311368111-3">(</span><span class="n">One</span><span class="p" data-group-id="0311368111-3">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">%% Results in Succ(Succ(Zero))</span></code></pre>
   </section>
 </section>
@@ -2685,7 +2685,7 @@ similar to Idris's S constructor.</p><h2 id="nat_succ/1-arguments" class="sectio
     </a>
     <h1 class="signature" translate="no">nat_to_int/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L8173" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L8191" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2713,8 +2713,8 @@ the integer value.</p><h2 id="nat_to_int/1-arguments" class="section-heading">
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="2204269488-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Three</span><span class="p" data-group-id="2204269488-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_from_int</span><span class="p" data-group-id="2204269488-2">(</span><span class="mi">3</span><span class="p" data-group-id="2204269488-2">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="2204269488-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="2204269488-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_to_int</span><span class="p" data-group-id="2204269488-4">(</span><span class="n">Three</span><span class="p" data-group-id="2204269488-4">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="5934791388-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Three</span><span class="p" data-group-id="5934791388-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_from_int</span><span class="p" data-group-id="5934791388-2">(</span><span class="mi">3</span><span class="p" data-group-id="5934791388-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="5934791388-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="5934791388-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_to_int</span><span class="p" data-group-id="5934791388-4">(</span><span class="n">Three</span><span class="p" data-group-id="5934791388-4">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="nat_zero/0">
@@ -2725,7 +2725,7 @@ the integer value.</p><h2 id="nat_to_int/1-arguments" class="section-heading">
     </a>
     <h1 class="signature" translate="no">nat_zero()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L8102" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L8120" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2747,7 +2747,7 @@ similar to Idris's Z constructor.</p><h2 id="nat_zero/0-returns" class="section-
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Zero</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_zero</span><span class="p" data-group-id="6886765222-1">(</span><span class="p" data-group-id="6886765222-1">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">Zero</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">nat_zero</span><span class="p" data-group-id="5442945006-1">(</span><span class="p" data-group-id="5442945006-1">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">%% Results in an identifier expression representing Zero</span></code></pre>
   </section>
 </section>
@@ -2781,9 +2781,9 @@ supports hierarchical scoping through parent environments.</p><h2 id="new_env/0-
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_env</span><span class="p" data-group-id="5539956176-1">(</span><span class="p" data-group-id="5539956176-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Env2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env</span><span class="p" data-group-id="5539956176-2">(</span><span class="n">Env</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5539956176-3">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Int&#39;</span><span class="p" data-group-id="5539956176-3">}</span><span class="p" data-group-id="5539956176-2">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="5539956176-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Type</span><span class="p" data-group-id="5539956176-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">lookup_env</span><span class="p" data-group-id="5539956176-5">(</span><span class="n">Env2</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p" data-group-id="5539956176-5">)</span><span class="p">.</span></code></pre><h2 id="new_env/0-features" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_env</span><span class="p" data-group-id="6170372531-1">(</span><span class="p" data-group-id="6170372531-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Env2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env</span><span class="p" data-group-id="6170372531-2">(</span><span class="n">Env</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6170372531-3">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Int&#39;</span><span class="p" data-group-id="6170372531-3">}</span><span class="p" data-group-id="6170372531-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="6170372531-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Type</span><span class="p" data-group-id="6170372531-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">lookup_env</span><span class="p" data-group-id="6170372531-5">(</span><span class="n">Env2</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p" data-group-id="6170372531-5">)</span><span class="p">.</span></code></pre><h2 id="new_env/0-features" class="section-heading">
   <a href="#new_env/0-features" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -2800,7 +2800,7 @@ supports hierarchical scoping through parent environments.</p><h2 id="new_env/0-
     </a>
     <h1 class="signature" translate="no">new_recursive_state()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7321" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7339" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2821,8 +2821,8 @@ supports hierarchical scoping through parent environments.</p><h2 id="new_env/0-
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_recursive_state</span><span class="p" data-group-id="4849929821-1">(</span><span class="p" data-group-id="4849929821-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">UpdatedState</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">push_recursive_call</span><span class="p" data-group-id="4849929821-2">(</span><span class="ss">factorial</span><span class="p">,</span><span class="w"> </span><span class="n">ParamTypes</span><span class="p">,</span><span class="w"> </span><span class="n">RetType</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="4849929821-2">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_recursive_state</span><span class="p" data-group-id="0079479776-1">(</span><span class="p" data-group-id="0079479776-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">UpdatedState</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">push_recursive_call</span><span class="p" data-group-id="0079479776-2">(</span><span class="ss">factorial</span><span class="p">,</span><span class="w"> </span><span class="n">ParamTypes</span><span class="p">,</span><span class="w"> </span><span class="n">RetType</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="0079479776-2">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="new_type_var/0">
@@ -2854,8 +2854,8 @@ supports hierarchical scoping through parent environments.</p><h2 id="new_env/0-
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">TVar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="2295641602-1">(</span><span class="p" data-group-id="2295641602-1">)</span><span class="p">,</span><span class="w">
-</span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_type_var</span><span class="p" data-group-id="2295641602-2">(</span><span class="n">TVar</span><span class="p" data-group-id="2295641602-2">)</span><span class="p">.</span></code></pre><h2 id="new_type_var/0-note" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">TVar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="0060970061-1">(</span><span class="p" data-group-id="0060970061-1">)</span><span class="p">,</span><span class="w">
+</span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">is_type_var</span><span class="p" data-group-id="0060970061-2">(</span><span class="n">TVar</span><span class="p" data-group-id="0060970061-2">)</span><span class="p">.</span></code></pre><h2 id="new_type_var/0-note" class="section-heading">
   <a href="#new_type_var/0-note" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -2900,8 +2900,8 @@ For concurrent use, external synchronization may be required.</p>
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">TVar1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="7475435683-1">(</span><span class="ss">my_var</span><span class="p" data-group-id="7475435683-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">TVar2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="7475435683-2">(</span><span class="ss">undefined</span><span class="p" data-group-id="7475435683-2">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">TVar1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="7720536573-1">(</span><span class="ss">my_var</span><span class="p" data-group-id="7720536573-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">TVar2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="7720536573-2">(</span><span class="ss">undefined</span><span class="p" data-group-id="7720536573-2">)</span><span class="p">,</span><span class="w">
 </span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TVar1</span><span class="o">#</span><span class="ss">type_var</span><span class="p">.</span><span class="ss">name</span><span class="w"> </span><span class="o">=:=</span><span class="w"> </span><span class="ss">my_var</span><span class="p">.</span></code></pre><h2 id="new_type_var/1-note" class="section-heading">
   <a href="#new_type_var/1-note" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -2920,7 +2920,7 @@ ensures type variable identity regardless of name.</p>
     </a>
     <h1 class="signature" translate="no">normalize_type(Type)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4378" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4376" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2968,10 +2968,10 @@ the type it would be unified with, preventing infinite type structures.</p><h2 i
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">TVar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="8113351863-1">(</span><span class="p" data-group-id="8113351863-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">ListType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="8113351863-2">{</span><span class="ss">list_type</span><span class="p">,</span><span class="w"> </span><span class="n">TVar</span><span class="p" data-group-id="8113351863-2">}</span><span class="p">,</span><span class="w">
-</span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">occurs_check</span><span class="p" data-group-id="8113351863-3">(</span><span class="n">TVar</span><span class="p">,</span><span class="w"> </span><span class="n">ListType</span><span class="p" data-group-id="8113351863-3">)</span><span class="p">,</span><span class="w">  </span><span class="c1">% Would create infinite list</span><span class="w">
-</span><span class="ss">false</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">occurs_check</span><span class="p" data-group-id="8113351863-4">(</span><span class="n">TVar</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8113351863-5">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Int&#39;</span><span class="p" data-group-id="8113351863-5">}</span><span class="p" data-group-id="8113351863-4">)</span><span class="p">.</span></code></pre><h2 id="occurs_check/2-note" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">TVar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">new_type_var</span><span class="p" data-group-id="3243037340-1">(</span><span class="p" data-group-id="3243037340-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">ListType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="3243037340-2">{</span><span class="ss">list_type</span><span class="p">,</span><span class="w"> </span><span class="n">TVar</span><span class="p" data-group-id="3243037340-2">}</span><span class="p">,</span><span class="w">
+</span><span class="ss">true</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">occurs_check</span><span class="p" data-group-id="3243037340-3">(</span><span class="n">TVar</span><span class="p">,</span><span class="w"> </span><span class="n">ListType</span><span class="p" data-group-id="3243037340-3">)</span><span class="p">,</span><span class="w">  </span><span class="c1">% Would create infinite list</span><span class="w">
+</span><span class="ss">false</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">occurs_check</span><span class="p" data-group-id="3243037340-4">(</span><span class="n">TVar</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3243037340-5">{</span><span class="ss">primitive_type</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Int&#39;</span><span class="p" data-group-id="3243037340-5">}</span><span class="p" data-group-id="3243037340-4">)</span><span class="p">.</span></code></pre><h2 id="occurs_check/2-note" class="section-heading">
   <a href="#occurs_check/2-note" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -2988,7 +2988,7 @@ the type it would be unified with, preventing infinite type structures.</p><h2 i
     </a>
     <h1 class="signature" translate="no">occurs_check_recursive/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6213" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6231" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3008,7 +3008,7 @@ the type it would be unified with, preventing infinite type structures.</p><h2 i
     </a>
     <h1 class="signature" translate="no">partial_application_kind(Kind, NumApplied)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7042" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7060" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3028,7 +3028,7 @@ the type it would be unified with, preventing infinite type structures.</p><h2 i
     </a>
     <h1 class="signature" translate="no">pop_recursive_call(State)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7392" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7410" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3060,7 +3060,7 @@ the type it would be unified with, preventing infinite type structures.</p><h2 i
     </a>
     <h1 class="signature" translate="no">push_recursive_call(FunctionName, ParameterTypes, ReturnType, State)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7353" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7371" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3088,9 +3088,9 @@ across recursive boundaries.</p><h2 id="push_recursive_call/4-arguments" class="
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="0987314444-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">NewState</span><span class="p" data-group-id="0987314444-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">push_recursive_call</span><span class="p" data-group-id="0987314444-2">(</span><span class="w">
-    </span><span class="ss">factorial</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0987314444-3">[</span><span class="n">NType</span><span class="p" data-group-id="0987314444-3">]</span><span class="p">,</span><span class="w"> </span><span class="n">FactorialRetType</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="w">
-</span><span class="p" data-group-id="0987314444-2">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4701081418-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">NewState</span><span class="p" data-group-id="4701081418-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">push_recursive_call</span><span class="p" data-group-id="4701081418-2">(</span><span class="w">
+    </span><span class="ss">factorial</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4701081418-3">[</span><span class="n">NType</span><span class="p" data-group-id="4701081418-3">]</span><span class="p">,</span><span class="w"> </span><span class="n">FactorialRetType</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="w">
+</span><span class="p" data-group-id="4701081418-2">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="result_kind/1">
@@ -3101,7 +3101,7 @@ across recursive boundaries.</p><h2 id="push_recursive_call/4-arguments" class="
     </a>
     <h1 class="signature" translate="no">result_kind(Kind)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7026" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7044" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3121,7 +3121,7 @@ across recursive boundaries.</p><h2 id="push_recursive_call/4-arguments" class="
     </a>
     <h1 class="signature" translate="no">safe_extract_param_value/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L1747" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L1745" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3141,7 +3141,7 @@ across recursive boundaries.</p><h2 id="push_recursive_call/4-arguments" class="
     </a>
     <h1 class="signature" translate="no">solve_bounds_constraint(Type, Bounds, Subst)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5065" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5083" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3161,7 +3161,7 @@ across recursive boundaries.</p><h2 id="push_recursive_call/4-arguments" class="
     </a>
     <h1 class="signature" translate="no">solve_constraints(Constraints)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4145" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4143" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3181,7 +3181,7 @@ across recursive boundaries.</p><h2 id="push_recursive_call/4-arguments" class="
     </a>
     <h1 class="signature" translate="no">solve_constraints/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4148" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4146" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3201,7 +3201,7 @@ across recursive boundaries.</p><h2 id="push_recursive_call/4-arguments" class="
     </a>
     <h1 class="signature" translate="no">solve_equivalence_constraint(Left, Right, Subst)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5046" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5064" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3221,7 +3221,7 @@ across recursive boundaries.</p><h2 id="push_recursive_call/4-arguments" class="
     </a>
     <h1 class="signature" translate="no">solve_implication_constraint(Left, Right, Subst)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5023" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5041" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3241,7 +3241,7 @@ across recursive boundaries.</p><h2 id="push_recursive_call/4-arguments" class="
     </a>
     <h1 class="signature" translate="no">solve_invariant_constraint(Type, InvariantSpec, Subst)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5093" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5111" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3261,7 +3261,7 @@ across recursive boundaries.</p><h2 id="push_recursive_call/4-arguments" class="
     </a>
     <h1 class="signature" translate="no">solve_recursive_constraints_fixed_point(Constraints, RecState)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7558" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7576" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3300,7 +3300,7 @@ handling dependent types that may change across recursive calls.</p><h2 id="solv
     </a>
     <h1 class="signature" translate="no">solve_type_family_equation(Equation, Args, KindEnv)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6750" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6768" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3320,7 +3320,7 @@ handling dependent types that may change across recursive calls.</p><h2 id="solv
     </a>
     <h1 class="signature" translate="no">solve_variance_constraint(TypeConstructor, ParameterType, Variance, Subst)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5110" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L5128" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3340,7 +3340,7 @@ handling dependent types that may change across recursive calls.</p><h2 id="solv
     </a>
     <h1 class="signature" translate="no">substitute(Type, Subst)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4375" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4373" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3360,7 +3360,7 @@ handling dependent types that may change across recursive calls.</p><h2 id="solv
     </a>
     <h1 class="signature" translate="no">track_dependent_constraints_in_recursion(Constraints, Context, RecState)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7699" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7717" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3393,7 +3393,7 @@ across recursive call boundaries, ensuring type safety.</p><h2 id="track_depende
     </a>
     <h1 class="signature" translate="no">try_resolve_typeclass_method/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L8247" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L8265" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3422,8 +3422,8 @@ constraints from the where clause. If found, returns the method type.</p><h2 id=
   <span class="text">Example</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% In a function with &#39;where Show(T)&#39; and a call to &#39;show(x)&#39;</span><span class="w">
-</span><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env_with_typeclass_constraints</span><span class="p" data-group-id="7648764565-1">(</span><span class="n">Env0</span><span class="p">,</span><span class="w"> </span><span class="n">Constraints</span><span class="p" data-group-id="7648764565-1">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="7648764565-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">ShowType</span><span class="p" data-group-id="7648764565-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">try_resolve_typeclass_method</span><span class="p" data-group-id="7648764565-3">(</span><span class="ss">show</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="7648764565-3">)</span><span class="p">.</span></code></pre>
+</span><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">extend_env_with_typeclass_constraints</span><span class="p" data-group-id="5684415613-1">(</span><span class="n">Env0</span><span class="p">,</span><span class="w"> </span><span class="n">Constraints</span><span class="p" data-group-id="5684415613-1">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="5684415613-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">ShowType</span><span class="p" data-group-id="5684415613-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">try_resolve_typeclass_method</span><span class="p" data-group-id="5684415613-3">(</span><span class="ss">show</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="5684415613-3">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="type_to_string/1">
@@ -3434,7 +3434,7 @@ constraints from the where clause. If found, returns the method type.</p><h2 id=
     </a>
     <h1 class="signature" translate="no">type_to_string/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4382" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L4380" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3454,7 +3454,7 @@ constraints from the where clause. If found, returns the method type.</p><h2 id=
     </a>
     <h1 class="signature" translate="no">unfold_recursive_type/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6115" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6133" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3474,7 +3474,7 @@ constraints from the where clause. If found, returns the method type.</p><h2 id=
     </a>
     <h1 class="signature" translate="no">unfold_recursive_type/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6118" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6136" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3521,9 +3521,9 @@ constraints from the where clause. If found, returns the method type.</p><h2 id=
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="1186269150-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Subst</span><span class="p" data-group-id="1186269150-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="1186269150-2">(</span><span class="n">IntType</span><span class="p">,</span><span class="w"> </span><span class="n">IntType</span><span class="p" data-group-id="1186269150-2">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="1186269150-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Subst2</span><span class="p" data-group-id="1186269150-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="1186269150-4">(</span><span class="n">TVar</span><span class="p">,</span><span class="w"> </span><span class="n">IntType</span><span class="p" data-group-id="1186269150-4">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="1186269150-5">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="1186269150-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="1186269150-6">(</span><span class="n">IntType</span><span class="p">,</span><span class="w"> </span><span class="n">StringType</span><span class="p" data-group-id="1186269150-6">)</span><span class="p">.</span></code></pre><h2 id="unify/2-error-cases" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="8016524026-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Subst</span><span class="p" data-group-id="8016524026-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="8016524026-2">(</span><span class="n">IntType</span><span class="p">,</span><span class="w"> </span><span class="n">IntType</span><span class="p" data-group-id="8016524026-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="8016524026-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Subst2</span><span class="p" data-group-id="8016524026-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="8016524026-4">(</span><span class="n">TVar</span><span class="p">,</span><span class="w"> </span><span class="n">IntType</span><span class="p" data-group-id="8016524026-4">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="8016524026-5">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="8016524026-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="8016524026-6">(</span><span class="n">IntType</span><span class="p">,</span><span class="w"> </span><span class="n">StringType</span><span class="p" data-group-id="8016524026-6">)</span><span class="p">.</span></code></pre><h2 id="unify/2-error-cases" class="section-heading">
   <a href="#unify/2-error-cases" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -3568,8 +3568,8 @@ and composes the results.</p><h2 id="unify/3-arguments" class="section-heading">
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="2420658242-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Subst1</span><span class="p" data-group-id="2420658242-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="2420658242-2">(</span><span class="n">TVar1</span><span class="p">,</span><span class="w"> </span><span class="n">IntType</span><span class="p" data-group-id="2420658242-2">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="2420658242-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Subst2</span><span class="p" data-group-id="2420658242-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="2420658242-4">(</span><span class="n">TVar2</span><span class="p">,</span><span class="w"> </span><span class="n">StringType</span><span class="p">,</span><span class="w"> </span><span class="n">Subst1</span><span class="p" data-group-id="2420658242-4">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="8440925502-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Subst1</span><span class="p" data-group-id="8440925502-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="8440925502-2">(</span><span class="n">TVar1</span><span class="p">,</span><span class="w"> </span><span class="n">IntType</span><span class="p" data-group-id="8440925502-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="8440925502-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Subst2</span><span class="p" data-group-id="8440925502-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_types</span><span class="p">:</span><span class="nf">unify</span><span class="p" data-group-id="8440925502-4">(</span><span class="n">TVar2</span><span class="p">,</span><span class="w"> </span><span class="n">StringType</span><span class="p">,</span><span class="w"> </span><span class="n">Subst1</span><span class="p" data-group-id="8440925502-4">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">%% Subst2 now contains bindings for both TVar1 and TVar2</span></code></pre><h2 id="unify/3-substitution-composition" class="section-heading">
   <a href="#unify/3-substitution-composition" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -3588,7 +3588,7 @@ unification and composes the result with the input substitution.</p>
     </a>
     <h1 class="signature" translate="no">unify_kinds(Kind1, Kind2)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6648" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6666" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3608,7 +3608,7 @@ unification and composes the result with the input substitution.</p>
     </a>
     <h1 class="signature" translate="no">unify_recursive_types(RecType1, RecType2, Subst)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6188" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L6206" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -3628,7 +3628,7 @@ unification and composes the result with the input substitution.</p>
     </a>
     <h1 class="signature" translate="no">unify_with_recursive_context(Types1, Types2, Context, RecState)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7767" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_types.erl#L7785" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
