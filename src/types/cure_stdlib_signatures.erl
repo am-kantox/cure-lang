@@ -681,6 +681,17 @@ get_function_type('Std.Vector', contains, 2) ->
                 {primitive_type, 'T'}
             ],
             {primitive_type, 'Bool'}}};
+get_function_type('Std.Vector', drop, 2) ->
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]},
+                {primitive_type, 'Nat'}
+            ],
+            {dependent_type, 'Vector', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
 get_function_type('Std.Vector', filter, 2) ->
     {ok,
         {function_type,
@@ -705,6 +716,17 @@ get_function_type('Std.Vector', fold, 3) ->
                     {function_type, [{primitive_type, 'U'}], {primitive_type, 'U'}}}
             ],
             {primitive_type, 'U'}}};
+get_function_type('Std.Vector', head, 2) ->
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]},
+                {primitive_type, 'T'}
+            ],
+            {primitive_type, 'T'}}};
 get_function_type('Std.Vector', is_empty, 1) ->
     {ok,
         {function_type,
@@ -739,6 +761,18 @@ get_function_type('Std.Vector', map, 2) ->
                 {type_param, undefined, {type_var, 'U', 'U', []}},
                 {type_param, undefined, {identifier_expr, n, undefined}}
             ]}}};
+get_function_type('Std.Vector', nth, 3) ->
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]},
+                {primitive_type, 'Nat'},
+                {primitive_type, 'T'}
+            ],
+            {primitive_type, 'T'}}};
 get_function_type('Std.Vector', reverse, 2) ->
     {ok,
         {function_type,
@@ -753,6 +787,30 @@ get_function_type('Std.Vector', reverse, 2) ->
                 ]}
             ],
             {dependent_type, 'Vector', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
+get_function_type('Std.Vector', tail, 1) ->
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, n, undefined}}
+                ]}
+            ],
+            {dependent_type, 'Vector', [{type_param, undefined, {type_var, 'T', 'T', []}}]}}};
+get_function_type('Std.Vector', take, 2) ->
+    {ok,
+        {function_type,
+            [
+                {dependent_type, 'Vector', [
+                    {type_param, undefined, {type_var, 'T', 'T', []}},
+                    {type_param, undefined, {identifier_expr, '_', undefined}}
+                ]},
+                {primitive_type, 'Nat'}
+            ],
+            {dependent_type, 'Vector', [
+                {type_param, undefined, {type_var, 'T', 'T', []}},
+                {type_param, undefined, {identifier_expr, count, undefined}}
+            ]}}};
 get_function_type('Std.Vector', zip_with, 3) ->
     {ok,
         {function_type,
@@ -916,11 +974,16 @@ all_signatures() ->
         {'Std.System', system_time, 1},
         {'Std.System', timestamp, 0},
         {'Std.Vector', contains, 2},
+        {'Std.Vector', drop, 2},
         {'Std.Vector', filter, 2},
         {'Std.Vector', fold, 3},
+        {'Std.Vector', head, 2},
         {'Std.Vector', is_empty, 1},
         {'Std.Vector', length, 1},
         {'Std.Vector', map, 2},
+        {'Std.Vector', nth, 3},
         {'Std.Vector', reverse, 2},
+        {'Std.Vector', tail, 1},
+        {'Std.Vector', take, 2},
         {'Std.Vector', zip_with, 3}
     ].

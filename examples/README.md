@@ -97,6 +97,34 @@ erl -pa _build/ebin -pa lib/_build -noshell -s Recursion main -s init stop
 erl -pa _build/ebin -pa lib/_build -noshell -s GuardsDemo main -s init stop
 ```
 
+### 07_refinement_types_demo.cure
+**Demonstrates**: Refinement types with constraints ✅
+- Refinement type syntax: `{variable: BaseType | constraint}`
+- Non-zero integers for safe division
+- Positive integers for positive-only operations
+- Bounded integers (percentages, year ranges)
+- Constraint expressions with comparison operators
+- Compile-time constraint verification
+- Type-level predicates
+
+**Run**:
+```bash
+./cure examples/07_refinement_types_demo.cure
+erl -pa _build/ebin -noshell -s RefinementTypesDemo main -s init stop
+```
+
+**Example refinement types**:
+```cure
+# Non-zero divisor
+def safe_divide(a: Int, b: {x: Int | x != 0}): Int = a / b
+
+# Positive number
+def process_positive(n: {x: Int | x > 0}): Int = n * 2
+
+# Bounded value (0-100)
+def make_percentage(v: {p: Int | 0 <= p and p <= 100}): Int = v
+```
+
 ### 06_fsm_traffic_light.cure
 **Demonstrates**: Finite State Machine (FSM) with full runtime support ✅
 - FSM definition with `fsm` keyword

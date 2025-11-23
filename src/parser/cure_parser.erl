@@ -120,6 +120,7 @@ The parser integrates with:
 -export([parse/1, parse_file/1]).
 
 -include("cure_ast.hrl").
+-include("../types/cure_refinement_types.hrl").
 
 %% Parser state record
 -record(parser_state, {
@@ -2856,19 +2857,26 @@ parse_primary_type(State) ->
             {_, State3} = expect(State2, ')'),
             {Type, State3};
         '{' ->
-            % Tuple type: {T, U, V}
+            % Either refinement type {var: Type | constraint} or tuple type {T, U, V}
             {_, State1} = expect(State, '{'),
             Location = get_token_location(current_token(State)),
 
-            % Parse tuple element types
-            {ElementTypes, State2} = parse_tuple_type_elements(State1, []),
-            {_, State3} = expect(State2, '}'),
-
-            Type = #tuple_type{
-                element_types = ElementTypes,
-                location = Location
-            },
-            {Type, State3};
+            % Distinguish refinement from tuple by lookahead (doesn't advance state)
+            case is_refinement_type_syntax(State1) of
+                true ->
+                    % Parse refinement type: {var: Type | constraint}
+                    % Note: is_refinement_type_syntax doesn't consume tokens
+                    parse_refinement_type(State1, Location);
+                false ->
+                    % Parse tuple type: {T, U, V}
+                    {ElementTypes, State2} = parse_tuple_type_elements(State1, []),
+                    {_, State3} = expect(State2, '}'),
+                    Type = #tuple_type{
+                        element_types = ElementTypes,
+                        location = Location
+                    },
+                    {Type, State3}
+            end;
         _ ->
             CurrentToken = current_token(State),
             {Line, Col} = get_token_line_col(CurrentToken),
@@ -2952,6 +2960,138 @@ parse_tuple_type_elements(State, Acc) ->
                 false ->
                     {lists:reverse([ElementType | Acc]), State1}
             end
+    end.
+
+%% Check if '{' starts a refinement type (lookahead)
+%% Refinement types have syntax: {var: Type | constraint}
+%% Tuple types have syntax: {Type, Type, ...}
+%% This function does NOT consume any tokens - it only looks ahead
+is_refinement_type_syntax(State) ->
+    Token = current_token(State),
+    TokenType = get_token_type(Token),
+    case TokenType of
+        identifier ->
+            % Look ahead to see if next token is ':' (without consuming)
+            NextState = advance(State),
+            NextToken = current_token(NextState),
+            % true if refinement, false if tuple
+            get_token_type(NextToken) =:= ':';
+        _ ->
+            % Tuple type (starts with Type, not identifier)
+            false
+    end.
+
+%% Parse refinement type: {var: Type | constraint}
+parse_refinement_type(State, Location) ->
+    % Expect: identifier : Type | constraint }
+    {VarToken, State1} = expect(State, identifier),
+    Var = token_value_to_atom(get_token_value(VarToken)),
+
+    {_, State2} = expect(State1, ':'),
+    % Use parse_primary_type to avoid consuming the '|' token
+    % (parse_type would try to parse union types with '|')
+    {BaseType, State3} = parse_primary_type(State2),
+    {_, State4} = expect(State3, '|'),
+    {Constraint, State5} = parse_constraint_expression(State4),
+    {_, State6} = expect(State5, '}'),
+
+    RefinementType = #refinement_type{
+        base_type = BaseType,
+        variable = Var,
+        predicate = Constraint,
+        location = Location
+    },
+    {RefinementType, State6}.
+
+%% Parse constraint expression (stops at '}')
+%% This is similar to parse_binary_expression but stops at '}'
+parse_constraint_expression(State) ->
+    parse_constraint_binary_expression(State, 0).
+
+parse_constraint_binary_expression(State, MinPrec) ->
+    {Left, State1} = parse_constraint_primary(State),
+    parse_constraint_binary_rest(State1, Left, MinPrec).
+
+parse_constraint_binary_rest(State, Left, MinPrec) ->
+    case current_token(State) of
+        eof ->
+            {Left, State};
+        Token ->
+            TokenType = get_token_type(Token),
+            % Stop at '}' (end of refinement)
+            case TokenType of
+                '}' ->
+                    {Left, State};
+                _ ->
+                    % Check if this is an operator
+                    case get_operator_info(TokenType) of
+                        {Prec, Assoc} when Prec >= MinPrec ->
+                            {_, State1} = expect(State, TokenType),
+                            NextMinPrec =
+                                case Assoc of
+                                    left -> Prec + 1;
+                                    right -> Prec
+                                end,
+                            {Right, State2} = parse_constraint_binary_expression(
+                                State1, NextMinPrec
+                            ),
+                            Location = get_token_location(Token),
+                            BinOp = #binary_op_expr{
+                                op = TokenType,
+                                left = Left,
+                                right = Right,
+                                location = Location
+                            },
+                            parse_constraint_binary_rest(State2, BinOp, MinPrec);
+                        _ ->
+                            {Left, State}
+                    end
+            end
+    end.
+
+%% Parse primary expression for constraints (identifier, literal, parenthesized)
+parse_constraint_primary(State) ->
+    Token = current_token(State),
+    case get_token_type(Token) of
+        identifier ->
+            {IdToken, State1} = expect(State, identifier),
+            Name = token_value_to_atom(get_token_value(IdToken)),
+            Location = get_token_location(IdToken),
+            Expr = #identifier_expr{
+                name = Name,
+                location = Location
+            },
+            {Expr, State1};
+        integer ->
+            {IntToken, State1} = expect(State, integer),
+            Value = get_token_value(IntToken),
+            Location = get_token_location(IntToken),
+            Expr = #literal_expr{
+                value = Value,
+                location = Location
+            },
+            {Expr, State1};
+        float ->
+            {FloatToken, State1} = expect(State, float),
+            Value = get_token_value(FloatToken),
+            Location = get_token_location(FloatToken),
+            Expr = #literal_expr{
+                value = Value,
+                location = Location
+            },
+            {Expr, State1};
+        '(' ->
+            {_, State1} = expect(State, '('),
+            {Expr, State2} = parse_constraint_expression(State1),
+            {_, State3} = expect(State2, ')'),
+            {Expr, State3};
+        _ ->
+            CurrentToken = current_token(State),
+            {Line, Col} = get_token_line_col(CurrentToken),
+            throw(
+                {parse_error, {expected_constraint_expression, got, get_token_type(CurrentToken)},
+                    Line, Col}
+            )
     end.
 
 %% Separate type parameters from value parameters

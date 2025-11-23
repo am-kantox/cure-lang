@@ -178,6 +178,7 @@ operations can run concurrently on different ASTs.
 % Test/debug functions
 
 -include("../parser/cure_ast.hrl").
+-include("cure_refinement_types.hrl").
 
 %% Type checking result
 -record(typecheck_result, {
@@ -2287,6 +2288,16 @@ convert_type_to_tuple(#function_type{params = Params, return_type = ReturnType})
 convert_type_to_tuple(#tuple_type{element_types = ElementTypes, location = Location}) ->
     ConvertedElements = [convert_type_to_tuple(E) || E <- ElementTypes],
     {tuple_type, ConvertedElements, Location};
+convert_type_to_tuple(#refinement_type{
+    base_type = BaseType, variable = Var, predicate = Pred, location = Loc
+}) ->
+    % Keep refinement type as-is (already a record)
+    #refinement_type{
+        base_type = convert_type_to_tuple(BaseType),
+        variable = Var,
+        predicate = Pred,
+        location = Loc
+    };
 convert_type_to_tuple(#identifier_expr{name = Name}) when
     Name =:= 'Float' orelse
         Name =:= 'Int' orelse

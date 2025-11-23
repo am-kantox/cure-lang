@@ -868,25 +868,23 @@ unify(Type1, Type2, Subst) ->
 
 unify_impl(T, T, Subst) ->
     {ok, Subst};
-%% Handle refinement types - check subtyping via SMT
-unify_impl(Type1, Type2, Subst) when
-    is_tuple(Type1), element(1, Type1) =:= refinement_type;
-    is_tuple(Type2), element(1, Type2) =:= refinement_type
-->
-    % At least one type is a refinement type - use SMT-based subtyping
-    case cure_refinement_types:check_subtype(Type1, Type2, #{}) of
-        {ok, true} ->
-            % Subtyping holds, unification succeeds
-            {ok, Subst};
-        {ok, false} ->
-            % Try reverse direction (might be covariant)
-            case cure_refinement_types:check_subtype(Type2, Type1, #{}) of
-                {ok, true} -> {ok, Subst};
-                _ -> {error, {refinement_subtyping_failed, Type1, Type2}}
-            end;
-        {error, Reason} ->
-            {error, {refinement_check_error, Reason}}
-    end;
+%% Handle refinement types - a refinement type unifies with its base type
+%% Refinement type with refinement type
+unify_impl(
+    #refinement_type{base_type = Base1},
+    #refinement_type{base_type = Base2},
+    Subst
+) ->
+    % Two refinement types unify if their base types unify
+    % (constraint checking happens at constraint solving time)
+    unify_impl(Base1, Base2, Subst);
+%% Refinement type with primitive/other type - extract base type
+unify_impl(#refinement_type{base_type = BaseType}, Type2, Subst) ->
+    % A refinement type {x: T | constraint} unifies with T
+    unify_impl(BaseType, Type2, Subst);
+unify_impl(Type1, #refinement_type{base_type = BaseType}, Subst) ->
+    % Symmetric case
+    unify_impl(Type1, BaseType, Subst);
 %% Handle unification with undefined
 unify_impl(undefined, _Type, Subst) ->
     % undefined can unify with any type
@@ -4414,8 +4412,28 @@ type_to_string({list_type, ElemType, _LenExpr}) ->
 type_to_string({dependent_type, Name, _Params}) ->
     % Simplified
     atom_to_list(Name);
+type_to_string(#refinement_type{base_type = Base, variable = Var, predicate = Pred}) ->
+    BaseStr = type_to_string(Base),
+    PredStr = constraint_expr_to_string(Pred),
+    "{" ++ atom_to_list(Var) ++ ": " ++ BaseStr ++ " | " ++ PredStr ++ "}";
 type_to_string(Type) ->
     io_lib:format("~p", [Type]).
+
+%% Convert constraint expression to string for refinement types
+constraint_expr_to_string(#identifier_expr{name = Name}) ->
+    atom_to_list(Name);
+constraint_expr_to_string(#literal_expr{value = Value}) when is_integer(Value) ->
+    integer_to_list(Value);
+constraint_expr_to_string(#literal_expr{value = Value}) when is_float(Value) ->
+    float_to_list(Value);
+constraint_expr_to_string(#binary_op_expr{op = Op, left = Left, right = Right}) ->
+    LeftStr = constraint_expr_to_string(Left),
+    RightStr = constraint_expr_to_string(Right),
+    OpStr = atom_to_list(Op),
+    LeftStr ++ " " ++ OpStr ++ " " ++ RightStr;
+constraint_expr_to_string(Expr) ->
+    % Fallback for other expression types
+    io_lib:format("~p", [Expr]).
 
 %% Helper functions for dependent type pattern matching
 extract_length_var(#type_param{type = {identifier_expr, VarName, _}}) ->
