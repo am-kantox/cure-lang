@@ -14,7 +14,7 @@ A refinement type refines a base type with a logical predicate:
 
 ```cure
 type Positive = Int when x > 0
-type NonZero = Int when x /= 0
+type NonZero = Int when x != 0
 type Percentage = Int when x >= 0 and x =< 100
 ```
 

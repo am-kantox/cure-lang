@@ -1025,22 +1025,40 @@ check_multiclause_function(Name, Clauses, Location, Env) ->
     ),
 
     % Phase 3: Check guard coverage
-    CoverageResult = cure_guard_refinement:check_guard_coverage(Clauses, Env),
+    % Only check coverage if there are multiple clauses OR if any clause has guards
+    HasGuards = lists:any(
+        fun(#function_clause{constraint = Constraint}) ->
+            Constraint =/= undefined
+        end,
+        Clauses
+    ),
+
     CoverageWarnings =
-        case CoverageResult of
-            complete ->
+        case {length(Clauses) > 1, HasGuards} of
+            {false, _} ->
+                % Single clause - no coverage check needed
                 [];
-            {incomplete, _UncoveredCases} ->
-                [
-                    #typecheck_warning{
-                        message = io_lib:format(
-                            "Function ~p may not cover all input cases (no catch-all clause)",
-                            [Name]
-                        ),
-                        location = Location,
-                        details = incomplete_coverage
-                    }
-                ]
+            {true, false} ->
+                % Multiple clauses but no guards - no coverage check needed
+                [];
+            {true, true} ->
+                % Multiple clauses with guards - check coverage
+                CoverageResult = cure_guard_refinement:check_guard_coverage(Clauses, Env),
+                case CoverageResult of
+                    complete ->
+                        [];
+                    {incomplete, _UncoveredCases} ->
+                        [
+                            #typecheck_warning{
+                                message = io_lib:format(
+                                    "Function ~p may not cover all input cases (no catch-all clause)",
+                                    [Name]
+                                ),
+                                location = Location,
+                                details = incomplete_coverage
+                            }
+                        ]
+                end
         end,
 
     % Check each clause individually
