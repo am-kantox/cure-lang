@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.5.0">
+    <meta name="project" content="cure v0.6.0">
 
 
-    <title>cure_ast — cure v0.5.0</title>
+    <title>cure_ast — cure v0.6.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.5.0
+          v0.6.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_ast</span> 
-    <small class="app-vsn" translate="no">(cure v0.5.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.6.0)</small>
 
   </h1>
 
@@ -182,15 +182,15 @@ pipeline.</p><h2 id="module-overview" class="section-heading">
   <span class="text">Usage Example</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Create a simple function definition</span><span class="w">
-</span><span class="n">Params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9330448209-1">[</span><span class="o">#</span><span class="ss">param</span><span class="p" data-group-id="9330448209-2">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">int_type</span><span class="p" data-group-id="9330448209-3">(</span><span class="p" data-group-id="9330448209-3">)</span><span class="p">,</span><span class="w"> </span><span class="ss">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="9330448209-2">}</span><span class="p" data-group-id="9330448209-1">]</span><span class="p">,</span><span class="w">
-</span><span class="n">Body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">literal_expr</span><span class="p" data-group-id="9330448209-4">{</span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="ss">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="9330448209-4">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Function</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_function</span><span class="p" data-group-id="9330448209-5">(</span><span class="ss">identity</span><span class="p">,</span><span class="w"> </span><span class="n">Params</span><span class="p">,</span><span class="w"> </span><span class="nf">int_type</span><span class="p" data-group-id="9330448209-6">(</span><span class="p" data-group-id="9330448209-6">)</span><span class="p">,</span><span class="w"> </span><span class="ss">undefined</span><span class="p">,</span><span class="w"> </span><span class="n">Body</span><span class="p" data-group-id="9330448209-5">)</span><span class="p">.</span><span class="w">
+</span><span class="n">Params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="2819114388-1">[</span><span class="o">#</span><span class="ss">param</span><span class="p" data-group-id="2819114388-2">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">int_type</span><span class="p" data-group-id="2819114388-3">(</span><span class="p" data-group-id="2819114388-3">)</span><span class="p">,</span><span class="w"> </span><span class="ss">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="2819114388-2">}</span><span class="p" data-group-id="2819114388-1">]</span><span class="p">,</span><span class="w">
+</span><span class="n">Body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">literal_expr</span><span class="p" data-group-id="2819114388-4">{</span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="ss">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="2819114388-4">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Function</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_function</span><span class="p" data-group-id="2819114388-5">(</span><span class="ss">identity</span><span class="p">,</span><span class="w"> </span><span class="n">Params</span><span class="p">,</span><span class="w"> </span><span class="nf">int_type</span><span class="p" data-group-id="2819114388-6">(</span><span class="p" data-group-id="2819114388-6">)</span><span class="p">,</span><span class="w"> </span><span class="ss">undefined</span><span class="p">,</span><span class="w"> </span><span class="n">Body</span><span class="p" data-group-id="2819114388-5">)</span><span class="p">.</span><span class="w">
 
 </span><span class="c1">%% Create an FSM definition</span><span class="w">
-</span><span class="n">States</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9330448209-7">[</span><span class="ss">idle</span><span class="p">,</span><span class="w"> </span><span class="ss">running</span><span class="p">,</span><span class="w"> </span><span class="ss">stopped</span><span class="p" data-group-id="9330448209-7">]</span><span class="p">,</span><span class="w">
+</span><span class="n">States</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="2819114388-7">[</span><span class="ss">idle</span><span class="p">,</span><span class="w"> </span><span class="ss">running</span><span class="p">,</span><span class="w"> </span><span class="ss">stopped</span><span class="p" data-group-id="2819114388-7">]</span><span class="p">,</span><span class="w">
 </span><span class="n">Initial</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">idle</span><span class="p">,</span><span class="w">
-</span><span class="n">StateDefs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9330448209-8">[</span><span class="n">IdleState</span><span class="p">,</span><span class="w"> </span><span class="n">RunningState</span><span class="p">,</span><span class="w"> </span><span class="n">StoppedState</span><span class="p" data-group-id="9330448209-8">]</span><span class="p">,</span><span class="w">
-</span><span class="n">FSM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_fsm</span><span class="p" data-group-id="9330448209-9">(</span><span class="ss">state_machine</span><span class="p">,</span><span class="w"> </span><span class="n">States</span><span class="p">,</span><span class="w"> </span><span class="n">Initial</span><span class="p">,</span><span class="w"> </span><span class="n">StateDefs</span><span class="p" data-group-id="9330448209-9">)</span><span class="p">.</span></code></pre><h2 id="module-design-principles" class="section-heading">
+</span><span class="n">StateDefs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="2819114388-8">[</span><span class="n">IdleState</span><span class="p">,</span><span class="w"> </span><span class="n">RunningState</span><span class="p">,</span><span class="w"> </span><span class="n">StoppedState</span><span class="p" data-group-id="2819114388-8">]</span><span class="p">,</span><span class="w">
+</span><span class="n">FSM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_fsm</span><span class="p" data-group-id="2819114388-9">(</span><span class="ss">state_machine</span><span class="p">,</span><span class="w"> </span><span class="n">States</span><span class="p">,</span><span class="w"> </span><span class="n">Initial</span><span class="p">,</span><span class="w"> </span><span class="n">StateDefs</span><span class="p" data-group-id="2819114388-9">)</span><span class="p">.</span></code></pre><h2 id="module-design-principles" class="section-heading">
   <a href="#module-design-principles" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -682,7 +682,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">binary_op_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L322" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L322" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -709,7 +709,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">binding()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L313" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L313" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -735,7 +735,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">dependent_type()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L391" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L391" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -762,7 +762,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">erlang_function_def()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L185" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L185" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -794,7 +794,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">export_spec()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L238" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L238" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -820,7 +820,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L249" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L249" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -857,7 +857,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">field_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L359" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L359" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -883,7 +883,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">field_pattern()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L484" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L484" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -909,7 +909,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">fsm_def()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L204" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L204" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -940,7 +940,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">function_call_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L282" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L282" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -967,7 +967,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">function_def()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L173" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L173" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -999,7 +999,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">function_type()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L408" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L408" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1026,7 +1026,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">identifier_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L274" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L274" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1052,7 +1052,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">identifier_pattern()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L457" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L457" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1078,7 +1078,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">import_def()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L230" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L230" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1104,7 +1104,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">item()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L147" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L147" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1131,7 +1131,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">lambda_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L367" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L367" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1157,7 +1157,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">let_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L306" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L306" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1183,7 +1183,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">list_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L337" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L337" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1209,7 +1209,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">list_pattern()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L464" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L464" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1236,7 +1236,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">list_type()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L424" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L424" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1263,7 +1263,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">literal_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L267" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L267" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1289,7 +1289,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">literal_pattern()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L451" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L451" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1315,7 +1315,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">location()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L492" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L492" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1341,7 +1341,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">match_clause()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L298" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L298" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1371,7 +1371,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">match_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L290" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L290" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1397,7 +1397,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">module_def()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L162" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L162" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1427,7 +1427,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">param()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L246" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L246" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1453,7 +1453,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">pattern()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L434" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L434" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1485,7 +1485,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">primitive_type()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L383" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L383" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1511,7 +1511,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">program()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L144" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L144" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1537,7 +1537,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">record_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L352" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L352" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1563,7 +1563,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">record_pattern()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L477" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L477" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1590,7 +1590,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">state_def()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L212" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L212" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1616,7 +1616,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">transition()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L222" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L222" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1647,7 +1647,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">tuple_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L344" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L344" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1673,7 +1673,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">tuple_pattern()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L470" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L470" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1699,7 +1699,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">tuple_type()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L431" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L431" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1725,7 +1725,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">type_def()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L194" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L194" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1755,7 +1755,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">type_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L370" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L370" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1787,7 +1787,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">type_param()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L400" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L400" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1814,7 +1814,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">unary_op_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L330" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L330" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1840,7 +1840,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">union_type()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L415" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L415" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1866,7 +1866,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">wildcard_pattern()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L445" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L445" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1904,7 +1904,7 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
     </a>
     <h1 class="signature" translate="no">new_expr/3</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L696" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L696" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1943,8 +1943,8 @@ analysis tools to verify AST manipulation code.</p><h2 id="module-integration" c
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Literal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_expr</span><span class="p" data-group-id="5051191833-1">(</span><span class="ss">literal</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="5051191833-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_expr</span><span class="p" data-group-id="5051191833-2">(</span><span class="ss">identifier</span><span class="p">,</span><span class="w"> </span><span class="ss">variable_name</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="5051191833-2">)</span><span class="p">.</span></code></pre><h2 id="new_expr/3-note" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">Literal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_expr</span><span class="p" data-group-id="4460191414-1">(</span><span class="ss">literal</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="4460191414-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_expr</span><span class="p" data-group-id="4460191414-2">(</span><span class="ss">identifier</span><span class="p">,</span><span class="w"> </span><span class="ss">variable_name</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="4460191414-2">)</span><span class="p">.</span></code></pre><h2 id="new_expr/3-note" class="section-heading">
   <a href="#new_expr/3-note" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -1962,7 +1962,7 @@ For complex expressions, construct the records directly.</p>
     </a>
     <h1 class="signature" translate="no">new_fsm(Name, States, Initial, StateDefs, Location)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L660" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L660" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1995,9 +1995,9 @@ For complex expressions, construct the records directly.</p>
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">States</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="3234864940-1">[</span><span class="ss">idle</span><span class="p">,</span><span class="w"> </span><span class="ss">running</span><span class="p">,</span><span class="w"> </span><span class="ss">stopped</span><span class="p" data-group-id="3234864940-1">]</span><span class="p">,</span><span class="w">
-</span><span class="n">StateDefs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="3234864940-2">[</span><span class="n">IdleState</span><span class="p">,</span><span class="w"> </span><span class="n">RunningState</span><span class="p">,</span><span class="w"> </span><span class="n">StoppedState</span><span class="p" data-group-id="3234864940-2">]</span><span class="p">,</span><span class="w">
-</span><span class="n">FSM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_fsm</span><span class="p" data-group-id="3234864940-3">(</span><span class="ss">counter</span><span class="p">,</span><span class="w"> </span><span class="n">States</span><span class="p">,</span><span class="w"> </span><span class="ss">idle</span><span class="p">,</span><span class="w"> </span><span class="n">StateDefs</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="3234864940-3">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">States</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9581680205-1">[</span><span class="ss">idle</span><span class="p">,</span><span class="w"> </span><span class="ss">running</span><span class="p">,</span><span class="w"> </span><span class="ss">stopped</span><span class="p" data-group-id="9581680205-1">]</span><span class="p">,</span><span class="w">
+</span><span class="n">StateDefs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9581680205-2">[</span><span class="n">IdleState</span><span class="p">,</span><span class="w"> </span><span class="n">RunningState</span><span class="p">,</span><span class="w"> </span><span class="n">StoppedState</span><span class="p" data-group-id="9581680205-2">]</span><span class="p">,</span><span class="w">
+</span><span class="n">FSM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_fsm</span><span class="p" data-group-id="9581680205-3">(</span><span class="ss">counter</span><span class="p">,</span><span class="w"> </span><span class="n">States</span><span class="p">,</span><span class="w"> </span><span class="ss">idle</span><span class="p">,</span><span class="w"> </span><span class="n">StateDefs</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="9581680205-3">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="new_function/6">
@@ -2008,7 +2008,7 @@ For complex expressions, construct the records directly.</p>
     </a>
     <h1 class="signature" translate="no">new_function(Name, Params, ReturnType, Constraint, Body, Location)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L601" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L601" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2042,9 +2042,9 @@ For complex expressions, construct the records directly.</p>
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1741472631-1">[</span><span class="o">#</span><span class="ss">param</span><span class="p" data-group-id="1741472631-2">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IntType</span><span class="p">,</span><span class="w"> </span><span class="ss">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Loc</span><span class="p" data-group-id="1741472631-2">}</span><span class="p" data-group-id="1741472631-1">]</span><span class="p">,</span><span class="w">
-</span><span class="n">Body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">literal_expr</span><span class="p" data-group-id="1741472631-3">{</span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="ss">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Loc</span><span class="p" data-group-id="1741472631-3">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Function</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_function</span><span class="p" data-group-id="1741472631-4">(</span><span class="ss">identity</span><span class="p">,</span><span class="w"> </span><span class="n">Params</span><span class="p">,</span><span class="w"> </span><span class="n">IntType</span><span class="p">,</span><span class="w"> </span><span class="ss">undefined</span><span class="p">,</span><span class="w"> </span><span class="n">Body</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="1741472631-4">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">Params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="8872986995-1">[</span><span class="o">#</span><span class="ss">param</span><span class="p" data-group-id="8872986995-2">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IntType</span><span class="p">,</span><span class="w"> </span><span class="ss">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Loc</span><span class="p" data-group-id="8872986995-2">}</span><span class="p" data-group-id="8872986995-1">]</span><span class="p">,</span><span class="w">
+</span><span class="n">Body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">literal_expr</span><span class="p" data-group-id="8872986995-3">{</span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="ss">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Loc</span><span class="p" data-group-id="8872986995-3">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Function</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_function</span><span class="p" data-group-id="8872986995-4">(</span><span class="ss">identity</span><span class="p">,</span><span class="w"> </span><span class="n">Params</span><span class="p">,</span><span class="w"> </span><span class="n">IntType</span><span class="p">,</span><span class="w"> </span><span class="ss">undefined</span><span class="p">,</span><span class="w"> </span><span class="n">Body</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="8872986995-4">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="new_module/4">
@@ -2055,7 +2055,7 @@ For complex expressions, construct the records directly.</p>
     </a>
     <h1 class="signature" translate="no">new_module(Name, Exports, Items, Location)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L564" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L564" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2088,9 +2088,9 @@ For complex expressions, construct the records directly.</p>
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="3749778309-1">[</span><span class="o">#</span><span class="ss">export_spec</span><span class="p" data-group-id="3749778309-2">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">hello</span><span class="p">,</span><span class="w"> </span><span class="ss">arity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Loc</span><span class="p" data-group-id="3749778309-2">}</span><span class="p" data-group-id="3749778309-1">]</span><span class="p">,</span><span class="w">
-</span><span class="n">Items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="3749778309-3">[</span><span class="n">FunctionDef</span><span class="p" data-group-id="3749778309-3">]</span><span class="p">,</span><span class="w">
-</span><span class="n">Module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_module</span><span class="p" data-group-id="3749778309-4">(</span><span class="ss">&#39;MyModule&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">Exports</span><span class="p">,</span><span class="w"> </span><span class="n">Items</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="3749778309-4">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">Exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7810729566-1">[</span><span class="o">#</span><span class="ss">export_spec</span><span class="p" data-group-id="7810729566-2">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">hello</span><span class="p">,</span><span class="w"> </span><span class="ss">arity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Loc</span><span class="p" data-group-id="7810729566-2">}</span><span class="p" data-group-id="7810729566-1">]</span><span class="p">,</span><span class="w">
+</span><span class="n">Items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7810729566-3">[</span><span class="n">FunctionDef</span><span class="p" data-group-id="7810729566-3">]</span><span class="p">,</span><span class="w">
+</span><span class="n">Module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_module</span><span class="p" data-group-id="7810729566-4">(</span><span class="ss">&#39;MyModule&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">Exports</span><span class="p">,</span><span class="w"> </span><span class="n">Items</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="7810729566-4">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="new_type_def/4">
@@ -2101,7 +2101,7 @@ For complex expressions, construct the records directly.</p>
     </a>
     <h1 class="signature" translate="no">new_type_def(Name, Params, Definition, Location)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.erl#L631" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.erl#L631" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -2134,9 +2134,9 @@ For complex expressions, construct the records directly.</p>
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9948037712-1">[</span><span class="ss">t</span><span class="p" data-group-id="9948037712-1">]</span><span class="p">,</span><span class="w">
-</span><span class="n">Definition</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">union_type</span><span class="p" data-group-id="9948037712-2">{</span><span class="ss">types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9948037712-3">[</span><span class="n">IntType</span><span class="p">,</span><span class="w"> </span><span class="n">StringType</span><span class="p" data-group-id="9948037712-3">]</span><span class="p">,</span><span class="w"> </span><span class="ss">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Loc</span><span class="p" data-group-id="9948037712-2">}</span><span class="p">,</span><span class="w">
-</span><span class="n">TypeDef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_type_def</span><span class="p" data-group-id="9948037712-4">(</span><span class="ss">&#39;Maybe&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">Params</span><span class="p">,</span><span class="w"> </span><span class="n">Definition</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="9948037712-4">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">Params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="2238916472-1">[</span><span class="ss">t</span><span class="p" data-group-id="2238916472-1">]</span><span class="p">,</span><span class="w">
+</span><span class="n">Definition</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">union_type</span><span class="p" data-group-id="2238916472-2">{</span><span class="ss">types</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="2238916472-3">[</span><span class="n">IntType</span><span class="p">,</span><span class="w"> </span><span class="n">StringType</span><span class="p" data-group-id="2238916472-3">]</span><span class="p">,</span><span class="w"> </span><span class="ss">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Loc</span><span class="p" data-group-id="2238916472-2">}</span><span class="p">,</span><span class="w">
+</span><span class="n">TypeDef</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_ast</span><span class="p">:</span><span class="nf">new_type_def</span><span class="p" data-group-id="2238916472-4">(</span><span class="ss">&#39;Maybe&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">Params</span><span class="p">,</span><span class="w"> </span><span class="n">Definition</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="2238916472-4">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 
@@ -2147,9 +2147,9 @@ For complex expressions, construct the records directly.</p>
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.5.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.5.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
 
           </span>
 

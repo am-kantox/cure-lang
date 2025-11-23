@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.5.0">
+    <meta name="project" content="cure v0.6.0">
 
 
-    <title>Pipe Operator — cure v0.5.0</title>
+    <title>Pipe Operator — cure v0.6.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.5.0
+          v0.6.0
         </div>
       </div>
     </div>
@@ -112,7 +112,7 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/docs/PIPE_OPERATOR.md#L1" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/docs/PIPE_OPERATOR.md#L1" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
@@ -292,15 +292,15 @@ def multiply(x: Int, y: Int) -&gt; Int = x * y</code></pre><h3 id="real-world-ex
   </a>
   <span class="text">Code Generation</span>
 </h3>
-<p>The compiler generates a <code class="inline">monadic_pipe_call</code> instruction that is translated to BEAM bytecode as a call to <a href="cure_std.html#pipe/2"><code class="inline">cure_std:pipe/2</code></a>:</p><pre><code class="makeup erlang" translate="no"><span class="nf">generate_monadic_pipe_form</span><span class="p" data-group-id="0888765918-1">(</span><span class="n">Function</span><span class="p">,</span><span class="w"> </span><span class="n">PipedValue</span><span class="p">,</span><span class="w"> </span><span class="n">RestArgs</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p" data-group-id="0888765918-1">)</span></code></pre><p>This creates Erlang code that:</p><ol><li>Wraps the piped value with <code class="inline">ok()</code> if not already a Result</li><li>Checks if it's <code class="inline">Ok(value)</code> or <code class="inline">Error(reason)</code></li><li>If Ok, unwraps and calls the function</li><li>If Error, propagates without calling the function</li><li>Wraps non-monadic results in <code class="inline">Ok()</code></li></ol><h3 id="runtime" class="section-heading">
+<p>The compiler generates a <code class="inline">monadic_pipe_call</code> instruction that is translated to BEAM bytecode as a call to <a href="cure_std.html#pipe/2"><code class="inline">cure_std:pipe/2</code></a>:</p><pre><code class="makeup erlang" translate="no"><span class="nf">generate_monadic_pipe_form</span><span class="p" data-group-id="3932895713-1">(</span><span class="n">Function</span><span class="p">,</span><span class="w"> </span><span class="n">PipedValue</span><span class="p">,</span><span class="w"> </span><span class="n">RestArgs</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p" data-group-id="3932895713-1">)</span></code></pre><p>This creates Erlang code that:</p><ol><li>Wraps the piped value with <code class="inline">ok()</code> if not already a Result</li><li>Checks if it's <code class="inline">Ok(value)</code> or <code class="inline">Error(reason)</code></li><li>If Ok, unwraps and calls the function</li><li>If Error, propagates without calling the function</li><li>Wraps non-monadic results in <code class="inline">Ok()</code></li></ol><h3 id="runtime" class="section-heading">
   <a href="#runtime" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Runtime</span>
 </h3>
-<p>The runtime function <a href="cure_std.html#pipe/2"><code class="inline">cure_std:pipe/2</code></a> implements the three semantic rules:</p><pre><code class="makeup erlang" translate="no"><span class="nf">pipe</span><span class="p" data-group-id="6220379354-1">(</span><span class="p" data-group-id="6220379354-2">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="6220379354-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Err</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="n">RHO</span><span class="p" data-group-id="6220379354-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">Err</span><span class="p">;</span><span class="w">  </span><span class="c1">% Rule 1</span><span class="w">
-</span><span class="nf">pipe</span><span class="p" data-group-id="6220379354-3">(</span><span class="p" data-group-id="6220379354-4">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">V</span><span class="p" data-group-id="6220379354-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">RHO</span><span class="p" data-group-id="6220379354-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">wrap_result</span><span class="p" data-group-id="6220379354-5">(</span><span class="n">RHO</span><span class="p" data-group-id="6220379354-6">(</span><span class="n">V</span><span class="p" data-group-id="6220379354-6">)</span><span class="p" data-group-id="6220379354-5">)</span><span class="p">;</span><span class="w">  </span><span class="c1">% Rule 2</span><span class="w">
-</span><span class="nf">pipe</span><span class="p" data-group-id="6220379354-7">(</span><span class="n">LHO</span><span class="p">,</span><span class="w"> </span><span class="n">RHO</span><span class="p" data-group-id="6220379354-7">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">wrap_result</span><span class="p" data-group-id="6220379354-8">(</span><span class="n">RHO</span><span class="p" data-group-id="6220379354-9">(</span><span class="n">LHO</span><span class="p" data-group-id="6220379354-9">)</span><span class="p" data-group-id="6220379354-8">)</span><span class="p">.</span><span class="w">  </span><span class="c1">% Rule 3</span></code></pre><h2 id="best-practices" class="section-heading">
+<p>The runtime function <a href="cure_std.html#pipe/2"><code class="inline">cure_std:pipe/2</code></a> implements the three semantic rules:</p><pre><code class="makeup erlang" translate="no"><span class="nf">pipe</span><span class="p" data-group-id="6736369615-1">(</span><span class="p" data-group-id="6736369615-2">{</span><span class="ss">&#39;Error&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="6736369615-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Err</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="n">RHO</span><span class="p" data-group-id="6736369615-1">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="n">Err</span><span class="p">;</span><span class="w">  </span><span class="c1">% Rule 1</span><span class="w">
+</span><span class="nf">pipe</span><span class="p" data-group-id="6736369615-3">(</span><span class="p" data-group-id="6736369615-4">{</span><span class="ss">&#39;Ok&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">V</span><span class="p" data-group-id="6736369615-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">RHO</span><span class="p" data-group-id="6736369615-3">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">wrap_result</span><span class="p" data-group-id="6736369615-5">(</span><span class="n">RHO</span><span class="p" data-group-id="6736369615-6">(</span><span class="n">V</span><span class="p" data-group-id="6736369615-6">)</span><span class="p" data-group-id="6736369615-5">)</span><span class="p">;</span><span class="w">  </span><span class="c1">% Rule 2</span><span class="w">
+</span><span class="nf">pipe</span><span class="p" data-group-id="6736369615-7">(</span><span class="n">LHO</span><span class="p">,</span><span class="w"> </span><span class="n">RHO</span><span class="p" data-group-id="6736369615-7">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">wrap_result</span><span class="p" data-group-id="6736369615-8">(</span><span class="n">RHO</span><span class="p" data-group-id="6736369615-9">(</span><span class="n">LHO</span><span class="p" data-group-id="6736369615-9">)</span><span class="p" data-group-id="6736369615-8">)</span><span class="p">.</span><span class="w">  </span><span class="c1">% Rule 3</span></code></pre><h2 id="best-practices" class="section-heading">
   <a href="#best-practices" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -461,11 +461,11 @@ Project Overview
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.5.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.5.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
 
-              (<a href="https://preview.hex.pm/preview/cure/0.5.0/show/docs/PIPE_OPERATOR.md">current file</a>)
+              (<a href="https://preview.hex.pm/preview/cure/0.6.0/show/docs/PIPE_OPERATOR.md">current file</a>)
 
           </span>
 

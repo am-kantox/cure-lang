@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.5.0">
+    <meta name="project" content="cure v0.6.0">
 
 
-    <title>Lexer Error Format — cure v0.5.0</title>
+    <title>Lexer Error Format — cure v0.6.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.5.0
+          v0.6.0
         </div>
       </div>
     </div>
@@ -112,7 +112,7 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/docs/LEXER_ERROR_FORMAT.md#L1" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/docs/LEXER_ERROR_FORMAT.md#L1" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
@@ -127,7 +127,7 @@ Pages
   </a>
   <span class="text">Error Format</span>
 </h2>
-<p>All lexer errors are returned in the following format:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="1494972545-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1494972545-2">{</span><span class="n">Reason</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="1494972545-2">}</span><span class="p" data-group-id="1494972545-1">}</span></code></pre><p>Where:</p><ul><li><code class="inline">Reason</code> - Error reason (atom or tuple describing the error)</li><li><code class="inline">Line</code> - Line number where error occurred (1-based integer)</li><li><code class="inline">Column</code> - Column number where error occurred (1-based integer)</li></ul><h2 id="error-types" class="section-heading">
+<p>All lexer errors are returned in the following format:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="5493165546-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5493165546-2">{</span><span class="n">Reason</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="5493165546-2">}</span><span class="p" data-group-id="5493165546-1">}</span></code></pre><p>Where:</p><ul><li><code class="inline">Reason</code> - Error reason (atom or tuple describing the error)</li><li><code class="inline">Line</code> - Line number where error occurred (1-based integer)</li><li><code class="inline">Column</code> - Column number where error occurred (1-based integer)</li></ul><h2 id="error-types" class="section-heading">
   <a href="#error-types" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -139,7 +139,7 @@ Pages
   </a>
   <span class="text">Unexpected Character</span>
 </h3>
-<p>When an unrecognized character is encountered:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="9640389631-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9640389631-2">{</span><span class="p" data-group-id="9640389631-3">{</span><span class="ss">unexpected_character</span><span class="p">,</span><span class="w"> </span><span class="n">CodePoint</span><span class="p" data-group-id="9640389631-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="9640389631-2">}</span><span class="p" data-group-id="9640389631-1">}</span></code></pre><ul><li><code class="inline">CodePoint</code> - Unicode codepoint of the unexpected character (integer)</li></ul><p><strong>Example</strong>:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="3503335298-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;test … fail&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="3503335298-1">)</span><span class="p">.</span><span class="w">
+<p>When an unrecognized character is encountered:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4612012733-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4612012733-2">{</span><span class="p" data-group-id="4612012733-3">{</span><span class="ss">unexpected_character</span><span class="p">,</span><span class="w"> </span><span class="n">CodePoint</span><span class="p" data-group-id="4612012733-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="4612012733-2">}</span><span class="p" data-group-id="4612012733-1">}</span></code></pre><ul><li><code class="inline">CodePoint</code> - Unicode codepoint of the unexpected character (integer)</li></ul><p><strong>Example</strong>:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="3647194097-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;test … fail&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="3647194097-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {{unexpected_character, 8230}, 1, 6}}</span><span class="w">
 </span><span class="c1">% 8230 = U+2026 (horizontal ellipsis)</span></code></pre><h3 id="invalid-utf-8" class="section-heading">
   <a href="#invalid-utf-8" class="hover-link">
@@ -147,32 +147,32 @@ Pages
   </a>
   <span class="text">Invalid UTF-8</span>
 </h3>
-<p>When malformed UTF-8 is encountered:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="2220210610-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2220210610-2">{</span><span class="p" data-group-id="2220210610-3">{</span><span class="ss">invalid_utf8</span><span class="p">,</span><span class="w"> </span><span class="n">FirstByte</span><span class="p" data-group-id="2220210610-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="2220210610-2">}</span><span class="p" data-group-id="2220210610-1">}</span></code></pre><ul><li><code class="inline">FirstByte</code> - The first byte of the invalid sequence</li></ul><h3 id="unterminated-string" class="section-heading">
+<p>When malformed UTF-8 is encountered:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="9070720444-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9070720444-2">{</span><span class="p" data-group-id="9070720444-3">{</span><span class="ss">invalid_utf8</span><span class="p">,</span><span class="w"> </span><span class="n">FirstByte</span><span class="p" data-group-id="9070720444-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="9070720444-2">}</span><span class="p" data-group-id="9070720444-1">}</span></code></pre><ul><li><code class="inline">FirstByte</code> - The first byte of the invalid sequence</li></ul><h3 id="unterminated-string" class="section-heading">
   <a href="#unterminated-string" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Unterminated String</span>
 </h3>
-<p>When a string literal is not closed:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="1842146072-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1842146072-2">{</span><span class="ss">unterminated_string</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="1842146072-2">}</span><span class="p" data-group-id="1842146072-1">}</span></code></pre><p><strong>Example</strong>:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="4928777311-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;x = \&quot;hello&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="4928777311-1">)</span><span class="p">.</span><span class="w">
+<p>When a string literal is not closed:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="6263632199-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6263632199-2">{</span><span class="ss">unterminated_string</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="6263632199-2">}</span><span class="p" data-group-id="6263632199-1">}</span></code></pre><p><strong>Example</strong>:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="9391080397-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;x = \&quot;hello&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="9391080397-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {unterminated_string, 1, 13}}</span></code></pre><h3 id="unterminated-quoted-atom" class="section-heading">
   <a href="#unterminated-quoted-atom" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Unterminated Quoted Atom</span>
 </h3>
-<p>When a quoted atom is not closed:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="2507992022-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2507992022-2">{</span><span class="ss">unterminated_quoted_atom</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="2507992022-2">}</span><span class="p" data-group-id="2507992022-1">}</span></code></pre><h3 id="unterminated-interpolation" class="section-heading">
+<p>When a quoted atom is not closed:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4612814365-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4612814365-2">{</span><span class="ss">unterminated_quoted_atom</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="4612814365-2">}</span><span class="p" data-group-id="4612814365-1">}</span></code></pre><h3 id="unterminated-interpolation" class="section-heading">
   <a href="#unterminated-interpolation" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Unterminated Interpolation</span>
 </h3>
-<p>When string interpolation <code class="inline">#{...}</code> is not properly closed:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="5268566778-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5268566778-2">{</span><span class="ss">unterminated_interpolation</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="5268566778-2">}</span><span class="p" data-group-id="5268566778-1">}</span></code></pre><h3 id="unterminated-charlist" class="section-heading">
+<p>When string interpolation <code class="inline">#{...}</code> is not properly closed:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="1250453172-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1250453172-2">{</span><span class="ss">unterminated_interpolation</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="1250453172-2">}</span><span class="p" data-group-id="1250453172-1">}</span></code></pre><h3 id="unterminated-charlist" class="section-heading">
   <a href="#unterminated-charlist" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Unterminated Charlist</span>
 </h3>
-<p>When a charlist literal (using Unicode quotes) is not closed:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="5615913446-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5615913446-2">{</span><span class="p" data-group-id="5615913446-3">{</span><span class="ss">unterminated_charlist</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="5615913446-3">}</span><span class="p" data-group-id="5615913446-2">}</span><span class="p" data-group-id="5615913446-1">}</span></code></pre><h2 id="location-tracking" class="section-heading">
+<p>When a charlist literal (using Unicode quotes) is not closed:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="1408921748-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1408921748-2">{</span><span class="p" data-group-id="1408921748-3">{</span><span class="ss">unterminated_charlist</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="1408921748-3">}</span><span class="p" data-group-id="1408921748-2">}</span><span class="p" data-group-id="1408921748-1">}</span></code></pre><h2 id="location-tracking" class="section-heading">
   <a href="#location-tracking" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -201,7 +201,7 @@ line 2
 x … y
 line 4&quot;</span><span class="p">&gt;&gt;</span><span class="p">.</span><span class="w">
 
-</span><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="9170627629-1">(</span><span class="n">Code</span><span class="p" data-group-id="9170627629-1">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="4601364019-1">(</span><span class="n">Code</span><span class="p" data-group-id="4601364019-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {{unexpected_character, 8230}, 3, 3}}</span><span class="w">
 </span><span class="c1">%    Line 3 (third line)</span><span class="w">
 </span><span class="c1">%    Column 3 (after &quot;x &quot;)</span></code></pre><h2 id="utf-8-support" class="section-heading">
@@ -216,7 +216,7 @@ line 4&quot;</span><span class="p">&gt;&gt;</span><span class="p">.</span><span 
   </a>
   <span class="text">1-byte (ASCII)</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="0285519358-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;x $ y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="0285519358-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="1149732301-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;x $ y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="1149732301-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {{unexpected_character, 36}, 1, 3}}</span><span class="w">
 </span><span class="c1">% 36 = U+0024 ($)</span></code></pre><h3 id="2-byte-utf-8" class="section-heading">
   <a href="#2-byte-utf-8" class="hover-link">
@@ -224,7 +224,7 @@ line 4&quot;</span><span class="p">&gt;&gt;</span><span class="p">.</span><span 
   </a>
   <span class="text">2-byte UTF-8</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="3540470181-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;x ¢ y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="3540470181-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="0852063282-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;x ¢ y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="0852063282-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {{unexpected_character, 162}, 1, 3}}</span><span class="w">
 </span><span class="c1">% 162 = U+00A2 (¢)</span></code></pre><h3 id="3-byte-utf-8" class="section-heading">
   <a href="#3-byte-utf-8" class="hover-link">
@@ -232,7 +232,7 @@ line 4&quot;</span><span class="p">&gt;&gt;</span><span class="p">.</span><span 
   </a>
   <span class="text">3-byte UTF-8</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="9634619578-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;x … y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="9634619578-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="7931150190-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;x … y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="7931150190-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {{unexpected_character, 8230}, 1, 3}}</span><span class="w">
 </span><span class="c1">% 8230 = U+2026 (…)</span></code></pre><h3 id="4-byte-utf-8-emoji" class="section-heading">
   <a href="#4-byte-utf-8-emoji" class="hover-link">
@@ -240,7 +240,7 @@ line 4&quot;</span><span class="p">&gt;&gt;</span><span class="p">.</span><span 
   </a>
   <span class="text">4-byte UTF-8 (Emoji)</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="3656785790-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;x 😀 y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="3656785790-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="0976587584-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;x 😀 y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="0976587584-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {{unexpected_character, 128512}, 1, 3}}</span><span class="w">
 </span><span class="c1">% 128512 = U+1F600 (😀)</span></code></pre><h2 id="integration-with-lsp" class="section-heading">
   <a href="#integration-with-lsp" class="hover-link">
@@ -249,33 +249,33 @@ line 4&quot;</span><span class="p">&gt;&gt;</span><span class="p">.</span><span 
   <span class="text">Integration with LSP</span>
 </h2>
 <p>The LSP server uses the location information to create diagnostics with proper ranges:</p><pre><code class="makeup erlang" translate="no"><span class="c1">% Lexer error</span><span class="w">
-</span><span class="p" data-group-id="2454577970-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2454577970-2">{</span><span class="p" data-group-id="2454577970-3">{</span><span class="ss">unexpected_character</span><span class="p">,</span><span class="w"> </span><span class="mi">8230</span><span class="p" data-group-id="2454577970-3">}</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p" data-group-id="2454577970-2">}</span><span class="p" data-group-id="2454577970-1">}</span><span class="w">
+</span><span class="p" data-group-id="0086518038-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0086518038-2">{</span><span class="p" data-group-id="0086518038-3">{</span><span class="ss">unexpected_character</span><span class="p">,</span><span class="w"> </span><span class="mi">8230</span><span class="p" data-group-id="0086518038-3">}</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p" data-group-id="0086518038-2">}</span><span class="p" data-group-id="0086518038-1">}</span><span class="w">
 
 </span><span class="c1">% Converted to LSP diagnostic</span><span class="w">
-</span><span class="p" data-group-id="2454577970-4">#{</span><span class="w">
-    </span><span class="ss">range</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="2454577970-5">#{</span><span class="w">
-        </span><span class="ss">start</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="2454577970-6">#{</span><span class="ss">line</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="ss">character</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="2454577970-6">}</span><span class="p">,</span><span class="w">  </span><span class="c1">% 0-based in LSP</span><span class="w">
-        </span><span class="k">end</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="2454577970-7">#{</span><span class="ss">line</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="ss">character</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">6</span><span class="p" data-group-id="2454577970-7">}</span><span class="w">
-    </span><span class="p" data-group-id="2454577970-5">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="0086518038-4">#{</span><span class="w">
+    </span><span class="ss">range</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="0086518038-5">#{</span><span class="w">
+        </span><span class="ss">start</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="0086518038-6">#{</span><span class="ss">line</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="ss">character</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="0086518038-6">}</span><span class="p">,</span><span class="w">  </span><span class="c1">% 0-based in LSP</span><span class="w">
+        </span><span class="k">end</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="0086518038-7">#{</span><span class="ss">line</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="ss">character</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">6</span><span class="p" data-group-id="0086518038-7">}</span><span class="w">
+    </span><span class="p" data-group-id="0086518038-5">}</span><span class="p">,</span><span class="w">
     </span><span class="ss">severity</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">  </span><span class="c1">% Error</span><span class="w">
     </span><span class="ss">source</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;cure&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w">
     </span><span class="ss">message</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;Unexpected character: … (U+2026)&quot;</span><span class="p">&gt;&gt;</span><span class="w">
-</span><span class="p" data-group-id="2454577970-4">}</span></code></pre><h2 id="testing-location-tracking" class="section-heading">
+</span><span class="p" data-group-id="0086518038-4">}</span></code></pre><h2 id="testing-location-tracking" class="section-heading">
   <a href="#testing-location-tracking" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Testing Location Tracking</span>
 </h2>
 <p>To verify location tracking:</p><pre><code class="makeup erlang" translate="no"><span class="c1">% Test line tracking</span><span class="w">
-</span><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="6132757621-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;a\nb\nc … d&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="6132757621-1">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="8908782497-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;a\nb\nc … d&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="8908782497-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {{unexpected_character, 8230}, 3, 3}}</span><span class="w">
 
 </span><span class="c1">% Test column tracking  </span><span class="w">
-</span><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="6132757621-2">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;hello … world&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="6132757621-2">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="8908782497-2">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;hello … world&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="8908782497-2">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {{unexpected_character, 8230}, 1, 7}}</span><span class="w">
 
 </span><span class="c1">% Test multi-byte at column 1</span><span class="w">
-</span><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="6132757621-3">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;…test&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="6132757621-3">)</span><span class="p">.</span><span class="w">
+</span><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="8908782497-3">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;…test&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="8908782497-3">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {{unexpected_character, 8230}, 1, 1}}</span></code></pre><h2 id="summary" class="section-heading">
   <a href="#summary" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -315,11 +315,11 @@ LSP SMT User Guide
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.5.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.5.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
 
-              (<a href="https://preview.hex.pm/preview/cure/0.5.0/show/docs/LEXER_ERROR_FORMAT.md">current file</a>)
+              (<a href="https://preview.hex.pm/preview/cure/0.6.0/show/docs/LEXER_ERROR_FORMAT.md">current file</a>)
 
           </span>
 

@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.5.0">
+    <meta name="project" content="cure v0.6.0">
 
 
-    <title>cure_dependent_types — cure v0.5.0</title>
+    <title>cure_dependent_types — cure v0.6.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.5.0
+          v0.6.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_dependent_types</span> 
-    <small class="app-vsn" translate="no">(cure v0.5.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.6.0)</small>
 
   </h1>
 
@@ -165,13 +165,13 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
   <span class="text">Usage</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Check if type is well-formed</span><span class="w">
-</span><span class="p" data-group-id="3513377293-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Env2</span><span class="p" data-group-id="3513377293-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_dependent_types</span><span class="p">:</span><span class="nf">check_type</span><span class="p" data-group-id="3513377293-2">(</span><span class="n">Type</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="3513377293-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="4952814309-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Env2</span><span class="p" data-group-id="4952814309-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_dependent_types</span><span class="p">:</span><span class="nf">check_type</span><span class="p" data-group-id="4952814309-2">(</span><span class="n">Type</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="4952814309-2">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">% Generate verification conditions</span><span class="w">
-</span><span class="n">VCs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_dependent_types</span><span class="p">:</span><span class="nf">generate_vcs</span><span class="p" data-group-id="3513377293-3">(</span><span class="n">Expr</span><span class="p">,</span><span class="w"> </span><span class="n">Type</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="3513377293-3">)</span><span class="p">,</span><span class="w">
+</span><span class="n">VCs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_dependent_types</span><span class="p">:</span><span class="nf">generate_vcs</span><span class="p" data-group-id="4952814309-3">(</span><span class="n">Expr</span><span class="p">,</span><span class="w"> </span><span class="n">Type</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="4952814309-3">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">% Verify via SMT</span><span class="w">
-</span><span class="p" data-group-id="3513377293-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="3513377293-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_dependent_types</span><span class="p">:</span><span class="nf">verify_vcs</span><span class="p" data-group-id="3513377293-5">(</span><span class="n">VCs</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="3513377293-5">)</span><span class="p">.</span></code></pre>
+</span><span class="p" data-group-id="4952814309-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="4952814309-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_dependent_types</span><span class="p">:</span><span class="nf">verify_vcs</span><span class="p" data-group-id="4952814309-5">(</span><span class="n">VCs</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="4952814309-5">)</span><span class="p">.</span></code></pre>
     </section>
 
 </div>
@@ -321,7 +321,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">check_dependent_function/3</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L144" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L144" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -354,7 +354,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">check_dependent_type/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L110" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L110" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -380,7 +380,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">check_type_level_expr/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L177" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L177" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -411,7 +411,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">check_type_level_operand/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L196" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L196" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -431,7 +431,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">extend_env_with_value_params(ValueParams, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L411" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L411" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -457,7 +457,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">generate_bounds_constraint/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L245" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L245" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -483,7 +483,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">generate_length_constraint(VectorExpr, LengthExpr)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L231" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L231" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -509,7 +509,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">generate_verification_conditions/3</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L215" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L215" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -535,7 +535,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">instantiate_dependent_type/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L482" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L482" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -569,7 +569,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">is_dependent_type/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L477" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L477" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -595,7 +595,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">lookup_value_param(Name, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L418" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L418" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -621,7 +621,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">substitute_value_params/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L487" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L487" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -647,7 +647,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">verify_dependent_type(Type, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L307" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L307" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -673,7 +673,7 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
     </a>
     <h1 class="signature" translate="no">verify_type_level_expr/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_dependent_types.erl#L316" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_dependent_types.erl#L316" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -704,9 +704,9 @@ type checker with support for:</p><ul><li>Value parameters in types (e.g., n: Na
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.5.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.5.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
 
           </span>
 

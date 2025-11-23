@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.5.0">
+    <meta name="project" content="cure v0.6.0">
 
 
-    <title>cure_smt_array — cure v0.5.0</title>
+    <title>cure_smt_array — cure v0.6.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.5.0
+          v0.6.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_smt_array</span> 
-    <small class="app-vsn" translate="no">(cure v0.5.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.6.0)</small>
 
   </h1>
 
@@ -140,9 +140,9 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
   <span class="text">Usage</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Check if all elements are positive</span><span class="w">
-</span><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">all_elements_satisfy</span><span class="p" data-group-id="7676231913-1">(</span><span class="ss">arr</span><span class="p">,</span><span class="w"> </span><span class="ss">n</span><span class="p">,</span><span class="w"> 
-    </span><span class="nf">fun</span><span class="p" data-group-id="7676231913-2">(</span><span class="ss">i</span><span class="p">,</span><span class="w"> </span><span class="ss">v</span><span class="p" data-group-id="7676231913-2">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="7676231913-3">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">v</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="7676231913-4">(</span><span class="mi">0</span><span class="p" data-group-id="7676231913-4">)</span><span class="p" data-group-id="7676231913-3">}</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="7676231913-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generate_array_query</span><span class="p" data-group-id="7676231913-5">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7676231913-6">#{</span><span class="ss">arr</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="7676231913-7">{</span><span class="ss">array</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="7676231913-7">}</span><span class="p">,</span><span class="w"> </span><span class="ss">n</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="7676231913-8">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="7676231913-8">}</span><span class="p" data-group-id="7676231913-6">}</span><span class="p" data-group-id="7676231913-5">)</span><span class="p">.</span></code></pre>
+</span><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">all_elements_satisfy</span><span class="p" data-group-id="8340819960-1">(</span><span class="ss">arr</span><span class="p">,</span><span class="w"> </span><span class="ss">n</span><span class="p">,</span><span class="w"> 
+    </span><span class="nf">fun</span><span class="p" data-group-id="8340819960-2">(</span><span class="ss">i</span><span class="p">,</span><span class="w"> </span><span class="ss">v</span><span class="p" data-group-id="8340819960-2">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="8340819960-3">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">v</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="8340819960-4">(</span><span class="mi">0</span><span class="p" data-group-id="8340819960-4">)</span><span class="p" data-group-id="8340819960-3">}</span><span class="w"> </span><span class="k">end</span><span class="p" data-group-id="8340819960-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generate_array_query</span><span class="p" data-group-id="8340819960-5">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8340819960-6">#{</span><span class="ss">arr</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="8340819960-7">{</span><span class="ss">array</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="8340819960-7">}</span><span class="p">,</span><span class="w"> </span><span class="ss">n</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="8340819960-8">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="8340819960-8">}</span><span class="p" data-group-id="8340819960-6">}</span><span class="p" data-group-id="8340819960-5">)</span><span class="p">.</span></code></pre>
     </section>
 
 </div>
@@ -290,7 +290,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.hrl#L498" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.hrl#L498" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -357,7 +357,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">all_elements_satisfy(ArrayVar, LengthVar, PropertyFn)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L66" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L66" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -383,7 +383,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">array_const(Value)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L315" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L315" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -409,7 +409,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">array_length_constraint/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L250" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L250" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -435,7 +435,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">array_select/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L271" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L271" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -461,7 +461,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">array_store/3</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L292" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L292" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -487,7 +487,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">declare_array(Name, IndexType, ElemType)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L376" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L376" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -513,7 +513,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">exists_element_satisfying(ArrayVar, LengthVar, PropertyFn)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L107" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L107" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -539,7 +539,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">generate_array_query(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L328" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L328" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -565,7 +565,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">generate_array_query(Constraint, Env, Opts)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L332" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L332" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -591,7 +591,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">has_quantifiers/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L433" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L433" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -611,7 +611,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">sorted_ascending(ArrayVar, LengthVar)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L141" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L141" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -637,7 +637,7 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
     </a>
     <h1 class="signature" translate="no">sorted_descending(ArrayVar, LengthVar)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/smt/cure_smt_array.erl#L196" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_array.erl#L196" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -663,9 +663,9 @@ with constraints like:</p><ul><li>All elements satisfy a property (forall i. arr
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.5.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.5.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
 
           </span>
 

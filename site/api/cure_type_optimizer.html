@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.5.0">
+    <meta name="project" content="cure v0.6.0">
 
 
-    <title>cure_type_optimizer — cure v0.5.0</title>
+    <title>cure_type_optimizer — cure v0.6.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.5.0
+          v0.6.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_type_optimizer</span> 
-    <small class="app-vsn" translate="no">(cure v0.5.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.6.0)</small>
 
   </h1>
 
@@ -175,7 +175,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
   </a>
   <span class="text">Phase 1: Type Analysis</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="9889955965-1">{</span><span class="n">TypeInfo</span><span class="p">,</span><span class="w"> </span><span class="n">UsageStats</span><span class="p" data-group-id="9889955965-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">analyze_program_types</span><span class="p" data-group-id="9889955965-2">(</span><span class="n">AST</span><span class="p" data-group-id="9889955965-2">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="1742148478-1">{</span><span class="n">TypeInfo</span><span class="p">,</span><span class="w"> </span><span class="n">UsageStats</span><span class="p" data-group-id="1742148478-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">analyze_program_types</span><span class="p" data-group-id="1742148478-2">(</span><span class="n">AST</span><span class="p" data-group-id="1742148478-2">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">%% Collects:</span><span class="w">
 </span><span class="c1">%% - Function type signatures</span><span class="w">
 </span><span class="c1">%% - Call site information with argument types</span><span class="w">
@@ -186,7 +186,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
   </a>
   <span class="text">Phase 2: Opportunity Identification</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">Context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">find_optimization_opportunities</span><span class="p" data-group-id="7773172002-1">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Context1</span><span class="p" data-group-id="7773172002-1">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">Context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">find_optimization_opportunities</span><span class="p" data-group-id="2014308720-1">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Context1</span><span class="p" data-group-id="2014308720-1">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">%% Identifies:</span><span class="w">
 </span><span class="c1">%% - Specialization candidates</span><span class="w">
 </span><span class="c1">%% - Inlining opportunities</span><span class="w">
@@ -197,7 +197,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
   </a>
   <span class="text">Phase 3: Optimization Application</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">OptimizedAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">run_optimization_passes</span><span class="p" data-group-id="3059702731-1">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Context2</span><span class="p" data-group-id="3059702731-1">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">OptimizedAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">run_optimization_passes</span><span class="p" data-group-id="1995433276-1">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Context2</span><span class="p" data-group-id="1995433276-1">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">%% Applies optimizations in order:</span><span class="w">
 </span><span class="c1">%% 1. Function specialization</span><span class="w">
 </span><span class="c1">%% 2. Monomorphization  </span><span class="w">
@@ -216,34 +216,34 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
   <span class="text">Program Optimization</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Basic optimization with default settings</span><span class="w">
-</span><span class="p" data-group-id="8327175341-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedAST</span><span class="p">,</span><span class="w"> </span><span class="n">Report</span><span class="p" data-group-id="8327175341-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_program</span><span class="p" data-group-id="8327175341-2">(</span><span class="n">AST</span><span class="p" data-group-id="8327175341-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="4105819399-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedAST</span><span class="p">,</span><span class="w"> </span><span class="n">Report</span><span class="p" data-group-id="4105819399-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_program</span><span class="p" data-group-id="4105819399-2">(</span><span class="n">AST</span><span class="p" data-group-id="4105819399-2">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">%% Custom optimization configuration</span><span class="w">
-</span><span class="n">Config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">optimization_config</span><span class="p" data-group-id="8327175341-3">{</span><span class="w">
+</span><span class="n">Config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">optimization_config</span><span class="p" data-group-id="4105819399-3">{</span><span class="w">
     </span><span class="ss">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w">  </span><span class="c1">% Aggressive optimization</span><span class="w">
     </span><span class="ss">enable_specialization</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">true</span><span class="p">,</span><span class="w">
     </span><span class="ss">max_specializations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w">
     </span><span class="ss">inline_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="w">
-</span><span class="p" data-group-id="8327175341-3">}</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="8327175341-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedAST</span><span class="p">,</span><span class="w"> </span><span class="n">Report</span><span class="p" data-group-id="8327175341-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_program</span><span class="p" data-group-id="8327175341-5">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Config</span><span class="p" data-group-id="8327175341-5">)</span><span class="p">.</span></code></pre><h3 id="module-module-level-optimization" class="section-heading">
+</span><span class="p" data-group-id="4105819399-3">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="4105819399-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedAST</span><span class="p">,</span><span class="w"> </span><span class="n">Report</span><span class="p" data-group-id="4105819399-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_program</span><span class="p" data-group-id="4105819399-5">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Config</span><span class="p" data-group-id="4105819399-5">)</span><span class="p">.</span></code></pre><h3 id="module-module-level-optimization" class="section-heading">
   <a href="#module-module-level-optimization" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Module-level Optimization</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="9837046963-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedModule</span><span class="p" data-group-id="9837046963-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_module</span><span class="p" data-group-id="9837046963-2">(</span><span class="n">Module</span><span class="p" data-group-id="9837046963-2">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="1152314506-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedModule</span><span class="p" data-group-id="1152314506-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_module</span><span class="p" data-group-id="1152314506-2">(</span><span class="n">Module</span><span class="p" data-group-id="1152314506-2">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">%% With custom config</span><span class="w">
-</span><span class="p" data-group-id="9837046963-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedModule</span><span class="p" data-group-id="9837046963-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_module</span><span class="p" data-group-id="9837046963-4">(</span><span class="n">Module</span><span class="p">,</span><span class="w"> </span><span class="n">Config</span><span class="p" data-group-id="9837046963-4">)</span><span class="p">.</span></code></pre><h3 id="module-individual-optimization-passes" class="section-heading">
+</span><span class="p" data-group-id="1152314506-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedModule</span><span class="p" data-group-id="1152314506-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_module</span><span class="p" data-group-id="1152314506-4">(</span><span class="n">Module</span><span class="p">,</span><span class="w"> </span><span class="n">Config</span><span class="p" data-group-id="1152314506-4">)</span><span class="p">.</span></code></pre><h3 id="module-individual-optimization-passes" class="section-heading">
   <a href="#module-individual-optimization-passes" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Individual Optimization Passes</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Run specific optimization passes</span><span class="w">
-</span><span class="n">SpecializedAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">function_specialization_pass</span><span class="p" data-group-id="6205203919-1">(</span><span class="n">AST</span><span class="p" data-group-id="6205203919-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">MonomorphicAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">monomorphization_pass</span><span class="p" data-group-id="6205203919-2">(</span><span class="n">SpecializedAST</span><span class="p" data-group-id="6205203919-2">)</span><span class="p">,</span><span class="w">
-</span><span class="n">InlinedAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">inlining_pass</span><span class="p" data-group-id="6205203919-3">(</span><span class="n">MonomorphicAST</span><span class="p" data-group-id="6205203919-3">)</span><span class="p">.</span></code></pre><h2 id="module-configuration-options" class="section-heading">
+</span><span class="n">SpecializedAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">function_specialization_pass</span><span class="p" data-group-id="6262685946-1">(</span><span class="n">AST</span><span class="p" data-group-id="6262685946-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">MonomorphicAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">monomorphization_pass</span><span class="p" data-group-id="6262685946-2">(</span><span class="n">SpecializedAST</span><span class="p" data-group-id="6262685946-2">)</span><span class="p">,</span><span class="w">
+</span><span class="n">InlinedAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">inlining_pass</span><span class="p" data-group-id="6262685946-3">(</span><span class="n">MonomorphicAST</span><span class="p" data-group-id="6262685946-3">)</span><span class="p">.</span></code></pre><h2 id="module-configuration-options" class="section-heading">
   <a href="#module-configuration-options" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -671,7 +671,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">analyze_program_types(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1274" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1274" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -691,7 +691,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">analyze_specialization_candidates(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1637" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1637" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -711,7 +711,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">analyze_type_usage(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1300" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1300" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -731,7 +731,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">collect_call_sites/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1397" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1397" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -751,7 +751,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">collect_poly_instantiation_sites/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L6493" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L6493" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -771,7 +771,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">collect_poly_instantiations_from_expr/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L6555" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L6555" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -791,7 +791,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">collect_poly_instantiations_from_function/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L6527" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L6527" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -811,7 +811,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">collect_poly_instantiations_from_module/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L6516" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L6516" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -831,7 +831,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">collect_type_information(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1284" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1284" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -851,7 +851,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">collect_type_usage_patterns/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1441" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1441" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -871,7 +871,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">count_function_calls/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1564" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1564" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -891,7 +891,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">create_monomorphic_function/3</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L6764" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L6764" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -911,7 +911,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">dead_code_elimination_pass(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L692" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L692" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -931,7 +931,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">dead_code_elimination_pass(AST, Context)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L695" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L695" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -951,7 +951,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">default_optimization_config()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1322" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1322" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -971,7 +971,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">eliminate_unused_specializations/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L7083" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L7083" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -991,7 +991,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">find_optimization_opportunities(AST, Context)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1661" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1661" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1011,7 +1011,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">find_reachable_functions(AST, EntryPoints)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L7126" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L7126" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1031,7 +1031,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">find_specialization_opportunities(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1314" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1314" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1051,7 +1051,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">function_specialization_pass(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L639" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L639" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1071,7 +1071,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">function_specialization_pass(AST, Context)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L644" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L644" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1091,7 +1091,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">generate_specialized_variants(AST, InstantiationSites)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L6717" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L6717" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1111,7 +1111,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">identify_cold_code(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1623" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1623" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1131,7 +1131,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">identify_hot_paths(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1605" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1605" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1151,7 +1151,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">initialize_optimization_context(Config)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1364" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1364" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1171,7 +1171,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">inlining_pass(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L673" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L673" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1191,7 +1191,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">inlining_pass(AST, Context)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L676" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L676" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1211,7 +1211,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">memory_layout_optimization_pass(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1257" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1257" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1231,7 +1231,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">memory_layout_optimization_pass(AST, Context)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1262" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1262" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1251,7 +1251,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">monomorphization_pass(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L657" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L657" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1271,7 +1271,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">monomorphization_pass(AST, Context)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L660" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L660" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1291,7 +1291,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">monomorphize_ast/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L6468" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L6468" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1311,7 +1311,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">optimize_module(Module)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L567" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L567" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1331,7 +1331,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">optimize_module(Module, Config)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L570" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L570" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1351,7 +1351,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">optimize_program(AST)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L538" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L538" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1371,7 +1371,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">optimize_program(AST, Config)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L542" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L542" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1391,7 +1391,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">replace_poly_calls_in_expr/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L7016" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L7016" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1411,7 +1411,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">run_optimization_passes(AST, Context)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L589" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L589" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1431,7 +1431,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">set_optimization_level(Level)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L1336" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L1336" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1451,7 +1451,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">specialize_function_body(Body, TypeSubst, OrigFuncName)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L6902" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L6902" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1471,7 +1471,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">track_polymorphic_call(FuncName, Args, Location)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L6659" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L6659" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1491,7 +1491,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
     </a>
     <h1 class="signature" translate="no">transform_ast_with_specializations/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_type_optimizer.erl#L6956" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_type_optimizer.erl#L6956" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1511,9 +1511,9 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.5.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.5.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
 
           </span>
 

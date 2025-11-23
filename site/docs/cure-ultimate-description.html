@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cure Language: Ultimate Implementation Description - Cure Documentation</title>
-    <meta name="description" content="Version: 0.4.0 (November 2025)  
+    <meta name="description" content="Version: 0.6.1 (November 2025)  
 Status: Research/Educational Implementation with Production-Ready Core Components">
     <link rel="icon" type="image/png" href="../media/logo-128x128.png">
     <link rel="stylesheet" href="../css/style.css">
@@ -38,12 +38,12 @@ Status: Research/Educational Implementation with Production-Ready Core Component
         </div>
         
         <h1 id="cure-language-ultimate-implementation-description">Cure Language: Ultimate Implementation Description</h1>
-<p><strong>Version:</strong> 0.4.0 (November 2025)<br />
+<p><strong>Version:</strong> 0.6.1 (November 2025)<br />
 <strong>Status:</strong> Research/Educational Implementation with Production-Ready Core Components</p>
 <hr />
 <h2 id="executive-summary">Executive Summary</h2>
-<p>Cure is a strongly-typed, dependently-typed programming language for the BEAM VM with native finite state machine (FSM) support. The implementation consists of <strong>23 Erlang modules</strong> (~15,000 LOC) implementing the complete compiler toolchain, and <strong>11 standard library modules</strong> written in Cure itself.</p>
-<p><strong>Current State:</strong> The core compiler pipeline is <strong>fully functional</strong> with demonstrated end-to-end compilation and execution. <strong>Recent additions include multi-clause functions with union type derivation, record types with pattern matching, and pattern guards</strong> - bringing the language closer to production readiness. Several advanced features are <strong>implemented but require refinement</strong> for production use. The FSM system is <strong>production-grade</strong> with comprehensive runtime support.</p>
+<p>Cure is a strongly-typed, dependently-typed programming language for the BEAM VM with native finite state machine (FSM) support. The implementation consists of <strong>23 Erlang modules</strong> (~15,000 LOC) implementing the complete compiler toolchain, and <strong>13 standard library modules</strong> written in Cure itself.</p>
+<p><strong>Current State:</strong> The core compiler pipeline is <strong>fully functional</strong> with demonstrated end-to-end compilation and execution. <strong>Recent fixes include guard compilation improvements (load_var instruction, missing operators), FSM runtime ETS table persistence, and Std.Show module integration</strong> - bringing the language closer to production readiness. Multi-clause functions with union type derivation, record types with pattern matching, and pattern guards are fully implemented. The FSM system is <strong>production-grade</strong> with comprehensive runtime support and fixed registration persistence.</p>
 <hr />
 <h2 id="part-1-erlang-implementation-src-detailed-analysis">Part 1: Erlang Implementation (<code>src/</code>) - Detailed Analysis</h2>
 <h3 id="11-lexer-srclexer">1.1 Lexer (<code>src/lexer/</code>)</h3>
@@ -206,10 +206,16 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li>Instruction-level optimizations</li>
 <li>Constant folding</li>
 </ul>
+<h4 id="recently-fixed-november-2025">✅ <strong>Recently Fixed (November 2025)</strong></h4>
+<ul>
+<li><strong>Guard Compilation</strong>: ✅ Added support for <code>load_var</code> instruction in guard compiler</li>
+<li><strong>Guard Operators</strong>: ✅ Added missing operators: <code>!=</code> → <code>/=</code>, <code>&lt;=</code> → <code>=&lt;</code>, <code>and</code> → <code>andalso</code>, <code>or</code> → <code>orelse</code></li>
+<li><strong>Comprehensive Guards Demo</strong>: Now compiles and executes correctly with all guard features</li>
+</ul>
 <h4 id="implemented-with-provisos_3">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
 <li><strong>Debug Information</strong>: Basic debug info generated, but not comprehensive for all constructs</li>
-<li><strong>Guard Compilation</strong>: Basic guards work, complex dependent type guards use runtime validation stubs</li>
+<li><strong>Complex Dependent Type Guards</strong>: Use runtime validation stubs (requires SMT integration)</li>
 <li><strong>Tail Call Optimization</strong>: Basic TCO works, but not verified for all cases</li>
 <li><strong>Record Compilation</strong>: Records compile to maps, field ordering needs attention (marked as work-in-progress)</li>
 </ul>
@@ -219,7 +225,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>OTP Supervision Trees</strong>: Manual supervision setup required</li>
 <li><strong>Distribution Primitives</strong>: No distributed Cure constructs (use Erlang primitives directly)</li>
 </ul>
-<p><strong>Production Readiness:</strong> <strong>85%</strong> - Core codegen is production-quality, needs complete guard validation and debug info</p>
+<p><strong>Production Readiness:</strong> <strong>90%</strong> - Core codegen is production-quality with comprehensive guard support, needs only debug info improvements</p>
 <hr />
 <h3 id="15-fsm-runtime-srcfsm">1.5 FSM Runtime (<code>src/fsm/</code>)</h3>
 <p><strong>Files:</strong> <code>cure_fsm_runtime.erl</code> (~1,800 LOC), <code>cure_fsm_cure_api.erl</code> (~400 LOC), <code>cure_fsm_builtins.erl</code> (~600 LOC), <code>cure_fsm_runtime.hrl</code> (record definitions)</p>
@@ -229,8 +235,9 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li>FSM lifecycle (start, stop, spawn)</li>
 <li>gen_server-based architecture</li>
 <li>Process registry and lookup</li>
+<li>Named FSM registration</li>
 <li>
-<p>Named FSM registration</p>
+<p>✅ <strong>ETS Table Persistence</strong>: Registry survives process termination via heir process (fixed Nov 2025)</p>
 </li>
 <li>
 <p><strong>Event Processing:</strong></p>
@@ -265,10 +272,11 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li>FSM type registration</li>
 <li>Runtime type checking</li>
 <li>Definition lookup and validation</li>
+<li>✅ <strong>Cross-Process Registration</strong>: FSM registration persists across on-load/runtime boundaries</li>
 </ul>
 <h4 id="implemented-with-provisos_4">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
-<li><strong>FSM Definition Registration</strong>: Currently requires explicit <code>register_fsms/0</code> call; needs automatic registration on module load</li>
+<li><strong>FSM Definition Registration</strong>: Currently requires explicit <code>register_fsms/0</code> call, but registration now persists correctly via heir process</li>
 <li><strong>Distributed FSMs</strong>: Single-node only; no cross-node FSM coordination</li>
 </ul>
 <h4 id="not-implemented_4">❌ <strong>Not Implemented</strong></h4>
@@ -277,7 +285,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>FSM Monitoring</strong>: Basic gen_server monitoring only, no FSM-specific monitoring dashboards</li>
 <li><strong>FSM Hot-Swapping</strong>: No support for FSM definition updates at runtime</li>
 </ul>
-<p><strong>Production Readiness:</strong> <strong>90%</strong> - FSM runtime is production-grade for single-node applications</p>
+<p><strong>Production Readiness:</strong> <strong>95%</strong> - FSM runtime is production-grade for single-node applications with all core features working reliably</p>
 <hr />
 <h3 id="16-smt-solver-integration-srcsmt">1.6 SMT Solver Integration (<code>src/smt/</code>)</h3>
 <p><strong>Files:</strong> <code>cure_smt_solver.erl</code> (~900 LOC, two copies in <code>src/smt/</code> and <code>src/types/</code>)</p>
@@ -423,7 +431,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <p><strong>Production Readiness:</strong> <strong>70%</strong> - CLI and build work, needs package management</p>
 <hr />
 <h2 id="part-2-cure-standard-library-libstd-detailed-analysis">Part 2: Cure Standard Library (<code>lib/std/</code>) - Detailed Analysis</h2>
-<p>The standard library consists of 11 modules written in Cure, totaling ~800 LOC.</p>
+<p>The standard library consists of 13 modules written in Cure, totaling ~1,000 LOC.</p>
 <h3 id="21-core-module-libstdcorecure">2.1 Core Module (<code>lib/std/core.cure</code>)</h3>
 <p><strong>Exports:</strong> 25 functions</p>
 <h4 id="fully-implemented_8">✅ <strong>Fully Implemented</strong></h4>
@@ -525,17 +533,29 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <p><strong>Production Readiness:</strong> <strong>60%</strong> - Works but needs proper ADT support</p>
 <hr />
 <h3 id="28-show-module-libstdshowcure">2.8 Show Module (<code>lib/std/show.cure</code>)</h3>
-<p><strong>Exports:</strong> 1 function</p>
+<p><strong>Exports:</strong> 2 helper functions (<code>show_list/1</code>, <code>show_separated/2</code>)</p>
+<h4 id="recently-implemented-november-2025">✅ <strong>Recently Implemented (November 2025)</strong></h4>
+<ul>
+<li><strong>Typeclass Definition</strong>: Show typeclass with method signature</li>
+<li><strong>Primitive Instances</strong>: Show instances for Int, Float, String, Bool, Atom, Charlist</li>
+<li><strong>Container Instances</strong>: Show instances for List(Int), Option(Int), Result(Int, String)</li>
+<li><strong>Helper Functions</strong>: <code>show_list/1</code> and <code>show_separated/2</code> for formatted output</li>
+<li><strong>Module Compilation</strong>: Now included in standard library compilation list</li>
+<li><strong>Working Examples</strong>: <code>13_show_simple.cure</code> demonstrates Show usage</li>
+</ul>
 <h4 id="implemented-with-provisos_12">🟡 <strong>Implemented with Provisos</strong></h4>
 <ul>
-<li><strong>Basic Show</strong>: <code>show/1</code> implemented but returns placeholder <code>"[value]"</code> string</li>
+<li><strong>Simplified Output</strong>: Many instances return simplified placeholders (e.g., <code>"&lt;int&gt;"</code> instead of actual value)</li>
+<li><strong>Limited Polymorphism</strong>: Container instances only work for specific types (e.g., <code>List(Int)</code> not <code>List(T)</code>)</li>
+<li><strong>No Typeclass Instances for External Modules</strong>: Typeclass instances cannot be defined in modules that import the typeclass</li>
 </ul>
 <h4 id="not-implemented_11">❌ <strong>Not Implemented</strong></h4>
 <ul>
-<li><strong>Type-Based Show</strong>: No runtime type inspection to format values properly</li>
-<li><strong>Custom Show</strong>: No mechanism for user-defined show instances</li>
+<li><strong>Full Polymorphic Show</strong>: Generic <code>show</code> for all <code>Show(T)</code> instances</li>
+<li><strong>Runtime Type Reflection</strong>: No mechanism for actual value-to-string conversion</li>
+<li><strong>Custom Show Derivation</strong>: No derive mechanism for user types</li>
 </ul>
-<p><strong>Production Readiness:</strong> <strong>20%</strong> - Stub implementation only</p>
+<p><strong>Production Readiness:</strong> <strong>60%</strong> - Basic typeclass infrastructure works, needs full polymorphic implementation</p>
 <hr />
 <h3 id="29-system-module-libstdsystemcure">2.9 System Module (<code>lib/std/system.cure</code>)</h3>
 <p><strong>Exports:</strong> 3 functions</p>
@@ -727,10 +747,10 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <td>Incremental lexing for IDE</td>
 </tr>
 <tr>
-<td></td>
 <td><strong>Parser</strong></td>
 <td>90%</td>
 <td>✅ Production</td>
+<td>Error recovery</td>
 </tr>
 <tr>
 <td><strong>Type System</strong></td>
@@ -740,15 +760,15 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 </tr>
 <tr>
 <td><strong>Code Generation</strong></td>
-<td>85%</td>
+<td>90%</td>
 <td>✅ Production</td>
-<td>Complete guard validation, debug info</td>
+<td>Debug info improvements</td>
 </tr>
 <tr>
 <td><strong>FSM Runtime</strong></td>
-<td>90%</td>
+<td>95%</td>
 <td>✅ Production</td>
-<td>Auto-registration, persistence</td>
+<td>Auto-registration automation</td>
 </tr>
 <tr>
 <td><strong>SMT Solver</strong></td>
@@ -776,20 +796,22 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 </tr>
 <tr>
 <td><strong>Standard Library</strong></td>
-<td>65%</td>
+<td>70%</td>
 <td>🟡 Functional</td>
 <td>Complete implementations, ADTs</td>
 </tr>
 </tbody>
 </table>
 <h3 id="overall-assessment">Overall Assessment</h3>
-<p><strong>Current Status:</strong> <strong>70% Production-Ready</strong></p>
+<p><strong>Current Status:</strong> <strong>72% Production-Ready</strong></p>
 <p><strong>Strengths:</strong><br />
 - ✅ <strong>Solid Core Compiler Pipeline</strong>: Lexer → Parser → Type Checker → Codegen fully functional<br />
 - ✅ <strong>Multi-Clause Functions</strong>: Erlang-style pattern matching with automatic union type derivation<br />
 - ✅ <strong>Record Types &amp; Guards</strong>: Full support for records with pattern matching and <code>when</code> guards<br />
-- ✅ <strong>Production-Grade FSM System</strong>: Best-in-class finite state machine support<br />
+- ✅ <strong>Comprehensive Guard Compilation</strong>: All guard operators and instructions working (Nov 2025)<br />
+- ✅ <strong>Production-Grade FSM System</strong>: Best-in-class finite state machine support with persistent registration<br />
 - ✅ <strong>Working Dependent Types</strong>: Basic dependent types compile and run correctly<br />
+- ✅ <strong>Typeclass Infrastructure</strong>: Show module with instances and helper functions<br />
 - ✅ <strong>BEAM Integration</strong>: Generates correct, efficient BEAM bytecode<br />
 - ✅ <strong>Comprehensive Testing</strong>: 95%+ test pass rate with good coverage</p>
 <p><strong>Weaknesses:</strong><br />
@@ -807,7 +829,7 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <li><strong>Parser Error Recovery</strong> (1 week)</li>
 <li><strong>Standard Library Essentials</strong> (1-2 weeks)</li>
 </ol>
-<p><strong>Deliverable:</strong> Cure 0.5.0 - Stable core with verified dependent types</p>
+<p><strong>Deliverable:</strong> Cure 0.6.0 - Stable core with verified dependent types</p>
 <hr />
 <h3 id="phase-2-developer-experience-4-6-weeks">Phase 2: Developer Experience (4-6 weeks)</h3>
 <ol>
@@ -849,8 +871,8 @@ Status: Research/Educational Implementation with Production-Ready Core Component
 <p><strong>Future Potential:</strong><br />
 With completion of the roadmap, Cure could become the <strong>premier choice for type-safe, formally-verified BEAM applications</strong>, especially in domains requiring strong correctness guarantees (financial systems, safety-critical systems, complex state machines).</p>
 <hr />
-<p><strong>Document Version:</strong> 1.0<br />
-<strong>Last Updated:</strong> October 2025<br />
+<p><strong>Document Version:</strong> 1.1<br />
+<strong>Last Updated:</strong> November 2025<br />
 <strong>Authors:</strong> Cure Development Team</p>
     </div>
 

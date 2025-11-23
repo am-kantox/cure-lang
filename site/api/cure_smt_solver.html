@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.5.0">
+    <meta name="project" content="cure v0.6.0">
 
 
-    <title>cure_smt_solver — cure v0.5.0</title>
+    <title>cure_smt_solver — cure v0.6.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.5.0
+          v0.6.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_smt_solver</span> 
-    <small class="app-vsn" translate="no">(cure v0.5.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.6.0)</small>
 
   </h1>
 
@@ -169,17 +169,17 @@ logical reasoning, and proof generation for dependent type verification.</p><h2 
   <span class="text">Constraint Solving</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Create arithmetic constraints</span><span class="w">
-</span><span class="n">Constraint1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">arithmetic_constraint</span><span class="p" data-group-id="6822586898-1">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p" data-group-id="6822586898-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Constraint2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">equality_constraint</span><span class="p" data-group-id="6822586898-2">(</span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="n">Z</span><span class="p" data-group-id="6822586898-2">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Constraint1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">arithmetic_constraint</span><span class="p" data-group-id="6635146186-1">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p" data-group-id="6635146186-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Constraint2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">equality_constraint</span><span class="p" data-group-id="6635146186-2">(</span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="n">Z</span><span class="p" data-group-id="6635146186-2">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">%% Solve constraints</span><span class="w">
-</span><span class="k">case</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">solve_constraints</span><span class="p" data-group-id="6822586898-3">(</span><span class="p" data-group-id="6822586898-4">[</span><span class="n">Constraint1</span><span class="p">,</span><span class="w"> </span><span class="n">Constraint2</span><span class="p" data-group-id="6822586898-4">]</span><span class="p" data-group-id="6822586898-3">)</span><span class="w"> </span><span class="k">of</span><span class="w">
-    </span><span class="p" data-group-id="6822586898-5">{</span><span class="ss">sat</span><span class="p">,</span><span class="w"> </span><span class="n">Solution</span><span class="p" data-group-id="6822586898-5">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="6822586898-6">(</span><span class="s">&quot;Solution: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6822586898-7">[</span><span class="n">Solution</span><span class="p" data-group-id="6822586898-7">]</span><span class="p" data-group-id="6822586898-6">)</span><span class="p">;</span><span class="w">
+</span><span class="k">case</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">solve_constraints</span><span class="p" data-group-id="6635146186-3">(</span><span class="p" data-group-id="6635146186-4">[</span><span class="n">Constraint1</span><span class="p">,</span><span class="w"> </span><span class="n">Constraint2</span><span class="p" data-group-id="6635146186-4">]</span><span class="p" data-group-id="6635146186-3">)</span><span class="w"> </span><span class="k">of</span><span class="w">
+    </span><span class="p" data-group-id="6635146186-5">{</span><span class="ss">sat</span><span class="p">,</span><span class="w"> </span><span class="n">Solution</span><span class="p" data-group-id="6635146186-5">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
+        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="6635146186-6">(</span><span class="s">&quot;Solution: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6635146186-7">[</span><span class="n">Solution</span><span class="p" data-group-id="6635146186-7">]</span><span class="p" data-group-id="6635146186-6">)</span><span class="p">;</span><span class="w">
     </span><span class="ss">unsat</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="6822586898-8">(</span><span class="s">&quot;No solution exists</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="6822586898-8">)</span><span class="p">;</span><span class="w">
+        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="6635146186-8">(</span><span class="s">&quot;No solution exists</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="6635146186-8">)</span><span class="p">;</span><span class="w">
     </span><span class="ss">unknown</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="6822586898-9">(</span><span class="s">&quot;Cannot determine satisfiability</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="6822586898-9">)</span><span class="w">
+        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="6635146186-9">(</span><span class="s">&quot;Cannot determine satisfiability</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="6635146186-9">)</span><span class="w">
 </span><span class="k">end</span><span class="p">.</span></code></pre><h3 id="module-pattern-length-inference" class="section-heading">
   <a href="#module-pattern-length-inference" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -187,9 +187,9 @@ logical reasoning, and proof generation for dependent type verification.</p><h2 
   <span class="text">Pattern Length Inference</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Infer length constraints from list patterns</span><span class="w">
-</span><span class="n">Pattern</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="2311988448-1">{</span><span class="ss">list_pattern</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2311988448-2">[</span><span class="ss">a</span><span class="p">,</span><span class="w"> </span><span class="ss">b</span><span class="p" data-group-id="2311988448-2">]</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2311988448-3">{</span><span class="ss">identifier_pattern</span><span class="p">,</span><span class="w"> </span><span class="ss">tail</span><span class="p" data-group-id="2311988448-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="2311988448-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">LengthVar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">variable_term</span><span class="p" data-group-id="2311988448-4">(</span><span class="ss">list_length</span><span class="p" data-group-id="2311988448-4">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Constraints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">infer_pattern_length</span><span class="p" data-group-id="2311988448-5">(</span><span class="n">Pattern</span><span class="p">,</span><span class="w"> </span><span class="n">LengthVar</span><span class="p" data-group-id="2311988448-5">)</span><span class="p">.</span><span class="w">
+</span><span class="n">Pattern</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1424236885-1">{</span><span class="ss">list_pattern</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1424236885-2">[</span><span class="ss">a</span><span class="p">,</span><span class="w"> </span><span class="ss">b</span><span class="p" data-group-id="1424236885-2">]</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1424236885-3">{</span><span class="ss">identifier_pattern</span><span class="p">,</span><span class="w"> </span><span class="ss">tail</span><span class="p" data-group-id="1424236885-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">Location</span><span class="p" data-group-id="1424236885-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">LengthVar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">variable_term</span><span class="p" data-group-id="1424236885-4">(</span><span class="ss">list_length</span><span class="p" data-group-id="1424236885-4">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Constraints</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">infer_pattern_length</span><span class="p" data-group-id="1424236885-5">(</span><span class="n">Pattern</span><span class="p">,</span><span class="w"> </span><span class="n">LengthVar</span><span class="p" data-group-id="1424236885-5">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">%% Generates: list_length = 2 + tail_length</span></code></pre><h3 id="module-proof-generation-1" class="section-heading">
   <a href="#module-proof-generation-1" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -197,16 +197,16 @@ logical reasoning, and proof generation for dependent type verification.</p><h2 
   <span class="text">Proof Generation</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Prove that a constraint follows from assumptions</span><span class="w">
-</span><span class="n">Assumptions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="8011763020-1">[</span><span class="n">X_greater_than_zero</span><span class="p">,</span><span class="w"> </span><span class="n">Y_positive</span><span class="p" data-group-id="8011763020-1">]</span><span class="p">,</span><span class="w">
-</span><span class="n">Goal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">arithmetic_constraint</span><span class="p" data-group-id="8011763020-2">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">zero</span><span class="p" data-group-id="8011763020-2">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Assumptions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1659945598-1">[</span><span class="n">X_greater_than_zero</span><span class="p">,</span><span class="w"> </span><span class="n">Y_positive</span><span class="p" data-group-id="1659945598-1">]</span><span class="p">,</span><span class="w">
+</span><span class="n">Goal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">arithmetic_constraint</span><span class="p" data-group-id="1659945598-2">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">Y</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">zero</span><span class="p" data-group-id="1659945598-2">)</span><span class="p">,</span><span class="w">
 
-</span><span class="k">case</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_constraint</span><span class="p" data-group-id="8011763020-3">(</span><span class="n">Assumptions</span><span class="p">,</span><span class="w"> </span><span class="n">Goal</span><span class="p" data-group-id="8011763020-3">)</span><span class="w"> </span><span class="k">of</span><span class="w">
-    </span><span class="p" data-group-id="8011763020-4">{</span><span class="ss">proved</span><span class="p">,</span><span class="w"> </span><span class="n">Proof</span><span class="p" data-group-id="8011763020-4">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="8011763020-5">(</span><span class="s">&quot;Proof: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8011763020-6">[</span><span class="n">Proof</span><span class="p" data-group-id="8011763020-6">]</span><span class="p" data-group-id="8011763020-5">)</span><span class="p">;</span><span class="w">
-    </span><span class="p" data-group-id="8011763020-7">{</span><span class="ss">disproved</span><span class="p">,</span><span class="w"> </span><span class="n">CounterExample</span><span class="p" data-group-id="8011763020-7">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="8011763020-8">(</span><span class="s">&quot;Counter-example: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8011763020-9">[</span><span class="n">CounterExample</span><span class="p" data-group-id="8011763020-9">]</span><span class="p" data-group-id="8011763020-8">)</span><span class="p">;</span><span class="w">
+</span><span class="k">case</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_constraint</span><span class="p" data-group-id="1659945598-3">(</span><span class="n">Assumptions</span><span class="p">,</span><span class="w"> </span><span class="n">Goal</span><span class="p" data-group-id="1659945598-3">)</span><span class="w"> </span><span class="k">of</span><span class="w">
+    </span><span class="p" data-group-id="1659945598-4">{</span><span class="ss">proved</span><span class="p">,</span><span class="w"> </span><span class="n">Proof</span><span class="p" data-group-id="1659945598-4">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
+        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="1659945598-5">(</span><span class="s">&quot;Proof: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1659945598-6">[</span><span class="n">Proof</span><span class="p" data-group-id="1659945598-6">]</span><span class="p" data-group-id="1659945598-5">)</span><span class="p">;</span><span class="w">
+    </span><span class="p" data-group-id="1659945598-7">{</span><span class="ss">disproved</span><span class="p">,</span><span class="w"> </span><span class="n">CounterExample</span><span class="p" data-group-id="1659945598-7">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
+        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="1659945598-8">(</span><span class="s">&quot;Counter-example: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1659945598-9">[</span><span class="n">CounterExample</span><span class="p" data-group-id="1659945598-9">]</span><span class="p" data-group-id="1659945598-8">)</span><span class="p">;</span><span class="w">
     </span><span class="ss">unknown</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="8011763020-10">(</span><span class="s">&quot;Cannot prove or disprove</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="8011763020-10">)</span><span class="w">
+        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="1659945598-10">(</span><span class="s">&quot;Cannot prove or disprove</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="1659945598-10">)</span><span class="w">
 </span><span class="k">end</span><span class="p">.</span></code></pre><h2 id="module-constraint-types" class="section-heading">
   <a href="#module-constraint-types" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -243,23 +243,23 @@ logical reasoning, and proof generation for dependent type verification.</p><h2 
   </a>
   <span class="text">Constraint Representation</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="p">-</span><span class="na">record</span><span class="p" data-group-id="3932106623-1">(</span><span class="ss">smt_constraint</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3932106623-2">{</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p">-</span><span class="na">record</span><span class="p" data-group-id="0334114740-1">(</span><span class="ss">smt_constraint</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0334114740-2">{</span><span class="w">
     </span><span class="ss">type</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="ss">equality</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">inequality</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">arithmetic</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">logical</span><span class="p">,</span><span class="w">
-    </span><span class="ss">left</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">smt_term</span><span class="p" data-group-id="3932106623-3">(</span><span class="p" data-group-id="3932106623-3">)</span><span class="p">,</span><span class="w">
+    </span><span class="ss">left</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">smt_term</span><span class="p" data-group-id="0334114740-3">(</span><span class="p" data-group-id="0334114740-3">)</span><span class="p">,</span><span class="w">
     </span><span class="ss">op</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="ss">&#39;=&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;&lt;&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;&lt;=&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;&gt;=&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;/=&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;-&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">&#39;*&#39;</span><span class="p">,</span><span class="w">
-    </span><span class="ss">right</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">smt_term</span><span class="p" data-group-id="3932106623-4">(</span><span class="p" data-group-id="3932106623-4">)</span><span class="p">,</span><span class="w">
-    </span><span class="ss">location</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">location</span><span class="p" data-group-id="3932106623-5">(</span><span class="p" data-group-id="3932106623-5">)</span><span class="w">
-</span><span class="p" data-group-id="3932106623-2">}</span><span class="p" data-group-id="3932106623-1">)</span><span class="p">.</span></code></pre><h3 id="module-term-representation" class="section-heading">
+    </span><span class="ss">right</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">smt_term</span><span class="p" data-group-id="0334114740-4">(</span><span class="p" data-group-id="0334114740-4">)</span><span class="p">,</span><span class="w">
+    </span><span class="ss">location</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">location</span><span class="p" data-group-id="0334114740-5">(</span><span class="p" data-group-id="0334114740-5">)</span><span class="w">
+</span><span class="p" data-group-id="0334114740-2">}</span><span class="p" data-group-id="0334114740-1">)</span><span class="p">.</span></code></pre><h3 id="module-term-representation" class="section-heading">
   <a href="#module-term-representation" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Term Representation</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="p">-</span><span class="na">record</span><span class="p" data-group-id="8087871450-1">(</span><span class="ss">smt_term</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8087871450-2">{</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p">-</span><span class="na">record</span><span class="p" data-group-id="4927366478-1">(</span><span class="ss">smt_term</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4927366478-2">{</span><span class="w">
     </span><span class="ss">type</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="ss">variable</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">constant</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="ss">expression</span><span class="p">,</span><span class="w">
-    </span><span class="ss">value</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">atom</span><span class="p" data-group-id="8087871450-3">(</span><span class="p" data-group-id="8087871450-3">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nf">integer</span><span class="p" data-group-id="8087871450-4">(</span><span class="p" data-group-id="8087871450-4">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nf">float</span><span class="p" data-group-id="8087871450-5">(</span><span class="p" data-group-id="8087871450-5">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nf">smt_expression</span><span class="p" data-group-id="8087871450-6">(</span><span class="p" data-group-id="8087871450-6">)</span><span class="p">,</span><span class="w">
-    </span><span class="ss">location</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">location</span><span class="p" data-group-id="8087871450-7">(</span><span class="p" data-group-id="8087871450-7">)</span><span class="w">
-</span><span class="p" data-group-id="8087871450-2">}</span><span class="p" data-group-id="8087871450-1">)</span><span class="p">.</span></code></pre><h2 id="module-solving-strategies" class="section-heading">
+    </span><span class="ss">value</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">atom</span><span class="p" data-group-id="4927366478-3">(</span><span class="p" data-group-id="4927366478-3">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nf">integer</span><span class="p" data-group-id="4927366478-4">(</span><span class="p" data-group-id="4927366478-4">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nf">float</span><span class="p" data-group-id="4927366478-5">(</span><span class="p" data-group-id="4927366478-5">)</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nf">smt_expression</span><span class="p" data-group-id="4927366478-6">(</span><span class="p" data-group-id="4927366478-6">)</span><span class="p">,</span><span class="w">
+    </span><span class="ss">location</span><span class="w"> </span><span class="p">:</span><span class="p">:</span><span class="w"> </span><span class="nf">location</span><span class="p" data-group-id="4927366478-7">(</span><span class="p" data-group-id="4927366478-7">)</span><span class="w">
+</span><span class="p" data-group-id="4927366478-2">}</span><span class="p" data-group-id="4927366478-1">)</span><span class="p">.</span></code></pre><h2 id="module-solving-strategies" class="section-heading">
   <a href="#module-solving-strategies" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -602,7 +602,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">location()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/parser/cure_ast.hrl#L497" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.hrl#L497" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -628,7 +628,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">proof_term()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L258" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L258" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -658,7 +658,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">smt_constraint()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L254" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L254" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -691,7 +691,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">smt_expression()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L256" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L256" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -720,7 +720,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">smt_term()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L255" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L255" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -761,7 +761,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">addition_expression(Terms)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L699" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L699" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -781,7 +781,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">arithmetic_constraint(Left, Op, Right)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L319" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L319" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -807,7 +807,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">check_proof/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L1158" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L1158" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -827,7 +827,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">check_satisfiable(Constraint)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L281" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L281" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -853,7 +853,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">constant_term(Value)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L696" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L696" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -873,7 +873,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">constraint_to_string/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L1023" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L1023" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -893,7 +893,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">division_expression(Terms)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L720" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L720" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -913,7 +913,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">equality_constraint(Left, Right)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L330" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L330" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -939,7 +939,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">generate_proof(Assumptions, Goal)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L1150" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L1150" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -959,7 +959,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">implication_constraint(Premise, Conclusion)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L341" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L341" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -985,7 +985,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">inequality_constraint(Left, Op, Right)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L734" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L734" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1005,7 +1005,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">infer_pattern_length/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L356" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L356" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1031,7 +1031,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">infer_pattern_length_constraint(Pattern, OriginalLengthVar)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L450" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L450" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1057,7 +1057,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">infer_tail_length_constraint/3</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L410" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L410" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1083,7 +1083,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">list_pattern_length_constraint(Pattern, LengthVar)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L403" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L403" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1109,7 +1109,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">modulo_expression(Terms)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L727" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L727" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1129,7 +1129,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">multiplication_expression(Terms)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L713" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L713" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1149,7 +1149,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">negate_constraint(Constraint)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L842" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L842" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1169,7 +1169,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">new_constraint(Type, Op, Right)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L305" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L305" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1195,7 +1195,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">prove_constraint(Assumptions, Goal)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L290" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L290" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1222,7 +1222,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">solve_constraints(Constraints)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L266" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L266" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1248,7 +1248,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">solve_constraints(Constraints, InitialAssignment)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L271" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L271" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1275,7 +1275,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">subtraction_expression(Terms)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L706" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L706" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1295,7 +1295,7 @@ operations can run concurrently without interference.</p>
     </a>
     <h1 class="signature" translate="no">variable_term(Name)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.5.0/src/types/cure_smt_solver.erl#L693" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/types/cure_smt_solver.erl#L693" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1315,9 +1315,9 @@ operations can run concurrently without interference.</p>
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.5.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.5.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
 
           </span>
 
