@@ -3887,51 +3887,70 @@ parse_identifier_or_call(State) ->
                             % Could be Record{field: value, ...} or Record{base | field: value, ...}
                             {_, State2} = expect(State1, '{'),
 
-                            % Check for update syntax (base | fields)
+                            % OPTIMIZED: Use efficient lookahead instead of backtracking
+                            % Check for update syntax by looking for identifier followed by '|'
                             case is_identifier_token(current_token(State2)) of
                                 true ->
-                                    % Peek ahead to see if there's a '|' after the identifier
-                                    {MaybeBase, State3} = parse_expression(State2),
-                                    case match_token(State3, '|') of
-                                        true ->
+                                    % Get the identifier
+                                    {IdToken, State3} = expect(State2, identifier),
+
+                                    % Check what follows: '|' means update, ':' means regular construction
+                                    case get_token_type(current_token(State3)) of
+                                        '|' ->
                                             % Record update: Record{base | field: value}
+                                            % Parse the base expression from the identifier
+                                            BaseIdent = token_value_to_atom(
+                                                get_token_value(IdToken)
+                                            ),
+                                            Base = #identifier_expr{
+                                                name = BaseIdent,
+                                                location = get_token_location(IdToken)
+                                            },
                                             {_, State4} = expect(State3, '|'),
                                             {Fields, State5} = parse_record_expr_fields(State4, []),
                                             {_, State6} = expect(State5, '}'),
                                             UpdateExpr = #record_update_expr{
                                                 name = Name,
-                                                base = MaybeBase,
+                                                base = Base,
                                                 fields = Fields,
                                                 location = Location
                                             },
                                             {UpdateExpr, State6};
-                                        false ->
-                                            % Regular construction, but we already parsed first field name
-                                            % We need to reparse as field_name: value
-                                            % This is a limitation - for now, error out and reparse
-                                            % For simplicity, check if next is ':'
-                                            case match_token(State3, ':') of
-                                                true ->
-                                                    % Back up and parse as regular construction
-                                                    {Fields, State4} = parse_record_expr_fields(
-                                                        State2, []
-                                                    ),
-                                                    {_, State5} = expect(State4, '}'),
-                                                    RecordExpr = #record_expr{
-                                                        name = Name,
-                                                        fields = Fields,
-                                                        location = Location
-                                                    },
-                                                    {RecordExpr, State5};
-                                                false ->
-                                                    CurrentToken = current_token(State3),
-                                                    {Line, Col} = get_token_line_col(CurrentToken),
-                                                    throw(
-                                                        {parse_error,
-                                                            expected_colon_or_pipe_in_record, Line,
-                                                            Col}
-                                                    )
-                                            end
+                                        ':' ->
+                                            % Regular construction: Record{field: value, ...}
+                                            % Parse from the identifier we already consumed
+                                            FieldName = token_value_to_atom(
+                                                get_token_value(IdToken)
+                                            ),
+                                            {_, State4} = expect(State3, ':'),
+                                            {FieldValue, State5} = parse_expression(State4),
+                                            FirstField = {FieldName, FieldValue},
+
+                                            % Parse remaining fields
+                                            {RemainingFields, State6} =
+                                                case match_token(State5, ',') of
+                                                    true ->
+                                                        {_, State5a} = expect(State5, ','),
+                                                        parse_record_expr_fields(State5a, []);
+                                                    false ->
+                                                        {[], State5}
+                                                end,
+
+                                            {_, State7} = expect(State6, '}'),
+                                            RecordExpr = #record_expr{
+                                                name = Name,
+                                                fields = [FirstField | RemainingFields],
+                                                location = Location
+                                            },
+                                            {RecordExpr, State7};
+                                        _ ->
+                                            % Invalid syntax
+                                            CurrentToken = current_token(State3),
+                                            {Line, Col} = get_token_line_col(CurrentToken),
+                                            throw(
+                                                {parse_error, expected_colon_or_pipe_in_record,
+                                                    Line, Col}
+                                            )
                                     end;
                                 false ->
                                     % Not an identifier, must be regular construction

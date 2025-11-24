@@ -112,7 +112,13 @@ create_diagnostic(Severity, Location, Message, Suggestions) ->
 
 %% Format error message based on error type
 format_error_message({expected, TokenType, got, ActualType}) ->
-    io_lib:format("expected ~p, but got ~p", [TokenType, ActualType]);
+    BaseMsg = io_lib:format("expected ~p, but got ~p", [TokenType, ActualType]),
+    case suggest_correction(TokenType, ActualType) of
+        {ok, Suggestion} ->
+            [BaseMsg, io_lib:format("~n  hint: did you mean '~p'?", [Suggestion])];
+        none ->
+            BaseMsg
+    end;
 format_error_message({unexpected_token, TokenType}) ->
     io_lib:format("unexpected token: ~p", [TokenType]);
 format_error_message({undefined_variable, VarName}) ->
@@ -178,4 +184,130 @@ extract_snippet(SourceCode, Line, Column) ->
             iolist_to_binary(["\n", Formatted]);
         false ->
             <<"">>
+    end.
+
+%%% Typo Suggestion System %%%
+
+%% @doc Suggest correction for common typos using Levenshtein distance
+-spec suggest_correction(atom(), atom()) -> {ok, atom()} | none.
+suggest_correction(Expected, Got) when is_atom(Expected), is_atom(Got) ->
+    % Convert atoms to strings
+    ExpectedStr = atom_to_list(Expected),
+    GotStr = atom_to_list(Got),
+
+    % Calculate Levenshtein distance
+    Distance = levenshtein_distance(ExpectedStr, GotStr),
+
+    % Suggest if distance is small (1-2 characters difference)
+    case Distance of
+        % Single character typo
+        1 ->
+            {ok, Expected};
+        % Two character typo
+        2 ->
+            {ok, Expected};
+        _ ->
+            % Also check against common keyword typos
+            case suggest_common_keyword_typo(GotStr) of
+                {ok, _} = Result -> Result;
+                none -> none
+            end
+    end;
+suggest_correction(_, _) ->
+    none.
+
+%% @doc Suggest corrections for common keyword typos
+-spec suggest_common_keyword_typo(string()) -> {ok, atom()} | none.
+suggest_common_keyword_typo(Typo) ->
+    % Common typos mapped to correct keywords
+    Corrections = #{
+        "dn" => 'end',
+        "ned" => 'end',
+        "ened" => 'end',
+        "endd" => 'end',
+        "dne" => 'end',
+        "deff" => def,
+        "dfe" => def,
+        "deef" => def,
+        "modul" => module,
+        "moduel" => module,
+        "mdoule" => module,
+        "modeul" => module,
+        "macth" => 'match',
+        "mtach" => 'match',
+        "mathc" => 'match',
+        "matc" => 'match',
+        "od" => do,
+        "doo" => do,
+        "dont" => do,
+        "lte" => 'let',
+        "elt" => 'let',
+        "lett" => 'let',
+        "fi" => 'if',
+        "iff" => 'if',
+        "esle" => 'else',
+        "els" => 'else',
+        "eles" => 'else',
+        "elsee" => 'else',
+        "whne" => 'when',
+        "wehn" => 'when',
+        "whe" => 'when',
+        "whenn" => 'when',
+        "recrod" => record,
+        "reocrd" => record,
+        "rcord" => record,
+        "recordd" => record,
+        "tpye" => type,
+        "tyep" => type,
+        "typ" => type,
+        "typee" => type,
+        "fsms" => fsm,
+        "fms" => fsm,
+        "fssm" => fsm,
+        "exoprt" => export,
+        "exprot" => export,
+        "expor" => export,
+        "exort" => export,
+        "imoprt" => 'import',
+        "improt" => 'import',
+        "impor" => 'import',
+        "imort" => 'import'
+    },
+
+    case maps:get(Typo, Corrections, undefined) of
+        undefined -> none;
+        Correction -> {ok, Correction}
+    end.
+
+%% @doc Calculate Levenshtein distance between two strings
+-spec levenshtein_distance(string(), string()) -> non_neg_integer().
+levenshtein_distance(S1, S2) ->
+    levenshtein_distance(S1, S2, #{}).
+
+levenshtein_distance([], S2, _Cache) ->
+    length(S2);
+levenshtein_distance(S1, [], _Cache) ->
+    length(S1);
+levenshtein_distance([H | T1] = S1, [H | T2] = S2, Cache) ->
+    % Same character, no cost
+    Key = {S1, S2},
+    case maps:get(Key, Cache, undefined) of
+        undefined ->
+            Result = levenshtein_distance(T1, T2, Cache),
+            Result;
+        Cached ->
+            Cached
+    end;
+levenshtein_distance([_ | T1] = S1, [_ | T2] = S2, Cache) ->
+    Key = {S1, S2},
+    case maps:get(Key, Cache, undefined) of
+        undefined ->
+            % Different characters - try substitution, insertion, deletion
+            Subst = levenshtein_distance(T1, T2, Cache),
+            Insert = levenshtein_distance(S1, T2, Cache),
+            Delete = levenshtein_distance(T1, S2, Cache),
+            Result = 1 + lists:min([Subst, Insert, Delete]),
+            Result;
+        Cached ->
+            Cached
     end.
