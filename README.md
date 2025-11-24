@@ -319,6 +319,9 @@ Comprehensive documentation is available in the `docs/` directory:
 ### Advanced Features
 - **[DEPENDENT_TYPES_GUIDE.md](docs/DEPENDENT_TYPES_GUIDE.md)** - User guide to dependent types with SMT verification
 - **[DEPENDENT_TYPES_DESIGN.md](docs/DEPENDENT_TYPES_DESIGN.md)** - Design document and implementation details
+- **[TYPECLASS_RESOLUTION.md](docs/TYPECLASS_RESOLUTION.md)** - ✨ Typeclass method lookup and instance registry system (NEW)
+- **[SMT_SOLVER_ADVANCED.md](docs/SMT_SOLVER_ADVANCED.md)** - ✨ CVC5 solver, Z3 simplification, S-expression parsing (NEW)
+- **[smt_simplification.md](docs/smt_simplification.md)** - SMT-based constraint simplification and optimization
 - **[dependent_types_demo.cure](examples/dependent_types_demo.cure)** - Comprehensive examples showcasing compile-time verification
 
 ## Community & Development

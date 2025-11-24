@@ -23,7 +23,8 @@
     current_function = undefined :: map() | undefined,  % Current function context for dimension resolution
     type_constructors = #{} :: map(),  % Map of ConstructorName -> Arity for nullary constructors
     typeclass_constraints = [] :: [term()],  % Typeclass constraints for current function
-    typeclass_env = undefined :: term()  % Typeclass environment for instance lookup
+    typeclass_env = undefined :: term(),  % Typeclass environment for instance lookup
+    instance_registry = #{} :: map()  % Map of {TypeclassName, Type} -> {module, ModuleName} | local
 }).
 
 %% Function compilation result

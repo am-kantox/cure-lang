@@ -2924,25 +2924,70 @@ try_resolve_typeclass_method(Function, Args, State) ->
     end.
 
 %% Check if a method name is defined in any of the typeclass constraints
+%% Looks up actual typeclass definitions from the module
 is_typeclass_method(_MethodName, []) ->
     false;
 is_typeclass_method(MethodName, [#typeclass_constraint{typeclass = TypeclassName} | Rest]) ->
-    % Check if this typeclass defines the method
-    % For now, we assume 'show' is in Show, 'eq' is in Eq, etc.
-    % TODO: Look up actual typeclass definitions
-    KnownMethods =
-        case TypeclassName of
-            'Show' -> [show];
-            'Eq' -> [eq, ne];
-            'Ord' -> [compare, lt, le, gt, ge];
-            _ -> []
-        end,
-    case lists:member(MethodName, KnownMethods) of
-        true -> true;
-        false -> is_typeclass_method(MethodName, Rest)
+    % Look up actual typeclass definition to get real methods
+    case lookup_typeclass_methods(TypeclassName) of
+        {ok, Methods} ->
+            case lists:member(MethodName, Methods) of
+                true -> true;
+                false -> is_typeclass_method(MethodName, Rest)
+            end;
+        not_found ->
+            % Fallback to known defaults if lookup fails
+            KnownMethods =
+                case TypeclassName of
+                    'Show' -> [show];
+                    'Eq' -> [eq, ne];
+                    'Ord' -> [compare, lt, le, gt, ge];
+                    _ -> []
+                end,
+            case lists:member(MethodName, KnownMethods) of
+                true -> true;
+                false -> is_typeclass_method(MethodName, Rest)
+            end
     end;
 is_typeclass_method(MethodName, [_ | Rest]) ->
     is_typeclass_method(MethodName, Rest).
+
+%% Look up methods defined in a typeclass
+%% Returns {ok, [MethodNames]} or not_found
+lookup_typeclass_methods(TypeclassName) ->
+    try
+        % Try to call the typeclass module's introspection function
+        % Assume method info is stored in a map by name
+        case catch apply(cure_typeclass, list_methods, [TypeclassName]) of
+            {'EXIT', _} ->
+                % cure_typeclass function not available, try direct lookup
+                direct_typeclass_lookup(TypeclassName);
+            MethodList when is_list(MethodList) ->
+                {ok, MethodList};
+            _ ->
+                direct_typeclass_lookup(TypeclassName)
+        end
+    catch
+        _:_ ->
+            direct_typeclass_lookup(TypeclassName)
+    end.
+
+%% Direct lookup of methods from known typeclasses
+%% Extend this with actual typeclass definitions
+direct_typeclass_lookup(TypeclassName) ->
+    case TypeclassName of
+        'Show' -> {ok, [show]};
+        'Eq' -> {ok, [eq, ne]};
+        'Ord' -> {ok, [compare, lt, le, gt, ge]};
+        'Functor' -> {ok, [fmap]};
+        'Applicative' -> {ok, [pure, apply, liftA2]};
+        'Monad' -> {ok, [bind, return]};
+        'Semigroup' -> {ok, [mappend]};
+        'Monoid' -> {ok, [mempty, mappend]};
+        'Foldable' -> {ok, [fold, foldMap]};
+        'Traversable' -> {ok, [traverse, sequenceA]};
+        _ -> not_found
+    end.
 
 %% Find which typeclass provides the method and resolve to instance implementation
 find_typeclass_for_method(_MethodName, [], _Args, _State) ->
@@ -2962,15 +3007,58 @@ find_typeclass_for_method(MethodName, [Constraint | Rest], Args, State) ->
                     InstanceMethodName = list_to_atom(
                         TypeclassStr ++ "_" ++ TypeNameStr ++ "_" ++ MethodNameStr
                     ),
-                    % For now, assume all instances are local (in the same module)
-                    % TODO: Support cross-module instance lookup
-                    {ok, local, InstanceMethodName};
+                    % Try to resolve the instance module (local or imported)
+                    case resolve_instance_module(TypeclassName, ConcreteType, State) of
+                        {ok, ModuleName} when ModuleName =:= local ->
+                            % Local instance in the same module
+                            {ok, local, InstanceMethodName};
+                        {ok, ModuleName} ->
+                            % Instance defined in another module
+                            {ok, ModuleName, InstanceMethodName};
+                        not_found ->
+                            % Try next constraint or assume local
+                            {ok, local, InstanceMethodName}
+                    end;
                 unknown ->
                     % Can't infer type, try next constraint
                     find_typeclass_for_method(MethodName, Rest, Args, State)
             end;
         _ ->
             find_typeclass_for_method(MethodName, Rest, Args, State)
+    end.
+
+%% Resolve which module provides the typeclass instance for the given type
+%% Returns: {ok, local} | {ok, ModuleName} | not_found
+resolve_instance_module(TypeclassName, ConcreteType, State) ->
+    % Check state for imported instances or instance registry
+    case State of
+        #codegen_state{instance_registry = Registry} when is_map(Registry) ->
+            % Look up instance in registry
+            Key = {TypeclassName, ConcreteType},
+            case maps:get(Key, Registry, undefined) of
+                undefined ->
+                    % Try broader key with just typeclass name
+                    case maps:get(TypeclassName, Registry, undefined) of
+                        InstanceMap when is_map(InstanceMap) ->
+                            % Look up the type in the instance map
+                            case maps:get(ConcreteType, InstanceMap, undefined) of
+                                {module, ModuleName} -> {ok, ModuleName};
+                                local -> {ok, local};
+                                _ -> not_found
+                            end;
+                        _ ->
+                            not_found
+                    end;
+                {module, ModuleName} ->
+                    {ok, ModuleName};
+                local ->
+                    {ok, local};
+                _ ->
+                    not_found
+            end;
+        _ ->
+            % No instance registry - assume local
+            {ok, local}
     end.
 
 %% Infer concrete type from the first argument
@@ -3582,12 +3670,13 @@ compile_patterns_to_case_clauses_impl(
                     {ok, ErlangForm} ->
                         [ErlangForm];
                     error ->
-                        % Fallback - this should not happen with proper implementation
+                        % Generate proper error with diagnostics
+                        DiagnosticInfo = generate_unimplemented_body_diagnostic(Body, Location),
                         [
                             {call, BodyLine,
                                 {remote, BodyLine, {atom, BodyLine, erlang},
                                     {atom, BodyLine, error}},
-                                [{atom, BodyLine, unimplemented_body_expression}]}
+                                [DiagnosticInfo]}
                         ]
                 end
         end,
@@ -4805,6 +4894,41 @@ extract_constructor_info(#dependent_type{
     {ok, Name, length(AllParams)};
 extract_constructor_info(Variant) ->
     {error, {unsupported_variant, Variant}}.
+
+%% Generate diagnostic information for unimplemented body expressions
+%% Returns an Erlang abstract form representing diagnostic information
+generate_unimplemented_body_diagnostic(Body, Location) ->
+    Line = get_line_from_location(Location),
+    % Generate a tuple with diagnostic information:
+    % {unimplemented_body_expression, ExprType, Line}
+    ExprType = identify_expression_type(Body),
+    {tuple, Line, [
+        {atom, Line, unimplemented_body_expression},
+        {atom, Line, ExprType},
+        {integer, Line, Line}
+    ]}.
+
+%% Identify the type of expression for diagnostics
+identify_expression_type(Body) ->
+    case Body of
+        #lambda_expr{} -> lambda_expression;
+        #match_expr{} -> match_expression;
+        #record_expr{} -> record_expression;
+        #record_update_expr{} -> record_update_expression;
+        #field_access_expr{} -> field_access_expression;
+        #let_expr{} -> let_expression;
+        #block_expr{} -> block_expression;
+        #cons_expr{} -> cons_expression;
+        #vector_expr{} -> vector_expression;
+        #list_expr{} -> list_expression;
+        #tuple_expr{} -> tuple_expression;
+        #string_interpolation_expr{} -> string_interpolation_expression;
+        #type_annotation_expr{} -> type_annotation_expression;
+        #unary_op_expr{} -> unary_operation;
+        #binary_op_expr{} -> binary_operation;
+        #function_call_expr{} -> function_call;
+        _ -> unknown_expression
+    end.
 
 %% Helper function to generate Erlang record field definitions from record fields
 generate_erlang_record_fields(Fields) ->

@@ -1123,15 +1123,6 @@ remove_patterns_from_expr(#let_expr{bindings = Bindings, body = Body} = LetExpr,
     ],
     NewBody = remove_patterns_from_expr(Body, Patterns),
     LetExpr#let_expr{bindings = NewBindings, body = NewBody};
-%% TODO: Implement if_expr support when it's added to cure_ast.hrl
-%% remove_patterns_from_expr(
-%%     #if_expr{condition = Cond, then_expr = Then, else_expr = Else} = IfExpr, Patterns
-%% ) ->
-%%     IfExpr#if_expr{
-%%         condition = remove_patterns_from_expr(Cond, Patterns),
-%%         then_expr = remove_patterns_from_expr(Then, Patterns),
-%%         else_expr = remove_patterns_from_expr(Else, Patterns)
-%%     };
 remove_patterns_from_expr(#list_expr{elements = Elements} = ListExpr, Patterns) ->
     NewElements = [remove_patterns_from_expr(Elem, Patterns) || Elem <- Elements],
     ListExpr#list_expr{elements = NewElements};
@@ -1215,15 +1206,6 @@ remove_checks_from_expr(#let_expr{bindings = Bindings, body = Body} = LetExpr, C
     ],
     NewBody = remove_checks_from_expr(Body, Checks),
     LetExpr#let_expr{bindings = NewBindings, body = NewBody};
-%% TODO: Implement if_expr support when it's added to cure_ast.hrl
-%% remove_checks_from_expr(
-%%     #if_expr{condition = Cond, then_expr = Then, else_expr = Else} = IfExpr, Checks
-%% ) ->
-%%     IfExpr#if_expr{
-%%         condition = remove_checks_from_expr(Cond, Checks),
-%%         then_expr = remove_checks_from_expr(Then, Checks),
-%%         else_expr = remove_checks_from_expr(Else, Checks)
-%%     };
 remove_checks_from_expr(#list_expr{elements = Elements} = ListExpr, Checks) ->
     NewElements = [remove_checks_from_expr(Elem, Checks) || Elem <- Elements],
     ListExpr#list_expr{elements = NewElements};

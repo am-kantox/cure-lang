@@ -10,6 +10,7 @@
 ]).
 
 -include("../parser/cure_ast.hrl").
+-include("cure_codegen.hrl").
 
 %% ============================================================================
 %% Typeclass Compilation
@@ -108,17 +109,22 @@ compile_instance(
     % Compile each method with mangled name, threading state through
     case compile_instance_methods(TypeclassName, PrimaryType, Methods, State, []) of
         {ok, CompiledMethods, NewState} ->
-            % TODO: Generate registration code for this instance
-            % For now, skip registration to avoid form conversion issues
-            % RegistrationCode = generate_instance_registration(
-            %     TypeclassName,
-            %     PrimaryType,
-            %     CompiledMethods,
-            %     NewState
-            % ),
-
-            % Return just compiled methods (no registration for now)
-            {ok, CompiledMethods, NewState};
+            % Generate registration code and update state
+            case
+                generate_instance_registration(
+                    TypeclassName, PrimaryType, CompiledMethods, NewState
+                )
+            of
+                {ok, RegistrationInfo, UpdatedState} ->
+                    % Return compiled methods and updated state with registration info
+                    {ok, CompiledMethods, UpdatedState};
+                {error, Reason} ->
+                    % Log registration failure but continue (non-fatal)
+                    cure_utils:debug("Instance registration failed for ~p(~p): ~p~n", [
+                        TypeclassName, PrimaryType, Reason
+                    ]),
+                    {ok, CompiledMethods, NewState}
+            end;
         {error, Reason} ->
             {error, Reason}
     end.
@@ -432,63 +438,85 @@ registers the instance with cure_instance_registry when the module is loaded.
 ## Returns
 - Registration code structure with on_load hook
 """.
--spec generate_instance_registration(atom(), atom(), [term()], term()) -> term().
-generate_instance_registration(TypeclassName, TypeName, CompiledMethods, _State) ->
-    % Extract method names and arities from compiled methods
-    MethodMap = build_method_map(TypeclassName, TypeName, CompiledMethods),
+-spec generate_instance_registration(atom(), atom(), [term()], term()) ->
+    {ok, term(), term()} | {error, term()}.
+generate_instance_registration(TypeclassName, TypeName, CompiledMethods, State) ->
+    try
+        % Extract method names and arities from compiled methods
+        MethodMap = build_method_map(TypeclassName, TypeName, CompiledMethods),
 
-    % Generate the registration function
-    Line = 1,
-    ModuleName = get_current_module_name(),
+        % Generate the registration function
+        Line = 1,
+        ModuleName = get_current_module_name(),
 
-    % Build the method map as an Erlang term
-    MethodMapExpr = generate_method_map_expr(MethodMap, Line),
+        % Build the method map as an Erlang term
+        MethodMapExpr = generate_method_map_expr(MethodMap, Line),
 
-    % Build the type expression
-    TypeExpr = generate_type_expr(TypeName, Line),
+        % Build the type expression
+        TypeExpr = generate_type_expr(TypeName, Line),
 
-    % Generate the registration function body:
-    % register_instance() ->
-    %     cure_instance_registry:register_instance(
-    %         'TypeclassName',
-    %         {primitive_type, 'TypeName'},
-    %         #{method1 => {module, function, arity}, ...}
-    %     ).
-    RegistrationBody = {
-        call,
-        {remote, Line, {atom, Line, cure_instance_registry}, {atom, Line, register_instance}},
-        [
-            {atom, Line, TypeclassName},
-            TypeExpr,
-            MethodMapExpr
-        ]
-    },
+        % Generate the registration function body:
+        % register_instance() ->
+        %     cure_instance_registry:register_instance(
+        %         'TypeclassName',
+        %         {primitive_type, 'TypeName'},
+        %         #{method1 => {module, function, arity}, ...}
+        %     ).
+        RegistrationBody = {
+            call,
+            {remote, Line, {atom, Line, cure_instance_registry}, {atom, Line, register_instance}},
+            [
+                {atom, Line, TypeclassName},
+                TypeExpr,
+                MethodMapExpr
+            ]
+        },
 
-    RegistrationFunction = {
-        function,
-        Line,
-        register_instance,
-        0,
-        [{clause, Line, [], [], [RegistrationBody]}]
-    },
+        RegistrationFunction = {
+            function,
+            Line,
+            register_instance,
+            0,
+            [{clause, Line, [], [], [RegistrationBody]}]
+        },
 
-    % Generate -on_load attribute
-    OnLoadAttr = {
-        attribute,
-        Line,
-        on_load,
-        {register_instance, 0}
-    },
+        % Generate -on_load attribute
+        OnLoadAttr = {
+            attribute,
+            Line,
+            on_load,
+            {register_instance, 0}
+        },
 
-    % Return structure with both on_load and function
-    #{
-        type => instance_registration,
-        on_load_attr => OnLoadAttr,
-        registration_function => RegistrationFunction,
-        typeclass => TypeclassName,
-        type_name => TypeName,
-        module => ModuleName
-    }.
+        % Update state with instance registry information
+        RegistrationInfo = #{
+            type => instance_registration,
+            on_load_attr => OnLoadAttr,
+            registration_function => RegistrationFunction,
+            typeclass => TypeclassName,
+            type_name => TypeName,
+            module => ModuleName
+        },
+
+        % Update instance_registry in state
+        CurrentRegistry = maps:get(instance_registry, State, #{}),
+        UpdatedRegistry = update_instance_registry(
+            CurrentRegistry, TypeclassName, TypeName, ModuleName
+        ),
+        UpdatedState = State#codegen_state{instance_registry = UpdatedRegistry},
+
+        {ok, RegistrationInfo, UpdatedState}
+    catch
+        Class:Error:Stack ->
+            cure_utils:debug("Instance registration error for ~p(~p): ~p:~p~n", [
+                TypeclassName, TypeName, Class, Error
+            ]),
+            case os:getenv("CURE_DEBUG") of
+                "1" -> cure_utils:debug("Stack: ~p~n", [Stack]);
+                _ -> ok
+            end,
+            {error, {registration_failed, TypeclassName, TypeName, Error}}
+    end.
 
 %% Build method map from compiled methods
 build_method_map(_TypeclassName, _TypeName, CompiledMethods) ->
@@ -536,6 +564,15 @@ generate_type_expr(TypeName, Line) ->
         {atom, Line, primitive_type},
         {atom, Line, TypeName}
     ]}.
+
+%% Update instance registry with new instance entry
+update_instance_registry(CurrentRegistry, TypeclassName, TypeName, ModuleName) ->
+    % Ensure typeclass key exists in registry
+    TypeclassMap = maps:get(TypeclassName, CurrentRegistry, #{}),
+    % Add type entry mapping to module
+    UpdatedTypeMap = maps:put(TypeName, {module, ModuleName}, TypeclassMap),
+    % Update registry
+    maps:put(TypeclassName, UpdatedTypeMap, CurrentRegistry).
 
 %% Get current module name from state or use placeholder
 get_current_module_name() ->

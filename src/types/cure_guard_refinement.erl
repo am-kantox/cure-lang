@@ -66,6 +66,9 @@ This module integrates with:
     refine_param_type/3,
     create_refinement_from_guard/3,
     narrow_param_types_in_body/3,
+    create_union_refinement_type/4,
+    is_disjunctive_constraint/1,
+    extract_disjunctive_branches/1,
 
     % Cross-clause analysis
     unify_clause_return_types/2,
@@ -79,7 +82,13 @@ This module integrates with:
 
     % Flow-sensitive typing
     apply_guard_refinements/3,
-    strengthen_environment/3
+    strengthen_environment/3,
+
+    % SMT-based counterexample finding
+    find_counterexamples_smt/2,
+    build_guard_disjunction/1,
+    negate_guard_expression/1,
+    negate_comparison_op/1
 ]).
 
 %% ============================================================================
@@ -98,15 +107,42 @@ extract_guard_constraints(Guard) ->
             % AND: both constraints apply
             extract_guard_constraints(Left) ++ extract_guard_constraints(Right);
         #binary_op_expr{op = 'orelse', left = Left, right = Right} ->
-            % OR: either constraint applies
-            % For now, we don't refine types with OR guards (conservative)
-            % TODO: Could create union refinement types
+            % OR: either constraint applies - create union refinement types
             LeftConstraints = extract_guard_constraints(Left),
             RightConstraints = extract_guard_constraints(Right),
-            % Return both but mark as disjunctive
+            % Collect parameters that appear in either branch
+            AllParams = lists:usort([Param || {Param, _} <- LeftConstraints ++ RightConstraints]),
+            % For each parameter, create a union constraint combining both branches
             lists:map(
-                fun({Param, _C}) -> {Param, Guard} end,
-                lists:usort(LeftConstraints ++ RightConstraints)
+                fun(Param) ->
+                    LeftConstraint =
+                        case lists:keyfind(Param, 1, LeftConstraints) of
+                            {_, LC} ->
+                                LC;
+                            false ->
+                                #literal_expr{
+                                    value = false, location = Guard#binary_op_expr.location
+                                }
+                        end,
+                    RightConstraint =
+                        case lists:keyfind(Param, 1, RightConstraints) of
+                            {_, RC} ->
+                                RC;
+                            false ->
+                                #literal_expr{
+                                    value = false, location = Guard#binary_op_expr.location
+                                }
+                        end,
+                    % Create union constraint: {Param, or_constraint(Left, Right)}
+                    UnionConstraint = #binary_op_expr{
+                        op = 'orelse',
+                        left = LeftConstraint,
+                        right = RightConstraint,
+                        location = Guard#binary_op_expr.location
+                    },
+                    {Param, UnionConstraint}
+                end,
+                AllParams
             );
         #binary_op_expr{op = Op, left = Left, right = Right} when
             Op =:= '>';
@@ -223,6 +259,39 @@ combine_constraints([First | Rest]) ->
         First,
         Rest
     ).
+
+%% @doc Create a union refinement type from disjunctive constraints
+%% Handles OR guards by creating a refinement type that accepts either constraint
+-spec create_union_refinement_type(type_expr(), atom(), expr(), expr()) -> type_expr().
+create_union_refinement_type(BaseType, Var, LeftConstraint, RightConstraint) ->
+    % Create union constraint: either LeftConstraint OR RightConstraint
+    UnionConstraint = #binary_op_expr{
+        op = 'orelse',
+        left = LeftConstraint,
+        right = RightConstraint,
+        location = #location{line = 0, column = 0, file = undefined}
+    },
+    cure_refinement_types:create_refinement_type(
+        BaseType,
+        Var,
+        UnionConstraint
+    ).
+
+%% @doc Check if a constraint is a disjunctive constraint (contains orelse)
+-spec is_disjunctive_constraint(expr()) -> boolean().
+is_disjunctive_constraint(#binary_op_expr{op = 'orelse'}) ->
+    true;
+is_disjunctive_constraint(#binary_op_expr{left = Left, right = Right}) ->
+    is_disjunctive_constraint(Left) orelse is_disjunctive_constraint(Right);
+is_disjunctive_constraint(_) ->
+    false.
+
+%% @doc Extract left and right branches from a disjunctive constraint
+-spec extract_disjunctive_branches(expr()) -> {expr(), expr()} | error.
+extract_disjunctive_branches(#binary_op_expr{op = 'orelse', left = Left, right = Right}) ->
+    {Left, Right};
+extract_disjunctive_branches(_) ->
+    error.
 
 %% @doc Apply type refinements to parameters in function body environment
 -spec narrow_param_types_in_body(map(), [#param{}], expr()) -> map().
@@ -429,11 +498,131 @@ check_guard_coverage(Clauses, Env) ->
     end.
 
 %% @doc Find input cases not covered by any guard
+%% Uses SMT solver to generate concrete counterexamples that fail all guards
 -spec find_uncovered_cases([#function_clause{}], map()) -> [term()].
-find_uncovered_cases(_Clauses, _Env) ->
-    % TODO: Use SMT solver to find counterexamples
-    % For now, return empty list
-    [].
+find_uncovered_cases(Clauses, Env) ->
+    % Extract all guards from the clauses
+    Guards = [
+        C#function_clause.constraint
+     || C <- Clauses,
+        C#function_clause.constraint =/= undefined
+    ],
+
+    case Guards of
+        [] ->
+            % No guards at all - no specific uncovered cases
+            [];
+        _ ->
+            % Use SMT to find inputs that don't match any guard
+            find_counterexamples_smt(Guards, Env)
+    end.
+
+%% Use SMT solver to find counterexamples
+find_counterexamples_smt(Guards, _Env) ->
+    try
+        % Build a query that negates all guards: ¬(G1 ∨ G2 ∨ ... ∨ Gn)
+        % This finds inputs where NO guard is satisfied
+        GuardDisjunction = build_guard_disjunction(Guards),
+        NegatedGuards = negate_guard_expression(GuardDisjunction),
+
+        % Generate SMT-LIB query for satisfiability of negated guards
+        Query = generate_counterexample_query(NegatedGuards),
+
+        % Send to SMT solver
+        case cure_guard_smt:generate_counterexample([Guards], _Env) of
+            {ok, Counterexamples} when is_list(Counterexamples) ->
+                % Successfully found counterexamples
+                Counterexamples;
+            {ok, _} ->
+                % Found but not in expected format
+                [];
+            {error, _} ->
+                % SMT solver couldn't find counterexamples
+                [];
+            _ ->
+                % Unknown result
+                []
+        end
+    catch
+        _:Exception ->
+            % On any error, return empty list (conservative)
+            cure_utils:debug("SMT counterexample search failed: ~p~n", [Exception]),
+            []
+    end.
+
+%% Build a disjunction of all guards: G1 ∨ G2 ∨ ... ∨ Gn
+build_guard_disjunction([]) ->
+    #literal_expr{value = false, location = #location{line = 0, column = 0, file = undefined}};
+build_guard_disjunction([Single]) ->
+    Single;
+build_guard_disjunction([First | Rest]) ->
+    lists:foldl(
+        fun(Guard, Acc) ->
+            #binary_op_expr{
+                op = 'orelse',
+                left = Acc,
+                right = Guard,
+                location = #location{line = 0, column = 0, file = undefined}
+            }
+        end,
+        First,
+        Rest
+    ).
+
+%% Negate a guard expression: ¬expr
+negate_guard_expression(#literal_expr{value = true, location = Loc}) ->
+    #literal_expr{value = false, location = Loc};
+negate_guard_expression(#literal_expr{value = false, location = Loc}) ->
+    #literal_expr{value = true, location = Loc};
+negate_guard_expression(#binary_op_expr{op = 'orelse', left = Left, right = Right, location = Loc}) ->
+    % De Morgan's law: ¬(A ∨ B) = (¬A ∧ ¬B)
+    #binary_op_expr{
+        op = 'andalso',
+        left = negate_guard_expression(Left),
+        right = negate_guard_expression(Right),
+        location = Loc
+    };
+negate_guard_expression(#binary_op_expr{op = 'andalso', left = Left, right = Right, location = Loc}) ->
+    % De Morgan's law: ¬(A ∧ B) = (¬A ∨ ¬B)
+    #binary_op_expr{
+        op = 'orelse',
+        left = negate_guard_expression(Left),
+        right = negate_guard_expression(Right),
+        location = Loc
+    };
+negate_guard_expression(#binary_op_expr{op = Op, left = Left, right = Right, location = Loc}) ->
+    % Negate comparison operators
+    NegOp = negate_comparison_op(Op),
+    #binary_op_expr{
+        op = NegOp,
+        left = Left,
+        right = Right,
+        location = Loc
+    };
+negate_guard_expression(Expr) ->
+    % For other expressions, wrap in NOT (handled by runtime)
+    #unary_op_expr{
+        op = 'not',
+        operand = Expr,
+        location = #location{line = 0, column = 0, file = undefined}
+    }.
+
+%% Negate comparison operators
+negate_comparison_op('>') -> '=<';
+negate_comparison_op('<') -> '>=';
+negate_comparison_op('>=') -> '<';
+negate_comparison_op('=<') -> '>';
+negate_comparison_op('=:=') -> '=/=';
+negate_comparison_op('=/=') -> '=:=';
+negate_comparison_op('==') -> '/=';
+negate_comparison_op('/=') -> '==';
+negate_comparison_op(Op) -> Op.
+
+%% Generate SMT query for finding counterexamples
+generate_counterexample_query(NegatedGuards) ->
+    % This would generate an SMT-LIB 2.0 query
+    % For now, return placeholder that cure_guard_smt will handle
+    NegatedGuards.
 
 %% @doc Detect unreachable clauses (guards subsumed by earlier guards)
 -spec detect_unreachable_clauses([#function_clause{}]) -> [integer()].

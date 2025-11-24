@@ -36,7 +36,7 @@ module ListBasics do
     println("")
     
     println("=== Demo Complete ===")
-    doubled
+    sum
     # safe_divide(sum, 2)
 
   def double_list(numbers: List(Int)): List(Int) =
