@@ -1,0 +1,193 @@
+# Advanced Refinement Types Examples
+# Demonstrates more complex refinement type patterns
+
+module RefinementTypesAdvanced do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  
+  # =============================================================================
+  # EXAMPLE 1: Return Type Refinements
+  # =============================================================================
+  # These examples show how to use refinements in return types
+  
+  # absolute value always returns non-negative
+  def absolute(x: Int): {result: Int | result >= 0} =
+    match x do
+      n when n >= 0 -> n
+      n -> 0 - n
+    end
+  
+  # square always returns non-negative
+  def square(x: Int): {result: Int | result >= 0} =
+    x * x
+  
+  # =============================================================================
+  # EXAMPLE 2: Chained Refinements
+  # =============================================================================
+  # Using refined values from one function in another
+  
+  # Input must be positive, output is guaranteed positive
+  def double_positive(n: {x: Int | x > 0}): {y: Int | y > 0} =
+    n * 2
+  
+  # Takes positive, returns positive (chaining)
+  def chain_operations(start: {x: Int | x > 0}): {result: Int | result > 0} =
+    let doubled = double_positive(start)
+    doubled
+  
+  # =============================================================================
+  # EXAMPLE 3: Complex Constraint Combinations
+  # =============================================================================
+  
+  # Temperature must be above absolute zero
+  def celsius_to_kelvin(celsius: {t: Float | t >= -273.15}): {k: Float | k >= 0.0} =
+    celsius + 273.15
+  
+  # Percentage operations preserve range
+  def half_percentage(pct: {p: Int | p >= 0 and p <= 100}): {h: Int | h >= 0 and h <= 50} =
+    p / 2
+  
+  # Clamp value to range
+  def clamp_to_percentage(value: Int): {result: Int | result >= 0 and result <= 100} =
+    match value do
+      v when v < 0 -> 0
+      v when v > 100 -> 100
+      v -> v
+    end
+  
+  # =============================================================================
+  # EXAMPLE 4: Disjunctive Constraints (OR)
+  # =============================================================================
+  
+  # Value must be either very small or very large
+  def process_extreme(n: {x: Int | x < -100 or x > 100}): Bool =
+    true
+  
+  # Weekend days (0=Sunday, 6=Saturday)
+  def is_weekend(day: {d: Int | d == 0 or d == 6}): Bool =
+    true
+  
+  # =============================================================================
+  # EXAMPLE 5: Negation in Constraints
+  # =============================================================================
+  
+  # Any integer except zero
+  def reciprocal_prep(n: {x: Int | not (x == 0)}): Int =
+    n
+  
+  # Alternative syntax for non-zero
+  def reciprocal_prep2(n: {x: Int | x != 0}): Int =
+    n
+  
+  # =============================================================================
+  # EXAMPLE 6: Multiple Parameter Refinements
+  # =============================================================================
+  
+  # Both parameters must be positive
+  def multiply_positives(
+    a: {x: Int | x > 0},
+    b: {y: Int | y > 0}
+  ): {result: Int | result > 0} =
+    a * b
+  
+  # Range constraints on multiple parameters
+  def in_range(
+    value: Int,
+    min: {low: Int | low >= 0},
+    max: {high: Int | high >= 0 and high >= low}
+  ): Bool =
+    value >= min and value <= max
+  
+  # =============================================================================
+  # EXAMPLE 7: Arithmetic Constraints
+  # =============================================================================
+  
+  # Dividing by 2 always produces smaller result for positive inputs
+  def halve(n: {x: Int | x > 0}): {half: Int | half >= 0} =
+    n / 2
+  
+  # Adding two positive numbers yields positive result
+  def add_positive(
+    a: {x: Int | x > 0},
+    b: {y: Int | y > 0}
+  ): {sum: Int | sum > 0} =
+    a + b
+  
+  # =============================================================================
+  # HELPER FUNCTIONS
+  # =============================================================================
+  
+  def show_int(n: Int): String =
+    match n do
+      x when x == 0 -> "0"
+      x when x == 1 -> "1"
+      x when x == 2 -> "2"
+      x when x == 5 -> "5"
+      x when x == 10 -> "10"
+      x when x == 20 -> "20"
+      x when x == 25 -> "25"
+      x when x == 50 -> "50"
+      x when x == 100 -> "100"
+      _ -> "[int]"
+    end
+  
+  def show_float(f: Float): String =
+    match f do
+      x when x == 0.0 -> "0.0"
+      x when x == 273.15 -> "273.15"
+      _ -> "[float]"
+    end
+  
+  def show_bool(b: Bool): String =
+    match b do
+      true -> "true"
+      false -> "false"
+    end
+  
+  # =============================================================================
+  # MAIN DEMONSTRATION
+  # =============================================================================
+  
+  def main(): Int =
+    println("=== ADVANCED REFINEMENT TYPES ===")
+    
+    # Example 1: Return type refinements
+    println("1. Return Type Refinements")
+    let abs_result = absolute(0 - 5)
+    println("abs(-5) = " <> show_int(abs_result))
+    let sq_result = square(5)
+    println("square(5) = " <> show_int(sq_result))
+    
+    # Example 2: Chained refinements
+    println("2. Chained Refinements")
+    let doubled = double_positive(5)
+    println("double_positive(5) = " <> show_int(doubled))
+    let chained = chain_operations(10)
+    println("chain_operations(10) = " <> show_int(chained))
+    
+    # Example 3: Complex constraints
+    println("3. Complex Constraints")
+    let kelvin = celsius_to_kelvin(0.0)
+    println("celsius_to_kelvin(0.0) = " <> show_float(kelvin))
+    let half_pct = half_percentage(50)
+    println("half_percentage(50) = " <> show_int(half_pct))
+    let clamped = clamp_to_percentage(150)
+    println("clamp_to_percentage(150) = " <> show_int(clamped))
+    
+    # Example 6: Multiple parameter refinements
+    println("4. Multiple Parameter Refinements")
+    let product = multiply_positives(5, 10)
+    println("multiply_positives(5, 10) = " <> show_int(product))
+    
+    # Example 7: Arithmetic constraints
+    println("5. Arithmetic Constraints")
+    let halved = halve(20)
+    println("halve(20) = " <> show_int(halved))
+    let sum = add_positive(10, 20)
+    println("add_positive(10, 20) = " <> show_int(sum))
+    
+    println("=== All refinement examples completed! ===")
+    0
+
+end

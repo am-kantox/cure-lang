@@ -1,0 +1,49 @@
+# Type Aliases with Refinements Test
+# Tests if type aliases can use refinement types
+
+module RefinementTypeAliases do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  
+  # Try to define type aliases with refinements
+  type Positive = {x: Int | x > 0}
+  type NonZero = {x: Int | x != 0}
+  type Percentage = {p: Int | p >= 0 and p <= 100}
+  
+  # Use the type aliases in function signatures
+  def double_positive(n: Positive): Positive =
+    n * 2
+  
+  def safe_divide(numerator: Int, denominator: NonZero): Int =
+    numerator / denominator
+  
+  def validate_percentage(value: Percentage): Percentage =
+    value
+  
+  # Helper functions
+  def show_int(n: Int): String =
+    match n do
+      x when x == 2 -> "2"
+      x when x == 5 -> "5"
+      x when x == 10 -> "10"
+      x when x == 50 -> "50"
+      _ -> "[int]"
+    end
+  
+  def main(): Int =
+    println("=== TYPE ALIAS REFINEMENT TEST ===")
+    
+    let doubled = double_positive(5)
+    println("double_positive(5) = " <> show_int(doubled))
+    
+    let quotient = safe_divide(10, 2)
+    println("safe_divide(10, 2) = " <> show_int(quotient))
+    
+    let pct = validate_percentage(50)
+    println("validate_percentage(50) = " <> show_int(pct))
+    
+    println("=== If this compiles, type aliases work! ===")
+    0
+
+end

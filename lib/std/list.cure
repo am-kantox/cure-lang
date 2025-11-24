@@ -11,7 +11,7 @@ module Std.List do
     map/2, filter/2, fold/3, zip_with/3,
     
     # Access
-    # nth/3, take/2, drop/2,
+    nth/3, take/2, drop/2,
     
     # Simple predicates
     contains/2
@@ -104,31 +104,31 @@ module Std.List do
   # Access
   def nth(list: List(T), index: Nat, default: T): T =
     match index do
-      0 -> head(list, default)
-      _ -> nth(tail(list), Pred(index), default)
+      Zero -> head(list, default)
+      Succ(pred) -> nth(tail(list), pred, default)
     end
 
   def take(list: List(T), n: Nat): List(T) =
     match n do
-      0 ->
+      Zero ->
         []
-      _ ->
+      Succ(pred) ->
         match list do
           [] -> []
-          [h | t] -> [h | take(t, Pred(n))]
+          [h | t] -> [h | take(t, pred)]
         end
     end
 
   def drop(list: List(T), n: Nat): List(T) =
     match n do
-      0 ->
+      Zero ->
         list
-      _ ->
+      Succ(pred) ->
         match list do
           [] -> []
-          [_ | t] -> drop(t, Pred(n))
+          [_ | t] -> drop(t, pred)
         end
-   end
+    end
 
   # Simple predicates
   def contains(list: List(T), element: T): Bool =

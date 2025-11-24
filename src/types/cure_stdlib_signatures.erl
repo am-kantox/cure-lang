@@ -421,6 +421,18 @@ get_function_type('Std.Math', subtract, 2) ->
     {ok,
         {function_type, [{primitive_type, 'Int'}, {primitive_type, 'Int'}],
             {primitive_type, 'Int'}}};
+get_function_type('Std.Ord', ge, 2) ->
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'Bool'}}};
+get_function_type('Std.Ord', gt, 2) ->
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'Bool'}}};
+get_function_type('Std.Ord', le, 2) ->
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'Bool'}}};
+get_function_type('Std.Ord', lt, 2) ->
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'Bool'}}};
+get_function_type('Std.Ord', max, 2) ->
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'T'}}};
+get_function_type('Std.Ord', min, 2) ->
+    {ok, {function_type, [{primitive_type, 'T'}, {primitive_type, 'T'}], {primitive_type, 'T'}}};
 get_function_type('Std.Pair', pair, 2) ->
     {ok,
         {function_type, [{primitive_type, 'Any'}, {primitive_type, 'Any'}],
@@ -928,6 +940,12 @@ all_signatures() ->
         {'Std.Math', power, 2},
         {'Std.Math', sign, 1},
         {'Std.Math', subtract, 2},
+        {'Std.Ord', ge, 2},
+        {'Std.Ord', gt, 2},
+        {'Std.Ord', le, 2},
+        {'Std.Ord', lt, 2},
+        {'Std.Ord', max, 2},
+        {'Std.Ord', min, 2},
         {'Std.Pair', pair, 2},
         {'Std.Rec', get, 2},
         {'Std.Rec', new, 0},

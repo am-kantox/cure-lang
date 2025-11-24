@@ -1,0 +1,130 @@
+# Record Update Syntax Demonstration
+# Shows the new record update syntax: Record{base | field: value}
+
+module RecordUpdatesDemo do
+  export [main/0]
+
+  import Std.Io [println/1]
+
+  # Simple record for demonstration
+  record Counter do
+    value: Int
+  end
+
+  record Point do
+    x: Float
+    y: Float
+  end
+
+  record Person do
+    name: String
+    age: Int
+    email: String
+  end
+
+  # =========================================
+  # FIELD ACCESS EXAMPLES
+  # =========================================
+
+  def get_value(c: Counter): Int =
+    c.value
+
+  def get_x(p: Point): Float =
+    p.x
+
+  def get_y(p: Point): Float =
+    p.y
+
+  def get_name(p: Person): String =
+    p.name
+
+  # =========================================
+  # RECORD UPDATE EXAMPLES
+  # =========================================
+
+  # Single field update
+  def increment(c: Counter): Counter =
+    Counter{c | value: c.value + 1}
+
+  # Multiple field update
+  def move(p: Point, dx: Float, dy: Float): Point =
+    Point{p | x: p.x + dx, y: p.y + dy}
+
+  # Update with computation
+  def birthday(p: Person): Person =
+    Person{p | age: p.age + 1}
+
+  # Update multiple fields
+  def update_contact(p: Person, new_email: String): Person =
+    Person{p | email: new_email, age: p.age + 1}
+
+  # =========================================
+  # HELPER FUNCTIONS
+  # =========================================
+
+  def show_int(n: Int): String =
+    match n do
+      x when x == 0 -> "0"
+      x when x == 1 -> "1"
+      x when x == 2 -> "2"
+      x when x == 3 -> "3"
+      x when x == 10 -> "10"
+      x when x == 30 -> "30"
+      x when x == 31 -> "31"
+      _ -> "[int]"
+    end
+
+  def show_float(f: Float): String =
+    match f do
+      x when x == 0.0 -> "0.0"
+      x when x == 1.0 -> "1.0"
+      x when x == 3.0 -> "3.0"
+      x when x == 4.0 -> "4.0"
+      x when x == 5.0 -> "5.0"
+      x when x == 6.0 -> "6.0"
+      _ -> "[float]"
+    end
+
+  # =========================================
+  # MAIN DEMONSTRATION
+  # =========================================
+
+  def main(): Int =
+    println("=== RECORD UPDATE SYNTAX DEMO ===")
+
+    # Field Access Demo
+    println("1. Field Access")
+    let c1 = Counter{value: 10}
+    let v1 = get_value(c1)
+    println("Counter value: " <> show_int(v1))
+
+    let pt1 = Point{x: 3.0, y: 4.0}
+    let x1 = get_x(pt1)
+    let y1 = get_y(pt1)
+    println("Point: (" <> show_float(x1) <> ", " <> show_float(y1) <> ")")
+
+    # Record Update Demo
+    println("2. Record Updates")
+    let c2 = increment(c1)
+    let v2 = get_value(c2)
+    println("After increment: " <> show_int(v2))
+
+    let pt2 = move(pt1, 1.0, 2.0)
+    let x2 = get_x(pt2)
+    let y2 = get_y(pt2)
+    println("After move: (" <> show_float(x2) <> ", " <> show_float(y2) <> ")")
+
+    let alice = Person{name: "Alice", age: 30, email: "alice@example.com"}
+    let alice_older = birthday(alice)
+    let new_age = alice_older.age
+    println("After birthday: " <> show_int(new_age))
+
+    let alice_updated = update_contact(alice, "alice.new@example.com")
+    let updated_age = alice_updated.age
+    let updated_email = alice_updated.email
+    println("Updated: " <> updated_email <> ", age " <> show_int(updated_age))
+
+    println("=== Demo complete! ===")
+    0
+
+end

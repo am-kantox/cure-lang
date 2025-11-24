@@ -91,8 +91,31 @@ module RecordsComprehensive do
     pt.y
 
   # =========================================
-  # 5. HELPER: Creating new records from existing
+  # 5. RECORD UPDATE SYNTAX
   # =========================================
+  # Update syntax: Record{base | field: new_value, ...}
+  # This creates a new record with updated fields
+
+  # Update single field - age
+  def birthday(p: Person): Person =
+    Person{p | age: p.age + 1}
+
+  # Update multiple fields at once
+  def update_contact(p: Person, new_email: String, new_age: Int): Person =
+    Person{p | email: new_email, age: new_age}
+
+  # Update point coordinates
+  def move_point(pt: Point, dx: Float, dy: Float): Point =
+    Point{pt | x: pt.x + dx, y: pt.y + dy}
+
+  # Update single field
+  def set_x(pt: Point, new_x: Float): Point =
+    Point{pt | x: new_x}
+
+  # =========================================
+  # 6. HELPER: Creating new records from existing (old style)
+  # =========================================
+  # Note: Record update syntax is preferred over this
 
   # Create a new Person with modified age
   def with_age(n: String, a: Int, e: String, new_age: Int): Person =
@@ -103,7 +126,7 @@ module RecordsComprehensive do
     Point{x: new_x, y: new_y}
 
   # =========================================
-  # 6. HELPER FUNCTIONS
+  # 7. HELPER FUNCTIONS
   # =========================================
 
   def show_int(n: Int): String =
@@ -135,7 +158,7 @@ module RecordsComprehensive do
     end
 
   # =========================================
-  # 7. MAIN DEMONSTRATION
+  # 8. MAIN DEMONSTRATION
   # =========================================
 
   def main(): Int =
@@ -183,6 +206,25 @@ module RecordsComprehensive do
     let new_x = get_x(pt2)
     let new_y = get_y(pt2)
     println("Created new point: (" <> show_float(new_x) <> ", " <> show_float(new_y) <> ")")
+
+    # Record Update Syntax
+    println("5. Record Update Syntax")
+    let alice_birthday = birthday(alice)
+    let birthday_age = get_age(alice_birthday)
+    println("After birthday: " <> show_int(birthday_age))
+    let alice_updated = update_contact(alice, "alice.new@example.com", 31)
+    let updated_email = get_email(alice_updated)
+    let updated_age = get_age(alice_updated)
+    println("Updated email: " <> updated_email)
+    println("Updated age: " <> show_int(updated_age))
+    let pt_moved = move_point(pt1, 1.0, 1.0)
+    let moved_x = get_x(pt_moved)
+    let moved_y = get_y(pt_moved)
+    println("Moved point: (" <> show_float(moved_x) <> ", " <> show_float(moved_y) <> ")")
+    let pt_set_x = set_x(pt1, 10.0)
+    let set_x_val = get_x(pt_set_x)
+    let set_y_val = get_y(pt_set_x)
+    println("Point with new x: (" <> show_float(set_x_val) <> ", " <> show_float(set_y_val) <> ")")
 
     println("=== All operations completed! ===")
     0

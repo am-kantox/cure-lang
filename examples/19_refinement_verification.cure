@@ -1,0 +1,149 @@
+# Refinement Type Verification Tests
+# This file tests features that need verification:
+# 1. Return type refinements
+# 2. Type aliases with refinements (if supported)
+# 3. Nested refinements
+# 4. Runtime check behavior
+
+module RefinementVerification do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  
+  # =============================================================================
+  # TEST 1: Return Type Refinements
+  # =============================================================================
+  # These should compile if return type refinements are supported
+  
+  # Simple return type refinement
+  def always_positive(x: Int): {result: Int | result >= 0} =
+    match x do
+      n when n >= 0 -> n
+      n -> 0 - n
+    end
+  
+  # Return type with complex constraint
+  def make_percentage(raw: Int): {p: Int | p >= 0 and p <= 100} =
+    match raw do
+      v when v < 0 -> 0
+      v when v > 100 -> 100
+      v -> v
+    end
+  
+  # Return type that depends on input constraint
+  def double_positive(n: {x: Int | x > 0}): {result: Int | result > 0} =
+    n * 2
+  
+  # =============================================================================
+  # TEST 2: Type Aliases with Refinements
+  # =============================================================================
+  # UNCOMMENT IF TYPE ALIASES ARE SUPPORTED:
+  
+  # type Positive = {x: Int | x > 0}
+  # type NonZero = {x: Int | x != 0}
+  # type Percentage = {p: Int | p >= 0 and p <= 100}
+  # 
+  # def use_alias(n: Positive): Int = n * 2
+  # def div_alias(a: Int, b: NonZero): Int = a / b
+  
+  # =============================================================================
+  # TEST 3: Nested Refinements
+  # =============================================================================
+  # UNCOMMENT TO TEST NESTED REFINEMENTS:
+  
+  # List of positive integers
+  # def sum_positives(list: List({x: Int | x > 0})): Int =
+  #   match list do
+  #     [] -> 0
+  #     [h | t] -> h + sum_positives(t)
+  #   end
+  
+  # Tuple with refined elements
+  # def process_pair(pair: ({x: Int | x > 0}, {y: Int | y > 0})): Int =
+  #   match pair do
+  #     {a, b} -> a + b
+  #   end
+  
+  # =============================================================================
+  # TEST 4: Runtime Check Behavior
+  # =============================================================================
+  # These test what happens when SMT cannot statically prove constraints
+  
+  # When input is Int (no constraint), but function expects refined type
+  def safe_reciprocal(n: {x: Int | x != 0}): Int =
+    100 / n
+  
+  # This should require a runtime check or compile-time error
+  def risky_call(value: Int): Int =
+    # If value could be 0, this should either:
+    # a) Generate runtime check, or
+    # b) Fail at compile time
+    safe_reciprocal(value)
+  
+  # =============================================================================
+  # HELPER FUNCTIONS
+  # =============================================================================
+  
+  def show_int(n: Int): String =
+    match n do
+      x when x == -5 -> "-5"
+      x when x == 0 -> "0"
+      x when x == 1 -> "1"
+      x when x == 5 -> "5"
+      x when x == 10 -> "10"
+      x when x == 25 -> "25"
+      x when x == 50 -> "50"
+      x when x == 100 -> "100"
+      x when x == 150 -> "150"
+      _ -> "[int]"
+    end
+  
+  # =============================================================================
+  # MAIN - Test Return Type Refinements
+  # =============================================================================
+  
+  def main(): Int =
+    println("=== REFINEMENT VERIFICATION TESTS ===")
+    
+    # TEST 1: Return type refinements
+    println("TEST 1: Return Type Refinements")
+    
+    let pos1 = always_positive(5)
+    println("always_positive(5) = " <> show_int(pos1))
+    
+    let pos2 = always_positive(0 - 5)
+    println("always_positive(-5) = " <> show_int(pos2))
+    
+    let pct1 = make_percentage(50)
+    println("make_percentage(50) = " <> show_int(pct1))
+    
+    let pct2 = make_percentage(150)
+    println("make_percentage(150) = " <> show_int(pct2))
+    
+    let doubled = double_positive(5)
+    println("double_positive(5) = " <> show_int(doubled))
+    
+    # TEST 2: Type aliases
+    println("")
+    println("TEST 2: Type Aliases")
+    println("(Test code commented out - uncomment if supported)")
+    
+    # TEST 3: Nested refinements
+    println("")
+    println("TEST 3: Nested Refinements")
+    println("(Test code commented out - uncomment to test)")
+    
+    # TEST 4: Runtime checks
+    println("")
+    println("TEST 4: Runtime Check Behavior")
+    # This call might require runtime checking or fail at compile time
+    # let risky = risky_call(10)
+    # println("risky_call(10) = " <> show_int(risky))
+    println("(Runtime check test commented out to avoid potential errors)")
+    
+    println("")
+    println("=== Tests completed! ===")
+    println("If this compiled successfully, return type refinements are working!")
+    0
+
+end

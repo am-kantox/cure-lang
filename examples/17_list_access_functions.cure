@@ -1,0 +1,114 @@
+# List Access Functions Demo
+# Demonstrates nth, take, and drop functions from Std.List
+
+module ListAccessDemo do
+  export [main/0]
+
+  import Std.Io [println/1]
+  import Std.List [nth/3, take/2, drop/2]
+
+  # Helper to show Int
+  def show_int(n: Int): String =
+    match n do
+      x when x == 0 -> "0"
+      x when x == 1 -> "1"
+      x when x == 2 -> "2"
+      x when x == 3 -> "3"
+      x when x == 4 -> "4"
+      x when x == 5 -> "5"
+      x when x == 10 -> "10"
+      x when x == 20 -> "20"
+      x when x == 30 -> "30"
+      x when x == 40 -> "40"
+      x when x == 50 -> "50"
+      _ -> "[int]"
+    end
+
+  # Helper to convert list to string
+  def show_list(list: List(Int)): String =
+    match list do
+      [] -> "[]"
+      [x] -> "[" <> show_int(x) <> "]"
+      [x, y] -> "[" <> show_int(x) <> ", " <> show_int(y) <> "]"
+      [x, y, z] -> "[" <> show_int(x) <> ", " <> show_int(y) <> ", " <> show_int(z) <> "]"
+      _ -> "[...]"
+    end
+
+  def main(): Int =
+    println("=== LIST ACCESS FUNCTIONS DEMO ===")
+
+    # Test data
+    let my_list = [10, 20, 30, 40, 50]
+    println("Test list: [10, 20, 30, 40, 50]")
+
+    # Test nth - get element at index
+    println("")
+    println("1. nth - Get element at index")
+    let elem0 = nth(my_list, Zero, 0)
+    println("nth(list, Zero, 0) = " <> show_int(elem0))
+    
+    let elem1 = nth(my_list, Succ(Zero), 0)
+    println("nth(list, Succ(Zero), 0) = " <> show_int(elem1))
+    
+    let elem2 = nth(my_list, Succ(Succ(Zero)), 0)
+    println("nth(list, Succ(Succ(Zero)), 0) = " <> show_int(elem2))
+
+    # Test with out-of-bounds index (returns default)
+    let elem_default = nth([], Zero, 99)
+    println("nth([], Zero, 99) = " <> show_int(elem_default))
+
+    # Test take - get first n elements
+    println("")
+    println("2. take - Get first n elements")
+    let take0 = take(my_list, Zero)
+    println("take(list, Zero) = " <> show_list(take0))
+    
+    let take1 = take(my_list, Succ(Zero))
+    println("take(list, Succ(Zero)) = " <> show_list(take1))
+    
+    let take2 = take(my_list, Succ(Succ(Zero)))
+    println("take(list, Succ(Succ(Zero))) = " <> show_list(take2))
+    
+    let take3 = take(my_list, Succ(Succ(Succ(Zero))))
+    println("take(list, 3) = " <> show_list(take3))
+
+    # Test take with n > length
+    let take_more = take([1, 2], Succ(Succ(Succ(Zero))))
+    println("take([1, 2], 3) = " <> show_list(take_more))
+
+    # Test drop - remove first n elements
+    println("")
+    println("3. drop - Remove first n elements")
+    let drop0 = drop(my_list, Zero)
+    println("drop(list, Zero) = " <> show_list(drop0))
+    
+    let drop1 = drop(my_list, Succ(Zero))
+    println("drop(list, Succ(Zero)) = " <> show_list(drop1))
+    
+    let drop2 = drop(my_list, Succ(Succ(Zero)))
+    println("drop(list, Succ(Succ(Zero))) = " <> show_list(drop2))
+    
+    let drop3 = drop(my_list, Succ(Succ(Succ(Zero))))
+    println("drop(list, 3) = " <> show_list(drop3))
+
+    # Test drop with n > length
+    let drop_all = drop([1, 2], Succ(Succ(Succ(Zero))))
+    println("drop([1, 2], 3) = " <> show_list(drop_all))
+
+    # Test with empty list
+    println("")
+    println("4. Edge cases - Empty list")
+    let empty_nth = nth([], Zero, -1)
+    println("nth([], Zero, -1) = " <> show_int(empty_nth))
+    
+    let empty_take = take([], Succ(Zero))
+    println("take([], Succ(Zero)) = " <> show_list(empty_take))
+    
+    let empty_drop = drop([], Succ(Zero))
+    println("drop([], Succ(Zero)) = " <> show_list(empty_drop))
+
+    println("")
+    println("=== Demo complete! ===")
+    0
+
+end

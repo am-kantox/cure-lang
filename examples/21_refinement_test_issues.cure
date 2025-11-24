@@ -1,0 +1,77 @@
+# Test file to identify refinement type parser and runtime issues
+
+module RefinementTestIssues do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  
+  # =============================================================================
+  # TEST 1: Nested Refinements - List of refined types
+  # =============================================================================
+  
+  # Test if parser accepts List with refined element type
+  def sum_positives(list: List({x: Int | x > 0})): Int =
+    match list do
+      [] -> 0
+      [h | t] -> h + sum_positives(t)
+    end
+  
+  # =============================================================================
+  # TEST 2: Runtime Check Behavior
+  # =============================================================================
+  
+  # Function that expects non-zero
+  def safe_divide(a: Int, b: {x: Int | x != 0}): Int =
+    a / b
+  
+  # Function that calls with potentially unsafe value
+  # This should either:
+  # 1. Fail at compile time, or
+  # 2. Generate runtime check
+  def test_runtime_check(value: Int): Int =
+    safe_divide(10, value)
+  
+  # =============================================================================
+  # TEST 3: Tuple with Refined Elements
+  # =============================================================================
+  
+  def add_positive_pair(pair: ({x: Int | x > 0}, {y: Int | y > 0})): Int =
+    match pair do
+      {a, b} -> a + b
+    end
+  
+  # =============================================================================
+  # MAIN
+  # =============================================================================
+  
+  def show_int(n: Int): String =
+    match n do
+      x when x == 0 -> "0"
+      x when x == 5 -> "5"
+      x when x == 10 -> "10"
+      x when x == 15 -> "15"
+      _ -> "[int]"
+    end
+  
+  def main(): Int =
+    println("=== REFINEMENT ISSUES TEST ===")
+    
+    # Test 1: Nested refinements
+    println("TEST 1: Nested Refinements")
+    let sum = sum_positives([1, 2, 3])
+    println("sum_positives([1,2,3]) = " <> show_int(sum))
+    
+    # Test 2: Runtime checks - use safe value
+    println("TEST 2: Runtime Checks")
+    let result = test_runtime_check(2)
+    println("test_runtime_check(2) = " <> show_int(result))
+    
+    # Test 3: Tuple refinements  
+    println("TEST 3: Tuple Refinements")
+    let pair_sum = add_positive_pair({3, 2})
+    println("add_positive_pair({3,2}) = " <> show_int(pair_sum))
+    
+    println("=== Tests completed! ===")
+    0
+
+end
