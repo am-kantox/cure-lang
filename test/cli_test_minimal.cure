@@ -1,0 +1,15 @@
+module CliTestMinimal do
+  export [add/2, is_positive/1]
+
+  def add(x: Int, y: Int): Int =
+    x + y
+
+  def is_positive(n: Int): Bool =
+    match n do
+      x when x > 0 -> true
+      _ -> false
+    end
+
+  def main(): Int =
+    add(5, 10)
+end

@@ -36,6 +36,9 @@ cure input.cure --no-optimize      # Disable optimizations
 - `--no-smt` - Disable SMT constraint solving
 - `--smt-solver SOLVER` - Choose SMT solver (z3, cvc5, auto)
 - `--smt-timeout MS` - Set SMT solver timeout in milliseconds
+- `--emit-ast` - Output AST for debugging (pretty-printed)
+- `--emit-typed-ast` - Output typed AST after type checking
+- `--check` - Type check only, don't compile to BEAM
 - `--help, -h` - Show help information
 - `--version, -v` - Show version information
 
@@ -117,7 +120,13 @@ cure input.cure --no-optimize      # Disable optimizations
     % SMT solver to use (z3, cvc5, or auto)
     smt_solver = auto,
     % SMT solver timeout in milliseconds
-    smt_timeout = 5000
+    smt_timeout = 5000,
+    % Emit AST for debugging
+    emit_ast = false,
+    % Emit typed AST after type checking
+    emit_typed_ast = false,
+    % Check only mode (type check without compiling)
+    check_only = false
 }).
 
 %% ============================================================================
@@ -166,6 +175,9 @@ main(Args) ->
                 halt(?EXIT_SUCCESS);
             {compile, Filename, Options} ->
                 case compile_file(Filename, Options) of
+                    {ok, check_only} ->
+                        % Check-only mode succeeded, already printed message
+                        halt(?EXIT_SUCCESS);
                     {ok, OutputFile} ->
                         io:format("Successfully compiled ~s -> ~s~n", [Filename, OutputFile]),
                         halt(?EXIT_SUCCESS);
@@ -261,6 +273,15 @@ parse_compile_args(["--smt-timeout", TimeoutStr | Rest], Options, Filename) ->
         _:_ ->
             {error, io_lib:format("Invalid SMT timeout value: ~s", [TimeoutStr])}
     end;
+parse_compile_args(["--emit-ast" | Rest], Options, Filename) ->
+    NewOptions = Options#compile_options{emit_ast = true},
+    parse_compile_args(Rest, NewOptions, Filename);
+parse_compile_args(["--emit-typed-ast" | Rest], Options, Filename) ->
+    NewOptions = Options#compile_options{emit_typed_ast = true},
+    parse_compile_args(Rest, NewOptions, Filename);
+parse_compile_args(["--check" | Rest], Options, Filename) ->
+    NewOptions = Options#compile_options{check_only = true},
+    parse_compile_args(Rest, NewOptions, Filename);
 parse_compile_args([Arg | Rest], Options, undefined) when not (hd(Arg) =:= $-) ->
     % This should be the input filename
     case filename:extension(Arg) of
@@ -406,18 +427,24 @@ compile_file_impl(Filename, Options) ->
                     {error, {compilation_failed, Error, Reason}}
             end;
         false ->
-            % For non-stdlib files, ensure standard library is available
-            case ensure_stdlib_available(Options) of
-                ok ->
+            % For non-stdlib files, check if we need stdlib
+            % Skip stdlib check for analysis-only modes (check, emit-ast, emit-typed-ast)
+            AnalysisOnly =
+                Options#compile_options.check_only orelse
+                    Options#compile_options.emit_ast orelse
+                    Options#compile_options.emit_typed_ast,
+
+            case AnalysisOnly of
+                true ->
+                    % Skip stdlib for analysis-only modes
                     if
                         Options#compile_options.verbose ->
-                            cure_utils:debug("Compiling ~s...~n", [Filename]);
+                            cure_utils:debug("Analyzing ~s (stdlib check skipped)...~n", [Filename]);
                         true ->
                             ok
                     end,
 
                     try
-                        % Step 1: Read source file
                         case file:read_file(Filename) of
                             {ok, SourceBinary} ->
                                 Source = binary_to_list(SourceBinary),
@@ -429,8 +456,33 @@ compile_file_impl(Filename, Options) ->
                         Error:Reason:_Stack ->
                             {error, {compilation_failed, Error, Reason}}
                     end;
-                {error, StdlibError} ->
-                    {error, {stdlib_unavailable, StdlibError}}
+                false ->
+                    % Need stdlib for full compilation
+                    case ensure_stdlib_available(Options) of
+                        ok ->
+                            if
+                                Options#compile_options.verbose ->
+                                    cure_utils:debug("Compiling ~s...~n", [Filename]);
+                                true ->
+                                    ok
+                            end,
+
+                            try
+                                % Step 1: Read source file
+                                case file:read_file(Filename) of
+                                    {ok, SourceBinary} ->
+                                        Source = binary_to_list(SourceBinary),
+                                        compile_source(Filename, Source, Options);
+                                    {error, FileError} ->
+                                        {error, {file_read_error, Filename, FileError}}
+                                end
+                            catch
+                                Error:Reason:_Stack ->
+                                    {error, {compilation_failed, Error, Reason}}
+                            end;
+                        {error, StdlibError} ->
+                            {error, {stdlib_unavailable, StdlibError}}
+                    end
             end
     end.
 
@@ -447,11 +499,55 @@ compile_source(Filename, Source, Options) ->
 
     Pipeline = [
         {"Lexical Analysis", fun(Src) -> cure_lexer:tokenize(list_to_binary(Src)) end},
-        {"Parsing", fun(Tokens) -> cure_parser:parse(Tokens) end},
+        {"Parsing", fun(Tokens) ->
+            case cure_parser:parse(Tokens) of
+                {ok, AST} = Result ->
+                    % Emit AST if requested
+                    case Options#compile_options.emit_ast of
+                        true ->
+                            io:format("~n=== Abstract Syntax Tree ===~n~n"),
+                            io:format("~p~n", [AST]),
+                            io:format("~n============================~n~n");
+                        false ->
+                            ok
+                    end,
+                    Result;
+                Error ->
+                    Error
+            end
+        end},
         {"Type Checking", fun(AST) ->
             case Options#compile_options.type_check of
-                true -> type_check_ast(AST, Options);
-                false -> {ok, AST}
+                true ->
+                    case type_check_ast(AST, Options) of
+                        {ok, TypedAST} = Result ->
+                            % Emit typed AST if requested
+                            case Options#compile_options.emit_typed_ast of
+                                true ->
+                                    io:format("~n=== Typed Abstract Syntax Tree ===~n~n"),
+                                    io:format("~p~n", [TypedAST]),
+                                    io:format("~n===================================~n~n");
+                                false ->
+                                    ok
+                            end,
+                            % If check-only mode, stop here
+                            case Options#compile_options.check_only of
+                                true ->
+                                    {check_only_success, TypedAST};
+                                false ->
+                                    Result
+                            end;
+                        Error ->
+                            Error
+                    end;
+                false ->
+                    % If check-only but type checking disabled, that's an error
+                    case Options#compile_options.check_only of
+                        true ->
+                            {error, "Cannot use --check with --no-type-check"};
+                        false ->
+                            {ok, AST}
+                    end
             end
         end},
         {"Type-directed Optimization", fun(AST) ->
@@ -499,6 +595,10 @@ compile_source(Filename, Source, Options) ->
     ],
 
     case run_pipeline(Pipeline, EnhancedSource, Options) of
+        {check_only_success, _TypedAST} ->
+            % Check-only mode succeeded
+            io:format("Type checking completed successfully.~n"),
+            {ok, check_only};
         {ok, {ModuleName, BeamBinary}} ->
             write_output(Filename, {ModuleName, BeamBinary}, Options);
         {ok, BeamBinary} when is_binary(BeamBinary) ->
@@ -526,6 +626,9 @@ run_pipeline([{StageName, StageFunc} | RestStages], Input, Options) ->
     end,
 
     case StageFunc(Input) of
+        {check_only_success, AST} ->
+            % Check-only mode: stop pipeline and return success
+            {check_only_success, AST};
         {ok, Output} ->
             run_pipeline(RestStages, Output, Options);
         {error, Reason} ->
@@ -791,6 +894,9 @@ help() ->
     io:format("    --no-smt             Disable SMT constraint solving~n"),
     io:format("    --smt-solver <solver>  Choose SMT solver: z3 (default), cvc5, auto~n"),
     io:format("    --smt-timeout <ms>   Set SMT timeout in milliseconds (default: 5000)~n"),
+    io:format("    --emit-ast           Output AST for debugging (pretty-printed)~n"),
+    io:format("    --emit-typed-ast     Output typed AST after type checking~n"),
+    io:format("    --check              Type check only, don't compile to BEAM~n"),
     io:format("~n"),
     io:format("EXAMPLES:~n"),
     io:format("    cure examples/simple.cure~n"),
