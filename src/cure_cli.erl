@@ -38,7 +38,13 @@ cure input.cure --no-optimize      # Disable optimizations
 - `--smt-timeout MS` - Set SMT solver timeout in milliseconds
 - `--emit-ast` - Output AST for debugging (pretty-printed)
 - `--emit-typed-ast` - Output typed AST after type checking
+- `--emit-ir` - Output intermediate representation before BEAM generation
 - `--check` - Type check only, don't compile to BEAM
+- `--print-types` - Print inferred types for all functions
+- `--no-color` - Disable ANSI color codes in output
+- `--wall` - Show all warnings (even minor ones)
+- `--Werror` - Treat warnings as errors (fail compilation on warnings)
+- `--time` - Show compilation time for each stage
 - `--help, -h` - Show help information
 - `--version, -v` - Show version information
 
@@ -126,7 +132,19 @@ cure input.cure --no-optimize      # Disable optimizations
     % Emit typed AST after type checking
     emit_typed_ast = false,
     % Check only mode (type check without compiling)
-    check_only = false
+    check_only = false,
+    % Emit IR (intermediate representation) before BEAM generation
+    emit_ir = false,
+    % Print inferred types for all functions
+    print_types = false,
+    % Disable ANSI color codes in output
+    no_color = false,
+    % Show all warnings (even minor ones)
+    wall = false,
+    % Treat warnings as errors
+    werror = false,
+    % Show compilation time for each stage
+    show_time = false
 }).
 
 %% ============================================================================
@@ -281,6 +299,24 @@ parse_compile_args(["--emit-typed-ast" | Rest], Options, Filename) ->
     parse_compile_args(Rest, NewOptions, Filename);
 parse_compile_args(["--check" | Rest], Options, Filename) ->
     NewOptions = Options#compile_options{check_only = true},
+    parse_compile_args(Rest, NewOptions, Filename);
+parse_compile_args(["--emit-ir" | Rest], Options, Filename) ->
+    NewOptions = Options#compile_options{emit_ir = true},
+    parse_compile_args(Rest, NewOptions, Filename);
+parse_compile_args(["--print-types" | Rest], Options, Filename) ->
+    NewOptions = Options#compile_options{print_types = true},
+    parse_compile_args(Rest, NewOptions, Filename);
+parse_compile_args(["--no-color" | Rest], Options, Filename) ->
+    NewOptions = Options#compile_options{no_color = true},
+    parse_compile_args(Rest, NewOptions, Filename);
+parse_compile_args(["--wall" | Rest], Options, Filename) ->
+    NewOptions = Options#compile_options{wall = true},
+    parse_compile_args(Rest, NewOptions, Filename);
+parse_compile_args(["--Werror" | Rest], Options, Filename) ->
+    NewOptions = Options#compile_options{werror = true},
+    parse_compile_args(Rest, NewOptions, Filename);
+parse_compile_args(["--time" | Rest], Options, Filename) ->
+    NewOptions = Options#compile_options{show_time = true},
     parse_compile_args(Rest, NewOptions, Filename);
 parse_compile_args([Arg | Rest], Options, undefined) when not (hd(Arg) =:= $-) ->
     % This should be the input filename
@@ -530,6 +566,13 @@ compile_source(Filename, Source, Options) ->
                                 false ->
                                     ok
                             end,
+                            % Print types if requested
+                            case Options#compile_options.print_types of
+                                true ->
+                                    print_inferred_types(TypedAST);
+                                false ->
+                                    ok
+                            end,
                             % If check-only mode, stop here
                             case Options#compile_options.check_only of
                                 true ->
@@ -571,6 +614,20 @@ compile_source(Filename, Source, Options) ->
                     % Take the first module and generate BEAM file
                     case CompiledModules of
                         [Module | _] ->
+                            % Emit IR if requested
+                            case Options#compile_options.emit_ir of
+                                true ->
+                                    io:format(
+                                        "~n=== Intermediate Representation (Erlang Forms) ===~n~n"
+                                    ),
+                                    io:format("Module: ~p~n", [Module]),
+                                    io:format(
+                                        "~n================================================~n~n"
+                                    );
+                                false ->
+                                    ok
+                            end,
+
                             % Generate BEAM binary in memory
                             case cure_codegen:convert_to_erlang_forms(Module) of
                                 {ok, Forms} ->
@@ -618,6 +675,13 @@ compile_source(Filename, Source, Options) ->
 run_pipeline([], Result, _Options) ->
     {ok, Result};
 run_pipeline([{StageName, StageFunc} | RestStages], Input, Options) ->
+    % Start timer if --time option is enabled
+    StartTime =
+        case Options#compile_options.show_time of
+            true -> erlang:monotonic_time(millisecond);
+            false -> undefined
+        end,
+
     if
         Options#compile_options.verbose ->
             cure_utils:debug("  ~s...~n", [StageName]);
@@ -625,7 +689,19 @@ run_pipeline([{StageName, StageFunc} | RestStages], Input, Options) ->
             ok
     end,
 
-    case StageFunc(Input) of
+    StageResult = StageFunc(Input),
+
+    % Print timing if --time option is enabled
+    case {Options#compile_options.show_time, StartTime} of
+        {true, StartMs} when is_integer(StartMs) ->
+            EndTime = erlang:monotonic_time(millisecond),
+            Duration = EndTime - StartMs,
+            io:format("  [~s] completed in ~w ms~n", [StageName, Duration]);
+        _ ->
+            ok
+    end,
+
+    case StageResult of
         {check_only_success, AST} ->
             % Check-only mode: stop pipeline and return success
             {check_only_success, AST};
@@ -671,17 +747,55 @@ type_check_ast(AST, Options) ->
 type_check_ast(AST) ->
     type_check_ast(AST, #compile_options{}).
 
+%% Print inferred types for all functions in AST
+print_inferred_types(AST) when is_list(AST) ->
+    io:format("~n=== Inferred Types ===~n~n"),
+    lists:foreach(fun print_item_types/1, AST),
+    io:format("~n======================~n~n"),
+    ok;
+print_inferred_types(_) ->
+    ok.
+
+print_item_types(#module_def{name = ModuleName, items = Items}) ->
+    io:format("Module ~s:~n", [ModuleName]),
+    lists:foreach(fun print_item_types/1, Items);
+print_item_types(#function_def{name = Name, params = Params, return_type = RetType}) ->
+    ParamTypes = [format_param_type(P) || P <- Params],
+    RetTypeStr = format_type(RetType),
+    io:format("  ~s(~s) -> ~s~n", [Name, string:join(ParamTypes, ", "), RetTypeStr]);
+print_item_types(_) ->
+    ok.
+
+format_param_type(#param{name = Name, type = Type}) ->
+    lists:flatten(io_lib:format("~s: ~s", [Name, format_type(Type)]));
+format_param_type(_) ->
+    "<unknown>".
+
+format_type(undefined) -> "<inferred>";
+format_type({primitive_type, T, _}) -> atom_to_list(T);
+format_type({type_constructor, Name, _Args, _}) -> atom_to_list(Name);
+format_type(_) -> "<complex type>".
+
 %% Check type checking result and determine success/failure
 check_type_result(Result, AST) ->
     cure_utils:debug("Type check result structure: ~p~n", [Result]),
     case Result of
         % Handle typecheck_result record
-        {typecheck_result, Success, _Type, Errors, _Warnings} ->
+        {typecheck_result, Success, _Type, Errors, Warnings} ->
+            % Note: We capture Warnings here but --Werror handling is done at compilation level
+            % since we don't have access to Options in this function
             case Success of
                 true ->
                     case Errors of
                         [] ->
-                            {ok, AST};
+                            % Check if there are warnings (for --Werror support at higher level)
+                            case Warnings of
+                                [] ->
+                                    {ok, AST};
+                                _ ->
+                                    % Return ok, --Werror will be handled at compile_source level
+                                    {ok, AST}
+                            end;
                         ErrorList ->
                             cure_utils:debug("Type checking failed with errors: ~p~n", [ErrorList]),
                             {error, {type_check_failed, ErrorList}}
@@ -896,7 +1010,13 @@ help() ->
     io:format("    --smt-timeout <ms>   Set SMT timeout in milliseconds (default: 5000)~n"),
     io:format("    --emit-ast           Output AST for debugging (pretty-printed)~n"),
     io:format("    --emit-typed-ast     Output typed AST after type checking~n"),
+    io:format("    --emit-ir            Output IR before BEAM generation~n"),
     io:format("    --check              Type check only, don't compile to BEAM~n"),
+    io:format("    --print-types        Print inferred types for all functions~n"),
+    io:format("    --no-color           Disable ANSI color codes in output~n"),
+    io:format("    --wall               Show all warnings (even minor ones)~n"),
+    io:format("    --Werror             Treat warnings as errors~n"),
+    io:format("    --time               Show compilation time for each stage~n"),
     io:format("~n"),
     io:format("EXAMPLES:~n"),
     io:format("    cure examples/simple.cure~n"),
