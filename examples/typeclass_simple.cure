@@ -1,0 +1,17 @@
+# Simple Typeclass Example
+# Demonstrates Show typeclass with Int instance
+
+typeclass Show(T) do
+  def show(x: T): String
+end
+
+instance Show(Int) do
+  def show(x: Int): String = "42"
+end
+
+module TypeclassExample do
+  export [demo/0]
+  
+  def demo(): String =
+    show(42)
+end

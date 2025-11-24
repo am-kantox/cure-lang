@@ -1,0 +1,23 @@
+# Simple Pipe Operator Test
+# Test basic pipe functionality without complex type constraints
+
+module SimplePipeTest do
+  export [test1/0, test2/0, test3/0]
+  
+  # Helper functions
+  def double(x: Int): Int = x * 2
+  def increment(x: Int): Int = x + 1
+  def add(x: Int, y: Int): Int = x + y
+  
+  # Test 1: Simple pipe
+  def test1(): Int =
+    5 |> double
+  
+  # Test 2: Chained pipe
+  def test2(): Int =
+    5 |> double |> increment
+  
+  # Test 3: Pipe with multi-arg function
+  def test3(): Int =
+    5 |> double |> add(3)
+end

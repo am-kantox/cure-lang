@@ -1,0 +1,118 @@
+module Std.Ord do
+  export []
+  
+  import Std.Core [Option, Result, Some, None, Ok, Error]
+
+  # Ord typeclass for ordering comparison
+  # Returns :lt, :eq, or :gt
+  typeclass Ord(T) do
+    def compare(x: T, y: T): Atom
+  end
+
+  # Instance for Int
+  instance Ord(Int) do
+    def compare(x: Int, y: Int): Atom =
+      match x < y do
+        true -> :lt
+        false ->
+          match x > y do
+            true -> :gt
+            false -> :eq
+          end
+      end
+  end
+
+  # Instance for Float
+  instance Ord(Float) do
+    def compare(x: Float, y: Float): Atom =
+      match x < y do
+        true -> :lt
+        false ->
+          match x > y do
+            true -> :gt
+            false -> :eq
+          end
+      end
+  end
+
+  # Instance for String
+  instance Ord(String) do
+    def compare(x: String, y: String): Atom =
+      match x < y do
+        true -> :lt
+        false ->
+          match x > y do
+            true -> :gt
+            false -> :eq
+          end
+      end
+  end
+
+  # Instance for Bool (false < true)
+  instance Ord(Bool) do
+    def compare(x: Bool, y: Bool): Atom =
+      match x do
+        false ->
+          match y do
+            true -> :lt
+            false -> :eq
+          end
+        true ->
+          match y do
+            false -> :gt
+            true -> :eq
+          end
+      end
+  end
+
+  # Instance for Atom
+  instance Ord(Atom) do
+    def compare(x: Atom, y: Atom): Atom =
+      match x < y do
+        true -> :lt
+        false ->
+          match x > y do
+            true -> :gt
+            false -> :eq
+          end
+      end
+  end
+
+  # Helper functions for common comparisons
+  def lt(x: T, y: T): Bool =
+    match compare(x, y) do
+        :lt -> true
+      _ -> false
+    end
+
+  def le(x: T, y: T): Bool =
+    match compare(x, y) do
+        :gt -> false
+      _ -> true
+    end
+
+  def gt(x: T, y: T): Bool =
+    match compare(x, y) do
+        :gt -> true
+      _ -> false
+    end
+
+  def ge(x: T, y: T): Bool =
+    match compare(x, y) do
+        :lt -> false
+      _ -> true
+    end
+
+  def max(x: T, y: T): T =
+    match compare(x, y) do
+        :gt -> x
+      _ -> y
+    end
+
+  def min(x: T, y: T): T =
+    match compare(x, y) do
+        :lt -> x
+      _ -> y
+    end
+
+end

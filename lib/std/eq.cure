@@ -1,0 +1,57 @@
+module Std.Eq do
+  export []
+  
+  import Std.Core [Option, Result, Some, None, Ok, Error]
+
+  # Eq typeclass for equality comparison
+  typeclass Eq(T) do
+    def eq(x: T, y: T): Bool
+  end
+
+  # Instance for Int
+  instance Eq(Int) do
+    def eq(x: Int, y: Int): Bool =
+      match {x, y} do
+        {a, b} when a == b -> true
+        _ -> false
+      end
+  end
+
+  # Instance for Float  
+  instance Eq(Float) do
+    def eq(x: Float, y: Float): Bool =
+      match {x, y} do
+        {a, b} when a == b -> true
+        _ -> false
+      end
+  end
+
+  # Instance for String
+  instance Eq(String) do
+    def eq(x: String, y: String): Bool =
+      match {x, y} do
+        {a, b} when a == b -> true
+        _ -> false
+      end
+  end
+
+  # Instance for Bool
+  instance Eq(Bool) do
+    def eq(x: Bool, y: Bool): Bool =
+      match {x, y} do
+        {true, true} -> true
+        {false, false} -> true
+        _ -> false
+      end
+  end
+
+  # Instance for Atom
+  instance Eq(Atom) do
+    def eq(x: Atom, y: Atom): Bool =
+      match {x, y} do
+        {a, b} when a == b -> true
+        _ -> false
+      end
+  end
+
+end

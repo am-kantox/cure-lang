@@ -2,7 +2,7 @@
 # Polymorphic typeclass for converting values to strings
 
 module Std.Show do
-  export [show_list/1, show_separated/2]
+  export [show/1, show_list/1, show_separated/2]
   
   import Std.Core [Option, Result, Ok, Error, Some, None]
 

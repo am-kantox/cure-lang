@@ -1,0 +1,8 @@
+module TypeclassSimpleCall do
+  export [test/0]
+
+  # Test direct call to instance method
+  def test(): String =
+    'Std.Show':'Show_Int_show'(42)
+
+end

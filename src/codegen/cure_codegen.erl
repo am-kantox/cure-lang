@@ -619,7 +619,12 @@ compile_module_items([Item | RestItems], State, Acc) ->
                 length(CompiledMethods)
             ]),
             NewAcc = lists:reverse(CompiledMethods) ++ Acc,
-            compile_module_items(RestItems, NewState, NewAcc);
+            % Also add instance methods to exports
+            InstanceExports = extract_instance_exports(CompiledMethods),
+            cure_utils:debug("[INSTANCE] Adding instance exports: ~p~n", [InstanceExports]),
+            UpdatedExports = NewState#codegen_state.exports ++ InstanceExports,
+            NewStateWithExports = NewState#codegen_state{exports = UpdatedExports},
+            compile_module_items(RestItems, NewStateWithExports, NewAcc);
         {ok, CompiledItem, NewState} ->
             compile_module_items(RestItems, NewState, [CompiledItem | Acc]);
         {error, Reason} ->
@@ -2520,6 +2525,25 @@ extract_constructor_exports(ConstructorFunctions) ->
         ConstructorFunctions
     ).
 
+%% Extract exports from instance methods
+extract_instance_exports(InstanceMethods) ->
+    lists:filtermap(
+        fun
+            ({function, FuncMap}) when is_map(FuncMap) ->
+                case maps:get(is_instance_method, FuncMap, false) of
+                    true ->
+                        Name = maps:get(name, FuncMap),
+                        Arity = maps:get(arity, FuncMap),
+                        {true, {Name, Arity}};
+                    false ->
+                        false
+                end;
+            (_) ->
+                false
+        end,
+        InstanceMethods
+    ).
+
 %% Convert exports for new AST format
 convert_exports(ExportList, Items) ->
     case ExportList of
@@ -2880,7 +2904,8 @@ try_resolve_typeclass_method(Function, Args, State) ->
     % Check if we have any typeclass constraints
     case State#codegen_state.typeclass_constraints of
         [] ->
-            not_typeclass;
+            % No constraints, but check if it's a known typeclass method from imports
+            try_resolve_direct_typeclass_call(Function, Args, State);
         Constraints ->
             % Check if Function is a simple identifier that matches a typeclass method
             case Function of
@@ -2921,6 +2946,70 @@ try_resolve_typeclass_method(Function, Args, State) ->
                     % Not a simple identifier, can't be a typeclass method call
                     not_typeclass
             end
+    end.
+
+%% Try to resolve direct typeclass method call (without constraints)
+%% This handles imports like: import Std.Show [show/1]
+try_resolve_direct_typeclass_call(Function, Args, State) ->
+    case Function of
+        #identifier_expr{name = MethodName} ->
+            % Check if this method name matches known typeclass methods
+            case is_known_typeclass_method(MethodName) of
+                false ->
+                    not_typeclass;
+                {true, TypeclassName} ->
+                    % Infer the concrete type from the argument
+                    case infer_type_from_arg(Args, State) of
+                        {ok, ConcreteType} ->
+                            % Generate the mangled instance method name
+                            % Format: Show_Int_show
+                            TypeclassStr = atom_to_list(TypeclassName),
+                            TypeNameStr = type_to_string(ConcreteType),
+                            MethodNameStr = atom_to_list(MethodName),
+                            InstanceMethodName = list_to_atom(
+                                TypeclassStr ++ "_" ++ TypeNameStr ++ "_" ++ MethodNameStr
+                            ),
+
+                            % For direct imports, try to call the instance method
+                            % from the standard library module (e.g., 'Std.Show')
+                            % For now, assume it's in the current module or imported
+                            ResolvedFunction = #identifier_expr{
+                                name = InstanceMethodName,
+                                location = undefined
+                            },
+                            {ok, ResolvedFunction};
+                        unknown ->
+                            % Can't infer type, treat as regular function
+                            not_typeclass
+                    end
+            end;
+        _ ->
+            not_typeclass
+    end.
+
+%% Check if a method name is a known typeclass method
+%% Returns: false | {true, TypeclassName}
+is_known_typeclass_method(MethodName) ->
+    % List of known typeclass methods
+    % This should eventually be populated from imported modules
+    KnownMethods = #{
+        show => 'Show',
+        eq => 'Eq',
+        ne => 'Eq',
+        compare => 'Ord',
+        lt => 'Ord',
+        le => 'Ord',
+        gt => 'Ord',
+        ge => 'Ord',
+        fmap => 'Functor',
+        pure => 'Applicative',
+        apply => 'Applicative',
+        bind => 'Monad',
+        return => 'Monad'
+    },
+    case maps:get(MethodName, KnownMethods, undefined) of
+        undefined -> false;
+        TypeclassName -> {true, TypeclassName}
     end.
 
 %% Check if a method name is defined in any of the typeclass constraints

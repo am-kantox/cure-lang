@@ -1,0 +1,20 @@
+module TypeclassPolymorphicTest do
+  export [test_show/0, test_eq/0, test_ord/0]
+  
+  import Std.Show [show]
+  import Std.Eq [eq]
+  import Std.Ord [compare]
+
+  # Test polymorphic show calls with different types
+  def test_show(): String =
+    show(42)
+
+  # Test polymorphic eq calls
+  def test_eq(): Bool =
+    eq(10, 20)
+
+  # Test polymorphic ord calls
+  def test_ord(): Atom =
+    compare(5, 10)
+
+end

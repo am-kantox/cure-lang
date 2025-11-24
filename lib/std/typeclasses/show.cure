@@ -1,0 +1,46 @@
+# Show Typeclass - String Conversion
+# Provides a standard way to convert values to strings for display
+
+typeclass Show(T) do
+  def show(x: T): String
+end
+
+# Instance for Int
+instance Show(Int) do
+  def show(x: Int): String = int_to_string(x)
+end
+
+# Instance for String (identity)
+instance Show(String) do
+  def show(x: String): String = x
+end
+
+# Instance for Bool
+instance Show(Bool) do
+  def show(x: Bool): String =
+    match x do
+      true -> "true"
+      false -> "false"
+    end
+end
+
+# Instance for Float
+instance Show(Float) do
+  def show(x: Float): String = float_to_string(x)
+end
+
+# Instance for Atom
+instance Show(Atom) do
+  def show(x: Atom): String = atom_to_string(x)
+end
+
+# Instance for List(T) where Show(T)
+# Shows list as [elem1, elem2, elem3]
+# TODO: Implement with proper recursion once lambda issues resolved
+# instance Show(List(T)) when Show(T) do
+#   def show(list: List(T)): String =
+#     match list do
+#       [] -> "[]"
+#       [h | t] -> "[" ++ show(h) ++ ",...]"
+#     end
+# end

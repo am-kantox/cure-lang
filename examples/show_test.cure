@@ -1,0 +1,27 @@
+# Show Typeclass Test
+# Tests the Show typeclass with various types
+
+module ShowTest do
+  import Std.Show [show/1]
+  export [test_int/0, test_string/0, test_bool/0, test_float/0, test_atom/0]
+  
+  # Test Show for Int
+  def test_int(): String =
+    show(42)
+  
+  # Test Show for String
+  def test_string(): String =
+    show("Hello, World!")
+  
+  # Test Show for Bool
+  def test_bool(): String =
+    show(true)
+  
+  # Test Show for Float  
+  def test_float(): String =
+    show(3.14)
+  
+  # Test Show for Atom
+  def test_atom(): String =
+    show(:example)
+end

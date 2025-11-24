@@ -3314,7 +3314,10 @@ process_parameters(
     process_parameters(RestParams, OrigEnv, [ParamType | TypesAcc], NewEnvAcc).
 
 check_import_items(Module, Items, Env) ->
-    import_items(Module, Items, Env).
+    % First, load typeclasses and instances from the imported module
+    EnvWithTypeclasses = import_module_typeclasses(Module, Env),
+    % Then, import the requested items (functions, types, etc.)
+    import_items(Module, Items, EnvWithTypeclasses).
 
 import_items(_Module, [], AccEnv) ->
     {ok, AccEnv};
@@ -3325,6 +3328,125 @@ import_items(Module, [Item | RestItems], AccEnv) ->
         {error, Error} ->
             {error, Error}
     end.
+
+%% Load typeclasses and instances from an imported module
+import_module_typeclasses(Module, Env) ->
+    cure_utils:debug("[IMPORT_TYPECLASS] Loading typeclasses from module ~p~n", [Module]),
+
+    % Convert module name to file path
+    % e.g., 'Std.Show' -> "lib/std/show.cure"
+    ModulePath = module_name_to_path(Module),
+
+    case filelib:is_regular(ModulePath) of
+        true ->
+            cure_utils:debug("[IMPORT_TYPECLASS] Parsing ~p~n", [ModulePath]),
+            case cure_parser:parse_file(ModulePath) of
+                {ok, AST} ->
+                    % Extract typeclasses and instances from the module
+                    case AST of
+                        [#module_def{items = Items}] ->
+                            % Register typeclasses first
+                            TCEnv = get_typeclass_env(Env),
+                            TCEnv1 = register_module_typeclasses(Items, TCEnv),
+
+                            % Then register instances
+                            TCEnv2 = register_module_instances(Items, TCEnv1),
+
+                            % Update environment with new typeclass environment
+                            NewEnv = put_typeclass_env(Env, TCEnv2),
+                            cure_utils:debug(
+                                "[IMPORT_TYPECLASS] Successfully loaded typeclasses from ~p~n",
+                                [Module]
+                            ),
+                            NewEnv;
+                        _ ->
+                            cure_utils:debug(
+                                "[IMPORT_TYPECLASS] Unexpected AST format from ~p~n",
+                                [ModulePath]
+                            ),
+                            Env
+                    end;
+                {error, Reason} ->
+                    cure_utils:debug(
+                        "[IMPORT_TYPECLASS] Failed to parse ~p: ~p~n",
+                        [ModulePath, Reason]
+                    ),
+                    Env
+            end;
+        false ->
+            cure_utils:debug(
+                "[IMPORT_TYPECLASS] Module file not found: ~p~n",
+                [ModulePath]
+            ),
+            Env
+    end.
+
+%% Convert module name to file path
+%% Examples: 'Std.Show' -> "lib/std/show.cure"
+%%           'Std.Core' -> "lib/std/core.cure"
+module_name_to_path(Module) when is_atom(Module) ->
+    ModuleStr = atom_to_list(Module),
+    % Split by '.' and convert to lowercase path
+    Parts = string:split(ModuleStr, ".", all),
+    case Parts of
+        ["Std" | Rest] ->
+            % Standard library module
+            RestLower = [string:lowercase(P) || P <- Rest],
+            "lib/std/" ++ string:join(RestLower, "/") ++ ".cure";
+        _ ->
+            % Non-standard module - assume it's in current directory or a relative path
+            PartsLower = [string:lowercase(P) || P <- Parts],
+            string:join(PartsLower, "/") ++ ".cure"
+    end;
+module_name_to_path(Module) ->
+    cure_utils:debug("[IMPORT_TYPECLASS] Invalid module name: ~p~n", [Module]),
+    "".
+
+%% Register typeclasses from module items
+register_module_typeclasses([], TCEnv) ->
+    TCEnv;
+register_module_typeclasses([#typeclass_def{} = TypeclassDef | Rest], TCEnv) ->
+    case cure_typeclass:register_typeclass(TypeclassDef, TCEnv) of
+        {ok, NewTCEnv} ->
+            cure_utils:debug(
+                "[IMPORT_TYPECLASS] Registered typeclass ~p~n",
+                [TypeclassDef#typeclass_def.name]
+            ),
+            register_module_typeclasses(Rest, NewTCEnv);
+        {error, Reason} ->
+            cure_utils:debug(
+                "[IMPORT_TYPECLASS] Failed to register typeclass ~p: ~p~n",
+                [TypeclassDef#typeclass_def.name, Reason]
+            ),
+            register_module_typeclasses(Rest, TCEnv)
+    end;
+register_module_typeclasses([_ | Rest], TCEnv) ->
+    register_module_typeclasses(Rest, TCEnv).
+
+%% Register instances from module items
+register_module_instances([], TCEnv) ->
+    TCEnv;
+register_module_instances([#instance_def{} = InstanceDef | Rest], TCEnv) ->
+    case cure_typeclass:register_instance(InstanceDef, TCEnv) of
+        {ok, NewTCEnv} ->
+            cure_utils:debug(
+                "[IMPORT_TYPECLASS] Registered instance ~p(~p)~n",
+                [InstanceDef#instance_def.typeclass, InstanceDef#instance_def.type_args]
+            ),
+            register_module_instances(Rest, NewTCEnv);
+        {error, Reason} ->
+            cure_utils:debug(
+                "[IMPORT_TYPECLASS] Failed to register instance ~p(~p): ~p~n",
+                [
+                    InstanceDef#instance_def.typeclass,
+                    InstanceDef#instance_def.type_args,
+                    Reason
+                ]
+            ),
+            register_module_instances(Rest, TCEnv)
+    end;
+register_module_instances([_ | Rest], TCEnv) ->
+    register_module_instances(Rest, TCEnv).
 
 import_item(Module, {function_import, Name, Arity, _Alias, _Location}, Env) ->
     cure_utils:debug(
