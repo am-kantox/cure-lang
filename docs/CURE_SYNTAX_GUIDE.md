@@ -478,9 +478,171 @@ false           # Bool
 [h | t]         # Cons pattern/constructor
 ```
 
-### Tuples (Limited Support)
+### Tuples
 
-Check actual implementation before using tuples extensively.
+Tuples group multiple values of potentially different types together.
+
+**Syntax**: `{elem1, elem2, ...}`
+
+#### Creating Tuples
+
+```cure
+# Empty tuple
+let empty = {}
+
+# Two-element tuple (pair)
+let pair = {10, 20}
+let point = {3.0, 4.0}
+
+# Three-element tuple
+let triple = {1, "hello", true}
+
+# Nested tuples
+let nested = {{1, 2}, {3, 4}}
+
+# Mixed with other types
+let mixed = {[1, 2, 3], "numbers", Ok(42)}
+```
+
+#### Tuple Pattern Matching
+
+Tuples can be destructured in match expressions:
+
+```cure
+# Match on tuple
+let point = {5, 10}
+match point do
+  {0, 0} -> "Origin"
+  {x, 0} -> "On X-axis"
+  {0, y} -> "On Y-axis"
+  {x, y} -> "General point"
+end
+
+# Match with literals
+match tuple do
+  {0, 0} -> "Both zero"
+  {1, 2} -> "Exact match"
+  {x, y} -> "Any other pair"
+end
+
+# Match with wildcards
+match {1, 2, 3, 4, 5} do
+  {first, _, _, _, last} -> # Only care about first and last
+end
+```
+
+#### Nested Tuple Patterns
+
+```cure
+# Match nested tuples
+let nested = {{1, 2}, {3, 4}}
+match nested do
+  {{a, b}, {c, d}} -> a + b + c + d
+end
+
+# Deeply nested
+let deep = {1, {2, {3, 4}}}
+match deep do
+  {x, {y, {z, w}}} -> "All extracted"
+end
+```
+
+#### Tuples with Guards
+
+```cure
+# Classify points by quadrant
+match {x, y} do
+  {x, y} when x == 0 and y == 0 -> "origin"
+  {x, y} when x > 0 and y > 0 -> "quadrant-1"
+  {x, y} when x < 0 and y > 0 -> "quadrant-2"
+  {x, y} when x < 0 and y < 0 -> "quadrant-3"
+  {x, y} when x > 0 and y < 0 -> "quadrant-4"
+  {x, 0} -> "x-axis"
+  {0, y} -> "y-axis"
+end
+```
+
+#### Tuples in Function Parameters
+
+```cure
+# Function taking a tuple
+def distance(point: {Int, Int}): Int =
+  match point do
+    {x, y} -> x * x + y * y
+  end
+
+# Multiple tuple parameters
+def distance_between(p1: {Int, Int}, p2: {Int, Int}): Int =
+  match {p1, p2} do
+    {{x1, y1}, {x2, y2}} ->
+      let dx = x2 - x1
+      let dy = y2 - y1
+      dx * dx + dy * dy
+  end
+```
+
+#### Returning Multiple Values
+
+Tuples are useful for returning multiple values:
+
+```cure
+# Return quotient and remainder
+def divide_with_remainder(a: Int, b: Int): {Int, Int} =
+  {a / b, a % b}
+
+# Return min and max
+def min_max(a: Int, b: Int): {Int, Int} =
+  match {a, b} do
+    {x, y} when x < y -> {x, y}
+    {x, y} -> {y, x}
+  end
+```
+
+#### Tuple Destructuring in Let
+
+```cure
+# Direct destructuring
+let point = {100, 200}
+let {x, y} = point
+# Now x = 100, y = 200
+
+# Works with function results
+let {quot, rem} = divide_with_remainder(17, 5)
+```
+
+#### Tuples with Constructors
+
+```cure
+# Tuple inside Result/Option
+let result = Ok({42, "success"})
+match result do
+  Ok({value, message}) -> "Got value and message"
+  Error(e) -> "Error"
+end
+
+# Multiple values in constructor
+let data = Some({"Alice", 30, true})
+match data do
+  Some({name, age, active}) -> "Person data"
+  None -> "No data"
+end
+```
+
+#### Mixed Patterns
+
+```cure
+# Tuple with list
+match {[1, 2, 3], "label"} do
+  {[], _} -> "Empty list"
+  {[h | t], label} -> "Non-empty list"
+end
+
+# Tuple with record
+match {Point{x: 0, y: 0}, "origin"} do
+  {Point{x: 0, y: 0}, label} -> label
+  _ -> "Other"
+end
+```
 
 ---
 

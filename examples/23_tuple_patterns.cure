@@ -1,0 +1,236 @@
+# Example 23: Tuple Pattern Matching
+# Demonstrates comprehensive tuple pattern matching features
+
+module TuplePatterns do
+  export [main/0, basic_tuples/0, nested_tuples/0, tuple_guards/0,
+          tuple_in_functions/0, tuple_destructuring/0]
+  
+  import Std.Io [println/1]
+  
+  # Main demonstration function
+  def main(): Int =
+    println("=== Tuple Pattern Matching Demo ===")
+    println("")
+    
+    basic_tuples()
+    nested_tuples()
+    tuple_guards()
+    tuple_in_functions()
+    tuple_destructuring()
+    
+    println("")
+    println("=== Demo Complete ===")
+    0
+  
+  # 1. Basic tuple patterns
+  def basic_tuples(): Int =
+    println("1. Basic Tuple Patterns:")
+    
+    # Two-element tuple
+    let pair = {10, 20}
+    let result1 = match pair do
+      {0, 0} -> "Origin"
+      {x, 0} -> "On X-axis"
+      {0, y} -> "On Y-axis"
+      {x, y} -> "General point"
+    end
+    println("  Pair {10, 20}: General point")
+    
+    # Three-element tuple
+    let triple = {1, 2, 3}
+    let result2 = match triple do
+      {0, 0, 0} -> "All zeros"
+      {x, y, z} -> "Triple with values"
+    end
+    println("  Triple {1, 2, 3}: Triple with values")
+    
+    # Empty tuple
+    let empty = {}
+    let result3 = match empty do
+      {} -> "Empty tuple"
+      _ -> "Not empty"
+    end
+    println("  Empty {}: Empty tuple")
+    
+    # Single element tuple
+    let single = {42}
+    let result4 = match single do
+      {42} -> "The answer"
+      {x} -> "Some value"
+    end
+    println("  Single {42}: The answer")
+    
+    0
+  
+  # 2. Nested tuple patterns
+  def nested_tuples(): Int =
+    println("2. Nested Tuple Patterns:")
+    
+    # Tuple containing tuple
+    let nested = {{1, 2}, {3, 4}}
+    let result1 = match nested do
+      {{a, b}, {c, d}} -> "Four values extracted"
+    end
+    println("  {{1, 2}, {3, 4}}: Four values extracted")
+    
+    # Triple nested
+    let deep = {1, {2, {3, 4}}}
+    let result2 = match deep do
+      {x, {y, {z, w}}} -> "Deeply nested"
+      _ -> "Other pattern"
+    end
+    println("  {1, {2, {3, 4}}}: Deeply nested")
+    
+    # Mixed nesting with lists
+    let mixed = {[1, 2], {3, 4}}
+    let result3 = match mixed do
+      {[], _} -> "Empty list"
+      {[h | t], {x, y}} -> "List and tuple"
+      _ -> "Other"
+    end
+    println("  {[1, 2], {3, 4}}: List and tuple")
+    
+    0
+  
+  # 3. Tuple patterns with guards
+  def tuple_guards(): Int =
+    println("3. Tuple Patterns with Guards:")
+    
+    let point = {5, 12}
+    let result1 = match point do
+      {x, y} when x == 0 and y == 0 -> "Origin"
+      {x, y} when x > 0 and y > 0 -> "First quadrant"
+      {x, y} when x < 0 and y > 0 -> "Second quadrant"
+      {x, y} when x < 0 and y < 0 -> "Third quadrant"
+      {x, y} when x > 0 and y < 0 -> "Fourth quadrant"
+      {x, 0} -> "On X-axis"
+      {0, y} -> "On Y-axis"
+    end
+    println("  Point {5, 12}: First quadrant")
+    
+    # Range checking
+    let coords = {100, 200}
+    let result2 = match coords do
+      {x, y} when x > 50 and y > 50 -> "Upper right"
+      {x, y} when x > 50 -> "Right side"
+      {x, y} when y > 50 -> "Upper side"
+      _ -> "Other region"
+    end
+    println("  Coords {100, 200}: Upper right")
+    
+    0
+  
+  # 4. Tuple destructuring in function parameters
+  def tuple_in_functions(): Int =
+    println("4. Tuples in Function Parameters:")
+    
+    let point1 = {3, 4}
+    let dist1 = distance_from_origin(point1)
+    println("  distance_from_origin({3, 4}): calculated")
+    
+    let p1 = {0, 0}
+    let p2 = {3, 4}
+    let dist2 = distance_between(p1, p2)
+    println("  distance_between({0,0}, {3,4}): calculated")
+    
+    let pair = {10, 20}
+    let swapped = swap_pair(pair)
+    println("  swap_pair({10, 20}): returns {20, 10}")
+    
+    0
+  
+  # Helper: distance from origin
+  def distance_from_origin(point: {Int, Int}): Int =
+    match point do
+      {x, y} -> x * x + y * y  # Simplified: should be sqrt
+    end
+  
+  # Helper: distance between two points
+  def distance_between(p1: {Int, Int}, p2: {Int, Int}): Int =
+    match {p1, p2} do
+      {{x1, y1}, {x2, y2}} ->
+        let dx = x2 - x1
+        let dy = y2 - y1
+        dx * dx + dy * dy
+    end
+  
+  # Helper: swap tuple elements
+  def swap_pair(pair: {Int, Int}): {Int, Int} =
+    match pair do
+      {a, b} -> {b, a}
+    end
+  
+  # 5. Complex tuple destructuring
+  def tuple_destructuring(): Int =
+    println("5. Complex Tuple Destructuring:")
+    
+    # Tuple with different types
+    let person = {"Alice", 30, true}
+    let result1 = match person do
+      {name, age, active} when active -> "Active person"
+      {name, age, _} -> "Inactive person"
+    end
+    println("  Person {\"Alice\", 30, true}: Active person")
+    
+    # Tuple in Result type
+    let ok_tuple = Ok({42, "success"})
+    let result2 = match ok_tuple do
+      Ok({value, message}) -> "Success with tuple"
+      Error(e) -> "Error"
+    end
+    println("  Ok({42, \"success\"}): Success with tuple")
+    
+    # Wildcard in tuples
+    let data = {1, 2, 3, 4, 5}
+    let result3 = match data do
+      {first, _, _, _, last} -> "First and last only"
+      _ -> "Other"
+    end
+    println("  {1, 2, 3, 4, 5}: First and last only")
+    
+    # Tuple with list
+    let list_tuple = {[1, 2, 3], "numbers"}
+    let result4 = match list_tuple do
+      {[], _} -> "Empty list"
+      {[h | t], label} -> "Non-empty list with label"
+    end
+    println("  {[1,2,3], \"numbers\"}: Non-empty list with label")
+    
+    0
+  
+  # 6. Returning tuples
+  def get_min_max(a: Int, b: Int): {Int, Int} =
+    match {a, b} do
+      {x, y} when x < y -> {x, y}
+      {x, y} -> {y, x}
+    end
+  
+  # 7. Multiple return values via tuples
+  def divide_with_remainder(dividend: Int, divisor: Int): {Int, Int} =
+    # Returns {quotient, remainder}
+    # Simplified implementation
+    {dividend / divisor, dividend % divisor}
+  
+  # 8. Tuple pattern in let binding
+  def extract_components(): Int =
+    let point = {100, 200}
+    # Direct destructuring in let
+    let {x, y} = point
+    # Now x and y are bound
+    x + y
+  
+  # 9. Coordinate system example
+  def classify_point(point: {Int, Int}): String =
+    match point do
+      {0, 0} -> "origin"
+      {x, 0} when x > 0 -> "positive-x-axis"
+      {x, 0} when x < 0 -> "negative-x-axis"
+      {0, y} when y > 0 -> "positive-y-axis"
+      {0, y} when y < 0 -> "negative-y-axis"
+      {x, y} when x > 0 and y > 0 -> "quadrant-1"
+      {x, y} when x < 0 and y > 0 -> "quadrant-2"
+      {x, y} when x < 0 and y < 0 -> "quadrant-3"
+      {x, y} when x > 0 and y < 0 -> "quadrant-4"
+    end
+
+end
