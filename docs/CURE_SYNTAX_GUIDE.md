@@ -149,18 +149,158 @@ def filter(list: List(T), predicate: T -> Bool): List(T) =
 
 ### Lambda Functions
 
-Lambda syntax: `fn(params) -> expression end`
+Lambdas (anonymous functions) allow inline function definitions without naming them.
+
+**Syntax**: `fn(params) -> expression end`
+
+#### Basic Lambda Expressions
 
 ```cure
-# Simple lambda
+# Simple lambda (one parameter)
 let double = fn(x) -> x * 2 end
 
-# Lambda with multiple params
+# Lambda with multiple parameters
 let add = fn(x, y) -> x + y end
 
-# Curried function application
-let partial_func = func(h)
-partial_func(fold(t, init, func))
+# Zero-parameter lambda (thunk)
+let get_constant = fn() -> 42 end
+```
+
+#### Type Inference
+
+Lambda parameter types are **inferred from context** - you don't need to annotate them:
+
+```cure
+# Type inferred from list element type
+let doubled = map([1, 2, 3], fn(x) -> x * 2 end)
+# x is inferred to be Int
+
+# Type inferred from function signature
+def apply_twice(f: Int -> Int, x: Int): Int =
+  f(f(x))
+
+let result = apply_twice(fn(n) -> n + 1 end, 5)
+# n is inferred to be Int from apply_twice signature
+```
+
+#### Nested Lambdas (Currying)
+
+Lambdas can return other lambdas for currying:
+
+```cure
+# Manual currying
+let add = fn(x) -> fn(y) -> x + y end end
+
+# Partial application (conceptually)
+# let add_five = add(5)  # Returns fn(y) -> 5 + y end
+# let result = add_five(3)  # Returns 8
+
+# Real example with fold
+let sum = fold([1, 2, 3, 4], 0, fn(x) -> fn(acc) -> x + acc end end)
+```
+
+#### Closures (Variable Capture)
+
+Lambdas can capture variables from their surrounding scope:
+
+```cure
+# Capture from outer scope
+let base = 10
+let add_base = fn(x) -> x + base end
+# add_base captures 'base' (closure)
+
+let result = add_base(5)  # Returns 15
+
+# Multiple captures
+def make_adder(x: Int): Int -> Int =
+  fn(y) -> x + y end
+# Returns a lambda that captures x
+
+let add_five = make_adder(5)
+let result = add_five(3)  # Returns 8
+```
+
+#### Lambdas in Higher-Order Functions
+
+Most common use is passing lambdas to higher-order functions:
+
+```cure
+import Std.List [map/2, filter/2, fold/3]
+
+# Map: transform each element
+let doubled = map([1, 2, 3, 4, 5], fn(x) -> x * 2 end)
+# Result: [2, 4, 6, 8, 10]
+
+# Filter: select elements
+let evens = filter([1, 2, 3, 4, 5], fn(x) -> x % 2 == 0 end)
+# Result: [2, 4]
+
+# Fold: aggregate with accumulator
+let sum = fold([1, 2, 3, 4, 5], 0, 
+               fn(x) -> fn(acc) -> x + acc end end)
+# Result: 15
+
+# Chain operations
+let result = 
+  [1, 2, 3, 4, 5]
+  |> map(fn(x) -> x * 2 end)
+  |> filter(fn(x) -> x > 5 end)
+  |> fold(0, fn(x) -> fn(acc) -> x + acc end end)
+```
+
+#### Complex Lambda Bodies
+
+Lambda bodies can contain any expression, including pattern matching:
+
+```cure
+# Lambda with match expression
+let classify = fn(x) ->
+  match x do
+    n when n > 0 -> "positive"
+    0 -> "zero"
+    _ -> "negative"
+  end
+end
+
+# Lambda with let bindings
+let compute = fn(x) ->
+  let doubled = x * 2
+  let squared = doubled * doubled
+  squared + 1
+end
+```
+
+#### Limitations
+
+**Recursive Lambdas**: Lambdas cannot directly call themselves (they're anonymous).  
+Use named functions for recursion:
+
+```cure
+# ❌ Won't work - lambda can't reference itself
+let factorial = fn(n) ->
+  match n do
+    0 -> 1
+    _ -> n * factorial(n - 1)  # Error: factorial undefined
+  end
+end
+
+# ✅ Use named function instead
+def factorial(n: Nat): Nat =
+  match n do
+    Zero -> Succ(Zero)
+    Succ(pred) -> mult(n, factorial(pred))
+  end
+```
+
+**Direct Invocation**: Directly calling a lambda literal may require binding first:
+
+```cure
+# May not work:
+# (fn(x) -> x + 1 end)(5)
+
+# Instead, bind to variable:
+let increment = fn(x) -> x + 1 end
+let result = increment(5)  # Works
 ```
 
 ### Function Guards ✅

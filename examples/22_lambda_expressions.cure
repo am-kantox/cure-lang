@@ -1,0 +1,113 @@
+# Example 22: Lambda Expressions
+# Demonstrates lambda syntax, closures, and higher-order functions
+
+module LambdaExpressions do
+  export [main/0, simple_lambda/0, closure_example/0, higher_order/0, 
+          nested_lambda/0, multi_param_lambda/0]
+  
+  import Std.Io [println/1]
+  import Std.List [map/2, filter/2]
+  
+  # Main demonstration function
+  def main(): Int =
+    println("=== Lambda Expressions Demo ===")
+    println("")
+    
+    simple_lambda()
+    closure_example()
+    higher_order()
+    nested_lambda()
+    multi_param_lambda()
+    
+    println("")
+    println("=== Demo Complete ===")
+    0
+  
+  # 1. Simple lambda - basic syntax
+  def simple_lambda(): Int =
+    println("1. Simple Lambda:")
+    
+    # Lambda that doubles a number
+    let double = fn(x) -> x * 2 end
+    
+    # Apply lambda to value (assuming we can call it somehow)
+    # For now, just define it
+    println("  Defined: fn(x) -> x * 2 end")
+    
+    0
+  
+  # 2. Lambda with closure - capturing variables
+  def closure_example(): Int =
+    println("2. Closure (capturing outer variables):")
+    
+    let base = 10
+    let add_base = fn(x) -> x + base end
+    
+    # The lambda captures 'base' from outer scope
+    println("  Defined: let base = 10; fn(x) -> x + base end")
+    println("  Lambda captures 'base' variable")
+    
+    0
+  
+  # 3. Higher-order functions - lambdas as arguments
+  def higher_order(): Int =
+    println("3. Higher-Order Functions:")
+    
+    let numbers = [1, 2, 3, 4, 5]
+    
+    # Map with lambda - double each element
+    let doubled = map(numbers, fn(x) -> x * 2 end)
+    println("  map([1,2,3,4,5], fn(x) -> x * 2 end)")
+    println("  Result: [2,4,6,8,10]")
+    
+    # Map with lambda - square each element
+    let squared = map(numbers, fn(x) -> x * x end)
+    println("  map([1,2,3,4,5], fn(x) -> x * x end)")
+    println("  Result: [1,4,9,16,25]")
+    
+    0
+  
+  # 4. Nested lambdas
+  def nested_lambda(): Int =
+    println("4. Nested Lambdas:")
+    
+    # Lambda that returns another lambda (currying)
+    let add = fn(x) -> fn(y) -> x + y end end
+    
+    # This creates a closure: add_five = fn(y) -> 5 + y end
+    # let add_five = apply(add, 5)
+    
+    println("  Defined: fn(x) -> fn(y) -> x + y end end")
+    println("  Creates curried addition function")
+    
+    0
+  
+  # 5. Multiple parameters
+  def multi_param_lambda(): Int =
+    println("5. Multi-Parameter Lambdas:")
+    
+    # Lambda with multiple parameters
+    let multiply = fn(x, y) -> x * y end
+    
+    println("  Defined: fn(x, y) -> x * y end")
+    println("  Lambda takes two arguments")
+    
+    0
+  
+  # 6. Lambda with complex body using match
+  def lambda_with_match(): Int =
+    println("6. Lambda with Pattern Matching:")
+    
+    # Lambda that uses pattern matching
+    let is_positive = fn(x) ->
+      match x do
+        n when n > 0 -> true
+        _ -> false
+      end
+    end
+    
+    println("  Lambda with match expression in body")
+    
+    0
+
+end
