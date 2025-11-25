@@ -98,5 +98,64 @@ run() ->
             io:format("  ✗ FAIL - Should have failed~n")
     end,
 
-    io:format("~n✓ UTF-8 lexer error reporting tests completed~n"),
+    % Test 6: UTF-8 in string literals (should work)
+    io:format("~nTest 6: UTF-8 in string literals...~n"),
+    Code6 = <<"module Test\ndef greet(): String = \"Hello 世界 🌍\"\nend">>,
+    case cure_lexer:tokenize(Code6) of
+        {ok, Tokens6} when is_list(Tokens6) ->
+            io:format("  ✓ PASS - UTF-8 in strings works~n"),
+            % Find the string token
+            StringTokens = [T || T <- Tokens6, element(1, T) =:= string],
+            case StringTokens of
+                [{string, _, Str} | _] ->
+                    io:format("  String value: ~ts~n", [Str]);
+                _ ->
+                    io:format("  (no string token found)~n")
+            end;
+        {error, Reason6} ->
+            io:format("  ✗ FAIL - Should accept UTF-8 in strings: ~p~n", [Reason6])
+    end,
+
+    % Test 7: UTF-8 in comments (should work)
+    io:format("~nTest 7: UTF-8 in comments...~n"),
+    Code7 = <<"module Test\n// Comment with UTF-8: 中文 عربي ñ\ndef test(): Int = 42\nend">>,
+    case cure_lexer:tokenize(Code7) of
+        {ok, Tokens7} when is_list(Tokens7) ->
+            io:format("  ✓ PASS - UTF-8 in comments works~n");
+        {error, Reason7} ->
+            io:format("  ✗ FAIL - Should accept UTF-8 in comments: ~p~n", [Reason7])
+    end,
+
+    % Test 8: Mixed ASCII and UTF-8 in strings
+    io:format("~nTest 8: Mixed ASCII and UTF-8...~n"),
+    Code8 = <<"module Test\ndef msg(): String = \"Price: €50, ¥100, £25\"\nend">>,
+    case cure_lexer:tokenize(Code8) of
+        {ok, Tokens8} when is_list(Tokens8) ->
+            io:format("  ✓ PASS - Mixed ASCII/UTF-8 works~n");
+        {error, Reason8} ->
+            io:format("  ✗ FAIL - Should accept mixed content: ~p~n", [Reason8])
+    end,
+
+    % Test 9: Multiline string with UTF-8
+    io:format("~nTest 9: Multiline string with UTF-8...~n"),
+    Code9 =
+        <<"module Test\ndef poem(): String = \"\"\"\n  Roses are 🌹\n  Violets are 💙\n\"\"\"\nend">>,
+    case cure_lexer:tokenize(Code9) of
+        {ok, Tokens9} when is_list(Tokens9) ->
+            io:format("  ✓ PASS - Multiline UTF-8 strings work~n");
+        {error, Reason9} ->
+            io:format("  ✗ FAIL - Should accept multiline UTF-8: ~p~n", [Reason9])
+    end,
+
+    % Test 10: Ensure UTF-8 outside strings/comments still fails
+    io:format("~nTest 10: UTF-8 in code (should fail)...~n"),
+    Code10 = <<"module Test\ndef π(): Float = 3.14159\nend">>,
+    case cure_lexer:tokenize(Code10) of
+        {error, {{unexpected_character, _}, _, _}} ->
+            io:format("  ✓ PASS - Correctly rejects UTF-8 in code~n");
+        {ok, _} ->
+            io:format("  ✗ FAIL - Should reject UTF-8 identifiers~n")
+    end,
+
+    io:format("~n✓ UTF-8 lexer tests completed (error reporting + valid usage)~n"),
     ok.

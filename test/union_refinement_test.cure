@@ -1,0 +1,38 @@
+## Test: Union Types with Refinement Constraints
+## Purpose: Verify that union types can contain refinement types
+
+module UnionRefinementTest do
+  export [test1/0, test2/0, test3/0]
+
+  ## Test 1: Simple union of refined types
+  type PositiveOrNegative = 
+    {x: Int | x > 0} | {x: Int | x < 0}
+
+  def test1(): PositiveOrNegative =
+    5  ## Should infer {x: Int | x > 0}
+
+  ## Test 2: Union with constructor-like syntax
+  type NumberClass = 
+    Positive({val: Int | val > 0}) | 
+    Negative({val: Int | val < 0}) | 
+    Zero
+
+  def test2(n: Int): NumberClass =
+    match n do
+      x when x > 0 -> Positive(x)
+      x when x < 0 -> Negative(x)
+      _ -> Zero
+    end
+
+  ## Test 3: Result type with refined variants
+  type SafeResult = 
+    Ok({value: Int | value >= 0}) | 
+    Error({code: Int | code < 0})
+
+  def test3(success: Bool): SafeResult =
+    match success do
+      true -> Ok(42)
+      false -> Error(-1)
+    end
+
+end
