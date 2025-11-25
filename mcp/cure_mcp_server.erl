@@ -31,6 +31,10 @@ init_state(_Options) ->
         capabilities = #{
             tools => #{
                 listChanged => false
+            },
+            resources => #{
+                subscribe => false,
+                listChanged => false
             }
         },
         tool_handlers = #{
@@ -152,6 +156,8 @@ handle_request(Request, State) ->
             handle_tools_call(Id, Params, State);
         <<"resources/list">> ->
             handle_resources_list(Id, State);
+        <<"resources/read">> ->
+            handle_resources_read(Id, Params, State);
         <<"prompts/list">> ->
             handle_prompts_list(Id, State);
         _ ->
@@ -360,9 +366,46 @@ handle_resources_list(Id, _State) ->
         <<"jsonrpc">> => <<"2.0">>,
         <<"id">> => Id,
         <<"result">> => #{
-            <<"resources">> => []
+            <<"resources">> => [
+                #{
+                    <<"uri">> => <<"cure://project/todo">>,
+                    <<"name">> => <<"Project TODO & Status">>,
+                    <<"description">> => <<"Comprehensive project status, audit results, and production readiness assessment (90% complete)">>,
+                    <<"mimeType">> => <<"text/markdown">>
+                }
+            ]
         }
     }.
+
+%% Handle resources/read request
+handle_resources_read(Id, Params, _State) ->
+    Uri = maps:get(<<"uri">>, Params, undefined),
+    
+    case Uri of
+        <<"cure://project/todo">> ->
+            TodoPath = "../TODO-2025-11-24.md",
+            case file:read_file(TodoPath) of
+                {ok, Content} ->
+                    #{
+                        <<"jsonrpc">> => <<"2.0">>,
+                        <<"id">> => Id,
+                        <<"result">> => #{
+                            <<"contents">> => [
+                                #{
+                                    <<"uri">> => <<"cure://project/todo">>,
+                                    <<"mimeType">> => <<"text/markdown">>,
+                                    <<"text">> => Content
+                                }
+                            ]
+                        }
+                    };
+                {error, Reason} ->
+                    error_response(Id, -32603, 
+                        list_to_binary(io_lib:format("Cannot read TODO file: ~p", [Reason])))
+            end;
+        _ ->
+            error_response(Id, -32602, <<"Unknown resource URI">>)
+    end.
 
 %% Handle prompts/list request
 handle_prompts_list(Id, _State) ->

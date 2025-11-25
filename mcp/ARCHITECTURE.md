@@ -48,9 +48,13 @@ The server maintains a registry of tool handlers as a map from tool name (binary
    - Routes to registered tool handlers
    - Returns tool output or errors
 
-4. **`resources/list`** - List resources (currently empty)
+4. **`resources/list`** - List available resources
+   - Returns resource URIs and metadata
 
-5. **`prompts/list`** - List prompts (currently empty)
+5. **`resources/read`** - Read resource content
+   - Returns resource content by URI
+
+6. **`prompts/list`** - List prompts (currently empty)
 
 #### JSON-RPC 2.0 Format
 
@@ -262,11 +266,34 @@ tool_handlers = #{
 
 ### Adding Resources
 
-Resources provide file-like access to data. To add:
+Resources provide file-like access to data. Currently implemented:
 
-1. Implement `handle_resources_list/2` to return resource URIs
-2. Implement `handle_resources_read/2` to return resource content
-3. Update server capabilities in `init_state/1`
+**`cure://project/todo`** - Project TODO and status
+- Returns TODO-2025-11-24.md content
+- Provides production readiness assessment (90%)
+- Includes comprehensive audit results
+
+To add new resources:
+
+1. Add resource metadata to `handle_resources_list/2`:
+   ```erlang
+   #{
+       <<"uri">> => <<"cure://my/resource">>,
+       <<"name">> => <<"Resource Name">>,
+       <<"description">> => <<"Description">>,
+       <<"mimeType">> => <<"text/plain">>
+   }
+   ```
+
+2. Add URI handler to `handle_resources_read/2`:
+   ```erlang
+   case Uri of
+       <<"cure://my/resource">> ->
+           % Return resource content
+   end
+   ```
+
+3. Update resource capabilities in `init_state/1` (already configured)
 
 ### Adding Prompts
 

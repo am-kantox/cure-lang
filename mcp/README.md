@@ -36,6 +36,16 @@ The Cure MCP server provides the following tools for AI assistants:
 - **`get_stdlib_docs`** - Get standard library documentation
   - Modules: Std.List, Std.Io, Std.Fsm, Std.Option, Std.Result, all
 
+### Resources
+
+MCP resources provide queryable project information:
+
+- **`cure://project/todo`** - Project TODO and status document
+  - Comprehensive audit results and implementation status
+  - Production readiness assessment (90% complete)
+  - Detailed feature completion tracking
+  - Known issues and future roadmap
+
 ## Installation
 
 ### Prerequisites
