@@ -302,6 +302,7 @@ keywords() ->
         <<"module">> => 'module',
         <<"import">> => 'import',
         <<"export">> => 'export',
+        <<"export_typeclasses">> => 'export_typeclasses',
         <<"process">> => 'process',
         <<"fsm">> => 'fsm',
         <<"state">> => 'state',

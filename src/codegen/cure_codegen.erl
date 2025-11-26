@@ -1582,6 +1582,17 @@ compile_binary_op(
                     Instructions = LeftInstructions ++ RightInstructions ++ [BinaryOpInstruction],
                     {Instructions, State2}
             end;
+        melquiades_send ->
+            % Melquíades operator (|->): message |-> target
+            % Convert to melquiades_send_expr and compile
+            compile_melquiades_send_expr(
+                #melquiades_send_expr{
+                    message = Left,
+                    target = Right,
+                    location = Location
+                },
+                State
+            );
         '|>' ->
             % Monadic pipe operator: Left |> Right with automatic ok() wrapping and error propagation
             % The first argument is wrapped with ok(arg), then each pipe operation:
@@ -1761,7 +1772,8 @@ compile_record_expr(#record_expr{name = RecordName, fields = Fields, location = 
     {FieldInstructions, State1} = compile_record_field_exprs(Fields, State),
 
     % Create field name list for the record construction
-    FieldNames = [Field#field_expr.name || Field <- Fields],
+    % Handle both #field_expr{} records and {name, expr} tuples
+    FieldNames = [extract_field_name(Field) || Field <- Fields],
 
     % Generate record construction instruction
     RecordInstruction = #beam_instr{
@@ -1785,7 +1797,8 @@ compile_record_update_expr(
     {FieldInstructions, State2} = compile_record_field_exprs(Fields, State1),
 
     % Create field name list for the record update
-    FieldNames = [Field#field_expr.name || Field <- Fields],
+    % Handle both #field_expr{} records and {name, expr} tuples
+    FieldNames = [extract_field_name(Field) || Field <- Fields],
 
     % Generate record update instruction
     UpdateInstruction = #beam_instr{
@@ -1859,7 +1872,17 @@ compile_record_field_exprs([], State, Acc) ->
     {lists:flatten(lists:reverse(Acc)), State};
 compile_record_field_exprs([#field_expr{value = Value} | Rest], State, Acc) ->
     {ValueInstructions, State1} = compile_expression(Value, State),
+    compile_record_field_exprs(Rest, State1, [ValueInstructions | Acc]);
+% Handle tuple format from parser: {FieldName, ValueExpr}
+compile_record_field_exprs([{_FieldName, Value} | Rest], State, Acc) when is_atom(_FieldName) ->
+    {ValueInstructions, State1} = compile_expression(Value, State),
     compile_record_field_exprs(Rest, State1, [ValueInstructions | Acc]).
+
+%% Extract field name from field expression (handles both record and tuple formats)
+extract_field_name(#field_expr{name = Name}) ->
+    Name;
+extract_field_name({Name, _Value}) when is_atom(Name) ->
+    Name.
 
 %% Compile block expressions
 compile_block_expr(#block_expr{expressions = Expressions, location = _Location}, State) ->

@@ -1,0 +1,26 @@
+# Demo: export_typeclasses feature
+# This example demonstrates the new export_typeclasses syntax
+
+module Demo.TypeclassExport do
+  export_typeclasses [Printable]
+  export [demo/0]
+
+  # Define a typeclass
+  typeclass Printable(T) do
+    def print(x: T): String
+  end
+
+  # Instance for Int
+  instance Printable(Int) do
+    def print(x: Int): String = "<integer>"
+  end
+
+  # Instance for String
+  instance Printable(String) do
+    def print(x: String): String = x
+  end
+
+  # Demo function that uses the typeclass
+  def demo(): String = 
+    print(42)  # Uses Printable(Int) instance
+end

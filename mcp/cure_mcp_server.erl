@@ -4,6 +4,14 @@
 %% Model Context Protocol (MCP) Server for Cure Language
 %% Implements JSON-RPC 2.0 over stdio for AI assistant integration
 
+%% Include type checker record definitions
+-record(typecheck_result, {
+    success :: boolean(),
+    type :: term() | undefined,
+    errors :: [term()],
+    warnings :: [term()]
+}).
+
 -record(server_state, {
     capabilities = #{
         tools => #{},
@@ -424,33 +432,33 @@ handle_compile(Args) ->
     
     case file:read_file(FilePath) of
         {ok, Code} ->
-            compile_cure_code(binary_to_list(Code), binary_to_list(FilePath), binary_to_list(OutputDir));
+            compile_cure_code(Code, binary_to_list(FilePath), binary_to_list(OutputDir));
         {error, Reason} ->
             format_error(<<"Cannot read file">>, Reason)
     end.
 
 handle_parse(Args) ->
-    Code = binary_to_list(maps:get(<<"code">>, Args)),
+    Code = ensure_binary(maps:get(<<"code">>, Args)),
     parse_cure_code(Code).
 
 handle_type_check(Args) ->
-    Code = binary_to_list(maps:get(<<"code">>, Args)),
+    Code = ensure_binary(maps:get(<<"code">>, Args)),
     type_check_cure_code(Code).
 
 handle_get_ast(Args) ->
-    Code = binary_to_list(maps:get(<<"code">>, Args)),
+    Code = ensure_binary(maps:get(<<"code">>, Args)),
     PrettyPrint = maps:get(<<"pretty_print">>, Args, true),
     get_ast_representation(Code, PrettyPrint).
 
 handle_analyze_fsm(Args) ->
-    Code = binary_to_list(maps:get(<<"code">>, Args)),
+    Code = ensure_binary(maps:get(<<"code">>, Args)),
     analyze_fsm_code(Code).
 
 handle_format(_Args) ->
     <<"Code formatting not yet implemented">>.
 
 handle_validate_syntax(Args) ->
-    Code = binary_to_list(maps:get(<<"code">>, Args)),
+    Code = ensure_binary(maps:get(<<"code">>, Args)),
     validate_syntax(Code).
 
 handle_syntax_help(Args) ->
@@ -477,12 +485,24 @@ compile_cure_code(Code, FilePath, OutputDir) ->
                 %% Parse
                 case cure_parser:parse(Tokens) of
                     {ok, AST} ->
-                        %% Type check
-                        case cure_typechecker:typecheck(AST) of
-                            {ok, TypedAST} ->
-                                %% Generate code
-                                case cure_codegen:generate(TypedAST, OutputDir) of
-                                    {ok, BeamFiles} ->
+                        %% Type check using check_program which returns a record
+                        Result = cure_typechecker:check_program(AST),
+                        case Result#typecheck_result.success of
+                            true ->
+                                %% Generate code - compile_program expects AST and returns {ok, Modules}
+                                case cure_codegen:compile_program(AST) of
+                                    {ok, Modules} ->
+                                        %% Write BEAM files
+                                        BeamFiles = lists:filtermap(fun(Mod) ->
+                                            try
+                                                ModName = element(2, Mod),
+                                                BeamFile = filename:join(OutputDir, atom_to_list(ModName) ++ ".beam"),
+                                                ok = cure_codegen:write_beam_module(Mod, BeamFile),
+                                                {true, list_to_binary(BeamFile)}
+                                            catch
+                                                _:_ -> false
+                                            end
+                                        end, Modules),
                                         format_success(<<"Compilation successful">>, #{
                                             <<"beam_files">> => BeamFiles,
                                             <<"output_dir">> => list_to_binary(OutputDir)
@@ -490,8 +510,9 @@ compile_cure_code(Code, FilePath, OutputDir) ->
                                     {error, CodegenError} ->
                                         format_error(<<"Code generation failed">>, CodegenError)
                                 end;
-                            {error, TypeError} ->
-                                format_error(<<"Type checking failed">>, TypeError)
+                            false ->
+                                Errors = Result#typecheck_result.errors,
+                                format_error(<<"Type checking failed">>, Errors)
                         end;
                     {error, ParseError} ->
                         format_error(<<"Parse error">>, ParseError)
@@ -534,11 +555,14 @@ type_check_cure_code(Code) ->
             {ok, Tokens} ->
                 case cure_parser:parse(Tokens) of
                     {ok, AST} ->
-                        case cure_typechecker:typecheck(AST) of
-                            {ok, _TypedAST} ->
+                        %% Use check_program which returns a typecheck_result record
+                        Result = cure_typechecker:check_program(AST),
+                        case Result#typecheck_result.success of
+                            true ->
                                 format_success(<<"Type checking passed">>, #{});
-                            {error, TypeError} ->
-                                format_error(<<"Type error">>, TypeError)
+                            false ->
+                                Errors = Result#typecheck_result.errors,
+                                format_error(<<"Type error">>, Errors)
                         end;
                     {error, ParseError} ->
                         format_error(<<"Parse error (cannot type-check)">>, ParseError)
@@ -606,7 +630,7 @@ validate_syntax(Code) ->
             {ok, Tokens} ->
                 case cure_parser:parse(Tokens) of
                     {ok, _AST} ->
-                        <<"✓ Syntax is valid">>;
+                        <<"[OK] Syntax is valid">>;
                     {error, ParseError} ->
                         format_error(<<"Syntax error">>, ParseError)
                 end;
@@ -927,19 +951,24 @@ format_fsm_analysis(FSMs) ->
 
 %% Helper: summarize AST
 summarize_ast({module_def, Name, Exports, Items, _}) ->
-    io_lib:format("Module: ~p~nExports: ~p~nItems: ~p definitions", 
-                 [Name, length(Exports), length(Items)]);
+    iolist_to_binary(io_lib:format("Module: ~p~nExports: ~p~nItems: ~p definitions", 
+                 [Name, length(Exports), length(Items)]));
 summarize_ast(_) ->
-    "Unknown AST structure".
+    <<"Unknown AST structure">>.
 
 %% Helper: format success response
 format_success(Message, Data) ->
     DataStr = io_lib:format("~p", [Data]),
-    list_to_binary(io_lib:format("✓ ~s~n~s", [Message, DataStr])).
+    iolist_to_binary(io_lib:format("[OK] ~s~n~s", [Message, DataStr])).
+
+%% Helper: ensure binary (convert from string if needed)
+ensure_binary(Code) when is_binary(Code) -> Code;
+ensure_binary(Code) when is_list(Code) -> list_to_binary(Code);
+ensure_binary(Code) -> Code.
 
 %% Helper: format error response
 format_error(Message, Reason) ->
-    list_to_binary(io_lib:format("✗ ~s~nReason: ~p", [Message, Reason])).
+    iolist_to_binary(io_lib:format("[ERROR] ~s~nReason: ~p", [Message, Reason])).
 
 %% Error response helper
 error_response(Id, Code, Message) ->

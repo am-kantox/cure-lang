@@ -2192,6 +2192,12 @@ convert_expr_to_tuple(#record_update_expr{
     {record_update_expr, Name, convert_expr_to_tuple(Base), ConvertedFields, Location};
 convert_expr_to_tuple(#tuple_expr{elements = Elements, location = Location}) ->
     {tuple_expr, [convert_expr_to_tuple(E) || E <- Elements], Location};
+convert_expr_to_tuple(#melquiades_send_expr{
+    message = Message,
+    target = Target,
+    location = Location
+}) ->
+    {melquiades_send_expr, convert_expr_to_tuple(Message), convert_expr_to_tuple(Target), Location};
 convert_expr_to_tuple(Expr) ->
     % Fallback - return as-is for unsupported expressions
     Expr.
@@ -2249,7 +2255,10 @@ convert_pattern_to_tuple(Pattern) ->
     Pattern.
 
 convert_field_expr_to_tuple(#field_expr{name = Name, value = Value, location = Location}) ->
-    {field_expr, Name, convert_expr_to_tuple(Value), Location}.
+    {field_expr, Name, convert_expr_to_tuple(Value), Location};
+% Handle tuple format from parser (when fields come as {name, expr} tuples)
+convert_field_expr_to_tuple({Name, Value}) when is_atom(Name) ->
+    {field_expr, Name, convert_expr_to_tuple(Value), undefined}.
 
 convert_block_to_lets([LastExpr], _Location) ->
     convert_expr_to_tuple(LastExpr);
@@ -3170,7 +3179,10 @@ extract_export_specs(ExportSpecs, _Items) when is_list(ExportSpecs) ->
         % List of export_spec tuples
         [{export_spec, _, _, _} | _] ->
             ExportSpecs;
-        % Pass through other formats
+        % Include typeclass exports
+        [#typeclass_export_list{} | _] ->
+            ExportSpecs;
+        % Pass through mixed lists
         _ ->
             ExportSpecs
     end;
@@ -3179,6 +3191,17 @@ extract_export_specs([_ | RestExports], Items) ->
 
 check_exports([], _Items) ->
     ok;
+% Handle typeclass export lists
+check_exports(
+    [#typeclass_export_list{typeclasses = Typeclasses, location = Location} | RestExports], Items
+) ->
+    % Validate that each typeclass exists in the module
+    case validate_typeclass_exports(Typeclasses, Items, Location) of
+        ok ->
+            check_exports(RestExports, Items);
+        {error, Error} ->
+            {error, Error}
+    end;
 check_exports([{export_spec, Name, Arity, _Location} | RestExports], Items) ->
     case find_function(Name, Items) of
         {ok,
@@ -3212,6 +3235,25 @@ check_exports([{export_spec, Name, Arity, _Location} | RestExports], Items) ->
         not_found ->
             {error, {exported_function_not_found, Name, Arity}}
     end.
+
+%% Validate that all exported typeclasses exist in the module
+validate_typeclass_exports([], _Items, _Location) ->
+    ok;
+validate_typeclass_exports([TypeclassName | RestTypeclasses], Items, Location) ->
+    case find_typeclass(TypeclassName, Items) of
+        {ok, _TypeclassDef} ->
+            validate_typeclass_exports(RestTypeclasses, Items, Location);
+        not_found ->
+            {error, {exported_typeclass_not_found, TypeclassName, Location}}
+    end.
+
+%% Find a typeclass definition in the module items
+find_typeclass(Name, [#typeclass_def{name = Name} = TypeclassDef | _]) ->
+    {ok, TypeclassDef};
+find_typeclass(Name, [_ | RestItems]) ->
+    find_typeclass(Name, RestItems);
+find_typeclass(_Name, []) ->
+    not_found.
 
 find_function(
     Name,

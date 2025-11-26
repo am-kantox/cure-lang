@@ -178,6 +178,12 @@
     location
 }).
 
+%% Typeclass export list
+-record(typeclass_export_list, {
+    typeclasses,  % List of typeclass names (atoms)
+    location
+}).
+
 %% Function parameter
 -record(param, {
     name,

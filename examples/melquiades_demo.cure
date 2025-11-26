@@ -2,6 +2,8 @@
 # The |-> operator sends messages to external BEAM GenServers
 
 module MelquiadesDemo do
+  import Std.String [trim/1, upcase/1]
+
   export [
     send_notification/2,
     send_with_record/3,
@@ -12,103 +14,100 @@ module MelquiadesDemo do
 
   # Define a message record
   record NotificationMsg do
-    type: Atom,
-    content: String,
+    msg_type: Atom
+    content: String
     priority: Int
   end
 
   # Define another record for complex messages
   record UserEvent do
-    user_id: Int,
-    action: String,
+    user_id: Int
+    event_action: String
     timestamp: Int
   end
 
   # Send a simple message to a local GenServer
   # The message can be any term
-  def send_notification(server_name: Atom, message: String) -> None do
+  def send_notification(server_name: Atom, message: String): Unit =
     message |-> server_name
-  end
 
   # Send a record message (will be converted to map with __from__ = MelquiadesDemo)
-  def send_with_record(server: Atom, notification_type: Atom, content: String) -> None do
+  def send_with_record(server: Atom, notification_type: Atom, content: String): Unit = (
     let msg = NotificationMsg{
-      type: notification_type,
+      msg_type: notification_type,
       content: content,
       priority: 5
     }
     msg |-> server
-  end
+  )
 
   # Send to a globally registered GenServer
   # In Cure, we construct GenServerRef types for different name formats
-  def send_to_global(name: Atom, message: String) -> None do
+  def send_to_global(name: Atom, message: String): Unit = (
     # Global name: {:global, name}
     let global_ref = {:global, name}
     message |-> global_ref
-  end
+  )
 
   # Send via a process registry (like Registry)
-  def send_via_registry(registry: Atom, key: String, message: String) -> None do
+  def send_via_registry(registry: Atom, key: String, message: String): Unit = (
     # Via tuple: {:via, Registry, {RegistryName, key}}
     let via_ref = {:via, :Registry, {registry, key}}
     message |-> via_ref
-  end
+  )
 
   # Example usage showing different message types
-  def example_usage() -> None do
+  def example_usage(): Unit = (
     # Simple message to local server
-    "Hello, World!" |-> :my_server
+    let _ = "Hello, World!" |-> :my_server
 
     # Record message (auto-converted to map with __from__)
-    let event = UserEvent{
+    let user_event = UserEvent{
       user_id: 42,
-      action: "login",
+      event_action: "login",
       timestamp: 1701000000
     }
-    event |-> :event_handler
+    let _ = user_event |-> :event_handler
 
     # Chain with other operations
     let result = compute_message()
-    result |-> :result_processor
+    let _ = result |-> :result_processor
 
     # Tuple message
-    {:notification, "System started"} |-> :logger
+    let _ = {:notification, "System started"} |-> :logger
 
     # List message
-    [1, 2, 3, 4, 5] |-> :list_processor
-  end
+    let _ = [1, 2, 3, 4, 5] |-> :list_processor
+    
+    # Return Unit
+    {}
+  )
 
   # Helper function to demonstrate chaining
-  def compute_message() -> String do
+  def compute_message(): String =
     "Computed result"
-  end
 
   # Complex example: Send multiple messages in sequence
-  def broadcast_event(event: UserEvent, servers: [Atom]) -> None do
+  def broadcast_event(user_event: UserEvent, servers: List(Atom)): Unit =
     # Note: This would need to be implemented with proper list iteration
-    # For now, showing the concept
-    event |-> :server1
-    event |-> :server2
-    event |-> :server3
-  end
+    # For now, showing the concept with just one send
+    user_event |-> :server1
 
   # Example with pattern matching
-  def conditional_send(condition: Bool, message: String) -> None do
+  def conditional_send(condition: Bool, message: String): Unit =
     match condition do
       true -> message |-> :primary_server
       false -> message |-> :backup_server
     end
-  end
 
   # Example showing the operator in a pipeline
-  def process_and_send(data: String) -> None do
+  def process_and_send(data: String): Unit = (
     let processed = data
-      |> String.trim()
-      |> String.upcase()
-    
-    processed |-> :processor
-  end
+      |> trim
+      |> upcase
+    let _ = processed |-> :processor
+    {}
+  )
 end
 
 # Usage notes:

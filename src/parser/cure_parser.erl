@@ -595,6 +595,41 @@ parse_export(State) ->
     % Return as an export item
     {{export_list, Exports}, State4}.
 
+%% Parse export_typeclasses statement as module item
+parse_export_typeclasses(State) ->
+    {_, State1} = expect(State, export_typeclasses),
+    {_, State2} = expect(State1, '['),
+    {Typeclasses, State3} = parse_typeclass_names(State2, []),
+    {_, State4} = expect(State3, ']'),
+
+    Location = get_token_location(current_token(State)),
+    TypeclassExport = #typeclass_export_list{
+        typeclasses = Typeclasses,
+        location = Location
+    },
+    {TypeclassExport, State4}.
+
+%% Parse typeclass names in export_typeclasses list
+parse_typeclass_names(State, Acc) ->
+    case match_token(State, ']') of
+        true ->
+            {lists:reverse(Acc), State};
+        false ->
+            {NameToken, State1} =
+                case get_token_type(current_token(State)) of
+                    identifier -> expect(State, identifier);
+                    _ -> expect(State, identifier)
+                end,
+            Name = token_value_to_atom(get_token_value(NameToken)),
+            case match_token(State1, ',') of
+                true ->
+                    {_, State2} = expect(State1, ','),
+                    parse_typeclass_names(State2, [Name | Acc]);
+                false ->
+                    {lists:reverse([Name | Acc]), State1}
+            end
+    end.
+
 %% Collect exports from module items and merge with header exports
 collect_exports(HeaderExports, Items) ->
     collect_exports_helper(Items, HeaderExports, [], []).
@@ -603,6 +638,9 @@ collect_exports_helper([], ExportsAcc, ItemsAcc, _) ->
     {lists:reverse(ExportsAcc), lists:reverse(ItemsAcc)};
 collect_exports_helper([{{export_list, Exports}} | Rest], ExportsAcc, ItemsAcc, _) ->
     collect_exports_helper(Rest, Exports ++ ExportsAcc, ItemsAcc, []);
+collect_exports_helper([#typeclass_export_list{} = TCExport | Rest], ExportsAcc, ItemsAcc, _) ->
+    % Keep typeclass exports as-is in the export list
+    collect_exports_helper(Rest, [TCExport | ExportsAcc], ItemsAcc, []);
 collect_exports_helper([Item | Rest], ExportsAcc, ItemsAcc, _) ->
     collect_exports_helper(Rest, ExportsAcc, [Item | ItemsAcc], []).
 
@@ -657,6 +695,8 @@ parse_module_item(State) ->
             parse_import(State);
         export ->
             parse_export(State);
+        export_typeclasses ->
+            parse_export_typeclasses(State);
         _ ->
             Token = current_token(State),
             {Line, Col} = get_token_line_col(Token),

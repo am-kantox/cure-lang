@@ -1966,6 +1966,10 @@ infer_expr({binary_op_expr, '.', Left, {identifier_expr, FieldName, _}, Location
     % Special case: field access is parsed as binary operator
     % Convert to field access expression
     infer_expr({field_access_expr, Left, FieldName, Location}, Env);
+infer_expr({binary_op_expr, melquiades_send, Message, Target, Location}, Env) ->
+    % Special case: melquiades operator is parsed as binary operator
+    % Convert to melquiades_send_expr
+    infer_expr({melquiades_send_expr, Message, Target, Location}, Env);
 infer_expr({binary_op_expr, Op, Left, Right, Location}, Env) ->
     case infer_expr(Left, Env) of
         {ok, LeftType, LeftConstraints} ->
@@ -2292,6 +2296,9 @@ infer_expr(#melquiades_send_expr{message = Message, target = Target, location = 
         Error ->
             Error
     end;
+infer_expr({melquiades_send_expr, Message, Target, Location}, Env) ->
+    % Handle tuple format from convert_expr_to_tuple
+    infer_expr(#melquiades_send_expr{message = Message, target = Target, location = Location}, Env);
 infer_expr({fsm_receive_expr, Patterns, Timeout, Location}, Env) ->
     % Type FSM receive expression
     % Create a type variable for the message type (will be defined in standard library)
@@ -2333,11 +2340,18 @@ infer_expr({fsm_state_expr, _Location}, Env) ->
     end;
 infer_expr({tuple_expr, Elements, Location}, Env) ->
     % Type a tuple expression: (elem1, elem2, ...)
-    case infer_tuple_elements(Elements, Env, [], []) of
-        {ok, ElementTypes, AllConstraints} ->
-            {ok, #tuple_type{element_types = ElementTypes, location = Location}, AllConstraints};
-        Error ->
-            Error
+    % Special case: empty tuple {} is Unit type
+    case Elements of
+        [] ->
+            {ok, {primitive_type, 'Unit'}, []};
+        _ ->
+            case infer_tuple_elements(Elements, Env, [], []) of
+                {ok, ElementTypes, AllConstraints} ->
+                    {ok, #tuple_type{element_types = ElementTypes, location = Location},
+                        AllConstraints};
+                Error ->
+                    Error
+            end
     end;
 infer_expr(#forall_expr{variables = Variables, body = Body, location = Location}, Env) ->
     % Type a forall expression: forall<T, U>(body)

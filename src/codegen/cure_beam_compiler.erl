@@ -387,6 +387,8 @@ compile_single_instruction(#beam_instr{op = Op, args = Args, location = Location
         unary_op -> compile_unary_op(Args, NewContext);
         list_length -> compile_list_length(Args, NewContext);
         call_bif -> compile_call_bif(Args, NewContext);
+        melquiades_transform_message -> compile_melquiades_transform(Args, NewContext);
+        genserver_cast -> compile_genserver_cast(Args, NewContext);
         _ -> {error, {unsupported_instruction, Op}}
     end.
 
@@ -2004,3 +2006,69 @@ find_field_index(FieldName, [FieldName | _Rest], Index) ->
     {ok, Index};
 find_field_index(FieldName, [_ | Rest], Index) ->
     find_field_index(FieldName, Rest, Index + 1).
+
+%% ============================================================================
+%% Melquíades Operator Compilation
+%% ============================================================================
+
+%% Generate a unique variable name using the temp counter
+gen_unique_var(Context) ->
+    Counter = Context#compile_context.temp_counter,
+    VarName = list_to_atom("_MelqVar" ++ integer_to_list(Counter)),
+    NewContext = Context#compile_context{temp_counter = Counter + 1},
+    {VarName, NewContext}.
+
+%% Compile melquiades_transform_message instruction
+%% Transforms a message for sending to GenServer, injecting __from__ field
+compile_melquiades_transform([ModuleName], Context) ->
+    Line = Context#compile_context.line,
+    % Pop message from stack
+    {Message, Context1} = pop_stack(Context),
+
+    % Generate unique variable name for each transformation to avoid Erlang's
+    % "unsafe variable" errors when multiple melquiades sends occur in same function
+    {UniqueVar, Context2} = gen_unique_var(Context1),
+
+    % Generate code to transform the message:
+    % If it's a map/record, add __from__ field
+    % Otherwise, wrap in a map with message and __from__
+    TransformForm = {
+        'case', Line, Message, [
+            % If Message is already a map, add __from__ field
+            {clause, Line, [{map, Line, []}], [], [
+                {map, Line, Message, [
+                    {map_field_assoc, Line, {atom, Line, '__from__'}, {atom, Line, ModuleName}}
+                ]}
+            ]},
+            % Otherwise, wrap in a map with message and __from__
+            {clause, Line, [{var, Line, UniqueVar}], [], [
+                {map, Line, [
+                    {map_field_assoc, Line, {atom, Line, 'message'}, {var, Line, UniqueVar}},
+                    {map_field_assoc, Line, {atom, Line, '__from__'}, {atom, Line, ModuleName}}
+                ]}
+            ]}
+        ]
+    },
+
+    % Push transformed message back onto stack
+    NewContext = push_stack(TransformForm, Context2),
+    {ok, [], NewContext}.
+
+%% Compile genserver_cast instruction
+%% Generates gen_server:cast/2 call
+compile_genserver_cast([], Context) ->
+    Line = Context#compile_context.line,
+    % Pop target and message from stack (order: target pushed last, so pop first)
+    {Target, Context1} = pop_stack(Context),
+    {Message, Context2} = pop_stack(Context1),
+
+    % Generate gen_server:cast(Target, Message) call
+    % This returns 'ok' so we just push the call form itself
+    CastForm =
+        {call, Line, {remote, Line, {atom, Line, gen_server}, {atom, Line, cast}}, [
+            Target, Message
+        ]},
+
+    % Push the cast call form onto stack (it will evaluate to 'ok' at runtime)
+    NewContext = push_stack(CastForm, Context2),
+    {ok, [], NewContext}.
