@@ -2,8 +2,9 @@
 %% Tests for the |-> operator (message sending to GenServers)
 -module(melquiades_test).
 
--include_lib("eunit/eunit.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -include("../src/parser/cure_ast.hrl").
+-include("../src/codegen/cure_codegen.hrl").
 
 %% ============================================================================
 %% Lexer Tests
