@@ -18,10 +18,10 @@ run() ->
 test_lexer() ->
     Code = <<"msg |-> :server">>,
     {ok, Tokens} = cure_lexer:tokenize(Code),
-    
+
     % Extract token types
     Types = [element(2, T) || T <- Tokens],
-    
+
     % Verify melquiades_send token is present
     case lists:member(melquiades_send, Types) of
         true ->
@@ -36,7 +36,7 @@ test_lexer() ->
 %% Test that the parser creates correct AST
 test_parser() ->
     Code = <<"def test() -> None do\n  msg |-> :server\nend">>,
-    
+
     case cure_lexer:tokenize(Code) of
         {ok, Tokens} ->
             case cure_parser:parse(Tokens) of
@@ -60,11 +60,11 @@ test_codegen() ->
         target = #identifier_expr{name = server, location = undefined},
         location = undefined
     },
-    
+
     % Try to compile it
     try
         {Instructions, _State} = cure_codegen:compile_expression(MelquiadesExpr),
-        
+
         % Check that we got some instructions
         case length(Instructions) > 0 of
             true ->

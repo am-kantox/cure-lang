@@ -1,7 +1,7 @@
 %% Test suite for Nat type (Peano encoding)
 -module(nat_type_test).
 
--include_lib("eunit/eunit.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -include("../src/parser/cure_ast.hrl").
 
 %% Test Nat type creation

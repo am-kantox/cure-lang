@@ -394,8 +394,8 @@ test_recursive_function_calls() ->
     % end
     FactorialFn = #function_def{
         name = factorial,
-        params = [#param{name = n, value = undefined, location = create_location(1, 17)}],
-        return_value = undefined,
+        params = [#param{name = n, type = undefined, location = create_location(1, 17)}],
+        return_type = undefined,
         constraint = undefined,
         body = #match_expr{
             expr = create_identifier('n'),
@@ -471,7 +471,7 @@ test_higher_order_function_calls() ->
         function = create_identifier('map'),
         args = [
             #lambda_expr{
-                params = [#param{name = x, value = undefined, location = create_location(1, 12)}],
+                params = [#param{name = x, type = undefined, location = create_location(1, 12)}],
                 body = #binary_op_expr{
                     op = '+',
                     left = create_identifier('x'),
@@ -523,7 +523,7 @@ test_closure_generation() ->
                     pattern = #identifier_pattern{name = f, location = create_location(2, 5)},
                     value = #lambda_expr{
                         params = [
-                            #param{name = y, value = undefined, location = create_location(2, 17)}
+                            #param{name = y, type = undefined, location = create_location(2, 17)}
                         ],
                         body = #binary_op_expr{
                             op = '+',
@@ -578,10 +578,10 @@ test_tail_call_optimization() ->
     FactorialTailFn = #function_def{
         name = factorial_tail,
         params = [
-            #param{name = n, value = undefined, location = create_location(1, 22)},
-            #param{name = acc, value = undefined, location = create_location(1, 25)}
+            #param{name = n, type = undefined, location = create_location(1, 22)},
+            #param{name = acc, type = undefined, location = create_location(1, 25)}
         ],
-        return_value = undefined,
+        return_type = undefined,
         constraint = undefined,
         body = #match_expr{
             expr = create_identifier('n'),

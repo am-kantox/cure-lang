@@ -417,7 +417,7 @@ sample_ast_with_let_body() ->
                 bindings = [
                     #binding{
                         pattern = #identifier_pattern{name = t},
-                        type = #binary_op_expr{
+                        value = #binary_op_expr{
                             op = '+',
                             left = #identifier_expr{name = a},
                             right = #identifier_expr{name = b}
