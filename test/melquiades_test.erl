@@ -71,16 +71,18 @@ parser_creates_melquiades_send_expr_test() ->
 
 parser_handles_record_message_test() ->
     Source =
-        <<"\n"
-        "        record Msg do\n"
-        "            content: String\n"
-        "        end\n"
-        "        \n"
-        "        def send() do\n"
-        "            let m = Msg{content: \"hello\"}\n"
-        "            m |-> :server\n"
-        "        end\n"
-        "    ">>,
+        <<
+            "\n"
+            "        record Msg do\n"
+            "            content: String\n"
+            "        end\n"
+            "        \n"
+            "        def send() do\n"
+            "            let m = Msg{content: \"hello\"}\n"
+            "            m |-> :server\n"
+            "        end\n"
+            "    "
+        >>,
     {ok, Tokens} = cure_lexer:scan(Source),
 
     case cure_parser:parse(Tokens) of
@@ -232,15 +234,17 @@ codegen_injects_module_name_test() ->
 
 full_pipeline_simple_message_test() ->
     Source =
-        <<"\n"
-        "        module TestSend do\n"
-        "            export [send_msg/0]\n"
-        "            \n"
-        "            def send_msg() -> None do\n"
-        "                \"hello\" |-> :my_server\n"
-        "            end\n"
-        "        end\n"
-        "    ">>,
+        <<
+            "\n"
+            "        module TestSend do\n"
+            "            export [send_msg/0]\n"
+            "            \n"
+            "            def send_msg() -> None do\n"
+            "                \"hello\" |-> :my_server\n"
+            "            end\n"
+            "        end\n"
+            "    "
+        >>,
 
     % Full pipeline: tokenize -> parse -> compile
     case cure_lexer:tokenize(Source) of
@@ -265,21 +269,23 @@ full_pipeline_simple_message_test() ->
 
 full_pipeline_record_message_test() ->
     Source =
-        <<"\n"
-        "        module RecordSend do\n"
-        "            export [send_event/0]\n"
-        "            \n"
-        "            record Event do\n"
-        "                name: String,\n"
-        "                value: Int\n"
-        "            end\n"
-        "            \n"
-        "            def send_event() -> None do\n"
-        "                let evt = Event{name: \"test\", value: 42}\n"
-        "                evt |-> :event_server\n"
-        "            end\n"
-        "        end\n"
-        "    ">>,
+        <<
+            "\n"
+            "        module RecordSend do\n"
+            "            export [send_event/0]\n"
+            "            \n"
+            "            record Event do\n"
+            "                name: String,\n"
+            "                value: Int\n"
+            "            end\n"
+            "            \n"
+            "            def send_event() -> None do\n"
+            "                let evt = Event{name: \"test\", value: 42}\n"
+            "                evt |-> :event_server\n"
+            "            end\n"
+            "        end\n"
+            "    "
+        >>,
 
     case cure_lexer:tokenize(Source) of
         {ok, Tokens} ->
@@ -331,14 +337,16 @@ handles_complex_target_expression_test() ->
 
 handles_chained_operations_test() ->
     Source =
-        <<"\n"
-        "        def process() do\n"
-        "            data\n"
-        "                |> transform()\n"
-        "                |> validate()\n"
-        "                |-> :processor\n"
-        "        end\n"
-        "    ">>,
+        <<
+            "\n"
+            "        def process() do\n"
+            "            data\n"
+            "                |> transform()\n"
+            "                |> validate()\n"
+            "                |-> :processor\n"
+            "        end\n"
+            "    "
+        >>,
     {ok, Tokens} = cure_lexer:scan(Source),
 
     case cure_parser:parse(Tokens) of
