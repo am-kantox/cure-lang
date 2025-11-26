@@ -151,16 +151,134 @@ Last Updated: Novem">
 </code></pre></div>
 
 <h3 id="lambda-functions">Lambda Functions</h3>
-<p>Lambda syntax: <code>fn(params) -&gt; expression end</code></p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># Simple lambda</span>
+<p>Lambdas (anonymous functions) allow inline function definitions without naming them.</p>
+<p><strong>Syntax</strong>: <code>fn(params) -&gt; expression end</code></p>
+<h4 id="basic-lambda-expressions">Basic Lambda Expressions</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Simple lambda (one parameter)</span>
 <span class="n">let</span><span class="w"> </span><span class="n">double</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">end</span>
 
-<span class="c1"># Lambda with multiple params</span>
+<span class="c1"># Lambda with multiple parameters</span>
 <span class="n">let</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="n">end</span>
 
-<span class="c1"># Curried function application</span>
-<span class="n">let</span><span class="w"> </span><span class="n">partial_func</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">func</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
-<span class="n">partial_func</span><span class="p">(</span><span class="n">fold</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">,</span><span class="w"> </span><span class="k">func</span><span class="p">))</span>
+<span class="c1"># Zero-parameter lambda (thunk)</span>
+<span class="n">let</span><span class="w"> </span><span class="n">get_constant</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">42</span><span class="w"> </span><span class="n">end</span>
+</code></pre></div>
+
+<h4 id="type-inference">Type Inference</h4>
+<p>Lambda parameter types are <strong>inferred from context</strong> - you don't need to annotate them:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Type</span><span class="w"> </span><span class="nx">inferred</span><span class="w"> </span><span class="nx">from</span><span class="w"> </span><span class="nx">list</span><span class="w"> </span><span class="nx">element</span><span class="w"> </span><span class="k">type</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">doubled</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">map</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">],</span><span class="w"> </span><span class="kd">fn</span><span class="p">(</span><span class="nx">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="nx">end</span><span class="p">)</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">x</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="nx">inferred</span><span class="w"> </span><span class="nx">to</span><span class="w"> </span><span class="nx">be</span><span class="w"> </span><span class="nx">Int</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Type</span><span class="w"> </span><span class="nx">inferred</span><span class="w"> </span><span class="nx">from</span><span class="w"> </span><span class="nx">function</span><span class="w"> </span><span class="nx">signature</span>
+<span class="nx">def</span><span class="w"> </span><span class="nx">apply_twice</span><span class="p">(</span><span class="nx">f</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">Int</span><span class="p">,</span><span class="w"> </span><span class="nx">x</span><span class="p">:</span><span class="w"> </span><span class="nx">Int</span><span class="p">):</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="p">=</span>
+<span class="w">  </span><span class="nx">f</span><span class="p">(</span><span class="nx">f</span><span class="p">(</span><span class="nx">x</span><span class="p">))</span>
+
+<span class="kd">let</span><span class="w"> </span><span class="nx">result</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">apply_twice</span><span class="p">(</span><span class="kd">fn</span><span class="p">(</span><span class="nx">n</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="nx">end</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">n</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="nx">inferred</span><span class="w"> </span><span class="nx">to</span><span class="w"> </span><span class="nx">be</span><span class="w"> </span><span class="nx">Int</span><span class="w"> </span><span class="nx">from</span><span class="w"> </span><span class="nx">apply_twice</span><span class="w"> </span><span class="nx">signature</span>
+</code></pre></div>
+
+<h4 id="nested-lambdas-currying">Nested Lambdas (Currying)</h4>
+<p>Lambdas can return other lambdas for currying:</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Manual currying</span>
+<span class="n">let</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="kd">end end</span>
+
+<span class="cp"># Partial application (conceptually)</span>
+<span class="cp"># let add_five = add(5)  # Returns fn(y) -&gt; 5 + y end</span>
+<span class="cp"># let result = add_five(3)  # Returns 8</span>
+
+<span class="cp"># Real example with fold</span>
+<span class="n">let</span><span class="w"> </span><span class="nf">sum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fold</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">],</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">acc</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">acc</span><span class="w"> </span><span class="kd">end end)</span>
+</code></pre></div>
+
+<h4 id="closures-variable-capture">Closures (Variable Capture)</h4>
+<p>Lambdas can capture variables from their surrounding scope:</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Capture from outer scope</span>
+<span class="n">let</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span>
+<span class="n">let</span><span class="w"> </span><span class="n">add_base</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">base</span><span class="w"> </span><span class="kd">end</span>
+<span class="cp"># add_base captures &#39;base&#39; (closure)</span>
+
+<span class="n">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">add_base</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="n">Returns</span><span class="w"> </span><span class="mi">15</span>
+
+<span class="cp"># Multiple captures</span>
+<span class="n">def</span><span class="w"> </span><span class="n">make_adder</span><span class="p">(</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">fn</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="kd">end</span>
+<span class="cp"># Returns a lambda that captures x</span>
+
+<span class="n">let</span><span class="w"> </span><span class="n">add_five</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">make_adder</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">add_five</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="n">Returns</span><span class="w"> </span><span class="mi">8</span>
+</code></pre></div>
+
+<h4 id="lambdas-in-higher-order-functions">Lambdas in Higher-Order Functions</h4>
+<p>Most common use is passing lambdas to higher-order functions:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.List</span><span class="w"> </span><span class="p">[</span><span class="nb">map</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nb">filter</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">fold</span><span class="o">/</span><span class="mi">3</span><span class="p">]</span>
+
+<span class="c1"># Map: transform each element</span>
+<span class="n">let</span><span class="w"> </span><span class="n">doubled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">map</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">],</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">end</span><span class="p">)</span>
+<span class="c1"># Result: [2, 4, 6, 8, 10]</span>
+
+<span class="c1"># Filter: select elements</span>
+<span class="n">let</span><span class="w"> </span><span class="n">evens</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">filter</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">],</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">end</span><span class="p">)</span>
+<span class="c1"># Result: [2, 4]</span>
+
+<span class="c1"># Fold: aggregate with accumulator</span>
+<span class="n">let</span><span class="w"> </span><span class="nb">sum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fold</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">],</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span>
+<span class="w">               </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">acc</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">acc</span><span class="w"> </span><span class="n">end</span><span class="w"> </span><span class="n">end</span><span class="p">)</span>
+<span class="c1"># Result: 15</span>
+
+<span class="c1"># Chain operations</span>
+<span class="n">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>
+<span class="w">  </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">]</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="nb">map</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">end</span><span class="p">)</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="nb">filter</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="n">end</span><span class="p">)</span>
+<span class="w">  </span><span class="o">|&gt;</span><span class="w"> </span><span class="n">fold</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">acc</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">acc</span><span class="w"> </span><span class="n">end</span><span class="w"> </span><span class="n">end</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="complex-lambda-bodies">Complex Lambda Bodies</h4>
+<p>Lambda bodies can contain any expression, including pattern matching:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Lambda with match expression
+let classify = fn(x) -&gt;
+  match x do
+    n when n &gt; 0 -&gt; &quot;positive&quot;
+    0 -&gt; &quot;zero&quot;
+    _ -&gt; &quot;negative&quot;
+  end
+end
+
+<span class="gh">#</span> Lambda with let bindings
+let compute = fn(x) -&gt;
+  let doubled = x <span class="gs">* 2</span>
+<span class="gs">  let squared = doubled *</span> doubled
+  squared + 1
+end
+</code></pre></div>
+
+<h4 id="limitations">Limitations</h4>
+<p><strong>Recursive Lambdas</strong>: Lambdas cannot directly call themselves (they're anonymous).<br />
+Use named functions for recursion:</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> ❌ Won&#39;t work - lambda can&#39;t reference itself
+let factorial = fn(n) -&gt;
+  match n do
+    0 -&gt; 1
+    _ -&gt; n * factorial(n - 1)  # Error: factorial undefined
+  end
+end
+
+<span class="gh">#</span> ✅ Use named function instead
+def factorial(n: Nat): Nat =
+  match n do
+    Zero -&gt; Succ(Zero)
+    Succ(pred) -&gt; mult(n, factorial(pred))
+  end
+</code></pre></div>
+
+<p><strong>Direct Invocation</strong>: Directly calling a lambda literal may require binding first:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># May not work:</span>
+<span class="c1"># (fn(x) -&gt; x + 1 end)(5)</span>
+
+<span class="c1"># Instead, bind to variable:</span>
+<span class="n">let</span><span class="w"> </span><span class="n">increment</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">end</span>
+<span class="n">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">increment</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="w">  </span><span class="c1"># Works</span>
 </code></pre></div>
 
 <h3 id="function-guards">Function Guards ✅</h3>
@@ -306,8 +424,149 @@ def tax_rate(_income: Int): Float = 0.3
 <span class="p">[</span><span class="n">h</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">t</span><span class="p">]</span><span class="w">         </span><span class="c1"># Cons pattern/constructor</span>
 </code></pre></div>
 
-<h3 id="tuples-limited-support">Tuples (Limited Support)</h3>
-<p>Check actual implementation before using tuples extensively.</p>
+<h3 id="tuples">Tuples</h3>
+<p>Tuples group multiple values of potentially different types together.</p>
+<p><strong>Syntax</strong>: <code>{elem1, elem2, ...}</code></p>
+<h4 id="creating-tuples">Creating Tuples</h4>
+<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="nx">Empty</span><span class="w"> </span><span class="nx">tuple</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">empty</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{}</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Two</span><span class="o">-</span><span class="nx">element</span><span class="w"> </span><span class="nx">tuple</span><span class="w"> </span><span class="p">(</span><span class="nx">pair</span><span class="p">)</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">pair</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">}</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">point</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span><span class="m m-Double">3.0</span><span class="p">,</span><span class="w"> </span><span class="m m-Double">4.0</span><span class="p">}</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Three</span><span class="o">-</span><span class="nx">element</span><span class="w"> </span><span class="nx">tuple</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">triple</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;hello&quot;</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Nested</span><span class="w"> </span><span class="nx">tuples</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">nested</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">}}</span>
+
+<span class="err">#</span><span class="w"> </span><span class="nx">Mixed</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">other</span><span class="w"> </span><span class="nx">types</span>
+<span class="kd">let</span><span class="w"> </span><span class="nx">mixed</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="p">{[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;numbers&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">Ok</span><span class="p">(</span><span class="mi">42</span><span class="p">)}</span>
+</code></pre></div>
+
+<h4 id="tuple-pattern-matching">Tuple Pattern Matching</h4>
+<p>Tuples can be destructured in match expressions:</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Match on tuple</span>
+<span class="n">let</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">}</span>
+<span class="n">match</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Origin&quot;</span>
+<span class="w">  </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;On X-axis&quot;</span>
+<span class="w">  </span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;On Y-axis&quot;</span>
+<span class="w">  </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;General point&quot;</span>
+<span class="kd">end</span>
+
+<span class="cp"># Match with literals</span>
+<span class="n">match</span><span class="w"> </span><span class="n">tuple</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Both zero&quot;</span>
+<span class="w">  </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Exact match&quot;</span>
+<span class="w">  </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Any other pair&quot;</span>
+<span class="kd">end</span>
+
+<span class="cp"># Match with wildcards</span>
+<span class="n">match</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="p">{</span><span class="kr">first</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="kr">last</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="kr">Only</span><span class="w"> </span><span class="n">care</span><span class="w"> </span><span class="n">about</span><span class="w"> </span><span class="kr">first</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="kr">last</span>
+<span class="kd">end</span>
+</code></pre></div>
+
+<h4 id="nested-tuple-patterns">Nested Tuple Patterns</h4>
+<div class="codehilite"><pre><span></span><code><span class="x"># Match nested tuples</span>
+<span class="x">let nested = </span><span class="cp">{{</span><span class="m">1</span><span class="o">,</span> <span class="m">2</span><span class="o">},</span> <span class="o">{</span><span class="m">3</span><span class="o">,</span> <span class="m">4</span><span class="cp">}}</span>
+<span class="x">match nested do</span>
+<span class="x">  </span><span class="cp">{{</span><span class="nv">a</span><span class="o">,</span> <span class="nv">b</span><span class="o">},</span> <span class="o">{</span><span class="nv">c</span><span class="o">,</span> <span class="nv">d</span><span class="cp">}}</span><span class="x"> -&gt; a + b + c + d</span>
+<span class="x">end</span>
+
+<span class="x"># Deeply nested</span>
+<span class="x">let deep = {1, {2, {3, 4}}}</span>
+<span class="x">match deep do</span>
+<span class="x">  {x, {y, {z, w}}} -&gt; &quot;All extracted&quot;</span>
+<span class="x">end</span>
+</code></pre></div>
+
+<h4 id="tuples-with-guards">Tuples with Guards</h4>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Classify points by quadrant</span>
+<span class="n">match</span><span class="w"> </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;origin&quot;</span>
+<span class="w">  </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;quadrant-1&quot;</span>
+<span class="w">  </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;quadrant-2&quot;</span>
+<span class="w">  </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;quadrant-3&quot;</span>
+<span class="w">  </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="kr">and</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;quadrant-4&quot;</span>
+<span class="w">  </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;x-axis&quot;</span>
+<span class="w">  </span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;y-axis&quot;</span>
+<span class="kd">end</span>
+</code></pre></div>
+
+<h4 id="tuples-in-function-parameters">Tuples in Function Parameters</h4>
+<div class="codehilite"><pre><span></span><code><span class="x"># Function taking a tuple</span>
+<span class="x">def distance(point: {Int, Int}): Int =</span>
+<span class="x">  match point do</span>
+<span class="x">    {x, y} -&gt; x * x + y * y</span>
+<span class="x">  end</span>
+
+<span class="x"># Multiple tuple parameters</span>
+<span class="x">def distance_between(p1: {Int, Int}, p2: {Int, Int}): Int =</span>
+<span class="x">  match {p1, p2} do</span>
+<span class="x">    </span><span class="cp">{{</span><span class="nv">x1</span><span class="o">,</span> <span class="nv">y1</span><span class="o">},</span> <span class="o">{</span><span class="nv">x2</span><span class="o">,</span> <span class="nv">y2</span><span class="cp">}}</span><span class="x"> -&gt;</span>
+<span class="x">      let dx = x2 - x1</span>
+<span class="x">      let dy = y2 - y1</span>
+<span class="x">      dx * dx + dy * dy</span>
+<span class="x">  end</span>
+</code></pre></div>
+
+<h4 id="returning-multiple-values">Returning Multiple Values</h4>
+<p>Tuples are useful for returning multiple values:</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Return quotient and remainder</span>
+<span class="n">def</span><span class="w"> </span><span class="n">divide_with_remainder</span><span class="p">(</span><span class="n">a</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="n">Int</span><span class="p">}</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="p">{</span><span class="n">a</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">b</span><span class="p">}</span>
+
+<span class="cp"># Return min and max</span>
+<span class="n">def</span><span class="w"> </span><span class="n">min_max</span><span class="p">(</span><span class="n">a</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="o">:</span><span class="w"> </span><span class="n">Int</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="n">Int</span><span class="p">,</span><span class="w"> </span><span class="n">Int</span><span class="p">}</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="n">match</span><span class="w"> </span><span class="p">{</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">b</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="kr">when</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span>
+<span class="w">    </span><span class="p">{</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">}</span>
+<span class="w">  </span><span class="kd">end</span>
+</code></pre></div>
+
+<h4 id="tuple-destructuring-in-let">Tuple Destructuring in Let</h4>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Direct destructuring
+let point = {100, 200}
+let {x, y} = point
+<span class="gh">#</span> Now x = 100, y = 200
+
+<span class="gh">#</span> Works with function results
+let {quot, rem} = divide_with_remainder(17, 5)
+</code></pre></div>
+
+<h4 id="tuples-with-constructors">Tuples with Constructors</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Tuple inside Result/Option</span>
+<span class="n">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Ok</span><span class="p">({</span><span class="mi">42</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;success&quot;</span><span class="p">})</span>
+<span class="k">match</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Ok</span><span class="p">({</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">message</span><span class="p">})</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s2">&quot;Got value and message&quot;</span>
+<span class="w">  </span><span class="n">Error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s2">&quot;Error&quot;</span>
+<span class="n">end</span>
+
+<span class="c1"># Multiple values in constructor</span>
+<span class="n">let</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Some</span><span class="p">({</span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span><span class="w"> </span><span class="bp">true</span><span class="p">})</span>
+<span class="k">match</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">Some</span><span class="p">({</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">age</span><span class="p">,</span><span class="w"> </span><span class="n">active</span><span class="p">})</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s2">&quot;Person data&quot;</span>
+<span class="w">  </span><span class="n">None</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s2">&quot;No data&quot;</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<h4 id="mixed-patterns">Mixed Patterns</h4>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Tuple with list</span>
+<span class="n">match</span><span class="w"> </span><span class="p">{[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">],</span><span class="w"> </span><span class="s">&quot;label&quot;</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="p">{[],</span><span class="w"> </span><span class="n">_</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Empty list&quot;</span>
+<span class="w">  </span><span class="p">{[</span><span class="n">h</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">t</span><span class="p">],</span><span class="w"> </span><span class="n">label</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Non-empty list&quot;</span>
+<span class="kd">end</span>
+
+<span class="cp"># Tuple with record</span>
+<span class="n">match</span><span class="w"> </span><span class="p">{</span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">},</span><span class="w"> </span><span class="s">&quot;origin&quot;</span><span class="p">}</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="p">{</span><span class="n">Point</span><span class="p">{</span><span class="n">x</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">},</span><span class="w"> </span><span class="n">label</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">label</span>
+<span class="w">  </span><span class="n">_</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Other&quot;</span>
+<span class="kd">end</span>
+</code></pre></div>
+
 <hr />
 <h2 id="8-operators">8. Operators</h2>
 <h3 id="arithmetic">Arithmetic</h3>
@@ -558,10 +817,14 @@ Succ(n)         # Successor of n
             <div class="footer-section">
                 <h4>All Documentation</h4>
                 <ul>
+                    <li><a href="cli-integration-status.html">CLI Integration - SMT Solver Options and</a></li>
+                    <li><a href="codegen-analysis-2025-11-25.html">Code Generation Issues - Analysis (2025-</a></li>
+                    <li><a href="codegen-investigation-summary.html">Code Generation Issues - Investigation S</a></li>
                     <li><a href="contributing.html">Contributing</a></li>
                     <li><a href="api-reference.html">Cure API Reference</a></li>
                     <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
                     <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-mcp-update-2025-11-26.html">Cure LSP and MCP Update - November 26, 2</a></li>
                     <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
                     <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
                     <li><a href="language-spec.html">Cure Language Specification</a></li>
@@ -569,10 +832,6 @@ Succ(n)         # Successor of n
                     <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
                     <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
                     <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
-                    <li><a href="project-overview.html">Cure Programming Language - Project Over</a></li>
-                    <li><a href="troubleshooting.html">Cure SMT Troubleshooting Guide</a></li>
-                    <li><a href="std-summary.html">Cure Standard Library Implementation Sum</a></li>
-                    <li><a href="type-system.html">Cure Type System</a></li>
                 </ul>
             </div>
         </div>

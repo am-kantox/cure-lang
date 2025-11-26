@@ -1,68 +1,40 @@
 -module(cure_smt_solver).
 
--moduledoc """
-# SMT Solver Integration for Cure
-
-This module provides integration with SMT (Satisfiability Modulo Theories) solvers
-for dependent type constraint verification and optimization. It supports multiple
-backend solvers including Z3, CVC5, and others.
-
-## Features
-
-- **Constraint Verification**: Prove or disprove type constraints at compile time
-- **Constraint Simplification**: Algebraic and SMT-based constraint simplification
-- **Guard Optimization**: Eliminate redundant runtime checks
-- **Counterexample Generation**: Provide examples when constraints fail
-- **Multiple Backends**: Support for Z3, CVC5, and fallback to symbolic evaluation
-
-## Usage
-
-### Basic Constraint Checking
-```erlang
-Constraint = #binary_op_expr{op = '>', left = VarN, right = Zero},
-case cure_smt_solver:check_constraint(Constraint, Env) of
-    {sat, Model} -> % Constraint is satisfiable
-        io:format("Satisfiable with model: ~p~n", [Model]);
-    unsat -> % Constraint is unsatisfiable
-        io:format("Constraint cannot be satisfied~n");
-    unknown -> % Solver couldn't determine
-        io:format("Unknown, need runtime check~n")
-end.
-```
-
-### Simplifying Constraints
-```erlang
-% Simplify constraint using algebraic rules and SMT solver
-Constraint = #binary_op_expr{op = '+', left = VarX, right = Zero},
-Simplified = cure_smt_solver:simplify_constraint(Constraint, Env).
-% => Returns VarX (since x + 0 = x)
-```
-
-### Proving Constraints
-```erlang
-% Prove that n > 0 implies length(list) > 0
-Result = cure_smt_solver:prove_implication(Antecedent, Consequent, Env).
-```
-
-## SMT Backend Selection
-
-The module automatically selects available SMT solvers in order of preference:
-1. Z3 (if available)
-2. CVC5 (if available)
-3. Symbolic evaluation fallback
-
-## Constraint Translation
-
-Cure constraints are translated to SMT-LIB format:
-- Arithmetic: +, -, *, div, rem
-- Comparisons: <, >, =<, >=, ==, /=
-- Boolean: and, or, not
-- Quantifiers: forall, exists (for dependent types)
-""".
+-moduledoc "# SMT Solver Integration for Cure\n\nThis module provides integratio"
+"n with SMT (Satisfiability Modulo Theories) solvers\nfor dependent "
+"type constraint verification and optimization. It supports "
+"multiple\nbackend solvers including Z3, CVC5, and others.\n\n## "
+"Features\n\n- **Constraint Verification**: Prove or disprove "
+"type constraints at compile time\n- **Constraint Simplification**: "
+"Algebraic and SMT-based constraint simplification\n- **Guard "
+"Optimization**: Eliminate redundant runtime checks\n- **Counterexamp"
+"le Generation**: Provide examples when constraints fail\n- "
+"**Multiple Backends**: Support for Z3, CVC5, and fallback to "
+"symbolic evaluation\n\n## Usage\n\n### Basic Constraint Checking\n``"
+"`erlang\nConstraint = #binary_op_expr{op = '>', left = VarN, "
+"right = Zero},\ncase cure_smt_solver:check_constraint(Constraint, "
+"Env) of\n    {sat, Model} -> % Constraint is satisfiable\n "
+"       io:format(\"Satisfiable with model: ~p~n\", [Model]);\n "
+"   unsat -> % Constraint is unsatisfiable\n        io:format(\"Const"
+"raint cannot be satisfied~n\");\n    unknown -> % Solver couldn't "
+"determine\n        io:format(\"Unknown, need runtime check~n\")\nend"
+".\n```\n\n### Simplifying Constraints\n```erlang\n% Simplify "
+"constraint using algebraic rules and SMT solver\nConstraint "
+"= #binary_op_expr{op = '+', left = VarX, right = Zero},\nSimplified "
+"= cure_smt_solver:simplify_constraint(Constraint, Env).\n% "
+"=> Returns VarX (since x + 0 = x)\n```\n\n### Proving Constraints\n`"
+"``erlang\n% Prove that n > 0 implies length(list) > 0\nResult "
+"= cure_smt_solver:prove_implication(Antecedent, Consequent, "
+"Env).\n```\n\n## SMT Backend Selection\n\nThe module automatically "
+"selects available SMT solvers in order of preference:\n1. Z3 "
+"(if available)\n2. CVC5 (if available)\n3. Symbolic evaluation "
+"fallback\n\n## Constraint Translation\n\nCure constraints are "
+"translated to SMT-LIB format:\n- Arithmetic: +, -, *, div, "
+"rem\n- Comparisons: <, >, =<, >=, ==, /=\n- Boolean: and, or, "
+"not\n- Quantifiers: forall, exists (for dependent types)".
 
 -export([
-    check_constraint/2,
-    check_constraint/3,
+    check_constraint/2, check_constraint/3,
     prove_implication/3,
     prove_constraint/2,
     find_counterexample/2,
@@ -70,25 +42,23 @@ Cure constraints are translated to SMT-LIB format:
     solve_constraints/1,
     available_solvers/0,
     set_solver/1,
-    % Helper functions for LSP integration
     equality_constraint/2,
     inequality_constraint/3,
     variable_term/1,
     constant_term/1,
-    % S-expression parser functions for testing
     parse_sexp_to_constraint/1,
     tokenize_sexp/2,
     parse_sexp_tokens/1,
     sexp_term_to_constraint/1
 ]).
 
+% Helper functions for LSP integration
+
+% S-expression parser functions for testing
+
 -include("../parser/cure_ast.hrl").
 
--record(smt_context, {
-    solver = z3 :: atom(),
-    timeout = 5000 :: integer(),
-    options = #{} :: map()
-}).
+-record(smt_context, {solver = z3 :: atom(), timeout = 5000 :: integer(), options = #{} :: map()}).
 
 %%% Public API %%%
 
@@ -103,10 +73,14 @@ check_constraint(Constraint, Env, Opts) ->
     Context = create_context(Opts),
 
     case Context#smt_context.solver of
-        z3 -> check_with_z3(Constraint, Env, Context);
-        cvc5 -> check_with_cvc5(Constraint, Env, Context);
-        symbolic -> check_with_symbolic(Constraint, Env, Context);
-        _ -> unknown
+        z3 ->
+            check_with_z3(Constraint, Env, Context);
+        cvc5 ->
+            check_with_cvc5(Constraint, Env, Context);
+        symbolic ->
+            check_with_symbolic(Constraint, Env, Context);
+        _ ->
+            unknown
     end.
 
 %% @doc Prove an implication: Antecedent => Consequent
@@ -118,11 +92,15 @@ prove_implication(Antecedent, Consequent, Env) ->
 
     case check_constraint(Combined, Env) of
         % Implication holds
-        unsat -> true;
+        unsat ->
+            true;
         % Implication doesn't hold
-        {sat, _} -> false;
-        sat -> false;
-        unknown -> unknown
+        {sat, _} ->
+            false;
+        sat ->
+            false;
+        unknown ->
+            unknown
     end.
 
 %% @doc Prove a constraint always holds
@@ -133,11 +111,15 @@ prove_constraint(Constraint, Env) ->
 
     case check_constraint(NotConstraint, Env) of
         % Constraint always holds
-        unsat -> true;
+        unsat ->
+            true;
         % Constraint doesn't always hold
-        {sat, _} -> false;
-        sat -> false;
-        unknown -> unknown
+        {sat, _} ->
+            false;
+        sat ->
+            false;
+        unknown ->
+            unknown
     end.
 
 %% @doc Find a counterexample where constraint doesn't hold
@@ -146,10 +128,14 @@ find_counterexample(Constraint, Env) ->
     NotConstraint = negate_constraint(Constraint),
 
     case check_constraint(NotConstraint, Env) of
-        {sat, Model} -> {ok, Model};
-        sat -> {ok, #{}};
-        unsat -> none;
-        unknown -> unknown
+        {sat, Model} ->
+            {ok, Model};
+        sat ->
+            {ok, #{}};
+        unsat ->
+            none;
+        unknown ->
+            unknown
     end.
 
 %% @doc Simplify a constraint using algebraic rules and SMT solver
@@ -159,7 +145,7 @@ find_counterexample(Constraint, Env) ->
 %%    - Arithmetic identities: x + 0 = x, x * 1 = x, x * 0 = 0
 %%    - Boolean identities: x and true = x, x or false = x
 %%    - Constant folding: 2 + 3 = 5, true and false = false
-%%    - Comparison simplifications: x == x = true, x < x = false
+%%    - Comparison simplifications: x == x
 %%    - Double negation: not (not x) = x, -(-x) = x
 %% 2. SMT-based simplifications (if Z3 available)
 %%    - Leverages Z3's simplify command for complex expressions
@@ -168,7 +154,7 @@ find_counterexample(Constraint, Env) ->
 %% @param Env Environment mapping variables to types
 %% @returns Simplified constraint expression
 %%
-%% @example
+%% Example
 %% % Arithmetic identity
 %% X = #identifier_expr{name = x},
 %% Zero = #literal_expr{value = 0},
@@ -180,7 +166,6 @@ simplify_constraint(Constraint, Env) ->
     % Apply multiple simplification strategies:
     % 1. Local algebraic simplifications (fast)
     % 2. SMT-based simplifications (if solver available)
-
     % First apply local simplifications
     LocalSimplified = simplify_local(Constraint, Env),
 
@@ -200,27 +185,29 @@ solve_constraints([SingleConstraint]) ->
     check_constraint(SingleConstraint, #{});
 solve_constraints(Constraints) ->
     % Combine all constraints with AND
-    Combined = lists:foldl(
-        fun(C, Acc) ->
-            case Acc of
-                undefined -> C;
-                _ -> make_conjunction(Acc, C)
-            end
-        end,
-        undefined,
-        Constraints
-    ),
+    Combined =
+        lists:foldl(
+            fun(C, Acc) ->
+                case Acc of
+                    undefined -> C;
+                    _ -> make_conjunction(Acc, C)
+                end
+            end,
+            undefined,
+            Constraints
+        ),
     check_constraint(Combined, #{}).
 
 %% @doc Get list of available SMT solvers
 -spec available_solvers() -> [atom()].
 available_solvers() ->
-    Solvers = [
-        {z3, find_z3()},
-        {cvc5, find_cvc5()},
-        % Always available
-        {symbolic, true}
-    ],
+    Solvers =
+        [
+            {z3, find_z3()},
+            {cvc5, find_cvc5()},
+            % Always available
+            {symbolic, true}
+        ],
     [Solver || {Solver, true} <- Solvers].
 
 %% @doc Set the preferred SMT solver
@@ -254,8 +241,10 @@ get_default_solver() ->
         undefined ->
             % Auto-select first available
             case available_solvers() of
-                [First | _] -> First;
-                [] -> symbolic
+                [First | _] ->
+                    First;
+                [] ->
+                    symbolic
             end;
         Solver ->
             Solver
@@ -267,10 +256,12 @@ check_with_z3(Constraint, Env, Context) ->
         false ->
             % Provide helpful message when Z3 is not available
             cure_utils:debug(
-                "SMT: Z3 solver not found in PATH. Falling back to symbolic evaluation.~n"
+                "SMT: Z3 solver not found in PATH. Falling back to symbolic "
+                "evaluation.~n"
             ),
             cure_utils:debug(
-                "Hint: Install Z3 for better constraint solving (https://github.com/Z3Prover/z3)~n"
+                "Hint: Install Z3 for better constraint solving (https://github.com/Z"
+                "3Prover/z3)~n"
             ),
             check_with_symbolic(Constraint, Env, Context);
         true ->
@@ -304,7 +295,8 @@ check_with_z3(Constraint, Env, Context) ->
                             cure_utils:debug("SMT: Z3 returned 'unknown' for constraint~n"),
                             cure_utils:debug("Constraint: ~p~n", [format_constraint(Constraint)]),
                             cure_utils:debug(
-                                "Hint: Constraint may be too complex or timeout was too short (~p ms)~n",
+                                "Hint: Constraint may be too complex or timeout was too short "
+                                "(~p ms)~n",
                                 [Context#smt_context.timeout]
                             ),
                             unknown;
@@ -333,8 +325,10 @@ check_with_z3(Constraint, Env, Context) ->
                     cure_utils:debug("SMT: Z3 execution failed with ~p:~p~n", [Class, Error]),
                     cure_utils:debug("Constraint: ~p~n", [format_constraint(Constraint)]),
                     case os:getenv("CURE_DEBUG") of
-                        "1" -> cure_utils:debug("Stack: ~p~n", [Stack]);
-                        _ -> cure_utils:debug("Hint: Set CURE_DEBUG=1 for full stack trace~n")
+                        "1" ->
+                            cure_utils:debug("Stack: ~p~n", [Stack]);
+                        _ ->
+                            cure_utils:debug("Hint: Set CURE_DEBUG=1 for full stack trace~n")
                     end,
                     cure_utils:debug("Falling back to symbolic evaluation~n"),
                     check_with_symbolic(Constraint, Env, Context)
@@ -347,10 +341,12 @@ check_with_cvc5(Constraint, Env, Context) ->
         false ->
             % Provide helpful message when CVC5 is not available
             cure_utils:debug(
-                "SMT: CVC5 solver not found in PATH. Falling back to symbolic evaluation.~n"
+                "SMT: CVC5 solver not found in PATH. Falling back to symbolic "
+                "evaluation.~n"
             ),
             cure_utils:debug(
-                "Hint: Install CVC5 for alternative SMT solving (https://cvc5.github.io/)~n"
+                "Hint: Install CVC5 for alternative SMT solving (https://cvc5.github."
+                "io/)~n"
             ),
             check_with_symbolic(Constraint, Env, Context);
         true ->
@@ -385,7 +381,8 @@ check_with_cvc5(Constraint, Env, Context) ->
                             cure_utils:debug("SMT: CVC5 returned 'unknown' for constraint~n"),
                             cure_utils:debug("Constraint: ~p~n", [format_constraint(Constraint)]),
                             cure_utils:debug(
-                                "Hint: Constraint may be too complex or timeout was too short (~p ms)~n",
+                                "Hint: Constraint may be too complex or timeout was too short "
+                                "(~p ms)~n",
                                 [Context#smt_context.timeout]
                             ),
                             unknown;
@@ -414,8 +411,10 @@ check_with_cvc5(Constraint, Env, Context) ->
                     cure_utils:debug("SMT: CVC5 execution failed with ~p:~p~n", [Class, Error]),
                     cure_utils:debug("Constraint: ~p~n", [format_constraint(Constraint)]),
                     case os:getenv("CURE_DEBUG") of
-                        "1" -> cure_utils:debug("Stack: ~p~n", [Stack]);
-                        _ -> cure_utils:debug("Hint: Set CURE_DEBUG=1 for full stack trace~n")
+                        "1" ->
+                            cure_utils:debug("Stack: ~p~n", [Stack]);
+                        _ ->
+                            cure_utils:debug("Hint: Set CURE_DEBUG=1 for full stack trace~n")
                     end,
                     cure_utils:debug("Falling back to symbolic evaluation~n"),
                     check_with_symbolic(Constraint, Env, Context)
@@ -442,8 +441,10 @@ check_with_symbolic(Constraint, Env, _Context) ->
             cure_utils:debug("SMT: Symbolic evaluation failed with ~p:~p~n", [Class, Error]),
             cure_utils:debug("Constraint: ~p~n", [format_constraint(Constraint)]),
             case os:getenv("CURE_DEBUG") of
-                "1" -> cure_utils:debug("Stack: ~p~n", [Stack]);
-                _ -> ok
+                "1" ->
+                    cure_utils:debug("Stack: ~p~n", [Stack]);
+                _ ->
+                    ok
             end,
             unknown
     end.
@@ -451,67 +452,145 @@ check_with_symbolic(Constraint, Env, _Context) ->
 %% Symbolic evaluation
 eval_symbolic(#literal_expr{value = Value}, _Env) when is_boolean(Value) ->
     Value;
-eval_symbolic(#binary_op_expr{op = Op, left = Left, right = Right}, Env) ->
+eval_symbolic(
+    #binary_op_expr{
+        op = Op,
+        left = Left,
+        right = Right
+    },
+    Env
+) ->
     LeftVal = eval_symbolic(Left, Env),
     RightVal = eval_symbolic(Right, Env),
 
     case {LeftVal, RightVal} of
-        {unknown, _} -> unknown;
-        {_, unknown} -> unknown;
-        _ -> eval_binary_op(Op, LeftVal, RightVal)
+        {unknown, _} ->
+            unknown;
+        {_, unknown} ->
+            unknown;
+        _ ->
+            eval_binary_op(Op, LeftVal, RightVal)
     end;
 eval_symbolic(#unary_op_expr{op = 'not', operand = Operand}, Env) ->
     case eval_symbolic(Operand, Env) of
-        true -> false;
-        false -> true;
-        unknown -> unknown
+        true ->
+            false;
+        false ->
+            true;
+        unknown ->
+            unknown
     end;
 eval_symbolic(#identifier_expr{name = Name}, Env) ->
     case maps:get(Name, Env, undefined) of
-        undefined -> unknown;
-        {value, Value} -> Value;
-        _ -> unknown
+        undefined ->
+            unknown;
+        {value, Value} ->
+            Value;
+        _ ->
+            unknown
     end;
 eval_symbolic(_, _) ->
     unknown.
 
 %% Evaluate binary operation
-eval_binary_op('+', L, R) when is_number(L), is_number(R) -> L + R;
-eval_binary_op('-', L, R) when is_number(L), is_number(R) -> L - R;
-eval_binary_op('*', L, R) when is_number(L), is_number(R) -> L * R;
-eval_binary_op('/', L, R) when is_number(L), is_number(R), R =/= 0 -> L / R;
-eval_binary_op('div', L, R) when is_integer(L), is_integer(R), R =/= 0 -> L div R;
-eval_binary_op('rem', L, R) when is_integer(L), is_integer(R), R =/= 0 -> L rem R;
-eval_binary_op('==', L, R) -> L == R;
-eval_binary_op('/=', L, R) -> L /= R;
-eval_binary_op('<', L, R) when is_number(L), is_number(R) -> L < R;
-eval_binary_op('>', L, R) when is_number(L), is_number(R) -> L > R;
-eval_binary_op('=<', L, R) when is_number(L), is_number(R) -> L =< R;
-eval_binary_op('>=', L, R) when is_number(L), is_number(R) -> L >= R;
-eval_binary_op('and', L, R) when is_boolean(L), is_boolean(R) -> L andalso R;
-eval_binary_op('or', L, R) when is_boolean(L), is_boolean(R) -> L orelse R;
-eval_binary_op(_, _, _) -> unknown.
+eval_binary_op('+', L, R) when is_number(L), is_number(R) ->
+    L + R;
+eval_binary_op('-', L, R) when is_number(L), is_number(R) ->
+    L - R;
+eval_binary_op('*', L, R) when is_number(L), is_number(R) ->
+    L * R;
+eval_binary_op('/', L, R) when is_number(L), is_number(R), R =/= 0 ->
+    L / R;
+eval_binary_op('div', L, R) when is_integer(L), is_integer(R), R =/= 0 ->
+    L div R;
+eval_binary_op('rem', L, R) when is_integer(L), is_integer(R), R =/= 0 ->
+    L rem R;
+eval_binary_op('==', L, R) ->
+    L == R;
+eval_binary_op('/=', L, R) ->
+    L /= R;
+eval_binary_op('<', L, R) when is_number(L), is_number(R) ->
+    L < R;
+eval_binary_op('>', L, R) when is_number(L), is_number(R) ->
+    L > R;
+eval_binary_op('=<', L, R) when is_number(L), is_number(R) ->
+    L =< R;
+eval_binary_op('>=', L, R) when is_number(L), is_number(R) ->
+    L >= R;
+eval_binary_op('and', L, R) when is_boolean(L), is_boolean(R) ->
+    L andalso R;
+eval_binary_op('or', L, R) when is_boolean(L), is_boolean(R) ->
+    L orelse R;
+eval_binary_op(_, _, _) ->
+    unknown.
 
 %% Negate a constraint
 negate_constraint(#unary_op_expr{op = 'not', operand = Operand}) ->
     Operand;
-negate_constraint(#binary_op_expr{op = '==', left = _L, right = _R} = Expr) ->
+negate_constraint(
+    #binary_op_expr{
+        op = '==',
+        left = _L,
+        right = _R
+    } =
+        Expr
+) ->
     Expr#binary_op_expr{op = '/='};
-negate_constraint(#binary_op_expr{op = '/=', left = _L, right = _R} = Expr) ->
+negate_constraint(
+    #binary_op_expr{
+        op = '/=',
+        left = _L,
+        right = _R
+    } =
+        Expr
+) ->
     Expr#binary_op_expr{op = '=='};
-negate_constraint(#binary_op_expr{op = '<', left = _L, right = _R} = Expr) ->
+negate_constraint(
+    #binary_op_expr{
+        op = '<',
+        left = _L,
+        right = _R
+    } =
+        Expr
+) ->
     Expr#binary_op_expr{op = '>='};
-negate_constraint(#binary_op_expr{op = '>', left = _L, right = _R} = Expr) ->
+negate_constraint(
+    #binary_op_expr{
+        op = '>',
+        left = _L,
+        right = _R
+    } =
+        Expr
+) ->
     Expr#binary_op_expr{op = '=<'};
-negate_constraint(#binary_op_expr{op = '=<', left = _L, right = _R} = Expr) ->
+negate_constraint(
+    #binary_op_expr{
+        op = '=<',
+        left = _L,
+        right = _R
+    } =
+        Expr
+) ->
     Expr#binary_op_expr{op = '>'};
-negate_constraint(#binary_op_expr{op = '>=', left = _L, right = _R} = Expr) ->
+negate_constraint(
+    #binary_op_expr{
+        op = '>=',
+        left = _L,
+        right = _R
+    } =
+        Expr
+) ->
     Expr#binary_op_expr{op = '<'};
 negate_constraint(Constraint) ->
     #unary_op_expr{
         op = 'not',
         operand = Constraint,
-        location = #location{line = 0, column = 0, file = undefined}
+        location =
+            #location{
+                line = 0,
+                column = 0,
+                file = undefined
+            }
     }.
 
 %% Make conjunction of two constraints
@@ -520,21 +599,30 @@ make_conjunction(Left, Right) ->
         op = 'and',
         left = Left,
         right = Right,
-        location = #location{line = 0, column = 0, file = undefined}
+        location =
+            #location{
+                line = 0,
+                column = 0,
+                file = undefined
+            }
     }.
 
 %% Find Z3 executable
 find_z3() ->
     case os:find_executable("z3") of
-        false -> false;
-        _ -> true
+        false ->
+            false;
+        _ ->
+            true
     end.
 
 %% Find CVC5 executable
 find_cvc5() ->
     case os:find_executable("cvc5") of
-        false -> false;
-        _ -> true
+        false ->
+            false;
+        _ ->
+            true
     end.
 
 %% ============================================================================
@@ -546,13 +634,23 @@ simplify_local(Constraint, Env) ->
     % Apply simplifications recursively until no more changes
     case simplify_once(Constraint, Env) of
         % No change, we're done
-        Constraint -> Constraint;
+        Constraint ->
+            Constraint;
         % Changed, try again
-        Simplified -> simplify_local(Simplified, Env)
+        Simplified ->
+            simplify_local(Simplified, Env)
     end.
 
 %% Apply one pass of simplifications
-simplify_once(#binary_op_expr{op = Op, left = L, right = R} = Expr, Env) ->
+simplify_once(
+    #binary_op_expr{
+        op = Op,
+        left = L,
+        right = R
+    } =
+        Expr,
+    Env
+) ->
     % First simplify children
     L1 = simplify_once(L, Env),
     R1 = simplify_once(R, Env),
@@ -580,13 +678,15 @@ simplify_binary_op('+', L, #literal_expr{value = 0}, _Expr, _Env) ->
 % 0 * x = 0
 simplify_binary_op('*', #literal_expr{value = 0}, _R, Expr, _Env) ->
     Expr#binary_op_expr{
-        left = #literal_expr{value = 0, location = Expr#binary_op_expr.location},
+        left =
+            #literal_expr{value = 0, location = Expr#binary_op_expr.location},
         right = #literal_expr{value = 0, location = Expr#binary_op_expr.location}
     };
 % x * 0 = 0
 simplify_binary_op('*', _L, #literal_expr{value = 0}, Expr, _Env) ->
     Expr#binary_op_expr{
-        left = #literal_expr{value = 0, location = Expr#binary_op_expr.location},
+        left =
+            #literal_expr{value = 0, location = Expr#binary_op_expr.location},
         right = #literal_expr{value = 0, location = Expr#binary_op_expr.location}
     };
 % 1 * x = x
@@ -603,11 +703,12 @@ simplify_binary_op(Op, #literal_expr{value = L}, #literal_expr{value = R}, Expr,
     is_number(L), is_number(R)
 ->
     case eval_binary_op(Op, L, R) of
-        unknown -> Expr;
-        Result -> #literal_expr{value = Result, location = Expr#binary_op_expr.location}
+        unknown ->
+            Expr;
+        Result ->
+            #literal_expr{value = Result, location = Expr#binary_op_expr.location}
     end;
 % Boolean identities
-
 % true and x = x
 simplify_binary_op('and', #literal_expr{value = true}, R, _Expr, _Env) ->
     R;
@@ -636,38 +737,50 @@ simplify_binary_op('or', _L, #literal_expr{value = true}, Expr, _Env) ->
 % x == x => true (for pure expressions)
 simplify_binary_op('==', L, R, Expr, _Env) when L =:= R ->
     case is_pure_expr(L) of
-        true -> #literal_expr{value = true, location = Expr#binary_op_expr.location};
-        false -> Expr
+        true ->
+            #literal_expr{value = true, location = Expr#binary_op_expr.location};
+        false ->
+            Expr
     end;
 % x /= x => false (for pure expressions)
 simplify_binary_op('/=', L, R, Expr, _Env) when L =:= R ->
     case is_pure_expr(L) of
-        true -> #literal_expr{value = false, location = Expr#binary_op_expr.location};
-        false -> Expr
+        true ->
+            #literal_expr{value = false, location = Expr#binary_op_expr.location};
+        false ->
+            Expr
     end;
 % x < x => false
 simplify_binary_op('<', L, R, Expr, _Env) when L =:= R ->
     case is_pure_expr(L) of
-        true -> #literal_expr{value = false, location = Expr#binary_op_expr.location};
-        false -> Expr
+        true ->
+            #literal_expr{value = false, location = Expr#binary_op_expr.location};
+        false ->
+            Expr
     end;
 % x > x => false
 simplify_binary_op('>', L, R, Expr, _Env) when L =:= R ->
     case is_pure_expr(L) of
-        true -> #literal_expr{value = false, location = Expr#binary_op_expr.location};
-        false -> Expr
+        true ->
+            #literal_expr{value = false, location = Expr#binary_op_expr.location};
+        false ->
+            Expr
     end;
 % x =< x => true
 simplify_binary_op('=<', L, R, Expr, _Env) when L =:= R ->
     case is_pure_expr(L) of
-        true -> #literal_expr{value = true, location = Expr#binary_op_expr.location};
-        false -> Expr
+        true ->
+            #literal_expr{value = true, location = Expr#binary_op_expr.location};
+        false ->
+            Expr
     end;
 % x >= x => true
 simplify_binary_op('>=', L, R, Expr, _Env) when L =:= R ->
     case is_pure_expr(L) of
-        true -> #literal_expr{value = true, location = Expr#binary_op_expr.location};
-        false -> Expr
+        true ->
+            #literal_expr{value = true, location = Expr#binary_op_expr.location};
+        false ->
+            Expr
     end;
 % No simplification applies
 simplify_binary_op(_Op, _L, _R, Expr, _Env) ->
@@ -693,11 +806,16 @@ simplify_unary_op(_Op, _Operand, Expr, _Env) ->
     Expr.
 
 %% Check if expression is pure (no side effects, deterministic)
-is_pure_expr(#literal_expr{}) -> true;
-is_pure_expr(#identifier_expr{}) -> true;
-is_pure_expr(#binary_op_expr{left = L, right = R}) -> is_pure_expr(L) andalso is_pure_expr(R);
-is_pure_expr(#unary_op_expr{operand = Op}) -> is_pure_expr(Op);
-is_pure_expr(_) -> false.
+is_pure_expr(#literal_expr{}) ->
+    true;
+is_pure_expr(#identifier_expr{}) ->
+    true;
+is_pure_expr(#binary_op_expr{left = L, right = R}) ->
+    is_pure_expr(L) andalso is_pure_expr(R);
+is_pure_expr(#unary_op_expr{operand = Op}) ->
+    is_pure_expr(Op);
+is_pure_expr(_) ->
+    false.
 
 %% SMT-based simplification using Z3's simplify command
 simplify_with_smt(Constraint, Env) ->
@@ -734,13 +852,7 @@ generate_simplify_query(Constraint, Env) ->
     Translated = cure_smt_translator:translate_expr(Constraint, Env),
 
     % Use Z3's simplify command
-    [
-        "(set-logic QF_LIA)\n",
-        Declarations,
-        "(simplify ",
-        Translated,
-        ")\n"
-    ].
+    ["(set-logic QF_LIA)\n", Declarations, "(simplify ", Translated, ")\n"].
 
 %% Parse the simplified result from Z3
 parse_simplified_result({sat, Lines}, _OriginalConstraint) when length(Lines) > 0 ->
@@ -748,8 +860,10 @@ parse_simplified_result({sat, Lines}, _OriginalConstraint) when length(Lines) > 
     % For now, if we can't parse it easily, return original
     % TODO: Implement proper S-expression parser for simplified results
     case parse_sexp_to_constraint(Lines) of
-        {ok, Simplified} -> Simplified;
-        {error, _} -> _OriginalConstraint
+        {ok, Simplified} ->
+            Simplified;
+        {error, _} ->
+            _OriginalConstraint
     end;
 parse_simplified_result(_Result, OriginalConstraint) ->
     % If we can't parse the result, return original
@@ -776,8 +890,10 @@ parse_sexp_to_constraint(Lines) when is_list(Lines) ->
                 case parse_sexp_tokens(Tokens) of
                     {ok, {Term, []}} ->
                         case sexp_term_to_constraint(Term) of
-                            {ok, Constraint} -> {ok, Constraint};
-                            {error, _} = Error -> Error
+                            {ok, Constraint} ->
+                                {ok, Constraint};
+                            {error, _} = Error ->
+                                Error
                         end;
                     {ok, _} ->
                         {error, unexpected_tokens};
@@ -788,7 +904,8 @@ parse_sexp_to_constraint(Lines) when is_list(Lines) ->
                 {error, {tokenize_error, Reason}}
         end
     catch
-        _:_ -> {error, parse_exception}
+        _:_ ->
+            {error, parse_exception}
     end;
 parse_sexp_to_constraint(_) ->
     {error, invalid_format}.
@@ -838,9 +955,11 @@ parse_atom_or_number([C | Rest] = String) ->
     end.
 
 %% Parse number characters
-parse_number_chars([C | Rest], NumAcc) when (C >= $0 andalso C =< $9) orelse C =:= $. ->
+parse_number_chars([C | Rest], NumAcc) when C >= $0 andalso C =< $9 orelse C =:= $. ->
     parse_number_chars(Rest, [C | NumAcc]);
-parse_number_chars([C | _] = Rest, NumAcc) when C =:= $( orelse C =:= $) orelse C =:= 32 ->
+parse_number_chars([C | _] = Rest, NumAcc) when
+    C =:= $( orelse C =:= $) orelse C =:= 32
+->
     {ok, lists:reverse(NumAcc), Rest};
 parse_number_chars([], NumAcc) ->
     {ok, lists:reverse(NumAcc), []};
@@ -849,15 +968,28 @@ parse_number_chars(_, _) ->
 
 %% Parse symbol characters
 parse_symbol_chars([C | Rest], SymAcc) when
-    (C >= $a andalso C =< $z) orelse (C >= $A andalso C =< $Z) orelse
-        (C >= $0 andalso C =< $9) orelse C =:= $_ orelse C =:= $- orelse C =:= $? orelse
-        C =:= $+ orelse C =:= $* orelse C =:= $/ orelse C =:= $= orelse C =:= $< orelse C =:= $>
+    C >= $a andalso C =< $z orelse
+        C >= $A andalso C =< $Z orelse
+        C >= $0 andalso C =< $9 orelse
+        C =:= $_ orelse
+        C =:= $- orelse
+        C =:= $? orelse
+        C =:= $+ orelse
+        C =:= $* orelse
+        C =:= $/ orelse
+        C =:= $= orelse
+        C =:= $< orelse
+        C =:= $>
 ->
     parse_symbol_chars(Rest, [C | SymAcc]);
-parse_symbol_chars([C | _] = Rest, SymAcc) when C =:= $( orelse C =:= $) orelse C =:= 32 ->
+parse_symbol_chars([C | _] = Rest, SymAcc) when
+    C =:= $( orelse C =:= $) orelse C =:= 32
+->
     case SymAcc of
-        [] -> {error, invalid_symbol};
-        _ -> {ok, {symbol, list_to_atom(lists:reverse(SymAcc))}, Rest}
+        [] ->
+            {error, invalid_symbol};
+        _ ->
+            {ok, {symbol, list_to_atom(lists:reverse(SymAcc))}, Rest}
     end;
 parse_symbol_chars([], SymAcc) when length(SymAcc) > 0 ->
     {ok, {symbol, list_to_atom(lists:reverse(SymAcc))}, []};
@@ -875,8 +1007,10 @@ parse_sexp_term([{')', _} | Rest], [List | ParentStack]) ->
     % End of list
     Term = {list, lists:reverse(List)},
     case ParentStack of
-        [] -> {ok, {Term, Rest}};
-        [Parent | Grandparents] -> parse_sexp_term(Rest, [[Term | Parent] | Grandparents])
+        [] ->
+            {ok, {Term, Rest}};
+        [Parent | Grandparents] ->
+            parse_sexp_term(Rest, [[Term | Parent] | Grandparents])
     end;
 parse_sexp_term([Token | Rest], [[] | _] = Stack) ->
     % First element in a list
@@ -893,14 +1027,44 @@ parse_sexp_term(_, _) ->
 
 %% Convert S-expression term to Cure constraint AST
 sexp_term_to_constraint({symbol, true}) ->
-    {ok, #literal_expr{value = true, location = #location{line = 0, column = 0, file = undefined}}};
+    {ok, #literal_expr{
+        value = true,
+        location =
+            #location{
+                line = 0,
+                column = 0,
+                file = undefined
+            }
+    }};
 sexp_term_to_constraint({symbol, false}) ->
-    {ok, #literal_expr{value = false, location = #location{line = 0, column = 0, file = undefined}}};
+    {ok, #literal_expr{
+        value = false,
+        location =
+            #location{
+                line = 0,
+                column = 0,
+                file = undefined
+            }
+    }};
 sexp_term_to_constraint({number, Num}) ->
-    {ok, #literal_expr{value = Num, location = #location{line = 0, column = 0, file = undefined}}};
+    {ok, #literal_expr{
+        value = Num,
+        location =
+            #location{
+                line = 0,
+                column = 0,
+                file = undefined
+            }
+    }};
 sexp_term_to_constraint({symbol, Name}) ->
     {ok, #identifier_expr{
-        name = Name, location = #location{line = 0, column = 0, file = undefined}
+        name = Name,
+        location =
+            #location{
+                line = 0,
+                column = 0,
+                file = undefined
+            }
     }};
 sexp_term_to_constraint({list, []}) ->
     {error, empty_list};
@@ -914,7 +1078,12 @@ sexp_term_to_constraint({list, [{symbol, Op} | Args]}) ->
                     {ok, #unary_op_expr{
                         op = Op,
                         operand = Arg,
-                        location = #location{line = 0, column = 0, file = undefined}
+                        location =
+                            #location{
+                                line = 0,
+                                column = 0,
+                                file = undefined
+                            }
                     }};
                 {error, _} = Error ->
                     Error
@@ -932,7 +1101,12 @@ sexp_term_to_constraint({list, [{symbol, Op} | Args]}) ->
                         op = Op,
                         left = Left,
                         right = Right,
-                        location = #location{line = 0, column = 0, file = undefined}
+                        location =
+                            #location{
+                                line = 0,
+                                column = 0,
+                                file = undefined
+                            }
                     }};
                 {{error, _} = Error, _} ->
                     Error;
@@ -965,9 +1139,15 @@ parse_cvc5_model(_) ->
 
 %% Check if line is a comment
 is_comment_line(Line) when is_list(Line) ->
-    case string:left(string:strip(Line), 1) of
-        ";" -> true;
-        _ -> false
+    case
+        string:left(
+            string:strip(Line), 1
+        )
+    of
+        ";" ->
+            true;
+        _ ->
+            false
     end;
 is_comment_line(_) ->
     false.
@@ -994,8 +1174,10 @@ parse_cvc5_assignment(Line) when is_list(Line) ->
         0 ->
             % Try define-fun format
             case string:str(Trimmed, "define-fun") of
-                0 -> skip;
-                _ -> parse_define_fun(Trimmed)
+                0 ->
+                    skip;
+                _ ->
+                    parse_define_fun(Trimmed)
             end;
         Pos ->
             % Simple assignment format: name = value
@@ -1004,8 +1186,10 @@ parse_cvc5_assignment(Line) when is_list(Line) ->
             VarName = string:strip(VarPart),
             ValueStr = string:strip(ValuePart),
             case parse_value(ValueStr) of
-                {ok, Value} -> {ok, list_to_atom(VarName), Value};
-                {error, Reason} -> {error, Reason}
+                {ok, Value} ->
+                    {ok, list_to_atom(VarName), Value};
+                {error, Reason} ->
+                    {error, Reason}
             end
     end;
 parse_cvc5_assignment(_) ->
@@ -1016,13 +1200,19 @@ parse_define_fun(Line) ->
     % This is a simplified parser for define-fun
     % Full parsing would need proper S-expression parsing
     case
-        re:match(Line, "\\(define-fun\\s+(\\w+).*\\s+(\\d+|true|false)\\)", [{capture, ['all']}])
+        re:match(
+            Line,
+            "\\(define-fun\\s+(\\w+).*\\s+(\\d+|true|false)\\)",
+            [{capture, [all]}]
+        )
     of
         {match, [_All, VarStr, ValueStr]} ->
             VarName = binary_to_list(VarStr),
             case parse_value(binary_to_list(ValueStr)) of
-                {ok, Value} -> {ok, list_to_atom(VarName), Value};
-                {error, Reason} -> {error, Reason}
+                {ok, Value} ->
+                    {ok, list_to_atom(VarName), Value};
+                {error, Reason} ->
+                    {error, Reason}
             end;
         nomatch ->
             skip
@@ -1039,15 +1229,21 @@ parse_value(Str) ->
             {ok, Int};
         {_Int, _Rest} ->
             case string:to_float(Str) of
-                {Float, ""} -> {ok, Float};
-                {error, _} -> {error, {invalid_value, Str}}
+                {Float, ""} ->
+                    {ok, Float};
+                {error, _} ->
+                    {error, {invalid_value, Str}}
             end;
         {error, _} ->
             {error, {invalid_value, Str}}
     end.
 
 %% Format constraint for user-friendly display
-format_constraint(#binary_op_expr{op = Op, left = Left, right = Right}) ->
+format_constraint(#binary_op_expr{
+    op = Op,
+    left = Left,
+    right = Right
+}) ->
     io_lib:format("(~s ~s ~s)", [format_constraint(Left), Op, format_constraint(Right)]);
 format_constraint(#unary_op_expr{op = Op, operand = Operand}) ->
     io_lib:format("(~s ~s)", [Op, format_constraint(Operand)]);
@@ -1071,7 +1267,12 @@ equality_constraint(Left, Right) ->
         op = '==',
         left = Left,
         right = Right,
-        location = #location{line = 0, column = 0, file = undefined}
+        location =
+            #location{
+                line = 0,
+                column = 0,
+                file = undefined
+            }
     }.
 
 %% @doc Create an inequality constraint for SMT
@@ -1080,14 +1281,24 @@ inequality_constraint(Left, Op, Right) ->
         op = Op,
         left = Left,
         right = Right,
-        location = #location{line = 0, column = 0, file = undefined}
+        location =
+            #location{
+                line = 0,
+                column = 0,
+                file = undefined
+            }
     }.
 
 %% @doc Create a variable term
 variable_term(Name) when is_atom(Name) ->
     #identifier_expr{
         name = Name,
-        location = #location{line = 0, column = 0, file = undefined}
+        location =
+            #location{
+                line = 0,
+                column = 0,
+                file = undefined
+            }
     };
 variable_term(Name) when is_list(Name) ->
     variable_term(list_to_atom(Name)).
@@ -1096,5 +1307,10 @@ variable_term(Name) when is_list(Name) ->
 constant_term(Value) ->
     #literal_expr{
         value = Value,
-        location = #location{line = 0, column = 0, file = undefined}
+        location =
+            #location{
+                line = 0,
+                column = 0,
+                file = undefined
+            }
     }.

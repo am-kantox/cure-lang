@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typeclass Full Compilation Success - Cure Documentation</title>
+    <meta name="description" content="Date: November 24, 2024  
+Status: ✅ Successfully compiled and executed typeclass instance methods in BEAM">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="typeclass-full-compilation-success">Typeclass Full Compilation Success</h1>
+<p><strong>Date</strong>: November 24, 2024<br />
+<strong>Status</strong>: ✅ Successfully compiled and executed typeclass instance methods in BEAM</p>
+<h2 id="summary">Summary</h2>
+<p>The Cure typeclass system can now successfully:<br />
+1. Parse typeclass and instance definitions from source files<br />
+2. Type check instances and method calls<br />
+3. Compile instances to BEAM functions with proper name mangling<br />
+4. Export instance methods from modules<br />
+5. Generate valid BEAM files<br />
+6. Load modules at runtime<br />
+7. Execute instance methods</p>
+<h2 id="the-fix">The Fix</h2>
+<h3 id="problem">Problem</h3>
+<p>Instance methods were being compiled correctly but not exported from modules. This caused them to be unavailable at runtime even though they existed in the BEAM file.</p>
+<h3 id="solution">Solution</h3>
+<p>Added <code class="language-cure">extract_instance_exports/1</code> function in <code>cure_codegen.erl</code> to extract exports from instance methods, similar to how constructor exports work.</p>
+<p><strong>File</strong>: <code>src/codegen/cure_codegen.erl</code><br />
+- <strong>Lines 616-627</strong>: Modified instance handling to add exports<br />
+- <strong>Lines 2528-2545</strong>: Added <code class="language-cure">extract_instance_exports/1</code> function</p>
+<div class="codehilite"><pre><span></span><code><span class="c">%% In compile_module_items/3:</span>
+<span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">instance</span><span class="p">,</span><span class="w"> </span><span class="nv">CompiledMethods</span><span class="p">},</span><span class="w"> </span><span class="nv">NewState</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% Instance methods need to be unwrapped and added as individual functions</span>
+<span class="w">    </span><span class="nn">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p">(</span><span class="s">&quot;[INSTANCE] Adding </span><span class="si">~p</span><span class="s"> instance methods to module</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="nb">length</span><span class="p">(</span><span class="nv">CompiledMethods</span><span class="p">)</span>
+<span class="w">    </span><span class="p">]),</span>
+<span class="w">    </span><span class="nv">NewAcc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">lists</span><span class="p">:</span><span class="nf">reverse</span><span class="p">(</span><span class="nv">CompiledMethods</span><span class="p">)</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="nv">Acc</span><span class="p">,</span>
+<span class="w">    </span><span class="c">% Also add instance methods to exports</span>
+<span class="w">    </span><span class="nv">InstanceExports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extract_instance_exports</span><span class="p">(</span><span class="nv">CompiledMethods</span><span class="p">),</span>
+<span class="w">    </span><span class="nn">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p">(</span><span class="s">&quot;[INSTANCE] Adding instance exports: </span><span class="si">~p~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nv">InstanceExports</span><span class="p">]),</span>
+<span class="w">    </span><span class="nv">UpdatedExports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">NewState</span><span class="nl">#codegen_state.exports</span><span class="w"> </span><span class="o">++</span><span class="w"> </span><span class="nv">InstanceExports</span><span class="p">,</span>
+<span class="w">    </span><span class="nv">NewStateWithExports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">NewState</span><span class="nl">#codegen_state</span><span class="p">{</span><span class="n">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">UpdatedExports</span><span class="p">},</span>
+<span class="w">    </span><span class="n">compile_module_items</span><span class="p">(</span><span class="nv">RestItems</span><span class="p">,</span><span class="w"> </span><span class="nv">NewStateWithExports</span><span class="p">,</span><span class="w"> </span><span class="nv">NewAcc</span><span class="p">);</span>
+
+<span class="c">%% New helper function:</span>
+<span class="nf">extract_instance_exports</span><span class="p">(</span><span class="nv">InstanceMethods</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="nn">lists</span><span class="p">:</span><span class="nf">filtermap</span><span class="p">(</span>
+<span class="w">        </span><span class="k">fun</span>
+<span class="w">            </span><span class="p">({</span><span class="n">function</span><span class="p">,</span><span class="w"> </span><span class="nv">FuncMap</span><span class="p">})</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="n">is_map</span><span class="p">(</span><span class="nv">FuncMap</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                </span><span class="k">case</span><span class="w"> </span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">is_instance_method</span><span class="p">,</span><span class="w"> </span><span class="nv">FuncMap</span><span class="p">,</span><span class="w"> </span><span class="n">false</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">                    </span><span class="n">true</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                        </span><span class="nv">Name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="nv">FuncMap</span><span class="p">),</span>
+<span class="w">                        </span><span class="nv">Arity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">maps</span><span class="p">:</span><span class="nb">get</span><span class="p">(</span><span class="n">arity</span><span class="p">,</span><span class="w"> </span><span class="nv">FuncMap</span><span class="p">),</span>
+<span class="w">                        </span><span class="p">{</span><span class="n">true</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nv">Name</span><span class="p">,</span><span class="w"> </span><span class="nv">Arity</span><span class="p">}};</span>
+<span class="w">                    </span><span class="n">false</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                        </span><span class="n">false</span>
+<span class="w">                </span><span class="k">end</span><span class="p">;</span>
+<span class="w">            </span><span class="p">(_)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">                </span><span class="n">false</span>
+<span class="w">        </span><span class="k">end</span><span class="p">,</span>
+<span class="w">        </span><span class="nv">InstanceMethods</span>
+<span class="w">    </span><span class="p">).</span>
+</code></pre></div>
+
+<h2 id="test-results">Test Results</h2>
+<h3 id="test-full-beam-compilation-show_beam_compilation_testerl">Test: Full BEAM Compilation (show_beam_compilation_test.erl)</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">====</span><span class="w"> </span><span class="n">Show</span><span class="w"> </span><span class="n">Module</span><span class="w"> </span><span class="n">BEAM</span><span class="w"> </span><span class="n">Compilation</span><span class="w"> </span><span class="n">Test</span><span class="w"> </span><span class="o">====</span>
+
+<span class="n">Test</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="w"> </span><span class="n">Parsing</span><span class="w"> </span><span class="n">lib</span><span class="o">/</span><span class="n">std</span><span class="o">/</span><span class="n">show</span><span class="o">.</span><span class="n">cure</span><span class="o">...</span>
+<span class="w">  </span><span class="err">✓</span><span class="w"> </span><span class="n">Parsed</span><span class="w"> </span><span class="n">module</span><span class="w"> </span><span class="s1">&#39;Std.Show&#39;</span>
+
+<span class="n">Test</span><span class="w"> </span><span class="mi">2</span><span class="p">:</span><span class="w"> </span><span class="n">Type</span><span class="w"> </span><span class="n">checking</span><span class="o">...</span>
+<span class="w">  </span><span class="err">✓</span><span class="w"> </span><span class="n">Type</span><span class="w"> </span><span class="n">checking</span><span class="w"> </span><span class="n">succeeded</span>
+
+<span class="n">Test</span><span class="w"> </span><span class="mi">3</span><span class="p">:</span><span class="w"> </span><span class="n">Compiling</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">BEAM</span><span class="w"> </span><span class="n">bytecode</span><span class="o">...</span>
+<span class="w">  </span><span class="err">✓</span><span class="w"> </span><span class="n">Module</span><span class="w"> </span><span class="n">compilation</span><span class="w"> </span><span class="n">succeeded</span>
+<span class="w">  </span><span class="n">Compiled</span><span class="w"> </span><span class="n">module</span><span class="w"> </span><span class="n">info</span><span class="p">:</span>
+<span class="w">    </span><span class="n">Name</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;Std.Show&#39;</span>
+<span class="w">    </span><span class="n">Functions</span><span class="p">:</span><span class="w"> </span><span class="mi">11</span>
+<span class="w">    </span><span class="n">Exports</span><span class="p">:</span><span class="w"> </span><span class="mi">11</span>
+
+<span class="n">Test</span><span class="w"> </span><span class="mi">4</span><span class="p">:</span><span class="w"> </span><span class="n">Generating</span><span class="w"> </span><span class="n">BEAM</span><span class="w"> </span><span class="n">file</span><span class="o">...</span>
+<span class="w">  </span><span class="err">✓</span><span class="w"> </span><span class="n">BEAM</span><span class="w"> </span><span class="n">file</span><span class="w"> </span><span class="n">written</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">_build</span><span class="o">/</span><span class="n">test</span><span class="o">/</span><span class="n">Std_Show</span><span class="o">.</span><span class="n">beam</span>
+<span class="w">  </span><span class="err">✓</span><span class="w"> </span><span class="n">Module</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">BEAM</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;Std.Show&#39;</span>
+
+<span class="n">Test</span><span class="w"> </span><span class="mi">5</span><span class="p">:</span><span class="w"> </span><span class="n">Loading</span><span class="w"> </span><span class="n">compiled</span><span class="w"> </span><span class="n">module</span><span class="o">...</span>
+<span class="w">  </span><span class="err">✓</span><span class="w"> </span><span class="n">Module</span><span class="w"> </span><span class="n">loaded</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;Std.Show&#39;</span>
+
+<span class="n">Test</span><span class="w"> </span><span class="mi">6</span><span class="p">:</span><span class="w"> </span><span class="n">Calling</span><span class="w"> </span><span class="s1">&#39;Std.Show&#39;</span><span class="p">:</span><span class="s1">&#39;Show_Int_show&#39;</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span><span class="o">...</span>
+<span class="w">  </span><span class="err">✓</span><span class="w"> </span><span class="n">Call</span><span class="w"> </span><span class="n">succeeded</span><span class="o">!</span>
+<span class="w">  </span><span class="n">Result</span><span class="p">:</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="s2">&quot;&lt;int&gt;&quot;</span><span class="o">&gt;&gt;</span>
+
+<span class="o">====</span><span class="w"> </span><span class="n">ALL</span><span class="w"> </span><span class="n">TESTS</span><span class="w"> </span><span class="n">PASSED</span><span class="w"> </span><span class="o">====</span>
+</code></pre></div>
+
+<h3 id="verified-exports">Verified Exports</h3>
+<p>Before fix:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">Exports</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="n">show_separated</span><span class="p">,</span><span class="mi">2</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="n">show_list</span><span class="p">,</span><span class="mi">1</span><span class="p">}]</span>
+<span class="nv">Functions</span><span class="w"> </span><span class="p">(</span><span class="mi">11</span><span class="w"> </span><span class="n">total</span><span class="p">):</span>
+<span class="w">  </span><span class="n">&#39;Show_Int_show&#39;</span><span class="o">/</span><span class="mi">1</span><span class="w"> </span><span class="p">(</span><span class="n">instance</span><span class="p">)</span>
+<span class="w">  </span><span class="n">&#39;Show_Float_show&#39;</span><span class="o">/</span><span class="mi">1</span><span class="w"> </span><span class="p">(</span><span class="n">instance</span><span class="p">)</span>
+<span class="w">  </span><span class="p">...</span>
+</code></pre></div>
+
+<p>After fix:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">Exports</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="n">show_separated</span><span class="p">,</span><span class="mi">2</span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="n">show_list</span><span class="p">,</span><span class="mi">1</span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="n">&#39;Show_Int_show&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="n">&#39;Show_Float_show&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="n">&#39;Show_String_show&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="n">&#39;Show_Bool_show&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="n">&#39;Show_Atom_show&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="n">&#39;Show_Charlist_show&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="n">&#39;Show_List_show&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="n">&#39;Show_Option_show&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="n">&#39;Show_Result_show&#39;</span><span class="p">,</span><span class="mi">1</span><span class="p">}]</span>
+</code></pre></div>
+
+<h2 id="module-loading-details">Module Loading Details</h2>
+<p>Since Erlang module names cannot contain dots, we use:<br />
+- <strong>Internal module name</strong>: <code>'Std.Show'</code> (as defined in source)<br />
+- <strong>BEAM filename</strong>: <code>Std_Show.beam</code> (dots replaced with underscores)<br />
+- <strong>Loading method</strong>: <code>code:load_binary/3</code> to load module with name different from filename</p>
+<h2 id="instance-method-naming-convention">Instance Method Naming Convention</h2>
+<p>Instance methods use the pattern: <code>TypeclassName_TypeName_MethodName</code></p>
+<p>Examples from Show typeclass:<br />
+- <code>Show_Int_show/1</code> - show method for Int type<br />
+- <code>Show_Float_show/1</code> - show method for Float type<br />
+- <code>Show_String_show/1</code> - show method for String type<br />
+- <code>Show_Bool_show/1</code> - show method for Bool type<br />
+- <code>Show_Atom_show/1</code> - show method for Atom type<br />
+- <code>Show_Charlist_show/1</code> - show method for Charlist type<br />
+- <code>Show_List_show/1</code> - show method for List type<br />
+- <code>Show_Option_show/1</code> - show method for Option type<br />
+- <code>Show_Result_show/1</code> - show method for Result type</p>
+<h2 id="execution-flow">Execution Flow</h2>
+<ol>
+<li>
+<p><strong>Parse</strong>: <code>cure_parser:parse_file("lib/std/show.cure")</code><br />
+   - Reads Cure source file<br />
+   - Generates AST with typeclass and instance definitions</p>
+</li>
+<li>
+<p><strong>Type Check</strong>: <code>cure_typechecker:check_program([ModuleDef])</code><br />
+   - Validates typeclass and instance definitions<br />
+   - Checks method signatures match typeclass</p>
+</li>
+<li>
+<p><strong>Compile</strong>: <code class="language-cure">cure_codegen:compile_module(ModuleDef, [])</code><br />
+   - Compiles instances to functions with mangled names<br />
+   - <strong>NOW</strong>: Adds instance methods to exports<br />
+   - Generates complete module structure</p>
+</li>
+<li>
+<p><strong>Generate BEAM</strong>: <code class="language-cure">cure_codegen:write_beam_module(CompiledModule, OutputPath)</code><br />
+   - Converts to Erlang abstract forms<br />
+   - Compiles to BEAM bytecode using Erlang compiler<br />
+   - Writes to file</p>
+</li>
+<li>
+<p><strong>Load</strong>: <code>code:load_binary('Std.Show', Path, Binary)</code><br />
+   - Loads module into Erlang VM<br />
+   - Instance methods are available for calling</p>
+</li>
+<li>
+<p><strong>Execute</strong>: <code>'Std.Show':'Show_Int_show'(42)</code><br />
+   - Calls instance method directly<br />
+   - Returns <code>&lt;&lt;"&lt;int&gt;"&gt;&gt;</code> (as defined in show.cure)</p>
+</li>
+</ol>
+<h2 id="completion-status">Completion Status</h2>
+<p><strong>Overall Progress</strong>: ~85% complete</p>
+<h3 id="completed">✅ Completed</h3>
+<ul>
+<li>Lexer support for typeclass keywords</li>
+<li>Parser for typeclass and instance definitions</li>
+<li>AST representation</li>
+<li>Type checker integration</li>
+<li>Import system for typeclasses</li>
+<li>Instance method compilation with name mangling</li>
+<li>Method resolution in codegen (direct calls)</li>
+<li><strong>Instance method exports</strong> (THIS FIX)</li>
+<li><strong>Full BEAM compilation pipeline</strong> (THIS FIX)</li>
+<li><strong>Runtime execution of instance methods</strong> (THIS FIX)</li>
+</ul>
+<h3 id="remaining-work">🚧 Remaining Work</h3>
+<ol>
+<li>
+<p><strong>Method Dispatch Functions</strong> (~10% remaining)<br />
+   - Generate dispatch functions that select instance based on runtime type<br />
+   - Example: <code>show(X)</code> should call appropriate <code>Show_Type_show(X)</code> based on X's type<br />
+   - Estimated: 2-3 hours</p>
+</li>
+<li>
+<p><strong>Instance Registry</strong> (~5% remaining)<br />
+   - Runtime registry for typeclass instances<br />
+   - Automatic registration on module load<br />
+   - Lookup functions for polymorphic dispatch<br />
+   - Estimated: 2-3 hours</p>
+</li>
+<li>
+<p><strong>Additional Typeclasses</strong> (~15% remaining)<br />
+   - Implement Eq typeclass with instances<br />
+   - Implement Ord typeclass with instances<br />
+   - Test cross-typeclass dependencies<br />
+   - Estimated: 3-4 hours</p>
+</li>
+<li>
+<p><strong>Derive Mechanism Testing</strong> (~10% remaining)<br />
+   - Test automatic instance derivation<br />
+   - Verify generated code correctness<br />
+   - Add more derivable typeclasses<br />
+   - Estimated: 2-3 hours</p>
+</li>
+</ol>
+<h2 id="next-steps">Next Steps</h2>
+<ol>
+<li>
+<p>Implement method dispatch functions to enable polymorphic calls like <code>show(42)</code> instead of requiring direct <code>Show_Int_show(42)</code> calls</p>
+</li>
+<li>
+<p>Add Eq typeclass following the same pattern as Show</p>
+</li>
+<li>
+<p>Implement runtime instance registry for dynamic dispatch</p>
+</li>
+<li>
+<p>Complete derive mechanism testing</p>
+</li>
+</ol>
+<h2 id="related-files">Related Files</h2>
+<ul>
+<li><code>src/codegen/cure_codegen.erl</code> - Main codegen, instance export logic</li>
+<li><code class="language-cure">src/codegen/cure_typeclass_codegen.erl</code> - Instance compilation</li>
+<li><code>src/types/cure_typechecker.erl</code> - Import system</li>
+<li><code>lib/std/show.cure</code> - Show typeclass definition</li>
+<li><code>test/show_beam_compilation_test.erl</code> - Full compilation test</li>
+<li><code class="language-cure">test/check_exports.erl</code> - Export verification test</li>
+</ul>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>All Documentation</h4>
+                <ul>
+                    <li><a href="cli-integration-status.html">CLI Integration - SMT Solver Options and</a></li>
+                    <li><a href="codegen-analysis-2025-11-25.html">Code Generation Issues - Analysis (2025-</a></li>
+                    <li><a href="codegen-investigation-summary.html">Code Generation Issues - Investigation S</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-mcp-update-2025-11-26.html">Cure LSP and MCP Update - November 26, 2</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-DC6CD34D.js"></script>
+    <script src="dist/sidebar_items-C51205A4.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -148,7 +148,7 @@ compilation pipeline from Cure source code to BEAM bytecode.</p><h2 id="module-f
   </a>
   <span class="text">Command Line Options</span>
 </h2>
-<ul><li><code class="inline">-o, --output FILE</code> - Output .beam file path</li><li><code class="inline">-d, --output-dir DIR</code> - Output directory (default: <code class="inline">_build/ebin</code>)</li><li><code class="inline">--verbose</code> - Enable verbose compilation output</li><li><code class="inline">--no-debug</code> - Disable debug information in output</li><li><code class="inline">--no-warnings</code> - Suppress compiler warnings</li><li><code class="inline">--no-type-check</code> - Skip type checking phase</li><li><code class="inline">--no-optimize</code> - Disable type-directed optimizations</li><li><code class="inline">--no-smt</code> - Disable SMT constraint solving</li><li><code class="inline">--smt-solver SOLVER</code> - Choose SMT solver (z3, cvc5, auto)</li><li><code class="inline">--smt-timeout MS</code> - Set SMT solver timeout in milliseconds</li><li><code class="inline">--help, -h</code> - Show help information</li><li><code class="inline">--version, -v</code> - Show version information</li></ul><h2 id="module-environment-variables" class="section-heading">
+<ul><li><code class="inline">-o, --output FILE</code> - Output .beam file path</li><li><code class="inline">-d, --output-dir DIR</code> - Output directory (default: <code class="inline">_build/ebin</code>)</li><li><code class="inline">--verbose</code> - Enable verbose compilation output</li><li><code class="inline">--no-debug</code> - Disable debug information in output</li><li><code class="inline">--no-warnings</code> - Suppress compiler warnings</li><li><code class="inline">--no-type-check</code> - Skip type checking phase</li><li><code class="inline">--no-optimize</code> - Disable type-directed optimizations</li><li><code class="inline">--no-smt</code> - Disable SMT constraint solving</li><li><code class="inline">--smt-solver SOLVER</code> - Choose SMT solver (z3, cvc5, auto)</li><li><code class="inline">--smt-timeout MS</code> - Set SMT solver timeout in milliseconds</li><li><code class="inline">--emit-ast</code> - Output AST for debugging (pretty-printed)</li><li><code class="inline">--emit-typed-ast</code> - Output typed AST after type checking</li><li><code class="inline">--emit-ir</code> - Output intermediate representation before BEAM generation</li><li><code class="inline">--check</code> - Type check only, don't compile to BEAM</li><li><code class="inline">--print-types</code> - Print inferred types for all functions</li><li><code class="inline">--no-color</code> - Disable ANSI color codes in output</li><li><code class="inline">--wall</code> - Show all warnings (even minor ones)</li><li><code class="inline">--Werror</code> - Treat warnings as errors (fail compilation on warnings)</li><li><code class="inline">--time</code> - Show compilation time for each stage</li><li><code class="inline">--help, -h</code> - Show help information</li><li><code class="inline">--version, -v</code> - Show version information</li></ul><h2 id="module-environment-variables" class="section-heading">
   <a href="#module-environment-variables" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -336,7 +336,7 @@ compilation pipeline from Cure source code to BEAM bytecode.</p><h2 id="module-f
     </a>
     <h1 class="signature" translate="no">add_automatic_stdlib_imports(Source, Options)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1299" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1525" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -356,7 +356,7 @@ compilation pipeline from Cure source code to BEAM bytecode.</p><h2 id="module-f
     </a>
     <h1 class="signature" translate="no">check_cure_installation()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1084" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1310" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -403,7 +403,7 @@ state before attempting compilation operations.</p>
     </a>
     <h1 class="signature" translate="no">compile_file(Filename)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L299" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L356" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -430,7 +430,7 @@ state before attempting compilation operations.</p>
   </a>
   <span class="text">Examples</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nf">compile_file</span><span class="p" data-group-id="7094063397-1">(</span><span class="s">&quot;examples/hello.cure&quot;</span><span class="p" data-group-id="7094063397-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nf">compile_file</span><span class="p" data-group-id="3552384883-1">(</span><span class="s">&quot;examples/hello.cure&quot;</span><span class="p" data-group-id="3552384883-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {ok, &quot;_build/ebin/hello.beam&quot;}</span></code></pre>
   </section>
 </section>
@@ -442,7 +442,7 @@ state before attempting compilation operations.</p>
     </a>
     <h1 class="signature" translate="no">compile_file(Filename, Options)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L359" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L416" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -477,16 +477,16 @@ features including type checking, optimizations, and custom output options.</p><
   <span class="text">Examples</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Compile with verbose output</span><span class="w">
-</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="8487645360-1">{</span><span class="ss">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="8487645360-1">}</span><span class="p">,</span><span class="w">
-</span><span class="nf">compile_file</span><span class="p" data-group-id="8487645360-2">(</span><span class="s">&quot;src/math.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="8487645360-2">)</span><span class="p">.</span><span class="w">
+</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="0093664765-1">{</span><span class="ss">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="0093664765-1">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">compile_file</span><span class="p" data-group-id="0093664765-2">(</span><span class="s">&quot;src/math.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="0093664765-2">)</span><span class="p">.</span><span class="w">
 
 </span><span class="c1">% Compile without optimizations  </span><span class="w">
-</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="8487645360-3">{</span><span class="ss">optimize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">false</span><span class="p" data-group-id="8487645360-3">}</span><span class="p">,</span><span class="w">
-</span><span class="nf">compile_file</span><span class="p" data-group-id="8487645360-4">(</span><span class="s">&quot;debug.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="8487645360-4">)</span><span class="p">.</span><span class="w">
+</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="0093664765-3">{</span><span class="ss">optimize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">false</span><span class="p" data-group-id="0093664765-3">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">compile_file</span><span class="p" data-group-id="0093664765-4">(</span><span class="s">&quot;debug.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="0093664765-4">)</span><span class="p">.</span><span class="w">
 
 </span><span class="c1">% Custom output file</span><span class="w">
-</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="8487645360-5">{</span><span class="ss">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;custom.beam&quot;</span><span class="p" data-group-id="8487645360-5">}</span><span class="p">,</span><span class="w">
-</span><span class="nf">compile_file</span><span class="p" data-group-id="8487645360-6">(</span><span class="s">&quot;input.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="8487645360-6">)</span><span class="p">.</span></code></pre>
+</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="0093664765-5">{</span><span class="ss">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;custom.beam&quot;</span><span class="p" data-group-id="0093664765-5">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">compile_file</span><span class="p" data-group-id="0093664765-6">(</span><span class="s">&quot;input.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="0093664765-6">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="compile_file_from_shell/1">
@@ -497,7 +497,7 @@ features including type checking, optimizations, and custom output options.</p><
     </a>
     <h1 class="signature" translate="no">compile_file_from_shell/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L374" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L431" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -517,7 +517,7 @@ features including type checking, optimizations, and custom output options.</p><
     </a>
     <h1 class="signature" translate="no">compile_opts_to_codegen_opts(Options)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L685" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L902" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -556,7 +556,7 @@ the internal format expected by the code generation modules.</p><h2 id="compile_
     </a>
     <h1 class="signature" translate="no">convert_beam_to_source_path(BeamFile)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1280" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1506" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -576,7 +576,7 @@ the internal format expected by the code generation modules.</p><h2 id="compile_
     </a>
     <h1 class="signature" translate="no">ensure_stdlib_available(Options)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1126" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1352" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -615,7 +615,7 @@ and if not, attempts to compile them automatically.</p><h2 id="ensure_stdlib_ava
     </a>
     <h1 class="signature" translate="no">format_compilation_error/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L870" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1096" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -635,7 +635,7 @@ and if not, attempts to compile them automatically.</p><h2 id="ensure_stdlib_ava
     </a>
     <h1 class="signature" translate="no">format_error/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L841" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1067" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -655,7 +655,7 @@ and if not, attempts to compile them automatically.</p><h2 id="ensure_stdlib_ava
     </a>
     <h1 class="signature" translate="no">get_module_info/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L924" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1150" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -682,8 +682,8 @@ and if not, attempts to compile them automatically.</p><h2 id="ensure_stdlib_ava
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="0111862559-1">(</span><span class="s">&quot;MyModule.cure&quot;</span><span class="p" data-group-id="0111862559-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Info</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">get_module_info</span><span class="p" data-group-id="0111862559-2">(</span><span class="n">AST</span><span class="p" data-group-id="0111862559-2">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="9088282647-1">(</span><span class="s">&quot;MyModule.cure&quot;</span><span class="p" data-group-id="9088282647-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Info</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">get_module_info</span><span class="p" data-group-id="9088282647-2">(</span><span class="n">AST</span><span class="p" data-group-id="9088282647-2">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">% =&gt; #{name =&gt; &#39;MyModule&#39;, exports =&gt; [{hello, 1}], ...}</span></code></pre>
   </section>
 </section>
@@ -695,7 +695,7 @@ and if not, attempts to compile them automatically.</p><h2 id="ensure_stdlib_ava
     </a>
     <h1 class="signature" translate="no">has_explicit_module_or_imports(Source)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1327" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1553" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -715,7 +715,7 @@ and if not, attempts to compile them automatically.</p><h2 id="ensure_stdlib_ava
     </a>
     <h1 class="signature" translate="no">help()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L772" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L989" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -742,7 +742,7 @@ environment variables to assist users in using the compiler effectively.</p><h2 
     </a>
     <h1 class="signature" translate="no">main(Args)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L158" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L185" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -772,9 +772,9 @@ appropriate status codes.</p><h2 id="main/1-arguments" class="section-heading">
   <span class="text">Examples</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% These calls happen automatically when using the CLI:</span><span class="w">
-</span><span class="nf">main</span><span class="p" data-group-id="0271941716-1">(</span><span class="p" data-group-id="0271941716-2">[</span><span class="s">&quot;input.cure&quot;</span><span class="p" data-group-id="0271941716-2">]</span><span class="p" data-group-id="0271941716-1">)</span><span class="p">.</span><span class="w">
-</span><span class="nf">main</span><span class="p" data-group-id="0271941716-3">(</span><span class="p" data-group-id="0271941716-4">[</span><span class="s">&quot;input.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;-o&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;output.beam&quot;</span><span class="p" data-group-id="0271941716-4">]</span><span class="p" data-group-id="0271941716-3">)</span><span class="p">.</span><span class="w">
-</span><span class="nf">main</span><span class="p" data-group-id="0271941716-5">(</span><span class="p" data-group-id="0271941716-6">[</span><span class="s">&quot;--help&quot;</span><span class="p" data-group-id="0271941716-6">]</span><span class="p" data-group-id="0271941716-5">)</span><span class="p">.</span></code></pre><h2 id="main/1-error-handling" class="section-heading">
+</span><span class="nf">main</span><span class="p" data-group-id="2957237223-1">(</span><span class="p" data-group-id="2957237223-2">[</span><span class="s">&quot;input.cure&quot;</span><span class="p" data-group-id="2957237223-2">]</span><span class="p" data-group-id="2957237223-1">)</span><span class="p">.</span><span class="w">
+</span><span class="nf">main</span><span class="p" data-group-id="2957237223-3">(</span><span class="p" data-group-id="2957237223-4">[</span><span class="s">&quot;input.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;-o&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;output.beam&quot;</span><span class="p" data-group-id="2957237223-4">]</span><span class="p" data-group-id="2957237223-3">)</span><span class="p">.</span><span class="w">
+</span><span class="nf">main</span><span class="p" data-group-id="2957237223-5">(</span><span class="p" data-group-id="2957237223-6">[</span><span class="s">&quot;--help&quot;</span><span class="p" data-group-id="2957237223-6">]</span><span class="p" data-group-id="2957237223-5">)</span><span class="p">.</span></code></pre><h2 id="main/1-error-handling" class="section-heading">
   <a href="#main/1-error-handling" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -792,7 +792,7 @@ When <code class="inline">CURE_DEBUG=1</code> is set, full stack traces are disp
     </a>
     <h1 class="signature" translate="no">version()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L828" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/cure_cli.erl#L1054" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 

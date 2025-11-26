@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP TODO Integration - Cure Documentation</title>
+    <meta name="description" content="Date: November 25, 2025  
+Purpose: Document integration of TODO-2025-11-24.md into the Cure MCP server as a queryable resource">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="mcp-todo-integration">MCP TODO Integration</h1>
+<p><strong>Date</strong>: November 25, 2025<br />
+<strong>Purpose</strong>: Document integration of TODO-2025-11-24.md into the Cure MCP server as a queryable resource</p>
+<h2 id="overview">Overview</h2>
+<p>The Cure project's comprehensive TODO and status document (<code>TODO-2025-11-24.md</code>) has been integrated into the Model Context Protocol (MCP) server as a <strong>resource</strong>. This enables AI assistants like Claude to query project status, audit results, and production readiness information.</p>
+<h2 id="why-mcp-resources">Why MCP Resources?</h2>
+<p>MCP (Model Context Protocol) defines three types of context that servers can expose:</p>
+<ol>
+<li><strong>Tools</strong> - Executable functions (compile, parse, analyze, etc.)</li>
+<li><strong>Resources</strong> - Queryable data sources (documentation, project status, etc.)</li>
+<li><strong>Prompts</strong> - Template workflows for common tasks</li>
+</ol>
+<p>The TODO document fits naturally as a <strong>resource</strong> because:<br />
+- It provides static/semi-static information about project state<br />
+- AI assistants need to read it, not execute it<br />
+- It's analogous to documentation or configuration files<br />
+- Resources support versioning and updates</p>
+<h2 id="why-not-lsp">Why Not LSP?</h2>
+<p>The Language Server Protocol (LSP) integration was <strong>not modified</strong> because:<br />
+- LSP focuses on per-file code intelligence (completions, diagnostics, hover)<br />
+- LSP does not have a concept of "project status resources"<br />
+- LSP is for IDE features, not project metadata<br />
+- MCP is the correct protocol for exposing project-level information to AI assistants</p>
+<h2 id="implementation-details">Implementation Details</h2>
+<h3 id="resource-uri">Resource URI</h3>
+<div class="codehilite"><pre><span></span><code>cure://project/todo
+</code></pre></div>
+
+<p>This custom URI scheme follows MCP best practices for language-specific resources.</p>
+<h3 id="resource-metadata">Resource Metadata</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;uri&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cure://project/todo&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Project TODO &amp; Status&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Comprehensive project status, audit results, and production readiness assessment (90% complete)&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;mimeType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;text/markdown&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="integration-points">Integration Points</h3>
+<p><strong>1. Server Capabilities</strong> (<code>cure_mcp_server.erl:35-38</code>)</p>
+<div class="codehilite"><pre><span></span><code><span class="n">resources</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">    </span><span class="n">subscribe</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">false</span><span class="p">,</span>
+<span class="w">    </span><span class="n">listChanged</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">false</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>2. Resource List Handler</strong> (<code>cure_mcp_server.erl:357-377</code>)<br />
+- Returns list of available resources<br />
+- Currently exposes one resource: <code>cure://project/todo</code></p>
+<p><strong>3. Resource Read Handler</strong> (<code>cure_mcp_server.erl:380-408</code>)<br />
+- Reads <code>../TODO-2025-11-24.md</code> relative to MCP server location<br />
+- Returns full markdown content<br />
+- Handles file read errors gracefully</p>
+<p><strong>4. Request Router</strong> (<code>cure_mcp_server.erl:159-160</code>)<br />
+- Added <code>resources/read</code> method to request dispatcher</p>
+<h2 id="usage-examples">Usage Examples</h2>
+<h3 id="from-claude-desktop">From Claude Desktop</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">User</span><span class="o">:</span><span class="w"> </span><span class="n">What</span><span class="err">&#39;</span><span class="n">s</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">current</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">Cure</span><span class="w"> </span><span class="n">project</span><span class="o">?</span>
+</code></pre></div>
+
+<p>Claude will:<br />
+1. Call <code>resources/list</code> to discover available resources<br />
+2. See <code>cure://project/todo</code> resource<br />
+3. Call <code>resources/read</code> with that URI<br />
+4. Parse the markdown and provide a summary</p>
+<h3 id="from-mcp-client">From MCP Client</h3>
+<p><strong>List resources:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;resources/list&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;resources&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;uri&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cure://project/todo&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Project TODO &amp; Status&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Comprehensive project status, audit results, and production readiness assessment (90% complete)&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;mimeType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;text/markdown&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Read resource:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;method&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;resources/read&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;uri&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cure://project/todo&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Response:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;jsonrpc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;contents&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;uri&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;cure://project/todo&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;mimeType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;text/markdown&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;# Cure Programming Language - TODO Audit (2025-11-24/25)\n\n...&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2 id="benefits">Benefits</h2>
+<ol>
+<li><strong>Discoverability</strong>: AI assistants can discover project status automatically</li>
+<li><strong>Consistency</strong>: Single source of truth for project status</li>
+<li><strong>Up-to-date</strong>: Always reflects latest audit results</li>
+<li><strong>Structured</strong>: Markdown format is easy for AI to parse</li>
+<li><strong>Queryable</strong>: AI can answer questions about project status</li>
+</ol>
+<h2 id="testing">Testing</h2>
+<p>Run the test script:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>/opt/Proyectos/Ammotion/cure/mcp
+./test_resources.sh
+</code></pre></div>
+
+<p>This tests:<br />
+1. Resource listing (should return cure://project/todo)<br />
+2. Resource reading (should return TODO.md content)<br />
+3. Invalid URI handling (should return error)</p>
+<h2 id="future-enhancements">Future Enhancements</h2>
+<p>Potential additional resources:</p>
+<ol>
+<li><strong><code>cure://project/changelog</code></strong> - CHANGELOG.md</li>
+<li><strong><code>cure://project/roadmap</code></strong> - Future feature plans</li>
+<li><strong><code>cure://docs/syntax</code></strong> - Complete syntax reference</li>
+<li><strong><code>cure://docs/stdlib</code></strong> - Standard library API reference</li>
+<li><strong><code>cure://project/benchmarks</code></strong> - Performance benchmark results</li>
+<li><strong><code>cure://project/tests</code></strong> - Test suite status and coverage</li>
+</ol>
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+<li><code>mcp/README.md</code> - MCP server overview and usage</li>
+<li><code>mcp/ARCHITECTURE.md</code> - Detailed architecture documentation</li>
+<li><code>TODO-2025-11-24.md</code> - The actual status document</li>
+<li>MCP Specification: https://spec.modelcontextprotocol.io/</li>
+</ul>
+<h2 id="validation-checklist">Validation Checklist</h2>
+<p>✅ <strong>Implementation</strong><br />
+- [x] Added <code>resources</code> capability to server state<br />
+- [x] Implemented <code>handle_resources_list/2</code><br />
+- [x] Implemented <code>handle_resources_read/2</code><br />
+- [x] Added <code>resources/read</code> to request router<br />
+- [x] File path resolution works correctly</p>
+<p>✅ <strong>Documentation</strong><br />
+- [x] Updated MCP README.md with resources section<br />
+- [x] Updated ARCHITECTURE.md with implementation details<br />
+- [x] Created this integration guide<br />
+- [x] Added code comments</p>
+<p>✅ <strong>Testing</strong><br />
+- [x] Server compiles without errors<br />
+- [x] Created test script for resources<br />
+- [x] Manual testing with JSON-RPC requests</p>
+<p>✅ <strong>Correctness</strong><br />
+- [x] Follows MCP specification for resources<br />
+- [x] Returns proper JSON-RPC 2.0 responses<br />
+- [x] Handles errors gracefully<br />
+- [x] Uses appropriate MIME type (text/markdown)</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>The TODO-2025-11-24.md integration is <strong>complete and production-ready</strong>. AI assistants using the Cure MCP server can now query project status, audit results, and production readiness information through the standard MCP resources interface.</p>
+<p>This integration follows best practices for MCP resource implementation and provides a foundation for exposing additional project metadata in the future.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>All Documentation</h4>
+                <ul>
+                    <li><a href="cli-integration-status.html">CLI Integration - SMT Solver Options and</a></li>
+                    <li><a href="codegen-analysis-2025-11-25.html">Code Generation Issues - Analysis (2025-</a></li>
+                    <li><a href="codegen-investigation-summary.html">Code Generation Issues - Investigation S</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-mcp-update-2025-11-26.html">Cure LSP and MCP Update - November 26, 2</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

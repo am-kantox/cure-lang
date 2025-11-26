@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typeclass Method Resolution in Codegen - Enhancement - Cure Documentation</title>
+    <meta name="description" content=" Date
+November 24, 2024">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="typeclass-method-resolution-in-codegen-enhancement">Typeclass Method Resolution in Codegen - Enhancement</h1>
+<h2 id="date">Date</h2>
+<p>November 24, 2024</p>
+<h2 id="overview">Overview</h2>
+<p>Enhanced the codegen to properly resolve typeclass method calls to instance implementations, even without explicit typeclass constraints in the where clause.</p>
+<h2 id="problem">Problem</h2>
+<p>Previously, typeclass method resolution in codegen only worked when there were explicit typeclass constraints (e.g., <code>where Show(T)</code>). For direct method calls like <code>show(42)</code> in modules that import typeclasses, the resolution would fail.</p>
+<h2 id="solution">Solution</h2>
+<p>Added a new function <code class="language-cure">try_resolve_direct_typeclass_call/3</code> that:<br />
+1. Checks if a function call is a known typeclass method<br />
+2. Infers the concrete type from the arguments<br />
+3. Generates the correct mangled instance method name (e.g., <code>Show_Int_show</code>)<br />
+4. Resolves the call to the instance implementation</p>
+<h2 id="implementation-details">Implementation Details</h2>
+<h3 id="files-modified">Files Modified</h3>
+<ul>
+<li><strong>src/codegen/cure_codegen.erl</strong>: Lines 2877-2989</li>
+</ul>
+<h3 id="key-functions">Key Functions</h3>
+<h4 id="try_resolve_typeclass_method3-enhanced"><code class="language-cure">try_resolve_typeclass_method/3</code> (Enhanced)</h4>
+<div class="codehilite"><pre><span></span><code><span class="nf">try_resolve_typeclass_method</span><span class="p">(</span><span class="nv">Function</span><span class="p">,</span><span class="w"> </span><span class="nv">Args</span><span class="p">,</span><span class="w"> </span><span class="nv">State</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="nv">State</span><span class="nl">#codegen_state.typeclass_constraints</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="p">[]</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="c">% NEW: Check for direct typeclass method calls</span>
+<span class="w">            </span><span class="n">try_resolve_direct_typeclass_call</span><span class="p">(</span><span class="nv">Function</span><span class="p">,</span><span class="w"> </span><span class="nv">Args</span><span class="p">,</span><span class="w"> </span><span class="nv">State</span><span class="p">);</span>
+<span class="w">        </span><span class="nv">Constraints</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="c">% Existing constraint-based resolution</span>
+<span class="w">            </span><span class="p">...</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+</code></pre></div>
+
+<h4 id="try_resolve_direct_typeclass_call3-new"><code class="language-cure">try_resolve_direct_typeclass_call/3</code> (New)</h4>
+<p>Handles direct typeclass method calls without constraints:<br />
+- Maps method names to typeclasses (show → Show, eq → Eq, etc.)<br />
+- Infers concrete types from literal arguments<br />
+- Generates mangled instance method names<br />
+- Returns resolved function identifiers</p>
+<h4 id="is_known_typeclass_method1-new"><code class="language-cure">is_known_typeclass_method/1</code> (New)</h4>
+<p>Maps method names to their typeclasses:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">KnownMethods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">#{</span>
+<span class="w">    </span><span class="n">show</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;Show&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">eq</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;Eq&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">compare</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">&#39;Ord&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">...</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h2 id="test-results">Test Results</h2>
+<h3 id="test-1-direct-method-call">Test 1: Direct Method Call ✅</h3>
+<p><strong>Input:</strong> <code>show(42)</code></p>
+<p><strong>Generated Instructions:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="n">beam_instr</span><span class="p">,</span><span class="w"> </span><span class="n">load_global</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="n">&#39;Show_Int_show&#39;</span><span class="p">],</span><span class="w"> </span><span class="n">undefined</span><span class="p">}</span>
+<span class="p">{</span><span class="n">beam_instr</span><span class="p">,</span><span class="w"> </span><span class="n">load_literal</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mi">42</span><span class="p">],</span><span class="w"> </span><span class="n">undefined</span><span class="p">}</span>
+<span class="p">{</span><span class="n">beam_instr</span><span class="p">,</span><span class="w"> </span><span class="n">call</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">undefined</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Result:</strong> ✅ Successfully resolved to <code>Show_Int_show</code></p>
+<h3 id="test-2-full-module-compilation">Test 2: Full Module Compilation</h3>
+<p><strong>Status:</strong> Partial - Core resolution works, full pipeline needs more work</p>
+<p>The codegen correctly resolves method calls, but full module compilation with imports needs additional integration work.</p>
+<h2 id="current-capabilities">Current Capabilities</h2>
+<p>✅ <strong>Working:</strong><br />
+- Type inference: Resolves <code>show</code> as a typeclass method<br />
+- Import system: Loads typeclasses from imported modules<br />
+- <strong>Codegen resolution:</strong> Generates correct instance method names<br />
+- Method dispatch: Creates proper function calls</p>
+<p>⚠️ <strong>Partial:</strong><br />
+- Full module compilation with typeclass imports<br />
+- Instance registration and module loading</p>
+<h2 id="example-usage">Example Usage</h2>
+<h3 id="input-code">Input Code</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="n">ShowTest</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Show</span><span class="w"> </span><span class="p">[</span><span class="n">show</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+<span class="w">  </span><span class="n">export</span><span class="w"> </span><span class="p">[</span><span class="n">test</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">test</span><span class="p">():</span><span class="w"> </span><span class="nb">String</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">show</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span><span class="w">  </span><span class="c1"># Resolves to Show_Int_show</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<h3 id="generated-beam-instructions-for-show42">Generated BEAM Instructions (for show(42))</h3>
+<div class="codehilite"><pre><span></span><code><span class="nf">load_global</span><span class="p">(</span><span class="n">&#39;Show_Int_show&#39;</span><span class="p">)</span><span class="w">  </span><span class="c">% Load the instance method</span>
+<span class="nf">load_literal</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span><span class="w">              </span><span class="c">% Load the argument</span>
+<span class="nf">call</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w">                       </span><span class="c">% Call the method</span>
+</code></pre></div>
+
+<h2 id="integration-status">Integration Status</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Status</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lexer</td>
+<td>✅ Complete</td>
+<td>Keywords recognized</td>
+</tr>
+<tr>
+<td>Parser</td>
+<td>✅ Complete</td>
+<td>Typeclass/instance parsing</td>
+</tr>
+<tr>
+<td>Type Checker</td>
+<td>✅ Complete</td>
+<td>Import system, method resolution</td>
+</tr>
+<tr>
+<td><strong>Codegen (Method Resolution)</strong></td>
+<td>✅ <strong>Complete</strong></td>
+<td>Generates correct instance calls</td>
+</tr>
+<tr>
+<td>Codegen (Full Pipeline)</td>
+<td>⚠️ Partial</td>
+<td>Module compilation needs work</td>
+</tr>
+<tr>
+<td>Runtime</td>
+<td>⚠️ Partial</td>
+<td>Instance dispatch needs implementation</td>
+</tr>
+<tr>
+<td>Tests</td>
+<td>✅ Complete</td>
+<td>Resolution verified</td>
+</tr>
+</tbody>
+</table>
+<h2 id="next-steps">Next Steps</h2>
+<ol>
+<li>
+<p><strong>Complete Module Compilation Pipeline</strong><br />
+   - Fix module compilation with typeclass imports<br />
+   - Ensure instance methods are included in compiled modules<br />
+   - Handle cross-module instance calls</p>
+</li>
+<li>
+<p><strong>Runtime Instance Dispatch</strong><br />
+   - Implement <code class="language-cure">cure_instance_registry</code> for runtime lookup<br />
+   - Add automatic instance registration on module load<br />
+   - Support dynamic dispatch for polymorphic calls</p>
+</li>
+<li>
+<p><strong>Instance Code Generation</strong><br />
+   - Ensure instance definitions compile to proper Erlang functions<br />
+   - Generate export lists for instance methods<br />
+   - Create module attributes for typeclass metadata</p>
+</li>
+<li>
+<p><strong>End-to-End Testing</strong><br />
+   - Compile complete modules with typeclasses<br />
+   - Generate executable BEAM files<br />
+   - Test runtime execution of typeclass methods</p>
+</li>
+</ol>
+<h2 id="architecture">Architecture</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">User</span><span class="w"> </span><span class="n">Code</span><span class="p">:</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="w">      </span><span class="err">↓</span>
+<span class="n">Parser</span><span class="p">:</span><span class="w"> </span><span class="n">Parses</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">function_call_expr</span>
+<span class="w">      </span><span class="err">↓</span>
+<span class="n">Type</span><span class="w"> </span><span class="n">Checker</span><span class="p">:</span><span class="w"> </span><span class="n">Resolves</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">Show</span><span class="w"> </span><span class="n">typeclass</span><span class="w"> </span><span class="n">method</span>
+<span class="w">      </span><span class="err">↓</span>
+<span class="n">Codegen</span><span class="p">:</span><span class="w"> </span><span class="n">try_resolve_direct_typeclass_call</span>
+<span class="w">      </span><span class="err">↓</span>
+<span class="w">  </span><span class="n">is_known_typeclass_method</span><span class="p">(</span><span class="n">show</span><span class="p">)</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="p">{</span><span class="bp">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Show&#39;</span><span class="p">}</span>
+<span class="w">  </span><span class="n">infer_type_from_arg</span><span class="p">([</span><span class="mi">42</span><span class="p">])</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Int&#39;</span><span class="p">}</span>
+<span class="w">  </span><span class="n">Generate</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;Show_Int_show&#39;</span>
+<span class="w">      </span><span class="err">↓</span>
+<span class="n">BEAM</span><span class="w"> </span><span class="n">Instructions</span><span class="p">:</span>
+<span class="w">  </span><span class="n">load_global</span><span class="p">(</span><span class="s1">&#39;Show_Int_show&#39;</span><span class="p">)</span>
+<span class="w">  </span><span class="n">load_literal</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="w">  </span><span class="n">call</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">      </span><span class="err">↓</span>
+<span class="n">Runtime</span><span class="p">:</span><span class="w"> </span><span class="n">Execute</span><span class="w"> </span><span class="n">Show_Int_show</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+</code></pre></div>
+
+<h2 id="known-limitations">Known Limitations</h2>
+<ol>
+<li>
+<p><strong>Type Inference:</strong> Currently only infers types from literal values<br />
+   - <code>show(42)</code> works (literal integer)<br />
+   - <code>show(x)</code> might not resolve correctly (variable)</p>
+</li>
+<li>
+<p><strong>Known Methods:</strong> Hardcoded list of typeclass methods<br />
+   - Should be dynamically populated from imported modules<br />
+   - Currently limited to: show, eq, compare, fmap, bind, etc.</p>
+</li>
+<li>
+<p><strong>Cross-Module Calls:</strong> Resolution assumes local or imported instances<br />
+   - Need module-qualified calls for external instances<br />
+   - Instance registry not fully integrated</p>
+</li>
+</ol>
+<h2 id="files-created">Files Created</h2>
+<ul>
+<li><strong>test/typeclass_codegen_test.erl</strong>: Codegen resolution tests</li>
+<li><strong>docs/typeclass_codegen_enhancement.md</strong>: This documentation</li>
+</ul>
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+<li><code class="language-cure">docs/typeclass_import_system.md</code>: Import system implementation</li>
+<li><code class="language-cure">docs/typeclass_status.md</code>: Overall typeclass system status</li>
+<li><code>TODO-2025-11-24.md</code>: Original TODO list</li>
+</ul>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>All Documentation</h4>
+                <ul>
+                    <li><a href="cli-integration-status.html">CLI Integration - SMT Solver Options and</a></li>
+                    <li><a href="codegen-analysis-2025-11-25.html">Code Generation Issues - Analysis (2025-</a></li>
+                    <li><a href="codegen-investigation-summary.html">Code Generation Issues - Investigation S</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-mcp-update-2025-11-26.html">Cure LSP and MCP Update - November 26, 2</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

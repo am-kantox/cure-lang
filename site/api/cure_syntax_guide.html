@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-DC6CD34D.js"></script>
+    <script src="dist/sidebar_items-C51205A4.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -242,15 +242,96 @@ end</code></pre><hr class="thin"/><h2 id="4-function-definitions" class="section
   </a>
   <span class="text">Lambda Functions</span>
 </h3>
-<p>Lambda syntax: <code class="inline">fn(params) -&gt; expression end</code></p><pre><code class="cure"># Simple lambda
+<p>Lambdas (anonymous functions) allow inline function definitions without naming them.</p><p><strong>Syntax</strong>: <code class="inline">fn(params) -&gt; expression end</code></p><h4>Basic Lambda Expressions</h4><pre><code class="cure"># Simple lambda (one parameter)
 let double = fn(x) -&gt; x * 2 end
 
-# Lambda with multiple params
+# Lambda with multiple parameters
 let add = fn(x, y) -&gt; x + y end
 
-# Curried function application
-let partial_func = func(h)
-partial_func(fold(t, init, func))</code></pre><h3 id="function-guards" class="section-heading">
+# Zero-parameter lambda (thunk)
+let get_constant = fn() -&gt; 42 end</code></pre><h4>Type Inference</h4><p>Lambda parameter types are <strong>inferred from context</strong> - you don't need to annotate them:</p><pre><code class="cure"># Type inferred from list element type
+let doubled = map([1, 2, 3], fn(x) -&gt; x * 2 end)
+# x is inferred to be Int
+
+# Type inferred from function signature
+def apply_twice(f: Int -&gt; Int, x: Int): Int =
+  f(f(x))
+
+let result = apply_twice(fn(n) -&gt; n + 1 end, 5)
+# n is inferred to be Int from apply_twice signature</code></pre><h4>Nested Lambdas (Currying)</h4><p>Lambdas can return other lambdas for currying:</p><pre><code class="cure"># Manual currying
+let add = fn(x) -&gt; fn(y) -&gt; x + y end end
+
+# Partial application (conceptually)
+# let add_five = add(5)  # Returns fn(y) -&gt; 5 + y end
+# let result = add_five(3)  # Returns 8
+
+# Real example with fold
+let sum = fold([1, 2, 3, 4], 0, fn(x) -&gt; fn(acc) -&gt; x + acc end end)</code></pre><h4>Closures (Variable Capture)</h4><p>Lambdas can capture variables from their surrounding scope:</p><pre><code class="cure"># Capture from outer scope
+let base = 10
+let add_base = fn(x) -&gt; x + base end
+# add_base captures 'base' (closure)
+
+let result = add_base(5)  # Returns 15
+
+# Multiple captures
+def make_adder(x: Int): Int -&gt; Int =
+  fn(y) -&gt; x + y end
+# Returns a lambda that captures x
+
+let add_five = make_adder(5)
+let result = add_five(3)  # Returns 8</code></pre><h4>Lambdas in Higher-Order Functions</h4><p>Most common use is passing lambdas to higher-order functions:</p><pre><code class="cure">import Std.List [map/2, filter/2, fold/3]
+
+# Map: transform each element
+let doubled = map([1, 2, 3, 4, 5], fn(x) -&gt; x * 2 end)
+# Result: [2, 4, 6, 8, 10]
+
+# Filter: select elements
+let evens = filter([1, 2, 3, 4, 5], fn(x) -&gt; x % 2 == 0 end)
+# Result: [2, 4]
+
+# Fold: aggregate with accumulator
+let sum = fold([1, 2, 3, 4, 5], 0, 
+               fn(x) -&gt; fn(acc) -&gt; x + acc end end)
+# Result: 15
+
+# Chain operations
+let result = 
+  [1, 2, 3, 4, 5]
+  |&gt; map(fn(x) -&gt; x * 2 end)
+  |&gt; filter(fn(x) -&gt; x &gt; 5 end)
+  |&gt; fold(0, fn(x) -&gt; fn(acc) -&gt; x + acc end end)</code></pre><h4>Complex Lambda Bodies</h4><p>Lambda bodies can contain any expression, including pattern matching:</p><pre><code class="cure"># Lambda with match expression
+let classify = fn(x) -&gt;
+  match x do
+    n when n &gt; 0 -&gt; &quot;positive&quot;
+    0 -&gt; &quot;zero&quot;
+    _ -&gt; &quot;negative&quot;
+  end
+end
+
+# Lambda with let bindings
+let compute = fn(x) -&gt;
+  let doubled = x * 2
+  let squared = doubled * doubled
+  squared + 1
+end</code></pre><h4>Limitations</h4><p><strong>Recursive Lambdas</strong>: Lambdas cannot directly call themselves (they're anonymous).<br/>Use named functions for recursion:</p><pre><code class="cure"># ❌ Won't work - lambda can't reference itself
+let factorial = fn(n) -&gt;
+  match n do
+    0 -&gt; 1
+    _ -&gt; n * factorial(n - 1)  # Error: factorial undefined
+  end
+end
+
+# ✅ Use named function instead
+def factorial(n: Nat): Nat =
+  match n do
+    Zero -&gt; Succ(Zero)
+    Succ(pred) -&gt; mult(n, factorial(pred))
+  end</code></pre><p><strong>Direct Invocation</strong>: Directly calling a lambda literal may require binding first:</p><pre><code class="cure"># May not work:
+# (fn(x) -&gt; x + 1 end)(5)
+
+# Instead, bind to variable:
+let increment = fn(x) -&gt; x + 1 end
+let result = increment(5)  # Works</code></pre><h3 id="function-guards" class="section-heading">
   <a href="#function-guards" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -414,13 +495,115 @@ false           # Bool
 </h3>
 <pre><code class="cure">[]              # Empty list
 [1, 2, 3]       # List of integers
-[h | t]         # Cons pattern/constructor</code></pre><h3 id="tuples-limited-support" class="section-heading">
-  <a href="#tuples-limited-support" class="hover-link">
+[h | t]         # Cons pattern/constructor</code></pre><h3 id="tuples" class="section-heading">
+  <a href="#tuples" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
-  <span class="text">Tuples (Limited Support)</span>
+  <span class="text">Tuples</span>
 </h3>
-<p>Check actual implementation before using tuples extensively.</p><hr class="thin"/><h2 id="8-operators" class="section-heading">
+<p>Tuples group multiple values of potentially different types together.</p><p><strong>Syntax</strong>: <code class="inline">{elem1, elem2, ...}</code></p><h4>Creating Tuples</h4><pre><code class="cure"># Empty tuple
+let empty = {}
+
+# Two-element tuple (pair)
+let pair = {10, 20}
+let point = {3.0, 4.0}
+
+# Three-element tuple
+let triple = {1, &quot;hello&quot;, true}
+
+# Nested tuples
+let nested = {{1, 2}, {3, 4}}
+
+# Mixed with other types
+let mixed = {[1, 2, 3], &quot;numbers&quot;, Ok(42)}</code></pre><h4>Tuple Pattern Matching</h4><p>Tuples can be destructured in match expressions:</p><pre><code class="cure"># Match on tuple
+let point = {5, 10}
+match point do
+  {0, 0} -&gt; &quot;Origin&quot;
+  {x, 0} -&gt; &quot;On X-axis&quot;
+  {0, y} -&gt; &quot;On Y-axis&quot;
+  {x, y} -&gt; &quot;General point&quot;
+end
+
+# Match with literals
+match tuple do
+  {0, 0} -&gt; &quot;Both zero&quot;
+  {1, 2} -&gt; &quot;Exact match&quot;
+  {x, y} -&gt; &quot;Any other pair&quot;
+end
+
+# Match with wildcards
+match {1, 2, 3, 4, 5} do
+  {first, _, _, _, last} -&gt; # Only care about first and last
+end</code></pre><h4>Nested Tuple Patterns</h4><pre><code class="cure"># Match nested tuples
+let nested = {{1, 2}, {3, 4}}
+match nested do
+  {{a, b}, {c, d}} -&gt; a + b + c + d
+end
+
+# Deeply nested
+let deep = {1, {2, {3, 4}}}
+match deep do
+  {x, {y, {z, w}}} -&gt; &quot;All extracted&quot;
+end</code></pre><h4>Tuples with Guards</h4><pre><code class="cure"># Classify points by quadrant
+match {x, y} do
+  {x, y} when x == 0 and y == 0 -&gt; &quot;origin&quot;
+  {x, y} when x &gt; 0 and y &gt; 0 -&gt; &quot;quadrant-1&quot;
+  {x, y} when x &lt; 0 and y &gt; 0 -&gt; &quot;quadrant-2&quot;
+  {x, y} when x &lt; 0 and y &lt; 0 -&gt; &quot;quadrant-3&quot;
+  {x, y} when x &gt; 0 and y &lt; 0 -&gt; &quot;quadrant-4&quot;
+  {x, 0} -&gt; &quot;x-axis&quot;
+  {0, y} -&gt; &quot;y-axis&quot;
+end</code></pre><h4>Tuples in Function Parameters</h4><pre><code class="cure"># Function taking a tuple
+def distance(point: {Int, Int}): Int =
+  match point do
+    {x, y} -&gt; x * x + y * y
+  end
+
+# Multiple tuple parameters
+def distance_between(p1: {Int, Int}, p2: {Int, Int}): Int =
+  match {p1, p2} do
+    {{x1, y1}, {x2, y2}} -&gt;
+      let dx = x2 - x1
+      let dy = y2 - y1
+      dx * dx + dy * dy
+  end</code></pre><h4>Returning Multiple Values</h4><p>Tuples are useful for returning multiple values:</p><pre><code class="cure"># Return quotient and remainder
+def divide_with_remainder(a: Int, b: Int): {Int, Int} =
+  {a / b, a % b}
+
+# Return min and max
+def min_max(a: Int, b: Int): {Int, Int} =
+  match {a, b} do
+    {x, y} when x &lt; y -&gt; {x, y}
+    {x, y} -&gt; {y, x}
+  end</code></pre><h4>Tuple Destructuring in Let</h4><pre><code class="cure"># Direct destructuring
+let point = {100, 200}
+let {x, y} = point
+# Now x = 100, y = 200
+
+# Works with function results
+let {quot, rem} = divide_with_remainder(17, 5)</code></pre><h4>Tuples with Constructors</h4><pre><code class="cure"># Tuple inside Result/Option
+let result = Ok({42, &quot;success&quot;})
+match result do
+  Ok({value, message}) -&gt; &quot;Got value and message&quot;
+  Error(e) -&gt; &quot;Error&quot;
+end
+
+# Multiple values in constructor
+let data = Some({&quot;Alice&quot;, 30, true})
+match data do
+  Some({name, age, active}) -&gt; &quot;Person data&quot;
+  None -&gt; &quot;No data&quot;
+end</code></pre><h4>Mixed Patterns</h4><pre><code class="cure"># Tuple with list
+match {[1, 2, 3], &quot;label&quot;} do
+  {[], _} -&gt; &quot;Empty list&quot;
+  {[h | t], label} -&gt; &quot;Non-empty list&quot;
+end
+
+# Tuple with record
+match {Point{x: 0, y: 0}, &quot;origin&quot;} do
+  {Point{x: 0, y: 0}, label} -&gt; label
+  _ -&gt; &quot;Other&quot;
+end</code></pre><hr class="thin"/><h2 id="8-operators" class="section-heading">
   <a href="#8-operators" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>

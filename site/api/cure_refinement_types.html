@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-DC6CD34D.js"></script>
+    <script src="dist/sidebar_items-C51205A4.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -139,7 +139,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
   </a>
   <span class="text">Subtyping</span>
 </h2>
-<p>Refinement subtyping is verified using SMT:</p><pre><code class="makeup erlang" translate="no"><span class="n">Positive</span><span class="w"> </span><span class="o">&lt;</span><span class="p">:</span><span class="w"> </span><span class="n">NonZero</span><span class="w">   </span><span class="p" data-group-id="3350969881-1">(</span><span class="ss">proven</span><span class="w"> </span><span class="ss">by</span><span class="w"> </span><span class="n">Z3</span><span class="p">:</span><span class="w"> </span><span class="ss">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">x</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="3350969881-1">)</span></code></pre><h2 id="module-features" class="section-heading">
+<p>Refinement subtyping is verified using SMT:</p><pre><code class="makeup erlang" translate="no"><span class="n">Positive</span><span class="w"> </span><span class="o">&lt;</span><span class="p">:</span><span class="w"> </span><span class="n">NonZero</span><span class="w">   </span><span class="p" data-group-id="0484273775-1">(</span><span class="ss">proven</span><span class="w"> </span><span class="ss">by</span><span class="w"> </span><span class="n">Z3</span><span class="p">:</span><span class="w"> </span><span class="ss">x</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">x</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">0</span><span class="p" data-group-id="0484273775-1">)</span></code></pre><h2 id="module-features" class="section-heading">
   <a href="#module-features" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -341,7 +341,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
     </a>
     <h1 class="signature" translate="no">expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.hrl#L498" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.hrl#L518" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -376,6 +376,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
           #fsm_send_expr{target :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), message :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
           #fsm_receive_expr{patterns :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), timeout :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
           #fsm_state_expr{location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #melquiades_send_expr{message :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), target :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
           #qualified_call_expr{trait_name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
                                type_args :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
                                method_name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(),
@@ -396,7 +397,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
     </a>
     <h1 class="signature" translate="no">location()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.hrl#L497" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.hrl#L517" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -452,7 +453,7 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
     </a>
     <h1 class="signature" translate="no">type_expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.hrl#L528" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.hrl#L549" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -474,7 +475,8 @@ type Percentage = Int when x &gt;= 0 and x =&lt; 100</code></pre><h2 id="module-
           #list_type{element_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), length :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
           #tuple_type{element_types :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
           #fsm_type{name :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), states :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), message_types :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
-          #process_type{fsm_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), current_state :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
+          #process_type{fsm_type :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), current_state :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} |
+          #genserver_ref_type{variant :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), location :: <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
 
       </div>
 

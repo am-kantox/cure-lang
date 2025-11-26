@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Constraint Simplification - Cure Documentation</title>
+    <meta name="description" content=" Overview">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="smt-constraint-simplification">SMT Constraint Simplification</h1>
+<h2 id="overview">Overview</h2>
+<p>The <code>cure_smt_solver:simplify_constraint/2</code> function implements comprehensive constraint simplification using a two-phase approach:</p>
+<ol>
+<li><strong>Local algebraic simplifications</strong> - Fast, deterministic optimizations requiring no external solver</li>
+<li><strong>SMT-based simplifications</strong> - Advanced optimizations using Z3's simplify command (when available)</li>
+</ol>
+<h2 id="implementation-location">Implementation Location</h2>
+<ul>
+<li><strong>Module</strong>: <code>src/smt/cure_smt_solver.erl</code></li>
+<li><strong>Function</strong>: <code>simplify_constraint/2</code> (lines 150-180)</li>
+<li><strong>Helper Functions</strong>: Lines 447-641</li>
+</ul>
+<h2 id="supported-simplifications">Supported Simplifications</h2>
+<h3 id="1-arithmetic-identities">1. Arithmetic Identities</h3>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Simplification</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>x + 0</code></td>
+<td><code>x</code></td>
+<td>Identity element for addition</td>
+</tr>
+<tr>
+<td><code>0 + x</code></td>
+<td><code>x</code></td>
+<td>Commutative identity</td>
+</tr>
+<tr>
+<td><code>x * 1</code></td>
+<td><code>x</code></td>
+<td>Identity element for multiplication</td>
+</tr>
+<tr>
+<td><code>1 * x</code></td>
+<td><code>x</code></td>
+<td>Commutative identity</td>
+</tr>
+<tr>
+<td><code>x * 0</code></td>
+<td><code>0</code></td>
+<td>Zero property</td>
+</tr>
+<tr>
+<td><code>0 * x</code></td>
+<td><code>0</code></td>
+<td>Commutative zero</td>
+</tr>
+<tr>
+<td><code>x - 0</code></td>
+<td><code>x</code></td>
+<td>Subtraction identity</td>
+</tr>
+</tbody>
+</table>
+<h3 id="2-boolean-identities">2. Boolean Identities</h3>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Simplification</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>x and true</code></td>
+<td><code>x</code></td>
+<td>Conjunction identity</td>
+</tr>
+<tr>
+<td><code>true and x</code></td>
+<td><code>x</code></td>
+<td>Commutative identity</td>
+</tr>
+<tr>
+<td><code>x and false</code></td>
+<td><code>false</code></td>
+<td>Annihilator element</td>
+</tr>
+<tr>
+<td><code>false and x</code></td>
+<td><code>false</code></td>
+<td>Commutative annihilator</td>
+</tr>
+<tr>
+<td><code>x or true</code></td>
+<td><code>true</code></td>
+<td>Disjunction annihilator</td>
+</tr>
+<tr>
+<td><code>true or x</code></td>
+<td><code>true</code></td>
+<td>Commutative annihilator</td>
+</tr>
+<tr>
+<td><code>x or false</code></td>
+<td><code>x</code></td>
+<td>Disjunction identity</td>
+</tr>
+<tr>
+<td><code>false or x</code></td>
+<td><code>x</code></td>
+<td>Commutative identity</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-constant-folding">3. Constant Folding</h3>
+<p>All operations with constant operands are evaluated at compile time:</p>
+<div class="codehilite"><pre><span></span><code><span class="mi">2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="w">          </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">5</span>
+<span class="mi">10</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">3</span><span class="w">         </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">7</span>
+<span class="mi">4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">5</span><span class="w">          </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">20</span>
+<span class="n">true</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">false</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">false</span>
+<span class="mi">5</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">3</span><span class="w">          </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">true</span>
+</code></pre></div>
+
+<h3 id="4-comparison-simplifications">4. Comparison Simplifications</h3>
+<p>For pure expressions (no side effects):</p>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Simplification</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>x == x</code></td>
+<td><code>true</code></td>
+<td>Reflexivity of equality</td>
+</tr>
+<tr>
+<td><code>x /= x</code></td>
+<td><code>false</code></td>
+<td>Negation of reflexivity</td>
+</tr>
+<tr>
+<td><code>x &lt; x</code></td>
+<td><code>false</code></td>
+<td>Irreflexivity of strict ordering</td>
+</tr>
+<tr>
+<td><code>x &gt; x</code></td>
+<td><code>false</code></td>
+<td>Irreflexivity of strict ordering</td>
+</tr>
+<tr>
+<td><code>x =&lt; x</code></td>
+<td><code>true</code></td>
+<td>Reflexivity of weak ordering</td>
+</tr>
+<tr>
+<td><code>x &gt;= x</code></td>
+<td><code>true</code></td>
+<td>Reflexivity of weak ordering</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-double-negation-elimination">5. Double Negation Elimination</h3>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Simplification</th>
+<th>Type</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>not (not x)</code></td>
+<td><code>x</code></td>
+<td>Boolean negation</td>
+</tr>
+<tr>
+<td><code>-(-x)</code></td>
+<td><code>x</code></td>
+<td>Numeric negation</td>
+</tr>
+<tr>
+<td><code>not true</code></td>
+<td><code>false</code></td>
+<td>Constant negation</td>
+</tr>
+<tr>
+<td><code>not false</code></td>
+<td><code>true</code></td>
+<td>Constant negation</td>
+</tr>
+<tr>
+<td><code>-N</code></td>
+<td><code>-N</code></td>
+<td>Constant folding</td>
+</tr>
+</tbody>
+</table>
+<h2 id="algorithm-details">Algorithm Details</h2>
+<h3 id="local-simplification-algorithm">Local Simplification Algorithm</h3>
+<p>The implementation uses a fixed-point iteration strategy:</p>
+<div class="codehilite"><pre><span></span><code><span class="nf">simplify_local</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">simplify_once</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="nv">Constraint</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nv">Constraint</span><span class="p">;</span><span class="w">    </span><span class="c">% No change, done</span>
+<span class="w">        </span><span class="nv">Simplified</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">simplify_local</span><span class="p">(</span><span class="nv">Simplified</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w">  </span><span class="c">% Changed, iterate</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+</code></pre></div>
+
+<p>This ensures that nested simplifications are fully reduced. For example:<br />
+- <code>((x + 0) * 1) - 0</code> → <code>(x * 1) - 0</code> → <code>x - 0</code> → <code>x</code></p>
+<h3 id="smt-based-simplification">SMT-Based Simplification</h3>
+<p>When Z3 is available, the implementation:</p>
+<ol>
+<li>Generates an SMT-LIB query with variable declarations</li>
+<li>Uses Z3's <code>(simplify ...)</code> command</li>
+<li>Parses the simplified result back to AST</li>
+</ol>
+<p>Currently, the SMT-based simplification provides infrastructure for advanced optimizations but falls back to local simplification if parsing fails.</p>
+<h2 id="performance-characteristics">Performance Characteristics</h2>
+<ul>
+<li><strong>Local simplifications</strong>: O(n) per pass, where n = expression tree size</li>
+<li><strong>Fixed-point iteration</strong>: Typically 1-3 passes for most expressions</li>
+<li><strong>SMT simplification</strong>: ~2-10ms overhead for Z3 process (when used)</li>
+</ul>
+<h2 id="use-cases">Use Cases</h2>
+<h3 id="1-guard-optimization">1. Guard Optimization</h3>
+<p>Simplify type guards to eliminate redundant checks:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Before: (n &gt; 0) and true</span>
+<span class="c">% After:  (n &gt; 0)</span>
+</code></pre></div>
+
+<h3 id="2-dependent-type-constraints">2. Dependent Type Constraints</h3>
+<p>Reduce complex type constraints at compile time:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Vector(T, n+0) simplifies to Vector(T, n)</span>
+<span class="c">% This enables better type checking and error messages</span>
+</code></pre></div>
+
+<h3 id="3-dead-code-elimination">3. Dead Code Elimination</h3>
+<p>Identify always-true or always-false conditions:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">if</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">then</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">else</span><span class="w"> </span><span class="p">...</span><span class="w">  </span>
+<span class="c">% Condition simplifies to &#39;true&#39;, else branch is dead code</span>
+</code></pre></div>
+
+<h2 id="testing">Testing</h2>
+<h3 id="test-suite">Test Suite</h3>
+<ul>
+<li><strong>Location</strong>: <code>test/smt_simplify_test.erl</code></li>
+<li><strong>Tests</strong>: 5 test categories, 20+ individual test cases</li>
+<li><strong>Coverage</strong>: All simplification rules</li>
+</ul>
+<p>Run tests:</p>
+<div class="codehilite"><pre><span></span><code>make<span class="w"> </span><span class="nb">test</span>
+<span class="c1"># Or specifically:</span>
+erl<span class="w"> </span>-pa<span class="w"> </span>_build/ebin<span class="w"> </span>-noshell<span class="w"> </span>-s<span class="w"> </span>smt_simplify_test<span class="w"> </span>run<span class="w"> </span>-s<span class="w"> </span>init<span class="w"> </span>stop
+</code></pre></div>
+
+<h3 id="example-script">Example Script</h3>
+<ul>
+<li><strong>Location</strong>: <code>examples/smt_simplify_example.erl</code></li>
+<li><strong>Purpose</strong>: Interactive demonstration of simplification capabilities</li>
+</ul>
+<p>Run example:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>examples
+./smt_simplify_example.erl
+</code></pre></div>
+
+<h2 id="api-usage">API Usage</h2>
+<h3 id="basic-usage">Basic Usage</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Create a constraint: x + 0</span>
+<span class="nv">X</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#identifier_expr</span><span class="p">{</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...},</span>
+<span class="nv">Zero</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#literal_expr</span><span class="p">{</span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...},</span>
+<span class="nv">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nl">#binary_op_expr</span><span class="p">{</span><span class="n">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">X</span><span class="p">,</span><span class="w"> </span><span class="n">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">Zero</span><span class="p">,</span><span class="w"> </span><span class="n">location</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...},</span>
+
+<span class="c">% Simplify</span>
+<span class="nv">Simplified</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">simplify_constraint</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="p">#{}).</span>
+<span class="c">% Result: X</span>
+</code></pre></div>
+
+<h3 id="with-type-environment">With Type Environment</h3>
+<div class="codehilite"><pre><span></span><code><span class="c">% Environment mapping variables to types</span>
+<span class="nv">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">#{</span><span class="n">x</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">int</span><span class="p">},</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">nat</span><span class="p">}},</span>
+<span class="nv">Simplified</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nn">cure_smt_solver</span><span class="p">:</span><span class="nf">simplify_constraint</span><span class="p">(</span><span class="nv">Constraint</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">).</span>
+</code></pre></div>
+
+<h2 id="future-enhancements">Future Enhancements</h2>
+<h3 id="potential-improvements">Potential Improvements</h3>
+<ol>
+<li>
+<p><strong>Full S-expression Parser</strong><br />
+   - Parse Z3's simplified output back to AST<br />
+   - Enable more sophisticated SMT-based simplifications</p>
+</li>
+<li>
+<p><strong>Additional Algebraic Rules</strong><br />
+   - Distributive laws: <code>x * (y + z)</code> → <code>(x * y) + (x * z)</code><br />
+   - Associative transformations<br />
+   - De Morgan's laws for boolean expressions</p>
+</li>
+<li>
+<p><strong>Context-Aware Simplifications</strong><br />
+   - Use type information for more aggressive simplification<br />
+   - Incorporate known facts from the environment</p>
+</li>
+<li>
+<p><strong>Caching</strong><br />
+   - Cache simplification results for common patterns<br />
+   - Memoization for expensive SMT queries</p>
+</li>
+</ol>
+<h2 id="references">References</h2>
+<ul>
+<li><strong>Main Implementation</strong>: <code>src/smt/cure_smt_solver.erl:447-641</code></li>
+<li><strong>SMT Translator</strong>: <code>src/smt/cure_smt_translator.erl</code></li>
+<li><strong>Related Modules</strong>: </li>
+<li><code>cure_guard_optimizer.erl</code> - Uses simplification for guard optimization</li>
+<li><code>cure_type_optimizer.erl</code> - Uses simplification in type-directed optimizations</li>
+</ul>
+<h2 id="implementation-notes">Implementation Notes</h2>
+<h3 id="pure-expression-check">Pure Expression Check</h3>
+<p>The implementation includes a helper <code>is_pure_expr/1</code> that determines if an expression has no side effects. This is crucial for safely applying reflexive simplifications like <code>x == x</code> → <code>true</code>, since the simplification is only valid if evaluating <code>x</code> twice produces the same result.</p>
+<h3 id="zero-multiplication-handling">Zero Multiplication Handling</h3>
+<p>When simplifying <code>x * 0</code> to <code>0</code>, the implementation preserves the expression structure by creating a new binary operation with zero literals on both sides. This maintains type information and location data for error reporting.</p>
+<h3 id="location-preservation">Location Preservation</h3>
+<p>All simplifications preserve the <code>location</code> field from the original expression, ensuring that error messages and debugging information remain accurate after optimization.</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>All Documentation</h4>
+                <ul>
+                    <li><a href="cli-integration-status.html">CLI Integration - SMT Solver Options and</a></li>
+                    <li><a href="codegen-analysis-2025-11-25.html">Code Generation Issues - Analysis (2025-</a></li>
+                    <li><a href="codegen-investigation-summary.html">Code Generation Issues - Investigation S</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-mcp-update-2025-11-26.html">Cure LSP and MCP Update - November 26, 2</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

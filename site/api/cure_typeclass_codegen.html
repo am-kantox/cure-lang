@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-DC6CD34D.js"></script>
+    <script src="dist/sidebar_items-C51205A4.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -208,7 +208,7 @@ Pages
     </a>
     <h1 class="signature" translate="no">compile_instance/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_typeclass_codegen.erl#L97" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_typeclass_codegen.erl#L98" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -252,7 +252,7 @@ Pages
     </a>
     <h1 class="signature" translate="no">compile_typeclass/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_typeclass_codegen.erl#L36" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_typeclass_codegen.erl#L37" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -297,7 +297,7 @@ Pages
     </a>
     <h1 class="signature" translate="no">generate_instance_function(TypeclassName, MethodName, Instances, State)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_typeclass_codegen.erl#L333" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_typeclass_codegen.erl#L339" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -312,9 +312,9 @@ Pages
 
       </div>
 
-<p>Generates a callable function for a typeclass method dispatch.</p><p>Creates wrapper functions that dispatch to the correct instance:</p><pre><code class="makeup erlang" translate="no"><span class="nf">show</span><span class="p" data-group-id="7925380304-1">(</span><span class="n">X</span><span class="p" data-group-id="7925380304-1">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="nf">is_integer</span><span class="p" data-group-id="7925380304-2">(</span><span class="n">X</span><span class="p" data-group-id="7925380304-2">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">show_Int</span><span class="p" data-group-id="7925380304-3">(</span><span class="n">X</span><span class="p" data-group-id="7925380304-3">)</span><span class="p">;</span><span class="w">
-</span><span class="nf">show</span><span class="p" data-group-id="7925380304-4">(</span><span class="n">X</span><span class="p" data-group-id="7925380304-4">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="nf">is_float</span><span class="p" data-group-id="7925380304-5">(</span><span class="n">X</span><span class="p" data-group-id="7925380304-5">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">show_Float</span><span class="p" data-group-id="7925380304-6">(</span><span class="n">X</span><span class="p" data-group-id="7925380304-6">)</span><span class="p">;</span><span class="w">
-</span><span class="nf">show</span><span class="p" data-group-id="7925380304-7">(</span><span class="n">X</span><span class="p" data-group-id="7925380304-7">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="nf">is_list</span><span class="p" data-group-id="7925380304-8">(</span><span class="n">X</span><span class="p" data-group-id="7925380304-8">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">show_List</span><span class="p" data-group-id="7925380304-9">(</span><span class="n">X</span><span class="p" data-group-id="7925380304-9">)</span><span class="p">.</span></code></pre><h2 id="generate_instance_function/4-arguments" class="section-heading">
+<p>Generates a callable function for a typeclass method dispatch.</p><p>Creates wrapper functions that dispatch to the correct instance:</p><pre><code class="makeup erlang" translate="no"><span class="nf">show</span><span class="p" data-group-id="3849068488-1">(</span><span class="n">X</span><span class="p" data-group-id="3849068488-1">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="nf">is_integer</span><span class="p" data-group-id="3849068488-2">(</span><span class="n">X</span><span class="p" data-group-id="3849068488-2">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">show_Int</span><span class="p" data-group-id="3849068488-3">(</span><span class="n">X</span><span class="p" data-group-id="3849068488-3">)</span><span class="p">;</span><span class="w">
+</span><span class="nf">show</span><span class="p" data-group-id="3849068488-4">(</span><span class="n">X</span><span class="p" data-group-id="3849068488-4">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="nf">is_float</span><span class="p" data-group-id="3849068488-5">(</span><span class="n">X</span><span class="p" data-group-id="3849068488-5">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">show_Float</span><span class="p" data-group-id="3849068488-6">(</span><span class="n">X</span><span class="p" data-group-id="3849068488-6">)</span><span class="p">;</span><span class="w">
+</span><span class="nf">show</span><span class="p" data-group-id="3849068488-7">(</span><span class="n">X</span><span class="p" data-group-id="3849068488-7">)</span><span class="w"> </span><span class="k">when</span><span class="w"> </span><span class="nf">is_list</span><span class="p" data-group-id="3849068488-8">(</span><span class="n">X</span><span class="p" data-group-id="3849068488-8">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nf">show_List</span><span class="p" data-group-id="3849068488-9">(</span><span class="n">X</span><span class="p" data-group-id="3849068488-9">)</span><span class="p">.</span></code></pre><h2 id="generate_instance_function/4-arguments" class="section-heading">
   <a href="#generate_instance_function/4-arguments" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -337,7 +337,7 @@ Pages
     </a>
     <h1 class="signature" translate="no">generate_instance_registration(TypeclassName, TypeName, CompiledMethods, State)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_typeclass_codegen.erl#L436" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_typeclass_codegen.erl#L443" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -348,7 +348,8 @@ Pages
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">-spec</span> generate_instance_registration(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()], <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) -> <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>().</pre>
+          <pre translate="no"><span class="attribute">-spec</span> generate_instance_registration(<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:atom/0">atom</a>(), [<a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()], <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()) ->
+                                        {ok, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>(), <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()} | {error, <a href="https://www.erlang.org/doc/apps/erts/erlang.html#t:term/0">term</a>()}.</pre>
 
       </div>
 
@@ -376,7 +377,7 @@ registers the instance with cure_instance_registry when the module is loaded.</p
     </a>
     <h1 class="signature" translate="no">process_derive_clause/3</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_typeclass_codegen.erl#L161" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_typeclass_codegen.erl#L167" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 

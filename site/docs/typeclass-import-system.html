@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typeclass Import System Implementation - Cure Documentation</title>
+    <meta name="description" content=" Overview">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="typeclass-import-system-implementation">Typeclass Import System Implementation</h1>
+<h2 id="overview">Overview</h2>
+<p>The Cure type checker now supports importing typeclasses and their instances from other modules. This enables modular typeclass-based programming where typeclasses can be defined in library modules and imported by user code.</p>
+<h2 id="implementation-date">Implementation Date</h2>
+<p>November 24, 2024</p>
+<h2 id="problem-statement">Problem Statement</h2>
+<p>Previously, when a module attempted to use a typeclass method (e.g., <code>show(42)</code>), the type checker would report an unbound variable error even if the module imported from a typeclass-defining module. This was because the import system only handled function imports, not typeclass definitions or instances.</p>
+<h2 id="solution">Solution</h2>
+<p>Enhanced the import system in <code>cure_typechecker.erl</code> to automatically load and register typeclasses and instances from imported modules.</p>
+<h2 id="key-changes">Key Changes</h2>
+<h3 id="1-enhanced-check_import_items-function-line-3316">1. Enhanced <code class="language-cure">check_import_items</code> Function (Line 3316)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nf">check_import_items</span><span class="p">(</span><span class="nv">Module</span><span class="p">,</span><span class="w"> </span><span class="nv">Items</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% First, load typeclasses and instances from the imported module</span>
+<span class="w">    </span><span class="nv">EnvWithTypeclasses</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">import_module_typeclasses</span><span class="p">(</span><span class="nv">Module</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">),</span>
+<span class="w">    </span><span class="c">% Then, import the requested items (functions, types, etc.)</span>
+<span class="w">    </span><span class="n">import_items</span><span class="p">(</span><span class="nv">Module</span><span class="p">,</span><span class="w"> </span><span class="nv">Items</span><span class="p">,</span><span class="w"> </span><span class="nv">EnvWithTypeclasses</span><span class="p">).</span>
+</code></pre></div>
+
+<h3 id="2-new-import_module_typeclasses-function-line-3333">2. New <code class="language-cure">import_module_typeclasses</code> Function (Line 3333)</h3>
+<p>This function:<br />
+1. Converts the module name to a file path (e.g., <code>'Std.Show'</code> → <code>"lib/std/show.cure"</code>)<br />
+2. Parses the imported module's AST<br />
+3. Extracts typeclass definitions and instances<br />
+4. Registers them in the importing module's typeclass environment</p>
+<h3 id="3-new-helper-functions">3. New Helper Functions</h3>
+<ul>
+<li><strong><code class="language-cure">module_name_to_path/1</code></strong> (Line 3387): Converts module names to file paths</li>
+<li><code>'Std.Show'</code> → <code>"lib/std/show.cure"</code></li>
+<li><code>'Std.Core'</code> → <code>"lib/std/core.cure"</code></li>
+<li>
+<p>Custom modules use lowercase path conversion</p>
+</li>
+<li>
+<p><strong><code class="language-cure">register_module_typeclasses/2</code></strong> (Line 3406): Registers typeclass definitions from module items</p>
+</li>
+<li>
+<p><strong><code class="language-cure">register_module_instances/2</code></strong> (Line 3427): Registers instance definitions from module items</p>
+</li>
+</ul>
+<h2 id="usage-example">Usage Example</h2>
+<h3 id="define-a-typeclass-in-a-library-module">Define a Typeclass in a Library Module</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># lib/std/show.cure</span>
+<span class="n">module</span><span class="w"> </span><span class="n">Std</span><span class="o">.</span><span class="n">Show</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="k">export</span><span class="w"> </span><span class="p">[</span><span class="n">show</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="w">  </span><span class="n">typeclass</span><span class="w"> </span><span class="n">Show</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<span class="w">  </span><span class="n">end</span>
+
+<span class="w">  </span><span class="n">instance</span><span class="w"> </span><span class="n">Show</span><span class="p">(</span><span class="n">Int</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">):</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&lt;int&gt;&quot;</span>
+<span class="w">  </span><span class="n">end</span>
+
+<span class="w">  </span><span class="n">instance</span><span class="w"> </span><span class="n">Show</span><span class="p">(</span><span class="nb nb-Type">String</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="p">):</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span>
+<span class="w">  </span><span class="n">end</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<h3 id="import-and-use-the-typeclass">Import and Use the Typeclass</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># examples/show_test.cure</span>
+<span class="n">module</span><span class="w"> </span><span class="n">ShowTest</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Show</span><span class="w"> </span><span class="p">[</span><span class="n">show</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+<span class="w">  </span><span class="n">export</span><span class="w"> </span><span class="p">[</span><span class="n">test_int</span><span class="o">/</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="w">  </span><span class="k">def</span><span class="w"> </span><span class="nf">test_int</span><span class="p">():</span><span class="w"> </span><span class="nb">String</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="n">show</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span><span class="w">  </span><span class="c1"># Resolves to Show(Int) instance</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<h2 id="how-it-works">How It Works</h2>
+<ol>
+<li>
+<p><strong>Import Phase</strong>: When <code>ShowTest</code> imports from <code>Std.Show</code>:<br />
+   - The type checker calls <code class="language-cure">check_import_items</code><br />
+   - This triggers <code class="language-cure">import_module_typeclasses</code><br />
+   - The <code>Std.Show</code> module is parsed<br />
+   - All typeclass definitions (Show) are registered<br />
+   - All instances (Show(Int), Show(String), etc.) are registered<br />
+   - The typeclass environment is updated</p>
+</li>
+<li>
+<p><strong>Type Checking Phase</strong>: When <code>show(42)</code> is encountered:<br />
+   - Type inference tries to resolve <code>show</code> as an identifier<br />
+   - Since it's not found as a regular function, <code class="language-cure">try_resolve_typeclass_method</code> is called<br />
+   - The method is found in the Show typeclass<br />
+   - The argument type is inferred as <code>Int</code><br />
+   - The appropriate instance <code>Show(Int)</code> is resolved<br />
+   - Type checking succeeds with return type <code>String</code></p>
+</li>
+</ol>
+<h2 id="test-results">Test Results</h2>
+<p>Comprehensive tests verify the system works:</p>
+<ol>
+<li><strong>With Import</strong>: ✓ Type checking succeeds</li>
+<li><strong>Without Import</strong>: ✓ Type checking fails with <code>unbound_variable: show</code></li>
+<li><strong>Show Module</strong>: ✓ Parses and type checks successfully<br />
+   - 1 typeclass definition (Show)<br />
+   - 9 instance definitions (Int, Float, String, Bool, Atom, Charlist, List(Int), Option(Int), Result(Int, String))</li>
+</ol>
+<h2 id="files-modified">Files Modified</h2>
+<ul>
+<li><strong>src/types/cure_typechecker.erl</strong>: Added typeclass import functionality</li>
+<li>Lines 3316-3450: New import system functions</li>
+</ul>
+<h2 id="files-created">Files Created</h2>
+<ul>
+<li><strong>test/show_module_test.erl</strong>: Basic parsing and type checking test</li>
+<li><strong>test/typeclass_method_resolution_test.erl</strong>: Comprehensive resolution test</li>
+<li><strong>docs/typeclass_import_system.md</strong>: This documentation</li>
+</ul>
+<h2 id="architecture">Architecture</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">Module</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="p">(</span><span class="n">User</span><span class="w"> </span><span class="n">Code</span><span class="p">)</span>
+<span class="w">  </span><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Show</span><span class="w"> </span><span class="p">[</span><span class="n">show</span><span class="o">/</span><span class="mi">1</span><span class="p">]</span>
+<span class="w">         </span><span class="err">↓</span>
+<span class="w">    </span><span class="n">Parse</span><span class="w"> </span><span class="n">imports</span>
+<span class="w">         </span><span class="err">↓</span>
+<span class="w">  </span><span class="n">import_module_typeclasses</span><span class="p">(</span><span class="s1">&#39;Std.Show&#39;</span><span class="p">)</span>
+<span class="w">         </span><span class="err">↓</span>
+<span class="w">    </span><span class="n">Parse</span><span class="w"> </span><span class="n">lib</span><span class="o">/</span><span class="n">std</span><span class="o">/</span><span class="n">show</span><span class="o">.</span><span class="n">cure</span>
+<span class="w">         </span><span class="err">↓</span>
+<span class="w">  </span><span class="n">Extract</span><span class="w"> </span><span class="n">typeclasses</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">instances</span>
+<span class="w">         </span><span class="err">↓</span>
+<span class="w">  </span><span class="n">Register</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">typeclass</span><span class="w"> </span><span class="n">environment</span>
+<span class="w">         </span><span class="err">↓</span>
+<span class="w">  </span><span class="n">Type</span><span class="w"> </span><span class="n">check</span><span class="w"> </span><span class="n">Module</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="k">with</span><span class="w"> </span><span class="n">full</span><span class="w"> </span><span class="n">typeclass</span><span class="w"> </span><span class="n">context</span>
+</code></pre></div>
+
+<h2 id="benefits">Benefits</h2>
+<ol>
+<li><strong>Modularity</strong>: Typeclasses can be organized in library modules</li>
+<li><strong>Reusability</strong>: Standard typeclasses (Show, Eq, Ord) defined once, used everywhere</li>
+<li><strong>Type Safety</strong>: Full type checking with instance resolution</li>
+<li><strong>Extensibility</strong>: Users can add new instances in their own modules</li>
+</ol>
+<h2 id="future-enhancements">Future Enhancements</h2>
+<ol>
+<li><strong>Orphan Instance Detection</strong>: Warn about instances defined outside the typeclass or type module</li>
+<li><strong>Instance Import Control</strong>: Selectively import only specific instances</li>
+<li><strong>Typeclass Coherence</strong>: Ensure only one instance per type per typeclass</li>
+<li><strong>Performance</strong>: Cache parsed module ASTs to avoid re-parsing on multiple imports</li>
+<li><strong>Error Messages</strong>: Improve error messages for missing instances or ambiguous resolution</li>
+</ol>
+<h2 id="related-documentation">Related Documentation</h2>
+<ul>
+<li><code class="language-cure">docs/typeclass_status.md</code>: Comprehensive typeclass system status</li>
+<li><code class="language-cure">docs/typeclass_implementation_progress.md</code>: Session progress tracking</li>
+<li><code>TODO-2025-11-24.md</code>: Original issue list (item #2)</li>
+</ul>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>All Documentation</h4>
+                <ul>
+                    <li><a href="cli-integration-status.html">CLI Integration - SMT Solver Options and</a></li>
+                    <li><a href="codegen-analysis-2025-11-25.html">Code Generation Issues - Analysis (2025-</a></li>
+                    <li><a href="codegen-investigation-summary.html">Code Generation Issues - Investigation S</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-mcp-update-2025-11-26.html">Cure LSP and MCP Update - November 26, 2</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

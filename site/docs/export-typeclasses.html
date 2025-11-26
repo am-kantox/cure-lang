@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typeclass Export Feature - Cure Documentation</title>
+    <meta name="description" content=" Overview">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="typeclass-export-feature">Typeclass Export Feature</h1>
+<h2 id="overview">Overview</h2>
+<p>The <code class="language-cure">export_typeclasses</code> feature provides a proper mechanism for exporting typeclasses and their instances from Cure modules. This addresses the semantic mismatch between how typeclasses work (polymorphic methods across instances) and how the traditional export system works (concrete function definitions).</p>
+<h2 id="motivation">Motivation</h2>
+<p>Previously, attempting to export typeclass methods like <code>show/1</code> would fail because:<br />
+1. Typeclass methods are defined inside <code class="language-cure">instance</code> definitions, not as top-level functions<br />
+2. The export validator only looked for top-level <code>function_def</code> or <code>curify_function_def</code> records<br />
+3. There was no way to indicate that a typeclass (with all its instances) should be exported</p>
+<h2 id="syntax">Syntax</h2>
+<h3 id="basic-usage">Basic Usage</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">Std</span><span class="p">.</span><span class="n">Show</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">export_typeclasses</span><span class="w"> </span><span class="o">[</span><span class="n">Show</span><span class="o">]</span>
+<span class="w">  </span><span class="n">export</span><span class="w"> </span><span class="o">[</span><span class="n">show_list/1, show_separated/2</span><span class="o">]</span>
+
+<span class="w">  </span><span class="n">typeclass</span><span class="w"> </span><span class="n">Show</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="nl">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="k">end</span>
+
+<span class="w">  </span><span class="n">instance</span><span class="w"> </span><span class="n">Show</span><span class="p">(</span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="nl">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&quot;&lt;int&gt;&quot;</span>
+<span class="w">  </span><span class="k">end</span>
+
+<span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">more</span><span class="w"> </span><span class="n">instances</span>
+<span class="k">end</span>
+</code></pre></div>
+
+<h3 id="multiple-typeclasses">Multiple Typeclasses</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="n">Std</span><span class="o">.</span><span class="n">Comparison</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">export_typeclasses</span><span class="w"> </span><span class="p">[</span><span class="n">Eq</span><span class="p">,</span><span class="w"> </span><span class="n">Ord</span><span class="p">]</span>
+<span class="w">  </span><span class="k">export</span><span class="w"> </span><span class="p">[</span><span class="n">compare</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nb">min</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nb">max</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span>
+
+<span class="w">  </span><span class="n">typeclass</span><span class="w"> </span><span class="n">Eq</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">equals</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">Bool</span>
+<span class="w">  </span><span class="n">end</span>
+
+<span class="w">  </span><span class="n">typeclass</span><span class="w"> </span><span class="n">Ord</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">compare</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="n">Ordering</span>
+<span class="w">  </span><span class="n">end</span>
+
+<span class="w">  </span><span class="c1"># ... instances</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<h2 id="implementation-details">Implementation Details</h2>
+<h3 id="changes-made">Changes Made</h3>
+<ol>
+<li>
+<p><strong>Lexer</strong> (<code>cure_lexer.erl</code>):<br />
+   - Added <code class="language-cure">export_typeclasses</code> as a new keyword token</p>
+</li>
+<li>
+<p><strong>AST</strong> (<code>cure_ast.hrl</code>):<br />
+   - Added <code class="language-cure">#typeclass_export_list{}</code> record with fields:</p>
+<ul>
+<li><code class="language-cure">typeclasses</code>: List of typeclass names (atoms)</li>
+<li><code>location</code>: Source location</li>
+</ul>
+</li>
+<li>
+<p><strong>Parser</strong> (<code>cure_parser.erl</code>):<br />
+   - Added <code class="language-cure">parse_export_typeclasses/1</code> function<br />
+   - Added <code class="language-cure">parse_typeclass_names/2</code> helper<br />
+   - Updated <code class="language-cure">collect_exports_helper/4</code> to handle typeclass exports<br />
+   - Added handling in <code class="language-cure">parse_module_item/1</code></p>
+</li>
+<li>
+<p><strong>Type Checker</strong> (<code>cure_typechecker.erl</code>):<br />
+   - Updated <code class="language-cure">extract_export_specs/2</code> to recognize typeclass exports<br />
+   - Updated <code class="language-cure">check_exports/2</code> with new clause for <code class="language-cure">#typeclass_export_list{}</code><br />
+   - Added <code class="language-cure">validate_typeclass_exports/3</code> to verify exported typeclasses exist<br />
+   - Added <code class="language-cure">find_typeclass/2</code> helper function</p>
+</li>
+</ol>
+<h3 id="validation">Validation</h3>
+<p>When a module uses <code class="language-cure">export_typeclasses [Name1, Name2, ...]</code>, the type checker:<br />
+1. Verifies each typeclass is defined in the module<br />
+2. Returns an error if a referenced typeclass doesn't exist<br />
+3. Allows the module to compile if all typeclasses are present</p>
+<h2 id="semantics">Semantics</h2>
+<h3 id="what-gets-exported">What Gets Exported</h3>
+<p>When you export a typeclass:<br />
+- The typeclass definition itself is exported<br />
+- All instances defined in the same module are exported<br />
+- The typeclass methods become available for use (through typeclass resolution)</p>
+<h3 id="import-semantics">Import Semantics</h3>
+<p>When another module imports from a module that exports typeclasses:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">Std.Show</span><span class="w"> </span><span class="p">[</span><span class="n">Show</span><span class="p">]</span><span class="w">  </span><span class="c1"># Imports the Show typeclass and all its instances</span>
+</code></pre></div>
+
+<p>The typeclass and all its instances become available in the importing module.</p>
+<h2 id="benefits">Benefits</h2>
+<ol>
+<li><strong>Semantic Correctness</strong>: Typeclasses are exported as typeclasses, not as individual methods</li>
+<li><strong>Clean Separation</strong>: Regular function exports (<code class="language-cure">export [...]</code>) vs. typeclass exports (<code class="language-cure">export_typeclasses [...]</code>)</li>
+<li><strong>Better Error Messages</strong>: Specific error for missing typeclasses vs. missing functions</li>
+<li><strong>Extensibility</strong>: Easy to add more typeclass-specific validation in the future</li>
+</ol>
+<h2 id="migration-guide">Migration Guide</h2>
+<h3 id="before">Before</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">module</span><span class="w"> </span><span class="n">Std</span><span class="o">.</span><span class="n">Show</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="k">export</span><span class="w"> </span><span class="p">[</span><span class="n">show</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">show_list</span><span class="o">/</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">show_separated</span><span class="o">/</span><span class="mi">2</span><span class="p">]</span><span class="w">  </span><span class="c1"># ❌ Fails: show/1 not found</span>
+
+<span class="w">  </span><span class="n">typeclass</span><span class="w"> </span><span class="n">Show</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">):</span><span class="w"> </span><span class="nb nb-Type">String</span>
+<span class="w">  </span><span class="n">end</span>
+
+<span class="w">  </span><span class="n">instance</span><span class="w"> </span><span class="n">Show</span><span class="p">(</span><span class="n">Int</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="n">x</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="p">):</span><span class="w"> </span><span class="nb nb-Type">String</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&lt;int&gt;&quot;</span>
+<span class="w">  </span><span class="n">end</span>
+<span class="n">end</span>
+</code></pre></div>
+
+<h3 id="after">After</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">module</span><span class="w"> </span><span class="n">Std</span><span class="p">.</span><span class="n">Show</span><span class="w"> </span><span class="n">do</span>
+<span class="w">  </span><span class="n">export_typeclasses</span><span class="w"> </span><span class="o">[</span><span class="n">Show</span><span class="o">]</span><span class="w">                       </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="n">Exports</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">typeclass</span>
+<span class="w">  </span><span class="n">export</span><span class="w"> </span><span class="o">[</span><span class="n">show_list/1, show_separated/2</span><span class="o">]</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="n">Exports</span><span class="w"> </span><span class="n">helper</span><span class="w"> </span><span class="n">functions</span>
+
+<span class="w">  </span><span class="n">typeclass</span><span class="w"> </span><span class="n">Show</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="nl">x</span><span class="p">:</span><span class="w"> </span><span class="n">T</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="k">end</span>
+
+<span class="w">  </span><span class="n">instance</span><span class="w"> </span><span class="n">Show</span><span class="p">(</span><span class="nc">Int</span><span class="p">)</span><span class="w"> </span><span class="n">do</span>
+<span class="w">    </span><span class="n">def</span><span class="w"> </span><span class="n">show</span><span class="p">(</span><span class="nl">x</span><span class="p">:</span><span class="w"> </span><span class="nc">Int</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&quot;&lt;int&gt;&quot;</span>
+<span class="w">  </span><span class="k">end</span>
+<span class="k">end</span>
+</code></pre></div>
+
+<h2 id="examples">Examples</h2>
+<p>See:<br />
+- <code>lib/std/show.cure</code> - Real-world usage in standard library<br />
+- <code class="language-cure">examples/typeclass_export_demo.cure</code> - Simple demonstration</p>
+<h2 id="future-enhancements">Future Enhancements</h2>
+<p>Potential future improvements:<br />
+1. Allow selective instance exports: <code class="language-cure">export_typeclasses [Show(Int, String)]</code><br />
+2. Support re-exporting typeclasses from imported modules<br />
+3. Add typeclass visibility modifiers (public/private instances)<br />
+4. Generate documentation showing which instances are exported</p>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>All Documentation</h4>
+                <ul>
+                    <li><a href="cli-integration-status.html">CLI Integration - SMT Solver Options and</a></li>
+                    <li><a href="codegen-analysis-2025-11-25.html">Code Generation Issues - Analysis (2025-</a></li>
+                    <li><a href="codegen-investigation-summary.html">Code Generation Issues - Investigation S</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-mcp-update-2025-11-26.html">Cure LSP and MCP Update - November 26, 2</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

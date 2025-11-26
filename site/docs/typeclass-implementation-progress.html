@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typeclass System Implementation Progress - Cure Documentation</title>
+    <meta name="description" content="Date: 2025-11-24  
+Session: Initial investigation and Show typeclass creation">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="doc-page">
+        <div class="doc-nav">
+            <a href="../docs.html">← Back to Documentation</a>
+        </div>
+        
+        <h1 id="typeclass-system-implementation-progress">Typeclass System Implementation Progress</h1>
+<p><strong>Date</strong>: 2025-11-24<br />
+<strong>Session</strong>: Initial investigation and Show typeclass creation</p>
+<h2 id="what-was-accomplished">What Was Accomplished</h2>
+<h3 id="1-investigation-documentation">1. Investigation &amp; Documentation ✅</h3>
+<ul>
+<li>✅ Discovered typeclass system is ~40% implemented (not 0% as TODO stated)</li>
+<li>✅ Created comprehensive status document: <code class="language-cure">docs/typeclass_status.md</code></li>
+<li>✅ Documented 4-phase roadmap with effort estimates</li>
+<li>✅ Identified all integration points</li>
+</ul>
+<h3 id="2-show-typeclass-created">2. Show Typeclass Created ✅</h3>
+<ul>
+<li>✅ Created <code class="language-cure">lib/std/typeclasses/show.cure</code></li>
+<li>✅ Defined <code>Show(T)</code> typeclass with <code>show/1</code> method</li>
+<li>✅ Implemented instances for: Int, String, Bool, Float, Atom</li>
+<li>✅ Verified all definitions parse correctly (1 typeclass + 5 instances)</li>
+<li>✅ File location: <code class="language-cure">/opt/Proyectos/Ammotion/cure/lib/std/typeclasses/show.cure</code></li>
+</ul>
+<h3 id="3-test-files-created">3. Test Files Created ✅</h3>
+<ul>
+<li>✅ Created <code>examples/show_test.cure</code> - module using Show typeclass</li>
+<li>✅ Created <code class="language-cure">examples/typeclass_simple.cure</code> - basic typeclass demo</li>
+<li>✅ Both files parse successfully</li>
+</ul>
+<h3 id="4-infrastructure-verified">4. Infrastructure Verified ✅</h3>
+<ul>
+<li>✅ Confirmed lexer has typeclass keywords</li>
+<li>✅ Confirmed parser handles typeclass/instance definitions</li>
+<li>✅ Confirmed codegen has typeclass handlers:</li>
+<li><code class="language-cure">compile_module_item(#typeclass_def{}, State)</code> - line 708</li>
+<li><code class="language-cure">compile_module_item(#instance_def{}, State)</code> - line 717</li>
+<li>✅ Confirmed <code class="language-cure">cure_typeclass_codegen</code> module exists with:</li>
+<li><code class="language-cure">compile_typeclass/2</code></li>
+<li><code class="language-cure">compile_instance/2</code></li>
+<li><code>process_derive_clause/3</code></li>
+</ul>
+<h2 id="what-needs-to-be-done">What Needs to Be Done</h2>
+<h3 id="phase-1-method-resolution-critical">Phase 1: Method Resolution (CRITICAL)</h3>
+<p><strong>Problem</strong>: Type checker doesn't recognize typeclass methods as valid functions</p>
+<p><strong>Evidence</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">✗</span><span class="w"> </span><span class="n">Type</span><span class="w"> </span><span class="n">checking</span><span class="w"> </span><span class="n">failed</span><span class="p">:</span>
+<span class="w">  </span><span class="p">{</span><span class="n">unbound_variable</span><span class="p">,</span><span class="n">show</span><span class="p">,{</span><span class="n">location</span><span class="p">,</span><span class="mi">9</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="s2">&quot;examples/show_test.cure&quot;</span><span class="p">}}</span>
+</code></pre></div>
+
+<p><strong>What's Needed</strong>:<br />
+1. Modify <code>cure_typechecker.erl</code> to handle typeclass method calls<br />
+2. When encountering undefined function <code>show(x)</code>:<br />
+   - Check if <code>show</code> is a typeclass method<br />
+   - Infer type of <code>x</code><br />
+   - Look up instance <code>Show(TypeOfX)</code><br />
+   - Resolve to actual implementation function<br />
+3. Integrate typeclass environment into typechecker state</p>
+<p><strong>Files to Modify</strong>:<br />
+- <code>src/types/cure_typechecker.erl</code><br />
+  - Add typeclass environment to checker state<br />
+  - Modify function lookup to check typeclasses<br />
+  - Add method resolution logic</p>
+<p><strong>Estimated Effort</strong>: 4-6 hours</p>
+<h3 id="phase-2-instance-registration-critical">Phase 2: Instance Registration (CRITICAL)</h3>
+<p><strong>What's Needed</strong>:<br />
+1. Register typeclass definitions during type checking<br />
+2. Register instance definitions during type checking<br />
+3. Build instance lookup table (typeclass_name, type) -&gt; implementation</p>
+<p><strong>Files to Modify</strong>:<br />
+- <code>src/types/cure_typechecker.erl</code><br />
+  - Register typeclasses when encountered<br />
+  - Register instances when encountered<br />
+  - Build instance lookup structures</p>
+<p><strong>Estimated Effort</strong>: 2-3 hours</p>
+<h3 id="phase-3-code-generation-integration-critical">Phase 3: Code Generation Integration (CRITICAL)</h3>
+<p><strong>What's Needed</strong>:<br />
+1. Ensure typeclass method calls compile to correct function names<br />
+2. Generate proper dispatch code<br />
+3. Handle instance dictionaries</p>
+<p><strong>Status</strong>: Partially done<br />
+- Handlers exist in <code class="language-cure">compile_module_item</code> (lines 708-728)<br />
+- <code class="language-cure">cure_typeclass_codegen</code> has compilation functions<br />
+- May need tweaking based on type checker integration</p>
+<p><strong>Estimated Effort</strong>: 2-3 hours</p>
+<h3 id="phase-4-testing-critical">Phase 4: Testing (CRITICAL)</h3>
+<p><strong>What's Needed</strong>:<br />
+1. Create comprehensive test suite<br />
+2. Test Show(Int) end-to-end<br />
+3. Test all Show instances<br />
+4. Test error cases (missing instances, ambiguous calls)</p>
+<p><strong>Files to Create</strong>:<br />
+- <code class="language-cure">test/show_typeclass_integration_test.erl</code></p>
+<p><strong>Estimated Effort</strong>: 2-3 hours</p>
+<h2 id="integration-point-details">Integration Point Details</h2>
+<h3 id="typechecker-integration">Typechecker Integration</h3>
+<p>The key integration point is in <code>cure_typechecker.erl</code>. When type checking an identifier expression:</p>
+<div class="codehilite"><pre><span></span><code><span class="c">% Current behavior:</span>
+<span class="nf">check_identifier</span><span class="p">(</span><span class="nv">Name</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">lookup_variable</span><span class="p">(</span><span class="nv">Name</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Type</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Type</span><span class="p">};</span>
+<span class="w">        </span><span class="n">error</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">unbound_variable</span><span class="p">,</span><span class="w"> </span><span class="nv">Name</span><span class="p">}}</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+
+<span class="c">% Needed behavior:</span>
+<span class="nf">check_identifier</span><span class="p">(</span><span class="nv">Name</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">lookup_variable</span><span class="p">(</span><span class="nv">Name</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Type</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Type</span><span class="p">};</span>
+<span class="w">        </span><span class="n">error</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="c">% NEW: Check if it&#39;s a typeclass method</span>
+<span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="n">lookup_typeclass_method</span><span class="p">(</span><span class="nv">Name</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">                </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">MethodInfo</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">resolve_method_call</span><span class="p">(</span><span class="nv">MethodInfo</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">);</span>
+<span class="w">                </span><span class="n">error</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">unbound_variable</span><span class="p">,</span><span class="w"> </span><span class="nv">Name</span><span class="p">}}</span>
+<span class="w">            </span><span class="k">end</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+</code></pre></div>
+
+<h3 id="method-resolution-algorithm">Method Resolution Algorithm</h3>
+<div class="codehilite"><pre><span></span><code><span class="nf">resolve_method_call</span><span class="p">(</span><span class="nv">MethodInfo</span><span class="p">,</span><span class="w"> </span><span class="nv">Args</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">    </span><span class="c">% 1. Get method signature from typeclass</span>
+<span class="w">    </span><span class="nl">#method_info</span><span class="p">{</span><span class="n">typeclass</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">TC</span><span class="p">,</span><span class="w"> </span><span class="n">type_param</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">T</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">MethodInfo</span><span class="p">,</span>
+
+<span class="w">    </span><span class="c">% 2. Infer types of arguments</span>
+<span class="w">    </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">ArgTypes</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">infer_arg_types</span><span class="p">(</span><span class="nv">Args</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">),</span>
+
+<span class="w">    </span><span class="c">% 3. Find instance that matches</span>
+<span class="w">    </span><span class="k">case</span><span class="w"> </span><span class="n">lookup_instance</span><span class="p">(</span><span class="nv">TC</span><span class="p">,</span><span class="w"> </span><span class="nv">ArgTypes</span><span class="p">,</span><span class="w"> </span><span class="nv">Env</span><span class="p">)</span><span class="w"> </span><span class="k">of</span>
+<span class="w">        </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="nv">Instance</span><span class="p">}</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="c">% Generate call to instance method</span>
+<span class="w">            </span><span class="nv">InstanceFunc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">instance_method_name</span><span class="p">(</span><span class="nv">TC</span><span class="p">,</span><span class="w"> </span><span class="nv">ArgTypes</span><span class="p">,</span><span class="w"> </span><span class="nv">Method</span><span class="p">),</span>
+<span class="w">            </span><span class="p">{</span><span class="n">ok</span><span class="p">,</span><span class="w"> </span><span class="n">call_function</span><span class="p">(</span><span class="nv">InstanceFunc</span><span class="p">,</span><span class="w"> </span><span class="nv">Args</span><span class="p">)};</span>
+<span class="w">        </span><span class="n">error</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="p">{</span><span class="n">error</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">no_instance</span><span class="p">,</span><span class="w"> </span><span class="nv">TC</span><span class="p">,</span><span class="w"> </span><span class="nv">ArgTypes</span><span class="p">}}</span>
+<span class="w">    </span><span class="k">end</span><span class="p">.</span>
+</code></pre></div>
+
+<h2 id="current-file-structure">Current File Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="nx">lib</span><span class="o">/</span><span class="nx">std</span><span class="o">/</span><span class="nx">typeclasses</span><span class="o">/</span>
+<span class="err">└──</span><span class="w"> </span><span class="nx">show</span><span class="p">.</span><span class="nx">cure</span><span class="w">                    </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Created</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">Show</span><span class="w"> </span><span class="nx">typeclass</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">instances</span>
+
+<span class="nx">examples</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">show_test</span><span class="p">.</span><span class="nx">cure</span><span class="w">               </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Created</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">Uses</span><span class="w"> </span><span class="nx">Show</span>
+<span class="err">└──</span><span class="w"> </span><span class="nx">typeclass_simple</span><span class="p">.</span><span class="nx">cure</span><span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Created</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">Basic</span><span class="w"> </span><span class="nx">demo</span>
+
+<span class="nx">src</span><span class="o">/</span><span class="nx">types</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">cure_typeclass</span><span class="p">.</span><span class="nx">erl</span><span class="w">           </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Exists</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">Environment</span><span class="w"> </span><span class="nx">management</span>
+<span class="err">└──</span><span class="w"> </span><span class="nx">cure_typechecker</span><span class="p">.</span><span class="nx">erl</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="err">⚠️</span><span class="w"> </span><span class="nx">Needs</span><span class="w"> </span><span class="nx">integration</span>
+
+<span class="nx">src</span><span class="o">/</span><span class="nx">codegen</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">cure_typeclass_codegen</span><span class="p">.</span><span class="nx">erl</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Exists</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">Has</span><span class="w"> </span><span class="nx">compilation</span><span class="w"> </span><span class="nx">functions</span>
+<span class="err">└──</span><span class="w"> </span><span class="nx">cure_codegen</span><span class="p">.</span><span class="nx">erl</span><span class="w">             </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Has</span><span class="w"> </span><span class="nx">handlers</span><span class="w"> </span><span class="nx">at</span><span class="w"> </span><span class="nx">lines</span><span class="w"> </span><span class="mi">708</span><span class="o">-</span><span class="mi">728</span>
+
+<span class="nx">test</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">typeclass_parser_test</span><span class="p">.</span><span class="nx">erl</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="nx">Exists</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nx">Needs</span><span class="w"> </span><span class="nx">updating</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">typeclass_integration_test</span><span class="p">.</span><span class="nx">erl</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="err">⚠️</span><span class="w"> </span><span class="nx">Exists</span><span class="w"> </span><span class="nx">but</span><span class="w"> </span><span class="nx">needs</span><span class="w"> </span><span class="nx">completion</span>
+<span class="err">└──</span><span class="w"> </span><span class="nx">show_typeclass_integration_test</span><span class="p">.</span><span class="nx">erl</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="err">❌</span><span class="w"> </span><span class="nx">Need</span><span class="w"> </span><span class="nx">to</span><span class="w"> </span><span class="nx">create</span>
+</code></pre></div>
+
+<h2 id="next-session-plan">Next Session Plan</h2>
+<h3 id="step-1-type-checker-integration-start-here">Step 1: Type Checker Integration (Start Here)</h3>
+<ol>
+<li>Add typeclass environment to <code>#typecheck_env{}</code></li>
+<li>Modify program checking to register typeclasses/instances</li>
+<li>Add method resolution to identifier checking</li>
+<li>Test with <code>show(42)</code> - should type check</li>
+</ol>
+<h3 id="step-2-verify-codegen">Step 2: Verify Codegen</h3>
+<ol>
+<li>Compile <code>show_test.cure</code> fully</li>
+<li>Verify correct function names generated</li>
+<li>Test at runtime</li>
+</ol>
+<h3 id="step-3-complete-testing">Step 3: Complete Testing</h3>
+<ol>
+<li>Write comprehensive tests</li>
+<li>Document usage</li>
+<li>Mark Phase 1 complete</li>
+</ol>
+<h2 id="estimated-time-to-mvp">Estimated Time to MVP</h2>
+<ul>
+<li><strong>Type Checker Integration</strong>: 4-6 hours</li>
+<li><strong>Instance Registration</strong>: 2-3 hours  </li>
+<li><strong>Codegen Verification</strong>: 2-3 hours</li>
+<li><strong>Testing &amp; Documentation</strong>: 2-3 hours</li>
+</ul>
+<p><strong>Total</strong>: 10-15 hours of focused work</p>
+<h2 id="key-insights">Key Insights</h2>
+<ol>
+<li><strong>Infrastructure is 90% done</strong> - lexer, parser, AST, codegen handlers all exist</li>
+<li><strong>Main gap is type checker</strong> - method resolution not implemented</li>
+<li><strong>Show typeclass is ready</strong> - just needs integration to work</li>
+<li><strong>Clear path forward</strong> - well-defined integration points</li>
+<li><strong>Not starting from scratch</strong> - leveraging existing infrastructure</li>
+</ol>
+<h2 id="references">References</h2>
+<ul>
+<li>Status Document: <code class="language-cure">docs/typeclass_status.md</code></li>
+<li>Show Implementation: <code class="language-cure">lib/std/typeclasses/show.cure</code></li>
+<li>Test Files: <code>examples/show_test.cure</code>, <code class="language-cure">examples/typeclass_simple.cure</code></li>
+<li>Codegen Handlers: <code>src/codegen/cure_codegen.erl:708-728</code></li>
+<li>Typeclass Codegen: <code class="language-cure">src/codegen/cure_typeclass_codegen.erl</code></li>
+<li>Typeclass Env: <code class="language-cure">src/types/cure_typeclass.erl</code></li>
+</ul>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="language-spec.html">Language Specification</a></li>
+                    <li><a href="type-system.html">Type System</a></li>
+                    <li><a href="fsm-usage.html">FSM Guide</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Reference</h4>
+                <ul>
+                    <li><a href="../api/index.html">API Reference</a></li>
+                    <li><a href="std-summary.html">Standard Library</a></li>
+                    <li><a href="feature-reference.html">Feature Reference</a></li>
+                    <li><a href="cli-usage.html">CLI Usage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>All Documentation</h4>
+                <ul>
+                    <li><a href="cli-integration-status.html">CLI Integration - SMT Solver Options and</a></li>
+                    <li><a href="codegen-analysis-2025-11-25.html">Code Generation Issues - Analysis (2025-</a></li>
+                    <li><a href="codegen-investigation-summary.html">Code Generation Issues - Investigation S</a></li>
+                    <li><a href="contributing.html">Contributing</a></li>
+                    <li><a href="api-reference.html">Cure API Reference</a></li>
+                    <li><a href="fsm-api-design.html">Cure FSM API Design</a></li>
+                    <li><a href="fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="lsp-mcp-update-2025-11-26.html">Cure LSP and MCP Update - November 26, 2</a></li>
+                    <li><a href="lsp-smt-user-guide.html">Cure LSP with SMT Verification - User Gu</a></li>
+                    <li><a href="feature-reference.html">Cure Language Features Reference</a></li>
+                    <li><a href="language-spec.html">Cure Language Specification</a></li>
+                    <li><a href="cure-syntax-guide.html">Cure Language Syntax Guide</a></li>
+                    <li><a href="cure-ultimate-description.html">Cure Language: Ultimate Implementation D</a></li>
+                    <li><a href="mcp-integration.html">Cure MCP Integration</a></li>
+                    <li><a href="cli-usage.html">Cure Programming Language - Command Line</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        // Initialize highlight.js and highlight all code blocks
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

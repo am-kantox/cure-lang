@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-DC6CD34D.js"></script>
+    <script src="dist/sidebar_items-C51205A4.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -170,30 +170,30 @@ and integration with Erlang/OTP.</p><h2 id="module-features" class="section-head
   <span class="text">1. Program Compilation</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Compile entire program</span><span class="w">
-</span><span class="p" data-group-id="9942747564-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="9942747564-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_program</span><span class="p" data-group-id="9942747564-2">(</span><span class="n">AST</span><span class="p" data-group-id="9942747564-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="9329787949-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="9329787949-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_program</span><span class="p" data-group-id="9329787949-2">(</span><span class="n">AST</span><span class="p" data-group-id="9329787949-2">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">%% With custom options</span><span class="w">
-</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9942747564-3">[</span><span class="p" data-group-id="9942747564-4">{</span><span class="ss">optimize</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="9942747564-4">}</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9942747564-5">{</span><span class="ss">debug_info</span><span class="p">,</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="9942747564-5">}</span><span class="p" data-group-id="9942747564-3">]</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="9942747564-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="9942747564-6">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_program</span><span class="p" data-group-id="9942747564-7">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="9942747564-7">)</span><span class="p">.</span></code></pre><h3 id="module-2-module-compilation" class="section-heading">
+</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9329787949-3">[</span><span class="p" data-group-id="9329787949-4">{</span><span class="ss">optimize</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="9329787949-4">}</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9329787949-5">{</span><span class="ss">debug_info</span><span class="p">,</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="9329787949-5">}</span><span class="p" data-group-id="9329787949-3">]</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="9329787949-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="9329787949-6">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_program</span><span class="p" data-group-id="9329787949-7">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="9329787949-7">)</span><span class="p">.</span></code></pre><h3 id="module-2-module-compilation" class="section-heading">
   <a href="#module-2-module-compilation" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">2. Module Compilation</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Compile single module</span><span class="w">
-</span><span class="n">Module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">module_def</span><span class="p" data-group-id="9564280714-1">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;MyModule&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Exports</span><span class="p">,</span><span class="w"> </span><span class="ss">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Items</span><span class="p" data-group-id="9564280714-1">}</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="9564280714-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledModule</span><span class="p" data-group-id="9564280714-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="9564280714-3">(</span><span class="n">Module</span><span class="p" data-group-id="9564280714-3">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Module</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">module_def</span><span class="p" data-group-id="0392641775-1">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;MyModule&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Exports</span><span class="p">,</span><span class="w"> </span><span class="ss">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Items</span><span class="p" data-group-id="0392641775-1">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="0392641775-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledModule</span><span class="p" data-group-id="0392641775-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="0392641775-3">(</span><span class="n">Module</span><span class="p" data-group-id="0392641775-3">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">%% Generate BEAM file</span><span class="w">
-</span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">write_beam_module</span><span class="p" data-group-id="9564280714-4">(</span><span class="n">CompiledModule</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyModule.beam&quot;</span><span class="p" data-group-id="9564280714-4">)</span><span class="p">.</span></code></pre><h3 id="module-3-function-compilation" class="section-heading">
+</span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">write_beam_module</span><span class="p" data-group-id="0392641775-4">(</span><span class="n">CompiledModule</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyModule.beam&quot;</span><span class="p" data-group-id="0392641775-4">)</span><span class="p">.</span></code></pre><h3 id="module-3-function-compilation" class="section-heading">
   <a href="#module-3-function-compilation" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">3. Function Compilation</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Compile individual function</span><span class="w">
-</span><span class="n">Func</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">function_def</span><span class="p" data-group-id="7581320981-1">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">add</span><span class="p">,</span><span class="w"> </span><span class="ss">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Params</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Body</span><span class="p" data-group-id="7581320981-1">}</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="7581320981-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledFunc</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="7581320981-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_function</span><span class="p" data-group-id="7581320981-3">(</span><span class="n">Func</span><span class="p" data-group-id="7581320981-3">)</span><span class="p">.</span></code></pre><h2 id="module-code-generation-process" class="section-heading">
+</span><span class="n">Func</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">function_def</span><span class="p" data-group-id="4494795460-1">{</span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">add</span><span class="p">,</span><span class="w"> </span><span class="ss">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Params</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Body</span><span class="p" data-group-id="4494795460-1">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="4494795460-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledFunc</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="4494795460-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_function</span><span class="p" data-group-id="4494795460-3">(</span><span class="n">Func</span><span class="p" data-group-id="4494795460-3">)</span><span class="p">.</span></code></pre><h2 id="module-code-generation-process" class="section-heading">
   <a href="#module-code-generation-process" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -235,13 +235,13 @@ and integration with Erlang/OTP.</p><h2 id="module-features" class="section-head
   </a>
   <span class="text">Standard Options</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="2358455687-1">[</span><span class="w">
-    </span><span class="p" data-group-id="2358455687-2">{</span><span class="ss">debug_info</span><span class="p">,</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="2358455687-2">}</span><span class="p">,</span><span class="w">      </span><span class="c1">% Include debug information</span><span class="w">
-    </span><span class="p" data-group-id="2358455687-3">{</span><span class="ss">optimize</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="2358455687-3">}</span><span class="p">,</span><span class="w">           </span><span class="c1">% Optimization level 0-3</span><span class="w">
-    </span><span class="p" data-group-id="2358455687-4">{</span><span class="ss">warnings</span><span class="p">,</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="2358455687-4">}</span><span class="p">,</span><span class="w">        </span><span class="c1">% Enable compilation warnings</span><span class="w">
-    </span><span class="p" data-group-id="2358455687-5">{</span><span class="ss">strict_types</span><span class="p">,</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="2358455687-5">}</span><span class="p">,</span><span class="w">    </span><span class="c1">% Strict type checking</span><span class="w">
-    </span><span class="p" data-group-id="2358455687-6">{</span><span class="ss">fsm_integration</span><span class="p">,</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="2358455687-6">}</span><span class="w">  </span><span class="c1">% Enable FSM features</span><span class="w">
-</span><span class="p" data-group-id="2358455687-1">]</span><span class="p">.</span></code></pre><h3 id="module-optimization-levels" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7582412368-1">[</span><span class="w">
+    </span><span class="p" data-group-id="7582412368-2">{</span><span class="ss">debug_info</span><span class="p">,</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="7582412368-2">}</span><span class="p">,</span><span class="w">      </span><span class="c1">% Include debug information</span><span class="w">
+    </span><span class="p" data-group-id="7582412368-3">{</span><span class="ss">optimize</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="7582412368-3">}</span><span class="p">,</span><span class="w">           </span><span class="c1">% Optimization level 0-3</span><span class="w">
+    </span><span class="p" data-group-id="7582412368-4">{</span><span class="ss">warnings</span><span class="p">,</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="7582412368-4">}</span><span class="p">,</span><span class="w">        </span><span class="c1">% Enable compilation warnings</span><span class="w">
+    </span><span class="p" data-group-id="7582412368-5">{</span><span class="ss">strict_types</span><span class="p">,</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="7582412368-5">}</span><span class="p">,</span><span class="w">    </span><span class="c1">% Strict type checking</span><span class="w">
+    </span><span class="p" data-group-id="7582412368-6">{</span><span class="ss">fsm_integration</span><span class="p">,</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="7582412368-6">}</span><span class="w">  </span><span class="c1">% Enable FSM features</span><span class="w">
+</span><span class="p" data-group-id="7582412368-1">]</span><span class="p">.</span></code></pre><h3 id="module-optimization-levels" class="section-heading">
   <a href="#module-optimization-levels" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -559,7 +559,7 @@ local state that is not shared between threads.</p>
     </a>
     <h1 class="signature" translate="no">compile_expression(Expr)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L1262" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L1267" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -587,8 +587,8 @@ of all Cure expression types to equivalent BEAM bytecode instructions.</p><h2 id
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Expr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="1430937396-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1430937396-2">{</span><span class="ss">literal</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="1430937396-2">}</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1430937396-3">{</span><span class="ss">literal</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="1430937396-3">}</span><span class="p" data-group-id="1430937396-1">}</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="1430937396-4">{</span><span class="n">Instructions</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="n">State</span><span class="p" data-group-id="1430937396-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_expression</span><span class="p" data-group-id="1430937396-5">(</span><span class="n">Expr</span><span class="p" data-group-id="1430937396-5">)</span><span class="p">.</span></code></pre><h2 id="compile_expression/1-supported-expression-types" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">Expr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="3912745847-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="3912745847-2">{</span><span class="ss">literal</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="3912745847-2">}</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="3912745847-3">{</span><span class="ss">literal</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="3912745847-3">}</span><span class="p" data-group-id="3912745847-1">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="3912745847-4">{</span><span class="n">Instructions</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="n">State</span><span class="p" data-group-id="3912745847-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_expression</span><span class="p" data-group-id="3912745847-5">(</span><span class="n">Expr</span><span class="p" data-group-id="3912745847-5">)</span><span class="p">.</span></code></pre><h2 id="compile_expression/1-supported-expression-types" class="section-heading">
   <a href="#compile_expression/1-supported-expression-types" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -612,7 +612,7 @@ type mismatches, and compilation failures.</p>
     </a>
     <h1 class="signature" translate="no">compile_expression(Expr, State)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L1265" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L1270" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -632,7 +632,7 @@ type mismatches, and compilation failures.</p>
     </a>
     <h1 class="signature" translate="no">compile_fsm_impl/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L1967" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L2033" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -667,13 +667,13 @@ for spawning, controlling, and querying FSM instances.</p><h2 id="compile_fsm_im
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">FSM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">fsm_def</span><span class="p" data-group-id="1243096005-1">{</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">FSM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">fsm_def</span><span class="p" data-group-id="5090345480-1">{</span><span class="w">
     </span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;Counter&#39;</span><span class="p">,</span><span class="w">
-    </span><span class="ss">states</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1243096005-2">[</span><span class="ss">idle</span><span class="p">,</span><span class="w"> </span><span class="ss">counting</span><span class="p" data-group-id="1243096005-2">]</span><span class="p">,</span><span class="w">
+    </span><span class="ss">states</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="5090345480-2">[</span><span class="ss">idle</span><span class="p">,</span><span class="w"> </span><span class="ss">counting</span><span class="p" data-group-id="5090345480-2">]</span><span class="p">,</span><span class="w">
     </span><span class="ss">initial</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">idle</span><span class="p">,</span><span class="w">
-    </span><span class="ss">state_defs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1243096005-3">[</span><span class="n">IdleState</span><span class="p">,</span><span class="w"> </span><span class="n">CountingState</span><span class="p" data-group-id="1243096005-3">]</span><span class="w">
-</span><span class="p" data-group-id="1243096005-1">}</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="1243096005-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1243096005-5">{</span><span class="ss">fsm</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledFSM</span><span class="p" data-group-id="1243096005-5">}</span><span class="p">,</span><span class="w"> </span><span class="n">NewState</span><span class="p" data-group-id="1243096005-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">compile_fsm_impl</span><span class="p" data-group-id="1243096005-6">(</span><span class="n">FSM</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="1243096005-6">)</span><span class="p">.</span></code></pre><h2 id="compile_fsm_impl/2-fsm-runtime-integration" class="section-heading">
+    </span><span class="ss">state_defs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="5090345480-3">[</span><span class="n">IdleState</span><span class="p">,</span><span class="w"> </span><span class="n">CountingState</span><span class="p" data-group-id="5090345480-3">]</span><span class="w">
+</span><span class="p" data-group-id="5090345480-1">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="5090345480-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5090345480-5">{</span><span class="ss">fsm</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledFSM</span><span class="p" data-group-id="5090345480-5">}</span><span class="p">,</span><span class="w"> </span><span class="n">NewState</span><span class="p" data-group-id="5090345480-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">compile_fsm_impl</span><span class="p" data-group-id="5090345480-6">(</span><span class="n">FSM</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="5090345480-6">)</span><span class="p">.</span></code></pre><h2 id="compile_fsm_impl/2-fsm-runtime-integration" class="section-heading">
   <a href="#compile_fsm_impl/2-fsm-runtime-integration" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -725,12 +725,12 @@ part of module compilation.</p><h2 id="compile_function/1-arguments" class="sect
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">FuncAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">function_def</span><span class="p" data-group-id="9513770845-1">{</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">FuncAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">function_def</span><span class="p" data-group-id="9146908949-1">{</span><span class="w">
     </span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">add</span><span class="p">,</span><span class="w">
-    </span><span class="ss">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9513770845-2">[</span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="ss">y</span><span class="p" data-group-id="9513770845-2">]</span><span class="p">,</span><span class="w">
-    </span><span class="ss">body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9513770845-3">{</span><span class="ss">binary_op</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9513770845-4">{</span><span class="ss">var</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p" data-group-id="9513770845-4">}</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9513770845-5">{</span><span class="ss">var</span><span class="p">,</span><span class="w"> </span><span class="ss">y</span><span class="p" data-group-id="9513770845-5">}</span><span class="p" data-group-id="9513770845-3">}</span><span class="w">
-</span><span class="p" data-group-id="9513770845-1">}</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="9513770845-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledFunc</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="n">State</span><span class="p" data-group-id="9513770845-6">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_function</span><span class="p" data-group-id="9513770845-7">(</span><span class="n">FuncAST</span><span class="p" data-group-id="9513770845-7">)</span><span class="p">.</span></code></pre><h2 id="compile_function/1-function-processing" class="section-heading">
+    </span><span class="ss">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9146908949-2">[</span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="ss">y</span><span class="p" data-group-id="9146908949-2">]</span><span class="p">,</span><span class="w">
+    </span><span class="ss">body</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9146908949-3">{</span><span class="ss">binary_op</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9146908949-4">{</span><span class="ss">var</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p" data-group-id="9146908949-4">}</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9146908949-5">{</span><span class="ss">var</span><span class="p">,</span><span class="w"> </span><span class="ss">y</span><span class="p" data-group-id="9146908949-5">}</span><span class="p" data-group-id="9146908949-3">}</span><span class="w">
+</span><span class="p" data-group-id="9146908949-1">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="9146908949-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledFunc</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="n">State</span><span class="p" data-group-id="9146908949-6">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_function</span><span class="p" data-group-id="9146908949-7">(</span><span class="n">FuncAST</span><span class="p" data-group-id="9146908949-7">)</span><span class="p">.</span></code></pre><h2 id="compile_function/1-function-processing" class="section-heading">
   <a href="#compile_function/1-function-processing" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -773,7 +773,7 @@ part of module compilation.</p><h2 id="compile_function/1-arguments" class="sect
     </a>
     <h1 class="signature" translate="no">compile_function_impl/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L953" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L958" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -822,13 +822,13 @@ It converts Cure module AST to BEAM-compatible Erlang forms.</p><h2 id="compile_
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">ModuleAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">module_def</span><span class="p" data-group-id="4026424614-1">{</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">ModuleAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">module_def</span><span class="p" data-group-id="6894742904-1">{</span><span class="w">
     </span><span class="ss">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;MyModule&#39;</span><span class="p">,</span><span class="w">
-    </span><span class="ss">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="4026424614-2">[</span><span class="p" data-group-id="4026424614-3">{</span><span class="ss">foo</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="4026424614-3">}</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4026424614-4">{</span><span class="ss">bar</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="4026424614-4">}</span><span class="p" data-group-id="4026424614-2">]</span><span class="p">,</span><span class="w">
-    </span><span class="ss">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="4026424614-5">[</span><span class="n">FuncDef1</span><span class="p">,</span><span class="w"> </span><span class="n">FuncDef2</span><span class="p" data-group-id="4026424614-5">]</span><span class="w">
-</span><span class="p" data-group-id="4026424614-1">}</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="4026424614-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">BeamModule</span><span class="p" data-group-id="4026424614-6">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="4026424614-7">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="4026424614-7">)</span><span class="p">,</span><span class="w">
-</span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">write_beam_module</span><span class="p" data-group-id="4026424614-8">(</span><span class="n">BeamModule</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyModule.beam&quot;</span><span class="p" data-group-id="4026424614-8">)</span><span class="p">.</span></code></pre><h2 id="compile_module/1-module-processing" class="section-heading">
+    </span><span class="ss">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="6894742904-2">[</span><span class="p" data-group-id="6894742904-3">{</span><span class="ss">foo</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="6894742904-3">}</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6894742904-4">{</span><span class="ss">bar</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="6894742904-4">}</span><span class="p" data-group-id="6894742904-2">]</span><span class="p">,</span><span class="w">
+    </span><span class="ss">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="6894742904-5">[</span><span class="n">FuncDef1</span><span class="p">,</span><span class="w"> </span><span class="n">FuncDef2</span><span class="p" data-group-id="6894742904-5">]</span><span class="w">
+</span><span class="p" data-group-id="6894742904-1">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="6894742904-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">BeamModule</span><span class="p" data-group-id="6894742904-6">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="6894742904-7">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="6894742904-7">)</span><span class="p">,</span><span class="w">
+</span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">write_beam_module</span><span class="p" data-group-id="6894742904-8">(</span><span class="n">BeamModule</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyModule.beam&quot;</span><span class="p" data-group-id="6894742904-8">)</span><span class="p">.</span></code></pre><h2 id="compile_module/1-module-processing" class="section-heading">
   <a href="#compile_module/1-module-processing" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -871,7 +871,7 @@ It converts Cure module AST to BEAM-compatible Erlang forms.</p><h2 id="compile_
     </a>
     <h1 class="signature" translate="no">compile_patterns_to_case_clauses(Patterns, State)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L3508" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L3746" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -919,11 +919,11 @@ compilation options.</p><h2 id="compile_program/1-arguments" class="section-head
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="5173831180-1">(</span><span class="s">&quot;program.cure&quot;</span><span class="p" data-group-id="5173831180-1">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="5173831180-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="5173831180-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_program</span><span class="p" data-group-id="5173831180-3">(</span><span class="n">AST</span><span class="p" data-group-id="5173831180-3">)</span><span class="p">,</span><span class="w">
-</span><span class="nc">lists</span><span class="p">:</span><span class="nf">foreach</span><span class="p" data-group-id="5173831180-4">(</span><span class="nf">fun</span><span class="p" data-group-id="5173831180-5">(</span><span class="n">Module</span><span class="p" data-group-id="5173831180-5">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
-    </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">write_beam_module</span><span class="p" data-group-id="5173831180-6">(</span><span class="n">Module</span><span class="p">,</span><span class="w"> </span><span class="nf">filename</span><span class="p" data-group-id="5173831180-7">(</span><span class="n">Module</span><span class="p" data-group-id="5173831180-7">)</span><span class="p" data-group-id="5173831180-6">)</span><span class="w">
-</span><span class="k">end</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="5173831180-4">)</span><span class="p">.</span></code></pre><h2 id="compile_program/1-default-options" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="3501948964-1">(</span><span class="s">&quot;program.cure&quot;</span><span class="p" data-group-id="3501948964-1">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="3501948964-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="3501948964-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_program</span><span class="p" data-group-id="3501948964-3">(</span><span class="n">AST</span><span class="p" data-group-id="3501948964-3">)</span><span class="p">,</span><span class="w">
+</span><span class="nc">lists</span><span class="p">:</span><span class="nf">foreach</span><span class="p" data-group-id="3501948964-4">(</span><span class="nf">fun</span><span class="p" data-group-id="3501948964-5">(</span><span class="n">Module</span><span class="p" data-group-id="3501948964-5">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+    </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">write_beam_module</span><span class="p" data-group-id="3501948964-6">(</span><span class="n">Module</span><span class="p">,</span><span class="w"> </span><span class="nf">filename</span><span class="p" data-group-id="3501948964-7">(</span><span class="n">Module</span><span class="p" data-group-id="3501948964-7">)</span><span class="p" data-group-id="3501948964-6">)</span><span class="w">
+</span><span class="k">end</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="3501948964-4">)</span><span class="p">.</span></code></pre><h2 id="compile_program/1-default-options" class="section-heading">
   <a href="#compile_program/1-default-options" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -961,7 +961,7 @@ warnings enabled, strict types, and FSM integration.</p>
     </a>
     <h1 class="signature" translate="no">compile_value_to_erlang_form(Value, Location)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L3860" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L4099" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -981,7 +981,7 @@ warnings enabled, strict types, and FSM integration.</p>
     </a>
     <h1 class="signature" translate="no">convert_body_expression_to_erlang/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L3895" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L4134" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1001,7 +1001,7 @@ warnings enabled, strict types, and FSM integration.</p>
     </a>
     <h1 class="signature" translate="no">convert_list_pattern_to_erlang_form/3</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L3642" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L3881" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1021,7 +1021,7 @@ warnings enabled, strict types, and FSM integration.</p>
     </a>
     <h1 class="signature" translate="no">convert_pattern_to_erlang_form/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L3612" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L3851" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1041,7 +1041,7 @@ warnings enabled, strict types, and FSM integration.</p>
     </a>
     <h1 class="signature" translate="no">convert_to_erlang_forms(Module)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L3005" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L3243" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1081,7 +1081,7 @@ warnings enabled, strict types, and FSM integration.</p>
     </a>
     <h1 class="signature" translate="no">generate_beam_file(Module, OutputPath)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L2803" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L2888" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1110,9 +1110,9 @@ a BEAM bytecode file compatible with the Erlang Virtual Machine.</p><h2 id="gene
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="7609915058-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledModule</span><span class="p" data-group-id="7609915058-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="7609915058-2">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="7609915058-2">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="7609915058-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7609915058-4">{</span><span class="n">MyModule</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyModule.beam&quot;</span><span class="p" data-group-id="7609915058-4">}</span><span class="p" data-group-id="7609915058-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> 
-    </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">generate_beam_file</span><span class="p" data-group-id="7609915058-5">(</span><span class="n">CompiledModule</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyModule.beam&quot;</span><span class="p" data-group-id="7609915058-5">)</span><span class="p">.</span></code></pre><h2 id="generate_beam_file/2-process-steps" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="0601107663-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledModule</span><span class="p" data-group-id="0601107663-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="0601107663-2">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="0601107663-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="0601107663-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0601107663-4">{</span><span class="n">MyModule</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyModule.beam&quot;</span><span class="p" data-group-id="0601107663-4">}</span><span class="p" data-group-id="0601107663-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> 
+    </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">generate_beam_file</span><span class="p" data-group-id="0601107663-5">(</span><span class="n">CompiledModule</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyModule.beam&quot;</span><span class="p" data-group-id="0601107663-5">)</span><span class="p">.</span></code></pre><h2 id="generate_beam_file/2-process-steps" class="section-heading">
   <a href="#generate_beam_file/2-process-steps" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -1141,7 +1141,7 @@ a BEAM bytecode file compatible with the Erlang Virtual Machine.</p><h2 id="gene
     </a>
     <h1 class="signature" translate="no">generate_fsm_functions(FSMName, CompiledFSM, Location)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L2054" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L2120" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1161,7 +1161,7 @@ a BEAM bytecode file compatible with the Erlang Virtual Machine.</p><h2 id="gene
     </a>
     <h1 class="signature" translate="no">generate_module_attributes(State)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L2492" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L2558" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1221,7 +1221,7 @@ a BEAM bytecode file compatible with the Erlang Virtual Machine.</p><h2 id="gene
     </a>
     <h1 class="signature" translate="no">write_beam_module(Module, OutputPath)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L3500" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/codegen/cure_codegen.erl#L3738" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -1249,13 +1249,13 @@ a compiled module to BEAM bytecode and write it to the specified path.</p><h2 id
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="6388007169-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledModule</span><span class="p" data-group-id="6388007169-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="6388007169-2">(</span><span class="n">AST</span><span class="p" data-group-id="6388007169-2">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="6388007169-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6388007169-4">{</span><span class="n">MyModule</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyModule.beam&quot;</span><span class="p" data-group-id="6388007169-4">}</span><span class="p" data-group-id="6388007169-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> 
-    </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">write_beam_module</span><span class="p" data-group-id="6388007169-5">(</span><span class="n">CompiledModule</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyModule.beam&quot;</span><span class="p" data-group-id="6388007169-5">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="1817426694-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledModule</span><span class="p" data-group-id="1817426694-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="1817426694-2">(</span><span class="n">AST</span><span class="p" data-group-id="1817426694-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="1817426694-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1817426694-4">{</span><span class="n">MyModule</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyModule.beam&quot;</span><span class="p" data-group-id="1817426694-4">}</span><span class="p" data-group-id="1817426694-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> 
+    </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">write_beam_module</span><span class="p" data-group-id="1817426694-5">(</span><span class="n">CompiledModule</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;MyModule.beam&quot;</span><span class="p" data-group-id="1817426694-5">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">%% Load and test the module</span><span class="w">
-</span><span class="nc">code</span><span class="p">:</span><span class="nf">load_file</span><span class="p" data-group-id="6388007169-6">(</span><span class="n">MyModule</span><span class="p" data-group-id="6388007169-6">)</span><span class="p">,</span><span class="w">
-</span><span class="n">MyModule</span><span class="p">:</span><span class="nf">function_name</span><span class="p" data-group-id="6388007169-7">(</span><span class="ss">args</span><span class="p" data-group-id="6388007169-7">)</span><span class="p">.</span></code></pre><h2 id="write_beam_module/2-use-cases" class="section-heading">
+</span><span class="nc">code</span><span class="p">:</span><span class="nf">load_file</span><span class="p" data-group-id="1817426694-6">(</span><span class="n">MyModule</span><span class="p" data-group-id="1817426694-6">)</span><span class="p">,</span><span class="w">
+</span><span class="n">MyModule</span><span class="p">:</span><span class="nf">function_name</span><span class="p" data-group-id="1817426694-7">(</span><span class="ss">args</span><span class="p" data-group-id="1817426694-7">)</span><span class="p">.</span></code></pre><h2 id="write_beam_module/2-use-cases" class="section-heading">
   <a href="#write_beam_module/2-use-cases" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
