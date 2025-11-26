@@ -182,8 +182,8 @@ end, Modules).
 
 ## Version Information
 
-- **Cure Compiler**: Latest (November 2025)
-- **LSP Server**: v0.1.0
-- **MCP Server**: v0.1.0
+- **Cure Compiler**: v0.7.0 (November 2025)
+- **LSP Server**: v0.7.0
+- **MCP Server**: v0.7.0
 - **Update Date**: November 26, 2025
 - **Status**: ✅ Complete and verified

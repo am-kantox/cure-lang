@@ -23,7 +23,7 @@ main(["start"]) ->
   % Start the MCP server - this blocks until server exits
   cure_mcp_server:start();
 main(["--version"]) ->
-  io:format(standard_error, "Cure MCP Server version 0.1.0~n", []),
+  io:format(standard_error, "Cure MCP Server version 0.7.0~n", []),
   halt(0);
 main(["--help"]) ->
   io:format(standard_error, "Cure Model Context Protocol (MCP) Server~n", []),
