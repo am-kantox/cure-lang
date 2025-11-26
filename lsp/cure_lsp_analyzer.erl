@@ -714,31 +714,85 @@ make_location_ref(_) ->
         }
     }.
 
+%% Find operator at cursor position by checking the text
+find_operator_at_position(Text, Line, Character) ->
+    Lines = binary:split(Text, <<"\n">>, [global]),
+    case Line >= 0 andalso Line < length(Lines) of
+        true ->
+            LineText = lists:nth(Line + 1, Lines),
+            extract_operator_at_position(LineText, Character);
+        false ->
+            {error, invalid_position}
+    end.
+
+extract_operator_at_position(LineText, Character) ->
+    % Check for multi-character operators at and around the cursor position
+    % Try to extract operator by checking a few characters before and after cursor
+
+    % Longest operator is 3 chars (-->, >>=, etc.)
+    MaxOpLen = 3,
+    Start = max(0, Character - MaxOpLen),
+    End = min(byte_size(LineText), Character + MaxOpLen),
+
+    case Start < byte_size(LineText) andalso End > Start of
+        true ->
+            Segment = binary:part(LineText, Start, End - Start),
+            % Check if segment contains |->
+            case binary:match(Segment, <<"|->">>) of
+                {Pos, Len} ->
+                    % Check if cursor is within the operator
+                    OpStart = Start + Pos,
+                    OpEnd = OpStart + Len,
+                    if
+                        Character >= OpStart andalso Character =< OpEnd ->
+                            {ok, '|->', operator};
+                        true ->
+                            % Check for other operators if needed
+                            {error, not_found}
+                    end;
+                nomatch ->
+                    % Could add checks for other operators here
+                    {error, not_found}
+            end;
+        false ->
+            {error, invalid_position}
+    end.
+
 %% Get hover information for symbol at position
 get_hover_info(Text, Line, Character) ->
     case analyze_document(Text) of
         #{parse_result := {ok, AST}} ->
-            get_hover_from_ast(AST, Line, Character);
+            get_hover_from_ast(AST, Text, Line, Character);
         _ ->
             null
     end.
 
 %% Handle list of modules or single module
-get_hover_from_ast([ModuleDef | _], Line, Character) when is_record(ModuleDef, module_def) ->
-    get_hover_from_module(ModuleDef, Line, Character);
-get_hover_from_ast(ModuleDef, Line, Character) when is_record(ModuleDef, module_def) ->
-    get_hover_from_module(ModuleDef, Line, Character);
-get_hover_from_ast(_, _, _) ->
+get_hover_from_ast([ModuleDef | _], Text, Line, Character) when is_record(ModuleDef, module_def) ->
+    get_hover_from_module(ModuleDef, Text, Line, Character);
+get_hover_from_ast(ModuleDef, Text, Line, Character) when is_record(ModuleDef, module_def) ->
+    get_hover_from_module(ModuleDef, Text, Line, Character);
+get_hover_from_ast(_, _, _, _) ->
     null.
 
-get_hover_from_module(#module_def{items = Items} = AST, Line, Character) ->
-    % Find what symbol the cursor is on
-    case find_symbol_at_position(AST, Line, Character) of
-        {ok, SymbolName, SymbolType} ->
-            % Get hover information for that symbol
-            get_symbol_hover_info(Items, SymbolName, SymbolType);
+get_hover_from_module(#module_def{items = Items} = AST, Text, Line, Character) ->
+    % First check if cursor is on an operator
+    case find_operator_at_position(Text, Line, Character) of
+        {ok, '|->', operator} ->
+            % Melquíades operator
+            get_symbol_hover_info(Items, '|->', operator);
+        {ok, _OtherOp, operator} ->
+            % Could add hover for other operators here
+            null;
         _ ->
-            null
+            % Not on an operator, check for other symbols
+            case find_symbol_at_position(AST, Line, Character) of
+                {ok, SymbolName, SymbolType} ->
+                    % Get hover information for that symbol
+                    get_symbol_hover_info(Items, SymbolName, SymbolType);
+                _ ->
+                    null
+            end
     end.
 
 %% Get hover information for a specific symbol
