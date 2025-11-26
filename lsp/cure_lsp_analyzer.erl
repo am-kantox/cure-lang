@@ -904,6 +904,31 @@ get_symbol_hover_info(Items, SymbolName, trait) ->
         _ ->
             null
     end;
+get_symbol_hover_info(_, '|->', operator) ->
+    % Special hover for Melquíades operator
+    Content = iolist_to_binary([
+        <<"```cure\n">>,
+        <<"message |-> target\n">>,
+        <<"```\n\n">>,
+        <<"**Melquíades Operator** (|->)\n\n">>,
+        <<"Sends a message asynchronously to a GenServer process.\n\n">>,
+        <<"Named after the character from Gabriel García Márquez's ">>,
+        <<"\"One Hundred Years of Solitude\".\n\n">>,
+        <<"**Behavior:**\n">>,
+        <<"- Uses `gen_server:cast/2` (fire-and-forget)\n">>,
+        <<"- Always returns `None`\n">>,
+        <<"- Records are auto-converted to maps with `__from__` key\n\n">>,
+        <<"**Target formats:**\n">>,
+        <<"- Local name: `:my_server`\n">>,
+        <<"- Global: `{:global, :name}`\n">>,
+        <<"- Via registry: `{:via, Registry, key}`">>
+    ]),
+    #{
+        contents => #{
+            kind => <<"markdown">>,
+            value => Content
+        }
+    };
 get_symbol_hover_info(_, _, _) ->
     null.
 

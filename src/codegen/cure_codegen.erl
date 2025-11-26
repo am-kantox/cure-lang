@@ -1287,6 +1287,7 @@ compile_expression(Expr, State) ->
         #record_expr{} -> compile_record_expr(Expr, State);
         #record_update_expr{} -> compile_record_update_expr(Expr, State);
         #field_access_expr{} -> compile_field_access_expr(Expr, State);
+        #melquiades_send_expr{} -> compile_melquiades_send_expr(Expr, State);
         % Note: pipe operators are parsed as binary_op_expr with op = '|>'
         % Note: constructor expressions are parsed as function_call_expr
         _ -> {error, {unsupported_expression, Expr}}
@@ -1812,6 +1813,43 @@ compile_field_access_expr(
 
     Instructions = RecordInstructions ++ [FieldAccessInstruction],
     {Instructions, State1}.
+
+%% Compile Melquíades send expressions (message |-> target)
+%% Generates gen_server:cast/2 call to send message to external GenServer
+compile_melquiades_send_expr(
+    #melquiades_send_expr{message = Message, target = Target, location = Location}, State
+) ->
+    % Get current module name for __from__ injection
+    ModuleName = State#codegen_state.module_name,
+
+    % Compile the message expression
+    {MessageInstructions, State1} = compile_expression(Message, State),
+
+    % Check if message is a record - if so, convert to map with __from__
+    % For now, we inject __from__ transformation at runtime
+    % TODO: Could optimize this at compile time if we know the type
+    TransformInstruction = #beam_instr{
+        op = melquiades_transform_message,
+        args = [ModuleName],
+        location = Location
+    },
+
+    % Compile the target expression (GenServer name/ref)
+    {TargetInstructions, State2} = compile_expression(Target, State1),
+
+    % Generate gen_server:cast/2 call
+    % Stack: [TransformedMessage, Target]
+    CastInstruction = #beam_instr{
+        op = genserver_cast,
+        args = [],
+        location = Location
+    },
+
+    % Instructions: compile message, transform it, compile target, cast
+    Instructions =
+        MessageInstructions ++ [TransformInstruction] ++
+            TargetInstructions ++ [CastInstruction],
+    {Instructions, State2}.
 
 %% Compile record field expressions
 compile_record_field_exprs(Fields, State) ->

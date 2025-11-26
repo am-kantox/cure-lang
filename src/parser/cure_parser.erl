@@ -3552,6 +3552,24 @@ parse_binary_rest(State, Left, MinPrec) ->
                         false ->
                             {Left, State}
                     end;
+                melquiades_send ->
+                    % Special handling for Melquíades operator (|->)
+                    % message |-> target
+                    {Prec, _} = get_operator_info(melquiades_send),
+                    case Prec >= MinPrec of
+                        true ->
+                            {_, State1} = expect(State, melquiades_send),
+                            {Target, State2} = parse_binary_expression(State1, Prec + 1),
+                            Location = get_token_location(Token),
+                            MelquiadesSend = #melquiades_send_expr{
+                                message = Left,
+                                target = Target,
+                                location = Location
+                            },
+                            parse_binary_rest(State2, MelquiadesSend, MinPrec);
+                        false ->
+                            {Left, State}
+                    end;
                 _ ->
                     case get_operator_info(get_token_type(Token)) of
                         {Prec, Assoc} when Prec >= MinPrec ->
@@ -3586,6 +3604,7 @@ get_operator_info('++') -> {15, right};
 % String concatenation, same as ++
 get_operator_info('<>') -> {15, right};
 get_operator_info('|>') -> {1, left};
+get_operator_info('melquiades_send') -> {1, left};
 get_operator_info('as') -> {2, left};
 get_operator_info('<') -> {5, left};
 get_operator_info('>') -> {5, left};

@@ -129,6 +129,13 @@
     location
 }).
 
+%% Melquíades operator - send message to external GenServer (|->)
+-record(melquiades_send_expr, {
+    message,     % Message to send (LHO)
+    target,      % GenServer name/ref (RHO)
+    location
+}).
+
 %% FSM receive expression for handling messages
 -record(fsm_receive_expr, {
     patterns,    % List of message patterns to match
@@ -432,6 +439,13 @@
     location
 }).
 
+%% GenServer reference type (for Melquíades operator)
+%% Represents the three forms of GenServer names in BEAM
+-record(genserver_ref_type, {
+    variant,       % local | global | via
+    location
+}).
+
 %% Type parameter declaration (for explicit bounds/constraints)
 -record(type_param_decl, {
     name,            % Atom: type parameter name (e.g., 'T')
@@ -515,6 +529,7 @@
                #fsm_send_expr{} |
                #fsm_receive_expr{} |
                #fsm_state_expr{} |
+               #melquiades_send_expr{} |
                #qualified_call_expr{}.  % Phase 4: Trait method calls
 
 -type pattern() :: #wildcard_pattern{} |
@@ -532,7 +547,8 @@
                     #list_type{} |
                     #tuple_type{} |
                     #fsm_type{} |
-                    #process_type{}.
+                    #process_type{} |
+                    #genserver_ref_type{}.
 
 -type match_clause() :: #match_clause{}.
 -type binding() :: #binding{}.

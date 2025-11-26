@@ -511,6 +511,19 @@ concurrent environments. The module is otherwise stateless and thread-safe.
         undefined}
 ).
 
+%% GenServerRef type - represents Erlang/Elixir GenServer references
+%% data GenServerRef = LocalName(Atom) | GlobalName(Atom) | ViaName(Module, Term)
+%% Used by Melquíades operator (|->) for sending messages to external GenServers
+-define(TYPE_GENSERVER_REF,
+    {union_type, 'GenServerRef',
+        [
+            {'LocalName', {function_type, [?TYPE_ATOM], {primitive_type, 'GenServerRef'}}},
+            {'GlobalName', {function_type, [?TYPE_ATOM], {primitive_type, 'GenServerRef'}}},
+            {'ViaName', {function_type, [?TYPE_ATOM, ?TYPE_ATOM], {primitive_type, 'GenServerRef'}}}
+        ],
+        undefined}
+).
+
 -doc """
 Creates a new unique type variable without a specific name.
 
@@ -2253,6 +2266,26 @@ infer_expr({fsm_send_expr, Target, Message, Location}, Env) ->
                         false ->
                             {error, {invalid_send_target, TargetType, Location}}
                     end;
+                Error ->
+                    Error
+            end;
+        Error ->
+            Error
+    end;
+infer_expr(#melquiades_send_expr{message = Message, target = Target, location = Location}, Env) ->
+    % Type Melquíades operator expression: message |-> target
+    % This operator sends messages asynchronously to GenServers
+    % Returns None (fire-and-forget semantics)
+    case infer_expr(Message, Env) of
+        {ok, MessageType, MessageConstraints} ->
+            case infer_expr(Target, Env) of
+                {ok, TargetType, TargetConstraints} ->
+                    % Transform records to maps with __from__ injection
+                    TransformedType = transform_record_to_map(MessageType, Env),
+                    % Target can be Atom (local), tuple (global/via), or GenServerRef union
+                    % For now, we accept any type and let runtime handle validation
+                    % Return None (Unit) as result since this is fire-and-forget
+                    {ok, {primitive_type, 'Unit'}, MessageConstraints ++ TargetConstraints};
                 Error ->
                     Error
             end;
@@ -8086,8 +8119,20 @@ extract_message_types(?TYPE_PID) ->
     % Generic PID can receive any message (type variable)
     new_type_var();
 extract_message_types(_) ->
-    % Unknown process type - use type variable
+    % Other types, return a type variable
     new_type_var().
+
+%% Transform record type to map type for Melquíades operator
+%% Records sent via |-> are converted to maps with __from__ key injected
+transform_record_to_map({record_type, _Name, _Fields}, _Env) ->
+    % Record types become generic map types
+    % The actual transformation happens at codegen, we just verify it's valid
+    % Return a map type (for now we use a generic type variable)
+    % In a full implementation, this would create a proper map type with field types
+    new_type_var();
+transform_record_to_map(Type, _Env) ->
+    % Non-record types pass through unchanged
+    Type.
 
 %% Check if FSM type is well-formed
 % is_well_formed_fsm_type(#fsm_type{name = Name, states = States, message_types = MessageTypes}) ->

@@ -626,6 +626,7 @@ get_syntax_help(<<"all">>) ->
       (get_syntax_help(<<"functions">>))/binary, "\n\n",
       (get_syntax_help(<<"types">>))/binary, "\n\n",
       (get_syntax_help(<<"records">>))/binary, "\n\n",
+      (get_syntax_help(<<"operators">>))/binary, "\n\n",
       (get_syntax_help(<<"fsm">>))/binary, "\n\n",
       (get_syntax_help(<<"typeclasses">>))/binary, "\n\n",
       (get_syntax_help(<<"pattern_matching">>))/binary>>;
@@ -685,24 +686,51 @@ end
 let person = Person{name: \"Alice\", age: 30}
 ">>;
 
-get_syntax_help(<<"fsm">>) ->
-    <<"=== Finite State Machines ===
-record FSMData do
-  counter: Int
+get_syntax_help(<<"operators">>) ->
+    <<"=== Operators ===
+# Pipe operator
+value |> function  # Pass value as first arg
+
+# Melquíades operator (|->)
+message |-> :server  # Send to GenServer (async cast)
+
+# Named after Gabriel García Márquez's character
+# - Uses gen_server:cast/2 (fire-and-forget)
+# - Always returns None
+# - Records auto-converted to maps with __from__
+
+# Target formats:
+msg |-> :local_name          # Local registered name
+msg |-> {:global, :name}     # Global name
+msg |-> {:via, Reg, key}     # Via registry
+
+# Example:
+record Event do
+  type: Atom,
+  data: String
 end
 
-fsm FSMData{counter: 0} do
-  StateA --> |event1| StateB
-  StateB --> |event2| StateC
-  StateC --> |reset| StateA
-end
-
-# Using FSMs
-import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_state/1]
-
-let pid = fsm_spawn(:FSMData, FSMData{counter: 0})
-fsm_cast(pid, pair(:event1, []))
+let evt = Event{type: :info, data: \"test\"}
+evt |-> :event_handler  # Becomes #{__from__ => CurrentModule, ...}
 ">>;
+
+get_syntax_help(<<"fsm">>) ->
+    <<"=== Finite State Machines ===\n"
+      "record FSMData do\n"
+      "  counter: Int\n"
+      "end\n"
+      "\n"
+      "fsm FSMData{counter: 0} do\n"
+      "  StateA --> |event1| StateB\n"
+      "  StateB --> |event2| StateC\n"
+      "  StateC --> |reset| StateA\n"
+      "end\n"
+      "\n"
+      "# Using FSMs\n"
+      "import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_state/1]\n"
+      "\n"
+      "let pid = fsm_spawn(:FSMData, FSMData{counter: 0})\n"
+      "fsm_cast(pid, pair(:event1, []))\n">>;
 
 get_syntax_help(<<"typeclasses">>) ->
     <<"=== Typeclasses ===

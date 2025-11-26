@@ -1,0 +1,135 @@
+# Melquíades Operator Demo
+# The |-> operator sends messages to external BEAM GenServers
+
+module MelquiadesDemo do
+  export [
+    send_notification/2,
+    send_with_record/3,
+    send_to_global/2,
+    send_via_registry/3,
+    example_usage/0
+  ]
+
+  # Define a message record
+  record NotificationMsg do
+    type: Atom,
+    content: String,
+    priority: Int
+  end
+
+  # Define another record for complex messages
+  record UserEvent do
+    user_id: Int,
+    action: String,
+    timestamp: Int
+  end
+
+  # Send a simple message to a local GenServer
+  # The message can be any term
+  def send_notification(server_name: Atom, message: String) -> None do
+    message |-> server_name
+  end
+
+  # Send a record message (will be converted to map with __from__ = MelquiadesDemo)
+  def send_with_record(server: Atom, notification_type: Atom, content: String) -> None do
+    let msg = NotificationMsg{
+      type: notification_type,
+      content: content,
+      priority: 5
+    }
+    msg |-> server
+  end
+
+  # Send to a globally registered GenServer
+  # In Cure, we construct GenServerRef types for different name formats
+  def send_to_global(name: Atom, message: String) -> None do
+    # Global name: {:global, name}
+    let global_ref = {:global, name}
+    message |-> global_ref
+  end
+
+  # Send via a process registry (like Registry)
+  def send_via_registry(registry: Atom, key: String, message: String) -> None do
+    # Via tuple: {:via, Registry, {RegistryName, key}}
+    let via_ref = {:via, :Registry, {registry, key}}
+    message |-> via_ref
+  end
+
+  # Example usage showing different message types
+  def example_usage() -> None do
+    # Simple message to local server
+    "Hello, World!" |-> :my_server
+
+    # Record message (auto-converted to map with __from__)
+    let event = UserEvent{
+      user_id: 42,
+      action: "login",
+      timestamp: 1701000000
+    }
+    event |-> :event_handler
+
+    # Chain with other operations
+    let result = compute_message()
+    result |-> :result_processor
+
+    # Tuple message
+    {:notification, "System started"} |-> :logger
+
+    # List message
+    [1, 2, 3, 4, 5] |-> :list_processor
+  end
+
+  # Helper function to demonstrate chaining
+  def compute_message() -> String do
+    "Computed result"
+  end
+
+  # Complex example: Send multiple messages in sequence
+  def broadcast_event(event: UserEvent, servers: [Atom]) -> None do
+    # Note: This would need to be implemented with proper list iteration
+    # For now, showing the concept
+    event |-> :server1
+    event |-> :server2
+    event |-> :server3
+  end
+
+  # Example with pattern matching
+  def conditional_send(condition: Bool, message: String) -> None do
+    match condition do
+      true -> message |-> :primary_server
+      false -> message |-> :backup_server
+    end
+  end
+
+  # Example showing the operator in a pipeline
+  def process_and_send(data: String) -> None do
+    let processed = data
+      |> String.trim()
+      |> String.upcase()
+    
+    processed |-> :processor
+  end
+end
+
+# Usage notes:
+# 
+# 1. The |-> operator is named "Melquíades" in honor of the character from
+#    Gabriel García Márquez's "One Hundred Years of Solitude"
+#
+# 2. It always uses gen_server:cast/2 underneath (asynchronous, fire-and-forget)
+#
+# 3. The operator always returns None since cast always succeeds
+#
+# 4. When sending records, they are automatically converted to Erlang maps with
+#    an injected __from__ key containing the sender module name:
+#    
+#    NotificationMsg{type: :info, ...} becomes:
+#    #{__from__ => 'MelquiadesDemo', type => info, ...}
+#
+# 5. The target can be:
+#    - Local name (atom): :my_server
+#    - Global name: {:global, :name}
+#    - Via registry: {:via, ModuleName, term()}
+#
+# 6. This operator is designed for sending messages to Erlang/Elixir GenServers
+#    from Cure code, enabling seamless interop with the BEAM ecosystem

@@ -273,6 +273,7 @@ operators() ->
         <<"++">> => '++',
         <<"--">> => '--',
         <<"|>">> => '|>',
+        <<"|->">> => 'melquiades_send',
         <<"#{">> => 'interpolation_start',
         % Functor/Applicative operators
         <<"<$">> => '<$',
