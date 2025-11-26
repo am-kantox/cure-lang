@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.6.0">
+    <meta name="project" content="cure v0.7.0">
 
 
-    <title>cure_smt_solver — cure v0.6.0</title>
+    <title>cure_smt_solver — cure v0.7.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.6.0
+          v0.7.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L1" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L1" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_smt_solver</span> 
-    <small class="app-vsn" translate="no">(cure v0.6.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.7.0)</small>
 
   </h1>
 
@@ -144,14 +144,14 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
   </a>
   <span class="text">Basic Constraint Checking</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="9482463515-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VarN</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Zero</span><span class="p" data-group-id="9482463515-1">}</span><span class="p">,</span><span class="w">
-</span><span class="k">case</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">check_constraint</span><span class="p" data-group-id="9482463515-2">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="9482463515-2">)</span><span class="w"> </span><span class="k">of</span><span class="w">
-    </span><span class="p" data-group-id="9482463515-3">{</span><span class="ss">sat</span><span class="p">,</span><span class="w"> </span><span class="n">Model</span><span class="p" data-group-id="9482463515-3">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="c1">% Constraint is satisfiable</span><span class="w">
-        </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="9482463515-4">(</span><span class="s">&quot;Satisfiable with model: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9482463515-5">[</span><span class="n">Model</span><span class="p" data-group-id="9482463515-5">]</span><span class="p" data-group-id="9482463515-4">)</span><span class="p">;</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="2330458453-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VarN</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Zero</span><span class="p" data-group-id="2330458453-1">}</span><span class="p">,</span><span class="w">
+</span><span class="k">case</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">check_constraint</span><span class="p" data-group-id="2330458453-2">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="2330458453-2">)</span><span class="w"> </span><span class="k">of</span><span class="w">
+    </span><span class="p" data-group-id="2330458453-3">{</span><span class="ss">sat</span><span class="p">,</span><span class="w"> </span><span class="n">Model</span><span class="p" data-group-id="2330458453-3">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="c1">% Constraint is satisfiable</span><span class="w">
+        </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="2330458453-4">(</span><span class="s">&quot;Satisfiable with model: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2330458453-5">[</span><span class="n">Model</span><span class="p" data-group-id="2330458453-5">]</span><span class="p" data-group-id="2330458453-4">)</span><span class="p">;</span><span class="w">
     </span><span class="ss">unsat</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="c1">% Constraint is unsatisfiable</span><span class="w">
-        </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="9482463515-6">(</span><span class="s">&quot;Constraint cannot be satisfied</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="9482463515-6">)</span><span class="p">;</span><span class="w">
+        </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="2330458453-6">(</span><span class="s">&quot;Constraint cannot be satisfied</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="2330458453-6">)</span><span class="p">;</span><span class="w">
     </span><span class="ss">unknown</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="c1">% Solver couldn&#39;t determine</span><span class="w">
-        </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="9482463515-7">(</span><span class="s">&quot;Unknown, need runtime check</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="9482463515-7">)</span><span class="w">
+        </span><span class="nc">io</span><span class="p">:</span><span class="nf">format</span><span class="p" data-group-id="2330458453-7">(</span><span class="s">&quot;Unknown, need runtime check</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="2330458453-7">)</span><span class="w">
 </span><span class="k">end</span><span class="p">.</span></code></pre><h3 id="module-simplifying-constraints" class="section-heading">
   <a href="#module-simplifying-constraints" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -159,8 +159,8 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
   <span class="text">Simplifying Constraints</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Simplify constraint using algebraic rules and SMT solver</span><span class="w">
-</span><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="7835862619-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VarX</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Zero</span><span class="p" data-group-id="7835862619-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Simplified</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">simplify_constraint</span><span class="p" data-group-id="7835862619-2">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="7835862619-2">)</span><span class="p">.</span><span class="w">
+</span><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="5498262882-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VarX</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Zero</span><span class="p" data-group-id="5498262882-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Simplified</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">simplify_constraint</span><span class="p" data-group-id="5498262882-2">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="5498262882-2">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; Returns VarX (since x + 0 = x)</span></code></pre><h3 id="module-proving-constraints" class="section-heading">
   <a href="#module-proving-constraints" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -168,7 +168,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
   <span class="text">Proving Constraints</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Prove that n &gt; 0 implies length(list) &gt; 0</span><span class="w">
-</span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_implication</span><span class="p" data-group-id="9213183061-1">(</span><span class="n">Antecedent</span><span class="p">,</span><span class="w"> </span><span class="n">Consequent</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="9213183061-1">)</span><span class="p">.</span></code></pre><h2 id="module-smt-backend-selection" class="section-heading">
+</span><span class="n">Result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_solver</span><span class="p">:</span><span class="nf">prove_implication</span><span class="p" data-group-id="6215674308-1">(</span><span class="n">Antecedent</span><span class="p">,</span><span class="w"> </span><span class="n">Consequent</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="6215674308-1">)</span><span class="p">.</span></code></pre><h2 id="module-smt-backend-selection" class="section-heading">
   <a href="#module-smt-backend-selection" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -368,7 +368,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.hrl#L518" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/parser/cure_ast.hrl#L518" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -436,7 +436,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">available_solvers()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L189" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L203" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -462,7 +462,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">check_constraint(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L55" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L67" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -488,7 +488,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">check_constraint(Constraint, Env, Opts)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L60" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L72" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -514,7 +514,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">constant_term(Value)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L1177" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L1307" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -534,7 +534,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">equality_constraint(Left, Right)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L1147" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L1265" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -554,7 +554,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">find_counterexample(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L115" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L127" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -580,7 +580,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">inequality_constraint(Left, Op, Right)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L1157" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L1279" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -600,7 +600,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">parse_sexp_to_constraint/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L787" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L874" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -620,7 +620,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">parse_sexp_tokens(Tokens)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L910" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L1000" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -640,7 +640,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">prove_constraint(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L96" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L108" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -666,7 +666,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">prove_implication(Antecedent, Consequent, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L76" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L88" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -692,7 +692,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">set_solver(Solver)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L199" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L215" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -718,7 +718,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">sexp_term_to_constraint/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L939" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L1029" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -738,7 +738,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">simplify_constraint(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L153" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L165" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -764,7 +764,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">solve_constraints/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L170" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L182" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -790,7 +790,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">tokenize_sexp/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L827" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L914" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -810,7 +810,7 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
     </a>
     <h1 class="signature" translate="no">variable_term/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_solver.erl#L1167" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_solver.erl#L1293" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -830,9 +830,9 @@ backend solvers including Z3, CVC5, and others.</p><h2 id="module-features" clas
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.7.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.7.0">Hex Preview</a>
 
           </span>
 

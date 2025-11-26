@@ -358,7 +358,7 @@ cure src/main.cure --verbose --smt-solver z3
 ```
 $ cure --help
 
-Cure Programming Language Compiler v0.6.0
+Cure Programming Language Compiler v0.7.0
 
 USAGE:
     cure [OPTIONS] <input-file>

@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.6.0">
+    <meta name="project" content="cure v0.7.0">
 
 
-    <title>cure_lexer — cure v0.6.0</title>
+    <title>cure_lexer — cure v0.7.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.6.0
+          v0.7.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/lexer/cure_lexer.erl#L1" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/lexer/cure_lexer.erl#L1" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_lexer</span> 
-    <small class="app-vsn" translate="no">(cure v0.6.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.7.0)</small>
 
   </h1>
 
@@ -150,7 +150,7 @@ language constructs including keywords, operators, literals, and comments.</p><h
   </a>
   <span class="text">Error Handling</span>
 </h2>
-<p>All tokenization errors include precise location information:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="2481678754-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2481678754-2">{</span><span class="n">Reason</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="2481678754-2">}</span><span class="p" data-group-id="2481678754-1">}</span></code></pre>
+<p>All tokenization errors include precise location information:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4281643905-1">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4281643905-2">{</span><span class="n">Reason</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="4281643905-2">}</span><span class="p" data-group-id="4281643905-1">}</span></code></pre>
     </section>
 
 </div>
@@ -226,7 +226,7 @@ language constructs including keywords, operators, literals, and comments.</p><h
     </a>
     <h1 class="signature" translate="no">scan/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/lexer/cure_lexer.erl#L202" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/lexer/cure_lexer.erl#L202" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -252,7 +252,7 @@ language constructs including keywords, operators, literals, and comments.</p><h
     </a>
     <h1 class="signature" translate="no">token_type/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/lexer/cure_lexer.erl#L184" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/lexer/cure_lexer.erl#L184" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -287,12 +287,12 @@ pattern matching and categorizing tokens in the parser.</p><h2 id="token_type/1-
   </a>
   <span class="text">Examples</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">token</span><span class="p" data-group-id="5640615620-1">{</span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">identifier</span><span class="p">,</span><span class="w"> </span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;add&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="ss">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="5640615620-1">}</span><span class="p">,</span><span class="w">
-</span><span class="nf">token_type</span><span class="p" data-group-id="5640615620-2">(</span><span class="n">Token</span><span class="p" data-group-id="5640615620-2">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">Token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">token</span><span class="p" data-group-id="0292045370-1">{</span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">identifier</span><span class="p">,</span><span class="w"> </span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="s">&quot;add&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="ss">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="0292045370-1">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">token_type</span><span class="p" data-group-id="0292045370-2">(</span><span class="n">Token</span><span class="p" data-group-id="0292045370-2">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; identifier</span><span class="w">
 
-</span><span class="n">KeywordToken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">token</span><span class="p" data-group-id="5640615620-3">{</span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">def</span><span class="p">,</span><span class="w"> </span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">def</span><span class="p">,</span><span class="w"> </span><span class="ss">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="5640615620-3">}</span><span class="p">,</span><span class="w">
-</span><span class="nf">token_type</span><span class="p" data-group-id="5640615620-4">(</span><span class="n">KeywordToken</span><span class="p" data-group-id="5640615620-4">)</span><span class="p">.</span><span class="w">
+</span><span class="n">KeywordToken</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">token</span><span class="p" data-group-id="0292045370-3">{</span><span class="ss">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">def</span><span class="p">,</span><span class="w"> </span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">def</span><span class="p">,</span><span class="w"> </span><span class="ss">line</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="ss">column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="0292045370-3">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">token_type</span><span class="p" data-group-id="0292045370-4">(</span><span class="n">KeywordToken</span><span class="p" data-group-id="0292045370-4">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; def</span></code></pre>
   </section>
 </section>
@@ -304,7 +304,7 @@ pattern matching and categorizing tokens in the parser.</p><h2 id="token_type/1-
     </a>
     <h1 class="signature" translate="no">tokenize(Source)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/lexer/cure_lexer.erl#L108" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/lexer/cure_lexer.erl#L108" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -347,7 +347,7 @@ input and returns a list of tokens with position information.</p><h2 id="tokeniz
   </a>
   <span class="text">Examples</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nf">tokenize</span><span class="p" data-group-id="5293331200-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;def add(x, y) = x + y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="5293331200-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nf">tokenize</span><span class="p" data-group-id="8452985731-1">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;def add(x, y) = x + y&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="8452985731-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {ok, [</span><span class="w">
 </span><span class="c1">%      #token{type=def, value=def, line=1, column=1},</span><span class="w">
 </span><span class="c1">%      #token{type=identifier, value= &lt;&lt;&quot;add&quot;&gt;&gt;, line=1, column=5},</span><span class="w">
@@ -355,7 +355,7 @@ input and returns a list of tokens with position information.</p><h2 id="tokeniz
 </span><span class="c1">%      ...</span><span class="w">
 </span><span class="c1">%    ]}</span><span class="w">
 
-</span><span class="nf">tokenize</span><span class="p" data-group-id="5293331200-2">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;invalid \xff character&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="5293331200-2">)</span><span class="p">.</span><span class="w">
+</span><span class="nf">tokenize</span><span class="p" data-group-id="8452985731-2">(</span><span class="p">&lt;&lt;</span><span class="s">&quot;invalid \xff character&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="8452985731-2">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {invalid_character, 1, 9}}</span></code></pre><h2 id="tokenize/1-error-types" class="section-heading">
   <a href="#tokenize/1-error-types" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -373,7 +373,7 @@ input and returns a list of tokens with position information.</p><h2 id="tokeniz
     </a>
     <h1 class="signature" translate="no">tokenize_file(Filename)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/lexer/cure_lexer.erl#L148" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/lexer/cure_lexer.erl#L148" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -411,10 +411,10 @@ main tokenization function.</p><h2 id="tokenize_file/1-arguments" class="section
   </a>
   <span class="text">Examples</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nf">tokenize_file</span><span class="p" data-group-id="6834348449-1">(</span><span class="s">&quot;examples/hello.cure&quot;</span><span class="p" data-group-id="6834348449-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nf">tokenize_file</span><span class="p" data-group-id="5023559028-1">(</span><span class="s">&quot;examples/hello.cure&quot;</span><span class="p" data-group-id="5023559028-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {ok, [#token{type=def, ...}, ...]}</span><span class="w">
 
-</span><span class="nf">tokenize_file</span><span class="p" data-group-id="6834348449-2">(</span><span class="s">&quot;nonexistent.cure&quot;</span><span class="p" data-group-id="6834348449-2">)</span><span class="p">.</span><span class="w">
+</span><span class="nf">tokenize_file</span><span class="p" data-group-id="5023559028-2">(</span><span class="s">&quot;nonexistent.cure&quot;</span><span class="p" data-group-id="5023559028-2">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {error, {file_error, enoent}}</span></code></pre>
   </section>
 </section>
@@ -426,9 +426,9 @@ main tokenization function.</p><h2 id="tokenize_file/1-arguments" class="section
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.7.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.7.0">Hex Preview</a>
 
           </span>
 

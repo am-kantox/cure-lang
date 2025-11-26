@@ -749,7 +749,7 @@ All functions properly delegate to Erlang FSM runtime via type-safe `curify` bin
 3. **Parser Error Recovery** (1 week)
 4. **Standard Library Essentials** (1-2 weeks)
 
-**Deliverable:** Cure 0.6.0 - Stable core with verified dependent types
+**Deliverable:** Cure 0.7.0 - Stable core with verified dependent types
 
 ---
 
@@ -759,7 +759,7 @@ All functions properly delegate to Erlang FSM runtime via type-safe `curify` bin
 3. **Package Manager MVP** (3-4 weeks)
 4. **Incremental Compilation** (2-3 weeks)
 
-**Deliverable:** Cure 0.6.0 - Production-ready developer tooling
+**Deliverable:** Cure 0.7.0 - Production-ready developer tooling
 
 ---
 

@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.6.0">
+    <meta name="project" content="cure v0.7.0">
 
 
-    <title>cure_smt_translator — cure v0.6.0</title>
+    <title>cure_smt_translator — cure v0.7.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.6.0
+          v0.7.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_translator.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_translator.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_smt_translator</span> 
-    <small class="app-vsn" translate="no">(cure v0.6.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.7.0)</small>
 
   </h1>
 
@@ -138,9 +138,9 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
   <span class="text">Usage</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Translate a constraint to SMT-LIB query</span><span class="w">
-</span><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="2822136318-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="2822136318-2">(</span><span class="ss">x</span><span class="p" data-group-id="2822136318-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="2822136318-3">(</span><span class="mi">0</span><span class="p" data-group-id="2822136318-3">)</span><span class="p" data-group-id="2822136318-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="2822136318-4">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="2822136318-5">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="2822136318-5">}</span><span class="p" data-group-id="2822136318-4">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_translator</span><span class="p">:</span><span class="nf">generate_query</span><span class="p" data-group-id="2822136318-6">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="2822136318-6">)</span><span class="p">.</span><span class="w">
+</span><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="8056017946-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="8056017946-2">(</span><span class="ss">x</span><span class="p" data-group-id="8056017946-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="8056017946-3">(</span><span class="mi">0</span><span class="p" data-group-id="8056017946-3">)</span><span class="p" data-group-id="8056017946-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="8056017946-4">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="8056017946-5">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="8056017946-5">}</span><span class="p" data-group-id="8056017946-4">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_translator</span><span class="p">:</span><span class="nf">generate_query</span><span class="p" data-group-id="8056017946-6">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="n">Env</span><span class="p" data-group-id="8056017946-6">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; \&quot;(set-logic QF_LIA)\\n(declare-const x Int)\\n(assert (&gt; x 0))\\n(check-sat)\\n\&quot;</span></code></pre>
     </section>
 
@@ -289,7 +289,7 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">expr()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_ast.hrl#L518" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/parser/cure_ast.hrl#L518" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -345,7 +345,7 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">smt_logic()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_translator.erl#L47" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_translator.erl#L47" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -383,7 +383,7 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">collect_variables(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_translator.erl#L360" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_translator.erl#L360" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -421,7 +421,7 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">declare_variable(VarName, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_translator.erl#L387" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_translator.erl#L387" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -459,7 +459,7 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">generate_constraint_check_query(ValueExpr, Predicate, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_translator.erl#L580" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_translator.erl#L580" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -493,9 +493,9 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
   <span class="text">Example</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Check if 5 satisfies (x &gt; 0)</span><span class="w">
-</span><span class="n">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">literal_expr</span><span class="p" data-group-id="2435261968-1">{</span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="2435261968-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Pred</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="2435261968-2">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="2435261968-3">(</span><span class="ss">x</span><span class="p" data-group-id="2435261968-3">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="2435261968-4">(</span><span class="mi">0</span><span class="p" data-group-id="2435261968-4">)</span><span class="p" data-group-id="2435261968-2">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generate_constraint_check_query</span><span class="p" data-group-id="2435261968-5">(</span><span class="n">Value</span><span class="p">,</span><span class="w"> </span><span class="n">Pred</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2435261968-6">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="2435261968-7">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="2435261968-7">}</span><span class="p" data-group-id="2435261968-6">}</span><span class="p" data-group-id="2435261968-5">)</span><span class="p">.</span></code></pre>
+</span><span class="n">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">literal_expr</span><span class="p" data-group-id="9818337811-1">{</span><span class="ss">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="9818337811-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Pred</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="9818337811-2">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="9818337811-3">(</span><span class="ss">x</span><span class="p" data-group-id="9818337811-3">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="9818337811-4">(</span><span class="mi">0</span><span class="p" data-group-id="9818337811-4">)</span><span class="p" data-group-id="9818337811-2">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generate_constraint_check_query</span><span class="p" data-group-id="9818337811-5">(</span><span class="n">Value</span><span class="p">,</span><span class="w"> </span><span class="n">Pred</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9818337811-6">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="9818337811-7">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="9818337811-7">}</span><span class="p" data-group-id="9818337811-6">}</span><span class="p" data-group-id="9818337811-5">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="generate_query/2">
@@ -506,7 +506,7 @@ for consumption by external SMT solvers (Z3, CVC5).</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">generate_query(Constraint, Env)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_translator.erl#L73" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_translator.erl#L73" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -540,8 +540,8 @@ assertions, and check-sat command.</p><h2 id="generate_query/2-arguments" class=
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="7995918736-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="7995918736-2">(</span><span class="ss">x</span><span class="p" data-group-id="7995918736-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="7995918736-3">(</span><span class="ss">y</span><span class="p" data-group-id="7995918736-3">)</span><span class="p" data-group-id="7995918736-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generate_query</span><span class="p" data-group-id="7995918736-4">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7995918736-5">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="7995918736-6">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="7995918736-6">}</span><span class="p">,</span><span class="w"> </span><span class="ss">y</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="7995918736-7">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="7995918736-7">}</span><span class="p" data-group-id="7995918736-5">}</span><span class="p" data-group-id="7995918736-4">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">Constraint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="7219202599-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;+&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="7219202599-2">(</span><span class="ss">x</span><span class="p" data-group-id="7219202599-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="7219202599-3">(</span><span class="ss">y</span><span class="p" data-group-id="7219202599-3">)</span><span class="p" data-group-id="7219202599-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generate_query</span><span class="p" data-group-id="7219202599-4">(</span><span class="n">Constraint</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7219202599-5">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="7219202599-6">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="7219202599-6">}</span><span class="p">,</span><span class="w"> </span><span class="ss">y</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="7219202599-7">{</span><span class="ss">type</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="7219202599-7">}</span><span class="p" data-group-id="7219202599-5">}</span><span class="p" data-group-id="7219202599-4">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="generate_query/3">
@@ -552,7 +552,7 @@ assertions, and check-sat command.</p><h2 id="generate_query/2-arguments" class=
     </a>
     <h1 class="signature" translate="no">generate_query(Constraint, Env, Opts)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_translator.erl#L85" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_translator.erl#L85" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -584,7 +584,7 @@ assertions, and check-sat command.</p><h2 id="generate_query/2-arguments" class=
     </a>
     <h1 class="signature" translate="no">generate_refinement_subtype_query(Pred1, Pred2, Var, BaseType)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_translator.erl#L513" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_translator.erl#L513" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -620,9 +620,9 @@ with predicate Pred2. This is equivalent to proving: ∀Var. Pred1 =&gt; Pred2</
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Check if Positive &lt;: NonZero</span><span class="w">
 </span><span class="c1">% i.e., ∀x. (x &gt; 0) =&gt; (x ≠ 0)</span><span class="w">
-</span><span class="n">Pred1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="6856912346-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="6856912346-2">(</span><span class="ss">x</span><span class="p" data-group-id="6856912346-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="6856912346-3">(</span><span class="mi">0</span><span class="p" data-group-id="6856912346-3">)</span><span class="p" data-group-id="6856912346-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Pred2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="6856912346-4">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;/=&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="6856912346-5">(</span><span class="ss">x</span><span class="p" data-group-id="6856912346-5">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="6856912346-6">(</span><span class="mi">0</span><span class="p" data-group-id="6856912346-6">)</span><span class="p" data-group-id="6856912346-4">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generate_refinement_subtype_query</span><span class="p" data-group-id="6856912346-7">(</span><span class="n">Pred1</span><span class="p">,</span><span class="w"> </span><span class="n">Pred2</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="6856912346-7">)</span><span class="p">.</span></code></pre>
+</span><span class="n">Pred1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="1762949177-1">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;&gt;&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="1762949177-2">(</span><span class="ss">x</span><span class="p" data-group-id="1762949177-2">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="1762949177-3">(</span><span class="mi">0</span><span class="p" data-group-id="1762949177-3">)</span><span class="p" data-group-id="1762949177-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Pred2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">binary_op_expr</span><span class="p" data-group-id="1762949177-4">{</span><span class="ss">op</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">&#39;/=&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">left</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">var</span><span class="p" data-group-id="1762949177-5">(</span><span class="ss">x</span><span class="p" data-group-id="1762949177-5">)</span><span class="p">,</span><span class="w"> </span><span class="ss">right</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">lit</span><span class="p" data-group-id="1762949177-6">(</span><span class="mi">0</span><span class="p" data-group-id="1762949177-6">)</span><span class="p" data-group-id="1762949177-4">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Query</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">generate_refinement_subtype_query</span><span class="p" data-group-id="1762949177-7">(</span><span class="n">Pred1</span><span class="p">,</span><span class="w"> </span><span class="n">Pred2</span><span class="p">,</span><span class="w"> </span><span class="ss">x</span><span class="p">,</span><span class="w"> </span><span class="ss">int</span><span class="p" data-group-id="1762949177-7">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="infer_logic/1">
@@ -633,7 +633,7 @@ with predicate Pred2. This is equivalent to proving: ∀Var. Pred1 =&gt; Pred2</
     </a>
     <h1 class="signature" translate="no">infer_logic(Constraint)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_translator.erl#L279" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_translator.erl#L279" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -677,7 +677,7 @@ with predicate Pred2. This is equivalent to proving: ∀Var. Pred1 =&gt; Pred2</
     </a>
     <h1 class="signature" translate="no">translate_expr(Expr)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_translator.erl#L134" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_translator.erl#L134" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -715,7 +715,7 @@ with predicate Pred2. This is equivalent to proving: ∀Var. Pred1 =&gt; Pred2</
     </a>
     <h1 class="signature" translate="no">translate_expr/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_translator.erl#L139" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_translator.erl#L139" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -741,9 +741,9 @@ with predicate Pred2. This is equivalent to proving: ∀Var. Pred1 =&gt; Pred2</
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.7.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.7.0">Hex Preview</a>
 
           </span>
 

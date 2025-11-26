@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.6.0">
+    <meta name="project" content="cure v0.7.0">
 
 
-    <title>cure_parser — cure v0.6.0</title>
+    <title>cure_parser — cure v0.7.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.6.0
+          v0.7.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_parser.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/parser/cure_parser.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_parser</span> 
-    <small class="app-vsn" translate="no">(cure v0.6.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.7.0)</small>
 
   </h1>
 
@@ -194,17 +194,17 @@ end</code></pre><h3 id="module-expression-parsing" class="section-heading">
   <span class="text">API Usage</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Parse tokens directly</span><span class="w">
-</span><span class="p" data-group-id="4884899352-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p" data-group-id="4884899352-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse</span><span class="p" data-group-id="4884899352-2">(</span><span class="n">Tokens</span><span class="p" data-group-id="4884899352-2">)</span><span class="p">.</span><span class="w">
+</span><span class="p" data-group-id="0603117647-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p" data-group-id="0603117647-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse</span><span class="p" data-group-id="0603117647-2">(</span><span class="n">Tokens</span><span class="p" data-group-id="0603117647-2">)</span><span class="p">.</span><span class="w">
 
 </span><span class="c1">%% Parse from file</span><span class="w">
-</span><span class="p" data-group-id="4884899352-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p" data-group-id="4884899352-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="4884899352-4">(</span><span class="s">&quot;example.cure&quot;</span><span class="p" data-group-id="4884899352-4">)</span><span class="p">.</span><span class="w">
+</span><span class="p" data-group-id="0603117647-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p" data-group-id="0603117647-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="0603117647-4">(</span><span class="s">&quot;example.cure&quot;</span><span class="p" data-group-id="0603117647-4">)</span><span class="p">.</span><span class="w">
 
 </span><span class="c1">%% Handle parse errors</span><span class="w">
-</span><span class="k">case</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="4884899352-5">(</span><span class="s">&quot;example.cure&quot;</span><span class="p" data-group-id="4884899352-5">)</span><span class="w"> </span><span class="k">of</span><span class="w">
-    </span><span class="p" data-group-id="4884899352-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p" data-group-id="4884899352-6">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="4884899352-7">(</span><span class="s">&quot;Parsed successfully</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="4884899352-7">)</span><span class="p">;</span><span class="w">
-    </span><span class="p" data-group-id="4884899352-8">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4884899352-9">{</span><span class="ss">parse_error</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="4884899352-9">}</span><span class="p" data-group-id="4884899352-8">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="4884899352-10">(</span><span class="s">&quot;Parse error at </span><span class="si">~p</span><span class="s">:</span><span class="si">~p</span><span class="s">: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4884899352-11">[</span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p" data-group-id="4884899352-11">]</span><span class="p" data-group-id="4884899352-10">)</span><span class="w">
+</span><span class="k">case</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="0603117647-5">(</span><span class="s">&quot;example.cure&quot;</span><span class="p" data-group-id="0603117647-5">)</span><span class="w"> </span><span class="k">of</span><span class="w">
+    </span><span class="p" data-group-id="0603117647-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p" data-group-id="0603117647-6">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> 
+        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="0603117647-7">(</span><span class="s">&quot;Parsed successfully</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="0603117647-7">)</span><span class="p">;</span><span class="w">
+    </span><span class="p" data-group-id="0603117647-8">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0603117647-9">{</span><span class="ss">parse_error</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p" data-group-id="0603117647-9">}</span><span class="p" data-group-id="0603117647-8">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="0603117647-10">(</span><span class="s">&quot;Parse error at </span><span class="si">~p</span><span class="s">:</span><span class="si">~p</span><span class="s">: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0603117647-11">[</span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Column</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p" data-group-id="0603117647-11">]</span><span class="p" data-group-id="0603117647-10">)</span><span class="w">
 </span><span class="k">end</span><span class="p">.</span></code></pre><h2 id="module-parser-state" class="section-heading">
   <a href="#module-parser-state" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -287,7 +287,7 @@ end</code></pre><h3 id="module-expression-parsing" class="section-heading">
     </a>
     <h1 class="signature" translate="no">parse(Tokens)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_parser.erl#L164" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/parser/cure_parser.erl#L164" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -321,8 +321,8 @@ and produces a complete AST representing the Cure program structure.</p><h2 id="
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Tokens</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="6703800914-1">(</span><span class="s">&quot;def hello() -&gt; :ok end&quot;</span><span class="p" data-group-id="6703800914-1">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="6703800914-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p" data-group-id="6703800914-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse</span><span class="p" data-group-id="6703800914-3">(</span><span class="n">Tokens</span><span class="p" data-group-id="6703800914-3">)</span><span class="p">.</span></code></pre><h2 id="parse/1-error-handling" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">Tokens</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_lexer</span><span class="p">:</span><span class="nf">tokenize</span><span class="p" data-group-id="2556766637-1">(</span><span class="s">&quot;def hello() -&gt; :ok end&quot;</span><span class="p" data-group-id="2556766637-1">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="2556766637-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p" data-group-id="2556766637-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse</span><span class="p" data-group-id="2556766637-3">(</span><span class="n">Tokens</span><span class="p" data-group-id="2556766637-3">)</span><span class="p">.</span></code></pre><h2 id="parse/1-error-handling" class="section-heading">
   <a href="#parse/1-error-handling" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -339,7 +339,7 @@ and produces a complete AST representing the Cure program structure.</p><h2 id="
     </a>
     <h1 class="signature" translate="no">parse_file(Filename)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/parser/cure_parser.erl#L211" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/parser/cure_parser.erl#L211" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -374,13 +374,13 @@ lexing and parsing pipeline.</p><h2 id="parse_file/1-arguments" class="section-h
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="k">case</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="7047645757-1">(</span><span class="s">&quot;examples/hello.cure&quot;</span><span class="p" data-group-id="7047645757-1">)</span><span class="w"> </span><span class="k">of</span><span class="w">
-    </span><span class="p" data-group-id="7047645757-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p" data-group-id="7047645757-2">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="7047645757-3">(</span><span class="s">&quot;Successfully parsed file</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="7047645757-3">)</span><span class="p">;</span><span class="w">
-    </span><span class="p" data-group-id="7047645757-4">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7047645757-5">{</span><span class="ss">parse_error</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Col</span><span class="p" data-group-id="7047645757-5">}</span><span class="p" data-group-id="7047645757-4">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="7047645757-6">(</span><span class="s">&quot;Parse error at </span><span class="si">~p</span><span class="s">:</span><span class="si">~p</span><span class="s">: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7047645757-7">[</span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Col</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p" data-group-id="7047645757-7">]</span><span class="p" data-group-id="7047645757-6">)</span><span class="p">;</span><span class="w">
-    </span><span class="p" data-group-id="7047645757-8">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p" data-group-id="7047645757-8">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
-        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="7047645757-9">(</span><span class="s">&quot;Error: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7047645757-10">[</span><span class="n">Reason</span><span class="p" data-group-id="7047645757-10">]</span><span class="p" data-group-id="7047645757-9">)</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="k">case</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="2944902827-1">(</span><span class="s">&quot;examples/hello.cure&quot;</span><span class="p" data-group-id="2944902827-1">)</span><span class="w"> </span><span class="k">of</span><span class="w">
+    </span><span class="p" data-group-id="2944902827-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p" data-group-id="2944902827-2">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="2944902827-3">(</span><span class="s">&quot;Successfully parsed file</span><span class="si">~n</span><span class="s">&quot;</span><span class="p" data-group-id="2944902827-3">)</span><span class="p">;</span><span class="w">
+    </span><span class="p" data-group-id="2944902827-4">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2944902827-5">{</span><span class="ss">parse_error</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p">,</span><span class="w"> </span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Col</span><span class="p" data-group-id="2944902827-5">}</span><span class="p" data-group-id="2944902827-4">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="2944902827-6">(</span><span class="s">&quot;Parse error at </span><span class="si">~p</span><span class="s">:</span><span class="si">~p</span><span class="s">: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2944902827-7">[</span><span class="n">Line</span><span class="p">,</span><span class="w"> </span><span class="n">Col</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p" data-group-id="2944902827-7">]</span><span class="p" data-group-id="2944902827-6">)</span><span class="p">;</span><span class="w">
+    </span><span class="p" data-group-id="2944902827-8">{</span><span class="ss">error</span><span class="p">,</span><span class="w"> </span><span class="n">Reason</span><span class="p" data-group-id="2944902827-8">}</span><span class="w"> </span><span class="p">-&gt;</span><span class="w">
+        </span><span class="nc">cure_utils</span><span class="p">:</span><span class="nf">debug</span><span class="p" data-group-id="2944902827-9">(</span><span class="s">&quot;Error: </span><span class="si">~p</span><span class="si">~n</span><span class="s">&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2944902827-10">[</span><span class="n">Reason</span><span class="p" data-group-id="2944902827-10">]</span><span class="p" data-group-id="2944902827-9">)</span><span class="w">
 </span><span class="k">end</span><span class="p">.</span></code></pre><h2 id="parse_file/1-error-sources" class="section-heading">
   <a href="#parse_file/1-error-sources" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
@@ -398,9 +398,9 @@ lexing and parsing pipeline.</p><h2 id="parse_file/1-arguments" class="section-h
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.7.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.7.0">Hex Preview</a>
 
           </span>
 

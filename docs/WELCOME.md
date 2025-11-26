@@ -175,7 +175,7 @@ I'm not a purist, I just made pipes monadic. More details [here](https://github.
 
 ## Current Project Status
 
-### ✅ What Works (Version 0.6.0 — November 2025)
+### ✅ What Works (Version 0.7.0 — November 2025)
 
 **Fully functional implementation:**
 
@@ -322,7 +322,7 @@ make all
 
 # 3. Check installation
 ./cure --version
-# Cure v0.6.0 (November 2025)
+# Cure v0.7.0 (November 2025)
 
 # 4. Run tests
 make test

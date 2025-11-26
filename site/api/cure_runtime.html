@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.6.0">
+    <meta name="project" content="cure v0.7.0">
 
 
-    <title>cure_runtime — cure v0.6.0</title>
+    <title>cure_runtime — cure v0.7.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.6.0
+          v0.7.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/runtime/cure_runtime.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/runtime/cure_runtime.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_runtime</span> 
-    <small class="app-vsn" translate="no">(cure v0.6.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.7.0)</small>
 
   </h1>
 
@@ -175,13 +175,13 @@ and integration with the Erlang standard library.</p><h2 id="module-features" cl
   </a>
   <span class="text">State Management</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="o">#</span><span class="ss">runtime_state</span><span class="p" data-group-id="7053788570-1">{</span><span class="w">
-    </span><span class="ss">stack</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7053788570-2">[</span><span class="p" data-group-id="7053788570-2">]</span><span class="p">,</span><span class="w">      </span><span class="c1">% Execution stack for operands</span><span class="w">
-    </span><span class="ss">locals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7053788570-3">#{</span><span class="p" data-group-id="7053788570-3">}</span><span class="p">,</span><span class="w">    </span><span class="c1">% Local variables in current scope</span><span class="w">
-    </span><span class="ss">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7053788570-4">#{</span><span class="p" data-group-id="7053788570-4">}</span><span class="p">,</span><span class="w">    </span><span class="c1">% Function parameters</span><span class="w">
-    </span><span class="ss">modules</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7053788570-5">#{</span><span class="p" data-group-id="7053788570-5">}</span><span class="p">,</span><span class="w">   </span><span class="c1">% Loaded modules</span><span class="w">
-    </span><span class="ss">globals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7053788570-6">#{</span><span class="p" data-group-id="7053788570-6">}</span><span class="w">    </span><span class="c1">% Global function registry</span><span class="w">
-</span><span class="p" data-group-id="7053788570-1">}</span></code></pre><h3 id="module-instruction-set" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="o">#</span><span class="ss">runtime_state</span><span class="p" data-group-id="1151858063-1">{</span><span class="w">
+    </span><span class="ss">stack</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1151858063-2">[</span><span class="p" data-group-id="1151858063-2">]</span><span class="p">,</span><span class="w">      </span><span class="c1">% Execution stack for operands</span><span class="w">
+    </span><span class="ss">locals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1151858063-3">#{</span><span class="p" data-group-id="1151858063-3">}</span><span class="p">,</span><span class="w">    </span><span class="c1">% Local variables in current scope</span><span class="w">
+    </span><span class="ss">params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1151858063-4">#{</span><span class="p" data-group-id="1151858063-4">}</span><span class="p">,</span><span class="w">    </span><span class="c1">% Function parameters</span><span class="w">
+    </span><span class="ss">modules</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1151858063-5">#{</span><span class="p" data-group-id="1151858063-5">}</span><span class="p">,</span><span class="w">   </span><span class="c1">% Loaded modules</span><span class="w">
+    </span><span class="ss">globals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="1151858063-6">#{</span><span class="p" data-group-id="1151858063-6">}</span><span class="w">    </span><span class="c1">% Global function registry</span><span class="w">
+</span><span class="p" data-group-id="1151858063-1">}</span></code></pre><h3 id="module-instruction-set" class="section-heading">
   <a href="#module-instruction-set" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -200,26 +200,26 @@ and integration with the Erlang standard library.</p><h2 id="module-features" cl
   <span class="text">Basic Program Execution</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Execute a compiled module</span><span class="w">
-</span><span class="p" data-group-id="2747608986-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledModule</span><span class="p" data-group-id="2747608986-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="2747608986-2">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="2747608986-2">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="2747608986-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="2747608986-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">execute_module</span><span class="p" data-group-id="2747608986-4">(</span><span class="n">CompiledModule</span><span class="p" data-group-id="2747608986-4">)</span><span class="p">.</span><span class="w">
+</span><span class="p" data-group-id="4386263585-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledModule</span><span class="p" data-group-id="4386263585-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="4386263585-2">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="4386263585-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="4386263585-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="4386263585-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">execute_module</span><span class="p" data-group-id="4386263585-4">(</span><span class="n">CompiledModule</span><span class="p" data-group-id="4386263585-4">)</span><span class="p">.</span><span class="w">
 
 </span><span class="c1">%% Run a complete program with multiple modules</span><span class="w">
-</span><span class="p" data-group-id="2747608986-5">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="2747608986-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_program</span><span class="p" data-group-id="2747608986-6">(</span><span class="n">ProgramAST</span><span class="p" data-group-id="2747608986-6">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="2747608986-7">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="2747608986-7">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">run_program</span><span class="p" data-group-id="2747608986-8">(</span><span class="n">Modules</span><span class="p" data-group-id="2747608986-8">)</span><span class="p">.</span></code></pre><h3 id="module-function-calls" class="section-heading">
+</span><span class="p" data-group-id="4386263585-5">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="4386263585-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_program</span><span class="p" data-group-id="4386263585-6">(</span><span class="n">ProgramAST</span><span class="p" data-group-id="4386263585-6">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="4386263585-7">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="4386263585-7">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">run_program</span><span class="p" data-group-id="4386263585-8">(</span><span class="n">Modules</span><span class="p" data-group-id="4386263585-8">)</span><span class="p">.</span></code></pre><h3 id="module-function-calls" class="section-heading">
   <a href="#module-function-calls" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Function Calls</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="4774374420-1">(</span><span class="p" data-group-id="4774374420-1">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="4774374420-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="n">NewState</span><span class="p" data-group-id="4774374420-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="4774374420-3">(</span><span class="ss">add</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4774374420-4">[</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="4774374420-4">]</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="4774374420-3">)</span><span class="p">.</span></code></pre><h3 id="module-module-loading" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="9970807020-1">(</span><span class="p" data-group-id="9970807020-1">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="9970807020-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="n">NewState</span><span class="p" data-group-id="9970807020-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="9970807020-3">(</span><span class="ss">add</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9970807020-4">[</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="9970807020-4">]</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="9970807020-3">)</span><span class="p">.</span></code></pre><h3 id="module-module-loading" class="section-heading">
   <a href="#module-module-loading" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Module Loading</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="7373073046-1">(</span><span class="p" data-group-id="7373073046-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">StateWithModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">load_module</span><span class="p" data-group-id="7373073046-2">(</span><span class="n">CompiledModule</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="7373073046-2">)</span><span class="p">.</span></code></pre><h2 id="module-integration" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="5420615660-1">(</span><span class="p" data-group-id="5420615660-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">StateWithModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">load_module</span><span class="p" data-group-id="5420615660-2">(</span><span class="n">CompiledModule</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="5420615660-2">)</span><span class="p">.</span></code></pre><h2 id="module-integration" class="section-heading">
   <a href="#module-integration" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -384,7 +384,7 @@ External function calls may interact with concurrent Erlang processes safely.</p
     </a>
     <h1 class="signature" translate="no">call_function(FuncName, Args, State)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/runtime/cure_runtime.erl#L534" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/runtime/cure_runtime.erl#L534" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -413,15 +413,15 @@ with automatic error handling and state management.</p><h2 id="call_function/3-a
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="6540019029-1">(</span><span class="p" data-group-id="6540019029-1">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="1698249128-1">(</span><span class="p" data-group-id="1698249128-1">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">%% Call standard library function</span><span class="w">
-</span><span class="p" data-group-id="6540019029-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="n">State1</span><span class="p" data-group-id="6540019029-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="6540019029-3">(</span><span class="nb">abs</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6540019029-4">[</span><span class="o">-</span><span class="mi">5</span><span class="p" data-group-id="6540019029-4">]</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="6540019029-3">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="1698249128-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="n">State1</span><span class="p" data-group-id="1698249128-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="1698249128-3">(</span><span class="nb">abs</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1698249128-4">[</span><span class="o">-</span><span class="mi">5</span><span class="p" data-group-id="1698249128-4">]</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="1698249128-3">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">%% Result = 5</span><span class="w">
 
 </span><span class="c1">%% Call user-defined function (after loading module)</span><span class="w">
-</span><span class="n">StateWithModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">load_module</span><span class="p" data-group-id="6540019029-5">(</span><span class="n">CompiledModule</span><span class="p">,</span><span class="w"> </span><span class="n">State1</span><span class="p" data-group-id="6540019029-5">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="6540019029-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">UserResult</span><span class="p">,</span><span class="w"> </span><span class="n">State2</span><span class="p" data-group-id="6540019029-6">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="6540019029-7">(</span><span class="ss">my_func</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6540019029-8">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="6540019029-8">]</span><span class="p">,</span><span class="w"> </span><span class="n">StateWithModule</span><span class="p" data-group-id="6540019029-7">)</span><span class="p">.</span></code></pre><h2 id="call_function/3-function-types" class="section-heading">
+</span><span class="n">StateWithModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">load_module</span><span class="p" data-group-id="1698249128-5">(</span><span class="n">CompiledModule</span><span class="p">,</span><span class="w"> </span><span class="n">State1</span><span class="p" data-group-id="1698249128-5">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="1698249128-6">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">UserResult</span><span class="p">,</span><span class="w"> </span><span class="n">State2</span><span class="p" data-group-id="1698249128-6">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="1698249128-7">(</span><span class="ss">my_func</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1698249128-8">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p" data-group-id="1698249128-8">]</span><span class="p">,</span><span class="w"> </span><span class="n">StateWithModule</span><span class="p" data-group-id="1698249128-7">)</span><span class="p">.</span></code></pre><h2 id="call_function/3-function-types" class="section-heading">
   <a href="#call_function/3-function-types" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -462,7 +462,7 @@ with automatic error handling and state management.</p><h2 id="call_function/3-a
     </a>
     <h1 class="signature" translate="no">create_runtime_state()</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/runtime/cure_runtime.erl#L322" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/runtime/cure_runtime.erl#L322" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -485,8 +485,8 @@ library function registry.</p><h2 id="create_runtime_state/0-returns" class="sec
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="7576082681-1">(</span><span class="p" data-group-id="7576082681-1">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="7576082681-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="n">NewState</span><span class="p" data-group-id="7576082681-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="7576082681-3">(</span><span class="ss">print</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7576082681-4">[</span><span class="s">&quot;Hello&quot;</span><span class="p" data-group-id="7576082681-4">]</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="7576082681-3">)</span><span class="p">.</span></code></pre><h2 id="create_runtime_state/0-pre-loaded-functions" class="section-heading">
+<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="1026167826-1">(</span><span class="p" data-group-id="1026167826-1">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="1026167826-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="n">NewState</span><span class="p" data-group-id="1026167826-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="1026167826-3">(</span><span class="ss">print</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1026167826-4">[</span><span class="s">&quot;Hello&quot;</span><span class="p" data-group-id="1026167826-4">]</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="1026167826-3">)</span><span class="p">.</span></code></pre><h2 id="create_runtime_state/0-pre-loaded-functions" class="section-heading">
   <a href="#create_runtime_state/0-pre-loaded-functions" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -546,7 +546,7 @@ functions, ensuring consistent behavior and implementation.</p>
     </a>
     <h1 class="signature" translate="no">execute_function(FuncName, Args, State)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/runtime/cure_runtime.erl#L552" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/runtime/cure_runtime.erl#L552" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -566,7 +566,7 @@ functions, ensuring consistent behavior and implementation.</p>
     </a>
     <h1 class="signature" translate="no">execute_module(CompiledModule)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/runtime/cure_runtime.erl#L205" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/runtime/cure_runtime.erl#L205" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -596,9 +596,9 @@ main function if present.</p><h2 id="execute_module/1-arguments" class="section-
   <span class="text">Example</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Compile and execute a module with main/0</span><span class="w">
-</span><span class="n">ModuleAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">parse_module</span><span class="p" data-group-id="7326535983-1">(</span><span class="s">&quot;def main() = 42&quot;</span><span class="p" data-group-id="7326535983-1">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="7326535983-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledModule</span><span class="p" data-group-id="7326535983-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="7326535983-3">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="7326535983-3">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="7326535983-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p" data-group-id="7326535983-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">execute_module</span><span class="p" data-group-id="7326535983-5">(</span><span class="n">CompiledModule</span><span class="p" data-group-id="7326535983-5">)</span><span class="p">.</span></code></pre><h2 id="execute_module/1-main-function-requirements" class="section-heading">
+</span><span class="n">ModuleAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">parse_module</span><span class="p" data-group-id="1337221515-1">(</span><span class="s">&quot;def main() = 42&quot;</span><span class="p" data-group-id="1337221515-1">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="1337221515-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">CompiledModule</span><span class="p" data-group-id="1337221515-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="1337221515-3">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="1337221515-3">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="1337221515-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="mi">42</span><span class="p" data-group-id="1337221515-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">execute_module</span><span class="p" data-group-id="1337221515-5">(</span><span class="n">CompiledModule</span><span class="p" data-group-id="1337221515-5">)</span><span class="p">.</span></code></pre><h2 id="execute_module/1-main-function-requirements" class="section-heading">
   <a href="#execute_module/1-main-function-requirements" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -621,7 +621,7 @@ main function if present.</p><h2 id="execute_module/1-arguments" class="section-
     </a>
     <h1 class="signature" translate="no">load_module(CompiledModule, State)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/runtime/cure_runtime.erl#L425" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/runtime/cure_runtime.erl#L425" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -650,12 +650,12 @@ the module for future reference.</p><h2 id="load_module/2-arguments" class="sect
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="4729930710-1">(</span><span class="p" data-group-id="4729930710-1">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="4729930710-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Module</span><span class="p" data-group-id="4729930710-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="4729930710-3">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="4729930710-3">)</span><span class="p">,</span><span class="w">
-</span><span class="n">StateWithModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">load_module</span><span class="p" data-group-id="4729930710-4">(</span><span class="n">Module</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="4729930710-4">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">State</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">create_runtime_state</span><span class="p" data-group-id="1940723027-1">(</span><span class="p" data-group-id="1940723027-1">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="1940723027-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Module</span><span class="p" data-group-id="1940723027-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_module</span><span class="p" data-group-id="1940723027-3">(</span><span class="n">ModuleAST</span><span class="p" data-group-id="1940723027-3">)</span><span class="p">,</span><span class="w">
+</span><span class="n">StateWithModule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">load_module</span><span class="p" data-group-id="1940723027-4">(</span><span class="n">Module</span><span class="p">,</span><span class="w"> </span><span class="n">State</span><span class="p" data-group-id="1940723027-4">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">%% Now module functions are available</span><span class="w">
-</span><span class="p" data-group-id="4729930710-5">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="4729930710-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="4729930710-6">(</span><span class="ss">my_function</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4729930710-7">[</span><span class="ss">args</span><span class="p" data-group-id="4729930710-7">]</span><span class="p">,</span><span class="w"> </span><span class="n">StateWithModule</span><span class="p" data-group-id="4729930710-6">)</span><span class="p">.</span></code></pre><h2 id="load_module/2-module-integration" class="section-heading">
+</span><span class="p" data-group-id="1940723027-5">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p">,</span><span class="w"> </span><span class="p">_</span><span class="p" data-group-id="1940723027-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">call_function</span><span class="p" data-group-id="1940723027-6">(</span><span class="ss">my_function</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1940723027-7">[</span><span class="ss">args</span><span class="p" data-group-id="1940723027-7">]</span><span class="p">,</span><span class="w"> </span><span class="n">StateWithModule</span><span class="p" data-group-id="1940723027-6">)</span><span class="p">.</span></code></pre><h2 id="load_module/2-module-integration" class="section-heading">
   <a href="#load_module/2-module-integration" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -673,12 +673,12 @@ the module for future reference.</p><h2 id="load_module/2-arguments" class="sect
   </a>
   <span class="text">Module Format</span>
 </h2>
-<p>Expected compiled module format:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="6364870421-1">#{</span><span class="w">
+<p>Expected compiled module format:</p><pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="9986438450-1">#{</span><span class="w">
     </span><span class="ss">name</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="n">ModuleName</span><span class="p">,</span><span class="w">
-    </span><span class="ss">functions</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="6364870421-2">[</span><span class="n">CompiledFunction</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="6364870421-2">]</span><span class="p">,</span><span class="w">
-    </span><span class="ss">exports</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="6364870421-3">[</span><span class="p" data-group-id="6364870421-4">{</span><span class="n">FuncName</span><span class="p">,</span><span class="w"> </span><span class="n">Arity</span><span class="p" data-group-id="6364870421-4">}</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="6364870421-3">]</span><span class="p">,</span><span class="w">
-    </span><span class="ss">attributes</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="6364870421-5">[</span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="6364870421-5">]</span><span class="w">
-</span><span class="p" data-group-id="6364870421-1">}</span></code></pre><h2 id="load_module/2-error-handling" class="section-heading">
+    </span><span class="ss">functions</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="9986438450-2">[</span><span class="n">CompiledFunction</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="9986438450-2">]</span><span class="p">,</span><span class="w">
+    </span><span class="ss">exports</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="9986438450-3">[</span><span class="p" data-group-id="9986438450-4">{</span><span class="n">FuncName</span><span class="p">,</span><span class="w"> </span><span class="n">Arity</span><span class="p" data-group-id="9986438450-4">}</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="9986438450-3">]</span><span class="p">,</span><span class="w">
+    </span><span class="ss">attributes</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="9986438450-5">[</span><span class="p">.</span><span class="p">.</span><span class="p">.</span><span class="p" data-group-id="9986438450-5">]</span><span class="w">
+</span><span class="p" data-group-id="9986438450-1">}</span></code></pre><h2 id="load_module/2-error-handling" class="section-heading">
   <a href="#load_module/2-error-handling" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -697,7 +697,7 @@ not fail.</p>
     </a>
     <h1 class="signature" translate="no">record_field/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/runtime/cure_runtime.erl#L944" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/runtime/cure_runtime.erl#L944" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -727,8 +727,8 @@ isn't known statically during compilation. It handles both Erlang-style records
   <span class="text">Example</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% For a record like {turnstile_payload, &#39;Lock&#39;, coin}</span><span class="w">
-</span><span class="n">Payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="4049539608-1">{</span><span class="ss">&#39;TurnstilePayload&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Lock&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">coin</span><span class="p" data-group-id="4049539608-1">}</span><span class="p">,</span><span class="w">
-</span><span class="n">Event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">record_field</span><span class="p" data-group-id="4049539608-2">(</span><span class="n">Payload</span><span class="p">,</span><span class="w"> </span><span class="ss">event</span><span class="p" data-group-id="4049539608-2">)</span><span class="p">,</span><span class="w">  </span><span class="c1">% Returns coin</span></code></pre><h2 id="record_field/2-implementation-notes" class="section-heading">
+</span><span class="n">Payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="2828118609-1">{</span><span class="ss">&#39;TurnstilePayload&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">&#39;Lock&#39;</span><span class="p">,</span><span class="w"> </span><span class="ss">coin</span><span class="p" data-group-id="2828118609-1">}</span><span class="p">,</span><span class="w">
+</span><span class="n">Event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">record_field</span><span class="p" data-group-id="2828118609-2">(</span><span class="n">Payload</span><span class="p">,</span><span class="w"> </span><span class="ss">event</span><span class="p" data-group-id="2828118609-2">)</span><span class="p">,</span><span class="w">  </span><span class="c1">% Returns coin</span></code></pre><h2 id="record_field/2-implementation-notes" class="section-heading">
   <a href="#record_field/2-implementation-notes" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -747,7 +747,7 @@ during code generation</li><li>Performance: O(1) tuple element access</li></ul>
     </a>
     <h1 class="signature" translate="no">run_program/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/runtime/cure_runtime.erl#L252" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/runtime/cure_runtime.erl#L252" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -777,9 +777,9 @@ multi-module Cure programs.</p><h2 id="run_program/1-arguments" class="section-h
   <span class="text">Example</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Compile and run a multi-module program</span><span class="w">
-</span><span class="n">ProgramAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="2347548909-1">[</span><span class="n">Module1AST</span><span class="p">,</span><span class="w"> </span><span class="n">Module2AST</span><span class="p">,</span><span class="w"> </span><span class="n">MainModuleAST</span><span class="p" data-group-id="2347548909-1">]</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="2347548909-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="2347548909-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_program</span><span class="p" data-group-id="2347548909-3">(</span><span class="n">ProgramAST</span><span class="p" data-group-id="2347548909-3">)</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="2347548909-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="2347548909-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">run_program</span><span class="p" data-group-id="2347548909-5">(</span><span class="n">Modules</span><span class="p" data-group-id="2347548909-5">)</span><span class="p">.</span></code></pre><h2 id="run_program/1-module-loading-order" class="section-heading">
+</span><span class="n">ProgramAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="0608725377-1">[</span><span class="n">Module1AST</span><span class="p">,</span><span class="w"> </span><span class="n">Module2AST</span><span class="p">,</span><span class="w"> </span><span class="n">MainModuleAST</span><span class="p" data-group-id="0608725377-1">]</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="0608725377-2">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Modules</span><span class="p" data-group-id="0608725377-2">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_codegen</span><span class="p">:</span><span class="nf">compile_program</span><span class="p" data-group-id="0608725377-3">(</span><span class="n">ProgramAST</span><span class="p" data-group-id="0608725377-3">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="0608725377-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="p" data-group-id="0608725377-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_runtime</span><span class="p">:</span><span class="nf">run_program</span><span class="p" data-group-id="0608725377-5">(</span><span class="n">Modules</span><span class="p" data-group-id="0608725377-5">)</span><span class="p">.</span></code></pre><h2 id="run_program/1-module-loading-order" class="section-heading">
   <a href="#run_program/1-module-loading-order" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -802,9 +802,9 @@ multi-module Cure programs.</p><h2 id="run_program/1-arguments" class="section-h
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.7.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.7.0">Hex Preview</a>
 
           </span>
 

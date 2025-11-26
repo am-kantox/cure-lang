@@ -5,10 +5,10 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.35.1">
-    <meta name="project" content="cure v0.6.0">
+    <meta name="project" content="cure v0.7.0">
 
 
-    <title>cure_smt_parser — cure v0.6.0</title>
+    <title>cure_smt_parser — cure v0.7.0</title>
     <link rel="stylesheet" href="dist/html-erlang-4IXSOGMD.css" />
 
 
@@ -50,7 +50,7 @@
 cure
         </a>
         <div class="sidebar-projectVersion" translate="no">
-          v0.6.0
+          v0.7.0
         </div>
       </div>
     </div>
@@ -112,13 +112,13 @@ Pages
 <div id="top-content">
   <h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_parser.erl#L3" title="View Source" class="icon-action" rel="help">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_parser.erl#L3" title="View Source" class="icon-action" rel="help">
         <i class="ri-code-s-slash-line" aria-hidden="true"></i>
         <span class="sr-only">View Source</span>
       </a>
 
     <span translate="no">cure_smt_parser</span> 
-    <small class="app-vsn" translate="no">(cure v0.6.0)</small>
+    <small class="app-vsn" translate="no">(cure v0.7.0)</small>
 
   </h1>
 
@@ -138,13 +138,13 @@ variable bindings and convert them to Erlang terms.</p><h2 id="module-features" 
   <span class="text">Usage</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Parse model from Z3 output</span><span class="w">
-</span><span class="n">Lines</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="7457724734-1">[</span><span class="w">
-    </span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="p" data-group-id="7457724734-2">(</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w">
-    </span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="w">  </span><span class="p" data-group-id="7457724734-3">(</span><span class="ss">define</span><span class="o">-</span><span class="k">fun</span><span class="w"> </span><span class="nf">x</span><span class="w"> </span><span class="p" data-group-id="7457724734-4">(</span><span class="p" data-group-id="7457724734-4">)</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="7457724734-3">)</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w">
-    </span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="w">  </span><span class="p" data-group-id="7457724734-5">(</span><span class="ss">define</span><span class="o">-</span><span class="k">fun</span><span class="w"> </span><span class="nf">y</span><span class="w"> </span><span class="p" data-group-id="7457724734-6">(</span><span class="p" data-group-id="7457724734-6">)</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="7457724734-5">)</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w">
-    </span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="p" data-group-id="7457724734-2">)</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="w">
-</span><span class="p" data-group-id="7457724734-1">]</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="7457724734-7">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Model</span><span class="p" data-group-id="7457724734-7">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_parser</span><span class="p">:</span><span class="nf">parse_model</span><span class="p" data-group-id="7457724734-8">(</span><span class="n">Lines</span><span class="p" data-group-id="7457724734-8">)</span><span class="p">.</span><span class="w">
+</span><span class="n">Lines</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="0959702723-1">[</span><span class="w">
+    </span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="p" data-group-id="0959702723-2">(</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w">
+    </span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="w">  </span><span class="p" data-group-id="0959702723-3">(</span><span class="ss">define</span><span class="o">-</span><span class="k">fun</span><span class="w"> </span><span class="nf">x</span><span class="w"> </span><span class="p" data-group-id="0959702723-4">(</span><span class="p" data-group-id="0959702723-4">)</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="0959702723-3">)</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w">
+    </span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="w">  </span><span class="p" data-group-id="0959702723-5">(</span><span class="ss">define</span><span class="o">-</span><span class="k">fun</span><span class="w"> </span><span class="nf">y</span><span class="w"> </span><span class="p" data-group-id="0959702723-6">(</span><span class="p" data-group-id="0959702723-6">)</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="mi">3</span><span class="p" data-group-id="0959702723-5">)</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w">
+    </span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="p" data-group-id="0959702723-2">)</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="w">
+</span><span class="p" data-group-id="0959702723-1">]</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="0959702723-7">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">Model</span><span class="p" data-group-id="0959702723-7">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_smt_parser</span><span class="p">:</span><span class="nf">parse_model</span><span class="p" data-group-id="0959702723-8">(</span><span class="n">Lines</span><span class="p" data-group-id="0959702723-8">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {ok, #{x =&gt; 5, y =&gt; 3}}</span></code></pre>
     </section>
 
@@ -233,7 +233,7 @@ variable bindings and convert them to Erlang terms.</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">extract_bindings(ModelText)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_parser.erl#L93" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_parser.erl#L93" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -271,7 +271,7 @@ variable bindings and convert them to Erlang terms.</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">parse_define_fun(Line)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_parser.erl#L124" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_parser.erl#L124" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -309,7 +309,7 @@ variable bindings and convert them to Erlang terms.</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">parse_model/1</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_parser.erl#L65" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_parser.erl#L65" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -342,8 +342,8 @@ variable bindings and convert them to Erlang terms.</p><h2 id="module-features" 
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">Lines</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="3033775812-1">[</span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="p" data-group-id="3033775812-2">(</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="w">  </span><span class="p" data-group-id="3033775812-3">(</span><span class="ss">define</span><span class="o">-</span><span class="k">fun</span><span class="w"> </span><span class="nf">x</span><span class="w"> </span><span class="p" data-group-id="3033775812-4">(</span><span class="p" data-group-id="3033775812-4">)</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="3033775812-3">)</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="p" data-group-id="3033775812-2">)</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="3033775812-1">]</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="3033775812-5">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3033775812-6">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="3033775812-6">}</span><span class="p" data-group-id="3033775812-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">parse_model</span><span class="p" data-group-id="3033775812-7">(</span><span class="n">Lines</span><span class="p" data-group-id="3033775812-7">)</span><span class="p">.</span></code></pre>
+<pre><code class="makeup erlang" translate="no"><span class="n">Lines</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p" data-group-id="9434238159-1">[</span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="p" data-group-id="9434238159-2">(</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="w">  </span><span class="p" data-group-id="9434238159-3">(</span><span class="ss">define</span><span class="o">-</span><span class="k">fun</span><span class="w"> </span><span class="nf">x</span><span class="w"> </span><span class="p" data-group-id="9434238159-4">(</span><span class="p" data-group-id="9434238159-4">)</span><span class="w"> </span><span class="n">Int</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="9434238159-3">)</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="p">&lt;&lt;</span><span class="err">\</span><span class="p">&quot;</span><span class="p" data-group-id="9434238159-2">)</span><span class="err">\</span><span class="p">&quot;</span><span class="p">&gt;&gt;</span><span class="p" data-group-id="9434238159-1">]</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="9434238159-5">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9434238159-6">#{</span><span class="ss">x</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">5</span><span class="p" data-group-id="9434238159-6">}</span><span class="p" data-group-id="9434238159-5">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">parse_model</span><span class="p" data-group-id="9434238159-7">(</span><span class="n">Lines</span><span class="p" data-group-id="9434238159-7">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="parse_value/1">
@@ -354,7 +354,7 @@ variable bindings and convert them to Erlang terms.</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">parse_value(ValueBin)</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_parser.erl#L210" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_parser.erl#L210" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -392,7 +392,7 @@ variable bindings and convert them to Erlang terms.</p><h2 id="module-features" 
     </a>
     <h1 class="signature" translate="no">parse_value/2</h1>
 
-      <a href="https://github.com/am-kantox/cure-lang/blob/v0.6.0/src/smt/cure_smt_parser.erl#L158" class="icon-action" rel="help" aria-label="View Source">
+      <a href="https://github.com/am-kantox/cure-lang/blob/v0.7.0/src/smt/cure_smt_parser.erl#L158" class="icon-action" rel="help" aria-label="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
      </a>
 
@@ -430,9 +430,9 @@ variable bindings and convert them to Erlang terms.</p><h2 id="module-features" 
       <p>
 
           <span class="line">
-            <a href="https://hex.pm/packages/cure/0.6.0" class="footer-hex-package">Hex Package</a>
+            <a href="https://hex.pm/packages/cure/0.7.0" class="footer-hex-package">Hex Package</a>
 
-            <a href="https://preview.hex.pm/preview/cure/0.6.0">Hex Preview</a>
+            <a href="https://preview.hex.pm/preview/cure/0.7.0">Hex Preview</a>
 
           </span>
 
