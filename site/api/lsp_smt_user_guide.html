@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-C51205A4.js"></script>
+    <script src="dist/sidebar_items-AA658F96.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -257,34 +257,34 @@ def divide(a: Int, b: Int) when b /= 0: Int = a / b</code></pre><h4>Add Assertio
   <span class="text">Timeout Settings</span>
 </h3>
 <p>Configure timeouts based on your workflow:</p><pre><code class="makeup erlang" translate="no"><span class="c1">% In your LSP config</span><span class="w">
-</span><span class="p" data-group-id="1063694543-1">#{</span><span class="w">
-    </span><span class="ss">timeouts</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="1063694543-2">#{</span><span class="w">
+</span><span class="p" data-group-id="5963980814-1">#{</span><span class="w">
+    </span><span class="ss">timeouts</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="5963980814-2">#{</span><span class="w">
         </span><span class="ss">lsp</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w">        </span><span class="c1">% Interactive editing (default)</span><span class="w">
         </span><span class="ss">compile</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span><span class="w">   </span><span class="c1">% Full compilation</span><span class="w">
         </span><span class="ss">test</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">10000</span><span class="w">      </span><span class="c1">% Running tests</span><span class="w">
-    </span><span class="p" data-group-id="1063694543-2">}</span><span class="w">
-</span><span class="p" data-group-id="1063694543-1">}</span></code></pre><h3 id="cache-settings" class="section-heading">
+    </span><span class="p" data-group-id="5963980814-2">}</span><span class="w">
+</span><span class="p" data-group-id="5963980814-1">}</span></code></pre><h3 id="cache-settings" class="section-heading">
   <a href="#cache-settings" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Cache Settings</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="2455666871-1">#{</span><span class="w">
-    </span><span class="ss">cache</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="2455666871-2">#{</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4033438638-1">#{</span><span class="w">
+    </span><span class="ss">cache</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="4033438638-2">#{</span><span class="w">
         </span><span class="ss">enabled</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">true</span><span class="p">,</span><span class="w">
         </span><span class="ss">max_size</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span><span class="w">      </span><span class="c1">% Max cached queries</span><span class="w">
         </span><span class="ss">ttl_seconds</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="mi">3600</span><span class="w">    </span><span class="c1">% Cache lifetime</span><span class="w">
-    </span><span class="p" data-group-id="2455666871-2">}</span><span class="w">
-</span><span class="p" data-group-id="2455666871-1">}</span></code></pre><h3 id="solver-selection" class="section-heading">
+    </span><span class="p" data-group-id="4033438638-2">}</span><span class="w">
+</span><span class="p" data-group-id="4033438638-1">}</span></code></pre><h3 id="solver-selection" class="section-heading">
   <a href="#solver-selection" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Solver Selection</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="9477481427-1">#{</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="1146631675-1">#{</span><span class="w">
     </span><span class="ss">solver</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="ss">z3</span><span class="p">,</span><span class="w">              </span><span class="c1">% Currently only Z3 supported</span><span class="w">
     </span><span class="ss">solver_path</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="s">&quot;/usr/bin/z3&quot;</span><span class="w">  </span><span class="c1">% Custom path if needed</span><span class="w">
-</span><span class="p" data-group-id="9477481427-1">}</span></code></pre><hr class="thin"/><h2 id="using-smt-verification" class="section-heading">
+</span><span class="p" data-group-id="1146631675-1">}</span></code></pre><hr class="thin"/><h2 id="using-smt-verification" class="section-heading">
   <a href="#using-smt-verification" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -360,7 +360,7 @@ type AllPositive = List(Int) when
   </a>
   <span class="text">Monitoring Performance</span>
 </h3>
-<p>Check LSP statistics:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_lsp_performance</span><span class="p">:</span><span class="nf">get_stats</span><span class="p" data-group-id="2554442922-1">(</span><span class="p" data-group-id="2554442922-1">)</span><span class="p">.</span><span class="w">
+<p>Check LSP statistics:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_lsp_performance</span><span class="p">:</span><span class="nf">get_stats</span><span class="p" data-group-id="4308277204-1">(</span><span class="p" data-group-id="4308277204-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; #{</span><span class="w">
 </span><span class="c1">%     queued =&gt; 45,</span><span class="w">
 </span><span class="c1">%     processed =&gt; 120,</span><span class="w">
@@ -407,12 +407,12 @@ def unsafe_operation(x: Int) =
   </a>
   <span class="text">Custom Solver Flags</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="1508483012-1">#{</span><span class="w">
-    </span><span class="ss">solver_args</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="1508483012-2">[</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="4585516951-1">#{</span><span class="w">
+    </span><span class="ss">solver_args</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p" data-group-id="4585516951-2">[</span><span class="w">
         </span><span class="s">&quot;timeout=1000&quot;</span><span class="p">,</span><span class="w">
         </span><span class="s">&quot;smt.mbqi=false&quot;</span><span class="w">
-    </span><span class="p" data-group-id="1508483012-2">]</span><span class="w">
-</span><span class="p" data-group-id="1508483012-1">}</span></code></pre><h3 id="incremental-verification" class="section-heading">
+    </span><span class="p" data-group-id="4585516951-2">]</span><span class="w">
+</span><span class="p" data-group-id="4585516951-1">}</span></code></pre><h3 id="incremental-verification" class="section-heading">
   <a href="#incremental-verification" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
@@ -424,7 +424,7 @@ def unsafe_operation(x: Int) =
   </a>
   <span class="text">Background Verification</span>
 </h3>
-<p>Large files verified in background:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_lsp_performance</span><span class="p">:</span><span class="nf">verify_async</span><span class="p" data-group-id="2445012286-1">(</span><span class="n">Uri</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="ss">lsp</span><span class="p" data-group-id="2445012286-1">)</span><span class="p">.</span></code></pre><p>Results arrive asynchronously without blocking editor.</p><hr class="thin"/><h2 id="resources" class="section-heading">
+<p>Large files verified in background:</p><pre><code class="makeup erlang" translate="no"><span class="nc">cure_lsp_performance</span><span class="p">:</span><span class="nf">verify_async</span><span class="p" data-group-id="7411093738-1">(</span><span class="n">Uri</span><span class="p">,</span><span class="w"> </span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="ss">lsp</span><span class="p" data-group-id="7411093738-1">)</span><span class="p">.</span></code></pre><p>Results arrive asynchronously without blocking editor.</p><hr class="thin"/><h2 id="resources" class="section-heading">
   <a href="#resources" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>

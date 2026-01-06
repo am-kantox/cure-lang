@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-C51205A4.js"></script>
+    <script src="dist/sidebar_items-AA658F96.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -430,7 +430,7 @@ state before attempting compilation operations.</p>
   </a>
   <span class="text">Examples</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="nf">compile_file</span><span class="p" data-group-id="0385121597-1">(</span><span class="s">&quot;examples/hello.cure&quot;</span><span class="p" data-group-id="0385121597-1">)</span><span class="p">.</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="nf">compile_file</span><span class="p" data-group-id="3508029104-1">(</span><span class="s">&quot;examples/hello.cure&quot;</span><span class="p" data-group-id="3508029104-1">)</span><span class="p">.</span><span class="w">
 </span><span class="c1">% =&gt; {ok, &quot;_build/ebin/hello.beam&quot;}</span></code></pre>
   </section>
 </section>
@@ -477,16 +477,16 @@ features including type checking, optimizations, and custom output options.</p><
   <span class="text">Examples</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% Compile with verbose output</span><span class="w">
-</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="5361668861-1">{</span><span class="ss">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="5361668861-1">}</span><span class="p">,</span><span class="w">
-</span><span class="nf">compile_file</span><span class="p" data-group-id="5361668861-2">(</span><span class="s">&quot;src/math.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="5361668861-2">)</span><span class="p">.</span><span class="w">
+</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="6528215175-1">{</span><span class="ss">verbose</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">true</span><span class="p" data-group-id="6528215175-1">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">compile_file</span><span class="p" data-group-id="6528215175-2">(</span><span class="s">&quot;src/math.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="6528215175-2">)</span><span class="p">.</span><span class="w">
 
 </span><span class="c1">% Compile without optimizations  </span><span class="w">
-</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="5361668861-3">{</span><span class="ss">optimize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">false</span><span class="p" data-group-id="5361668861-3">}</span><span class="p">,</span><span class="w">
-</span><span class="nf">compile_file</span><span class="p" data-group-id="5361668861-4">(</span><span class="s">&quot;debug.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="5361668861-4">)</span><span class="p">.</span><span class="w">
+</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="6528215175-3">{</span><span class="ss">optimize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">false</span><span class="p" data-group-id="6528215175-3">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">compile_file</span><span class="p" data-group-id="6528215175-4">(</span><span class="s">&quot;debug.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="6528215175-4">)</span><span class="p">.</span><span class="w">
 
 </span><span class="c1">% Custom output file</span><span class="w">
-</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="5361668861-5">{</span><span class="ss">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;custom.beam&quot;</span><span class="p" data-group-id="5361668861-5">}</span><span class="p">,</span><span class="w">
-</span><span class="nf">compile_file</span><span class="p" data-group-id="5361668861-6">(</span><span class="s">&quot;input.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="5361668861-6">)</span><span class="p">.</span></code></pre>
+</span><span class="n">Options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">compile_options</span><span class="p" data-group-id="6528215175-5">{</span><span class="ss">output_file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;custom.beam&quot;</span><span class="p" data-group-id="6528215175-5">}</span><span class="p">,</span><span class="w">
+</span><span class="nf">compile_file</span><span class="p" data-group-id="6528215175-6">(</span><span class="s">&quot;input.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">Options</span><span class="p" data-group-id="6528215175-6">)</span><span class="p">.</span></code></pre>
   </section>
 </section>
 <section class="detail" id="compile_file_from_shell/1">
@@ -682,8 +682,8 @@ and if not, attempts to compile them automatically.</p><h2 id="ensure_stdlib_ava
   </a>
   <span class="text">Example</span>
 </h2>
-<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="0414722227-1">(</span><span class="s">&quot;MyModule.cure&quot;</span><span class="p" data-group-id="0414722227-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">Info</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">get_module_info</span><span class="p" data-group-id="0414722227-2">(</span><span class="n">AST</span><span class="p" data-group-id="0414722227-2">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">AST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_parser</span><span class="p">:</span><span class="nf">parse_file</span><span class="p" data-group-id="8949626931-1">(</span><span class="s">&quot;MyModule.cure&quot;</span><span class="p" data-group-id="8949626931-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">Info</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">get_module_info</span><span class="p" data-group-id="8949626931-2">(</span><span class="n">AST</span><span class="p" data-group-id="8949626931-2">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">% =&gt; #{name =&gt; &#39;MyModule&#39;, exports =&gt; [{hello, 1}], ...}</span></code></pre>
   </section>
 </section>
@@ -772,9 +772,9 @@ appropriate status codes.</p><h2 id="main/1-arguments" class="section-heading">
   <span class="text">Examples</span>
 </h2>
 <pre><code class="makeup erlang" translate="no"><span class="c1">% These calls happen automatically when using the CLI:</span><span class="w">
-</span><span class="nf">main</span><span class="p" data-group-id="9066731106-1">(</span><span class="p" data-group-id="9066731106-2">[</span><span class="s">&quot;input.cure&quot;</span><span class="p" data-group-id="9066731106-2">]</span><span class="p" data-group-id="9066731106-1">)</span><span class="p">.</span><span class="w">
-</span><span class="nf">main</span><span class="p" data-group-id="9066731106-3">(</span><span class="p" data-group-id="9066731106-4">[</span><span class="s">&quot;input.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;-o&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;output.beam&quot;</span><span class="p" data-group-id="9066731106-4">]</span><span class="p" data-group-id="9066731106-3">)</span><span class="p">.</span><span class="w">
-</span><span class="nf">main</span><span class="p" data-group-id="9066731106-5">(</span><span class="p" data-group-id="9066731106-6">[</span><span class="s">&quot;--help&quot;</span><span class="p" data-group-id="9066731106-6">]</span><span class="p" data-group-id="9066731106-5">)</span><span class="p">.</span></code></pre><h2 id="main/1-error-handling" class="section-heading">
+</span><span class="nf">main</span><span class="p" data-group-id="5167625163-1">(</span><span class="p" data-group-id="5167625163-2">[</span><span class="s">&quot;input.cure&quot;</span><span class="p" data-group-id="5167625163-2">]</span><span class="p" data-group-id="5167625163-1">)</span><span class="p">.</span><span class="w">
+</span><span class="nf">main</span><span class="p" data-group-id="5167625163-3">(</span><span class="p" data-group-id="5167625163-4">[</span><span class="s">&quot;input.cure&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;-o&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;output.beam&quot;</span><span class="p" data-group-id="5167625163-4">]</span><span class="p" data-group-id="5167625163-3">)</span><span class="p">.</span><span class="w">
+</span><span class="nf">main</span><span class="p" data-group-id="5167625163-5">(</span><span class="p" data-group-id="5167625163-6">[</span><span class="s">&quot;--help&quot;</span><span class="p" data-group-id="5167625163-6">]</span><span class="p" data-group-id="5167625163-5">)</span><span class="p">.</span></code></pre><h2 id="main/1-error-handling" class="section-heading">
   <a href="#main/1-error-handling" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>

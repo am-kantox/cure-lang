@@ -14,7 +14,7 @@
 
     <script src="dist/handlebars.runtime-NWIB6V2M.js"></script>
     <script src="dist/handlebars.templates-K7URE6B4.js"></script>
-    <script src="dist/sidebar_items-C51205A4.js"></script>
+    <script src="dist/sidebar_items-AA658F96.js"></script>
     <script src="docs_config.js"></script>
     <script async src="dist/html-PVRIOB7F.js"></script>
 
@@ -175,7 +175,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
   </a>
   <span class="text">Phase 1: Type Analysis</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="0095722259-1">{</span><span class="n">TypeInfo</span><span class="p">,</span><span class="w"> </span><span class="n">UsageStats</span><span class="p" data-group-id="0095722259-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">analyze_program_types</span><span class="p" data-group-id="0095722259-2">(</span><span class="n">AST</span><span class="p" data-group-id="0095722259-2">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="8934514593-1">{</span><span class="n">TypeInfo</span><span class="p">,</span><span class="w"> </span><span class="n">UsageStats</span><span class="p" data-group-id="8934514593-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">analyze_program_types</span><span class="p" data-group-id="8934514593-2">(</span><span class="n">AST</span><span class="p" data-group-id="8934514593-2">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">%% Collects:</span><span class="w">
 </span><span class="c1">%% - Function type signatures</span><span class="w">
 </span><span class="c1">%% - Call site information with argument types</span><span class="w">
@@ -186,7 +186,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
   </a>
   <span class="text">Phase 2: Opportunity Identification</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">Context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">find_optimization_opportunities</span><span class="p" data-group-id="9333311257-1">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Context1</span><span class="p" data-group-id="9333311257-1">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">Context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">find_optimization_opportunities</span><span class="p" data-group-id="3758981535-1">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Context1</span><span class="p" data-group-id="3758981535-1">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">%% Identifies:</span><span class="w">
 </span><span class="c1">%% - Specialization candidates</span><span class="w">
 </span><span class="c1">%% - Inlining opportunities</span><span class="w">
@@ -197,7 +197,7 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
   </a>
   <span class="text">Phase 3: Optimization Application</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="n">OptimizedAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">run_optimization_passes</span><span class="p" data-group-id="0650178933-1">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Context2</span><span class="p" data-group-id="0650178933-1">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="n">OptimizedAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">run_optimization_passes</span><span class="p" data-group-id="4821119735-1">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Context2</span><span class="p" data-group-id="4821119735-1">)</span><span class="p">,</span><span class="w">
 </span><span class="c1">%% Applies optimizations in order:</span><span class="w">
 </span><span class="c1">%% 1. Function specialization</span><span class="w">
 </span><span class="c1">%% 2. Monomorphization  </span><span class="w">
@@ -216,34 +216,34 @@ memory layouts based on static type analysis.</p><h2 id="module-key-features" cl
   <span class="text">Program Optimization</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Basic optimization with default settings</span><span class="w">
-</span><span class="p" data-group-id="9210061331-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedAST</span><span class="p">,</span><span class="w"> </span><span class="n">Report</span><span class="p" data-group-id="9210061331-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_program</span><span class="p" data-group-id="9210061331-2">(</span><span class="n">AST</span><span class="p" data-group-id="9210061331-2">)</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="8336113757-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedAST</span><span class="p">,</span><span class="w"> </span><span class="n">Report</span><span class="p" data-group-id="8336113757-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_program</span><span class="p" data-group-id="8336113757-2">(</span><span class="n">AST</span><span class="p" data-group-id="8336113757-2">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">%% Custom optimization configuration</span><span class="w">
-</span><span class="n">Config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">optimization_config</span><span class="p" data-group-id="9210061331-3">{</span><span class="w">
+</span><span class="n">Config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">#</span><span class="ss">optimization_config</span><span class="p" data-group-id="8336113757-3">{</span><span class="w">
     </span><span class="ss">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w">  </span><span class="c1">% Aggressive optimization</span><span class="w">
     </span><span class="ss">enable_specialization</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">true</span><span class="p">,</span><span class="w">
     </span><span class="ss">max_specializations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w">
     </span><span class="ss">inline_threshold</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="w">
-</span><span class="p" data-group-id="9210061331-3">}</span><span class="p">,</span><span class="w">
-</span><span class="p" data-group-id="9210061331-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedAST</span><span class="p">,</span><span class="w"> </span><span class="n">Report</span><span class="p" data-group-id="9210061331-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_program</span><span class="p" data-group-id="9210061331-5">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Config</span><span class="p" data-group-id="9210061331-5">)</span><span class="p">.</span></code></pre><h3 id="module-module-level-optimization" class="section-heading">
+</span><span class="p" data-group-id="8336113757-3">}</span><span class="p">,</span><span class="w">
+</span><span class="p" data-group-id="8336113757-4">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedAST</span><span class="p">,</span><span class="w"> </span><span class="n">Report</span><span class="p" data-group-id="8336113757-4">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_program</span><span class="p" data-group-id="8336113757-5">(</span><span class="n">AST</span><span class="p">,</span><span class="w"> </span><span class="n">Config</span><span class="p" data-group-id="8336113757-5">)</span><span class="p">.</span></code></pre><h3 id="module-module-level-optimization" class="section-heading">
   <a href="#module-module-level-optimization" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Module-level Optimization</span>
 </h3>
-<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="7579797781-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedModule</span><span class="p" data-group-id="7579797781-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_module</span><span class="p" data-group-id="7579797781-2">(</span><span class="n">Module</span><span class="p" data-group-id="7579797781-2">)</span><span class="p">,</span><span class="w">
+<pre><code class="makeup erlang" translate="no"><span class="p" data-group-id="5637252108-1">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedModule</span><span class="p" data-group-id="5637252108-1">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_module</span><span class="p" data-group-id="5637252108-2">(</span><span class="n">Module</span><span class="p" data-group-id="5637252108-2">)</span><span class="p">,</span><span class="w">
 
 </span><span class="c1">%% With custom config</span><span class="w">
-</span><span class="p" data-group-id="7579797781-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedModule</span><span class="p" data-group-id="7579797781-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_module</span><span class="p" data-group-id="7579797781-4">(</span><span class="n">Module</span><span class="p">,</span><span class="w"> </span><span class="n">Config</span><span class="p" data-group-id="7579797781-4">)</span><span class="p">.</span></code></pre><h3 id="module-individual-optimization-passes" class="section-heading">
+</span><span class="p" data-group-id="5637252108-3">{</span><span class="ss">ok</span><span class="p">,</span><span class="w"> </span><span class="n">OptimizedModule</span><span class="p" data-group-id="5637252108-3">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">optimize_module</span><span class="p" data-group-id="5637252108-4">(</span><span class="n">Module</span><span class="p">,</span><span class="w"> </span><span class="n">Config</span><span class="p" data-group-id="5637252108-4">)</span><span class="p">.</span></code></pre><h3 id="module-individual-optimization-passes" class="section-heading">
   <a href="#module-individual-optimization-passes" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
   <span class="text">Individual Optimization Passes</span>
 </h3>
 <pre><code class="makeup erlang" translate="no"><span class="c1">%% Run specific optimization passes</span><span class="w">
-</span><span class="n">SpecializedAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">function_specialization_pass</span><span class="p" data-group-id="8477556766-1">(</span><span class="n">AST</span><span class="p" data-group-id="8477556766-1">)</span><span class="p">,</span><span class="w">
-</span><span class="n">MonomorphicAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">monomorphization_pass</span><span class="p" data-group-id="8477556766-2">(</span><span class="n">SpecializedAST</span><span class="p" data-group-id="8477556766-2">)</span><span class="p">,</span><span class="w">
-</span><span class="n">InlinedAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">inlining_pass</span><span class="p" data-group-id="8477556766-3">(</span><span class="n">MonomorphicAST</span><span class="p" data-group-id="8477556766-3">)</span><span class="p">.</span></code></pre><h2 id="module-configuration-options" class="section-heading">
+</span><span class="n">SpecializedAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">function_specialization_pass</span><span class="p" data-group-id="5184433017-1">(</span><span class="n">AST</span><span class="p" data-group-id="5184433017-1">)</span><span class="p">,</span><span class="w">
+</span><span class="n">MonomorphicAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">monomorphization_pass</span><span class="p" data-group-id="5184433017-2">(</span><span class="n">SpecializedAST</span><span class="p" data-group-id="5184433017-2">)</span><span class="p">,</span><span class="w">
+</span><span class="n">InlinedAST</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nc">cure_type_optimizer</span><span class="p">:</span><span class="nf">inlining_pass</span><span class="p" data-group-id="5184433017-3">(</span><span class="n">MonomorphicAST</span><span class="p" data-group-id="5184433017-3">)</span><span class="p">.</span></code></pre><h2 id="module-configuration-options" class="section-heading">
   <a href="#module-configuration-options" class="hover-link">
     <i class="ri-link-m" aria-hidden="true"></i>
   </a>
