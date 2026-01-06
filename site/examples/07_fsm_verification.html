@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>07 Fsm Verification - Cure Example</title>
+    <meta name="description" content="FSM Verification Example Demonstrates: Deadlock detection, reachability, liveness, safety properties">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>07 Fsm Verification</h1>
+            <p>FSM Verification Example Demonstrates: Deadlock detection, reachability, liveness, safety properties</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># FSM Verification Example
+# Demonstrates: Deadlock detection, reachability, liveness, safety properties
+
+module FSMVerificationDemo do
+  export [main/0]
+  
+  # Import FSM and verification APIs
+  import Std.Fsm [
+    fsm_spawn/2,
+    fsm_cast/2,
+    fsm_state/1
+  ]
+  import Std.Io [println/1]
+  import Std.Pair [pair/2]
+  
+  # Simple counter record
+  record CounterState do
+    count: Int
+    max_count: Int
+  end
+  
+  # Example 1: FSM with potential deadlock
+  # This FSM can reach a deadlock state if count reaches max_count
+  fsm CounterState{count: 0, max_count: 5} do
+    Counting --&gt; |increment| Counting {
+      count = count + 1
+    }
+    
+    Counting --&gt; |check| Done {
+      # Guard: only transition when count &gt;= max_count
+      # In real implementation, this would use: when count &gt;= max_count
+    }
+    
+    # Done is a deadlock state - no transitions out
+  end
+  
+  # Example 2: Well-formed FSM with no deadlocks
+  # Traffic light FSM that always has a way forward
+  record LightState do
+    cycle_count: Int
+  end
+  
+  fsm LightState{cycle_count: 0} do
+    Red --&gt; |timer| Green {
+      cycle_count = cycle_count + 1
+    }
+    
+    Green --&gt; |timer| Yellow
+    
+    Yellow --&gt; |timer| Red
+    
+    # Emergency handling - can always return to Red
+    Red --&gt; |emergency| Red
+    Green --&gt; |emergency| Red
+    Yellow --&gt; |emergency| Red
+  end
+  
+  # Example 3: FSM demonstrating liveness properties
+  # A workflow FSM that should eventually complete
+  record WorkflowState do
+    tasks_completed: Int
+    total_tasks: Int
+  end
+  
+  fsm WorkflowState{tasks_completed: 0, total_tasks: 3} do
+    Pending --&gt; |start| InProgress {
+      tasks_completed = 0
+    }
+    
+    InProgress --&gt; |complete_task| InProgress {
+      tasks_completed = tasks_completed + 1
+    }
+    
+    InProgress --&gt; |finish| Completed {
+      # Guard: when tasks_completed &gt;= total_tasks
+    }
+    
+    # From Completed, can restart workflow
+    Completed --&gt; |reset| Pending {
+      tasks_completed = 0
+    }
+  end
+  
+  # Example 4: FSM with safety properties
+  # Door lock system - should never allow unlocked when alarm is active
+  record DoorState do
+    is_locked: Int      # 1 = locked, 0 = unlocked
+    alarm_active: Int   # 1 = active, 0 = inactive
+  end
+  
+  fsm DoorState{is_locked: 1, alarm_active: 0} do
+    Locked --&gt; |unlock| Unlocked {
+      is_locked = 0
+      # Safety property: should only unlock when alarm_active = 0
+    }
+    
+    Unlocked --&gt; |lock| Locked {
+      is_locked = 1
+    }
+    
+    Locked --&gt; |activate_alarm| LockedWithAlarm {
+      alarm_active = 1
+    }
+    
+    LockedWithAlarm --&gt; |deactivate_alarm| Locked {
+      alarm_active = 0
+    }
+    
+    # IMPORTANT: No direct transition from LockedWithAlarm to Unlocked
+    # This enforces the safety property: never unlocked while alarm active
+  end
+  
+  # Main function demonstrating verification concepts
+  def main(): Int =
+    println(&quot;╔══════════════════════════════════════════════════════════════╗&quot;)
+    println(&quot;║              FSM Verification Examples                       ║&quot;)
+    println(&quot;╚══════════════════════════════════════════════════════════════╝&quot;)
+    println(&quot;&quot;)
+    
+    # ==================================================================
+    # Example 1: Deadlock Detection
+    # ==================================================================
+    println(&quot;📊 Example 1: Deadlock Detection&quot;)
+    println(&quot;─────────────────────────────────────────&quot;)
+    println(&quot;Counter FSM that can reach a deadlock state&quot;)
+    println(&quot;&quot;)
+    
+    let counter_init = CounterState{count: 0, max_count: 5}
+    let counter_fsm = fsm_spawn(:CounterState, counter_init)
+    
+    println(&quot;Initial state: Counting&quot;)
+    println(&quot;Incrementing 5 times...&quot;)
+    
+    # Increment counter 5 times
+    fsm_cast(counter_fsm, pair(:increment, []))
+    fsm_cast(counter_fsm, pair(:increment, []))
+    fsm_cast(counter_fsm, pair(:increment, []))
+    fsm_cast(counter_fsm, pair(:increment, []))
+    fsm_cast(counter_fsm, pair(:increment, []))
+    
+    println(&quot;Checking if done...&quot;)
+    fsm_cast(counter_fsm, pair(:check, []))
+    
+    let final_state = fsm_state(counter_fsm)
+    println(&quot;Final state: Done (deadlock - no transitions available)&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;Verification Result:&quot;)
+    println(&quot;  ⚠️  Deadlock detected in &#x27;Done&#x27; state&quot;)
+    println(&quot;  → State has no outgoing transitions&quot;)
+    println(&quot;  → FSM cannot make progress&quot;)
+    println(&quot;&quot;)
+    
+    # ==================================================================
+    # Example 2: Reachability Analysis
+    # ==================================================================
+    println(&quot;🔍 Example 2: Reachability Analysis&quot;)
+    println(&quot;─────────────────────────────────────────&quot;)
+    println(&quot;Traffic Light FSM - all states should be reachable&quot;)
+    println(&quot;&quot;)
+    
+    let light_init = LightState{cycle_count: 0}
+    let light_fsm = fsm_spawn(:LightState, light_init)
+    
+    println(&quot;Starting at: Red&quot;)
+    fsm_cast(light_fsm, pair(:timer, []))
+    println(&quot;Reached: Green&quot;)
+    
+    fsm_cast(light_fsm, pair(:timer, []))
+    println(&quot;Reached: Yellow&quot;)
+    
+    fsm_cast(light_fsm, pair(:timer, []))
+    println(&quot;Reached: Red (cycled)&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;Verification Result:&quot;)
+    println(&quot;  ✅ All states reachable from initial state&quot;)
+    println(&quot;  → Red → Green → Yellow → Red&quot;)
+    println(&quot;  → No unreachable states&quot;)
+    println(&quot;&quot;)
+    
+    # ==================================================================
+    # Example 3: Liveness Properties
+    # ==================================================================
+    println(&quot;♾️  Example 3: Liveness Properties&quot;)
+    println(&quot;─────────────────────────────────────────&quot;)
+    println(&quot;Workflow FSM - should eventually reach Completed&quot;)
+    println(&quot;&quot;)
+    
+    let workflow_init = WorkflowState{tasks_completed: 0, total_tasks: 3}
+    let workflow_fsm = fsm_spawn(:WorkflowState, workflow_init)
+    
+    println(&quot;State: Pending&quot;)
+    fsm_cast(workflow_fsm, pair(:start, []))
+    println(&quot;State: InProgress&quot;)
+    
+    println(&quot;Completing tasks...&quot;)
+    fsm_cast(workflow_fsm, pair(:complete_task, []))
+    fsm_cast(workflow_fsm, pair(:complete_task, []))
+    fsm_cast(workflow_fsm, pair(:complete_task, []))
+    
+    fsm_cast(workflow_fsm, pair(:finish, []))
+    println(&quot;State: Completed&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;Verification Result:&quot;)
+    println(&quot;  ✅ Liveness property satisfied&quot;)
+    println(&quot;  → Every workflow eventually reaches Completed&quot;)
+    println(&quot;  → No infinite loops without progress&quot;)
+    println(&quot;&quot;)
+    
+    # ==================================================================
+    # Example 4: Safety Properties
+    # ==================================================================
+    println(&quot;🔒 Example 4: Safety Properties&quot;)
+    println(&quot;─────────────────────────────────────────&quot;)
+    println(&quot;Door Lock FSM - never unlocked while alarm active&quot;)
+    println(&quot;&quot;)
+    
+    let door_init = DoorState{is_locked: 1, alarm_active: 0}
+    let door_fsm = fsm_spawn(:DoorState, door_init)
+    
+    println(&quot;State: Locked (alarm inactive)&quot;)
+    
+    println(&quot;Activating alarm...&quot;)
+    fsm_cast(door_fsm, pair(:activate_alarm, []))
+    println(&quot;State: LockedWithAlarm&quot;)
+    
+    println(&quot;&quot;)
+    println(&quot;Attempting to unlock while alarm active...&quot;)
+    println(&quot;❌ Transition not defined - safety property enforced!&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;Deactivating alarm first...&quot;)
+    fsm_cast(door_fsm, pair(:deactivate_alarm, []))
+    println(&quot;State: Locked (alarm inactive)&quot;)
+    
+    println(&quot;Now unlocking...&quot;)
+    fsm_cast(door_fsm, pair(:unlock, []))
+    println(&quot;State: Unlocked ✅&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;Verification Result:&quot;)
+    println(&quot;  ✅ Safety property maintained&quot;)
+    println(&quot;  → Door never unlocked while alarm active&quot;)
+    println(&quot;  → Invalid state transitions prevented by FSM structure&quot;)
+    println(&quot;&quot;)
+    
+    # ==================================================================
+    # Summary
+    # ==================================================================
+    println(&quot;╔══════════════════════════════════════════════════════════════╗&quot;)
+    println(&quot;║                Verification Summary                          ║&quot;)
+    println(&quot;╚══════════════════════════════════════════════════════════════╝&quot;)
+    println(&quot;&quot;)
+    println(&quot;Verification Techniques Demonstrated:&quot;)
+    println(&quot;&quot;)
+    println(&quot;1. 🔍 Deadlock Detection&quot;)
+    println(&quot;   • Identifies states with no outgoing transitions&quot;)
+    println(&quot;   • Ensures FSM can always make progress&quot;)
+    println(&quot;   • Example: Counter reaching &#x27;Done&#x27; state&quot;)
+    println(&quot;&quot;)
+    println(&quot;2. 🎯 Reachability Analysis&quot;)
+    println(&quot;   • Verifies all states can be reached&quot;)
+    println(&quot;   • Uses graph traversal algorithms (BFS/DFS)&quot;)
+    println(&quot;   • Example: Traffic light all states accessible&quot;)
+    println(&quot;&quot;)
+    println(&quot;3. ⏱️  Liveness Properties&quot;)
+    println(&quot;   • Ensures desired states eventually reached&quot;)
+    println(&quot;   • Prevents infinite loops without progress&quot;)
+    println(&quot;   • Example: Workflow always completes&quot;)
+    println(&quot;&quot;)
+    println(&quot;4. 🛡️  Safety Properties&quot;)
+    println(&quot;   • Ensures bad states never reached&quot;)
+    println(&quot;   • Enforces invariants throughout execution&quot;)
+    println(&quot;   • Example: Door never unlocked with alarm&quot;)
+    println(&quot;&quot;)
+    println(&quot;Implementation Notes:&quot;)
+    println(&quot;  • Verification runs at compile-time (static analysis)&quot;)
+    println(&quot;  • Runtime monitors can enforce properties dynamically&quot;)
+    println(&quot;  • SMT solvers (Z3) used for formal proofs&quot;)
+    println(&quot;  • Counterexamples provided when properties violated&quot;)
+    println(&quot;&quot;)
+    println(&quot;🎉 All verification examples completed!&quot;)
+    
+    0
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

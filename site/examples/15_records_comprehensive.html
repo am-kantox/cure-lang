@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>15 Records Comprehensive - Cure Example</title>
+    <meta name="description" content="Comprehensive Records Example Demonstrates record usage in Cure: - Record declaration - Record construction - Pattern matching on records - Field access using dot notation - Record updates">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>15 Records Comprehensive</h1>
+            <p>Comprehensive Records Example Demonstrates record usage in Cure: - Record declaration - Record construction - Pattern matching on records - Field access using dot notation - Record updates</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Comprehensive Records Example
+# Demonstrates record usage in Cure:
+# - Record declaration
+# - Record construction  
+# - Pattern matching on records
+# - Field access using dot notation
+# - Record updates
+
+module RecordsComprehensive do
+  export [main/0]
+
+  import Std.Io [println/1]
+
+  # =========================================
+  # 1. RECORD DECLARATIONS
+  # =========================================
+
+  # Basic record with primitive fields
+  record Person do
+    name: String
+    age: Int
+    email: String
+  end
+
+  # Record with Float fields
+  record Point do
+    x: Float
+    y: Float
+  end
+
+  # =========================================
+  # 2. RECORD CONSTRUCTION
+  # =========================================
+
+  def create_person(): Person =
+    Person{name: &quot;Alice&quot;, age: 30, email: &quot;alice@example.com&quot;}
+
+  def create_point(x_val: Float, y_val: Float): Point =
+    Point{x: x_val, y: y_val}
+
+  # =========================================
+  # 3. PATTERN MATCHING ON RECORDS
+  # =========================================
+
+  # Extract all fields
+  def get_name(person: Person): String =
+    match person do
+      Person{name: n, age: _, email: _} -&gt; n
+    end
+
+  # Pattern matching with guards
+  def classify_point(p: Point): String =
+    match p do
+      Point{x: x, y: y} when x == 0.0 and y == 0.0 -&gt;
+        &quot;Origin&quot;
+      Point{x: x, y: y} when x &gt; 0.0 and y &gt; 0.0 -&gt;
+        &quot;First quadrant&quot;
+      Point{x: x, y: y} when x &lt; 0.0 and y &gt; 0.0 -&gt;
+        &quot;Second quadrant&quot;
+      Point{x: x, y: y} when x &lt; 0.0 and y &lt; 0.0 -&gt;
+        &quot;Third quadrant&quot;
+      Point{x: x, y: y} when x &gt; 0.0 and y &lt; 0.0 -&gt;
+        &quot;Fourth quadrant&quot;
+      Point{x: _, y: y} when y == 0.0 -&gt;
+        &quot;On X-axis&quot;
+      Point{x: x, y: _} when x == 0.0 -&gt;
+        &quot;On Y-axis&quot;
+    end
+
+  # Partial pattern matching
+  def is_adult(person: Person): Bool =
+    match person do
+      Person{age: age} when age &gt;= 18 -&gt; true
+      Person{age: _} -&gt; false
+    end
+
+  # =========================================
+  # 4. FIELD ACCESS WITH DOT NOTATION
+  # =========================================
+
+  def get_age(p: Person): Int =
+    p.age
+
+  def get_email(p: Person): String =
+    p.email
+
+  def get_x(pt: Point): Float =
+    pt.x
+
+  def get_y(pt: Point): Float =
+    pt.y
+
+  # =========================================
+  # 5. RECORD UPDATE SYNTAX
+  # =========================================
+  # Update syntax: Record{base | field: new_value, ...}
+  # This creates a new record with updated fields
+
+  # Update single field - age
+  def birthday(p: Person): Person =
+    Person{p | age: p.age + 1}
+
+  # Update multiple fields at once
+  def update_contact(p: Person, new_email: String, new_age: Int): Person =
+    Person{p | email: new_email, age: new_age}
+
+  # Update point coordinates
+  def move_point(pt: Point, dx: Float, dy: Float): Point =
+    Point{pt | x: pt.x + dx, y: pt.y + dy}
+
+  # Update single field
+  def set_x(pt: Point, new_x: Float): Point =
+    Point{pt | x: new_x}
+
+  # =========================================
+  # 6. HELPER: Creating new records from existing (old style)
+  # =========================================
+  # Note: Record update syntax is preferred over this
+
+  # Create a new Person with modified age
+  def with_age(n: String, a: Int, e: String, new_age: Int): Person =
+    Person{name: n, age: new_age, email: e}
+
+  # Create a new Point with modified coordinates
+  def with_coords(new_x: Float, new_y: Float): Point =
+    Point{x: new_x, y: new_y}
+
+  # =========================================
+  # 7. HELPER FUNCTIONS
+  # =========================================
+
+  def show_int(n: Int): String =
+    match n do
+      x when x == 0 -&gt; &quot;0&quot;
+      x when x == 3 -&gt; &quot;3&quot;
+      x when x == 4 -&gt; &quot;4&quot;
+      x when x == 30 -&gt; &quot;30&quot;
+      x when x == 31 -&gt; &quot;31&quot;
+      _ -&gt; &quot;[int]&quot;
+    end
+
+  def show_float(f: Float): String =
+    match f do
+      x when x == 0.0 -&gt; &quot;0.0&quot;
+      x when x == 1.0 -&gt; &quot;1.0&quot;
+      x when x == 2.0 -&gt; &quot;2.0&quot;
+      x when x == 3.0 -&gt; &quot;3.0&quot;
+      x when x == 4.0 -&gt; &quot;4.0&quot;
+      x when x == 5.0 -&gt; &quot;5.0&quot;
+      x when x == 6.0 -&gt; &quot;6.0&quot;
+      _ -&gt; &quot;[float]&quot;
+    end
+
+  def show_bool(b: Bool): String =
+    match b do
+      true -&gt; &quot;true&quot;
+      false -&gt; &quot;false&quot;
+    end
+
+  # =========================================
+  # 8. MAIN DEMONSTRATION
+  # =========================================
+
+  def main(): Int =
+    println(&quot;=== CURE RECORDS EXAMPLE ===&quot;)
+    
+    # Record Construction
+    println(&quot;1. Record Construction&quot;)
+    let alice = create_person()
+    println(&quot;Created person: Alice&quot;)
+    let pt1 = create_point(3.0, 4.0)
+    println(&quot;Created point (3.0, 4.0)&quot;)
+
+    # Field Access
+    println(&quot;2. Field Access&quot;)
+    let age = get_age(alice)
+    println(&quot;Age: &quot; &lt;&gt; show_int(age))
+    let email = get_email(alice)
+    println(&quot;Email: &quot; &lt;&gt; email)
+    let x = get_x(pt1)
+    println(&quot;Point X: &quot; &lt;&gt; show_float(x))
+    let y = get_y(pt1)
+    println(&quot;Point Y: &quot; &lt;&gt; show_float(y))
+
+    # Pattern Matching
+    println(&quot;3. Pattern Matching&quot;)
+    let name = get_name(alice)
+    println(&quot;Name: &quot; &lt;&gt; name)
+    let adult = is_adult(alice)
+    println(&quot;Is adult: &quot; &lt;&gt; show_bool(adult))
+    let classification = classify_point(pt1)
+    println(&quot;Point class: &quot; &lt;&gt; classification)
+    let origin = Point{x: 0.0, y: 0.0}
+    let origin_class = classify_point(origin)
+    println(&quot;Origin class: &quot; &lt;&gt; origin_class)
+
+    # Creating New Records
+    println(&quot;4. Creating New Records from Existing&quot;)
+    let name_val = get_name(alice)
+    let old_age = get_age(alice)
+    let email_val = get_email(alice)
+    let alice_older = with_age(name_val, old_age, email_val, 31)
+    let new_age = get_age(alice_older)
+    println(&quot;Created new person with age: &quot; &lt;&gt; show_int(new_age))
+    let pt2 = with_coords(4.0, 5.0)
+    let new_x = get_x(pt2)
+    let new_y = get_y(pt2)
+    println(&quot;Created new point: (&quot; &lt;&gt; show_float(new_x) &lt;&gt; &quot;, &quot; &lt;&gt; show_float(new_y) &lt;&gt; &quot;)&quot;)
+
+    # Record Update Syntax
+    println(&quot;5. Record Update Syntax&quot;)
+    let alice_birthday = birthday(alice)
+    let birthday_age = get_age(alice_birthday)
+    println(&quot;After birthday: &quot; &lt;&gt; show_int(birthday_age))
+    let alice_updated = update_contact(alice, &quot;alice.new@example.com&quot;, 31)
+    let updated_email = get_email(alice_updated)
+    let updated_age = get_age(alice_updated)
+    println(&quot;Updated email: &quot; &lt;&gt; updated_email)
+    println(&quot;Updated age: &quot; &lt;&gt; show_int(updated_age))
+    let pt_moved = move_point(pt1, 1.0, 1.0)
+    let moved_x = get_x(pt_moved)
+    let moved_y = get_y(pt_moved)
+    println(&quot;Moved point: (&quot; &lt;&gt; show_float(moved_x) &lt;&gt; &quot;, &quot; &lt;&gt; show_float(moved_y) &lt;&gt; &quot;)&quot;)
+    let pt_set_x = set_x(pt1, 10.0)
+    let set_x_val = get_x(pt_set_x)
+    let set_y_val = get_y(pt_set_x)
+    println(&quot;Point with new x: (&quot; &lt;&gt; show_float(set_x_val) &lt;&gt; &quot;, &quot; &lt;&gt; show_float(set_y_val) &lt;&gt; &quot;)&quot;)
+
+    println(&quot;=== All operations completed! ===&quot;)
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

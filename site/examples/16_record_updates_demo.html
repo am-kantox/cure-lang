@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>16 Record Updates Demo - Cure Example</title>
+    <meta name="description" content="Record Update Syntax Demonstration Shows the new record update syntax: Record{base | field: value}">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>16 Record Updates Demo</h1>
+            <p>Record Update Syntax Demonstration Shows the new record update syntax: Record{base | field: value}</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Record Update Syntax Demonstration
+# Shows the new record update syntax: Record{base | field: value}
+
+module RecordUpdatesDemo do
+  export [main/0]
+
+  import Std.Io [println/1]
+
+  # Simple record for demonstration
+  record Counter do
+    value: Int
+  end
+
+  record Point do
+    x: Float
+    y: Float
+  end
+
+  record Person do
+    name: String
+    age: Int
+    email: String
+  end
+
+  # =========================================
+  # FIELD ACCESS EXAMPLES
+  # =========================================
+
+  def get_value(c: Counter): Int =
+    c.value
+
+  def get_x(p: Point): Float =
+    p.x
+
+  def get_y(p: Point): Float =
+    p.y
+
+  def get_name(p: Person): String =
+    p.name
+
+  # =========================================
+  # RECORD UPDATE EXAMPLES
+  # =========================================
+
+  # Single field update
+  def increment(c: Counter): Counter =
+    Counter{c | value: c.value + 1}
+
+  # Multiple field update
+  def move(p: Point, dx: Float, dy: Float): Point =
+    Point{p | x: p.x + dx, y: p.y + dy}
+
+  # Update with computation
+  def birthday(p: Person): Person =
+    Person{p | age: p.age + 1}
+
+  # Update multiple fields
+  def update_contact(p: Person, new_email: String): Person =
+    Person{p | email: new_email, age: p.age + 1}
+
+  # =========================================
+  # HELPER FUNCTIONS
+  # =========================================
+
+  def show_int(n: Int): String =
+    match n do
+      x when x == 0 -&gt; &quot;0&quot;
+      x when x == 1 -&gt; &quot;1&quot;
+      x when x == 2 -&gt; &quot;2&quot;
+      x when x == 3 -&gt; &quot;3&quot;
+      x when x == 10 -&gt; &quot;10&quot;
+      x when x == 30 -&gt; &quot;30&quot;
+      x when x == 31 -&gt; &quot;31&quot;
+      _ -&gt; &quot;[int]&quot;
+    end
+
+  def show_float(f: Float): String =
+    match f do
+      x when x == 0.0 -&gt; &quot;0.0&quot;
+      x when x == 1.0 -&gt; &quot;1.0&quot;
+      x when x == 3.0 -&gt; &quot;3.0&quot;
+      x when x == 4.0 -&gt; &quot;4.0&quot;
+      x when x == 5.0 -&gt; &quot;5.0&quot;
+      x when x == 6.0 -&gt; &quot;6.0&quot;
+      _ -&gt; &quot;[float]&quot;
+    end
+
+  # =========================================
+  # MAIN DEMONSTRATION
+  # =========================================
+
+  def main(): Int =
+    println(&quot;=== RECORD UPDATE SYNTAX DEMO ===&quot;)
+
+    # Field Access Demo
+    println(&quot;1. Field Access&quot;)
+    let c1 = Counter{value: 10}
+    let v1 = get_value(c1)
+    println(&quot;Counter value: &quot; &lt;&gt; show_int(v1))
+
+    let pt1 = Point{x: 3.0, y: 4.0}
+    let x1 = get_x(pt1)
+    let y1 = get_y(pt1)
+    println(&quot;Point: (&quot; &lt;&gt; show_float(x1) &lt;&gt; &quot;, &quot; &lt;&gt; show_float(y1) &lt;&gt; &quot;)&quot;)
+
+    # Record Update Demo
+    println(&quot;2. Record Updates&quot;)
+    let c2 = increment(c1)
+    let v2 = get_value(c2)
+    println(&quot;After increment: &quot; &lt;&gt; show_int(v2))
+
+    let pt2 = move(pt1, 1.0, 2.0)
+    let x2 = get_x(pt2)
+    let y2 = get_y(pt2)
+    println(&quot;After move: (&quot; &lt;&gt; show_float(x2) &lt;&gt; &quot;, &quot; &lt;&gt; show_float(y2) &lt;&gt; &quot;)&quot;)
+
+    let alice = Person{name: &quot;Alice&quot;, age: 30, email: &quot;alice@example.com&quot;}
+    let alice_older = birthday(alice)
+    let new_age = alice_older.age
+    println(&quot;After birthday: &quot; &lt;&gt; show_int(new_age))
+
+    let alice_updated = update_contact(alice, &quot;alice.new@example.com&quot;)
+    let updated_age = alice_updated.age
+    let updated_email = alice_updated.email
+    println(&quot;Updated: &quot; &lt;&gt; updated_email &lt;&gt; &quot;, age &quot; &lt;&gt; show_int(updated_age))
+
+    println(&quot;=== Demo complete! ===&quot;)
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

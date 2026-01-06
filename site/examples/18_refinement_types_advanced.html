@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>18 Refinement Types Advanced - Cure Example</title>
+    <meta name="description" content="Advanced Refinement Types Examples Demonstrates more complex refinement type patterns">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>18 Refinement Types Advanced</h1>
+            <p>Advanced Refinement Types Examples Demonstrates more complex refinement type patterns</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Advanced Refinement Types Examples
+# Demonstrates more complex refinement type patterns
+
+module RefinementTypesAdvanced do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  
+  # =============================================================================
+  # EXAMPLE 1: Return Type Refinements
+  # =============================================================================
+  # These examples show how to use refinements in return types
+  
+  # absolute value always returns non-negative
+  def absolute(x: Int): {result: Int | result &gt;= 0} =
+    match x do
+      n when n &gt;= 0 -&gt; n
+      n -&gt; 0 - n
+    end
+  
+  # square always returns non-negative
+  def square(x: Int): {result: Int | result &gt;= 0} =
+    x * x
+  
+  # =============================================================================
+  # EXAMPLE 2: Chained Refinements
+  # =============================================================================
+  # Using refined values from one function in another
+  
+  # Input must be positive, output is guaranteed positive
+  def double_positive(n: {x: Int | x &gt; 0}): {y: Int | y &gt; 0} =
+    n * 2
+  
+  # Takes positive, returns positive (chaining)
+  def chain_operations(start: {x: Int | x &gt; 0}): {result: Int | result &gt; 0} =
+    let doubled = double_positive(start)
+    doubled
+  
+  # =============================================================================
+  # EXAMPLE 3: Complex Constraint Combinations
+  # =============================================================================
+  
+  # Temperature must be above absolute zero
+  def celsius_to_kelvin(celsius: {t: Float | t &gt;= -273.15}): {k: Float | k &gt;= 0.0} =
+    celsius + 273.15
+  
+  # Percentage operations preserve range
+  def half_percentage(pct: {p: Int | p &gt;= 0 and p &lt;= 100}): {h: Int | h &gt;= 0 and h &lt;= 50} =
+    p / 2
+  
+  # Clamp value to range
+  def clamp_to_percentage(value: Int): {result: Int | result &gt;= 0 and result &lt;= 100} =
+    match value do
+      v when v &lt; 0 -&gt; 0
+      v when v &gt; 100 -&gt; 100
+      v -&gt; v
+    end
+  
+  # =============================================================================
+  # EXAMPLE 4: Disjunctive Constraints (OR)
+  # =============================================================================
+  
+  # Value must be either very small or very large
+  def process_extreme(n: {x: Int | x &lt; -100 or x &gt; 100}): Bool =
+    true
+  
+  # Weekend days (0=Sunday, 6=Saturday)
+  def is_weekend(day: {d: Int | d == 0 or d == 6}): Bool =
+    true
+  
+  # =============================================================================
+  # EXAMPLE 5: Negation in Constraints
+  # =============================================================================
+  
+  # Any integer except zero
+  def reciprocal_prep(n: {x: Int | not (x == 0)}): Int =
+    n
+  
+  # Alternative syntax for non-zero
+  def reciprocal_prep2(n: {x: Int | x != 0}): Int =
+    n
+  
+  # =============================================================================
+  # EXAMPLE 6: Multiple Parameter Refinements
+  # =============================================================================
+  
+  # Both parameters must be positive
+  def multiply_positives(
+    a: {x: Int | x &gt; 0},
+    b: {y: Int | y &gt; 0}
+  ): {result: Int | result &gt; 0} =
+    a * b
+  
+  # Range constraints on multiple parameters
+  def in_range(
+    value: Int,
+    min: {low: Int | low &gt;= 0},
+    max: {high: Int | high &gt;= 0 and high &gt;= low}
+  ): Bool =
+    value &gt;= min and value &lt;= max
+  
+  # =============================================================================
+  # EXAMPLE 7: Arithmetic Constraints
+  # =============================================================================
+  
+  # Dividing by 2 always produces smaller result for positive inputs
+  def halve(n: {x: Int | x &gt; 0}): {half: Int | half &gt;= 0} =
+    n / 2
+  
+  # Adding two positive numbers yields positive result
+  def add_positive(
+    a: {x: Int | x &gt; 0},
+    b: {y: Int | y &gt; 0}
+  ): {sum: Int | sum &gt; 0} =
+    a + b
+  
+  # =============================================================================
+  # HELPER FUNCTIONS
+  # =============================================================================
+  
+  def show_int(n: Int): String =
+    match n do
+      x when x == 0 -&gt; &quot;0&quot;
+      x when x == 1 -&gt; &quot;1&quot;
+      x when x == 2 -&gt; &quot;2&quot;
+      x when x == 5 -&gt; &quot;5&quot;
+      x when x == 10 -&gt; &quot;10&quot;
+      x when x == 20 -&gt; &quot;20&quot;
+      x when x == 25 -&gt; &quot;25&quot;
+      x when x == 50 -&gt; &quot;50&quot;
+      x when x == 100 -&gt; &quot;100&quot;
+      _ -&gt; &quot;[int]&quot;
+    end
+  
+  def show_float(f: Float): String =
+    match f do
+      x when x == 0.0 -&gt; &quot;0.0&quot;
+      x when x == 273.15 -&gt; &quot;273.15&quot;
+      _ -&gt; &quot;[float]&quot;
+    end
+  
+  def show_bool(b: Bool): String =
+    match b do
+      true -&gt; &quot;true&quot;
+      false -&gt; &quot;false&quot;
+    end
+  
+  # =============================================================================
+  # MAIN DEMONSTRATION
+  # =============================================================================
+  
+  def main(): Int =
+    println(&quot;=== ADVANCED REFINEMENT TYPES ===&quot;)
+    
+    # Example 1: Return type refinements
+    println(&quot;1. Return Type Refinements&quot;)
+    let abs_result = absolute(0 - 5)
+    println(&quot;abs(-5) = &quot; &lt;&gt; show_int(abs_result))
+    let sq_result = square(5)
+    println(&quot;square(5) = &quot; &lt;&gt; show_int(sq_result))
+    
+    # Example 2: Chained refinements
+    println(&quot;2. Chained Refinements&quot;)
+    let doubled = double_positive(5)
+    println(&quot;double_positive(5) = &quot; &lt;&gt; show_int(doubled))
+    let chained = chain_operations(10)
+    println(&quot;chain_operations(10) = &quot; &lt;&gt; show_int(chained))
+    
+    # Example 3: Complex constraints
+    println(&quot;3. Complex Constraints&quot;)
+    let kelvin = celsius_to_kelvin(0.0)
+    println(&quot;celsius_to_kelvin(0.0) = &quot; &lt;&gt; show_float(kelvin))
+    let half_pct = half_percentage(50)
+    println(&quot;half_percentage(50) = &quot; &lt;&gt; show_int(half_pct))
+    let clamped = clamp_to_percentage(150)
+    println(&quot;clamp_to_percentage(150) = &quot; &lt;&gt; show_int(clamped))
+    
+    # Example 6: Multiple parameter refinements
+    println(&quot;4. Multiple Parameter Refinements&quot;)
+    let product = multiply_positives(5, 10)
+    println(&quot;multiply_positives(5, 10) = &quot; &lt;&gt; show_int(product))
+    
+    # Example 7: Arithmetic constraints
+    println(&quot;5. Arithmetic Constraints&quot;)
+    let halved = halve(20)
+    println(&quot;halve(20) = &quot; &lt;&gt; show_int(halved))
+    let sum = add_positive(10, 20)
+    println(&quot;add_positive(10, 20) = &quot; &lt;&gt; show_int(sum))
+    
+    println(&quot;=== All refinement examples completed! ===&quot;)
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Show Working - Cure Example</title>
+    <meta name="description" content="Test Show Typeclass Demonstrates that Show compiles and can be used">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>Test Show Working</h1>
+            <p>Test Show Typeclass Demonstrates that Show compiles and can be used</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Test Show Typeclass
+# Demonstrates that Show compiles and can be used
+
+module TestShowWorking do
+  export [main/0]
+
+  import Std.ShowMinimal [Show]
+  import Std.Io [println]
+
+  def main(): Int =
+    let s = &quot;Hello&quot;
+    let b = true
+    println(s)
+    println(&quot;true&quot;)
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>06 Fsm Traffic Light - Cure Example</title>
+    <meta name="description" content="Demonstrates Finite State Machine implementation with a traffic light">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>06 Fsm Traffic Light</h1>
+            <p>Demonstrates Finite State Machine implementation with a traffic light</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Example 6: FSM Traffic Light
+# Demonstrates Finite State Machine implementation with a traffic light
+
+module TrafficLightFSM do
+  export [main/0]
+  
+  import Std.Fsm [fsm_spawn/2, fsm_cast/2, fsm_advertise/2, fsm_state/1]
+  import Std.Io [println/1]
+  import Std.Pair [pair/2]
+  
+  # Payload record - tracks traffic light statistics
+  record TrafficPayload do
+    cycles_completed: Int
+    timer_events: Int
+    emergency_stops: Int
+  end
+  
+  # Define the TrafficLight FSM
+  # Initial state is Red (first state in transitions)
+  # Events: :timer (normal progression), :emergency (immediate red)
+  fsm TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0} do
+    Red --&gt; |timer| Green
+    Red --&gt; |emergency| Red
+    Green --&gt; |timer| Yellow
+    Green --&gt; |emergency| Red
+    Yellow --&gt; |timer| Red
+    Yellow --&gt; |emergency| Red
+  end
+  
+  # Main demonstration
+  def main(): Int =
+    println(&quot;=== Traffic Light FSM Demo ===&quot;)
+    println(&quot;&quot;)
+    
+    # Initialize FSM with starting data
+    let initial_data = TrafficPayload{cycles_completed: 0, timer_events: 0, emergency_stops: 0}
+    let fsm_pid = fsm_spawn(:TrafficPayload, initial_data)
+    
+    # Give the FSM a friendly name
+    let adv_result = fsm_advertise(fsm_pid, :traffic_light)
+    
+    # Check initial state (should be Red - first in transition list)
+    println(&quot;Initial state:&quot;)
+    let state0 = fsm_state(:traffic_light)
+    println(&quot;State: Red (expected)&quot;)
+    println(&quot;&quot;)
+    
+    # Scenario 1: Normal timer progression Red -&gt; Green
+    println(&quot;Scenario 1: Timer event from Red&quot;)
+    let empty1 = []
+    let event1 = pair(:timer, empty1)
+    let cast1 = fsm_cast(:traffic_light, event1)
+    let state1 = fsm_state(:traffic_light)
+    println(&quot;State: Green (expected)&quot;)
+    println(&quot;&quot;)
+    
+    # Scenario 2: Normal timer progression Green -&gt; Yellow
+    println(&quot;Scenario 2: Timer event from Green&quot;)
+    let empty2 = []
+    let event2 = pair(:timer, empty2)
+    let cast2 = fsm_cast(:traffic_light, event2)
+    let state2 = fsm_state(:traffic_light)
+    println(&quot;State: Yellow (expected)&quot;)
+    println(&quot;&quot;)
+    
+    # Scenario 3: Normal timer progression Yellow -&gt; Red (complete cycle)
+    println(&quot;Scenario 3: Timer event from Yellow&quot;)
+    let empty3 = []
+    let event3 = pair(:timer, empty3)
+    let cast3 = fsm_cast(:traffic_light, event3)
+    let state3 = fsm_state(:traffic_light)
+    println(&quot;State: Red (expected - cycle complete)&quot;)
+    println(&quot;&quot;)
+    
+    # Scenario 4: Another cycle Red -&gt; Green -&gt; Yellow
+    println(&quot;Scenario 4: Two timer events (Red -&gt; Green -&gt; Yellow)&quot;)
+    let empty4 = []
+    let event4 = pair(:timer, empty4)
+    let cast4 = fsm_cast(:traffic_light, event4)
+    let empty5 = []
+    let event5 = pair(:timer, empty5)
+    let cast5 = fsm_cast(:traffic_light, event5)
+    let state4 = fsm_state(:traffic_light)
+    println(&quot;State: Yellow (expected)&quot;)
+    println(&quot;&quot;)
+    
+    # Scenario 5: Emergency from Yellow -&gt; Red
+    println(&quot;Scenario 5: Emergency stop from Yellow&quot;)
+    let empty6 = []
+    let event6 = pair(:emergency, empty6)
+    let cast6 = fsm_cast(:traffic_light, event6)
+    let state5 = fsm_state(:traffic_light)
+    println(&quot;State: Red (expected - emergency stop)&quot;)
+    println(&quot;&quot;)
+    
+    # Scenario 6: Emergency while already Red (self-transition)
+    println(&quot;Scenario 6: Emergency while already Red&quot;)
+    let empty7 = []
+    let event7 = pair(:emergency, empty7)
+    let cast7 = fsm_cast(:traffic_light, event7)
+    let state6 = fsm_state(:traffic_light)
+    println(&quot;State: Red (expected - stays red)&quot;)
+    println(&quot;&quot;)
+    
+    # Final state check
+    println(&quot;=== Final State ===&quot;)
+    let final_state = fsm_state(:traffic_light)
+    println(&quot;State: Red&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;=== Demo Complete ===&quot;)
+    println(&quot;The traffic light FSM successfully:&quot;)
+    println(&quot;- Progressed through normal Red-&gt;Green-&gt;Yellow-&gt;Red cycle&quot;)
+    println(&quot;- Handled emergency stops from any state&quot;)
+    println(&quot;- Maintained state consistency throughout&quot;)
+    0
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

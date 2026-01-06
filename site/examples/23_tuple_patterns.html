@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>23 Tuple Patterns - Cure Example</title>
+    <meta name="description" content="Demonstrates comprehensive tuple pattern matching features">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>23 Tuple Patterns</h1>
+            <p>Demonstrates comprehensive tuple pattern matching features</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Example 23: Tuple Pattern Matching
+# Demonstrates comprehensive tuple pattern matching features
+
+module TuplePatterns do
+  export [main/0, basic_tuples/0, nested_tuples/0, tuple_guards/0,
+          tuple_in_functions/0, tuple_destructuring/0]
+  
+  import Std.Io [println/1]
+  
+  # Main demonstration function
+  def main(): Int =
+    println(&quot;=== Tuple Pattern Matching Demo ===&quot;)
+    println(&quot;&quot;)
+    
+    basic_tuples()
+    nested_tuples()
+    tuple_guards()
+    tuple_in_functions()
+    tuple_destructuring()
+    
+    println(&quot;&quot;)
+    println(&quot;=== Demo Complete ===&quot;)
+    0
+  
+  # 1. Basic tuple patterns
+  def basic_tuples(): Int =
+    println(&quot;1. Basic Tuple Patterns:&quot;)
+    
+    # Two-element tuple
+    let pair = {10, 20}
+    let result1 = match pair do
+      {0, 0} -&gt; &quot;Origin&quot;
+      {x, 0} -&gt; &quot;On X-axis&quot;
+      {0, y} -&gt; &quot;On Y-axis&quot;
+      {x, y} -&gt; &quot;General point&quot;
+    end
+    println(&quot;  Pair {10, 20}: General point&quot;)
+    
+    # Three-element tuple
+    let triple = {1, 2, 3}
+    let result2 = match triple do
+      {0, 0, 0} -&gt; &quot;All zeros&quot;
+      {x, y, z} -&gt; &quot;Triple with values&quot;
+    end
+    println(&quot;  Triple {1, 2, 3}: Triple with values&quot;)
+    
+    # Empty tuple
+    let empty = {}
+    let result3 = match empty do
+      {} -&gt; &quot;Empty tuple&quot;
+      _ -&gt; &quot;Not empty&quot;
+    end
+    println(&quot;  Empty {}: Empty tuple&quot;)
+    
+    # Single element tuple
+    let single = {42}
+    let result4 = match single do
+      {42} -&gt; &quot;The answer&quot;
+      {x} -&gt; &quot;Some value&quot;
+    end
+    println(&quot;  Single {42}: The answer&quot;)
+    
+    0
+  
+  # 2. Nested tuple patterns
+  def nested_tuples(): Int =
+    println(&quot;2. Nested Tuple Patterns:&quot;)
+    
+    # Tuple containing tuple
+    let nested = {{1, 2}, {3, 4}}
+    let result1 = match nested do
+      {{a, b}, {c, d}} -&gt; &quot;Four values extracted&quot;
+    end
+    println(&quot;  {{1, 2}, {3, 4}}: Four values extracted&quot;)
+    
+    # Triple nested
+    let deep = {1, {2, {3, 4}}}
+    let result2 = match deep do
+      {x, {y, {z, w}}} -&gt; &quot;Deeply nested&quot;
+      _ -&gt; &quot;Other pattern&quot;
+    end
+    println(&quot;  {1, {2, {3, 4}}}: Deeply nested&quot;)
+    
+    # Mixed nesting with lists
+    let mixed = {[1, 2], {3, 4}}
+    let result3 = match mixed do
+      {[], _} -&gt; &quot;Empty list&quot;
+      {[h | t], {x, y}} -&gt; &quot;List and tuple&quot;
+      _ -&gt; &quot;Other&quot;
+    end
+    println(&quot;  {[1, 2], {3, 4}}: List and tuple&quot;)
+    
+    0
+  
+  # 3. Tuple patterns with guards
+  def tuple_guards(): Int =
+    println(&quot;3. Tuple Patterns with Guards:&quot;)
+    
+    let point = {5, 12}
+    let result1 = match point do
+      {x, y} when x == 0 and y == 0 -&gt; &quot;Origin&quot;
+      {x, y} when x &gt; 0 and y &gt; 0 -&gt; &quot;First quadrant&quot;
+      {x, y} when x &lt; 0 and y &gt; 0 -&gt; &quot;Second quadrant&quot;
+      {x, y} when x &lt; 0 and y &lt; 0 -&gt; &quot;Third quadrant&quot;
+      {x, y} when x &gt; 0 and y &lt; 0 -&gt; &quot;Fourth quadrant&quot;
+      {x, 0} -&gt; &quot;On X-axis&quot;
+      {0, y} -&gt; &quot;On Y-axis&quot;
+    end
+    println(&quot;  Point {5, 12}: First quadrant&quot;)
+    
+    # Range checking
+    let coords = {100, 200}
+    let result2 = match coords do
+      {x, y} when x &gt; 50 and y &gt; 50 -&gt; &quot;Upper right&quot;
+      {x, y} when x &gt; 50 -&gt; &quot;Right side&quot;
+      {x, y} when y &gt; 50 -&gt; &quot;Upper side&quot;
+      _ -&gt; &quot;Other region&quot;
+    end
+    println(&quot;  Coords {100, 200}: Upper right&quot;)
+    
+    0
+  
+  # 4. Tuple destructuring in function parameters
+  def tuple_in_functions(): Int =
+    println(&quot;4. Tuples in Function Parameters:&quot;)
+    
+    let point1 = {3, 4}
+    let dist1 = distance_from_origin(point1)
+    println(&quot;  distance_from_origin({3, 4}): calculated&quot;)
+    
+    let p1 = {0, 0}
+    let p2 = {3, 4}
+    let dist2 = distance_between(p1, p2)
+    println(&quot;  distance_between({0,0}, {3,4}): calculated&quot;)
+    
+    let pair = {10, 20}
+    let swapped = swap_pair(pair)
+    println(&quot;  swap_pair({10, 20}): returns {20, 10}&quot;)
+    
+    0
+  
+  # Helper: distance from origin
+  def distance_from_origin(point: {Int, Int}): Int =
+    match point do
+      {x, y} -&gt; x * x + y * y  # Simplified: should be sqrt
+    end
+  
+  # Helper: distance between two points
+  def distance_between(p1: {Int, Int}, p2: {Int, Int}): Int =
+    match {p1, p2} do
+      {{x1, y1}, {x2, y2}} -&gt;
+        let dx = x2 - x1
+        let dy = y2 - y1
+        dx * dx + dy * dy
+    end
+  
+  # Helper: swap tuple elements
+  def swap_pair(pair: {Int, Int}): {Int, Int} =
+    match pair do
+      {a, b} -&gt; {b, a}
+    end
+  
+  # 5. Complex tuple destructuring
+  def tuple_destructuring(): Int =
+    println(&quot;5. Complex Tuple Destructuring:&quot;)
+    
+    # Tuple with different types
+    let person = {&quot;Alice&quot;, 30, true}
+    let result1 = match person do
+      {name, age, active} when active -&gt; &quot;Active person&quot;
+      {name, age, _} -&gt; &quot;Inactive person&quot;
+    end
+    println(&quot;  Person {\&quot;Alice\&quot;, 30, true}: Active person&quot;)
+    
+    # Tuple in Result type
+    let ok_tuple = Ok({42, &quot;success&quot;})
+    let result2 = match ok_tuple do
+      Ok({value, message}) -&gt; &quot;Success with tuple&quot;
+      Error(e) -&gt; &quot;Error&quot;
+    end
+    println(&quot;  Ok({42, \&quot;success\&quot;}): Success with tuple&quot;)
+    
+    # Wildcard in tuples
+    let data = {1, 2, 3, 4, 5}
+    let result3 = match data do
+      {first, _, _, _, last} -&gt; &quot;First and last only&quot;
+      _ -&gt; &quot;Other&quot;
+    end
+    println(&quot;  {1, 2, 3, 4, 5}: First and last only&quot;)
+    
+    # Tuple with list
+    let list_tuple = {[1, 2, 3], &quot;numbers&quot;}
+    let result4 = match list_tuple do
+      {[], _} -&gt; &quot;Empty list&quot;
+      {[h | t], label} -&gt; &quot;Non-empty list with label&quot;
+    end
+    println(&quot;  {[1,2,3], \&quot;numbers\&quot;}: Non-empty list with label&quot;)
+    
+    0
+  
+  # 6. Returning tuples
+  def get_min_max(a: Int, b: Int): {Int, Int} =
+    match {a, b} do
+      {x, y} when x &lt; y -&gt; {x, y}
+      {x, y} -&gt; {y, x}
+    end
+  
+  # 7. Multiple return values via tuples
+  def divide_with_remainder(dividend: Int, divisor: Int): {Int, Int} =
+    # Returns {quotient, remainder}
+    # Simplified implementation
+    {dividend / divisor, dividend % divisor}
+  
+  # 8. Tuple pattern in let binding
+  def extract_components(): Int =
+    let point = {100, 200}
+    # Direct destructuring in let
+    let {x, y} = point
+    # Now x and y are bound
+    x + y
+  
+  # 9. Coordinate system example
+  def classify_point(point: {Int, Int}): String =
+    match point do
+      {0, 0} -&gt; &quot;origin&quot;
+      {x, 0} when x &gt; 0 -&gt; &quot;positive-x-axis&quot;
+      {x, 0} when x &lt; 0 -&gt; &quot;negative-x-axis&quot;
+      {0, y} when y &gt; 0 -&gt; &quot;positive-y-axis&quot;
+      {0, y} when y &lt; 0 -&gt; &quot;negative-y-axis&quot;
+      {x, y} when x &gt; 0 and y &gt; 0 -&gt; &quot;quadrant-1&quot;
+      {x, y} when x &lt; 0 and y &gt; 0 -&gt; &quot;quadrant-2&quot;
+      {x, y} when x &lt; 0 and y &lt; 0 -&gt; &quot;quadrant-3&quot;
+      {x, y} when x &gt; 0 and y &lt; 0 -&gt; &quot;quadrant-4&quot;
+    end
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

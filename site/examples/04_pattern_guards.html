@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>04 Pattern Guards - Cure Example</title>
+    <meta name="description" content="Pattern Guards Example Demonstrates pattern matching with guard expressions in Cure">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>04 Pattern Guards</h1>
+            <p>Pattern Guards Example Demonstrates pattern matching with guard expressions in Cure</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Pattern Guards Example
+# Demonstrates pattern matching with guard expressions in Cure
+
+module PatternGuards do
+  export [main/0]
+
+  import Std.Io [println/1]
+  import Std.List [length/1]
+
+  # === BASIC GUARDS ===
+  
+  # Numeric comparison guards
+  def classify_age(age: Int): String =
+    match age do
+      x when x &lt; 0 -&gt; &quot;Invalid age&quot;
+      x when x &gt;= 0 and x &lt; 13 -&gt; &quot;Child&quot;
+      x when x &gt;= 13 and x &lt; 20 -&gt; &quot;Teenager&quot;
+      x when x &gt;= 20 and x &lt; 65 -&gt; &quot;Adult&quot;
+      x when x &gt;= 65 -&gt; &quot;Senior&quot;
+    end
+
+  # Multiple conditions with logical operators
+  def check_range(n: Int): String =
+    match n do
+      x when x &gt;= 10 and x &lt;= 20 -&gt; &quot;In range [10, 20]&quot;
+      x when x &lt; 10 or x &gt; 20 -&gt; &quot;Out of range&quot;
+    end
+
+  # Equality and inequality guards
+  def describe_value(n: Int): String =
+    match n do
+      x when x == 0 -&gt; &quot;Zero&quot;
+      x when x == 1 -&gt; &quot;One&quot;
+      _ -&gt; &quot;Unknown&quot;
+    end
+
+  # === GUARDS WITH ARITHMETIC ===
+
+  # Using arithmetic in guards
+  # def check_even_odd(n: Int): String =
+  #   match n do
+  #     x when x % 2 == 0 -&gt; &quot;Even: &quot; &lt;&gt; show(x)
+  #     x when x % 2 == 1 -&gt; &quot;Odd: &quot; &lt;&gt; show(x)
+  #   end
+
+  # Complex arithmetic conditions
+  def triangle_type(a: Float, b: Float, c: Float): String =
+    match {a, b, c} do
+      {x, y, z} when x + y &lt;= z or x + z &lt;= y or y + z &lt;= x -&gt;
+        &quot;Not a valid triangle&quot;
+      {x, y, z} when x == y and y == z -&gt;
+        &quot;Equilateral triangle&quot;
+      {x, y, z} when x == y or y == z or x == z -&gt;
+        &quot;Isosceles triangle&quot;
+      _ -&gt;
+        &quot;Scalene triangle&quot;
+    end
+
+  # === GUARDS WITH LIST PATTERNS ===
+
+  # Guards on list elements
+  def analyze_list(list: List(Int)): String =
+    match list do
+      [] -&gt; &quot;Empty list&quot;
+      [x] when x &gt; 0 -&gt; &quot;Single positive element&quot;
+      [x] when x &lt; 0 -&gt; &quot;Single negative element&quot;
+      [x] when x == 0 -&gt; &quot;Single zero element&quot;
+      [x, y] when x &gt; y -&gt; &quot;Two elements, descending&quot;
+      [x, y] when x &lt; y -&gt; &quot;Two elements, ascending&quot;
+      [x, y] when x == y -&gt; &quot;Two equal elements&quot;
+      [head | _] when head &gt; 100 -&gt; &quot;List starts with large number&quot;
+      [head | _] when head &lt; 0 -&gt; &quot;List starts with negative&quot;
+      _ -&gt; &quot;Other list pattern&quot;
+    end
+
+  # === GUARDS WITH RECORDS ===
+
+  record Point do
+    x: Float
+    y: Float
+  end
+
+  # Guards accessing record fields
+  def classify_point(p: Point): String =
+    match p do
+      Point{x: x, y: y} when x == 0.0 and y == 0.0 -&gt;
+        &quot;Origin&quot;
+      Point{x: x, y: y} when x &gt; 0.0 and y &gt; 0.0 -&gt;
+        &quot;First quadrant&quot;
+      Point{x: x, y: y} when x &lt; 0.0 and y &gt; 0.0 -&gt;
+        &quot;Second quadrant&quot;
+      Point{x: x, y: y} when x &lt; 0.0 and y &lt; 0.0 -&gt;
+        &quot;Third quadrant&quot;
+      Point{x: x, y: y} when x &gt; 0.0 and y &lt; 0.0 -&gt;
+        &quot;Fourth quadrant&quot;
+      Point{x: x, y: _} when x == 0.0 -&gt;
+        &quot;On Y-axis&quot;
+      Point{x: _, y: y} when y == 0.0 -&gt;
+        &quot;On X-axis&quot;
+    end
+
+  def distance_from_origin(p: Point): String =
+    match p do
+      Point{x: x, y: y} when x * x + y * y &lt; 1.0 -&gt;
+        &quot;Inside unit circle&quot;
+      Point{x: x, y: y} when x * x + y * y == 1.0 -&gt;
+        &quot;On unit circle&quot;
+      Point{x: x, y: y} when x * x + y * y &gt; 1.0 -&gt;
+        &quot;Outside unit circle&quot;
+    end
+
+  # === GUARDS WITH UNION TYPES ===
+
+  type Result(T, E) = Ok(T) | Error(E)
+
+  def process_result(result: Result(Int, String)): String =
+    match result do
+      Ok(value) when value &gt; 100 -&gt;
+        &quot;Large success&quot;
+      Ok(value) when value &gt; 0 and value &lt;= 100 -&gt;
+        &quot;Moderate success&quot;
+      Ok(value) when value &lt; 0 -&gt;
+        &quot;Non-positive success&quot;
+      Error(msg) when msg == &quot;timeout&quot; -&gt;
+        &quot;Connection timeout&quot;
+      Error(msg) when msg == &quot;not_found&quot; -&gt;
+        &quot;Resource not found&quot;
+      Error(msg) -&gt;
+        &quot;Error: &quot; &lt;&gt; msg
+    end
+
+  # === NESTED GUARDS ===
+
+  record Person do
+    name: String
+    age: Int
+    score: Int
+  end
+
+  def evaluate_person(person: Person): String =
+    match person do
+      Person{age: age, score: score} when age &lt; 18 and score &gt;= 90 -&gt;
+        &quot;Outstanding young achiever&quot;
+      Person{age: age, score: score} when age &lt; 18 and score &gt;= 70 -&gt;
+        &quot;Good young student&quot;
+      Person{age: age, score: score} when age &gt;= 18 and age &lt; 65 and score &gt;= 90 -&gt;
+        &quot;Excellent adult performer&quot;
+      Person{age: age, score: score} when age &gt;= 18 and age &lt; 65 and score &gt;= 70 -&gt;
+        &quot;Good adult performer&quot;
+      Person{age: age, score: score} when age &gt;= 65 and score &gt;= 80 -&gt;
+        &quot;Impressive senior&quot;
+      Person{age: age, score: _} when age &gt;= 65 -&gt;
+        &quot;Senior participant&quot;
+      _ -&gt;
+        &quot;Needs improvement&quot;
+    end
+
+  # === GUARDS WITH COMPLEX EXPRESSIONS ===
+
+  def fizzbuzz(n: Int): String =
+    match n do
+      x when x % 15 == 0 -&gt; &quot;FizzBuzz&quot;
+      x when x % 3 == 0 -&gt; &quot;Fizz&quot;
+      x when x % 5 == 0 -&gt; &quot;Buzz&quot;
+      _ -&gt; &quot;Number&quot;
+    end
+
+  # Temperature classification with multiple thresholds
+  def classify_temperature(celsius: Float): String =
+    match celsius do
+      t when t &lt; -273.15 -&gt; &quot;Invalid (below absolute zero)&quot;
+      t when t &lt; -50.0 -&gt; &quot;Extremely cold&quot;
+      t when t &gt;= -50.0 and t &lt; 0.0 -&gt; &quot;Freezing&quot;
+      t when t &gt;= 0.0 and t &lt; 15.0 -&gt; &quot;Cold&quot;
+      t when t &gt;= 15.0 and t &lt; 25.0 -&gt; &quot;Comfortable&quot;
+      t when t &gt;= 25.0 and t &lt; 35.0 -&gt; &quot;Warm&quot;
+      t when t &gt;= 35.0 -&gt; &quot;Hot&quot;
+    end
+
+  # === GUARDS WITH NEGATIVE CONDITIONS ===
+
+  def validate_input(n: Int): String =
+    match n do
+      x when x &gt; 10 -&gt;
+        &quot;Valid large number&quot;
+      0 -&gt; &quot;Zero not allowed&quot;
+      1 -&gt; &quot;One not allowed&quot;
+      x when x &lt; 10 -&gt;
+        &quot;Valid small number&quot;
+    end
+
+  # === DEMONSTRATION FUNCTION ===
+
+  def main(): Int =
+    println(&quot;=== Basic Age Classification ===&quot;)
+    println(classify_age(5))       # &quot;Child&quot;
+    println(classify_age(15))      # &quot;Teenager&quot;
+    println(classify_age(30))      # &quot;Adult&quot;
+    println(classify_age(70))      # &quot;Senior&quot;
+
+    println(&quot;\n=== Range Checking ===&quot;)
+    println(check_range(15))       # &quot;In range [10, 20]&quot;
+    println(check_range(25))       # &quot;Out of range&quot;
+
+    # println(&quot;\n=== Even/Odd ===&quot;)
+    # println(check_even_odd(10))    # &quot;Even: 10&quot;
+    # println(check_even_odd(7))     # &quot;Odd: 7&quot;
+
+    println(&quot;\n=== Triangle Types ===&quot;)
+    println(triangle_type(3.0, 4.0, 5.0))     # &quot;Scalene triangle&quot;
+    println(triangle_type(5.0, 5.0, 5.0))     # &quot;Equilateral triangle&quot;
+    println(triangle_type(5.0, 5.0, 8.0))     # &quot;Isosceles triangle&quot;
+
+    println(&quot;\n=== List Analysis ===&quot;)
+    println(analyze_list([]))          # &quot;Empty list&quot;
+    println(analyze_list([42]))        # &quot;Single positive element&quot;
+    println(analyze_list([150, 10]))   # &quot;List starts with large number&quot;
+
+    println(&quot;\n=== Point Classification ===&quot;)
+    let p1 = Point{x: 0.0, y: 0.0}
+    println(classify_point(p1))        # &quot;Origin&quot;
+
+    println(&quot;\n=== Distance from Origin ===&quot;)
+    println(distance_from_origin(Point{x: 0.5, y: 0.5}))   # &quot;Inside unit circle&quot;
+    println(distance_from_origin(Point{x: 2.0, y: 2.0}))   # &quot;Outside unit circle&quot;
+
+    println(&quot;\n=== Result Processing ===&quot;)
+    println(process_result(Ok(150)))                 # &quot;Large success&quot;
+    println(process_result(Ok(50)))                  # &quot;Moderate success&quot;
+    println(process_result(Error(&quot;timeout&quot;)))        # &quot;Connection timeout&quot;
+
+    println(&quot;\n=== Person Evaluation ===&quot;)
+    let alice = Person{name: &quot;Alice&quot;, age: 16, score: 95}
+    println(evaluate_person(alice))    # &quot;Outstanding young achiever&quot;
+    let bob = Person{name: &quot;Bob&quot;, age: 35, score: 85}
+    println(evaluate_person(bob))      # &quot;Good adult performer&quot;
+
+    println(&quot;\n=== FizzBuzz ===&quot;)
+    println(fizzbuzz(15))              # &quot;FizzBuzz&quot;
+    println(fizzbuzz(9))               # &quot;Fizz&quot;
+    println(fizzbuzz(10))              # &quot;Buzz&quot;
+    println(fizzbuzz(7))               # &quot;Number&quot;
+
+    println(&quot;\n=== Temperature Classification ===&quot;)
+    println(classify_temperature(-60.0))    # &quot;Extremely cold&quot;
+    println(classify_temperature(20.0))     # &quot;Comfortable&quot;
+    println(classify_temperature(40.0))     # &quot;Hot&quot;
+
+    println(&quot;\n=== Input Validation ===&quot;)
+    println(validate_input(15))        # &quot;Valid large number&quot;
+    println(validate_input(5))         # &quot;Valid small number&quot;
+    println(validate_input(0))         # &quot;Zero not allowed&quot;
+
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

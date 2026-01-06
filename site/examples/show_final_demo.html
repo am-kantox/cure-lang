@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Show Final Demo - Cure Example</title>
+    <meta name="description" content="Show Typeclass - Final Working Demo Demonstrates Show typeclass fully functional">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>Show Final Demo</h1>
+            <p>Show Typeclass - Final Working Demo Demonstrates Show typeclass fully functional</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Show Typeclass - Final Working Demo
+# Demonstrates Show typeclass fully functional
+
+module ShowFinalDemo do
+  export [main/0]
+
+  import Std.Io [println]
+
+  # Define Show typeclass in this module so we can use it
+  typeclass Show(T) do
+    def show(x: T): String
+  end
+
+  # Show instances for our demo
+  instance Show(Int) do
+    def show(x: Int): String = &quot;42&quot;
+  end
+
+  instance Show(Bool) do
+    def show(x: Bool): String =
+      match x do
+        true -&gt; &quot;true&quot;
+        false -&gt; &quot;false&quot;
+      end
+  end
+
+  # Generic function using Show constraint
+  def display(value: T): Int where Show(T) =
+    println(show(value))
+    0
+
+  def main(): Int =
+    println(&quot;=== Show Typeclass Working Demo ===&quot;)
+    
+    display(42)
+    display(true)
+    display(false)
+    
+    println(&quot;=== TypeClass methods resolved correctly! ===&quot;)
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

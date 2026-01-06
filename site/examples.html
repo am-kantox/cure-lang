@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cure Examples - Code Samples and Demonstrations</title>
+    <meta name="description" content="Browse comprehensive Cure programming language examples covering lists, FSMs, refinement types, typeclasses, and more">
+    <link rel="icon" type="image/png" href="media/logo-128x128.png">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="examples.html">Examples</a></li>
+                    <li><a href="docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Examples Content -->
+    <div class="container">
+        <div class="example-page">
+            <h1>Cure Examples</h1>
+            <p>Comprehensive code samples demonstrating Cure language features, from basic list operations to advanced finite state machines and dependent types.</p>
+
+            <!-- Table of Contents -->
+            <div class="toc">
+                <h2>Table of Contents</h2>
+                <ul>
+                    <li><a href="#basic-examples">Basic Examples</a></li>
+                    <li><a href="#fsm-examples">Finite State Machine Examples</a></li>
+                    <li><a href="#type-system-examples">Type System Examples</a></li>
+                    <li><a href="#advanced-examples">Advanced Examples</a></li>
+                </ul>
+            </div>
+
+            <!-- Basic Examples -->
+            <h2 id="basic-examples">Basic Examples</h2>
+            <div class="examples-grid">
+                <a href="examples/01_list_basics.html" class="example-link">
+                    <h3>01. List Basics</h3>
+                    <p>Fundamental list processing with map, filter, and fold operations</p>
+                </a>
+
+                <a href="examples/01_vector_basics.html" class="example-link">
+                    <h3>01. Vector Basics</h3>
+                    <p>Length-indexed vectors with compile-time size verification</p>
+                </a>
+
+                <a href="examples/02_result_handling.html" class="example-link">
+                    <h3>02. Result Type</h3>
+                    <p>Safe error handling with Result type and combinators</p>
+                </a>
+
+                <a href="examples/03_option_type.html" class="example-link">
+                    <h3>03. Option Type</h3>
+                    <p>Handling optional values without null references</p>
+                </a>
+
+                <a href="examples/04_pattern_guards.html" class="example-link">
+                    <h3>04. Pattern Guards</h3>
+                    <p>Pattern matching with guard clauses for precise control flow</p>
+                </a>
+
+                <a href="examples/05_function_guards.html" class="example-link">
+                    <h3>05. Function Guards</h3>
+                    <p>Guard constraints in function signatures</p>
+                </a>
+
+                <a href="examples/05_recursion.html" class="example-link">
+                    <h3>05. Recursion</h3>
+                    <p>Recursive function definitions and patterns</p>
+                </a>
+            </div>
+
+            <!-- FSM Examples -->
+            <h2 id="fsm-examples">Finite State Machine Examples</h2>
+            <div class="examples-grid">
+                <a href="examples/06_comprehensive_guards_demo.html" class="example-link">
+                    <h3>06. Comprehensive Guards</h3>
+                    <p>Advanced guard patterns and combinations</p>
+                </a>
+
+                <a href="examples/06_fsm_traffic_light.html" class="example-link">
+                    <h3>06. FSM Traffic Light</h3>
+                    <p>Classic traffic light FSM with timer and emergency transitions</p>
+                </a>
+
+                <a href="examples/06_fsm_traffic_light_enhanced.html" class="example-link">
+                    <h3>06. FSM Traffic Light Enhanced</h3>
+                    <p>Enhanced traffic light with state payload tracking</p>
+                </a>
+
+                <a href="examples/07_fsm_verification.html" class="example-link">
+                    <h3>07. FSM Verification</h3>
+                    <p>Compile-time verification of FSM properties and invariants</p>
+                </a>
+            </div>
+
+            <!-- Type System Examples -->
+            <h2 id="type-system-examples">Type System Examples</h2>
+            <div class="examples-grid">
+                <a href="examples/07_refinement_types_demo.html" class="example-link">
+                    <h3>07. Refinement Types</h3>
+                    <p>Refinement constraints for non-zero divisors, positive numbers, and bounded values</p>
+                </a>
+
+                <a href="examples/08_typeclasses.html" class="example-link">
+                    <h3>08. Typeclasses</h3>
+                    <p>Typeclass system with Show, Eq, and custom instances</p>
+                </a>
+
+                <a href="examples/09_derive.html" class="example-link">
+                    <h3>09. Derive</h3>
+                    <p>Automatic typeclass derivation for records</p>
+                </a>
+
+                <a href="examples/18_refinement_types_advanced.html" class="example-link">
+                    <h3>18. Advanced Refinement Types</h3>
+                    <p>Complex refinement constraints and dependent type patterns</p>
+                </a>
+
+                <a href="examples/19_refinement_verification.html" class="example-link">
+                    <h3>19. Refinement Verification</h3>
+                    <p>SMT-backed verification of refinement type constraints</p>
+                </a>
+            </div>
+
+            <!-- Advanced Examples -->
+            <h2 id="advanced-examples">Advanced Examples</h2>
+            <div class="examples-grid">
+                <a href="examples/10_generic_algorithms.html" class="example-link">
+                    <h3>10. Generic Algorithms</h3>
+                    <p>Polymorphic algorithms with typeclass constraints</p>
+                </a>
+
+                <a href="examples/11_advanced_typeclasses.html" class="example-link">
+                    <h3>11. Advanced Typeclasses</h3>
+                    <p>Functor, Monad, and higher-kinded type patterns</p>
+                </a>
+
+                <a href="examples/12_show_typeclass.html" class="example-link">
+                    <h3>12. Show Typeclass</h3>
+                    <p>Implementing and using the Show typeclass</p>
+                </a>
+
+                <a href="examples/14_pipe.html" class="example-link">
+                    <h3>14. Pipe Operator</h3>
+                    <p>Function composition with the pipe operator</p>
+                </a>
+
+                <a href="examples/15_records_comprehensive.html" class="example-link">
+                    <h3>15. Records</h3>
+                    <p>Record types with pattern matching and updates</p>
+                </a>
+
+                <a href="examples/22_lambda_expressions.html" class="example-link">
+                    <h3>22. Lambda Expressions</h3>
+                    <p>Anonymous functions and closures</p>
+                </a>
+
+                <a href="examples/23_tuple_patterns.html" class="example-link">
+                    <h3>23. Tuple Patterns</h3>
+                    <p>Pattern matching on tuples and nested structures</p>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="examples.html">Browse Examples</a></li>
+                    <li><a href="examples/01_list_basics.html">List Operations</a></li>
+                    <li><a href="examples/06_fsm_traffic_light.html">FSM Traffic Light</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+</body>
+</html>

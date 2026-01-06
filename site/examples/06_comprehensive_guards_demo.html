@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>06 Comprehensive Guards Demo - Cure Example</title>
+    <meta name="description" content="Comprehensive Guard Features Demonstration Shows all supported guard capabilities in Cure">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>06 Comprehensive Guards Demo</h1>
+            <p>Comprehensive Guard Features Demonstration Shows all supported guard capabilities in Cure</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Comprehensive Guard Features Demonstration
+# Shows all supported guard capabilities in Cure
+
+module ComprehensiveGuardsDemo do
+  export [main/0]
+
+  import Std.Io [println/1]
+
+  # =============================================================================
+  # SECTION 1: Basic Comparison Guards
+  # =============================================================================
+
+  # Guards with literals - fully supported
+  def is_positive(x: Int): Bool when x &gt; 0 = true
+  def is_positive(_x: Int): Bool = false
+
+  def is_negative(x: Int): Bool when x &lt; 0 = true
+  def is_negative(_x: Int): Bool = false
+
+  def is_zero(x: Int): Bool when x == 0 = true
+  def is_zero(_x: Int): Bool = false
+
+  def is_nonzero(x: Int): Bool when x != 0 = true
+  def is_nonzero(_x: Int): Bool = false
+
+  # =============================================================================
+  # SECTION 2: Multi-Clause Functions
+  # =============================================================================
+
+  # Absolute value
+  def abs(x: Int): Int when x &gt;= 0 = x
+  def abs(x: Int): Int = 0 - x
+
+  # Sign function
+  def sign(x: Int): Int when x &gt; 0 = 1
+  def sign(x: Int): Int when x == 0 = 0
+  def sign(x: Int): Int = -1
+
+  # Fibonacci
+  def fib(n: Int): Int when n == 0 = 0
+  def fib(n: Int): Int when n == 1 = 1
+  def fib(n: Int): Int = fib(n - 1) + fib(n - 2)
+
+  # =============================================================================
+  # SECTION 3: Guard Sequences (AND/OR with literals)
+  # =============================================================================
+
+  # Small numbers (0-10)
+  def is_small(x: Int): Bool when x &gt;= 0 and x &lt;= 10 = true
+  def is_small(_x: Int): Bool = false
+
+  # Medium numbers (11-100)
+  def is_medium(x: Int): Bool when x &gt; 10 and x &lt;= 100 = true
+  def is_medium(_x: Int): Bool = false
+
+  # Extreme values
+  def is_extreme(x: Int): Bool when x &lt; -100 or x &gt; 100 = true
+  def is_extreme(_x: Int): Bool = false
+
+  # =============================================================================
+  # SECTION 4: Type Refinement with Guards
+  # =============================================================================
+
+  # Temperature classification
+  def classify_temp(celsius: Int): String
+    when celsius &lt; -40 or celsius &gt; 50 = &quot;extreme&quot;
+  def classify_temp(celsius: Int): String
+    when celsius &gt;= 20 and celsius &lt;= 25 = &quot;comfortable&quot;
+  def classify_temp(celsius: Int): String
+    when celsius &lt; 0 = &quot;freezing&quot;
+  def classify_temp(celsius: Int): String
+    when celsius &gt; 30 = &quot;hot&quot;
+  def classify_temp(_celsius: Int): String = &quot;moderate&quot;
+
+  # Age groups
+  def age_group(age: Int): String
+    when age &lt; 0 = &quot;invalid&quot;
+  def age_group(age: Int): String
+    when age &lt; 13 = &quot;child&quot;
+  def age_group(age: Int): String
+    when age &lt; 20 = &quot;teenager&quot;
+  def age_group(age: Int): String
+    when age &lt; 65 = &quot;adult&quot;
+  def age_group(_age: Int): String = &quot;senior&quot;
+
+  # Grade letters
+  def grade_letter(score: Int): String
+    when score &gt;= 90 = &quot;A&quot;
+  def grade_letter(score: Int): String
+    when score &gt;= 80 = &quot;B&quot;
+  def grade_letter(score: Int): String
+    when score &gt;= 70 = &quot;C&quot;
+  def grade_letter(score: Int): String
+    when score &gt;= 60 = &quot;D&quot;
+  def grade_letter(_score: Int): String = &quot;F&quot;
+
+  # =============================================================================
+  # SECTION 5: Real-World Applications
+  # =============================================================================
+
+  # Discount by age
+  def discount(age: Int): Float
+    when age &lt; 12 = 0.5
+  def discount(age: Int): Float
+    when age &gt;= 65 = 0.3
+  def discount(_age: Int): Float = 0.0
+
+  # Tax brackets
+  def tax_bracket(income: Int): Float
+    when income &lt;= 10000 = 0.0
+  def tax_bracket(income: Int): Float
+    when income &lt;= 40000 = 0.1
+  def tax_bracket(income: Int): Float
+    when income &lt;= 100000 = 0.2
+  def tax_bracket(_income: Int): Float = 0.3
+
+  # Shipping weight
+  def shipping_cost(kg: Int): Int
+    when kg &lt;= 0 = 0
+  def shipping_cost(kg: Int): Int
+    when kg &lt;= 5 = 5
+  def shipping_cost(kg: Int): Int
+    when kg &lt;= 20 = 10
+  def shipping_cost(_kg: Int): Int = 20
+
+  # =============================================================================
+  # SECTION 6: Comparison Operators
+  # =============================================================================
+
+  def test_gt(x: Int): String when x &gt; 10 = &quot;GT&quot;
+  def test_gt(_x: Int): String = &quot;LE&quot;
+
+  def test_lt(x: Int): String when x &lt; 10 = &quot;LT&quot;
+  def test_lt(_x: Int): String = &quot;GE&quot;
+
+  def test_gte(x: Int): String when x &gt;= 10 = &quot;GTE&quot;
+  def test_gte(_x: Int): String = &quot;LT&quot;
+
+  def test_lte(x: Int): String when x &lt;= 10 = &quot;LTE&quot;
+  def test_lte(_x: Int): String = &quot;GT&quot;
+
+  def test_eq(x: Int): String when x == 10 = &quot;EQ&quot;
+  def test_eq(_x: Int): String = &quot;NE&quot;
+
+  def test_neq(x: Int): String when x != 10 = &quot;NE&quot;
+  def test_neq(_x: Int): String = &quot;EQ&quot;
+
+  # =============================================================================
+  # SECTION 7: Utility Functions
+  # =============================================================================
+
+  # Clamp to 0-100
+  def clamp100(x: Int): Int when x &lt; 0 = 0
+  def clamp100(x: Int): Int when x &gt; 100 = 100
+  def clamp100(x: Int): Int = x
+
+  # =============================================================================
+  # SECTION 8: Recursive Functions
+  # =============================================================================
+
+  # Sum 0 to n
+  def sum_to(n: Int): Int when n &lt;= 0 = 0
+  def sum_to(n: Int): Int = n + sum_to(n - 1)
+
+  # Factorial
+  def factorial(n: Int): Int when n &lt;= 1 = 1
+  def factorial(n: Int): Int = n * factorial(n - 1)
+
+  # Power
+  def power(base: Int, exp: Int): Int when exp == 0 = 1
+  def power(base: Int, exp: Int): Int when exp == 1 = base
+  def power(base: Int, exp: Int): Int = base * power(base, exp - 1)
+
+  # =============================================================================
+  # SECTION 9: Guard Coverage
+  # =============================================================================
+
+  # Complete coverage
+  def classify(x: Int): String when x &gt; 0 = &quot;POS&quot;
+  def classify(x: Int): String when x &lt; 0 = &quot;NEG&quot;
+  def classify(_x: Int): String = &quot;ZERO&quot;
+
+  # Performance-ordered
+  def perf_test(x: Int): String when x == 42 = &quot;ANSWER&quot;
+  def perf_test(x: Int): String when x &gt; 100 = &quot;BIG&quot;
+  def perf_test(x: Int): String when x &gt; 0 = &quot;POS&quot;
+  def perf_test(x: Int): String when x &lt; 0 = &quot;NEG&quot;
+  def perf_test(_x: Int): String = &quot;ZERO&quot;
+
+  # =============================================================================
+  # SECTION 10: Main Demo
+  # =============================================================================
+
+  def main(): Int =
+    println(&quot;=== COMPREHENSIVE GUARDS DEMO ===\n&quot;)
+    
+    println(&quot;== Basic Comparisons ==&quot;)
+    println(is_positive(5))
+    println(is_negative(-3))
+    println(is_zero(0))
+    println(is_nonzero(7))
+    
+    println(&quot;\n== Multi-Clause ==&quot;)
+    println(abs(5))
+    println(abs(-5))
+    println(sign(10))
+    println(sign(0))
+    println(sign(-10))
+    println(fib(7))
+    
+    println(&quot;\n== Guard Sequences ==&quot;)
+    println(is_small(5))
+    println(is_medium(50))
+    println(is_extreme(200))
+    
+    println(&quot;\n== Type Refinement ==&quot;)
+    println(classify_temp(22))
+    println(classify_temp(-50))
+    println(age_group(10))
+    println(age_group(70))
+    println(grade_letter(85))
+    
+    println(&quot;\n== Real-World ==&quot;)
+    println(discount(10))
+    println(discount(70))
+    println(tax_bracket(25000))
+    println(shipping_cost(3))
+    
+    println(&quot;\n== Comparisons ==&quot;)
+    println(test_gt(15))
+    println(test_lt(5))
+    println(test_gte(10))
+    println(test_eq(10))
+    println(test_neq(7))
+    
+    println(&quot;\n== Utilities ==&quot;)
+    println(clamp100(-10))
+    println(clamp100(50))
+    println(clamp100(150))
+    
+    println(&quot;\n== Recursive ==&quot;)
+    println(sum_to(10))
+    println(factorial(5))
+    println(power(2, 4))
+    
+    println(&quot;\n== Coverage ==&quot;)
+    println(classify(5))
+    println(classify(-5))
+    println(classify(0))
+    println(perf_test(42))
+    println(perf_test(200))
+    
+    println(&quot;\n=== ALL FEATURES COMPLETE! ===&quot;)
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

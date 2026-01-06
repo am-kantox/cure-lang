@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>20 Refinement Type Aliases - Cure Example</title>
+    <meta name="description" content="Type Aliases with Refinements Test Tests if type aliases can use refinement types">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>20 Refinement Type Aliases</h1>
+            <p>Type Aliases with Refinements Test Tests if type aliases can use refinement types</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Type Aliases with Refinements Test
+# Tests if type aliases can use refinement types
+
+module RefinementTypeAliases do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  
+  # Try to define type aliases with refinements
+  type Positive = {x: Int | x &gt; 0}
+  type NonZero = {x: Int | x != 0}
+  type Percentage = {p: Int | p &gt;= 0 and p &lt;= 100}
+  
+  # Use the type aliases in function signatures
+  def double_positive(n: Positive): Positive =
+    n * 2
+  
+  def safe_divide(numerator: Int, denominator: NonZero): Int =
+    numerator / denominator
+  
+  def validate_percentage(value: Percentage): Percentage =
+    value
+  
+  # Helper functions
+  def show_int(n: Int): String =
+    match n do
+      x when x == 2 -&gt; &quot;2&quot;
+      x when x == 5 -&gt; &quot;5&quot;
+      x when x == 10 -&gt; &quot;10&quot;
+      x when x == 50 -&gt; &quot;50&quot;
+      _ -&gt; &quot;[int]&quot;
+    end
+  
+  def main(): Int =
+    println(&quot;=== TYPE ALIAS REFINEMENT TEST ===&quot;)
+    
+    let doubled = double_positive(5)
+    println(&quot;double_positive(5) = &quot; &lt;&gt; show_int(doubled))
+    
+    let quotient = safe_divide(10, 2)
+    println(&quot;safe_divide(10, 2) = &quot; &lt;&gt; show_int(quotient))
+    
+    let pct = validate_percentage(50)
+    println(&quot;validate_percentage(50) = &quot; &lt;&gt; show_int(pct))
+    
+    println(&quot;=== If this compiles, type aliases work! ===&quot;)
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

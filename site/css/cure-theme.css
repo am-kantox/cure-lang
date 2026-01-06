@@ -1,189 +1,177 @@
 /*
- * Cure Theme for highlight.js
- * Based on the vicure Vim syntax highlighting
+ * Nord Theme for highlight.js
+ * Adapted for Cure language syntax highlighting
+ * Based on https://www.nordtheme.com/
  * 
- * This theme provides syntax highlighting for Cure code examples
- * with colors optimized for readability and distinction between
- * language constructs.
+ * Nord Palette:
+ * Polar Night: #2e3440, #3b4252, #434c5e, #4c566a
+ * Snow Storm: #d8dee9, #e5e9f0, #eceff4
+ * Frost: #8fbcbb, #88c0d0, #81a1c1, #5e81ac
+ * Aurora: #bf616a, #d08770, #ebcb8b, #a3be8c, #b48ead
  */
 
-/* Base styling - required for all highlight.js themes */
+/* Base styling */
 .hljs {
   display: block;
   overflow-x: auto;
-  padding: 0.5em;
-  background: #f9fafb;
-  color: #1f2937;
-  font-family: 'Victor Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', 'Courier New', monospace;
-  font-variant-ligatures: common-ligatures;
-  font-feature-settings: 'liga' 1, 'calt' 1;
+  padding: 1em;
+  background: #2e3440;  /* nord0 - Polar Night darkest */
+  color: #d8dee9;       /* nord4 - Snow Storm lightest */
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   line-height: 1.6;
 }
 
-/* Reset .subst to default color */
-.hljs-subst {
-  color: #1f2937;
-}
-
-/* Keywords (flow control, declarations) - Statement group in vim */
-.hljs-keyword {
-  color: #7c3aed; /* purple-600 - matches Statement */
-  font-weight: 600;
-}
-
-/* Built-in constructors - StorageClass in vim */
-.hljs-built_in {
-  color: #dc2626; /* red-600 - matches StorageClass */
-  font-weight: 500;
-}
-
-/* Literals (true, false) - Boolean in vim */
-.hljs-literal {
-  color: #ea580c; /* orange-600 - matches Boolean */
-  font-weight: 600;
-}
-
 /* Comments */
-.hljs-comment {
-  color: #6b7280; /* gray-500 - standard comment color */
+.hljs-comment,
+.hljs-quote {
+  color: #616e88;  /* Brightened nord3 for better visibility */
   font-style: italic;
 }
 
-/* TODO/FIXME/NOTE markers in comments */
-.hljs-doctag {
-  color: #dc2626; /* red-600 - draw attention */
-  font-weight: 700;
-  font-style: normal;
+/* Keywords (def, match, do, end, when, etc.) */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-section,
+.hljs-link {
+  color: #81a1c1;  /* nord9 - Frost blue */
+  font-weight: 600;
+}
+
+/* Built-in types and constants */
+.hljs-built_in,
+.hljs-type,
+.hljs-class .hljs-title {
+  color: #8fbcbb;  /* nord7 - Frost cyan */
+  font-weight: 500;
 }
 
 /* Strings */
-.hljs-string {
-  color: #059669; /* emerald-600 - standard string color */
+.hljs-string,
+.hljs-title,
+.hljs-section,
+.hljs-attribute,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: #a3be8c;  /* nord14 - Aurora green */
 }
 
-/* String interpolation expressions */
-.hljs-subst {
-  color: #b45309; /* amber-700 - Special in vim */
+/* Numbers and literals */
+.hljs-number,
+.hljs-literal {
+  color: #b48ead;  /* nord15 - Aurora purple */
 }
 
-/* Atoms/symbols (:atom, 'quoted') - Constant in vim */
-.hljs-symbol {
-  color: #0891b2; /* cyan-600 - matches Constant */
-  font-weight: 500;
+/* Function names */
+.hljs-title.hljs-function,
+.hljs-function > .hljs-title {
+  color: #88c0d0;  /* nord8 - Frost cyan */
+  font-weight: 600;
 }
 
-/* Numbers and floats */
-.hljs-number {
-  color: #dc2626; /* red-600 - matches Number */
+/* Variables and parameters */
+.hljs-variable,
+.hljs-attr,
+.hljs-template-variable,
+.hljs-params {
+  color: #d8dee9;  /* nord4 - Snow Storm */
 }
 
 /* Operators */
-.hljs-operator {
-  color: #7c3aed; /* purple-600 - matches Operator */
-  font-weight: 500;
+.hljs-operator,
+.hljs-punctuation {
+  color: #81a1c1;  /* nord9 - Frost blue */
 }
 
-/* Type names (Vector, Int, T, etc.) - Type in vim */
+/* Symbols/atoms (:atom) */
+.hljs-symbol,
+.hljs-bullet,
+.hljs-meta {
+  color: #8fbcbb;  /* nord7 - Frost cyan */
+}
+
+/* Regex and special chars */
+.hljs-regexp,
+.hljs-char.escape_ {
+  color: #ebcb8b;  /* nord13 - Aurora yellow */
+}
+
+/* Module/record/FSM names */
+.hljs-title.hljs-class,
+.hljs-class,
 .hljs-type {
-  color: #0284c7; /* sky-600 - matches Type */
-  font-weight: 600;
-}
-
-/* Function names in definitions - Function in vim */
-.hljs-title.hljs-function,
-.hljs-function > .hljs-title {
-  color: #0891b2; /* cyan-600 - matches Function */
-  font-weight: 600;
-}
-
-/* Module/FSM/Record names - PreProc in vim */
-.hljs-title.hljs-class {
-  color: #7c3aed; /* purple-600 - matches PreProc */
+  color: #8fbcbb;  /* nord7 - Frost cyan */
   font-weight: 700;
 }
 
-/* Regular identifiers */
-.hljs-variable,
-.hljs-attr {
-  color: #1f2937; /* gray-800 - default text color */
-}
-
-/* Punctuation/Delimiters */
-.hljs-punctuation {
-  color: #4b5563; /* gray-600 - subtle but visible */
-}
-
-/* Special characters and escape sequences */
-.hljs-char.escape_,
-.hljs-meta {
-  color: #b45309; /* amber-700 - matches SpecialChar */
+/* Attributes and metadata */
+.hljs-meta,
+.hljs-meta-keyword {
+  color: #5e81ac;  /* nord10 - Frost blue darkest */
   font-weight: 600;
 }
 
-/* Sections and attributes */
-.hljs-section,
-.hljs-attribute {
-  color: #7c3aed; /* purple-600 */
-  font-weight: 600;
-}
-
-/* Template variables and substitutions */
-.hljs-template-variable {
-  color: #b45309; /* amber-700 - matches Special */
-}
-
-/* Strong emphasis */
+/* Special emphasis */
 .hljs-strong {
   font-weight: 700;
 }
 
-/* Emphasis */
 .hljs-emphasis {
   font-style: italic;
 }
 
-/* Links */
-.hljs-link {
-  color: #0891b2; /* cyan-600 */
-  text-decoration: underline;
-}
-
-/* Additions (for diffs) */
-.hljs-addition {
-  color: #059669; /* emerald-600 */
-  background-color: #d1fae5; /* emerald-100 */
-}
-
-/* Deletions (for diffs) */
+/* Deletion (for diffs) */
 .hljs-deletion {
-  color: #dc2626; /* red-600 */
-  background-color: #fee2e2; /* red-100 */
+  color: #bf616a;  /* nord11 - Aurora red */
+  background-color: #3b2c32;
 }
 
-/* Language-specific: Cure */
+/* Addition (for diffs) */
+.hljs-addition {
+  color: #a3be8c;  /* nord14 - Aurora green */
+  background-color: #2e3d30;
+}
 
-/* FSM-specific highlighting */
-.language-cure .hljs-keyword:is([data-keyword*="fsm"], 
-                                 [data-keyword*="state"],
-                                 [data-keyword*="transition"]) {
-  color: #7c3aed; /* purple-600 - emphasize FSM constructs */
+/* Error highlighting */
+.hljs-error {
+  color: #bf616a;  /* nord11 - Aurora red */
+  background-color: #3b2c32;
+}
+
+/* Language-specific: Cure FSM highlighting */
+.language-cure .hljs-keyword[data-keyword*="fsm"],
+.language-cure .hljs-keyword[data-keyword*="state"],
+.language-cure .hljs-keyword[data-keyword*="transition"] {
+  color: #b48ead;  /* nord15 - Aurora purple for FSM constructs */
   font-weight: 700;
 }
 
-/* Verification keywords */
-.language-cure .hljs-keyword:is([data-keyword*="property"],
-                                 [data-keyword*="invariant"],
-                                 [data-keyword*="always"],
-                                 [data-keyword*="eventually"]) {
-  color: #dc2626; /* red-600 - highlight verification constructs */
+/* Cure verification keywords */
+.language-cure .hljs-keyword[data-keyword*="property"],
+.language-cure .hljs-keyword[data-keyword*="invariant"],
+.language-cure .hljs-keyword[data-keyword*="always"],
+.language-cure .hljs-keyword[data-keyword*="eventually"] {
+  color: #d08770;  /* nord12 - Aurora orange for verification */
   font-weight: 700;
 }
 
-/* Type system keywords */
-.language-cure .hljs-keyword:is([data-keyword*="type"],
-                                 [data-keyword*="typeclass"],
-                                 [data-keyword*="trait"],
-                                 [data-keyword*="instance"]) {
-  color: #0284c7; /* sky-600 - highlight type constructs */
+/* Cure type system keywords */
+.language-cure .hljs-keyword[data-keyword*="type"],
+.language-cure .hljs-keyword[data-keyword*="typeclass"],
+.language-cure .hljs-keyword[data-keyword*="instance"],
+.language-cure .hljs-keyword[data-keyword*="derive"] {
+  color: #88c0d0;  /* nord8 - Frost cyan for type constructs */
   font-weight: 700;
+}
+
+/* Refinement type constraints */
+.language-cure .hljs-constraint {
+  color: #ebcb8b;  /* nord13 - Aurora yellow */
+  font-style: italic;
+}
+
+/* Cure-specific operators (arrows, pipes) */
+.language-cure .hljs-operator:is([data-op*="-->"], [data-op*="|>"]) {
+  color: #d08770;  /* nord12 - Aurora orange for special operators */
+  font-weight: 600;
 }

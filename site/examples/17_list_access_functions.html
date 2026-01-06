@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>17 List Access Functions - Cure Example</title>
+    <meta name="description" content="List Access Functions Demo Demonstrates nth, take, and drop functions from Std.List">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>17 List Access Functions</h1>
+            <p>List Access Functions Demo Demonstrates nth, take, and drop functions from Std.List</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># List Access Functions Demo
+# Demonstrates nth, take, and drop functions from Std.List
+
+module ListAccessDemo do
+  export [main/0]
+
+  import Std.Io [println/1]
+  import Std.List [nth/3, take/2, drop/2]
+
+  # Helper to show Int
+  def show_int(n: Int): String =
+    match n do
+      x when x == 0 -&gt; &quot;0&quot;
+      x when x == 1 -&gt; &quot;1&quot;
+      x when x == 2 -&gt; &quot;2&quot;
+      x when x == 3 -&gt; &quot;3&quot;
+      x when x == 4 -&gt; &quot;4&quot;
+      x when x == 5 -&gt; &quot;5&quot;
+      x when x == 10 -&gt; &quot;10&quot;
+      x when x == 20 -&gt; &quot;20&quot;
+      x when x == 30 -&gt; &quot;30&quot;
+      x when x == 40 -&gt; &quot;40&quot;
+      x when x == 50 -&gt; &quot;50&quot;
+      _ -&gt; &quot;[int]&quot;
+    end
+
+  # Helper to convert list to string
+  def show_list(list: List(Int)): String =
+    match list do
+      [] -&gt; &quot;[]&quot;
+      [x] -&gt; &quot;[&quot; &lt;&gt; show_int(x) &lt;&gt; &quot;]&quot;
+      [x, y] -&gt; &quot;[&quot; &lt;&gt; show_int(x) &lt;&gt; &quot;, &quot; &lt;&gt; show_int(y) &lt;&gt; &quot;]&quot;
+      [x, y, z] -&gt; &quot;[&quot; &lt;&gt; show_int(x) &lt;&gt; &quot;, &quot; &lt;&gt; show_int(y) &lt;&gt; &quot;, &quot; &lt;&gt; show_int(z) &lt;&gt; &quot;]&quot;
+      _ -&gt; &quot;[...]&quot;
+    end
+
+  def main(): Int =
+    println(&quot;=== LIST ACCESS FUNCTIONS DEMO ===&quot;)
+
+    # Test data
+    let my_list = [10, 20, 30, 40, 50]
+    println(&quot;Test list: [10, 20, 30, 40, 50]&quot;)
+
+    # Test nth - get element at index
+    println(&quot;&quot;)
+    println(&quot;1. nth - Get element at index&quot;)
+    let elem0 = nth(my_list, Zero, 0)
+    println(&quot;nth(list, Zero, 0) = &quot; &lt;&gt; show_int(elem0))
+    
+    let elem1 = nth(my_list, Succ(Zero), 0)
+    println(&quot;nth(list, Succ(Zero), 0) = &quot; &lt;&gt; show_int(elem1))
+    
+    let elem2 = nth(my_list, Succ(Succ(Zero)), 0)
+    println(&quot;nth(list, Succ(Succ(Zero)), 0) = &quot; &lt;&gt; show_int(elem2))
+
+    # Test with out-of-bounds index (returns default)
+    let elem_default = nth([], Zero, 99)
+    println(&quot;nth([], Zero, 99) = &quot; &lt;&gt; show_int(elem_default))
+
+    # Test take - get first n elements
+    println(&quot;&quot;)
+    println(&quot;2. take - Get first n elements&quot;)
+    let take0 = take(my_list, Zero)
+    println(&quot;take(list, Zero) = &quot; &lt;&gt; show_list(take0))
+    
+    let take1 = take(my_list, Succ(Zero))
+    println(&quot;take(list, Succ(Zero)) = &quot; &lt;&gt; show_list(take1))
+    
+    let take2 = take(my_list, Succ(Succ(Zero)))
+    println(&quot;take(list, Succ(Succ(Zero))) = &quot; &lt;&gt; show_list(take2))
+    
+    let take3 = take(my_list, Succ(Succ(Succ(Zero))))
+    println(&quot;take(list, 3) = &quot; &lt;&gt; show_list(take3))
+
+    # Test take with n &gt; length
+    let take_more = take([1, 2], Succ(Succ(Succ(Zero))))
+    println(&quot;take([1, 2], 3) = &quot; &lt;&gt; show_list(take_more))
+
+    # Test drop - remove first n elements
+    println(&quot;&quot;)
+    println(&quot;3. drop - Remove first n elements&quot;)
+    let drop0 = drop(my_list, Zero)
+    println(&quot;drop(list, Zero) = &quot; &lt;&gt; show_list(drop0))
+    
+    let drop1 = drop(my_list, Succ(Zero))
+    println(&quot;drop(list, Succ(Zero)) = &quot; &lt;&gt; show_list(drop1))
+    
+    let drop2 = drop(my_list, Succ(Succ(Zero)))
+    println(&quot;drop(list, Succ(Succ(Zero))) = &quot; &lt;&gt; show_list(drop2))
+    
+    let drop3 = drop(my_list, Succ(Succ(Succ(Zero))))
+    println(&quot;drop(list, 3) = &quot; &lt;&gt; show_list(drop3))
+
+    # Test drop with n &gt; length
+    let drop_all = drop([1, 2], Succ(Succ(Succ(Zero))))
+    println(&quot;drop([1, 2], 3) = &quot; &lt;&gt; show_list(drop_all))
+
+    # Test with empty list
+    println(&quot;&quot;)
+    println(&quot;4. Edge cases - Empty list&quot;)
+    let empty_nth = nth([], Zero, -1)
+    println(&quot;nth([], Zero, -1) = &quot; &lt;&gt; show_int(empty_nth))
+    
+    let empty_take = take([], Succ(Zero))
+    println(&quot;take([], Succ(Zero)) = &quot; &lt;&gt; show_list(empty_take))
+    
+    let empty_drop = drop([], Succ(Zero))
+    println(&quot;drop([], Succ(Zero)) = &quot; &lt;&gt; show_list(empty_drop))
+
+    println(&quot;&quot;)
+    println(&quot;=== Demo complete! ===&quot;)
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

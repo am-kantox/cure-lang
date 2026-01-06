@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>14 Pipe - Cure Example</title>
+    <meta name="description" content="Simple Pipe Operator Example Demonstrates the pipe operator with Result type wrapping">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>14 Pipe</h1>
+            <p>Simple Pipe Operator Example Demonstrates the pipe operator with Result type wrapping</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Simple Pipe Operator Example
+# Demonstrates the pipe operator with Result type wrapping
+
+module PipeExample do
+  export [
+    main/0,
+    example_bare_to_bare/0,
+    example_bare_to_result/0,
+    example_result_ok_chain/0,
+    example_result_error_propagation/0,
+    example_mixed_chain/0
+  ]
+  
+  import Std.Core [Result, ok/1, error/1]
+
+  # ============================================================================
+  # Helper Functions
+  # ============================================================================
+
+  # Function that takes bare Int and returns bare Int
+  def double(x: Int): Int = x * 2
+  
+  # Function that takes bare Float and returns bareFloatt
+  def double_float(x: Float): Float = x * 2.0
+  
+  # Function that takes bare Int and returns bare Int
+  def increment(x: Int): Int = x + 1
+  
+  # Ditto but with additional agruments
+  def add(x1: Int, x2: Int): Int = x1 + x2
+  
+  # Function that takes bare Int and returns Result
+  def safe_divide(x: Int): Result(Float, String) =
+    match x do
+      0 -&gt; error(&quot;Cannot divide by zero&quot;)
+      _ -&gt; ok(10 / x)
+    end
+  
+  # Function that always returns an error
+  def always_fails(x: Int): Result(Int, String) =
+    error(&quot;This always fails&quot;)
+
+  # ============================================================================
+  # Example 1: Bare value -&gt; Bare function
+  # ============================================================================
+  # Input: 5 (bare Int)
+  # Transformation: x * 2 (returns bare Int)
+  # Expected: Ok(10)
+  def example_bare_to_bare(): Result(Int, String) =
+    5 |&gt; double
+
+  # ============================================================================
+  # Example 2: Bare value -&gt; Result function
+  # ============================================================================
+  # Input: 5 (bare Int)
+  # Transformation: ok(x * 2) (returns Result(Int, String))
+  # Expected: Ok(10)
+  def example_bare_to_result(): Result(Float, String) =
+    5 |&gt; safe_divide
+
+  # ============================================================================
+  # Example 3: Chaining with Ok results
+  # ============================================================================
+  # Input: 5 (bare Int)
+  # Chain: double (returns bare) -&gt; safe_divide (returns Result)
+  # Expected: Ok(1) because 5 * 2 = 10, then 10 / 10 = 1
+  def example_result_ok_chain(): Result(Float, String) =
+    5 |&gt; double |&gt; safe_divide
+
+  # ============================================================================
+  # Example 4: Error propagation through chain
+  # ============================================================================
+  # Input: 0 (bare Int)
+  # Chain: safe_divide (returns Error) -&gt; double (should NOT be called)
+  # Expected: Error(&quot;Cannot divide by zero&quot;)
+  def example_result_error_propagation(): Result(Float, String) =
+    0 |&gt; safe_divide |&gt; double_float
+
+  # ============================================================================
+  # Example 5: Mixed bare and Result functions
+  # ============================================================================
+  # Input: 5 (bare Int)
+  # Chain: double (bare) -&gt; increment (bare) -&gt; safe_divide (Result)
+  # Expected: Ok(0) because (5 * 2 + 1) = 11, then 10 / 11 = 0 (integer division)
+  def example_mixed_chain(): Result(Float, String) =
+    5 |&gt; double |&gt; increment |&gt; safe_divide
+
+  # ============================================================================
+  # Main entry point
+  # ============================================================================
+  def main(): Result(Float, String) =
+    5 |&gt; double |&gt; add(10) |&gt; safe_divide
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

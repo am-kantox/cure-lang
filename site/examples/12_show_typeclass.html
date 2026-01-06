@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12 Show Typeclass - Cure Example</title>
+    <meta name="description" content="Shows how to use and implement the Show typeclass">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>12 Show Typeclass</h1>
+            <p>Shows how to use and implement the Show typeclass</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Example: Show Typeclass - Complete Demonstration
+# Shows how to use and implement the Show typeclass
+
+module ShowDemo do
+  export [main/0]
+
+  # Import the Show typeclass and standard instances
+  import Std.Show [Show, show, show_list, show_separated]
+  import Std.Core [Option, Result, Ok, Error, Some, None]
+  import Std.Io [println]
+
+  # ============================================================================
+  # Helper Functions (FFI)
+  # ============================================================================
+
+  curify string_concat(a: String, b: String): String = {string, concat, 2}
+
+  # ============================================================================
+  # Custom Record Types with Show Instances
+  # ============================================================================
+
+  # Define a Person record
+  record Person do
+    name: String
+    age: Int
+    email: String
+  end
+
+  # Implement Show for Person
+  instance Show(Person) do
+    def show(p: Person): String =
+      string_concat(&quot;Person { name: &quot;,
+        string_concat(show(p.name),
+          string_concat(&quot;, age: &quot;,
+            string_concat(show(p.age),
+              string_concat(&quot;, email: &quot;,
+                string_concat(show(p.email), &quot; }&quot;))))))
+  end
+
+  # Define a Point record (generic)
+  record Point(T) do
+    x: T
+    y: T
+  end
+
+  # Implement Show for Point(T) where T is showable
+  instance Show(Point(T)) when Show(T) do
+    def show(p: Point(T)): String =
+      string_concat(&quot;Point(&quot;,
+        string_concat(show(p.x),
+          string_concat(&quot;, &quot;,
+            string_concat(show(p.y), &quot;)&quot;))))
+  end
+
+  # Define a Color enum (using union types)
+  type Color = Red | Green | Blue | RGB(Int, Int, Int)
+
+  # Implement Show for Color
+  instance Show(Color) do
+    def show(c: Color): String =
+      match c do
+        Red -&gt; &quot;Red&quot;
+        Green -&gt; &quot;Green&quot;
+        Blue -&gt; &quot;Blue&quot;
+        RGB(r, g, b) -&gt;
+          string_concat(&quot;RGB(&quot;,
+            string_concat(show(r),
+              string_concat(&quot;, &quot;,
+                string_concat(show(g),
+                  string_concat(&quot;, &quot;,
+                    string_concat(show(b), &quot;)&quot;))))))
+      end
+  end
+
+  # Define a Tree data structure
+  type Tree(T) = Leaf | Node(T, Tree(T), Tree(T))
+
+  # Implement Show for Tree(T) where T is showable
+  instance Show(Tree(T)) when Show(T) do
+    def show(t: Tree(T)): String =
+      match t do
+        Leaf -&gt; &quot;Leaf&quot;
+        Node(value, left, right) -&gt;
+          string_concat(&quot;Node(&quot;,
+            string_concat(show(value),
+              string_concat(&quot;, &quot;,
+                string_concat(show(left),
+                  string_concat(&quot;, &quot;,
+                    string_concat(show(right), &quot;)&quot;))))))
+      end
+  end
+
+  # ============================================================================
+  # Generic Functions Using Show
+  # ============================================================================
+
+  # Debug printer - works with any type that implements Show
+  def debug(label: String, value: T): T where Show(T) =
+    println(string_concat(label, string_concat(&quot;: &quot;, show(value))))
+    value
+
+  # Pretty print a list with a title
+  def print_list(title: String, items: List(T)): Int where Show(T) =
+    println(string_concat(title, &quot;:&quot;))
+    println(show_list(items))
+    0
+
+  # Print multiple values in a formatted way
+  def print_values(values: List(T)): Int where Show(T) =
+    println(show_separated(values, &quot; | &quot;))
+    0
+
+  # Compare and show two values
+  def compare_and_show(a: T, b: T): String where Show(T) =
+    string_concat(show(a), string_concat(&quot; vs &quot;, show(b)))
+
+  # ============================================================================
+  # Demonstration Functions
+  # ============================================================================
+
+  # Demonstrate primitive type instances
+  def demo_primitives(): Int =
+    println(&quot;=== Primitive Types ===&quot;)
+    debug(&quot;Int&quot;, 42)
+    debug(&quot;Float&quot;, 3.14)
+    debug(&quot;String&quot;, &quot;Hello, World!&quot;)
+    debug(&quot;Bool&quot;, true)
+    debug(&quot;Atom&quot;, :example)
+    0
+
+  # Demonstrate container type instances
+  def demo_containers(): Int =
+    println(&quot;\n=== Container Types ===&quot;)
+    debug(&quot;List[Int]&quot;, [1, 2, 3, 4, 5])
+    debug(&quot;List[String]&quot;, [&quot;foo&quot;, &quot;bar&quot;, &quot;baz&quot;])
+    debug(&quot;Tuple&quot;, {42, &quot;answer&quot;, true})
+    debug(&quot;Option[Int]&quot;, Some(42))
+    debug(&quot;Option[String]&quot;, None)
+    debug(&quot;Result[Int, String]&quot;, Ok(100))
+    debug(&quot;Result[Int, String]&quot;, Error(&quot;oops&quot;))
+    0
+
+  # Demonstrate custom type instances
+  def demo_custom_types(): Int =
+    println(&quot;\n=== Custom Types ===&quot;)
+    
+    # Person example
+    let alice = Person{name: &quot;Alice&quot;, age: 30, email: &quot;alice@example.com&quot;}
+    debug(&quot;Person&quot;, alice)
+    
+    # Generic Point examples
+    let int_point = Point{x: 10, y: 20}
+    let float_point = Point{x: 1.5, y: 2.5}
+    debug(&quot;Point[Int]&quot;, int_point)
+    debug(&quot;Point[Float]&quot;, float_point)
+    
+    # Color examples
+    debug(&quot;Color&quot;, Red)
+    debug(&quot;Color&quot;, RGB(255, 128, 0))
+    
+    # Tree examples
+    let small_tree = Node(5, Leaf, Leaf)
+    let bigger_tree = Node(10, Node(5, Leaf, Leaf), Node(15, Leaf, Leaf))
+    debug(&quot;Tree[Int]&quot;, small_tree)
+    debug(&quot;Tree[Int]&quot;, bigger_tree)
+    
+    0
+
+  # Demonstrate nested structures
+  def demo_nested(): Int =
+    println(&quot;\n=== Nested Structures ===&quot;)
+    
+    # List of Options
+    let opts = [Some(1), None, Some(3), Some(4)]
+    debug(&quot;List[Option[Int]]&quot;, opts)
+    
+    # Result containing a List
+    let result_list = Ok([1, 2, 3])
+    debug(&quot;Result[List[Int], String]&quot;, result_list)
+    
+    # List of Tuples
+    let pairs = [{1, &quot;one&quot;}, {2, &quot;two&quot;}, {3, &quot;three&quot;}]
+    debug(&quot;List[{Int, String}]&quot;, pairs)
+    
+    # Option of Result
+    let opt_result = Some(Ok(42))
+    debug(&quot;Option[Result[Int, String]]&quot;, opt_result)
+    
+    0
+
+  # Demonstrate utility functions
+  def demo_utilities(): Int =
+    println(&quot;\n=== Utility Functions ===&quot;)
+    
+    let numbers = [1, 2, 3, 4, 5]
+    print_list(&quot;Numbers&quot;, numbers)
+    
+    let colors = [Red, Green, Blue]
+    print_list(&quot;Colors&quot;, colors)
+    
+    print_values([1, 2, 3, 4, 5])
+    
+    println(compare_and_show(42, 100))
+    println(compare_and_show(&quot;hello&quot;, &quot;world&quot;))
+    
+    0
+
+  # ============================================================================
+  # Main Entry Point
+  # ============================================================================
+
+  def main(): Int =
+    println(&quot;Show Typeclass Demonstration&quot;)
+    println(&quot;=&quot; * 40)
+    
+    demo_primitives()
+    demo_containers()
+    demo_custom_types()
+    demo_nested()
+    demo_utilities()
+    
+    println(&quot;\n=== Complete ===&quot;)
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

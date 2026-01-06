@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Melquiades Demo - Cure Example</title>
+    <meta name="description" content="Melquíades Operator Demo The |-&gt; operator sends messages to external BEAM GenServers">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>Melquiades Demo</h1>
+            <p>Melquíades Operator Demo The |-&gt; operator sends messages to external BEAM GenServers</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Melquíades Operator Demo
+# The |-&gt; operator sends messages to external BEAM GenServers
+
+module MelquiadesDemo do
+  import Std.String [trim/1, upcase/1]
+
+  export [
+    send_notification/2,
+    send_with_record/3,
+    send_to_global/2,
+    send_via_registry/3,
+    example_usage/0
+  ]
+
+  # Define a message record
+  record NotificationMsg do
+    msg_type: Atom
+    content: String
+    priority: Int
+  end
+
+  # Define another record for complex messages
+  record UserEvent do
+    user_id: Int
+    event_action: String
+    timestamp: Int
+  end
+
+  # Send a simple message to a local GenServer
+  # The message can be any term
+  def send_notification(server_name: Atom, message: String): Unit =
+    message |-&gt; server_name
+
+  # Send a record message (will be converted to map with __from__ = MelquiadesDemo)
+  def send_with_record(server: Atom, notification_type: Atom, content: String): Unit = (
+    let msg = NotificationMsg{
+      msg_type: notification_type,
+      content: content,
+      priority: 5
+    }
+    msg |-&gt; server
+  )
+
+  # Send to a globally registered GenServer
+  # In Cure, we construct GenServerRef types for different name formats
+  def send_to_global(name: Atom, message: String): Unit = (
+    # Global name: {:global, name}
+    let global_ref = {:global, name}
+    message |-&gt; global_ref
+  )
+
+  # Send via a process registry (like Registry)
+  def send_via_registry(registry: Atom, key: String, message: String): Unit = (
+    # Via tuple: {:via, Registry, {RegistryName, key}}
+    let via_ref = {:via, :Registry, {registry, key}}
+    message |-&gt; via_ref
+  )
+
+  # Example usage showing different message types
+  def example_usage(): Unit = (
+    # Simple message to local server
+    let _ = &quot;Hello, World!&quot; |-&gt; :my_server
+
+    # Record message (auto-converted to map with __from__)
+    let user_event = UserEvent{
+      user_id: 42,
+      event_action: &quot;login&quot;,
+      timestamp: 1701000000
+    }
+    let _ = user_event |-&gt; :event_handler
+
+    # Chain with other operations
+    let result = compute_message()
+    let _ = result |-&gt; :result_processor
+
+    # Tuple message
+    let _ = {:notification, &quot;System started&quot;} |-&gt; :logger
+
+    # List message
+    let _ = [1, 2, 3, 4, 5] |-&gt; :list_processor
+    
+    # Return Unit
+    {}
+  )
+
+  # Helper function to demonstrate chaining
+  def compute_message(): String =
+    &quot;Computed result&quot;
+
+  # Complex example: Send multiple messages in sequence
+  def broadcast_event(user_event: UserEvent, servers: List(Atom)): Unit =
+    # Note: This would need to be implemented with proper list iteration
+    # For now, showing the concept with just one send
+    user_event |-&gt; :server1
+
+  # Example with pattern matching
+  def conditional_send(condition: Bool, message: String): Unit =
+    match condition do
+      true -&gt; message |-&gt; :primary_server
+      false -&gt; message |-&gt; :backup_server
+    end
+
+  # Example showing the operator in a pipeline
+  def process_and_send(data: String): Unit = (
+    let processed = data
+      |&gt; trim
+      |&gt; upcase
+    let _ = processed |-&gt; :processor
+    {}
+  )
+end
+
+# Usage notes:
+# 
+# 1. The |-&gt; operator is named &quot;Melquíades&quot; in honor of the character from
+#    Gabriel García Márquez&#x27;s &quot;One Hundred Years of Solitude&quot;
+#
+# 2. It always uses gen_server:cast/2 underneath (asynchronous, fire-and-forget)
+#
+# 3. The operator always returns None since cast always succeeds
+#
+# 4. When sending records, they are automatically converted to Erlang maps with
+#    an injected __from__ key containing the sender module name:
+#    
+#    NotificationMsg{type: :info, ...} becomes:
+#    #{__from__ =&gt; &#x27;MelquiadesDemo&#x27;, type =&gt; info, ...}
+#
+# 5. The target can be:
+#    - Local name (atom): :my_server
+#    - Global name: {:global, :name}
+#    - Via registry: {:via, ModuleName, term()}
+#
+# 6. This operator is designed for sending messages to Erlang/Elixir GenServers
+#    from Cure code, enabling seamless interop with the BEAM ecosystem
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

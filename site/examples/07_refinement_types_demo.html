@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>07 Refinement Types Demo - Cure Example</title>
+    <meta name="description" content="Refinement Types Demo Demonstrates the syntax and usage of refinement types in Cure Refinement types allow adding constraints to base types using the syntax: {variable: BaseType | constraint} The constraint is a boolean expression that must hold for all values of that type. This enables compile-time verification of properties like: - Non-zero divisors - Positive numbers - Bounded values (percentages, years, etc.)">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>07 Refinement Types Demo</h1>
+            <p>Refinement Types Demo Demonstrates the syntax and usage of refinement types in Cure Refinement types allow adding constraints to base types using the syntax: {variable: BaseType | constraint} The constraint is a boolean expression that must hold for all values of that type. This enables compile-time verification of properties like: - Non-zero divisors - Positive numbers - Bounded values (percentages, years, etc.)</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Refinement Types Demo
+# Demonstrates the syntax and usage of refinement types in Cure
+#
+# Refinement types allow adding constraints to base types using the syntax:
+#   {variable: BaseType | constraint}
+#
+# The constraint is a boolean expression that must hold for all values
+# of that type. This enables compile-time verification of properties like:
+#   - Non-zero divisors
+#   - Positive numbers
+#   - Bounded values (percentages, years, etc.)
+
+module RefinementTypesDemo do
+  export [main/0]
+  
+  # Example 1: NonZero integers for safe division
+  # This refinement type ensures the divisor is never zero
+  def safe_divide(a: Int, b: {x: Int | x != 0}): Int =
+    a / b
+  
+  # Example 2: Positive integers
+  # Useful for square roots, logarithms, etc.
+  def process_positive(n: {x: Int | x &gt; 0}): Int =
+    n * 2
+  
+  # Example 3: Bounded integers (percentage)
+  # Ensures values are between 0 and 100
+  def make_percentage(value: {p: Int | 0 &lt;= p and p &lt;= 100}): Int =
+    value
+  
+  # Example 4: Range constraints
+  def process_year(year: {y: Int | y &gt;= 1900 and y &lt;= 2100}): Int =
+    year
+  
+  # Example 7: Non-empty string  (would need string length)
+  # def process_non_empty(s: {str: String | length(str) &gt; 0}): String =
+  #   s
+  
+  def main(): Int =
+    # Demonstration of refinement types:
+    # These calls are valid because arguments satisfy the refinements
+    let result1 = safe_divide(10, 2)  # 2 != 0 ✓
+    let result2 = process_positive(5)  # 5 &gt; 0 ✓
+    let result3 = make_percentage(50)  # 0 &lt;= 50 &lt;= 100 ✓
+    let result4 = process_year(2025)  # 1900 &lt;= 2025 &lt;= 2100 ✓
+    
+    # These would FAIL at compile time (constraint violations):
+    # let bad1 = safe_divide(10, 0)  # 0 == 0, violates x != 0
+    # let bad2 = process_positive(0)  # 0 not &gt; 0
+    # let bad3 = make_percentage(101)  # 101 &gt; 100
+    # let bad4 = process_year(1899)  # 1899 &lt; 1900
+    
+    result1
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

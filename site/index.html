@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cure v0.4.0 - Verification-First Programming for the BEAM</title>
-    <meta name="description" content="Cure v0.4.0: A strongly-typed, dependently-typed programming language for the BEAM with built-in FSMs, SMT verification, and 12 standard library modules">
+    <title>Cure v0.7.0 - Dependently-Typed Programming for the BEAM</title>
+    <meta name="description" content="Cure: A strongly-typed, dependently-typed programming language for the BEAM with built-in FSMs and SMT verification">
     <link rel="icon" type="image/png" href="media/logo-128x128.png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/cure-theme.css">
@@ -22,11 +22,9 @@
             </div>
             <nav class="main-nav">
                 <ul>
-                    <li><a href="docs/welcome.html">Welcome</a></li>
-                    <li><a href="#features">Features</a></li>
-                    <li><a href="#why">Why Cure?</a></li>
+                    <li><a href="examples.html">Examples</a></li>
                     <li><a href="docs.html">Documentation</a></li>
-                    <li><a href="api/index.html">API Reference</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
                 </ul>
             </nav>
         </div>
@@ -36,170 +34,46 @@
     <section class="hero">
         <div class="hero-content">
             <h1>Cure Programming Language</h1>
-            <p class="version-badge">v0.4.0 - November 2025</p>
-            <p class="tagline">Dependent Types. SMT Verification. Native FSMs. On the BEAM.</p>
-            <p class="description">
-                A strongly-typed, dependently-typed programming language that brings mathematical correctness 
-                guarantees to the battle-tested BEAM virtual machine. Build systems where verification matters 
-                more than convenience. Now with 12 fully compiled standard library modules and comprehensive documentation.
+            <p class="version-badge">v0.7.0</p>
+            <p class="tagline">
+                Dependently-typed programming language for the BEAM virtual machine with
+                first-class finite state machines and SMT-backed verification.
             </p>
             <div class="cta-buttons">
                 <a href="docs.html" class="btn btn-primary">Get Started</a>
-                <a href="api/readme.html" class="btn btn-secondary">Read the Docs</a>
+                <a href="examples.html" class="btn btn-secondary">Browse Examples</a>
+                <a href="https://cure-lang.org/api/index.html" class="api-reference-link">API Reference</a>
             </div>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="container section">
-        <h2 class="section-title">Core Features</h2>
-        <p class="section-subtitle">What makes Cure unique in the BEAM ecosystem</p>
-        
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">🎯</div>
-                <h3>Dependent Types</h3>
-                <p>Express and verify invariants at compile time with length-indexed vectors, refinement types, and SMT-backed constraint solving.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">🎆</div>
-                <h3>First-Class FSMs</h3>
-                <p>State machines as native syntax with arrow-based transitions. The compiler verifies reachability, deadlock freedom, and invariant preservation.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">🔬</div>
-                <h3>SMT Verification</h3>
-                <p>Z3 and CVC5 solver integration validates your types and state machines. Your types are theorems, proven before execution.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">✅</div>
-                <h3>Exhaustive Patterns</h3>
-                <p>No if-then-else. Pattern matching with guards ensures every case is handled. The compiler proves completeness.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">⚡</div>
-                <h3>Type Optimizations</h3>
-                <p>Monomorphization, specialization, and inlining provide 25-60% performance improvements over baseline.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">🏗️</div>
-                <h3>BEAM Integration</h3>
-                <p>Compiles to BEAM bytecode with full OTP compatibility. Interoperate with Erlang and Elixir ecosystems seamlessly.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">🔌</div>
-                <h3>LSP Support</h3>
-                <p>Complete Language Server Protocol implementation with real-time diagnostics, hover info, and IDE integration.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">📚</div>
-                <h3>Standard Library</h3>
-                <p>12 fully compiled modules: core, io, list, fsm, result, pair, vector, string, math, system, rec, and typeclasses with 100+ functions.</p>
-            </div>
-
-            <div class="feature-card">
-                <div class="feature-icon">📖</div>
-                <h3>Documentation</h3>
-                <p>31+ comprehensive guides covering language features, APIs, FSMs, typeclasses, SMT integration, and more.</p>
-            </div>
-        </div>
+    <section class="container section">
+        <h2 class="section-title">Features</h2>
+        <ul class="features-list">
+            <li>Dependent types with refinement constraints for compile-time verification</li>
+            <li>First-class finite state machines with native syntax and transition verification</li>
+            <li>SMT solver integration (Z3, CVC5) for automated theorem proving</li>
+            <li>Exhaustive pattern matching enforced by the compiler</li>
+            <li>Type-directed optimizations (monomorphization, specialization, inlining)</li>
+            <li>Full BEAM bytecode compilation with OTP compatibility</li>
+            <li>Language Server Protocol (LSP) implementation for IDE integration</li>
+            <li>Complete standard library with 12+ modules</li>
+            <li>Typeclass system with automatic derivation</li>
+        </ul>
     </section>
 
     <!-- Why Cure Section -->
-    <section id="why" class="why-cure">
-        <div class="container">
-            <h2 class="section-title">Why Cure?</h2>
-            <p class="section-subtitle">A principled language that focuses on what's missing, not what's already there</p>
-            
-            <div class="why-grid">
-                <div class="why-item">
-                    <h4>🎯 Dependent Types with SMT</h4>
-                    <p>Express and verify invariants at compile time. Vector operations that can't fail. Array access that's proven safe.</p>
-                </div>
-
-                <div class="why-item">
-                    <h4>🎆 Native FSM Syntax</h4>
-                    <p>State machines aren't a pattern—they're native syntax with compile-time safety verification by SMT solvers.</p>
-                </div>
-
-                <div class="why-item">
-                    <h4>🚫 No If-Then-Else</h4>
-                    <p>Forces you to think in pattern matching and exhaustive cases. No forgotten edge cases. Every decision point is explicit.</p>
-                </div>
-
-                <div class="why-item">
-                    <h4>🔒 Verification > Convenience</h4>
-                    <p>When correctness matters more than convenience. For safety-critical systems, financial transactions, industrial control.</p>
-                </div>
-
-                <div class="why-item">
-                    <h4>🤝 BEAM Interoperability</h4>
-                    <p>OTP fault tolerance, hot code reloading, distributed computing, and full Erlang/Elixir ecosystem access.</p>
-                </div>
-
-                <div class="why-item">
-                    <h4>📈 Production Ready</h4>
-                    <p>Complete compiler pipeline, comprehensive testing, working standard library, and LSP support for modern development.</p>
-                </div>
-            </div>
-
-            <div class="code-example">
-                <pre><code class="language-cure"># The type system proves this is safe—no runtime checks needed
-def safe_head(v: Vector(T, n)): T when n > 0 =
-  head(v)
-
-# FSMs with native syntax and compile-time verification
-fsm TrafficLight do
-  Red --> |timer| Green
-  Green --> |timer| Yellow  
-  Yellow --> |timer| Red
-  Green --> |emergency| Red
-end
-
-# Exhaustive pattern matching—compiler proves all cases handled
-def classify(x: Int): Atom =
-  match x do
-    n when n < 0 -> :negative
-    0 -> :zero
-    n when n > 0 -> :positive
-  end</code></pre>
-            </div>
-        </div>
-    </section>
-
-    <!-- Use Cases Section -->
     <section class="container section">
-        <h2 class="section-title">When to Use Cure</h2>
-        
-        <div class="features-grid">
-            <div class="feature-card">
-                <h3>✅ Perfect For</h3>
-                <ul style="text-align: left; margin-left: 1rem;">
-                    <li>Safety-critical finite state machines</li>
-                    <li>Systems with complex invariants</li>
-                    <li>Domains where correctness > convenience</li>
-                    <li>Trading systems, industrial control</li>
-                    <li>Medical devices, aerospace applications</li>
-                </ul>
-            </div>
-
-            <div class="feature-card">
-                <h3>❌ Not Ideal For</h3>
-                <ul style="text-align: left; margin-left: 1rem;">
-                    <li>Rapid prototyping (use Elixir)</li>
-                    <li>Scripts and glue code</li>
-                    <li>General web development (Phoenix is excellent)</li>
-                    <li>When you need maximum ecosystem libraries</li>
-                </ul>
-            </div>
-        </div>
+        <h2 class="section-title">Why Cure</h2>
+        <ul class="why-list">
+            <li>Mathematical correctness guarantees through dependent types and SMT verification</li>
+            <li>Native FSM syntax eliminates boilerplate and enables compile-time safety analysis</li>
+            <li>Runs on the battle-tested BEAM VM with OTP fault tolerance and distribution</li>
+            <li>Designed for safety-critical systems where verification matters more than convenience</li>
+            <li>Full interoperability with Erlang and Elixir ecosystems</li>
+            <li>Production-ready toolchain with compiler, LSP server, and comprehensive testing</li>
+        </ul>
     </section>
 
     <!-- Quick Start Section -->
@@ -207,24 +81,54 @@ def classify(x: Int): Atom =
         <h2 class="section-title">Quick Start</h2>
         
         <div class="code-example">
-            <pre><code class="language-bash"># Build the compiler
+            <pre><code># Build the compiler
 make all
 
-# Try an example
+# Compile an example
 ./cure examples/06_fsm_traffic_light.cure
 
 # Run the compiled program
-erl -pa _build/ebin -noshell -eval "'TrafficLightDemo':main(), init:stop()."
+erl -pa _build/ebin -noshell -eval "'TrafficLightFSM':main(), init:stop()."
 
 # Run tests
 make test</code></pre>
         </div>
-
-        <div style="text-align: center; margin-top: 2rem;">
-            <a href="docs.html" class="btn btn-primary">View Full Documentation</a>
-        </div>
     </section>
 
+    <!-- Code Example -->
+    <section class="container section">
+        <h2 class="section-title">Example Code</h2>
+        
+        <div class="code-example">
+            <pre><code class="language-cure"># Dependent types prove safety at compile time
+def safe_head(v: Vector(T, n)): T when n > 0 =
+  head(v)
+
+# Native FSM syntax with verified transitions
+fsm TrafficLight do
+  Red --> |timer| Green
+  Green --> |timer| Yellow  
+  Yellow --> |timer| Red
+  Green --> |emergency| Red
+end
+
+# Refinement types constrain values
+def safe_divide(a: Int, b: {x: Int | x != 0}): Int =
+  a / b
+
+# Exhaustive pattern matching
+def classify(x: Int): Atom =
+  match x do
+    n when n < 0 -> :negative
+    0 -> :zero
+    n when n > 0 -> :positive
+  end</code></pre>
+        </div>
+        
+        <p style="text-align: center; margin-top: 2rem;">
+            <a href="examples.html" class="btn btn-primary">See More Examples</a>
+        </p>
+    </section>
 
     <!-- Footer -->
     <footer class="site-footer">
@@ -233,41 +137,29 @@ make test</code></pre>
                 <h4>Documentation</h4>
                 <ul>
                     <li><a href="docs.html">Getting Started</a></li>
-                    <li><a href="docs/language-spec.html">Language Specification</a></li>
-                    <li><a href="docs/type-system.html">Type System</a></li>
-                    <li><a href="docs/fsm-usage.html">FSM Guide</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
                 </ul>
             </div>
 
             <div class="footer-section">
-                <h4>Reference</h4>
+                <h4>Examples</h4>
                 <ul>
-                    <li><a href="api/index.html">API Reference</a></li>
-                    <li><a href="docs/std-summary.html">Standard Library</a></li>
-                    <li><a href="docs/feature-reference.html">Feature Reference</a></li>
-                    <li><a href="docs/cli-usage.html">CLI Usage</a></li>
+                    <li><a href="examples.html">Browse Examples</a></li>
+                    <li><a href="examples/01_list_basics.html">List Operations</a></li>
+                    <li><a href="examples/06_fsm_traffic_light.html">FSM Traffic Light</a></li>
                 </ul>
             </div>
 
             <div class="footer-section">
-                <h4>All Documentation</h4>
+                <h4>Resources</h4>
                 <ul>
-                    <li><a href="docs/derive-guide.html">Automatic Typeclass Derivation in C</a></li>
-                    <li><a href="docs/cli-integration-status.html">CLI Integration - SMT Solver Option</a></li>
-                    <li><a href="docs/codegen-analysis-2025-11-25.html">Code Generation Issues - Analysis (</a></li>
-                    <li><a href="docs/codegen-investigation-summary.html">Code Generation Issues - Investigat</a></li>
-                    <li><a href="docs/implementation-complete.html">Complete FSM Compilation Pipeline -</a></li>
-                    <li><a href="docs/contributing.html">Contributing</a></li>
-                    <li><a href="docs/api-reference.html">Cure API Reference</a></li>
-                    <li><a href="docs/dependent-types-guide.html">Cure Dependent Types - User Guide</a></li>
-                    <li><a href="docs/fsm-api-design.html">Cure FSM API Design</a></li>
-                    <li><a href="docs/fsm-usage.html">Cure FSM Usage Guide</a></li>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
                 </ul>
             </div>
         </div>
 
         <div class="footer-bottom">
-            <p>&copy; 2025 Cure Programming Language. Verification-first programming for the BEAM.</p>
+            <p>&copy; 2025 Cure Programming Language</p>
         </div>
     </footer>
 
@@ -275,7 +167,6 @@ make test</code></pre>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
     <script src="js/cure-language.js"></script>
     <script>
-        // Initialize highlight.js and highlight all code blocks
         hljs.highlightAll();
     </script>
 </body>

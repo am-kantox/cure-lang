@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Type Holes Demo - Cure Example</title>
+    <meta name="description" content="Type Holes Demo This file demonstrates the new type holes feature">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>Type Holes Demo</h1>
+            <p>Type Holes Demo This file demonstrates the new type holes feature</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Type Holes Demo
+# This file demonstrates the new type holes feature
+
+module TypeHolesDemo do
+  export [main/0]
+  
+  import Std.List [map, filter]
+  import Std.Io [println]
+  
+  type PositiveInt = Int when n &gt; 0
+
+  # Example 1: Use _ as a type hole for return type
+  # The LSP will infer this as List(Int) and offer a code action to fill it in
+  def double_list(numbers: List(Int)): List(Int) =
+    map(numbers, fn(x) -&gt; x * 2 end)
+  
+  # Example 2: Multiple type holes
+  # Hover over each _ to see the inferred type
+  def process_data(xs: List(Float)): List(Float) =
+    let doubled = map(xs, fn(x) -&gt; x * 2 end)
+    filter(doubled, fn(x) -&gt; x &gt; 5 end)
+
+  def safe_div(x: Int, y: PositiveInt) -&gt; Int =
+    x / y  # OK: y is guaranteed &gt; 0
+  
+  # Example 3: Already complete types (for comparison)
+  def add_one(numbers: List(Int)): List(Int) =
+    map(numbers, fn(x) -&gt; x + 1 end)
+  
+  def main(): Int =
+    println(&quot;Type Holes Demo&quot;)
+    
+    # let numbers = [1, 2, 3, 4, 5]
+    # let doubled = double_list(numbers)
+    # let processed = process_data(numbers)
+    
+    0  # Exit code
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

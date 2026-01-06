@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>21 Refinement Test Issues - Cure Example</title>
+    <meta name="description" content="Test file to identify refinement type parser and runtime issues">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>21 Refinement Test Issues</h1>
+            <p>Test file to identify refinement type parser and runtime issues</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Test file to identify refinement type parser and runtime issues
+
+module RefinementTestIssues do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  
+  # =============================================================================
+  # TEST 1: Nested Refinements - List of refined types
+  # =============================================================================
+  
+  # Test if parser accepts List with refined element type
+  def sum_positives(list: List({x: Int | x &gt; 0})): Int =
+    match list do
+      [] -&gt; 0
+      [h | t] -&gt; h + sum_positives(t)
+    end
+  
+  # =============================================================================
+  # TEST 2: Runtime Check Behavior
+  # =============================================================================
+  
+  # Function that expects non-zero
+  def safe_divide(a: Int, b: {x: Int | x != 0}): Int =
+    a / b
+  
+  # Function that calls with potentially unsafe value
+  # This should either:
+  # 1. Fail at compile time, or
+  # 2. Generate runtime check
+  def test_runtime_check(value: Int): Int =
+    safe_divide(10, value)
+  
+  # =============================================================================
+  # TEST 3: Tuple with Refined Elements
+  # =============================================================================
+  
+  def add_positive_pair(pair: ({x: Int | x &gt; 0}, {y: Int | y &gt; 0})): Int =
+    match pair do
+      {a, b} -&gt; a + b
+    end
+  
+  # =============================================================================
+  # MAIN
+  # =============================================================================
+  
+  def show_int(n: Int): String =
+    match n do
+      x when x == 0 -&gt; &quot;0&quot;
+      x when x == 5 -&gt; &quot;5&quot;
+      x when x == 10 -&gt; &quot;10&quot;
+      x when x == 15 -&gt; &quot;15&quot;
+      _ -&gt; &quot;[int]&quot;
+    end
+  
+  def main(): Int =
+    println(&quot;=== REFINEMENT ISSUES TEST ===&quot;)
+    
+    # Test 1: Nested refinements
+    println(&quot;TEST 1: Nested Refinements&quot;)
+    let sum = sum_positives([1, 2, 3])
+    println(&quot;sum_positives([1,2,3]) = &quot; &lt;&gt; show_int(sum))
+    
+    # Test 2: Runtime checks - use safe value
+    println(&quot;TEST 2: Runtime Checks&quot;)
+    let result = test_runtime_check(2)
+    println(&quot;test_runtime_check(2) = &quot; &lt;&gt; show_int(result))
+    
+    # Test 3: Tuple refinements  
+    println(&quot;TEST 3: Tuple Refinements&quot;)
+    let pair_sum = add_positive_pair({3, 2})
+    println(&quot;add_positive_pair({3,2}) = &quot; &lt;&gt; show_int(pair_sum))
+    
+    println(&quot;=== Tests completed! ===&quot;)
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

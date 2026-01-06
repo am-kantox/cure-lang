@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>05 Recursion - Cure Example</title>
+    <meta name="description" content="Demonstrates recursion with factorial, fibonacci, and list operations">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>05 Recursion</h1>
+            <p>Demonstrates recursion with factorial, fibonacci, and list operations</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Example 5: Recursive Functions
+# Demonstrates recursion with factorial, fibonacci, and list operations
+
+module Recursion do
+  export [main/0]
+  
+  # Import standard library
+  import Std.Show [show_int/1]
+  import Std.Io [println/1]
+  
+  # Simple recursive factorial
+  def factorial(n: Int): Int =
+    match n &lt;= 1 do
+      true -&gt; 1
+      false -&gt; n * factorial(n - 1)
+    end
+  
+  # Recursive fibonacci
+  def fibonacci(n: Int): Int =
+    match n &lt;= 1 do
+      true -&gt; n
+      false -&gt; fibonacci(n - 1) + fibonacci(n - 2)
+    end
+  
+  # Recursive sum of list
+  def sum_list(numbers: List(Int)): Int =
+    match numbers do
+      [] -&gt; 0
+      [h | t] -&gt; h + sum_list(t)
+    end
+  
+  # Recursive count of list elements
+  def count_list(items: List(Int)): Int =
+    match items do
+      [] -&gt; 0
+      [_ | t] -&gt; 1 + count_list(t)
+    end
+  
+  # Main demonstration
+  def main(): Int =
+    println(&quot;=== Recursion Demo ===&quot;)
+    println(&quot;&quot;)
+    
+    # Test 1: Factorial
+    println(&quot;Test 1: Factorial of 5&quot;)
+    let fact5 = factorial(5)
+    println(&quot;Result: &quot; &lt;&gt; show_int(fact5) &lt;&gt; &quot; (120 expected)&quot;)
+    println(&quot;&quot;)
+    
+    # Test 2: Fibonacci
+    println(&quot;Test 2: Fibonacci of 7&quot;)
+    let fib7 = fibonacci(7)
+    println(&quot;Result: &quot; &lt;&gt; show_int(fib7) &lt;&gt; &quot; (13 expected)&quot;)
+    println(&quot;&quot;)
+    
+    # Test 3: Sum of list
+    println(&quot;Test 3: Sum of [1, 2, 3, 4, 5]&quot;)
+    let numbers = [1, 2, 3, 4, 5]
+    let total = sum_list(numbers)
+    println(&quot;Result: &quot; &lt;&gt; show_int(total) &lt;&gt; &quot; (15 expected)&quot;)
+    println(&quot;&quot;)
+    
+    # Test 4: Count list
+    println(&quot;Test 4: Count elements in [10, 20, 30]&quot;)
+    let items = [10, 20, 30]
+    let count = count_list(items)
+    println(&quot;Result: &quot; &lt;&gt; show_int(count) &lt;&gt; &quot; (3 expected)&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;=== Demo Complete ===&quot;)
+    0
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

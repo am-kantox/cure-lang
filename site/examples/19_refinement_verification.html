@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>19 Refinement Verification - Cure Example</title>
+    <meta name="description" content="Refinement Type Verification Tests This file tests features that need verification: 1. Return type refinements 2. Type aliases with refinements (if supported) 3. Nested refinements 4. Runtime check behavior">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>19 Refinement Verification</h1>
+            <p>Refinement Type Verification Tests This file tests features that need verification: 1. Return type refinements 2. Type aliases with refinements (if supported) 3. Nested refinements 4. Runtime check behavior</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Refinement Type Verification Tests
+# This file tests features that need verification:
+# 1. Return type refinements
+# 2. Type aliases with refinements (if supported)
+# 3. Nested refinements
+# 4. Runtime check behavior
+
+module RefinementVerification do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  
+  # =============================================================================
+  # TEST 1: Return Type Refinements
+  # =============================================================================
+  # These should compile if return type refinements are supported
+  
+  # Simple return type refinement
+  def always_positive(x: Int): {result: Int | result &gt;= 0} =
+    match x do
+      n when n &gt;= 0 -&gt; n
+      n -&gt; 0 - n
+    end
+  
+  # Return type with complex constraint
+  def make_percentage(raw: Int): {p: Int | p &gt;= 0 and p &lt;= 100} =
+    match raw do
+      v when v &lt; 0 -&gt; 0
+      v when v &gt; 100 -&gt; 100
+      v -&gt; v
+    end
+  
+  # Return type that depends on input constraint
+  def double_positive(n: {x: Int | x &gt; 0}): {result: Int | result &gt; 0} =
+    n * 2
+  
+  # =============================================================================
+  # TEST 2: Type Aliases with Refinements
+  # =============================================================================
+  # UNCOMMENT IF TYPE ALIASES ARE SUPPORTED:
+  
+  # type Positive = {x: Int | x &gt; 0}
+  # type NonZero = {x: Int | x != 0}
+  # type Percentage = {p: Int | p &gt;= 0 and p &lt;= 100}
+  # 
+  # def use_alias(n: Positive): Int = n * 2
+  # def div_alias(a: Int, b: NonZero): Int = a / b
+  
+  # =============================================================================
+  # TEST 3: Nested Refinements
+  # =============================================================================
+  # UNCOMMENT TO TEST NESTED REFINEMENTS:
+  
+  # List of positive integers
+  # def sum_positives(list: List({x: Int | x &gt; 0})): Int =
+  #   match list do
+  #     [] -&gt; 0
+  #     [h | t] -&gt; h + sum_positives(t)
+  #   end
+  
+  # Tuple with refined elements
+  # def process_pair(pair: ({x: Int | x &gt; 0}, {y: Int | y &gt; 0})): Int =
+  #   match pair do
+  #     {a, b} -&gt; a + b
+  #   end
+  
+  # =============================================================================
+  # TEST 4: Runtime Check Behavior
+  # =============================================================================
+  # These test what happens when SMT cannot statically prove constraints
+  
+  # When input is Int (no constraint), but function expects refined type
+  def safe_reciprocal(n: {x: Int | x != 0}): Int =
+    100 / n
+  
+  # This should require a runtime check or compile-time error
+  def risky_call(value: Int): Int =
+    # If value could be 0, this should either:
+    # a) Generate runtime check, or
+    # b) Fail at compile time
+    safe_reciprocal(value)
+  
+  # =============================================================================
+  # HELPER FUNCTIONS
+  # =============================================================================
+  
+  def show_int(n: Int): String =
+    match n do
+      x when x == -5 -&gt; &quot;-5&quot;
+      x when x == 0 -&gt; &quot;0&quot;
+      x when x == 1 -&gt; &quot;1&quot;
+      x when x == 5 -&gt; &quot;5&quot;
+      x when x == 10 -&gt; &quot;10&quot;
+      x when x == 25 -&gt; &quot;25&quot;
+      x when x == 50 -&gt; &quot;50&quot;
+      x when x == 100 -&gt; &quot;100&quot;
+      x when x == 150 -&gt; &quot;150&quot;
+      _ -&gt; &quot;[int]&quot;
+    end
+  
+  # =============================================================================
+  # MAIN - Test Return Type Refinements
+  # =============================================================================
+  
+  def main(): Int =
+    println(&quot;=== REFINEMENT VERIFICATION TESTS ===&quot;)
+    
+    # TEST 1: Return type refinements
+    println(&quot;TEST 1: Return Type Refinements&quot;)
+    
+    let pos1 = always_positive(5)
+    println(&quot;always_positive(5) = &quot; &lt;&gt; show_int(pos1))
+    
+    let pos2 = always_positive(0 - 5)
+    println(&quot;always_positive(-5) = &quot; &lt;&gt; show_int(pos2))
+    
+    let pct1 = make_percentage(50)
+    println(&quot;make_percentage(50) = &quot; &lt;&gt; show_int(pct1))
+    
+    let pct2 = make_percentage(150)
+    println(&quot;make_percentage(150) = &quot; &lt;&gt; show_int(pct2))
+    
+    let doubled = double_positive(5)
+    println(&quot;double_positive(5) = &quot; &lt;&gt; show_int(doubled))
+    
+    # TEST 2: Type aliases
+    println(&quot;&quot;)
+    println(&quot;TEST 2: Type Aliases&quot;)
+    println(&quot;(Test code commented out - uncomment if supported)&quot;)
+    
+    # TEST 3: Nested refinements
+    println(&quot;&quot;)
+    println(&quot;TEST 3: Nested Refinements&quot;)
+    println(&quot;(Test code commented out - uncomment to test)&quot;)
+    
+    # TEST 4: Runtime checks
+    println(&quot;&quot;)
+    println(&quot;TEST 4: Runtime Check Behavior&quot;)
+    # This call might require runtime checking or fail at compile time
+    # let risky = risky_call(10)
+    # println(&quot;risky_call(10) = &quot; &lt;&gt; show_int(risky))
+    println(&quot;(Runtime check test commented out to avoid potential errors)&quot;)
+    
+    println(&quot;&quot;)
+    println(&quot;=== Tests completed! ===&quot;)
+    println(&quot;If this compiled successfully, return type refinements are working!&quot;)
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

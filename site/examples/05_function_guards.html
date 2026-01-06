@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>05 Function Guards - Cure Example</title>
+    <meta name="description" content="Function-Level Guards Example Demonstrates guards on function definitions in Cure">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>05 Function Guards</h1>
+            <p>Function-Level Guards Example Demonstrates guards on function definitions in Cure</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Function-Level Guards Example
+# Demonstrates guards on function definitions in Cure
+
+module FunctionGuards do
+  export [main/0]
+
+  import Std.Io [println/1]
+
+  # === SINGLE-CLAUSE FUNCTION GUARDS ===
+  
+  # Simple guard on function parameter
+  def is_positive(x: Int): Bool when x &gt; 0 = true
+  def is_positive(x: Int): Bool when x &lt;= 0 = false
+  
+  # Guard with multiple conditions
+  def in_range(x: Int, min: Int, max: Int): Bool
+    when x &gt;= min and x &lt;= max 
+  do
+    true
+  end
+  
+  def in_range(x: Int, _min: Int, _max: Int): Bool = false
+  
+  # === MULTI-CLAUSE FUNCTIONS WITH GUARDS ===
+  
+  # Absolute value using guards
+  def abs(x: Int): Int when x &gt;= 0 = x
+  def abs(x: Int): Int when x &lt; 0 = -x
+  
+  # Factorial with guard-based recursion
+  def factorial(n: Int): Int when n == 0 = 1
+  def factorial(n: Int): Int when n &gt; 0 = n * factorial(n - 1)
+  
+  # Sign function
+  def sign(x: Int): Int when x &gt; 0 = 1
+  def sign(x: Int): Int when x == 0 = 0
+  def sign(x: Int): Int when x &lt; 0 = -1
+  
+  # === GUARDS WITH TYPE CONSTRAINTS ===
+  
+  # Safe division requiring non-zero divisor
+  def safe_div(numerator: Int, divisor: Int): Int 
+    when divisor != 0 
+  do
+    numerator / divisor
+  end
+  
+  # Guard ensuring valid array index
+  def get_element(list: List(Int), index: Int): Option(Int)
+    when index &gt;= 0 and index &lt; length(list)
+  do
+    Some(nth(list, index))
+  end
+  
+  def get_element(_list: List(Int), _index: Int): Option(Int) = None
+  
+  # === GUARDS WITH ARITHMETIC ===
+  
+  # Check if number is even (using modulo in guard)
+  def is_even(n: Int): Bool when n % 2 == 0 = true
+  def is_even(_n: Int): Bool = false
+  
+  # FizzBuzz using guards
+  def fizzbuzz(n: Int): String when n % 15 == 0 = &quot;FizzBuzz&quot;
+  def fizzbuzz(n: Int): String when n % 3 == 0 = &quot;Fizz&quot;
+  def fizzbuzz(n: Int): String when n % 5 == 0 = &quot;Buzz&quot;
+  def fizzbuzz(n: Int): String = show(n)
+  
+  # === GUARDS WITH COMPLEX EXPRESSIONS ===
+  
+  # Classify temperature with guard ranges
+  def classify_temp(celsius: Float): String 
+    when celsius &lt; -273.15 
+  do
+    &quot;Invalid (below absolute zero)&quot;
+  end
+  
+  def classify_temp(celsius: Float): String 
+    when celsius &lt; 0.0 
+  do
+    &quot;Freezing&quot;
+  end
+  
+  def classify_temp(celsius: Float): String 
+    when celsius &gt;= 0.0 and celsius &lt; 25.0 
+  do
+    &quot;Cool&quot;
+  end
+  
+  def classify_temp(celsius: Float): String 
+    when celsius &gt;= 25.0 and celsius &lt; 35.0 
+  do
+    &quot;Warm&quot;
+  end
+  
+  def classify_temp(_celsius: Float): String = &quot;Hot&quot;
+  
+  # === GUARDS WITH RECORD PATTERNS ===
+  
+  record Point do
+    x: Float
+    y: Float
+  end
+  
+  # Check if point is at origin
+  def at_origin(p: Point): Bool 
+    when p.x == 0.0 and p.y == 0.0 
+  do
+    true
+  end
+  
+  def at_origin(_p: Point): Bool = false
+  
+  # === GUARDS FOR PRECONDITIONS ===
+  
+  # Square root requiring non-negative input
+  def safe_sqrt(x: Float): Float 
+    when x &gt;= 0.0 
+  do
+    sqrt(x)
+  end
+  
+  # Logarithm requiring positive input
+  def safe_log(x: Float): Float 
+    when x &gt; 0.0 
+  do
+    log(x)
+  end
+  
+  # === RECURSIVE FUNCTIONS WITH GUARDS ===
+  
+  # Sum of list using guards for base case
+  def sum_list(list: List(Int)): Int 
+    when is_empty(list) 
+  do
+    0
+  end
+  
+  def sum_list(list: List(Int)): Int = 
+    head(list) + sum_list(tail(list))
+  
+  # Find maximum in list
+  def max_list(list: List(Int)): Option(Int)
+    when is_empty(list)
+  do
+    None
+  end
+  
+  def max_list(list: List(Int)): Option(Int)
+    when length(list) == 1
+  do
+    Some(head(list))
+  end
+  
+  def max_list(list: List(Int)): Option(Int) =
+    let first = head(list)
+    let rest_max = max_list(tail(list))
+    match rest_max do
+      Some(m) when first &gt; m -&gt; Some(first)
+      Some(m) -&gt; Some(m)
+      None -&gt; Some(first)
+    end
+  
+  # === DEMONSTRATION FUNCTION ===
+  
+  def main(): Int =
+    println(&quot;=== Function Guards Demo ===\n&quot;)
+    
+    println(&quot;--- Single Positive Test ---&quot;)
+    println(is_positive(5))   # true
+    println(is_positive(-3))  # false
+    
+    println(&quot;\n--- Range Test ---&quot;)
+    println(in_range(5, 0, 10))   # true
+    println(in_range(15, 0, 10))  # false
+    
+    println(&quot;\n--- Absolute Value ---&quot;)
+    println(abs(5))    # 5
+    println(abs(-5))   # 5
+    
+    println(&quot;\n--- Factorial ---&quot;)
+    println(factorial(0))  # 1
+    println(factorial(5))  # 120
+    
+    println(&quot;\n--- Sign Function ---&quot;)
+    println(sign(10))   # 1
+    println(sign(0))    # 0
+    println(sign(-10))  # -1
+    
+    println(&quot;\n--- Safe Division ---&quot;)
+    println(safe_div(10, 2))   # 5
+    # println(safe_div(10, 0))  # Would fail guard
+    
+    println(&quot;\n--- FizzBuzz ---&quot;)
+    println(fizzbuzz(15))  # &quot;FizzBuzz&quot;
+    println(fizzbuzz(9))   # &quot;Fizz&quot;
+    println(fizzbuzz(10))  # &quot;Buzz&quot;
+    println(fizzbuzz(7))   # &quot;7&quot;
+    
+    println(&quot;\n--- Temperature Classification ---&quot;)
+    println(classify_temp(-10.0))  # &quot;Freezing&quot;
+    println(classify_temp(20.0))   # &quot;Cool&quot;
+    println(classify_temp(30.0))   # &quot;Warm&quot;
+    println(classify_temp(40.0))   # &quot;Hot&quot;
+    
+    println(&quot;\n--- Recursive Sum ---&quot;)
+    println(sum_list([1, 2, 3, 4, 5]))  # 15
+    
+    println(&quot;\nAll tests completed!&quot;)
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

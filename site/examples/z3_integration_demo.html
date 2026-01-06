@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z3 Integration Demo - Cure Example</title>
+    <meta name="description" content="This file demonstrates all Z3 features in Cure: - Refinement types for compile-time safety - Pattern exhaustiveness checking - FSM verification (deadlock, liveness, safety) - Guard optimization">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>Z3 Integration Demo</h1>
+            <p>This file demonstrates all Z3 features in Cure: - Refinement types for compile-time safety - Pattern exhaustiveness checking - FSM verification (deadlock, liveness, safety) - Guard optimization</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Example: Z3 SMT Integration Demonstration
+# This file demonstrates all Z3 features in Cure:
+# - Refinement types for compile-time safety
+# - Pattern exhaustiveness checking
+# - FSM verification (deadlock, liveness, safety)
+# - Guard optimization
+
+module Z3Demo do
+  export [main/0]
+  
+  import Std.Io [println/1]
+  
+  # ===========================================================================
+  # 1. PATTERN EXHAUSTIVENESS CHECKING
+  # ===========================================================================
+  # Z3 verifies that all possible cases are covered
+  
+  def classify_bool(x: Bool): String =
+    match x do
+      true -&gt; &quot;Yes&quot;
+      false -&gt; &quot;No&quot;
+    end
+    # ✅ Z3 verifies: Pattern match is exhaustive (all Bool values covered)
+  
+  # INCOMPLETE pattern - Z3 will report missing case
+  # def bad_classify(x: Bool): String =
+  #   match x do
+  #     true -&gt; &quot;Yes&quot;
+  #     # ❌ LSP Error: Missing pattern: false
+  #   end
+  
+  # ===========================================================================
+  # 2. GUARD OPTIMIZATION
+  # ===========================================================================
+  # Z3 simplifies and optimizes boolean guards
+  
+  def redundant_check(x: Int): Bool =
+    # Before optimization: true &amp;&amp; x &gt; 10 &amp;&amp; x &gt; 0
+    # After Z3 optimization: x &gt; 10  (because x &gt; 10 implies x &gt; 0)
+    match true do
+      true -&gt; 
+        match x &gt; 10 do
+          true -&gt; 
+            match x &gt; 0 do
+              true -&gt; true
+              false -&gt; false
+            end
+          false -&gt; false
+        end
+      false -&gt; false
+    end
+  
+  # ===========================================================================
+  # 3. FSM VERIFICATION - Traffic Light
+  # ===========================================================================
+  # Z3 verifies: All states reachable, no deadlocks, cyclic behavior
+  
+  record TrafficData do
+    cycles: Int
+  end
+  
+  # FSM: Traffic light with three states
+  # Z3 will verify at compile time:
+  # ✅ All states (Red, Green, Yellow) are reachable from initial state
+  # ✅ No deadlocks (every state has outgoing transitions)
+  # ✅ Cyclic property (can return to Red)
+  fsm TrafficData{cycles: 0} do
+    Red --&gt; |timer| Green
+    Green --&gt; |timer| Yellow  
+    Yellow --&gt; |timer| Red
+  end
+  
+  # ===========================================================================
+  # 4. FSM VERIFICATION - Protocol with Error State
+  # ===========================================================================
+  
+  record ProtocolData do
+    retries: Int
+  end
+  
+  # FSM: Connection protocol
+  # Z3 verification will check:
+  # ✅ All states reachable
+  # ✅ Can recover from Error state
+  # ✅ No deadlocks
+  fsm ProtocolData{retries: 0} do
+    Disconnected --&gt; |connect| Connecting
+    Connecting --&gt; |success| Connected
+    Connecting --&gt; |failure| Err
+    Connected --&gt; |disconnect| Disconnected
+    Err --&gt; |retry| Connecting
+    Err --&gt; |give_up| Disconnected
+  end
+  
+  # ===========================================================================
+  # 5. FSM WITH DEADLOCK (for LSP diagnostics demo)
+  # ===========================================================================
+  # This FSM intentionally has issues that Z3/LSP will detect
+  
+  record DeadlockData do
+    count: Int
+  end
+  
+  # Uncomment to see LSP diagnostics:
+  # fsm DeadlockData{count: 0} do
+  #   Start --&gt; |begin| Active
+  #   Active --&gt; |finish| Done
+  #   # ❌ LSP Error: State &#x27;Done&#x27; has deadlock (no outgoing transitions)
+  #   # ❌ LSP Warning: State &#x27;Unreachable&#x27; is unreachable
+  # end
+  
+  # ===========================================================================
+  # 6. GUARDS IN PATTERNS
+  # ===========================================================================
+  # Z3 can verify guard exhaustiveness
+  
+  def classify_number(n: Int): String =
+    match n do
+      x when x &gt; 0 -&gt; &quot;Positive&quot;
+      x when x &lt; 0 -&gt; &quot;Negative&quot;
+      0 -&gt; &quot;Zero&quot;
+    end
+    # ✅ Z3 verifies: All integer values covered by guards
+  
+  # INCOMPLETE guards - Z3 will detect
+  # def bad_classify_number(n: Int): String =
+  #   match n do
+  #     x when x &gt; 0 -&gt; &quot;Positive&quot;
+  #     # ❌ LSP Error: Missing cases for x &lt;= 0
+  #   end
+  
+  # ===========================================================================
+  # 7. COMPLEX GUARD OPTIMIZATION
+  # ===========================================================================
+  
+  def complex_guard(x: Int, y: Int): Bool =
+    # Z3 will optimize this guard expression:
+    # - Remove redundant checks
+    # - Reorder for efficiency
+    # - Simplify boolean algebra
+    match x &gt; 0 do
+      true -&gt;
+        match y &gt; 0 do
+          true -&gt;
+            match x &gt; 10 do
+              true -&gt; true  # Z3 knows: x &gt; 10 already implies x &gt; 0
+              false -&gt; false
+            end
+          false -&gt; false
+        end
+      false -&gt; false
+    end
+  
+  # ===========================================================================
+  # 8. MAIN DEMONSTRATION
+  # ===========================================================================
+  
+  def main(): Int =
+    println(&quot;=== Z3 SMT Integration Demo ===&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;1. Pattern Exhaustiveness&quot;)
+    let b1 = classify_bool(true)
+    let b2 = classify_bool(false)
+    println(&quot;  ✅ Bool patterns exhaustive&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;2. Guard Optimization&quot;)
+    let g1 = redundant_check(15)
+    let g2 = complex_guard(20, 5)
+    println(&quot;  ✅ Guards optimized by Z3&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;3. FSM Verification - Traffic Light&quot;)
+    println(&quot;  ✅ Traffic FSM verified at compile time:&quot;)
+    println(&quot;    - All states reachable&quot;)
+    println(&quot;    - No deadlocks&quot;)
+    println(&quot;    - Cyclic behavior&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;4. FSM Verification - Protocol&quot;)
+    println(&quot;  ✅ Protocol FSM verified at compile time:&quot;)
+    println(&quot;    - All states reachable&quot;)
+    println(&quot;    - Error recovery available&quot;)
+    println(&quot;    - No deadlocks&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;5. Pattern Guards&quot;)
+    let n1 = classify_number(5)
+    let n2 = classify_number(-3)
+    let n3 = classify_number(0)
+    println(&quot;  ✅ Guard patterns exhaustive&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;=== All Z3 Features Demonstrated ===&quot;)
+    println(&quot;&quot;)
+    println(&quot;Compile-time verification provided:&quot;)
+    println(&quot;  ✓ Pattern exhaustiveness&quot;)
+    println(&quot;  ✓ Guard optimization&quot;)
+    println(&quot;  ✓ FSM deadlock detection&quot;)
+    println(&quot;  ✓ FSM reachability&quot;)
+    println(&quot;  ✓ FSM liveness properties&quot;)
+    println(&quot;&quot;)
+    println(&quot;LSP provides real-time diagnostics for:&quot;)
+    println(&quot;  • Missing pattern cases&quot;)
+    println(&quot;  • Unreachable FSM states&quot;)
+    println(&quot;  • FSM deadlocks&quot;)
+    println(&quot;  • Guard redundancy&quot;)
+    
+    0
+
+end
+
+# ===========================================================================
+# Z3 INTEGRATION FEATURES SUMMARY
+# ===========================================================================
+#
+# This example demonstrates the complete Z3 SMT integration in Cure:
+#
+# 1. PATTERN EXHAUSTIVENESS (Phase 5.1)
+#    - Z3 encodes patterns as SMT constraints
+#    - Verifies all cases are covered
+#    - Synthesizes missing patterns
+#    - Reports via LSP in real-time
+#
+# 2. GUARD OPTIMIZATION (Phase 5.3)
+#    - Algebraic simplification (true &amp;&amp; X → X)
+#    - Redundancy elimination (x &gt; 10 &amp;&amp; x &gt; 0 → x &gt; 10)
+#    - Cost-based reordering
+#    - Multi-pass optimization
+#
+# 3. FSM VERIFICATION (Phase 5.2)
+#    - Deadlock detection (states with no exits)
+#    - Reachability analysis (all states from initial)
+#    - Liveness properties (eventually returns)
+#    - Safety properties (never enters bad states)
+#
+# 4. REFINEMENT TYPES (Phase 3)
+#    - Type constraints verified at compile time
+#    - Subtype checking via SMT implication
+#    - Precondition/postcondition verification
+#    - No runtime overhead
+#
+# 5. LSP INTEGRATION
+#    - Real-time diagnostics in IDE
+#    - Error severity levels
+#    - Precise source locations
+#    - Quick fixes suggested
+#
+# COMPILATION:
+#   cure compile --verify z3_integration_demo.cure
+#
+# The compiler will:
+#   ✓ Check pattern exhaustiveness
+#   ✓ Optimize guards with Z3
+#   ✓ Verify FSMs
+#   ✓ Generate BEAM bytecode
+#
+# LSP USAGE:
+#   Open this file in your IDE with Cure LSP server running.
+#   Uncomment the &quot;bad&quot; examples to see real-time diagnostics:
+#   - Missing patterns highlighted
+#   - Deadlocked FSM states marked
+#   - Unreachable states warned
+#
+# ===========================================================================
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

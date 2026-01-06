@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>06 Fsm Traffic Light Enhanced - Cure Example</title>
+    <meta name="description" content="Enhanced Traffic Light FSM Example Showcases: Verification, Monitoring, Type Safety, Advanced API Features: Pattern matching, batch events, supervision, performance stats">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>06 Fsm Traffic Light Enhanced</h1>
+            <p>Enhanced Traffic Light FSM Example Showcases: Verification, Monitoring, Type Safety, Advanced API Features: Pattern matching, batch events, supervision, performance stats</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Enhanced Traffic Light FSM Example
+# Showcases: Verification, Monitoring, Type Safety, Advanced API
+# Features: Pattern matching, batch events, supervision, performance stats
+
+module TrafficLightEnhanced do
+  export [main/0]
+  
+  # Import FSM API
+  import Std.Fsm [
+    fsm_spawn/2, 
+    fsm_cast/2, 
+    fsm_advertise/2, 
+    fsm_state/1
+  ]
+  import Std.Io [println/1, print/1]
+  import Std.String [concat/2]
+  import Std.Pair [pair/2]
+  import Std.System [sleep/1]
+  
+  # Enhanced payload record with richer statistics
+  record TrafficStats do
+    cycles_completed: Int
+    timer_events: Int
+    emergency_stops: Int
+    total_transitions: Int
+    red_duration: Int
+    green_duration: Int
+    yellow_duration: Int
+    pedestrian_crossings: Int
+    errors_detected: Int
+  end
+  
+  # Define the Traffic Light FSM with comprehensive transitions
+  # This FSM implements a smart traffic light with multiple features:
+  # - Normal cycle progression: Red -&gt; Green -&gt; Yellow -&gt; Red
+  # - Emergency stops from any state
+  # - Pedestrian crossing requests
+  # - Maintenance mode
+  # - Performance tracking
+  fsm TrafficStats{
+    cycles_completed: 0, 
+    timer_events: 0, 
+    emergency_stops: 0,
+    total_transitions: 0,
+    red_duration: 0,
+    green_duration: 0,
+    yellow_duration: 0,
+    pedestrian_crossings: 0,
+    errors_detected: 0
+  } do
+    # Normal cycle transitions with state tracking
+    Red --&gt; |timer| Green {
+      # Action: increment counters
+      timer_events = timer_events + 1
+      total_transitions = total_transitions + 1
+      red_duration = red_duration + 30  # Assume 30 second red light
+    }
+    
+    Green --&gt; |timer| Yellow {
+      timer_events = timer_events + 1
+      total_transitions = total_transitions + 1
+      green_duration = green_duration + 45  # 45 second green light
+    }
+    
+    Yellow --&gt; |timer| Red {
+      timer_events = timer_events + 1
+      total_transitions = total_transitions + 1
+      yellow_duration = yellow_duration + 5   # 5 second yellow light
+      cycles_completed = cycles_completed + 1  # Complete cycle
+    }
+    
+    # Emergency transitions from any state
+    Red --&gt; |emergency| Red {
+      emergency_stops = emergency_stops + 1
+      total_transitions = total_transitions + 1
+    }
+    
+    Green --&gt; |emergency| Red {
+      emergency_stops = emergency_stops + 1
+      total_transitions = total_transitions + 1
+    }
+    
+    Yellow --&gt; |emergency| Red {
+      emergency_stops = emergency_stops + 1
+      total_transitions = total_transitions + 1
+    }
+    
+    # Pedestrian crossing - can request from Red (grants green faster)
+    Red --&gt; |pedestrian| Green {
+      pedestrian_crossings = pedestrian_crossings + 1
+      total_transitions = total_transitions + 1
+      red_duration = red_duration + 10  # Shorter red for pedestrian
+    }
+    
+    # Maintenance mode - all states can go to Maintenance
+    Red --&gt; |maintenance| Maintenance {
+      total_transitions = total_transitions + 1
+    }
+    
+    Green --&gt; |maintenance| Maintenance {
+      total_transitions = total_transitions + 1
+    }
+    
+    Yellow --&gt; |maintenance| Maintenance {
+      total_transitions = total_transitions + 1
+    }
+    
+    # Resume from maintenance always goes to Red for safety
+    Maintenance --&gt; |resume| Red {
+      total_transitions = total_transitions + 1
+    }
+    
+    # Error handling - if error occurs, go to flashing red
+    Red --&gt; |error_occurred| FlashingRed {
+      errors_detected = errors_detected + 1
+      total_transitions = total_transitions + 1
+    }
+    
+    Green --&gt; |error_occurred| FlashingRed {
+      errors_detected = errors_detected + 1
+      total_transitions = total_transitions + 1
+    }
+    
+    Yellow --&gt; |error_occurred| FlashingRed {
+      errors_detected = errors_detected + 1
+      total_transitions = total_transitions + 1
+    }
+    
+    # Reset from error state
+    FlashingRed --&gt; |reset| Red {
+      total_transitions = total_transitions + 1
+    }
+  end
+  
+  # Main demonstration of all features
+  # NOTE: Before running, FSM types must be registered via:
+  #   TrafficLightEnhanced:register_fsms()
+  # This is automatically done when using -eval to call this function
+  def main(): Int =
+    println(&quot;╔══════════════════════════════════════════════════════════════╗&quot;)
+    println(&quot;║  Enhanced Traffic Light FSM - Complete Feature Demo         ║&quot;)
+    println(&quot;╚══════════════════════════════════════════════════════════════╝&quot;)
+    println(&quot;&quot;)
+    
+    # ============================================================
+    # PHASE 1: Basic FSM Lifecycle
+    # ============================================================
+    println(&quot;📋 PHASE 1: FSM Lifecycle &amp; Registration&quot;)
+    println(&quot;─────────────────────────────────────────&quot;)
+    
+    let initial_stats = TrafficStats{
+      cycles_completed: 0, 
+      timer_events: 0, 
+      emergency_stops: 0,
+      total_transitions: 0,
+      red_duration: 0,
+      green_duration: 0,
+      yellow_duration: 0,
+      pedestrian_crossings: 0,
+      errors_detected: 0
+    }
+    
+    println(&quot;✓ Creating FSM with initial statistics&quot;)
+    let fsm_pid = fsm_spawn(:TrafficStats, initial_stats)
+    
+    println(&quot;✓ Registering FSM as :smart_traffic_light&quot;)
+    let adv_result = fsm_advertise(fsm_pid, :smart_traffic_light)
+    println(&quot;  FSM registered successfully&quot;)
+    println(&quot;&quot;)
+    
+    # ============================================================
+    # PHASE 2: Normal Operation Cycle
+    # ============================================================
+    println(&quot;🚦 PHASE 2: Normal Traffic Light Cycle&quot;)
+    println(&quot;─────────────────────────────────────────&quot;)
+    
+    let state0 = fsm_state(:smart_traffic_light)
+    println(&quot;  Initial State: Red&quot;)
+    
+    println(&quot;  Sending timer event: Red → Green&quot;)
+    let empty1 = []
+    let event1 = pair(:timer, empty1)
+    fsm_cast(:smart_traffic_light, event1)
+    
+    let state1 = fsm_state(:smart_traffic_light)
+    println(&quot;  ✓ Transitioned to Green&quot;)
+    
+    println(&quot;  Sending timer event: Green → Yellow&quot;)
+    let empty2 = []
+    let event2 = pair(:timer, empty2)
+    fsm_cast(:smart_traffic_light, event2)
+    
+    let state2 = fsm_state(:smart_traffic_light)
+    println(&quot;  ✓ Transitioned to Yellow&quot;)
+    
+    println(&quot;  Sending timer event: Yellow → Red (cycle complete)&quot;)
+    let empty3 = []
+    let event3 = pair(:timer, empty3)
+    fsm_cast(:smart_traffic_light, event3)
+    
+    let state3 = fsm_state(:smart_traffic_light)
+    println(&quot;  ✓ Transitioned to Red (1 cycle completed)&quot;)
+    println(&quot;&quot;)
+    
+    # ============================================================
+    # PHASE 3: Emergency Handling
+    # ============================================================
+    println(&quot;🚨 PHASE 3: Emergency Stop System&quot;)
+    println(&quot;─────────────────────────────────────────&quot;)
+    
+    println(&quot;  Progressing to Green state&quot;)
+    let empty4 = []
+    let event4 = pair(:timer, empty4)
+    fsm_cast(:smart_traffic_light, event4)
+    
+    println(&quot;  Triggering emergency stop from Green&quot;)
+    let empty5 = []
+    let event5 = pair(:emergency, empty5)
+    fsm_cast(:smart_traffic_light, event5)
+    
+    let emergency_state = fsm_state(:smart_traffic_light)
+    println(&quot;  ✓ Emergency stop executed: now at Red&quot;)
+    println(&quot;&quot;)
+    
+    # ============================================================
+    # PHASE 4: Pedestrian Crossing
+    # ============================================================
+    println(&quot;🚶 PHASE 4: Pedestrian Crossing Feature&quot;)
+    println(&quot;─────────────────────────────────────────&quot;)
+    
+    println(&quot;  Pedestrian button pressed at Red light&quot;)
+    let empty6 = []
+    let event6 = pair(:pedestrian, empty6)
+    fsm_cast(:smart_traffic_light, event6)
+    
+    let pedestrian_state = fsm_state(:smart_traffic_light)
+    println(&quot;  ✓ Light changed to Green for pedestrian&quot;)
+    println(&quot;&quot;)
+    
+    # ============================================================
+    # PHASE 5: Maintenance Mode
+    # ============================================================
+    println(&quot;🔧 PHASE 5: Maintenance Mode&quot;)
+    println(&quot;─────────────────────────────────────────&quot;)
+    
+    println(&quot;  Entering maintenance mode&quot;)
+    let empty7 = []
+    let event7 = pair(:maintenance, empty7)
+    fsm_cast(:smart_traffic_light, event7)
+    
+    let maint_state = fsm_state(:smart_traffic_light)
+    println(&quot;  ✓ In Maintenance mode&quot;)
+    
+    println(&quot;  Resuming from maintenance&quot;)
+    let empty8 = []
+    let event8 = pair(:resume, empty8)
+    fsm_cast(:smart_traffic_light, event8)
+    
+    let resume_state = fsm_state(:smart_traffic_light)
+    println(&quot;  ✓ Resumed to Red (safe state)&quot;)
+    println(&quot;&quot;)
+    
+    # ============================================================
+    # PHASE 6: Error Handling
+    # ============================================================
+    println(&quot;⚠️  PHASE 6: Error Detection &amp; Recovery&quot;)
+    println(&quot;─────────────────────────────────────────&quot;)
+    
+    println(&quot;  Simulating error condition&quot;)
+    let empty9 = []
+    let event9 = pair(:error_occurred, empty9)
+    fsm_cast(:smart_traffic_light, event9)
+    
+    let error_state = fsm_state(:smart_traffic_light)
+    println(&quot;  ✓ Entered FlashingRed (error mode)&quot;)
+    
+    println(&quot;  Resetting from error&quot;)
+    let empty10 = []
+    let event10 = pair(:reset, empty10)
+    fsm_cast(:smart_traffic_light, event10)
+    
+    let reset_state = fsm_state(:smart_traffic_light)
+    println(&quot;  ✓ Reset to Red (normal operation)&quot;)
+    println(&quot;&quot;)
+    
+    # ============================================================
+    # Summary
+    # ============================================================
+    println(&quot;╔══════════════════════════════════════════════════════════════╗&quot;)
+    println(&quot;║                    Demo Complete! ✅                          ║&quot;)
+    println(&quot;╚══════════════════════════════════════════════════════════════╝&quot;)
+    println(&quot;&quot;)
+    println(&quot;Successfully demonstrated:&quot;)
+    println(&quot;  ✅ FSM lifecycle (spawn, register, lookup)&quot;)
+    println(&quot;  ✅ Normal state transitions (Red→Green→Yellow→Red)&quot;)
+    println(&quot;  ✅ Emergency stop system (immediate safety)&quot;)
+    println(&quot;  ✅ Pedestrian crossing (priority transition)&quot;)
+    println(&quot;  ✅ Maintenance mode (safe servicing)&quot;)
+    println(&quot;  ✅ Error handling &amp; recovery (resilience)&quot;)
+    println(&quot;&quot;)
+    println(&quot;🎉 Enhanced FSM features validated!&quot;)
+    
+    0
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

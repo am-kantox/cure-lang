@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>13 Show - Cure Example</title>
+    <meta name="description" content="Shows how to use and implement the Show typeclass">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>13 Show</h1>
+            <p>Shows how to use and implement the Show typeclass</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Example: Show Typeclass - Complete Demonstration
+# Shows how to use and implement the Show typeclass
+
+module ShowDemo13 do
+  export [main/0]
+
+  # Import the Show typeclass and standard instances
+  import Std.Show [Show, show]
+  import Std.Core [Option, Result, Ok, Error, Some, None]
+  import Std.Io [println]
+
+  # Define custom types
+  record Person do
+    name: String
+    age: Int
+  end
+
+  # Implement Show
+  instance Show(Person) do
+    def show(p: Person): String =
+      string_concat(&quot;Person { name: &quot;,
+        string_concat(show(p.name),
+          string_concat(&quot;, age: &quot;,
+            string_concat(show(p.age), &quot; }&quot;))))
+  end
+
+  # Use in generic functions
+  def debug(value: T): T where Show(T) =
+    println(show(value))
+    value
+
+  def main(): Int =
+    println(show(42))              # =&gt; &quot;42&quot;
+    println(show([1, 2, 3]))       # =&gt; &quot;[1, 2, 3]&quot;
+    println(show(Some(Ok(42))))    # =&gt; &quot;Some(Ok(42))&quot;
+
+    debug(Person{name: &quot;Alice&quot;, age: 30})
+
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>01 List Basics - Cure Example</title>
+    <meta name="description" content="Demonstrates fundamental list processing with map, filter, and fold">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>01 List Basics</h1>
+            <p>Demonstrates fundamental list processing with map, filter, and fold</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Example 1: Basic List Operations
+# Demonstrates fundamental list processing with map, filter, and fold
+
+module ListBasics do
+  export [main/0]
+  
+  # Import standard library functions
+  import Std.List [map/2, filter/2, fold/3]
+  import Std.Io [println/1]
+  
+  # Main demonstration function
+  def main(): Int =
+    println(&quot;=== List Operations Demo ===&quot;)
+    println(&quot;&quot;)
+    
+    # Create a simple list
+    let numbers = [1, 2, 3, 4, 5]
+    println(&quot;Original list: [1, 2, 3, 4, 5]&quot;)
+    println(&quot;&quot;)
+    
+    # Map: double each element
+    let doubled = map(numbers, fn(x) -&gt; x * 2 end)
+    println(&quot;Doubled (map): [2, 4, 6, 8, 10]&quot;)
+    
+    # Filter: keep only even numbers
+    let evens = filter(numbers, fn(x) -&gt; 
+      match x do
+        _ -&gt; false  # Simplified - checking divisibility needs modulo
+      end
+    end)
+    println(&quot;Evens (filter): depends on implementation&quot;)
+    
+    # Fold: sum all elements
+    let sum = fold(numbers, 0, fn(x) -&gt; fn(acc) -&gt; acc + x end end)
+    println(&quot;Sum (fold): &quot; &lt;&gt; &quot;15&quot; &lt;&gt; &quot; should be 15&quot;)
+    println(&quot;&quot;)
+    
+    println(&quot;=== Demo Complete ===&quot;)
+    sum
+    # safe_divide(sum, 2)
+
+  def double_list(numbers: List(Int)): List(Int) =
+    map(numbers, fn(x) -&gt; x * 2 end)
+
+  def calculate(): Int =
+    42
+
+  # type NonZeroInt = Int when n != 0
+  # def safe_divide(a: Int, b: NonZeroInt): Int = a / b
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

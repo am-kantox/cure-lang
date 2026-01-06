@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>22 Lambda Expressions - Cure Example</title>
+    <meta name="description" content="Demonstrates lambda syntax, closures, and higher-order functions">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>22 Lambda Expressions</h1>
+            <p>Demonstrates lambda syntax, closures, and higher-order functions</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Example 22: Lambda Expressions
+# Demonstrates lambda syntax, closures, and higher-order functions
+
+module LambdaExpressions do
+  export [main/0, simple_lambda/0, closure_example/0, higher_order/0, 
+          nested_lambda/0, multi_param_lambda/0]
+  
+  import Std.Io [println/1]
+  import Std.List [map/2, filter/2]
+  
+  # Main demonstration function
+  def main(): Int =
+    println(&quot;=== Lambda Expressions Demo ===&quot;)
+    println(&quot;&quot;)
+    
+    simple_lambda()
+    closure_example()
+    higher_order()
+    nested_lambda()
+    multi_param_lambda()
+    
+    println(&quot;&quot;)
+    println(&quot;=== Demo Complete ===&quot;)
+    0
+  
+  # 1. Simple lambda - basic syntax
+  def simple_lambda(): Int =
+    println(&quot;1. Simple Lambda:&quot;)
+    
+    # Lambda that doubles a number
+    let double = fn(x) -&gt; x * 2 end
+    
+    # Apply lambda to value (assuming we can call it somehow)
+    # For now, just define it
+    println(&quot;  Defined: fn(x) -&gt; x * 2 end&quot;)
+    
+    0
+  
+  # 2. Lambda with closure - capturing variables
+  def closure_example(): Int =
+    println(&quot;2. Closure (capturing outer variables):&quot;)
+    
+    let base = 10
+    let add_base = fn(x) -&gt; x + base end
+    
+    # The lambda captures &#x27;base&#x27; from outer scope
+    println(&quot;  Defined: let base = 10; fn(x) -&gt; x + base end&quot;)
+    println(&quot;  Lambda captures &#x27;base&#x27; variable&quot;)
+    
+    0
+  
+  # 3. Higher-order functions - lambdas as arguments
+  def higher_order(): Int =
+    println(&quot;3. Higher-Order Functions:&quot;)
+    
+    let numbers = [1, 2, 3, 4, 5]
+    
+    # Map with lambda - double each element
+    let doubled = map(numbers, fn(x) -&gt; x * 2 end)
+    println(&quot;  map([1,2,3,4,5], fn(x) -&gt; x * 2 end)&quot;)
+    println(&quot;  Result: [2,4,6,8,10]&quot;)
+    
+    # Map with lambda - square each element
+    let squared = map(numbers, fn(x) -&gt; x * x end)
+    println(&quot;  map([1,2,3,4,5], fn(x) -&gt; x * x end)&quot;)
+    println(&quot;  Result: [1,4,9,16,25]&quot;)
+    
+    0
+  
+  # 4. Nested lambdas
+  def nested_lambda(): Int =
+    println(&quot;4. Nested Lambdas:&quot;)
+    
+    # Lambda that returns another lambda (currying)
+    let add = fn(x) -&gt; fn(y) -&gt; x + y end end
+    
+    # This creates a closure: add_five = fn(y) -&gt; 5 + y end
+    # let add_five = apply(add, 5)
+    
+    println(&quot;  Defined: fn(x) -&gt; fn(y) -&gt; x + y end end&quot;)
+    println(&quot;  Creates curried addition function&quot;)
+    
+    0
+  
+  # 5. Multiple parameters
+  def multi_param_lambda(): Int =
+    println(&quot;5. Multi-Parameter Lambdas:&quot;)
+    
+    # Lambda with multiple parameters
+    let multiply = fn(x, y) -&gt; x * y end
+    
+    println(&quot;  Defined: fn(x, y) -&gt; x * y end&quot;)
+    println(&quot;  Lambda takes two arguments&quot;)
+    
+    0
+  
+  # 6. Lambda with complex body using match
+  def lambda_with_match(): Int =
+    println(&quot;6. Lambda with Pattern Matching:&quot;)
+    
+    # Lambda that uses pattern matching
+    let is_positive = fn(x) -&gt;
+      match x do
+        n when n &gt; 0 -&gt; true
+        _ -&gt; false
+      end
+    end
+    
+    println(&quot;  Lambda with match expression in body&quot;)
+    
+    0
+
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>

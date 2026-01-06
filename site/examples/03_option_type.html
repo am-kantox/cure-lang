@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>03 Option Type - Cure Example</title>
+    <meta name="description" content="Demonstrates defining and using a custom option-like type">
+    <link rel="icon" type="image/png" href="../media/logo-128x128.png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/cure-theme.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="nav-container">
+            <div class="logo-section">
+                <img src="../media/logo-128x128.png" alt="Cure Logo" class="logo">
+                <div>
+                    <h1 class="site-title">Cure</h1>
+                    <p class="site-tagline">Verification-First Programming</p>
+                </div>
+            </div>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="../index.html">Home</a></li>
+                    <li><a href="../examples.html">Examples</a></li>
+                    <li><a href="../docs.html">Documentation</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Example Content -->
+    <div class="container">
+        <div class="example-page">
+            <a href="../examples.html" class="back-link">← Back to Examples</a>
+            
+            <h1>03 Option Type</h1>
+            <p>Demonstrates defining and using a custom option-like type</p>
+
+            <h2>Source Code</h2>
+            <pre><code class="language-cure"># Example 3: Custom Option Type
+# Demonstrates defining and using a custom option-like type
+
+module OptionType do
+  export [main/0]
+  
+  # Import standard library
+  import Std.Io [println/1]
+  
+  # Define our own simple option type
+  type MyOption(T) = Found(T) | NotFound
+  
+  # Helper: find first element greater than threshold
+  def find_first_above(threshold: Int): MyOption(Int) =
+    match threshold &lt; 10 do
+      true -&gt; Found(15)
+      false -&gt; NotFound
+    end
+  
+  # Helper: safe list head using MyOption
+  def safe_first(list: List(Int)): MyOption(Int) =
+    match list do
+      [] -&gt; NotFound
+      [h | _] -&gt; Found(h)
+    end
+  
+  # Main demonstration
+  def main(): Int =
+    println(&quot;=== Custom Option Type Demo ===&quot;)
+    println(&quot;&quot;)
+    
+    # Test 1: Found value
+    println(&quot;Test 1: Find value above 5&quot;)
+    let result1 = find_first_above(5)
+    match result1 do
+      Found(v1) -&gt; println(&quot;Found: 15&quot;)
+      _ -&gt; println(&quot;Not found&quot;)
+    end
+    println(&quot;&quot;)
+    
+    # Test 2: NotFound value
+    println(&quot;Test 2: Find value above 20&quot;)
+    let result2 = find_first_above(20)
+    match result2 do
+      Found(v2) -&gt; println(&quot;Found value&quot;)
+      _ -&gt; println(&quot;Not found&quot;)
+    end
+    println(&quot;&quot;)
+    
+    # Test 3: Safe list access with non-empty list
+    println(&quot;Test 3: First element of [42, 43, 44]&quot;)
+    let numbers = [42, 43, 44]
+    let result3 = safe_first(numbers)
+    match result3 do
+      Found(v3) -&gt; println(&quot;First element: 42&quot;)
+      _ -&gt; println(&quot;Empty list&quot;)
+    end
+    println(&quot;&quot;)
+    
+    # Test 4: Safe list access with empty list
+    println(&quot;Test 4: First element of empty list&quot;)
+    let empty_list = []
+    let result4 = safe_first(empty_list)
+    match result4 do
+      Found(v4) -&gt; println(&quot;First element found&quot;)
+      _ -&gt; println(&quot;Empty list - no first element&quot;)
+    end
+    println(&quot;&quot;)
+    
+    println(&quot;=== Demo Complete ===&quot;)
+    0
+end
+</code></pre>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Documentation</h4>
+                <ul>
+                    <li><a href="../docs.html">Getting Started</a></li>
+                    <li><a href="https://cure-lang.org/api/index.html">API Reference</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Examples</h4>
+                <ul>
+                    <li><a href="../examples.html">Browse Examples</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://github.com/cure-lang/cure">GitHub</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Cure Programming Language</p>
+        </div>
+    </footer>
+
+    <!-- Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="../js/cure-language.js"></script>
+    <script>
+        hljs.highlightAll();
+    </script>
+</body>
+</html>
