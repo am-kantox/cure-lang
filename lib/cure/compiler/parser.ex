@@ -472,7 +472,8 @@ defmodule Cure.Compiler.Parser do
 
   defp parse_record_construction(state, name_ast) do
     open_token = peek(state)
-    state = advance(state)  # consume {
+    # consume {
+    state = advance(state)
 
     rec_name =
       case name_ast do
@@ -504,7 +505,8 @@ defmodule Cure.Compiler.Parser do
         case peek(probe_state) do
           %Token{type: :bar} ->
             # Record update: TypeName{base | field: val, ...}
-            probe_state = advance(probe_state)  # consume "|"
+            # consume "|"
+            probe_state = advance(probe_state)
             probe_state = skip_newlines(probe_state)
             {fields, probe_state} = parse_map_pairs(probe_state, :rbrace)
             probe_state = expect(probe_state, :rbrace)

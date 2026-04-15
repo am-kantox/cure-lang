@@ -933,8 +933,7 @@ defmodule Cure.Types.Checker do
                   [
                     {:type_mismatch,
                      "field '#{field_name}' expects #{Type.display(expected)} " <>
-                       "but update value has type #{Type.display(val_type)}",
-                     line: line}
+                       "but update value has type #{Type.display(val_type)}", line: line}
                   ]
                 end
 
