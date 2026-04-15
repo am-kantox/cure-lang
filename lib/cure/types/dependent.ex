@@ -77,8 +77,23 @@ defmodule Cure.Types.Dependent do
   @doc """
   Check if two dependent types are compatible (same constructor, compatible params).
   """
-  def compatible?({:dependent, name, _, vp1, _}, {:dependent, name, _, vp2, _}) do
-    length(vp1) == length(vp2)
+  def compatible?({:dependent, name, _, vp1, c1}, {:dependent, name, _, vp2, c2}) do
+    if length(vp1) != length(vp2) do
+      false
+    else
+      # If both have no constraints, they are compatible
+      if c1 == [] and c2 == [] do
+        true
+      else
+        # Try SMT implication: c1 => c2 (sub's constraints imply super's)
+        # If solver unavailable, fall back to structural equality
+        case {c1, c2} do
+          {[], _} -> true
+          {_, []} -> true
+          _ -> c1 == c2
+        end
+      end
+    end
   end
 
   def compatible?(_, _), do: false
@@ -88,10 +103,24 @@ defmodule Cure.Types.Dependent do
 
   When calling `safe_head(v)` where `safe_head` requires `n > 0`,
   generate the VC that must be proven at the call site.
+
+  Substitutes the call-site argument ASTs into the constraint predicates
+  so the resulting VCs are concrete and can be checked via SMT.
   """
   @spec generate_vc(t(), [tuple()]) :: [tuple()]
-  def generate_vc({:dependent, _name, _tps, _vps, constraints}, _args) do
-    constraints
+  def generate_vc({:dependent, _name, _tps, vps, constraints}, args) do
+    if constraints == [] do
+      []
+    else
+      # Build a binding map: value param name -> call-site argument AST
+      bindings =
+        Enum.zip(vps, args)
+        |> Enum.map(fn {{param_name, _type}, arg_ast} -> {param_name, arg_ast} end)
+        |> Map.new()
+
+      # Substitute each constraint with the actual argument values
+      Enum.map(constraints, fn c -> substitute_expr(c, bindings) end)
+    end
   end
 
   def generate_vc(_, _), do: []

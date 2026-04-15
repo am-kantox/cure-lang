@@ -279,4 +279,23 @@ defmodule Cure.SMT.SmtTest do
       assert Type.subtype?(positive, nonzero) == true
     end
   end
+
+  # ============================================================================
+  # SMT Translator Fallback
+  # ============================================================================
+
+  describe "Translator fallback" do
+    test "unrecognized AST produces SMT comment with true" do
+      result = Translator.translate({:weird_node, [line: 1], :stuff})
+      assert result =~ "untranslatable"
+      assert result =~ "true"
+    end
+
+    test "conditional translates to ite" do
+      cond_ast = {:conditional, [], [binop(:>, var("x"), int(0)), int(1), int(0)]}
+      result = Translator.translate(cond_ast)
+      assert result =~ "ite"
+      assert result =~ "(> x 0)"
+    end
+  end
 end

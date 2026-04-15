@@ -210,8 +210,13 @@ defmodule Cure.LSP.Server do
     {state, []}
   end
 
-  defp do_handle("textDocument/completion", id, _params, state) do
-    items = keyword_completions()
+  defp do_handle("textDocument/completion", id, params, state) do
+    td = Map.get(params, "textDocument", %{})
+    uri = Map.get(td, "uri", "")
+    docs = Map.get(state, :documents, %{})
+    text = Map.get(docs, uri, "")
+
+    items = keyword_completions() ++ context_completions(text)
     Transport.send_response(id, items)
     {state, []}
   end
@@ -325,14 +330,34 @@ defmodule Cure.LSP.Server do
 
   # -- Hover -------------------------------------------------------------------
 
-  defp compute_hover(text, line, _char) do
-    # Get the line content and provide basic info
-    lines = String.split(text, "\n")
-    target_line = Enum.at(lines, line, "")
+  defp compute_hover(text, line, char) do
+    # Try AST-based hover first, fall back to line-matching
+    case parse_to_ast(text) do
+      {:ok, ast} ->
+        symbols = build_symbol_table(ast)
+        lines = String.split(text, "\n")
+        target_line = Enum.at(lines, line, "")
+        word = extract_word_at(target_line, char)
 
+        case Enum.find(symbols, fn s -> s.name == word end) do
+          %{kind: :function, signature: sig, line: fn_line} ->
+            hover_text = "```cure\n#{sig}\n```\n\n*Defined at line #{fn_line}*"
+            %{"contents" => %{"kind" => "markdown", "value" => hover_text}}
+
+          _ ->
+            compute_hover_fallback(target_line)
+        end
+
+      _ ->
+        lines = String.split(text, "\n")
+        target_line = Enum.at(lines, line, "")
+        compute_hover_fallback(target_line)
+    end
+  end
+
+  defp compute_hover_fallback(target_line) do
     cond do
       String.contains?(target_line, "fn ") ->
-        # Attempt to infer effects for display
         effect_info = infer_hover_effects(target_line)
 
         hover_text =
@@ -342,12 +367,7 @@ defmodule Cure.LSP.Server do
             "```cure\n#{String.trim(target_line)}\n```"
           end
 
-        %{
-          "contents" => %{
-            "kind" => "markdown",
-            "value" => hover_text
-          }
-        }
+        %{"contents" => %{"kind" => "markdown", "value" => hover_text}}
 
       String.contains?(target_line, "mod ") ->
         %{
@@ -394,19 +414,33 @@ defmodule Cure.LSP.Server do
 
   # -- Go-to-Definition --------------------------------------------------------
 
-  defp find_definition(text, uri, line, _char) do
+  defp find_definition(text, uri, line, char) do
     lines = String.split(text, "\n")
     target_line = Enum.at(lines, line, "")
-
-    # Extract the word at the cursor position
-    word = extract_word(target_line)
+    word = extract_word_at(target_line, char)
 
     if word != "" do
-      # Search all lines for a function definition matching the word
+      # Try AST-based symbol table first
       definition_line =
-        Enum.find_index(lines, fn l ->
-          String.contains?(l, "fn #{word}(") or String.contains?(l, "fn #{word} ")
-        end)
+        case parse_to_ast(text) do
+          {:ok, ast} ->
+            symbols = build_symbol_table(ast)
+
+            case Enum.find(symbols, fn s -> s.name == word and s.kind == :function end) do
+              %{line: l} -> l - 1
+              _ -> nil
+            end
+
+          _ ->
+            nil
+        end
+
+      # Fall back to text search
+      definition_line =
+        definition_line ||
+          Enum.find_index(lines, fn l ->
+            String.contains?(l, "fn #{word}(") or String.contains?(l, "fn #{word} ")
+          end)
 
       if definition_line do
         %{
@@ -425,7 +459,6 @@ defmodule Cure.LSP.Server do
   end
 
   defp extract_word(line) do
-    # Extract the first identifier-like word from the line
     case Regex.run(~r/\b([a-z_][a-z0-9_]*)\s*\(/, line) do
       [_, word] ->
         word
@@ -436,6 +469,20 @@ defmodule Cure.LSP.Server do
           _ -> ""
         end
     end
+  end
+
+  defp extract_word_at(line, char) do
+    # Extract the identifier at the given character position
+    graphemes = String.graphemes(line)
+    # Walk backwards from char to find word start
+    {before, _after} = Enum.split(graphemes, min(char, length(graphemes)))
+    prefix = before |> Enum.reverse() |> Enum.take_while(&(&1 =~ ~r/[a-zA-Z0-9_]/)) |> Enum.reverse() |> Enum.join()
+
+    suffix =
+      graphemes |> Enum.drop(min(char, length(graphemes))) |> Enum.take_while(&(&1 =~ ~r/[a-zA-Z0-9_]/)) |> Enum.join()
+
+    word = prefix <> suffix
+    if word == "", do: extract_word(line), else: word
   end
 
   # -- Document Symbols --------------------------------------------------------
@@ -452,17 +499,33 @@ defmodule Cure.LSP.Server do
   # -- Code Actions ------------------------------------------------------------
 
   @doc false
-  def compute_code_actions(_uri, diagnostics) do
+  def compute_code_actions(uri, diagnostics) do
     Enum.flat_map(diagnostics, fn diag ->
       message = Map.get(diag, "message", "")
 
       cond do
         String.contains?(message, "not exhaustive") ->
+          range = Map.get(diag, "range", %{})
+          end_line = get_in(range, ["end", "line"]) || 0
+
           [
             %{
               "title" => "Add wildcard pattern (_ -> ...)",
               "kind" => "quickfix",
-              "diagnostics" => [diag]
+              "diagnostics" => [diag],
+              "edit" => %{
+                "changes" => %{
+                  uri => [
+                    %{
+                      "range" => %{
+                        "start" => %{"line" => end_line + 1, "character" => 0},
+                        "end" => %{"line" => end_line + 1, "character" => 0}
+                      },
+                      "newText" => "    | _ -> throw \"unhandled case\"\n"
+                    }
+                  ]
+                }
+              }
             }
           ]
 
@@ -510,6 +573,69 @@ defmodule Cure.LSP.Server do
       }
     end)
   end
+
+  defp context_completions(text) do
+    case parse_to_ast(text) do
+      {:ok, ast} ->
+        symbols = build_symbol_table(ast)
+
+        Enum.map(symbols, fn s ->
+          kind = if s.kind == :function, do: 3, else: 2
+          %{"label" => s.name, "kind" => kind, "detail" => s.signature}
+        end)
+
+      _ ->
+        []
+    end
+  end
+
+  # -- AST Helpers for LSP -------------------------------------------------------
+
+  defp parse_to_ast(text) do
+    with {:ok, tokens} <- Lexer.tokenize(text, emit_events: false),
+         {:ok, ast} <- Parser.parse(tokens, emit_events: false) do
+      {:ok, ast}
+    end
+  end
+
+  @doc false
+  def build_symbol_table(ast) do
+    extract_symbols(ast, [])
+  end
+
+  defp extract_symbols({:container, meta, body}, acc) do
+    name = Keyword.get(meta, :name, "unknown")
+    line = Keyword.get(meta, :line, 1)
+    type = Keyword.get(meta, :container_type, :module)
+    acc = [%{name: name, kind: :module, line: line, signature: "#{type} #{name}"} | acc]
+    Enum.reduce(body, acc, &extract_symbols/2)
+  end
+
+  defp extract_symbols({:block, _, children}, acc) do
+    Enum.reduce(children, acc, &extract_symbols/2)
+  end
+
+  defp extract_symbols({:function_def, meta, _body}, acc) do
+    name = Keyword.get(meta, :name, "unknown")
+    params = Keyword.get(meta, :params, [])
+    line = Keyword.get(meta, :line, 1)
+
+    param_str =
+      Enum.map_join(params, ", ", fn {:param, pm, pn} ->
+        type = Keyword.get(pm, :type)
+        if type, do: "#{pn}: #{format_type(type)}", else: pn
+      end)
+
+    sig = "fn #{name}(#{param_str})"
+    [%{name: name, kind: :function, line: line, signature: sig} | acc]
+  end
+
+  defp extract_symbols(_, acc), do: acc
+
+  defp format_type({:variable, _, name}) when is_binary(name), do: name
+  defp format_type({:function_call, meta, _}), do: Keyword.get(meta, :name, "?")
+  defp format_type(other) when is_binary(other), do: other
+  defp format_type(_), do: "Any"
 
   # -- Stdin Reader (Content-Length aware) -------------------------------------
 

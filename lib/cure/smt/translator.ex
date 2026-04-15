@@ -161,8 +161,23 @@ defmodule Cure.SMT.Translator do
     end
   end
 
-  # Fallback
-  defp do_translate(_ast), do: "true"
+  # Conditional: if c then a else b -> (ite c a b)
+  defp do_translate({:conditional, _meta, [cond_ast, then_ast, else_ast]}) do
+    ["(ite ", do_translate(cond_ast), " ", do_translate(then_ast), " ", do_translate(else_ast), ")"]
+  end
+
+  # Fallback -- emit SMT comment and log warning; return "true" to keep query valid
+  defp do_translate(ast) do
+    tag =
+      if is_tuple(ast) and tuple_size(ast) >= 1,
+        do: Atom.to_string(elem(ast, 0)),
+        else: "unknown"
+
+    require Logger
+    Logger.warning("SMT translator: untranslatable AST node '#{tag}', approximated as true")
+
+    ["(; untranslatable: #{tag} ;) true"]
+  end
 
   # -- Operator Mapping --------------------------------------------------------
 

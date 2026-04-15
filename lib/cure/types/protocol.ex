@@ -114,17 +114,48 @@ defmodule Cure.Types.Protocol do
   @spec type_guard(tuple(), String.t(), non_neg_integer()) :: tuple() | nil
   def type_guard(var_form, type_name, line) do
     case type_name do
-      "Int" -> {:call, line, {:atom, line, :is_integer}, [var_form]}
-      "Float" -> {:call, line, {:atom, line, :is_float}, [var_form]}
-      "String" -> {:call, line, {:atom, line, :is_binary}, [var_form]}
-      "Bool" -> {:call, line, {:atom, line, :is_boolean}, [var_form]}
-      "Atom" -> {:call, line, {:atom, line, :is_atom}, [var_form]}
-      "List" -> {:call, line, {:atom, line, :is_list}, [var_form]}
-      "Tuple" -> {:call, line, {:atom, line, :is_tuple}, [var_form]}
-      "Map" -> {:call, line, {:atom, line, :is_map}, [var_form]}
-      "Pid" -> {:call, line, {:atom, line, :is_pid}, [var_form]}
-      "Ref" -> {:call, line, {:atom, line, :is_reference}, [var_form]}
-      _ -> nil
+      "Int" ->
+        {:call, line, {:atom, line, :is_integer}, [var_form]}
+
+      "Float" ->
+        {:call, line, {:atom, line, :is_float}, [var_form]}
+
+      "String" ->
+        {:call, line, {:atom, line, :is_binary}, [var_form]}
+
+      "Bool" ->
+        {:call, line, {:atom, line, :is_boolean}, [var_form]}
+
+      "Atom" ->
+        {:call, line, {:atom, line, :is_atom}, [var_form]}
+
+      "List" ->
+        {:call, line, {:atom, line, :is_list}, [var_form]}
+
+      "Tuple" ->
+        {:call, line, {:atom, line, :is_tuple}, [var_form]}
+
+      "Map" ->
+        {:call, line, {:atom, line, :is_map}, [var_form]}
+
+      "Pid" ->
+        {:call, line, {:atom, line, :is_pid}, [var_form]}
+
+      "Ref" ->
+        {:call, line, {:atom, line, :is_reference}, [var_form]}
+
+      _ ->
+        # User-defined type: generate is_map(V) andalso maps:get(__struct__, V, nil) == type_atom
+        type_atom = type_name |> Macro.underscore() |> String.to_atom()
+
+        is_map_guard = {:call, line, {:atom, line, :is_map}, [var_form]}
+
+        struct_check =
+          {:op, line, :==,
+           {:call, line, {:remote, line, {:atom, line, :maps}, {:atom, line, :get}},
+            [{:atom, line, :__struct__}, var_form, {:atom, line, nil}]}, {:atom, line, type_atom}}
+
+        {:op, line, :andalso, is_map_guard, struct_check}
     end
   end
 

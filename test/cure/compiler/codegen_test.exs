@@ -703,5 +703,71 @@ defmodule Cure.Compiler.CodegenTest do
       assert_receive {Cure.Pipeline.Events, :codegen, :form_generated, _, _}
       assert_receive {Cure.Pipeline.Events, :codegen, :form_generated, _, _}
     end
+
+    test "warning event emitted for unrecognized AST node" do
+      Events.subscribe(:codegen, :warning)
+
+      ast =
+        {:container, [container_type: :module, name: "WarnTest", line: 1, col: 1],
+         [
+           {:function_def, [name: "f", params: [], visibility: :public, arity: 0, line: 1],
+            [{:unknown_node, [line: 5], :something}]}
+         ]}
+
+      {:ok, _forms} = Codegen.compile_module(ast, emit_events: true)
+
+      assert_receive {Cure.Pipeline.Events, :codegen, :warning, {:unrecognized_node, msg, _}, _}
+
+      assert msg =~ "unknown_node"
+    end
+  end
+
+  # ============================================================================
+  # String Interpolation (wrap_to_iodata)
+  # ============================================================================
+
+  describe "string interpolation with non-string values" do
+    test "integer interpolation compiles and runs" do
+      source = """
+      mod InterpInt
+        fn msg() -> String = "value is #{42}"
+      """
+
+      {:ok, mod} = Cure.Compiler.compile_and_load(source)
+      assert mod.msg() == "value is 42"
+    after
+      :code.purge(:"Cure.InterpInt")
+      :code.delete(:"Cure.InterpInt")
+    end
+
+    test "atom interpolation compiles and runs" do
+      source = """
+      mod InterpAtom
+        fn msg() -> String = "status: #{:ok}"
+      """
+
+      {:ok, mod} = Cure.Compiler.compile_and_load(source)
+      assert mod.msg() == "status: ok"
+    after
+      :code.purge(:"Cure.InterpAtom")
+      :code.delete(:"Cure.InterpAtom")
+    end
+  end
+
+  # ============================================================================
+  # Bytes Literal
+  # ============================================================================
+
+  describe "bytes literal" do
+    test "binary bytes compile to bin form" do
+      form = expr({:literal, [subtype: :bytes, line: 1], <<1, 2, 3>>})
+      assert {:bin, 1, [{:bin_element, 1, {:string, 1, [1, 2, 3]}, :default, :default}]} = form
+    end
+
+    test "list bytes compile to bin form with elements" do
+      form = expr({:literal, [subtype: :bytes, line: 1], [65, 66, 67]})
+      assert {:bin, 1, elements} = form
+      assert [_, _, _] = elements
+    end
   end
 end

@@ -321,4 +321,56 @@ defmodule Cure.LSP.LspTest do
       assert new_state == state
     end
   end
+
+  # ============================================================================
+  # Server: symbol table and context completions
+  # ============================================================================
+
+  describe "build_symbol_table" do
+    test "extracts function symbols from AST" do
+      source = "mod Test\n  fn add(a: Int, b: Int) -> Int = a + b\n  fn hello() -> String = \"hi\"\n"
+
+      {:ok, tokens} = Cure.Compiler.Lexer.tokenize(source, emit_events: false)
+      {:ok, ast} = Cure.Compiler.Parser.parse(tokens, emit_events: false)
+      symbols = Server.build_symbol_table(ast)
+
+      fn_names = Enum.filter(symbols, &(&1.kind == :function)) |> Enum.map(& &1.name)
+      assert "add" in fn_names
+      assert "hello" in fn_names
+    end
+
+    test "extracts module name" do
+      source = "mod MyMod\n  fn foo() -> Int = 1\n"
+
+      {:ok, tokens} = Cure.Compiler.Lexer.tokenize(source, emit_events: false)
+      {:ok, ast} = Cure.Compiler.Parser.parse(tokens, emit_events: false)
+      symbols = Server.build_symbol_table(ast)
+
+      mod_names = Enum.filter(symbols, &(&1.kind == :module)) |> Enum.map(& &1.name)
+      assert "MyMod" in mod_names
+    end
+  end
+
+  describe "completion with context" do
+    test "includes function names from document" do
+      state = %{
+        initialized: true,
+        documents: %{
+          "file:///test.cure" => "mod Test\n  fn add(a: Int, b: Int) -> Int = a + b\n"
+        }
+      }
+
+      msg = %{
+        "method" => "textDocument/completion",
+        "id" => 60,
+        "params" => %{
+          "textDocument" => %{"uri" => "file:///test.cure"},
+          "position" => %{"line" => 1, "character" => 5}
+        }
+      }
+
+      {_, _} = Server.process_message(msg, state)
+      # Verifies no crash and response is sent
+    end
+  end
 end

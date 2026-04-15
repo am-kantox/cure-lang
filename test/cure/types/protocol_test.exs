@@ -203,7 +203,17 @@ defmodule Cure.Types.ProtocolTest do
       assert Protocol.type_guard(var, "String", 1) == {:call, 1, {:atom, 1, :is_binary}, [var]}
       assert Protocol.type_guard(var, "Bool", 1) == {:call, 1, {:atom, 1, :is_boolean}, [var]}
       assert Protocol.type_guard(var, "List", 1) == {:call, 1, {:atom, 1, :is_list}, [var]}
-      assert Protocol.type_guard(var, "UnknownType", 1) == nil
+      # User-defined types now get a struct guard instead of nil
+      guard = Protocol.type_guard(var, "Person", 1)
+      assert guard != nil
+      assert {:op, 1, :andalso, {:call, 1, {:atom, 1, :is_map}, [^var]}, _struct_check} = guard
+    end
+
+    test "user-defined type guard checks __struct__" do
+      var = {:var, 1, :V_x}
+      guard = Protocol.type_guard(var, "MyRecord", 1)
+      assert {:op, 1, :andalso, _, struct_check} = guard
+      assert {:op, 1, :==, _, {:atom, 1, :my_record}} = struct_check
     end
   end
 end

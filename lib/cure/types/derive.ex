@@ -55,19 +55,33 @@ defmodule Cure.Types.Derive do
 
   defp derive_show(type_name, fields) do
     # Generate: fn show(x: Type) -> String = "TypeName{field1: ..., field2: ...}"
-    # For simplicity, generate string concatenation of field accesses
     body =
       if fields == [] do
         {:literal, [subtype: :string], type_name}
       else
-        # Build: "TypeName{" <> show(x.f1) <> ", " <> show(x.f2) <> "}"
-        _field_parts =
+        # Build: "TypeName{" <> "field1: " <> show(x.f1) <> ", " <> ... <> "}"
+        field_parts =
           fields
           |> Enum.map(fn field ->
-            {:attribute_access, [attribute: Atom.to_string(field)], [{:variable, [scope: :local], "x"}]}
-          end)
+            field_access =
+              {:attribute_access, [attribute: Atom.to_string(field)], [{:variable, [scope: :local], "x"}]}
 
-        # For now, just return "TypeName{...}" as a placeholder
+            show_call = {:function_call, [name: "show"], [field_access]}
+
+            # "field_name: " <> show(x.field_name)
+            concat(
+              {:literal, [subtype: :string], "#{field}: "},
+              show_call
+            )
+          end)
+          |> Enum.intersperse({:literal, [subtype: :string], ", "})
+          |> Enum.reduce(&concat(&2, &1))
+
+        # "TypeName{" <> fields_str <> "}"
+        concat(
+          concat({:literal, [subtype: :string], "#{type_name}{"}, field_parts),
+          {:literal, [subtype: :string], "}"}
+        )
       end
 
     [
@@ -80,6 +94,10 @@ defmodule Cure.Types.Derive do
          line: 0
        ], [body]}
     ]
+  end
+
+  defp concat(left, right) do
+    {:binary_op, [operator: :<>, category: :string], [left, right]}
   end
 
   # -- Eq derivation -----------------------------------------------------------

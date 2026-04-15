@@ -473,6 +473,8 @@ defmodule Cure.Types.Checker do
   # -- Expression Type Inference -----------------------------------------------
 
   defp infer(env, ast, emit?, file) do
+    # Attach emit/file to env so deep fallback clauses can access them
+    env = Map.put(env, :emit_events, emit?) |> Map.put(:file, file)
     result = do_infer(env, ast)
 
     case result do
@@ -967,7 +969,35 @@ defmodule Cure.Types.Checker do
 
   # -- Fallback ----------------------------------------------------------------
 
-  defp do_infer(env, _ast), do: {:ok, :any, env}
+  defp do_infer(env, ast) do
+    tag =
+      if is_tuple(ast) and tuple_size(ast) >= 1,
+        do: elem(ast, 0),
+        else: :unknown
+
+    line =
+      if is_tuple(ast) and tuple_size(ast) >= 2 do
+        case elem(ast, 1) do
+          meta when is_list(meta) -> Keyword.get(meta, :line, 0)
+          _ -> 0
+        end
+      else
+        0
+      end
+
+    if Map.get(env, :emit_events, false) do
+      file = Map.get(env, :file, "nofile")
+
+      Events.emit(
+        :type_checker,
+        :type_warning,
+        {:unrecognized_node, "unrecognized AST node '#{tag}' inferred as Any", line: line},
+        Events.meta(file, line)
+      )
+    end
+
+    {:ok, :any, env}
+  end
 
   defp resolve_record_field(env, {:named, rec_name}, field_name) do
     case Env.lookup_type(env, rec_name) do

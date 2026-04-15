@@ -355,11 +355,7 @@ defmodule Cure.Compiler.Codegen do
     # Guard based on the type
     guard = Protocol.type_guard(first_var, for_type, line)
 
-    guard_forms =
-      case guard do
-        nil -> []
-        g -> [[g]]
-      end
+    guard_forms = [[guard]]
 
     # Body: call the mangled impl function with the same args
     body = [{:call, line, {:atom, line, mangled_name}, param_vars}]
@@ -567,21 +563,57 @@ defmodule Cure.Compiler.Codegen do
       {:record_update, meta, [base | fields]} ->
         compile_record_update(meta, base, fields, state)
 
-      # Containers in expression position (nested modules, etc.) -- skip
-      {:container, _meta, _body} ->
-        line = 1
-        {{:atom, line, :ok}, state}
+      # Containers in expression position (nested modules, etc.)
+      # Compile the nested container as a side effect and return the module atom.
+      {:container, meta, body} when is_list(meta) ->
+        line = Keyword.get(meta, :line, 1)
+
+        case dispatch_container(meta, body, state.emit_events, state.file) do
+          {:ok, forms} ->
+            # Load the module into the VM at compile time
+            case Cure.Compiler.BeamWriter.compile_and_load(forms) do
+              {:ok, mod_atom} ->
+                {{:atom, line, mod_atom}, state}
+
+              {:error, _} ->
+                {{:atom, line, :undefined}, state}
+            end
+
+          {:error, _} ->
+            {{:atom, line, :undefined}, state}
+        end
 
       # Param nodes in pattern position
       {:param, _meta, _name} ->
         # Handled by compile_pattern
         {{:atom, 1, :ok}, state}
 
-      # Fallback
-      _ ->
-        {{:atom, 1, :undefined}, state}
+      # Fallback -- emit a warning so unrecognized nodes are visible
+      other ->
+        line = extract_ast_line(other)
+        tag = if is_tuple(other) and tuple_size(other) >= 1, do: elem(other, 0), else: :unknown
+
+        if state.emit_events do
+          Events.emit(
+            :codegen,
+            :warning,
+            {:unrecognized_node, "unrecognized AST node '#{tag}' compiled as :undefined", line: line},
+            Events.meta(state.file, line)
+          )
+        end
+
+        {{:atom, line, :undefined}, state}
     end
   end
+
+  defp extract_ast_line(ast) when is_tuple(ast) and tuple_size(ast) >= 2 do
+    case elem(ast, 1) do
+      meta when is_list(meta) -> Keyword.get(meta, :line, 1)
+      _ -> 1
+    end
+  end
+
+  defp extract_ast_line(_), do: 1
 
   # -- Literal Compilation -----------------------------------------------------
 
@@ -599,7 +631,7 @@ defmodule Cure.Compiler.Codegen do
         :symbol -> {:atom, line, value}
         :char -> {:integer, line, value}
         :regex -> compile_regex_literal(value, line)
-        :bytes -> {nil, line}
+        :bytes -> compile_bytes_literal(value, line)
         _ -> {:atom, line, value}
       end
 
@@ -647,6 +679,26 @@ defmodule Cure.Compiler.Codegen do
   end
 
   defp compile_regex_flags(_, line), do: {nil, line}
+
+  defp compile_bytes_literal(value, line) when is_binary(value) do
+    # Compile binary byte string as an Erlang binary literal (raw bytes, no utf8 annotation)
+    {:bin, line, [{:bin_element, line, {:string, line, :binary.bin_to_list(value)}, :default, :default}]}
+  end
+
+  defp compile_bytes_literal(value, line) when is_list(value) do
+    # List of byte integers -> binary with one element per byte
+    elements =
+      Enum.map(value, fn byte ->
+        {:bin_element, line, {:integer, line, byte}, :default, :default}
+      end)
+
+    {:bin, line, elements}
+  end
+
+  defp compile_bytes_literal(_value, line) do
+    # Unknown format -- produce empty binary
+    {:bin, line, []}
+  end
 
   # -- Variable Compilation ----------------------------------------------------
 
@@ -1060,10 +1112,44 @@ defmodule Cure.Compiler.Codegen do
     {form, state}
   end
 
-  defp wrap_to_iodata(form, _line) do
-    # If the expression might not be a binary, wrap with a conversion
-    # For now, pass through; in practice most interpolated values are already strings or numbers
-    form
+  defp wrap_to_iodata(form, line) do
+    # Wrap an expression in a type-test cascade that converts any term to iodata.
+    # case V of
+    #   V when is_binary(V) -> V;
+    #   V when is_integer(V) -> erlang:integer_to_binary(V);
+    #   V when is_float(V) -> erlang:float_to_binary(V);
+    #   V when is_atom(V) -> erlang:atom_to_binary(V);
+    #   V -> io_lib:format("~p", [V])
+    # end
+    temp = {:var, line, :V__interp}
+
+    make_guard = fn guard_fn ->
+      [[{:call, line, {:atom, line, guard_fn}, [temp]}]]
+    end
+
+    make_convert = fn mod, fun ->
+      {:call, line, {:remote, line, {:atom, line, mod}, {:atom, line, fun}}, [temp]}
+    end
+
+    clauses = [
+      {:clause, line, [temp], make_guard.(:is_binary), [temp]},
+      {:clause, line, [temp], make_guard.(:is_integer), [make_convert.(:erlang, :integer_to_binary)]},
+      {:clause, line, [temp], make_guard.(:is_float), [make_convert.(:erlang, :float_to_binary)]},
+      {:clause, line, [temp], make_guard.(:is_atom), [make_convert.(:erlang, :atom_to_binary)]},
+      {:clause, line, [temp], [],
+       [
+         {:call, line, {:remote, line, {:atom, line, :erlang}, {:atom, line, :iolist_to_binary}},
+          [
+            {:call, line, {:remote, line, {:atom, line, :io_lib}, {:atom, line, :format}},
+             [
+               {:string, line, ~c"~p"},
+               {:cons, line, temp, {nil, line}}
+             ]}
+          ]}
+       ]}
+    ]
+
+    {:case, line, form, clauses}
   end
 
   # -- Attribute Access (obj.field) --------------------------------------------

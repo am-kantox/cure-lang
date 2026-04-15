@@ -468,4 +468,27 @@ defmodule Cure.Types.CheckerTest do
                Cure.Compiler.compile_and_load(source, check_types: true)
     end
   end
+
+  # ============================================================================
+  # Fallback warning for unknown AST nodes
+  # ============================================================================
+
+  describe "unknown AST node warning" do
+    test "emits type_warning event for unrecognized node" do
+      Events.subscribe(:type_checker, :type_warning)
+
+      ast =
+        {:container, [container_type: :module, name: "UnknownNode", line: 1],
+         [
+           {:function_def, [name: "f", params: [], visibility: :public, arity: 0, line: 1],
+            [{:totally_unknown, [line: 3], :data}]}
+         ]}
+
+      {:ok, _} = Checker.check_module(ast, emit_events: true)
+
+      assert_receive {Cure.Pipeline.Events, :type_checker, :type_warning, {:unrecognized_node, msg, _}, _}
+
+      assert msg =~ "totally_unknown"
+    end
+  end
 end

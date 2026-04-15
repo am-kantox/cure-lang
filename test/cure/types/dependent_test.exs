@@ -92,6 +92,59 @@ defmodule Cure.Types.DependentTest do
     end
   end
 
+  describe "generate_vc with argument substitution" do
+    test "substitutes arguments into constraints" do
+      constraint = binop(:>, var("n"), int(0))
+      dt = Dependent.new("Vector", ["T"], [{"n", :int}], [constraint])
+
+      # Simulate calling with argument 5
+      vcs = Dependent.generate_vc(dt, [int(5)])
+      assert [vc] = vcs
+
+      # The constraint should now have 5 instead of n
+      {:binary_op, _, [left, _right]} = vc
+      assert {:literal, _, 5} = left
+    end
+
+    test "no constraints returns empty VCs" do
+      dt = Dependent.new("Vector", ["T"], [{"n", :int}])
+      assert [] = Dependent.generate_vc(dt, [int(3)])
+    end
+
+    test "multiple constraints are all substituted" do
+      c1 = binop(:>, var("n"), int(0))
+      c2 = binop(:<, var("n"), int(100))
+      dt = Dependent.new("Vector", ["T"], [{"n", :int}], [c1, c2])
+
+      vcs = Dependent.generate_vc(dt, [int(42)])
+      assert [_, _] = vcs
+    end
+  end
+
+  describe "compatible? with constraints" do
+    test "same constraints are compatible" do
+      c = binop(:>, var("n"), int(0))
+      dt1 = Dependent.new("V", ["T"], [{"n", :int}], [c])
+      dt2 = Dependent.new("V", ["T"], [{"m", :int}], [c])
+      assert Dependent.compatible?(dt1, dt2)
+    end
+
+    test "different constraints are incompatible" do
+      c1 = binop(:>, var("n"), int(0))
+      c2 = binop(:>, var("n"), int(10))
+      dt1 = Dependent.new("V", ["T"], [{"n", :int}], [c1])
+      dt2 = Dependent.new("V", ["T"], [{"m", :int}], [c2])
+      refute Dependent.compatible?(dt1, dt2)
+    end
+
+    test "empty constraints on one side are compatible" do
+      c = binop(:>, var("n"), int(0))
+      dt1 = Dependent.new("V", ["T"], [{"n", :int}])
+      dt2 = Dependent.new("V", ["T"], [{"m", :int}], [c])
+      assert Dependent.compatible?(dt1, dt2)
+    end
+  end
+
   describe "Std.Vector" do
     setup do
       # Load all stdlib dependencies first
