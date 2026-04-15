@@ -1,0 +1,19 @@
+mod Std.Test
+  ## Test assertion primitives: assert, assert_eq, assert_ne.
+  @extern(:erlang, :error, 1)
+  local fn raise_error(reason: Atom) -> Atom
+
+  fn assert(condition: Bool) -> Atom =
+    if condition then :ok else raise_error(:assertion_failed)
+
+  fn assert_eq(a: T, b: T) -> Atom =
+    if a == b then :ok else raise_error(:not_equal)
+
+  fn assert_ne(a: T, b: T) -> Atom =
+    if a != b then :ok else raise_error(:unexpectedly_equal)
+
+  fn assert_gt(a: T, b: T) -> Atom =
+    if a > b then :ok else raise_error(:not_greater)
+
+  fn assert_lt(a: T, b: T) -> Atom =
+    if a < b then :ok else raise_error(:not_less)

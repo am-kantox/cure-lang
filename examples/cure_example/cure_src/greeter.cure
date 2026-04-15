@@ -1,0 +1,9 @@
+mod Greeter
+  fn hello(name: String) -> String = "Hello, " <> name <> "!"
+
+  fn farewell(name: String) -> String = "Goodbye, " <> name <> ". See you soon!"
+
+  fn greet_many(names: List(String)) -> List(String) =
+    Std.List.map(names, fn(n) -> hello(n))
+
+  fn main() -> Int = 0

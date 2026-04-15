@@ -1,0 +1,363 @@
+%{
+  title: "Type System",
+  description: "Bidirectional type checking, refinement types, and SMT-backed verification.",
+  order: 3
+}
+---
+Cure has a bidirectional type system with refinement types verified at compile time by the Z3 SMT solver. Types are checked statically -- no runtime type tags, no casts.
+
+## Bidirectional type checking
+
+The type checker operates in two modes:
+
+- **Infer mode**: determines the type of an expression from its structure. Literals, variables, operators, and function calls are inferred.
+- **Check mode**: verifies that an expression has an expected type. Function bodies are checked against their declared return type. Arguments are checked against parameter types.
+
+Modules are checked in two passes:
+
+1. **Signature collection**: scan all function definitions, collecting their names, parameter types, and return types. This allows mutual recursion -- functions can reference each other regardless of definition order.
+2. **Body checking**: check each function body against its declared return type using check mode.
+
+```cure
+mod Example
+  # Pass 1 registers: add : (Int, Int) -> Int, double : Int -> Int
+  # Pass 2 checks each body
+
+  fn add(a: Int, b: Int) -> Int = a + b
+
+  fn double(x: Int) -> Int = add(x, x)
+```
+
+## Primitive types
+
+- `Int` -- arbitrary-precision integers (BEAM big integers)
+- `Float` -- IEEE 754 double-precision floating point
+- `String` -- UTF-8 binary strings
+- `Bool` -- `true` or `false`
+- `Atom` -- Erlang atoms (`:ok`, `:error`, `:my_atom`)
+- `Pid` -- Erlang process identifier
+- `Char` -- single Unicode character
+- `Unit` -- the type of `nil`, meaning "no meaningful value"
+
+```cure
+fn example() -> Int = 42
+fn pi() -> Float = 3.14
+fn name() -> String = "Alice"
+fn flag() -> Bool = true
+fn status() -> Atom = :ok
+fn nothing() -> Unit = nil
+```
+
+## Composite types
+
+- `List(T)` -- linked list, parameterized by element type
+- `Map(K, V)` -- hash map
+- `%[A, B]` -- tuple (fixed-size, heterogeneous)
+- `A -> B` -- function type (from A to B)
+
+```cure
+fn numbers() -> List(Int) = [1, 2, 3]
+fn lookup() -> Map(String, Int) = %{name: 42}
+fn pair() -> %[Int, String] = %[1, "hello"]
+fn adder() -> Int -> Int = fn(x) -> x + 1
+```
+
+Function types with multiple parameters are curried:
+
+```cure
+# Type of a two-argument function
+fn make_adder() -> Int -> Int -> Int = fn(a) -> fn(b) -> a + b
+```
+
+## Algebraic data types
+
+Sum types are defined with `type` and used as first-class values:
+
+```cure
+type Option(T) = Some(T) | None
+type Result(T, E) = Ok(T) | Error(E)
+type Color = Red | Green | Blue
+```
+
+Constructors are typed as functions:
+
+- `Some : T -> Option(T)`
+- `None : Option(T)` (nullary)
+- `Ok : T -> Result(T, E)`
+- `Red : Color` (nullary)
+
+## Subtyping
+
+Cure defines these subtype relationships:
+
+- `Int <: Float` -- numeric widening (integers can be used where floats are expected)
+- `Never <: T` for all T -- the bottom type is a subtype of everything
+- `T <: Any` for all T -- every type is a subtype of the top type
+- `{x: Int | P(x)} <: Int` -- a refinement type is a subtype of its base type (dropping the constraint)
+- `List(A) <: List(B)` if `A <: B` -- lists are covariant
+- `(A -> B) <: (C -> D)` if `C <: A` and `B <: D` -- function types are contravariant in parameters and covariant in return types
+
+Examples of what this means in practice:
+
+```cure
+type Positive = {x: Int | x > 0}
+
+# Positive <: Int, so this is valid:
+fn double(x: Int) -> Int = x * 2
+fn use_positive(p: Positive) -> Int = double(p)
+
+# Int is NOT <: Positive, so this would be a type error:
+# fn bad(x: Int) -> Positive = x  -- error!
+```
+
+## Refinement types
+
+Refinement types constrain a base type with a logical predicate. The predicate is a boolean expression over the bound variable:
+
+```cure
+type NonZero = {x: Int | x != 0}
+type Positive = {x: Int | x > 0}
+type Percentage = {p: Int | p >= 0 and p <= 100}
+type NonNegative = {x: Int | x >= 0}
+type SmallInt = {n: Int | n >= 0 and n <= 255}
+```
+
+Predicates can use comparison operators (`==`, `!=`, `<`, `>`, `<=`, `>=`), boolean connectives (`and`, `or`, `not`), and arithmetic (`+`, `-`, `*`).
+
+### Subtype verification via SMT
+
+Refinement subtyping is verified at compile time by sending logical implications to Z3. To check whether `{x: A | P(x)} <: {x: A | Q(x)}`, the compiler asks Z3 to prove: `forall x. P(x) => Q(x)`.
+
+Verified relationships:
+
+- **Positive <: NonZero** -- because `forall x. x > 0 => x != 0` (Z3 proves `unsat` for the negation)
+- **Percentage <: NonNegative** -- because `forall p. (p >= 0 and p <= 100) => p >= 0`
+- **SmallInt <: NonNegative** -- because `forall n. (n >= 0 and n <= 255) => n >= 0`
+
+Rejected relationships:
+
+- **NonZero is NOT <: Positive** -- Z3 finds the counterexample `x = -1` (satisfies `x != 0` but not `x > 0`)
+- **NonNegative is NOT <: Percentage** -- counterexample: `x = 101`
+
+```cure
+type NonZero = {x: Int | x != 0}
+type Positive = {x: Int | x > 0}
+
+fn needs_nonzero(x: NonZero) -> Int = x * 2
+
+# This is valid: Positive <: NonZero
+fn use_positive(p: Positive) -> Int = needs_nonzero(p)
+
+# This would be a type error: NonZero is NOT <: Positive
+# fn needs_positive(x: Positive) -> Int = x
+# fn bad(n: NonZero) -> Int = needs_positive(n)  -- error!
+```
+
+### Satisfiability checking
+
+The compiler verifies that refinement types are not empty (i.e., at least one value satisfies the constraint). This catches impossible types at definition time:
+
+- `{x: Int | x > 0}` -- satisfiable (e.g., `x = 1`)
+- `{x: Int | x > 0 and x < 0}` -- unsatisfiable: the compiler emits a warning that this type is empty
+
+## Dependent type verification at call sites
+
+Functions with `when` guards register as constrained types. When called with literal or statically-known arguments, the compiler substitutes values into the guard predicate and sends it to Z3.
+
+```cure
+fn safe_divide(a: Int, b: Int) -> Int when b != 0 = a / b
+fn positive_double(x: Int) -> Int when x > 0 = x * 2
+```
+
+At a call site:
+
+```cure
+fn main() -> Int =
+  safe_divide(42, 7)    # OK: Z3 proves 7 != 0
+  safe_divide(42, 0)    # Warning: guard constraint violated (b = 0, but b != 0 required)
+  positive_double(5)    # OK: Z3 proves 5 > 0
+  positive_double(-1)   # Warning: guard constraint violated
+```
+
+When the proof fails, the solver extracts a counterexample model from Z3's `(get-model)` output, showing the specific values that break the constraint:
+
+```text
+Warning: call to 'safe_divide': guard constraint may be violated
+  Constraint: b != 0
+  Counterexample: b = 0
+```
+
+When arguments are not statically known (e.g., from user input), the compiler reports that it cannot prove the constraint -- it is the programmer's responsibility to validate inputs.
+
+## Pattern exhaustiveness
+
+The type checker analyzes `match` expressions for completeness. Missing cases produce compile-time warnings.
+
+### Bool
+
+Requires both `true` and `false`:
+
+```cure
+fn describe(b: Bool) -> String =
+  match b
+    true -> "yes"
+    false -> "no"
+# Exhaustive: Bool has exactly two values
+```
+
+### Result(T, E)
+
+Requires `Ok(...)` and `Error(...)`:
+
+```cure
+fn handle(r: Result(Int, String)) -> Int =
+  match r
+    Ok(v) -> v
+    Error(_) -> -1
+# Exhaustive: covers both constructors
+```
+
+### Option(T)
+
+Requires `Some(...)` and `None()`:
+
+```cure
+fn unwrap(opt: Option(Int)) -> Int =
+  match opt
+    Some(v) -> v
+    None() -> 0
+# Exhaustive
+```
+
+### List(T)
+
+Requires `[]` (empty) and `[_ | _]` (non-empty):
+
+```cure
+fn head_or_zero(xs: List(Int)) -> Int =
+  match xs
+    [h | _] -> h
+    [] -> 0
+# Exhaustive: covers empty and non-empty
+```
+
+### Infinite types
+
+Types with infinite inhabitants (`Int`, `String`, `Float`) require a wildcard `_` to be exhaustive:
+
+```cure
+fn describe(x: Int) -> String
+  | 0 -> "zero"
+  | 1 -> "one"
+  | _ -> "other"
+# The wildcard is required -- you cannot enumerate all integers
+```
+
+Without the wildcard, the compiler warns:
+
+```text
+Warning: non-exhaustive patterns in function 'describe'
+  Missing: wildcard (_) for infinite type Int
+```
+
+### Nested patterns
+
+Exhaustiveness analysis works through nested constructors:
+
+```cure
+fn nested(x: Option(Result(Int, String))) -> Int =
+  match x
+    Some(Ok(v)) -> v
+    Some(Error(_)) -> -1
+    None() -> 0
+# Exhaustive: all three paths covered
+```
+
+## Guard-based flow typing
+
+When a function has a `when` guard, parameter types are refined within the guarded body. The type checker narrows the type to include the guard constraint:
+
+```cure
+fn process(x: Int) -> Int when x > 0 =
+  # Inside this body, x has type {x: Int | x > 0}
+  x * 2
+```
+
+For multi-clause functions with guards, the type checker uses SMT to verify guard coverage and detect unreachable clauses:
+
+```cure
+fn classify(x: Int) -> String
+  | x when x > 0 -> "positive"
+  | x when x < 0 -> "negative"
+  | _ -> "zero"
+# Guards cover all integers: x > 0, x < 0, and the wildcard for x == 0
+```
+
+If a guard is unreachable (e.g., implied by a previous clause), the compiler warns about dead code.
+
+## Protocols and type checking
+
+Protocols provide ad-hoc polymorphism. The type checker:
+
+1. Registers protocol method signatures during the first pass (signature collection)
+2. Validates that each `impl` method signature matches the protocol declaration
+3. Checks implementation bodies against the declared types
+
+```cure
+proto Eq(T)
+  fn eq(a: T, b: T) -> Bool
+
+impl Eq for Int
+  fn eq(a: Int, b: Int) -> Bool = a == b
+
+# The type checker verifies:
+# - eq in impl Eq for Int matches the signature fn eq(a: T, b: T) -> Bool
+#   with T = Int
+# - The body (a == b) has type Bool, matching the declared return type
+```
+
+Protocol implementations are registered globally in an ETS table during compilation, enabling cross-module dispatch.
+
+## Effect system
+
+Cure tracks side effects in the type system. Functions can declare their effects after the return type using `!`:
+
+```cure
+fn read_file(path: String) -> String ! Io
+fn risky(x: Int) -> Int ! Exception
+fn complex(x: Int) -> Int ! Io, Exception
+```
+
+### Effect kinds
+
+Five effect kinds form a closed set:
+
+- `Io` -- I/O operations (printing, file access)
+- `State` -- mutable state (send, receive, process dictionary)
+- `Exception` -- exception throwing
+- `Spawn` -- process spawning
+- `Extern` -- unclassified foreign function calls
+
+### Inference
+
+Effect annotations are optional. When omitted, the type checker infers effects from the function body by analyzing:
+
+- Keywords: `send`/`receive` -> State, `throw` -> Exception, `spawn` -> Spawn
+- `@extern` targets: classified by Erlang module (`:io` -> Io, `:gen_server` -> State, etc.)
+- Transitive calls: calling an effectful function inherits its effects
+
+### Effect subtyping
+
+A pure function (no effects) is a subtype of any effectful function with the same signature:
+
+```
+(Int) -> Int  <:  (Int) -> Int ! Io
+```
+
+An effectful function is a subtype of another effectful function only when its effect set is a subset:
+
+```
+(Int) -> Int ! Io  <:  (Int) -> Int ! Io, State
+```
+
+This means pure callbacks can be passed where effectful ones are expected.

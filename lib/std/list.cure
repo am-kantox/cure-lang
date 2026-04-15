@@ -1,0 +1,140 @@
+mod Std.List
+  ## List operations: length, head, tail, map, filter, fold, and more.
+  # -- Basic queries ----------------------------------------------------------
+
+  @extern(:erlang, :length, 1)
+  fn length(list: List(T)) -> Int
+
+  fn is_empty(list: List(T)) -> Bool =
+    match list
+      [] -> true
+      _ -> false
+
+  # -- Head / Tail ------------------------------------------------------------
+
+  fn head(list: List(T), default: T) -> T =
+    match list
+      [h | _] -> h
+      [] -> default
+
+  fn tail(list: List(T)) -> List(T) =
+    match list
+      [_ | t] -> t
+      [] -> []
+
+  fn last(list: List(T), default: T) -> T =
+    match list
+      [] -> default
+      [x] -> x
+      [_ | t] -> last(t, default)
+
+  # -- Construction -----------------------------------------------------------
+
+  fn cons(elem: T, list: List(T)) -> List(T) = [elem | list]
+
+  fn append(a: List(T), b: List(T)) -> List(T) =
+    match a
+      [] -> b
+      [h | t] -> [h | append(t, b)]
+
+  fn concat(lists: List(List(T))) -> List(T) =
+    match lists
+      [] -> []
+      [h | t] -> append(h, concat(t))
+
+  fn reverse(list: List(T)) -> List(T) = reverse_acc(list, [])
+
+  local fn reverse_acc(list: List(T), acc: List(T)) -> List(T) =
+    match list
+      [] -> acc
+      [h | t] -> reverse_acc(t, [h | acc])
+
+  # -- Transformations --------------------------------------------------------
+
+  fn map(list: List(T), f: T -> U) -> List(U) =
+    match list
+      [] -> []
+      [h | t] -> [f(h) | map(t, f)]
+
+  fn filter(list: List(T), pred: T -> Bool) -> List(T) =
+    match list
+      [] -> []
+      [h | t] ->
+        if pred(h) then [h | filter(t, pred)] else filter(t, pred)
+
+  fn foldl(list: List(T), acc: U, f: T -> U -> U) -> U =
+    match list
+      [] -> acc
+      [h | t] -> foldl(t, f(h)(acc), f)
+
+  fn foldr(list: List(T), acc: U, f: T -> U -> U) -> U =
+    match list
+      [] -> acc
+      [h | t] -> f(h)(foldr(t, acc, f))
+
+  fn flat_map(list: List(T), f: T -> List(U)) -> List(U) =
+    concat(map(list, f))
+
+  fn zip_with(a: List(T), b: List(U), f: T -> U -> V) -> List(V) =
+    match a
+      [] -> []
+      [h1 | t1] ->
+        match b
+          [] -> []
+          [h2 | t2] -> [f(h1)(h2) | zip_with(t1, t2, f)]
+
+  # -- Access -----------------------------------------------------------------
+
+  fn nth(list: List(T), idx: Int, default: T) -> T =
+    match list
+      [] -> default
+      [h | t] -> if idx == 0 then h else nth(t, idx - 1, default)
+
+  fn take(list: List(T), n: Int) -> List(T) =
+    if n <= 0 then [] else take_rest(list, n)
+
+  local fn take_rest(list: List(T), n: Int) -> List(T) =
+    match list
+      [] -> []
+      [h | t] -> [h | take(t, n - 1)]
+
+  fn drop(list: List(T), n: Int) -> List(T) =
+    if n <= 0 then list else drop_rest(list, n)
+
+  local fn drop_rest(list: List(T), n: Int) -> List(T) =
+    match list
+      [] -> []
+      [_ | t] -> drop(t, n - 1)
+
+  # -- Search -----------------------------------------------------------------
+
+  fn contains(list: List(T), elem: T) -> Bool =
+    match list
+      [] -> false
+      [h | t] -> if h == elem then true else contains(t, elem)
+
+  fn find(list: List(T), pred: T -> Bool, default: T) -> T =
+    match list
+      [] -> default
+      [h | t] -> if pred(h) then h else find(t, pred, default)
+
+  fn any(list: List(T), pred: T -> Bool) -> Bool =
+    match list
+      [] -> false
+      [h | t] -> if pred(h) then true else any(t, pred)
+
+  fn all(list: List(T), pred: T -> Bool) -> Bool =
+    match list
+      [] -> true
+      [h | t] -> if pred(h) then all(t, pred) else false
+
+  # -- Misc -------------------------------------------------------------------
+
+  fn sum(list: List(Int)) -> Int =
+    foldl(list, 0, fn(x) -> fn(acc) -> acc + x)
+
+  fn product(list: List(Int)) -> Int =
+    foldl(list, 1, fn(x) -> fn(acc) -> acc * x)
+
+  fn count(list: List(T), pred: T -> Bool) -> Int =
+    foldl(list, 0, fn(x) -> fn(acc) -> if pred(x) then acc + 1 else acc)

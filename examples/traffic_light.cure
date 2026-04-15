@@ -1,0 +1,5 @@
+fsm TrafficLight
+  Red    --timer-->     Green
+  Green  --timer-->     Yellow
+  Yellow --timer-->     Red
+  *      --emergency--> Red

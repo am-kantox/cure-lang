@@ -1,0 +1,27 @@
+mod Std.System
+  ## System operations: time, process info, exit.
+  @extern(:erlang, :system_time, 0)
+  fn monotonic_time() -> Int
+
+  @extern(:os, :system_time, 1)
+  fn system_time(unit: Atom) -> Int
+
+  fn timestamp_ms() -> Int = system_time(:millisecond)
+
+  fn timestamp_us() -> Int = system_time(:microsecond)
+
+  @extern(:erlang, :self, 0)
+  fn self() -> Pid
+
+  @extern(:erlang, :node, 0)
+  fn node() -> Atom
+
+  @extern(:erlang, :system_info, 1)
+  fn system_info(key: Atom) -> T
+
+  fn otp_version() -> T = system_info(:otp_release)
+
+  fn cpu_count() -> Int = system_info(:logical_processors)
+
+  @extern(:erlang, :halt, 1)
+  fn exit(code: Int) -> Atom

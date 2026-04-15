@@ -1,0 +1,22 @@
+mod Adt
+  # Sum types
+  type Color = Red | Green | Blue
+
+  # Parameterized sum types
+  type Option(T) = Some(T) | None
+  type Result(T, E) = Ok(T) | Error(E)
+
+  # Use constructors in expressions
+  fn make_color() -> Color = Red()
+
+  fn wrap(x: Int) -> Option(Int) = Some(x)
+
+  fn safe_divide(a: Int, b: Int) -> Result(Int, String) =
+    if b == 0 then Error("division by zero") else Ok(a / b)
+
+  fn unwrap_or(opt: Option(Int), default: Int) -> Int =
+    match opt
+      Some(v) -> v
+      None() -> default
+
+  fn main() -> Int = unwrap_or(wrap(42), 0)

@@ -1,0 +1,73 @@
+mod Std.String
+  ## String operations: length, concat, split, trim, case conversion.
+  # -- Basic operations -------------------------------------------------------
+
+  @extern(:erlang, :byte_size, 1)
+  fn length(s: String) -> Int
+
+  fn is_empty(s: String) -> Bool = s == ""
+
+  fn concat(a: String, b: String) -> String = a <> b
+
+  # -- Case conversion --------------------------------------------------------
+
+  @extern(:string, :lowercase, 1)
+  fn downcase(s: String) -> String
+
+  @extern(:string, :uppercase, 1)
+  fn upcase(s: String) -> String
+
+  # -- Trim -------------------------------------------------------------------
+
+  @extern(:string, :trim, 1)
+  fn trim(s: String) -> String
+
+  @extern(:string, :trim_leading, 1)
+  fn trim_leading(s: String) -> String
+
+  @extern(:string, :trim_trailing, 1)
+  fn trim_trailing(s: String) -> String
+
+  # -- Conversion -------------------------------------------------------------
+
+  @extern(:erlang, :integer_to_binary, 1)
+  fn from_int(n: Int) -> String
+
+  @extern(:erlang, :float_to_binary, 1)
+  fn from_float(f: Float) -> String
+
+  @extern(:erlang, :atom_to_binary, 1)
+  fn from_atom(a: Atom) -> String
+
+  @extern(:erlang, :binary_to_integer, 1)
+  fn to_int(s: String) -> Int
+
+  @extern(:erlang, :binary_to_float, 1)
+  fn to_float(s: String) -> Float
+
+  @extern(:erlang, :binary_to_atom, 1)
+  fn to_atom(s: String) -> Atom
+
+  # -- Split / Join -----------------------------------------------------------
+
+  @extern(:binary, :split, 2)
+  fn split(s: String, sep: String) -> List(String)
+
+  # -- Repeat -----------------------------------------------------------------
+
+  @extern(:binary, :copy, 2)
+  fn repeat(s: String, n: Int) -> String
+
+  # -- Reverse (via charlist) -------------------------------------------------
+
+  fn reverse(s: String) -> String =
+    list_to_binary(lists_reverse(binary_to_list(s)))
+
+  @extern(:erlang, :binary_to_list, 1)
+  local fn binary_to_list(s: String) -> List(Int)
+
+  @extern(:lists, :reverse, 1)
+  local fn lists_reverse(l: List(T)) -> List(T)
+
+  @extern(:erlang, :list_to_binary, 1)
+  local fn list_to_binary(l: List(Int)) -> String

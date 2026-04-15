@@ -1,0 +1,30 @@
+mod Std.Set
+  ## Set operations: new, add, remove, member, union, intersection.
+  # Sets are represented as maps with :true values: %{elem => true}
+
+  fn new() -> Map = Std.Map.new()
+
+  fn add(elem: T, set: Map) -> Map = Std.Map.put(elem, true, set)
+
+  fn remove(elem: T, set: Map) -> Map = Std.Map.remove(elem, set)
+
+  fn member(elem: T, set: Map) -> Bool = Std.Map.has_key(elem, set)
+
+  fn size(set: Map) -> Int = Std.Map.size(set)
+
+  fn is_empty(set: Map) -> Bool = Std.Map.is_empty(set)
+
+  fn to_list(set: Map) -> List(T) = Std.Map.keys(set)
+
+  fn from_list(list: List(T)) -> Map =
+    Std.List.foldl(list, new(), fn(elem) -> fn(acc) -> add(elem, acc))
+
+  fn union(a: Map, b: Map) -> Map = Std.Map.merge(a, b)
+
+  fn intersection(a: Map, b: Map) -> Map =
+    Std.List.foldl(to_list(a), new(), fn(elem) -> fn(acc) ->
+      if member(elem, b) then add(elem, acc) else acc)
+
+  fn difference(a: Map, b: Map) -> Map =
+    Std.List.foldl(to_list(a), new(), fn(elem) -> fn(acc) ->
+      if member(elem, b) then acc else add(elem, acc))

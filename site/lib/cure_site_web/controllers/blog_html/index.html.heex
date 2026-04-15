@@ -1,0 +1,25 @@
+<Layouts.app flash={@flash}>
+  <h1 class="text-3xl font-bold mb-8">Blog</h1>
+
+  <div class="space-y-8">
+    <article :for={post <- @posts} class="border-b border-base-300 pb-6">
+      <h2 class="text-xl font-semibold">
+        <a href={~p"/blog/#{post.id}"} class="text-primary hover:text-accent transition-colors">
+          {post.title}
+        </a>
+      </h2>
+      <p class="text-sm text-base-content/50 mt-1">
+        <time>{post.date}</time> by {post.author}
+      </p>
+      <p class="mt-2 text-base-content/80">{post.description}</p>
+      <div class="mt-2 flex gap-2">
+        <span
+          :for={tag <- post.tags}
+          class="inline-block rounded-full bg-base-300 px-2 py-0.5 text-xs text-base-content/70"
+        >
+          {tag}
+        </span>
+      </div>
+    </article>
+  </div>
+</Layouts.app>

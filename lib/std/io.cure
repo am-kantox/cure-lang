@@ -1,0 +1,34 @@
+mod Std.Io
+  ## Standard I/O operations for printing to stdout.
+
+  ## Print a string to stdout without trailing newline.
+  @extern(:io, :put_chars, 1)
+  fn put_chars(text: String) -> Atom ! Io
+
+  ## Print a string to stdout with trailing newline.
+  fn println(text: String) -> Atom ! Io =
+    put_chars(text <> "\n")
+
+  ## Print a string to stdout without trailing newline.
+  fn print(text: String) -> Atom ! Io =
+    put_chars(text)
+
+  # Print a value converted to string (integers)
+  @extern(:erlang, :integer_to_binary, 1)
+  fn int_to_string(n: Int) -> String
+
+  # Print a value converted to string (floats)
+  @extern(:erlang, :float_to_binary, 1)
+  fn float_to_string(f: Float) -> String
+
+  # Print a value converted to string (atoms)
+  @extern(:erlang, :atom_to_binary, 1)
+  fn atom_to_string(a: Atom) -> String
+
+  # Print an integer followed by newline
+  fn print_int(n: Int) -> Atom =
+    println(int_to_string(n))
+
+  # Print a float followed by newline
+  fn print_float(f: Float) -> Atom =
+    println(float_to_string(f))

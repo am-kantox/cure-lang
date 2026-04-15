@@ -1,0 +1,48 @@
+mod Std.Option
+  ## Option type operations: some, none, map, flat_map, unwrap.
+  fn some(value: T) -> Option(T) = Some(value)
+
+  fn none() -> Option(T) = None()
+
+  fn is_some(opt: Option(T)) -> Bool =
+    match opt
+      Some(_) -> true
+      None() -> false
+
+  fn is_none(opt: Option(T)) -> Bool =
+    match opt
+      Some(_) -> false
+      None() -> true
+
+  fn unwrap(opt: Option(T), default: T) -> T =
+    match opt
+      Some(v) -> v
+      None() -> default
+
+  fn map(opt: Option(T), f: T -> U) -> Option(U) =
+    match opt
+      Some(v) -> Some(f(v))
+      None() -> None()
+
+  fn flat_map(opt: Option(T), f: T -> Option(U)) -> Option(U) =
+    match opt
+      Some(v) -> f(v)
+      None() -> None()
+
+  fn or_else(opt: Option(T), default: T) -> T =
+    match opt
+      Some(v) -> v
+      None() -> default
+
+  fn filter(opt: Option(T), pred: T -> Bool) -> Option(T) =
+    match opt
+      Some(v) -> if pred(v) then Some(v) else None()
+      None() -> None()
+
+  fn zip(a: Option(T), b: Option(U)) -> Option(Tuple) =
+    match a
+      None() -> None()
+      Some(va) ->
+        match b
+          None() -> None()
+          Some(vb) -> Some(%[va, vb])

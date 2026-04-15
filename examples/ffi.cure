@@ -1,0 +1,21 @@
+mod FfiDemo
+  # Call Erlang stdlib functions via @extern
+  @extern(:erlang, :abs, 1)
+  fn abs(x: Int) -> Int
+
+  @extern(:math, :sqrt, 1)
+  fn sqrt(x: Float) -> Float
+
+  @extern(:erlang, :integer_to_binary, 1)
+  fn int_to_string(n: Int) -> String
+
+  @extern(:io, :put_chars, 1)
+  fn print(s: String) -> Atom
+
+  # Use the FFI functions
+  fn demo() -> Atom =
+    let val = abs(0 - 42)
+    let msg = "The answer is: " <> int_to_string(val)
+    print(msg)
+
+  fn main() -> Int = abs(0 - 42)

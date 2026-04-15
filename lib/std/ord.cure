@@ -1,0 +1,28 @@
+mod Std.Ord
+  ## Ordering protocol for comparing ordered values.
+  proto Ord(T)
+    fn compare(a: T, b: T) -> Atom
+
+  impl Ord for Int
+    fn compare(a: Int, b: Int) -> Atom =
+      if a < b then :lt else if a > b then :gt else :eq
+
+  impl Ord for Float
+    fn compare(a: Float, b: Float) -> Atom =
+      if a < b then :lt else if a > b then :gt else :eq
+
+  impl Ord for String
+    fn compare(a: String, b: String) -> Atom =
+      if a < b then :lt else if a > b then :gt else :eq
+
+  impl Ord for Atom
+    fn compare(a: Atom, b: Atom) -> Atom =
+      if a < b then :lt else if a > b then :gt else :eq
+
+  fn lt(a: T, b: T) -> Bool = compare(a, b) == :lt
+
+  fn le(a: T, b: T) -> Bool = compare(a, b) != :gt
+
+  fn gt(a: T, b: T) -> Bool = compare(a, b) == :gt
+
+  fn ge(a: T, b: T) -> Bool = compare(a, b) != :lt

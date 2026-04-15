@@ -1,0 +1,50 @@
+mod Std.Math
+  ## Mathematical operations: abs, sqrt, pow, trig, rounding, min/max.
+  @extern(:erlang, :abs, 1)
+  fn abs(x: Int) -> Int
+
+  @extern(:math, :sqrt, 1)
+  fn sqrt(x: Float) -> Float
+
+  @extern(:math, :pow, 2)
+  fn pow(base: Float, exp: Float) -> Float
+
+  @extern(:math, :log, 1)
+  fn log(x: Float) -> Float
+
+  @extern(:math, :log2, 1)
+  fn log2(x: Float) -> Float
+
+  @extern(:math, :log10, 1)
+  fn log10(x: Float) -> Float
+
+  @extern(:math, :ceil, 1)
+  fn ceil(x: Float) -> Float
+
+  @extern(:math, :floor, 1)
+  fn floor(x: Float) -> Float
+
+  @extern(:erlang, :round, 1)
+  fn round(x: Float) -> Int
+
+  @extern(:math, :pi, 0)
+  fn pi() -> Float
+
+  fn max(a: Int, b: Int) -> Int = if a >= b then a else b
+
+  fn min(a: Int, b: Int) -> Int = if a <= b then a else b
+
+  fn clamp(value: Int, lo: Int, hi: Int) -> Int =
+    if value < lo then lo else if value > hi then hi else value
+
+  fn sign(x: Int) -> Int =
+    if x > 0 then 1 else if x < 0 then 0 - 1 else 0
+
+  fn negate(x: Int) -> Int = 0 - x
+
+  fn is_even(x: Int) -> Bool = x % 2 == 0
+
+  fn is_odd(x: Int) -> Bool = x % 2 != 0
+
+  fn safe_div(a: Int, b: Int) -> Int =
+    if b == 0 then 0 else a / b

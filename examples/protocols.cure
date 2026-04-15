@@ -1,0 +1,21 @@
+mod Protocols
+  # Define a protocol for converting values to strings
+  proto Stringify(T)
+    fn stringify(x: T) -> String
+
+  # Implement for Int
+  impl Stringify for Int
+    fn stringify(x: Int) -> String = Std.String.from_int(x)
+
+  # Implement for Bool
+  impl Stringify for Bool
+    fn stringify(x: Bool) -> String = if x then "true" else "false"
+
+  # Implement for String (identity)
+  impl Stringify for String
+    fn stringify(x: String) -> String = x
+
+  # Use the protocol in a function
+  fn display(x: T) -> String = "Value: " <> stringify(x)
+
+  fn main() -> Int = 0

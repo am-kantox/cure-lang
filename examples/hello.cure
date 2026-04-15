@@ -1,0 +1,3 @@
+mod Hello
+  fn greet(name: String) -> String = "Hello, " <> name <> "!"
+  fn main() -> Int = 42

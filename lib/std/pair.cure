@@ -1,0 +1,28 @@
+mod Std.Pair
+  ## Pair (2-tuple) operations: first, second, swap, map.
+  @extern(:erlang, :element, 2)
+  fn element(index: Int, tuple: Tuple) -> T
+
+  fn first(pair: Tuple) -> T = element(1, pair)
+
+  fn second(pair: Tuple) -> T = element(2, pair)
+
+  fn swap(pair: Tuple) -> Tuple = %[second(pair), first(pair)]
+
+  fn map_first(pair: Tuple, f: A -> C) -> Tuple =
+    %[f(first(pair)), second(pair)]
+
+  fn map_second(pair: Tuple, f: B -> C) -> Tuple =
+    %[first(pair), f(second(pair))]
+
+  fn map_both(pair: Tuple, f: A -> C, g: B -> D) -> Tuple =
+    %[f(first(pair)), g(second(pair))]
+
+  fn to_list(pair: Tuple) -> List(T) = [first(pair), second(pair)]
+
+  fn from_list(list: List(T)) -> Tuple =
+    match list
+      [a, b] -> %[a, b]
+      [a] -> %[a, a]
+      [] -> %[0, 0]
+      _ -> %[0, 0]

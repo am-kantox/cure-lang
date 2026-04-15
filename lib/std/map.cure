@@ -1,0 +1,41 @@
+mod Std.Map
+  ## Map operations: get, put, delete, keys, values, merge, and more.
+  @extern(:maps, :new, 0)
+  fn new() -> Map
+
+  @extern(:maps, :put, 3)
+  fn put(key: K, value: V, map: Map) -> Map
+
+  @extern(:maps, :get, 2)
+  fn get(key: K, map: Map) -> V
+
+  fn get_or(key: K, map: Map, default: V) -> V =
+    if has_key(key, map) then get(key, map) else default
+
+  @extern(:maps, :remove, 2)
+  fn remove(key: K, map: Map) -> Map
+
+  @extern(:maps, :is_key, 2)
+  fn has_key(key: K, map: Map) -> Bool
+
+  @extern(:maps, :size, 1)
+  fn size(map: Map) -> Int
+
+  @extern(:maps, :keys, 1)
+  fn keys(map: Map) -> List(K)
+
+  @extern(:maps, :values, 1)
+  fn values(map: Map) -> List(V)
+
+  @extern(:maps, :to_list, 1)
+  fn to_list(map: Map) -> List(Tuple)
+
+  @extern(:maps, :from_list, 1)
+  fn from_list(list: List(Tuple)) -> Map
+
+  @extern(:maps, :merge, 2)
+  fn merge(map1: Map, map2: Map) -> Map
+
+  fn is_empty(map: Map) -> Bool = size(map) == 0
+
+  fn count(map: Map) -> Int = size(map)

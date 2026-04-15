@@ -1,0 +1,180 @@
+/* See the Tailwind configuration guide for advanced usage
+   https://tailwindcss.com/docs/configuration */
+
+@import "tailwindcss" source(none);
+@source "../css";
+@source "../js";
+@source "../../lib/cure_site_web";
+
+/* A Tailwind plugin that makes "hero-#{ICON}" classes available.
+   The heroicons installation itself is managed by your mix.exs */
+@plugin "../vendor/heroicons";
+
+/* daisyUI Tailwind Plugin. You can update this file by fetching the latest version with:
+   curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui.js
+   Make sure to look at the daisyUI changelog: https://daisyui.com/docs/changelog/ */
+@plugin "../vendor/daisyui" {
+  themes: false;
+}
+
+/* daisyUI theme plugin. You can update this file by fetching the latest version with:
+  curl -sLO https://github.com/saadeghi/daisyui/releases/latest/download/daisyui-theme.js
+  We ship with two themes, a light one inspired on Phoenix colors and a dark one inspired
+  on Elixir colors. Build your own at: https://daisyui.com/theme-generator/ */
+/* Nord Dark Theme (Polar Night background, Snow Storm text) */
+@plugin "../vendor/daisyui-theme" {
+  name: "dark";
+  default: false;
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: #2e3440;
+  --color-base-200: #3b4252;
+  --color-base-300: #434c5e;
+  --color-base-content: #eceff4;
+  --color-primary: #88c0d0;
+  --color-primary-content: #2e3440;
+  --color-secondary: #81a1c1;
+  --color-secondary-content: #2e3440;
+  --color-accent: #8fbcbb;
+  --color-accent-content: #2e3440;
+  --color-neutral: #4c566a;
+  --color-neutral-content: #d8dee9;
+  --color-info: #5e81ac;
+  --color-info-content: #eceff4;
+  --color-success: #a3be8c;
+  --color-success-content: #2e3440;
+  --color-warning: #ebcb8b;
+  --color-warning-content: #2e3440;
+  --color-error: #bf616a;
+  --color-error-content: #eceff4;
+  --radius-selector: 0.25rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.21875rem;
+  --size-field: 0.21875rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Nord Light Theme (Snow Storm background, Polar Night text) */
+@plugin "../vendor/daisyui-theme" {
+  name: "light";
+  default: true;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: #eceff4;
+  --color-base-200: #e5e9f0;
+  --color-base-300: #d8dee9;
+  --color-base-content: #2e3440;
+  --color-primary: #5e81ac;
+  --color-primary-content: #eceff4;
+  --color-secondary: #81a1c1;
+  --color-secondary-content: #eceff4;
+  --color-accent: #8fbcbb;
+  --color-accent-content: #2e3440;
+  --color-neutral: #4c566a;
+  --color-neutral-content: #eceff4;
+  --color-info: #88c0d0;
+  --color-info-content: #2e3440;
+  --color-success: #a3be8c;
+  --color-success-content: #2e3440;
+  --color-warning: #ebcb8b;
+  --color-warning-content: #2e3440;
+  --color-error: #bf616a;
+  --color-error-content: #eceff4;
+  --radius-selector: 0.25rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.21875rem;
+  --size-field: 0.21875rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Add variants based on LiveView classes */
+@custom-variant phx-click-loading (.phx-click-loading&, .phx-click-loading &);
+@custom-variant phx-submit-loading (.phx-submit-loading&, .phx-submit-loading &);
+@custom-variant phx-change-loading (.phx-change-loading&, .phx-change-loading &);
+
+/* Use the data attribute for dark mode  */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* Make LiveView wrapper divs transparent for layout */
+[data-phx-session], [data-phx-teleported-src] { display: contents }
+
+/* This file is for your main application CSS */
+
+/* Nord-based Makeup syntax highlighting.
+   Makeup wraps highlighted code in <code class="makeup cure">. */
+.makeup .na { color: #d08770; }            /* name_attribute - annotations */
+.makeup .nc { color: #8fbcbb; }            /* name_class - types/modules */
+.makeup .nf { color: #88c0d0; }            /* name_function - functions */
+.makeup .n  { color: inherit; }            /* name - plain identifiers */
+.makeup .no { color: #d8dee9; }            /* name_constant */
+.makeup .ni { color: #81a1c1; }            /* name_builtin */
+.makeup .k  { color: #81a1c1; font-weight: bold; } /* keyword */
+.makeup .kd { color: #81a1c1; font-weight: bold; } /* keyword_declaration */
+.makeup .kc { color: #81a1c1; font-weight: bold; } /* keyword_constant */
+.makeup .kn { color: #81a1c1; font-weight: bold; } /* keyword_namespace */
+.makeup .kp { color: #81a1c1; }            /* keyword_pseudo */
+.makeup .kr { color: #81a1c1; }            /* keyword_reserved */
+.makeup .kt { color: #8fbcbb; }            /* keyword_type */
+.makeup .s  { color: #a3be8c; }            /* string */
+.makeup .s1 { color: #a3be8c; }            /* string_single */
+.makeup .s2 { color: #a3be8c; }            /* string_double */
+.makeup .sa { color: #a3be8c; }            /* string_affix */
+.makeup .sb { color: #a3be8c; }            /* string_backtick */
+.makeup .sc { color: #a3be8c; }            /* string_char */
+.makeup .sd { color: #a3be8c; }            /* string_doc */
+.makeup .se { color: #ebcb8b; }            /* string_escape */
+.makeup .si { color: #a3be8c; }            /* string_interpol */
+.makeup .sr { color: #ebcb8b; }            /* string_regex */
+.makeup .ss { color: #a3be8c; }            /* string_symbol */
+.makeup .m  { color: #b48ead; }            /* number */
+.makeup .mi { color: #b48ead; }            /* number_integer */
+.makeup .mf { color: #b48ead; }            /* number_float */
+.makeup .mh { color: #b48ead; }            /* number_hex */
+.makeup .mb { color: #b48ead; }            /* number_bin */
+.makeup .o  { color: #81a1c1; }            /* operator */
+.makeup .ow { color: #81a1c1; font-weight: bold; } /* operator_word */
+.makeup .p  { color: #eceff4; }            /* punctuation */
+.makeup .w  { }                            /* whitespace - inherit */
+.makeup .c  { color: #616e88; font-style: italic; } /* comment */
+.makeup .c1 { color: #616e88; font-style: italic; } /* comment_single */
+.makeup .cm { color: #616e88; font-style: italic; } /* comment_multiline */
+.makeup .err { color: #bf616a; }           /* error */
+
+[data-theme="light"] .makeup .p { color: #2e3440; }
+[data-theme="light"] .makeup .c,
+[data-theme="light"] .makeup .c1,
+[data-theme="light"] .makeup .cm { color: #7b88a1; }
+
+/* Prose content styling */
+.prose-cure h2 { margin-top: 2rem; margin-bottom: 0.75rem; font-size: 1.5rem; font-weight: 700; }
+.prose-cure h3 { margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 700; }
+.prose-cure h4 { margin-top: 1.25rem; margin-bottom: 0.375rem; font-size: 1.1rem; font-weight: 600; }
+.prose-cure p { margin-bottom: 0.75rem; line-height: 1.7; }
+.prose-cure ul, .prose-cure ol { margin-bottom: 0.75rem; padding-left: 1.5rem; }
+.prose-cure li { margin-bottom: 0.25rem; line-height: 1.6; }
+.prose-cure ul { list-style-type: disc; }
+.prose-cure ol { list-style-type: decimal; }
+.prose-cure pre { margin-bottom: 1rem; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+.prose-cure code { font-size: 0.9em; }
+.prose-cure :not(pre) > code {
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+}
+[data-theme="dark"] .prose-cure pre { background: #2e3440; }
+[data-theme="light"] .prose-cure pre { background: #e5e9f0; }
+[data-theme="dark"] .prose-cure :not(pre) > code { background: #3b4252; }
+[data-theme="light"] .prose-cure :not(pre) > code { background: #d8dee9; }
+.prose-cure a { text-decoration: underline; text-underline-offset: 2px; }
+.prose-cure strong { font-weight: 600; }
+.prose-cure blockquote {
+  border-left: 3px solid #81a1c1;
+  padding-left: 1rem;
+  margin-bottom: 0.75rem;
+  font-style: italic;
+}

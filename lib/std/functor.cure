@@ -1,0 +1,8 @@
+mod Std.Functor
+  ## Functor protocol for mapping over structures.
+  proto Functor(F)
+    fn fmap(container: F, f: A -> B) -> F
+
+  impl Functor for List
+    fn fmap(container: List, f: A -> B) -> List =
+      Std.List.map(container, f)

@@ -1,0 +1,42 @@
+mod Std.Vector
+  ## Vector (dynamic array) operations backed by Erlang arrays.
+  # A Vector is represented as a tagged tuple: {:vector, length, list}
+  # The length is tracked at the type level for dependent type verification.
+
+  fn empty() -> Tuple = %[:vector, 0, []]
+
+  fn singleton(x: T) -> Tuple = %[:vector, 1, [x]]
+
+  fn from_list(list: List(T)) -> Tuple =
+    %[:vector, Std.List.length(list), list]
+
+  fn to_list(vec: Tuple) -> List(T) =
+    Std.Pair.element(3, vec)
+
+  fn length(vec: Tuple) -> Int =
+    Std.Pair.element(2, vec)
+
+  fn cons(x: T, vec: Tuple) -> Tuple =
+    let len = length(vec)
+    let list = to_list(vec)
+    %[:vector, len + 1, [x | list]]
+
+  fn head(vec: Tuple) -> T =
+    Std.List.head(to_list(vec), 0)
+
+  fn tail(vec: Tuple) -> Tuple =
+    let len = length(vec)
+    if len > 0 then from_list(Std.List.tail(to_list(vec))) else empty()
+
+  fn append(a: Tuple, b: Tuple) -> Tuple =
+    let list_a = to_list(a)
+    let list_b = to_list(b)
+    let new_len = length(a) + length(b)
+    %[:vector, new_len, Std.List.append(list_a, list_b)]
+
+  fn map(vec: Tuple, f: T -> U) -> Tuple =
+    let list = to_list(vec)
+    let len = length(vec)
+    %[:vector, len, Std.List.map(list, f)]
+
+  fn is_empty(vec: Tuple) -> Bool = length(vec) == 0

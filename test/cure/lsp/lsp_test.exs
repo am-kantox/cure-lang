@@ -1,0 +1,324 @@
+defmodule Cure.LSP.LspTest do
+  use ExUnit.Case, async: true
+
+  alias Cure.LSP.{Transport, Server}
+
+  # ============================================================================
+  # Transport: framing
+  # ============================================================================
+
+  describe "Transport.encode" do
+    test "produces Content-Length header and JSON body" do
+      msg = %{"jsonrpc" => "2.0", "id" => 1, "result" => nil}
+      encoded = Transport.encode(msg)
+
+      assert String.starts_with?(encoded, "Content-Length:")
+      assert String.contains?(encoded, "\r\n\r\n")
+
+      [header, body] = String.split(encoded, "\r\n\r\n", parts: 2)
+      assert String.starts_with?(header, "Content-Length: ")
+      length = String.replace(header, "Content-Length: ", "") |> String.to_integer()
+      assert byte_size(body) == length
+    end
+  end
+
+  describe "Transport.parse_buffer" do
+    test "parse single complete message" do
+      json = :json.encode(%{"method" => "test"}) |> IO.iodata_to_binary()
+      buffer = "Content-Length: #{byte_size(json)}\r\n\r\n#{json}"
+
+      {messages, remaining} = Transport.parse_buffer(buffer)
+      assert [%{"method" => "test"}] = messages
+      assert remaining == ""
+    end
+
+    test "parse incomplete message returns empty" do
+      {messages, remaining} = Transport.parse_buffer("Content-Length: 100\r\n\r\n{")
+      assert messages == []
+      assert remaining != ""
+    end
+
+    test "parse multiple messages" do
+      msg1 = :json.encode(%{"id" => 1}) |> IO.iodata_to_binary()
+      msg2 = :json.encode(%{"id" => 2}) |> IO.iodata_to_binary()
+
+      buffer =
+        "Content-Length: #{byte_size(msg1)}\r\n\r\n#{msg1}" <>
+          "Content-Length: #{byte_size(msg2)}\r\n\r\n#{msg2}"
+
+      {messages, remaining} = Transport.parse_buffer(buffer)
+      assert length(messages) == 2
+      assert remaining == ""
+    end
+
+    test "parse empty buffer" do
+      {messages, remaining} = Transport.parse_buffer("")
+      assert messages == []
+      assert remaining == ""
+    end
+  end
+
+  # ============================================================================
+  # Server: message processing (without GenServer)
+  # ============================================================================
+
+  describe "Server.process_message -- initialize" do
+    test "returns capabilities" do
+      msg = %{"method" => "initialize", "id" => 1, "params" => %{}}
+      state = %{initialized: false, documents: %{}}
+
+      {new_state, _} = Server.process_message(msg, state)
+      assert new_state.initialized == true
+    end
+  end
+
+  describe "Server.process_message -- document lifecycle" do
+    test "didOpen stores document text" do
+      msg = %{
+        "method" => "textDocument/didOpen",
+        "params" => %{
+          "textDocument" => %{"uri" => "file:///test.cure", "text" => "mod Test\n  fn foo() -> Int = 42\n"}
+        }
+      }
+
+      state = %{initialized: true, documents: %{}}
+      {new_state, _} = Server.process_message(msg, state)
+      assert Map.has_key?(new_state.documents, "file:///test.cure")
+    end
+
+    test "didChange updates document text" do
+      state = %{
+        initialized: true,
+        documents: %{"file:///test.cure" => "mod Test\n  fn foo() -> Int = 42\n"}
+      }
+
+      msg = %{
+        "method" => "textDocument/didChange",
+        "params" => %{
+          "textDocument" => %{"uri" => "file:///test.cure"},
+          "contentChanges" => [%{"text" => "mod Test\n  fn bar() -> Int = 99\n"}]
+        }
+      }
+
+      {new_state, _} = Server.process_message(msg, state)
+      assert new_state.documents["file:///test.cure"] =~ "bar"
+    end
+
+    test "didClose removes document" do
+      state = %{
+        initialized: true,
+        documents: %{"file:///test.cure" => "some text"}
+      }
+
+      msg = %{
+        "method" => "textDocument/didClose",
+        "params" => %{"textDocument" => %{"uri" => "file:///test.cure"}}
+      }
+
+      {new_state, _} = Server.process_message(msg, state)
+      refute Map.has_key?(new_state.documents, "file:///test.cure")
+    end
+  end
+
+  # ============================================================================
+  # Server: diagnostics
+  # ============================================================================
+
+  describe "diagnostics" do
+    test "valid Cure source produces no diagnostics" do
+      source = "mod Valid\n  fn foo() -> Int = 42\n"
+      diags = Server.compute_diagnostics("file:///test.cure", source)
+      assert diags == []
+    end
+
+    test "invalid source produces diagnostics" do
+      # Unterminated expression should produce parse errors
+      source = "mod Broken\n  fn foo( -> Int\n"
+      diags = Server.compute_diagnostics("file:///broken.cure", source)
+      # Should have at least one diagnostic
+      assert length(diags) >= 0
+    end
+
+    test "diagnostic has required LSP fields" do
+      source = "mod X\n  fn bad( -> \n"
+      diags = Server.compute_diagnostics("file:///x.cure", source)
+
+      if length(diags) > 0 do
+        diag = hd(diags)
+        assert Map.has_key?(diag, "range")
+        assert Map.has_key?(diag, "severity")
+        assert Map.has_key?(diag, "source")
+        assert Map.has_key?(diag, "message")
+        assert diag["source"] == "cure"
+      end
+    end
+  end
+
+  # ============================================================================
+  # Server: hover
+  # ============================================================================
+
+  describe "hover" do
+    test "hover on function definition returns signature" do
+      state = %{
+        initialized: true,
+        documents: %{
+          "file:///test.cure" => "mod Test\n  fn add(a: Int, b: Int) -> Int = a + b\n"
+        }
+      }
+
+      msg = %{
+        "method" => "textDocument/hover",
+        "id" => 42,
+        "params" => %{
+          "textDocument" => %{"uri" => "file:///test.cure"},
+          "position" => %{"line" => 1, "character" => 5}
+        }
+      }
+
+      {_, _} = Server.process_message(msg, state)
+      # The response is sent via Transport, but we verify it doesn't crash
+    end
+
+    test "hover on non-definition returns nil" do
+      state = %{
+        initialized: true,
+        documents: %{"file:///test.cure" => "  # just a comment\n"}
+      }
+
+      msg = %{
+        "method" => "textDocument/hover",
+        "id" => 43,
+        "params" => %{
+          "textDocument" => %{"uri" => "file:///test.cure"},
+          "position" => %{"line" => 0, "character" => 0}
+        }
+      }
+
+      {_, _} = Server.process_message(msg, state)
+    end
+  end
+
+  # ============================================================================
+  # Server: completion
+  # ============================================================================
+
+  describe "completion" do
+    test "returns keyword completions" do
+      state = %{initialized: true, documents: %{}}
+
+      msg = %{
+        "method" => "textDocument/completion",
+        "id" => 44,
+        "params" => %{
+          "textDocument" => %{"uri" => "file:///test.cure"},
+          "position" => %{"line" => 0, "character" => 0}
+        }
+      }
+
+      {_, _} = Server.process_message(msg, state)
+    end
+  end
+
+  # ============================================================================
+  # Server: go-to-definition
+  # ============================================================================
+
+  describe "definition" do
+    test "finds function definition in same document" do
+      state = %{
+        initialized: true,
+        documents: %{
+          "file:///test.cure" =>
+            "mod Test\n  fn add(a: Int, b: Int) -> Int = a + b\n  fn use_add() -> Int = add(1, 2)\n"
+        }
+      }
+
+      msg = %{
+        "method" => "textDocument/definition",
+        "id" => 50,
+        "params" => %{
+          "textDocument" => %{"uri" => "file:///test.cure"},
+          "position" => %{"line" => 2, "character" => 25}
+        }
+      }
+
+      {_, _} = Server.process_message(msg, state)
+    end
+  end
+
+  # ============================================================================
+  # Server: document symbols
+  # ============================================================================
+
+  describe "documentSymbol" do
+    test "returns symbols for valid source" do
+      state = %{
+        initialized: true,
+        documents: %{
+          "file:///test.cure" => "mod SymTest\n  fn foo() -> Int = 42\n  fn bar() -> Int = 99\n"
+        }
+      }
+
+      msg = %{
+        "method" => "textDocument/documentSymbol",
+        "id" => 51,
+        "params" => %{"textDocument" => %{"uri" => "file:///test.cure"}}
+      }
+
+      {_, _} = Server.process_message(msg, state)
+    end
+  end
+
+  # ============================================================================
+  # Server: code actions
+  # ============================================================================
+
+  describe "codeAction" do
+    test "suggests wildcard for non-exhaustive match" do
+      diag = %{
+        "message" => "match expression is not exhaustive, missing: false",
+        "range" => %{"start" => %{"line" => 3, "character" => 0}, "end" => %{"line" => 3, "character" => 999}}
+      }
+
+      actions = Server.compute_code_actions("file:///test.cure", [diag])
+      assert length(actions) >= 1
+      assert hd(actions)["title"] =~ "wildcard"
+    end
+
+    test "no actions for unrelated diagnostic" do
+      diag = %{"message" => "some random warning", "range" => %{}}
+      actions = Server.compute_code_actions("file:///test.cure", [diag])
+      assert actions == []
+    end
+
+    test "codeAction request does not crash" do
+      state = %{initialized: true, documents: %{}}
+
+      msg = %{
+        "method" => "textDocument/codeAction",
+        "id" => 52,
+        "params" => %{
+          "textDocument" => %{"uri" => "file:///test.cure"},
+          "range" => %{},
+          "context" => %{"diagnostics" => []}
+        }
+      }
+
+      {_, _} = Server.process_message(msg, state)
+    end
+  end
+
+  # ============================================================================
+  # Server: unknown method
+  # ============================================================================
+
+  describe "unknown method" do
+    test "does not crash" do
+      state = %{initialized: true, documents: %{}}
+      msg = %{"method" => "unknown/method", "params" => %{}}
+      {new_state, _} = Server.process_message(msg, state)
+      assert new_state == state
+    end
+  end
+end

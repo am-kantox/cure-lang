@@ -1,0 +1,21 @@
+mod Std.Eq
+  ## Equality protocol for comparing values.
+  proto Eq(T)
+    fn eq(a: T, b: T) -> Bool
+
+  impl Eq for Int
+    fn eq(a: Int, b: Int) -> Bool = a == b
+
+  impl Eq for Float
+    fn eq(a: Float, b: Float) -> Bool = a == b
+
+  impl Eq for String
+    fn eq(a: String, b: String) -> Bool = a == b
+
+  impl Eq for Bool
+    fn eq(a: Bool, b: Bool) -> Bool = a == b
+
+  impl Eq for Atom
+    fn eq(a: Atom, b: Atom) -> Bool = a == b
+
+  fn ne(a: T, b: T) -> Bool = if eq(a, b) then false else true

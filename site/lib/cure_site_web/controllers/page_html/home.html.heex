@@ -1,0 +1,112 @@
+<Layouts.app flash={@flash}>
+  <%!-- Hero --%>
+  <div class="text-center py-8">
+    <img
+      src={~p"/images/logo-500x500-nobg.png"}
+      width="120"
+      height="120"
+      alt="Cure"
+      class="mx-auto mb-4"
+    />
+    <h1 class="text-4xl font-bold tracking-tight sm:text-5xl">Cure</h1>
+    <p class="mt-3 text-lg text-base-content/70">
+      Dependently-typed programming language for the BEAM virtual machine
+      with first-class finite state machines and SMT-backed verification.
+    </p>
+  </div>
+  <%!-- Quick example --%>
+  <div class="mt-8" phx-no-curly-interpolation>
+    <pre class="rounded-lg p-4 text-sm overflow-x-auto bg-base-200"><code class="makeup cure"><span class="k">mod</span> <span class="nc">MyApp.Math</span>
+  <span class="k">use</span> <span class="nc">Std</span>.{<span class="nc">Result</span>, <span class="nc">Option</span>}
+
+  <span class="k">type</span> <span class="nc">Sign</span> <span class="o">=</span> <span class="nc">Positive</span> <span class="o">|</span> <span class="nc">Negative</span> <span class="o">|</span> <span class="nc">Zero</span>
+  <span class="k">type</span> <span class="nc">NonZero</span> <span class="o">=</span> {x: <span class="kt">Int</span> <span class="o">|</span> x <span class="o">!=</span> <span class="mi">0</span>}
+
+  <span class="k">fn</span> <span class="nf">factorial</span>(n: <span class="kt">Nat</span>) <span class="o">-></span> <span class="kt">Nat</span>
+    <span class="o">|</span> <span class="mi">0</span> <span class="o">-></span> <span class="mi">1</span>
+    <span class="o">|</span> n <span class="o">-></span> n <span class="o">*</span> <span class="nf">factorial</span>(n <span class="o">-</span> <span class="mi">1</span>)
+
+  <span class="k">fn</span> <span class="nf">safe_divide</span>(a: <span class="kt">Int</span>, b: <span class="nc">NonZero</span>) <span class="o">-></span> <span class="kt">Int</span> <span class="o">=</span> a <span class="o">/</span> b
+
+  <span class="k">fn</span> <span class="nf">classify</span>(x: <span class="kt">Int</span>) <span class="o">-></span> <span class="nc">Sign</span>
+    <span class="o">|</span> x <span class="k">when</span> x <span class="o">></span> <span class="mi">0</span> <span class="o">-></span> <span class="nc">Positive</span>
+    <span class="o">|</span> x <span class="k">when</span> x &lt; <span class="mi">0</span> <span class="o">-&gt;</span> <span class="nc">Negative</span>
+    <span class="o">|</span> _             <span class="o">-></span> <span class="nc">Zero</span></code></pre>
+  </div>
+
+  <%!-- Description --%>
+  <div class="mt-10 space-y-4 text-base-content/80 leading-relaxed">
+    <p>
+      Cure compiles <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">.cure</code>
+      source files to BEAM bytecode. Your Cure modules run natively on the Erlang VM alongside
+      Erlang and Elixir code -- same OTP, same supervision trees, same hot code loading.
+    </p>
+    <p>
+      The type system is bidirectional, with refinement types verified at compile time by Z3.
+      The constraint <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">x != 0</code>
+      in <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">NonZero</code>
+      is not a
+      runtime check -- it is a theorem the compiler proves before a single BEAM instruction executes.
+    </p>
+    <p>
+      Finite state machines are a first-class language construct. They compile to OTP
+      <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">gen_statem</code>
+      modules
+      with compile-time verification of reachability and deadlock freedom.
+    </p>
+  </div>
+
+  <%!-- Navigation cards --%>
+  <div class="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <a
+      href={~p"/getting-started"}
+      class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
+    >
+      <h3 class="font-semibold text-primary group-hover:text-accent">Getting Started</h3>
+      <p class="mt-1 text-sm text-base-content/60">
+        Install, compile, and run your first Cure program.
+      </p>
+    </a>
+    <a
+      href={~p"/language-guide"}
+      class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
+    >
+      <h3 class="font-semibold text-primary group-hover:text-accent">Language Guide</h3>
+      <p class="mt-1 text-sm text-base-content/60">
+        Syntax, keywords, operators, and all language constructs.
+      </p>
+    </a>
+    <a
+      href={~p"/type-system"}
+      class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
+    >
+      <h3 class="font-semibold text-primary group-hover:text-accent">Type System</h3>
+      <p class="mt-1 text-sm text-base-content/60">
+        Bidirectional checking, refinement types, SMT verification.
+      </p>
+    </a>
+    <a
+      href={~p"/finite-state-machines"}
+      class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
+    >
+      <h3 class="font-semibold text-primary group-hover:text-accent">Finite State Machines</h3>
+      <p class="mt-1 text-sm text-base-content/60">
+        First-class FSMs with compile-time structural verification.
+      </p>
+    </a>
+    <a
+      href={~p"/standard-library"}
+      class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
+    >
+      <h3 class="font-semibold text-primary group-hover:text-accent">Standard Library</h3>
+      <p class="mt-1 text-sm text-base-content/60">18 self-hosted modules, ~200 functions.</p>
+    </a>
+    <a
+      href={~p"/roadmap"}
+      class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
+    >
+      <h3 class="font-semibold text-primary group-hover:text-accent">Roadmap</h3>
+      <p class="mt-1 text-sm text-base-content/60">What shipped in v0.15 and what comes next.</p>
+    </a>
+  </div>
+</Layouts.app>

@@ -1,0 +1,45 @@
+mod Std.Fsm
+  ## FSM runtime operations: start, send_event, get_state.
+  # Spawn an FSM instance from a compiled FSM module atom
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_spawn, 1)
+  fn spawn(fsm_module: Atom) -> Pid
+
+  # Spawn a named FSM instance
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_spawn_named, 2)
+  fn spawn_named(fsm_module: Atom, name: String) -> Pid
+
+  # Stop an FSM instance
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_stop, 1)
+  fn stop(pid: Pid) -> Atom
+
+  # Send an event to an FSM
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_send, 2)
+  fn send(pid: Pid, event: Atom) -> Atom
+
+  # Send a batch of events
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_send_batch, 2)
+  fn send_batch(pid: Pid, events: List(Atom)) -> Atom
+
+  # Get the current state of an FSM (returns {state, data} tuple)
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_get_state, 1)
+  fn get_state(pid: Pid) -> Tuple
+
+  # Get just the state atom
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_state, 1)
+  fn state(pid: Pid) -> Atom
+
+  # Check if an FSM process is alive
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_is_alive, 1)
+  fn is_alive(pid: Pid) -> Bool
+
+  # Get info about an FSM from the runtime registry
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_info, 1)
+  fn info(pid: Pid) -> Map
+
+  # Get the event history of an FSM
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_history, 1)
+  fn history(pid: Pid) -> List(Atom)
+
+  # Look up an FSM by name
+  @extern(Elixir.Cure.FSM.Builtins, :fsm_lookup, 1)
+  fn lookup(name: String) -> Pid

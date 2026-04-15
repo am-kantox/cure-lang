@@ -1,0 +1,17 @@
+mod DependentTypes
+  # Refinement types constrain values at compile time
+  type NonZero = {x: Int | x != 0}
+  type Positive = {x: Int | x > 0}
+  type Percentage = {p: Int | p >= 0 and p <= 100}
+
+  # Functions with guard constraints are verified at call sites
+  fn safe_divide(a: Int, b: Int) -> Int when b != 0 = a / b
+
+  fn positive_double(x: Int) -> Int when x > 0 = x * 2
+
+  # Multi-clause with guards
+  fn abs(x: Int) -> Int
+    | x when x >= 0 -> x
+    | x -> 0 - x
+
+  fn main() -> Int = safe_divide(42, 7)

@@ -1,0 +1,11 @@
+mod ListBasics
+  fn double_all(xs: List(Int)) -> List(Int) =
+    Std.List.map(xs, fn(x) -> x * 2)
+
+  fn sum(xs: List(Int)) -> Int =
+    Std.List.foldl(xs, 0, fn(x) -> fn(acc) -> acc + x)
+
+  fn evens(xs: List(Int)) -> List(Int) =
+    Std.List.filter(xs, fn(x) -> x % 2 == 0)
+
+  fn main() -> Int = sum([1, 2, 3, 4, 5])

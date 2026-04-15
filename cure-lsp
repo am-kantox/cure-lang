@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Cure Language Server Protocol launcher
+# Usage: cure-lsp
+#
+# This script starts the Cure LSP server over stdio.
+# Configure your editor to use this as the LSP command.
+#
+# Neovim (via nvim-lspconfig):
+#   require('lspconfig.configs').cure = {
+#     default_config = {
+#       cmd = { '/opt/Proyectos/Oeditus/cure/cure-lsp' },
+#       filetypes = { 'cure' },
+#       root_dir = function(fname)
+#         return vim.fs.dirname(fname)
+#       end,
+#     },
+#   }
+#   require('lspconfig').cure.setup({})
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$SCRIPT_DIR/cure" lsp

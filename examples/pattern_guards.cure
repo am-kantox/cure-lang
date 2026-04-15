@@ -1,0 +1,29 @@
+mod PatternGuards
+  # Multi-clause function with pattern matching
+  fn describe(x: Int) -> String
+    | 0 -> "zero"
+    | 1 -> "one"
+    | _ -> "other"
+
+  # Function with guard
+  fn abs(x: Int) -> Int when x >= 0 = x
+
+  # Multi-clause with guards
+  fn classify(x: Int) -> String
+    | x when x > 0 -> "positive"
+    | x when x < 0 -> "negative"
+    | _ -> "zero"
+
+  # Match expression
+  fn result_to_string(r: Result(Int, String)) -> String =
+    match r
+      Ok(v) -> "ok"
+      Error(e) -> "error"
+
+  # List pattern matching
+  fn head_or_zero(xs: List(Int)) -> Int =
+    match xs
+      [h | _] -> h
+      [] -> 0
+
+  fn main() -> Int = 0

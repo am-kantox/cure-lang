@@ -1,0 +1,50 @@
+mod Std.Result
+  ## Result type operations: ok, error, map_ok, and_then, or_else.
+  fn ok(value: T) -> Result(T, E) = Ok(value)
+
+  fn error(reason: E) -> Result(T, E) = Error(reason)
+
+  fn is_ok(result: Result(T, E)) -> Bool =
+    match result
+      Ok(_) -> true
+      Error(_) -> false
+
+  fn is_error(result: Result(T, E)) -> Bool =
+    match result
+      Ok(_) -> false
+      Error(_) -> true
+
+  fn unwrap(result: Result(T, E), default: T) -> T =
+    match result
+      Ok(v) -> v
+      Error(_) -> default
+
+  fn unwrap_error(result: Result(T, E), default: E) -> E =
+    match result
+      Ok(_) -> default
+      Error(e) -> e
+
+  fn map(result: Result(T, E), f: T -> U) -> Result(U, E) =
+    match result
+      Ok(v) -> Ok(f(v))
+      Error(e) -> Error(e)
+
+  fn map_error(result: Result(T, E), f: E -> F) -> Result(T, F) =
+    match result
+      Ok(v) -> Ok(v)
+      Error(e) -> Error(f(e))
+
+  fn and_then(result: Result(T, E), f: T -> Result(U, E)) -> Result(U, E) =
+    match result
+      Ok(v) -> f(v)
+      Error(e) -> Error(e)
+
+  fn or_else(result: Result(T, E), f: E -> Result(T, F)) -> Result(T, F) =
+    match result
+      Ok(v) -> Ok(v)
+      Error(e) -> f(e)
+
+  fn flatten(result: Result(Result(T, E), E)) -> Result(T, E) =
+    match result
+      Ok(inner) -> inner
+      Error(e) -> Error(e)

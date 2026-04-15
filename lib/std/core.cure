@@ -1,0 +1,137 @@
+mod Std.Core
+  ## Identity, composition, boolean, comparison, Result, and Option operations.
+
+  ## Returns its argument unchanged.
+  fn identity(x: T) -> T = x
+
+  ## Right-to-left function composition.
+  fn compose(f: B -> C, g: A -> B) -> (A -> C) =
+    fn(x) -> f(g(x))
+
+  ## Applies a function to a value (flip of apply).
+  fn pipe(x: T, f: T -> U) -> U = f(x)
+
+  ## Applies a function to a value.
+  fn apply(f: T -> U, x: T) -> U = f(x)
+
+  ## Returns a function that always returns x.
+  fn const(x: T) -> (U -> T) =
+    fn(y) -> x
+
+  # -- Boolean operations -----------------------------------------------------
+
+  fn bool_not(x: Bool) -> Bool = if x then false else true
+
+  fn bool_and(x: Bool, y: Bool) -> Bool = if x then y else false
+
+  fn bool_or(x: Bool, y: Bool) -> Bool = if x then true else y
+
+  fn bool_xor(x: Bool, y: Bool) -> Bool =
+    if x then bool_not(y) else y
+
+  # -- Comparison operations --------------------------------------------------
+
+  fn eq(x: T, y: T) -> Bool = x == y
+
+  fn ne(x: T, y: T) -> Bool = x != y
+
+  fn lt(x: T, y: T) -> Bool = x < y
+
+  fn le(x: T, y: T) -> Bool = x <= y
+
+  fn gt(x: T, y: T) -> Bool = x > y
+
+  fn ge(x: T, y: T) -> Bool = x >= y
+
+  fn min(x: T, y: T) -> T = if x <= y then x else y
+
+  fn max(x: T, y: T) -> T = if x >= y then x else y
+
+  fn clamp(value: T, lo: T, hi: T) -> T =
+    if value < lo then lo else if value > hi then hi else value
+
+  # -- Result type operations -------------------------------------------------
+  # Result is represented as Ok(value) -> {:ok, value}
+  #                          Error(reason) -> {:error, reason}
+
+  fn ok(value: T) -> Result(T, E) = Ok(value)
+
+  fn error(reason: E) -> Result(T, E) = Error(reason)
+
+  fn is_ok(result: Result(T, E)) -> Bool =
+    match result
+      Ok(_) -> true
+      Error(_) -> false
+
+  fn is_error(result: Result(T, E)) -> Bool =
+    match result
+      Ok(_) -> false
+      Error(_) -> true
+
+  fn unwrap_ok(result: Result(T, E), default: T) -> T =
+    match result
+      Ok(v) -> v
+      Error(_) -> default
+
+  fn unwrap_error(result: Result(T, E), default: E) -> E =
+    match result
+      Ok(_) -> default
+      Error(e) -> e
+
+  fn map_ok(result: Result(T, E), f: T -> U) -> Result(U, E) =
+    match result
+      Ok(v) -> Ok(f(v))
+      Error(e) -> Error(e)
+
+  fn map_error(result: Result(T, E), f: E -> F) -> Result(T, F) =
+    match result
+      Ok(v) -> Ok(v)
+      Error(e) -> Error(f(e))
+
+  fn and_then(result: Result(T, E), f: T -> Result(U, E)) -> Result(U, E) =
+    match result
+      Ok(v) -> f(v)
+      Error(e) -> Error(e)
+
+  fn or_else(result: Result(T, E), f: E -> Result(T, F)) -> Result(T, F) =
+    match result
+      Ok(v) -> Ok(v)
+      Error(e) -> f(e)
+
+  # -- Option type operations -------------------------------------------------
+  # Option is represented as Some(value) -> {:some, value}
+  #                          None()      -> {:none}
+
+  fn some(value: T) -> Option(T) = Some(value)
+
+  fn none() -> Option(T) = None()
+
+  fn is_some(opt: Option(T)) -> Bool =
+    match opt
+      Some(_) -> true
+      None() -> false
+
+  fn is_none(opt: Option(T)) -> Bool =
+    match opt
+      Some(_) -> false
+      None() -> true
+
+  fn unwrap(opt: Option(T), default: T) -> T =
+    match opt
+      Some(v) -> v
+      None() -> default
+
+  fn map_option(opt: Option(T), f: T -> U) -> Option(U) =
+    match opt
+      Some(v) -> Some(f(v))
+      None() -> None()
+
+  fn flat_map_option(opt: Option(T), f: T -> Option(U)) -> Option(U) =
+    match opt
+      Some(v) -> f(v)
+      None() -> None()
+
+  fn option_or(opt: Option(T), default: T) -> T =
+    match opt
+      Some(v) -> v
+      None() -> default

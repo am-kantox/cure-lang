@@ -1,0 +1,12 @@
+mod Math
+  fn add(a: Int, b: Int) -> Int = a + b
+  fn sub(a: Int, b: Int) -> Int = a - b
+  fn mul(a: Int, b: Int) -> Int = a * b
+
+  fn factorial(n: Int) -> Int
+    | 0 -> 1
+    | n -> n * factorial(n - 1)
+
+  fn abs(x: Int) -> Int = if x > 0 then x else 0 - x
+
+  fn max(a: Int, b: Int) -> Int = if a > b then a else b
