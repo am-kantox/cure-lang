@@ -116,6 +116,14 @@ defmodule Cure.Types.Type do
     end
   end
 
+  # Named type (user-defined record/ADT) subtyping
+  # {:named, "Pair"} is a subtype of {:adt, :pair, _} when the lowercased name matches
+  def subtype?({:named, name}, {:adt, key, _params}),
+    do: String.downcase(name) == Atom.to_string(key)
+
+  def subtype?({:named, name}, {:record, key, _fields}),
+    do: String.downcase(name) == Atom.to_string(key)
+
   def subtype?(_, _), do: false
 
   @doc "Returns true if `a` and `b` are compatible (either is subtype of the other, or either is `:any`)."
@@ -213,8 +221,8 @@ defmodule Cure.Types.Type do
   defp resolve_name("Pid"), do: :atom
   defp resolve_name("Ref"), do: :atom
   defp resolve_name("Nat"), do: :int
-  # Single-letter uppercase -> type variable (future); treat as :any for Phase 1
-  defp resolve_name(<<c, _::binary>>) when c in ?A..?Z, do: :any
+  # Unknown uppercase name -> named type reference (user-defined record, ADT, etc.)
+  defp resolve_name(name = <<c, _::binary>>) when c in ?A..?Z, do: {:named, name}
   defp resolve_name(_), do: :any
 
   # -- Pretty Printing ---------------------------------------------------------
@@ -252,6 +260,7 @@ defmodule Cure.Types.Type do
     do: "#{Atom.to_string(name) |> String.capitalize()}(#{Enum.map_join(ps, ", ", &display/1)})"
 
   def display({:record, name, _}), do: Atom.to_string(name) |> String.capitalize()
+  def display({:named, name}), do: name
   def display({:type_var, id}), do: "t#{id}"
   def display({:type_hole, _}), do: "_"
   def display({:refinement, base, var, _pred}), do: "{#{var}: #{display(base)} | ...}"

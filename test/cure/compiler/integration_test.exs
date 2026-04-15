@@ -164,6 +164,41 @@ defmodule Cure.Compiler.IntegrationTest do
     after
       purge(:"Cure.LambdaTest")
     end
+
+    test "record construction and field access" do
+      source = """
+      mod RecordDemo
+        rec Point
+          x: Int
+          y: Int
+
+        fn make_point(x: Int, y: Int) -> Point = Point{x: x, y: y}
+        fn x_coord(p: Point) -> Int = p.x
+        fn y_coord(p: Point) -> Int = p.y
+
+        fn translate(p: Point, dx: Int, dy: Int) -> Point =
+          Point{x: p.x + dx, y: p.y + dy}
+
+        fn distance_squared(a: Point, b: Point) -> Int =
+          let dx = b.x - a.x
+          let dy = b.y - a.y
+          dx * dx + dy * dy
+      """
+
+      {:ok, module} = Cure.Compiler.compile_and_load(source)
+
+      p = module.make_point(3, 4)
+      assert module.x_coord(p) == 3
+      assert module.y_coord(p) == 4
+
+      q = module.translate(p, 1, 1)
+      assert module.x_coord(q) == 4
+      assert module.y_coord(q) == 5
+
+      assert module.distance_squared(p, q) == 2
+    after
+      purge(:"Cure.RecordDemo")
+    end
   end
 
   # Helper to unload a module

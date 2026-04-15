@@ -1,0 +1,5 @@
+fsm Turnstile
+  Locked   --coin do data + 1--> Unlocked
+  Unlocked --push--> Locked
+  Unlocked --coin do data + 1--> Unlocked
+  Locked   --push--> Locked

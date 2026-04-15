@@ -115,11 +115,11 @@ defmodule Cure.FSM.Compiler do
 
   # -- start_link/0 -----------------------------------------------------------
 
-  defp gen_start_link_0(mod_atom, initial_atom, l) do
-    # start_link() -> gen_statem:start_link(Module, InitialState, []).
+  defp gen_start_link_0(mod_atom, _initial_atom, l) do
+    # start_link() -> gen_statem:start_link(Module, #{}, []).
     body =
       {:call, l, {:remote, l, {:atom, l, :gen_statem}, {:atom, l, :start_link}},
-       [{:atom, l, mod_atom}, {:atom, l, initial_atom}, {nil, l}]}
+       [{:atom, l, mod_atom}, {:map, l, []}, {nil, l}]}
 
     {:function, l, :start_link, 0, [{:clause, l, [], [], [body]}]}
   end
@@ -158,21 +158,20 @@ defmodule Cure.FSM.Compiler do
   # -- init/1 -----------------------------------------------------------------
 
   defp gen_init(initial_atom, l) do
-    # init(InitState) -> {ok, InitState, #{}}.
-    # We use the argument as initial state atom if it's an atom, otherwise use the default.
+    # init(InitData) -> {ok, InitialState, InitData}.
+    # start_link/0 passes #{} (empty map), start_link/1 passes custom data.
     body =
       {:tuple, l,
        [
          {:atom, l, :ok},
          {:atom, l, initial_atom},
-         {:map, l, []}
+         {:var, l, :V_init_data}
        ]}
 
-    # Clause for atom argument (from start_link/0)
-    clause_atom =
-      {:clause, l, [{:var, l, :_}], [], [body]}
+    clause =
+      {:clause, l, [{:var, l, :V_init_data}], [], [body]}
 
-    {:function, l, :init, 1, [clause_atom]}
+    {:function, l, :init, 1, [clause]}
   end
 
   # -- handle_event/4 ----------------------------------------------------------

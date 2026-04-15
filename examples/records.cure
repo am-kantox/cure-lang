@@ -1,0 +1,118 @@
+mod Records
+  # ---------------------------------------------------------------------------
+  # Record definitions
+  #
+  # A record is declared with `rec Name` followed by an indented list of
+  # `field: Type` pairs.  Records compile to BEAM maps with a `__struct__`
+  # discriminator key so they integrate seamlessly with OTP.
+  # ---------------------------------------------------------------------------
+
+  rec Point
+    x: Int
+    y: Int
+
+  rec Rectangle
+    origin: Point
+    width: Int
+    height: Int
+
+  rec Person
+    name: String
+    age: Int
+
+  # Parameterized records carry type parameters declared in parentheses.
+  # The type parameters are erased at runtime (Cure is not dependently typed
+  # at the map level) but are available to the type checker.
+  rec Pair(A, B)
+    first: A
+    second: B
+
+  # ---------------------------------------------------------------------------
+  # Low-level functional update via the Erlang maps module.
+  #
+  # Cure does not yet have built-in `with`-style update syntax, so
+  # single-field updates use an @extern shim.  Reconstruction (shown below)
+  # is the idiomatic multi-field approach.
+  # ---------------------------------------------------------------------------
+
+  @extern(:maps, :put, 3)
+  fn map_put(key: Atom, val: Any, map: Any) -> Any
+
+  # ---------------------------------------------------------------------------
+  # Construction
+  #
+  # Use `TypeName{field: expr, ...}` to build a record value.
+  # ---------------------------------------------------------------------------
+
+  fn origin() -> Point = Point{x: 0, y: 0}
+
+  fn make_point(x: Int, y: Int) -> Point = Point{x: x, y: y}
+
+  fn make_person(name: String, age: Int) -> Person =
+    Person{name: name, age: age}
+
+  fn make_pair(a: Any, b: Any) -> Pair(Any, Any) = Pair{first: a, second: b}
+
+  # ---------------------------------------------------------------------------
+  # Field access
+  #
+  # Use dot notation: `record.field`.  This compiles to `maps:get(field, map)`.
+  # ---------------------------------------------------------------------------
+
+  fn x_coord(p: Point) -> Int = p.x
+  fn y_coord(p: Point) -> Int = p.y
+  fn person_name(p: Person) -> String = p.name
+  fn person_age(p: Person) -> Int = p.age
+
+  # ---------------------------------------------------------------------------
+  # Functional update by reconstruction (multi-field, idiomatic)
+  #
+  # Since records are immutable values, "updating" means constructing a new
+  # record with the desired field values and the old record supplying the rest.
+  # ---------------------------------------------------------------------------
+
+  fn translate(p: Point, dx: Int, dy: Int) -> Point =
+    Point{x: p.x + dx, y: p.y + dy}
+
+  fn birthday(p: Person) -> Person =
+    Person{name: p.name, age: p.age + 1}
+
+  fn scale_rect(r: Rectangle, factor: Int) -> Rectangle =
+    Rectangle{origin: r.origin, width: r.width * factor, height: r.height * factor}
+
+  # ---------------------------------------------------------------------------
+  # Functional update via maps:put (single-field, low-level)
+  # ---------------------------------------------------------------------------
+
+  fn set_x(p: Point, new_x: Int) -> Any = map_put(:x, new_x, p)
+
+  # ---------------------------------------------------------------------------
+  # Records in computations
+  # ---------------------------------------------------------------------------
+
+  fn distance_squared(a: Point, b: Point) -> Int =
+    let dx = b.x - a.x
+    let dy = b.y - a.y
+    dx * dx + dy * dy
+
+  fn midpoint(a: Point, b: Point) -> Point =
+    Point{x: (a.x + b.x) / 2, y: (a.y + b.y) / 2}
+
+  fn area(r: Rectangle) -> Int = r.width * r.height
+
+  fn greet(p: Person) -> String = "Hello, " <> p.name
+
+  fn older_of(a: Person, b: Person) -> Person =
+    if a.age > b.age then a else b
+
+  # Nested field access: access the origin of a Rectangle, then its x coord.
+  fn rect_origin_x(r: Rectangle) -> Int = r.origin.x
+
+  # ---------------------------------------------------------------------------
+  # Entry point
+  # ---------------------------------------------------------------------------
+
+  fn main() -> Int =
+    let p = make_point(3, 4)
+    let q = translate(p, 1, 1)
+    distance_squared(p, q)

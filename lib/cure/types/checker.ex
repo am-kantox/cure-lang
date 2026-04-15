@@ -125,9 +125,25 @@ defmodule Cure.Types.Checker do
       {:function_def, meta, _body}, env ->
         register_fn_signature(meta, env)
 
-      # Register protocol method signatures so calling them type-checks
+      # Register protocol method signatures so calling them type-checks,
+      # and record field schemas for type-safe field access.
       {:container, meta, body}, env when is_list(meta) ->
         case Keyword.get(meta, :container_type) do
+          :struct ->
+            name = Keyword.get(meta, :name)
+
+            field_map =
+              Enum.reduce(body, %{}, fn
+                {:param, pmeta, field_name}, acc ->
+                  type_ast = Keyword.get(pmeta, :type)
+                  Map.put(acc, field_name, Type.resolve(type_ast))
+
+                _, acc ->
+                  acc
+              end)
+
+            Env.extend_type(env, name, {:record, String.to_atom(String.downcase(name)), field_map})
+
           :protocol ->
             Enum.reduce(body, env, fn
               {:function_def, m, _}, e -> register_fn_signature(m, e)
@@ -459,6 +475,15 @@ defmodule Cure.Types.Checker do
     end
   end
 
+  # -- Range -------------------------------------------------------------------
+
+  defp do_infer(env, {:range, _meta, [from, to]}) do
+    with {:ok, _, env} <- do_infer(env, from),
+         {:ok, _, env} <- do_infer(env, to) do
+      {:ok, {:list, :int}, env}
+    end
+  end
+
   # -- Literals ----------------------------------------------------------------
 
   defp do_infer(env, {:literal, meta, _value}) do
@@ -592,32 +617,39 @@ defmodule Cure.Types.Checker do
     name = Keyword.get(meta, :name, "unknown")
     line = Keyword.get(meta, :line, 1)
 
-    {arg_types, env} = infer_args(env, args)
+    if Keyword.get(meta, :record, false) do
+      # Record construction: TypeName{field: val, ...} -- infer field arg types
+      # (for side-effects / error propagation) then return the named type.
+      {_field_types, env} = infer_args(env, args)
+      {:ok, {:named, name}, env}
+    else
+      {arg_types, env} = infer_args(env, args)
 
-    case Env.lookup(env, name) do
-      {:ok, {:fun, param_types, ret_type}} ->
-        check_fn_call(name, param_types, ret_type, arg_types, line, env)
+      case Env.lookup(env, name) do
+        {:ok, {:fun, param_types, ret_type}} ->
+          check_fn_call(name, param_types, ret_type, arg_types, line, env)
 
-      {:ok, {:constrained_fun, param_types, ret_type, guard_ast, param_names}} ->
-        case check_fn_call(name, param_types, ret_type, arg_types, line, env) do
-          {:ok, _, _} = ok ->
-            # Verify guard constraint via SMT
-            verify_call_constraint(name, guard_ast, param_names, args, line, env)
-            ok
+        {:ok, {:constrained_fun, param_types, ret_type, guard_ast, param_names}} ->
+          case check_fn_call(name, param_types, ret_type, arg_types, line, env) do
+            {:ok, _, _} = ok ->
+              # Verify guard constraint via SMT
+              verify_call_constraint(name, guard_ast, param_names, args, line, env)
+              ok
 
-          err ->
-            err
-        end
+            err ->
+              err
+          end
 
-      {:ok, _other} ->
-        {:ok, :any, env}
+        {:ok, _other} ->
+          {:ok, :any, env}
 
-      :error ->
-        {:ok, :any, env}
+        :error ->
+          {:ok, :any, env}
+      end
     end
   end
 
-  # -- Let Binding (Assignment) ------------------------------------------------
+  # -- Let Binding
 
   defp do_infer(env, {:assignment, meta, [pattern, value]}) do
     annotation_ast = Keyword.get(meta, :type_annotation)
@@ -824,23 +856,6 @@ defmodule Cure.Types.Checker do
     {:ok, :string, env}
   end
 
-  # -- Attribute Access --------------------------------------------------------
-
-  defp do_infer(env, {:attribute_access, _meta, [obj]}) do
-    with {:ok, _obj_type, env} <- do_infer(env, obj) do
-      {:ok, :any, env}
-    end
-  end
-
-  # -- Range -------------------------------------------------------------------
-
-  defp do_infer(env, {:range, _meta, [from, to]}) do
-    with {:ok, _, env} <- do_infer(env, from),
-         {:ok, _, env} <- do_infer(env, to) do
-      {:ok, {:list, :int}, env}
-    end
-  end
-
   # -- Early Return / Throw / Yield --------------------------------------------
 
   defp do_infer(env, {:early_return, _meta, [expr]}) do
@@ -874,9 +889,28 @@ defmodule Cure.Types.Checker do
   defp do_infer(env, {:decorator, _meta, _}), do: {:ok, :any, env}
   defp do_infer(env, {:property, _meta, _}), do: {:ok, :any, env}
 
+  # -- Attribute Access --------------------------------------------------------
+
+  defp do_infer(env, {:attribute_access, meta, [obj]}) do
+    field_name = Keyword.get(meta, :attribute)
+
+    with {:ok, obj_type, env} <- do_infer(env, obj) do
+      {:ok, resolve_record_field(env, obj_type, field_name), env}
+    end
+  end
+
   # -- Fallback ----------------------------------------------------------------
 
   defp do_infer(env, _ast), do: {:ok, :any, env}
+
+  defp resolve_record_field(env, {:named, rec_name}, field_name) do
+    case Env.lookup_type(env, rec_name) do
+      {:ok, {:record, _, field_map}} -> Map.get(field_map, field_name, :any)
+      _ -> :any
+    end
+  end
+
+  defp resolve_record_field(_env, _type, _field_name), do: :any
 
   # -- Path-Sensitive Refinement ------------------------------------------------
 

@@ -583,6 +583,70 @@ defmodule Cure.Compiler.CodegenTest do
   end
 
   # ============================================================================
+  # Record Construction and Field Access
+  # ============================================================================
+
+  describe "record construction" do
+    test "Name{field: val} compiles to a map with __struct__ tag" do
+      ast =
+        {:function_call, [name: "Point", record: true, line: 1, col: 1],
+         [
+           {:pair, [], [{:literal, [subtype: :symbol], :x}, {:literal, [subtype: :integer], 3}]},
+           {:pair, [], [{:literal, [subtype: :symbol], :y}, {:literal, [subtype: :integer], 4}]}
+         ]}
+
+      form = expr(ast)
+
+      assert {:map, _,
+              [
+                {:map_field_assoc, _, {:atom, _, :__struct__}, {:atom, _, :point}},
+                {:map_field_assoc, _, {:atom, _, :x}, {:integer, _, 3}},
+                {:map_field_assoc, _, {:atom, _, :y}, {:integer, _, 4}}
+              ]} = form
+    end
+
+    test "field values are compiled correctly" do
+      ast =
+        {:function_call, [name: "Box", record: true, line: 1, col: 1],
+         [
+           {:pair, [],
+            [
+              {:literal, [subtype: :symbol], :width},
+              {:binary_op, [operator: :+, line: 1, col: 1],
+               [{:literal, [subtype: :integer], 2}, {:literal, [subtype: :integer], 3}]}
+            ]}
+         ]}
+
+      form = expr(ast)
+
+      assert {:map, _,
+              [
+                {:map_field_assoc, _, {:atom, _, :__struct__}, {:atom, _, :box}},
+                {:map_field_assoc, _, {:atom, _, :width}, {:op, _, :+, _, _}}
+              ]} = form
+    end
+
+    test "empty record compiles to a map with only __struct__" do
+      ast = {:function_call, [name: "Empty", record: true, line: 1, col: 1], []}
+      form = expr(ast)
+      assert {:map, _, [{:map_field_assoc, _, {:atom, _, :__struct__}, {:atom, _, :empty}}]} = form
+    end
+  end
+
+  describe "record field access" do
+    test "record.field compiles to maps:get(field, record)" do
+      ast =
+        {:attribute_access, [attribute: "x", line: 1, col: 1],
+         [{:variable, [scope: :local, line: 1], "p"}]}
+
+      form = expr(ast)
+
+      assert {:call, _, {:remote, _, {:atom, _, :maps}, {:atom, _, :get}},
+              [{:atom, _, :x}, {:var, _, :V_p}]} = form
+    end
+  end
+
+  # ============================================================================
   # Name Mangling
   # ============================================================================
 
