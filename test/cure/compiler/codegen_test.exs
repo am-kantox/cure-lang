@@ -636,13 +636,11 @@ defmodule Cure.Compiler.CodegenTest do
   describe "record field access" do
     test "record.field compiles to maps:get(field, record)" do
       ast =
-        {:attribute_access, [attribute: "x", line: 1, col: 1],
-         [{:variable, [scope: :local, line: 1], "p"}]}
+        {:attribute_access, [attribute: "x", line: 1, col: 1], [{:variable, [scope: :local, line: 1], "p"}]}
 
       form = expr(ast)
 
-      assert {:call, _, {:remote, _, {:atom, _, :maps}, {:atom, _, :get}},
-              [{:atom, _, :x}, {:var, _, :V_p}]} = form
+      assert {:call, _, {:remote, _, {:atom, _, :maps}, {:atom, _, :get}}, [{:atom, _, :x}, {:var, _, :V_p}]} = form
     end
   end
 

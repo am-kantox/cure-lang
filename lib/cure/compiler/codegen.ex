@@ -728,48 +728,48 @@ defmodule Cure.Compiler.Codegen do
           is_record ->
             compile_record_construction(name, arg_forms, line)
 
-        # Qualified call: Mod.fun(args) -- must come before constructor check
-        String.contains?(name, ".") ->
-          compile_qualified_call(name, arg_forms, line)
+          # Qualified call: Mod.fun(args) -- must come before constructor check
+          String.contains?(name, ".") ->
+            compile_qualified_call(name, arg_forms, line)
 
-        # ADT constructor: PascalCase name -> tagged tuple
-        constructor?(name) ->
-          compile_constructor_call(name, arg_forms, line)
+          # ADT constructor: PascalCase name -> tagged tuple
+          constructor?(name) ->
+            compile_constructor_call(name, arg_forms, line)
 
-        # Variable call: if the name is a variable in scope, call it as a function value
-        Map.has_key?(state.vars, name) ->
-          var_atom = mangle_var(name)
-          {:call, line, {:var, line, var_atom}, arg_forms}
+          # Variable call: if the name is a variable in scope, call it as a function value
+          Map.has_key?(state.vars, name) ->
+            var_atom = mangle_var(name)
+            {:call, line, {:var, line, var_atom}, arg_forms}
 
-        # Expression call: callee is an arbitrary expression (e.g. f(x)(y))
-        Keyword.has_key?(meta, :callee) ->
-          callee = Keyword.get(meta, :callee)
-          {callee_form, _st} = do_compile_expr(callee, state)
-          {:call, line, callee_form, arg_forms}
+          # Expression call: callee is an arbitrary expression (e.g. f(x)(y))
+          Keyword.has_key?(meta, :callee) ->
+            callee = Keyword.get(meta, :callee)
+            {callee_form, _st} = do_compile_expr(callee, state)
+            {:call, line, callee_form, arg_forms}
 
-        # Import resolution: check imports only if NOT a locally defined function
-        true ->
-          fn_atom = mangle_fn_name(name)
-          arity = length(arg_forms)
-          local_fns = Map.get(state, :local_fns, [])
-          is_local = Enum.any?(state.exports ++ local_fns, fn {n, a} -> n == fn_atom and a == arity end)
+          # Import resolution: check imports only if NOT a locally defined function
+          true ->
+            fn_atom = mangle_fn_name(name)
+            arity = length(arg_forms)
+            local_fns = Map.get(state, :local_fns, [])
+            is_local = Enum.any?(state.exports ++ local_fns, fn {n, a} -> n == fn_atom and a == arity end)
 
-          if is_local or state.imports == [] do
-            {:call, line, {:atom, line, fn_atom}, arg_forms}
-          else
-            case resolve_import(fn_atom, arity, state.imports) do
-              {:ok, mod_atom} ->
-                {:call, line, {:remote, line, {:atom, line, mod_atom}, {:atom, line, fn_atom}}, arg_forms}
+            if is_local or state.imports == [] do
+              {:call, line, {:atom, line, fn_atom}, arg_forms}
+            else
+              case resolve_import(fn_atom, arity, state.imports) do
+                {:ok, mod_atom} ->
+                  {:call, line, {:remote, line, {:atom, line, mod_atom}, {:atom, line, fn_atom}}, arg_forms}
 
-              :not_found ->
-                # Last resort: check protocol registry for cross-module dispatch
-                case resolve_protocol_call(name, arity, line) do
-                  {:ok, form} -> form
-                  :not_found -> {:call, line, {:atom, line, fn_atom}, arg_forms}
-                end
+                :not_found ->
+                  # Last resort: check protocol registry for cross-module dispatch
+                  case resolve_protocol_call(name, arity, line) do
+                    {:ok, form} -> form
+                    :not_found -> {:call, line, {:atom, line, fn_atom}, arg_forms}
+                  end
+              end
             end
-          end
-      end
+        end
 
       {form, state}
     end
