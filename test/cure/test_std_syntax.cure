@@ -1,6 +1,0 @@
-module TestStdSyntax do
-  def head(list: List(T, n)) -> T when n > 0 =
-    match list do
-      [x | _] -> x
-    end
-end

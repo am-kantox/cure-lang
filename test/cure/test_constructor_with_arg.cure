@@ -1,3 +1,0 @@
-module TestConstructorWithArg do
-  def simple_some() = 'Some'(42)
-end

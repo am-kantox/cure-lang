@@ -1,5 +1,0 @@
-module TestImportSyntax do
-  import Std.Core [Result, Option, 'Some', 'None', 'Ok', 'Error']
-  
-  def simple_function() = 42
-end

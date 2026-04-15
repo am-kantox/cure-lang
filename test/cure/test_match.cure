@@ -1,9 +1,0 @@
-module Test do
-  export [test/1]
-  
-  def test(x: Bool): Bool =
-    match x do
-      true -> false
-      false -> true
-    end
-end

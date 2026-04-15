@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "cure": {
-      "command": "/REPLACE/WITH/YOUR/PATH/cure/cure-mcp",
-      "args": [],
-      "description": "Cure programming language MCP server - provides compilation, analysis, and documentation tools"
-    }
-  }
-}

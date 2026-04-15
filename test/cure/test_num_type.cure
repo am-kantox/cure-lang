@@ -1,7 +1,0 @@
-module TestNum do
-  export [
-    add/2
-  ]
-
-  def add(x: Num, y: Num): Num = x + y
-end
