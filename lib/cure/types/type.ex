@@ -14,10 +14,32 @@ defmodule Cure.Types.Type do
   - `{:map, key_type, value_type}`
   - `{:fun, [param_types], return_type}`
   - `{:adt, name_atom, [type_params]}`
-  - `{:record, name_atom, %{field_atom => type}}`
+  - `{:record, name_atom, %{field_name_string => type}}` -- stored in
+    `Cure.Types.Env.types`; used by the checker for field lookup
+  - `{:named, name_string}` -- lightweight reference to a user-defined
+    record or ADT type; produced by `resolve_name/1` for any PascalCase
+    name not in the built-in set (`Int`, `String`, ...)
   - `{:type_var, id}` -- fresh unification variable (future use)
   - `{:refinement, base_type, var_name, predicate_ast}` -- structural only
   - `{:effun, [param_types], return_type, effects}` -- effectful function type
+
+  ## Named type resolution
+
+  `Type.resolve/1` maps parser type-expression AST nodes to canonical types.
+  For unknown uppercase names (user-defined records, ADTs, type variables),
+  it returns `{:named, name}` rather than `:any`. This preserves the original
+  name so the type checker can look up field schemas and perform meaningful
+  subtype checks.
+
+  Built-in names (`Int`, `Float`, `String`, `Bool`, `Any`, `Never`, ...) are
+  still resolved directly to their primitive atoms.
+
+  ## Named type subtyping
+
+  - `{:named, T} <: Any` for all T
+  - `{:named, T} <: {:adt, key, _}` when `String.downcase(T) == key`
+  - `{:named, T} <: {:record, key, _}` when `String.downcase(T) == key`
+  - `{:named, T} <: {:named, T}` (reflexivity)
 
   ## Effects
 

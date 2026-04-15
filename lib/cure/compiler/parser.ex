@@ -8,6 +8,20 @@ defmodule Cure.Compiler.Parser do
   The parser is indentation-aware: `:indent`/`:dedent`/`:newline` tokens from
   the lexer drive block structure.
 
+  ## Record syntax
+
+  Two record syntactic forms share the same `TypeName{...}` opening:
+
+  - **Construction** `Point{x: 1, y: 2}` -- emits
+    `{:function_call, [name: "Point", record: true, ...], field_pairs}`
+  - **Update** `Point{p | x: 1}` -- emits
+    `{:record_update, [name: "Point", ...], [base_expr | field_pairs]}`
+
+  Detection uses a probe: after consuming `{`, one expression is parsed and
+  the next token is inspected. If it is `|`, the parser commits to update
+  mode. Otherwise it rewinds (saves and restores `pos` and `errors`) and
+  falls back to normal field-pair parsing.
+
   ## Pipeline Events
 
   Emits via `Cure.Pipeline.Events`:
@@ -454,13 +468,11 @@ defmodule Cure.Compiler.Parser do
 
   defp extract_dotted_path(_), do: nil
 
-  # -- Record Construction  Name{field: val} ---------------------------------
+  # -- Record Construction / Update  Name{fields}  or  Name{base | overrides} --
 
   defp parse_record_construction(state, name_ast) do
-    token = peek(state)
-    state = advance(state)
-    {fields, state} = parse_map_pairs(state, :rbrace)
-    state = expect(state, :rbrace)
+    open_token = peek(state)
+    state = advance(state)  # consume {
 
     rec_name =
       case name_ast do
@@ -468,8 +480,46 @@ defmodule Cure.Compiler.Parser do
         _ -> "unknown"
       end
 
-    ast = {:function_call, [name: rec_name, record: true, line: token.line, col: token.col], fields}
-    {ast, state}
+    line = open_token.line
+    col = open_token.col
+
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: :rbrace} ->
+        # Empty construction: TypeName{}
+        state = advance(state)
+        ast = {:function_call, [name: rec_name, record: true, line: line, col: col], []}
+        {ast, state}
+
+      _ ->
+        # Probe: parse one expression to detect update syntax.
+        # :bar ("|") is not an infix operator, so parse_expr stops naturally at it.
+        # We save pos+errors so we can fully rewind on a non-update literal.
+        saved_pos = state.pos
+        saved_errors = state.errors
+        {base_expr, probe_state} = parse_expr(state, 0)
+        probe_state = skip_newlines(probe_state)
+
+        case peek(probe_state) do
+          %Token{type: :bar} ->
+            # Record update: TypeName{base | field: val, ...}
+            probe_state = advance(probe_state)  # consume "|"
+            probe_state = skip_newlines(probe_state)
+            {fields, probe_state} = parse_map_pairs(probe_state, :rbrace)
+            probe_state = expect(probe_state, :rbrace)
+            ast = {:record_update, [name: rec_name, line: line, col: col], [base_expr | fields]}
+            {ast, probe_state}
+
+          _ ->
+            # Not update syntax: rewind completely and parse as plain construction.
+            state = %{state | pos: saved_pos, errors: saved_errors}
+            {fields, state} = parse_map_pairs(state, :rbrace)
+            state = expect(state, :rbrace)
+            ast = {:function_call, [name: rec_name, record: true, line: line, col: col], fields}
+            {ast, state}
+        end
+    end
   end
 
   defp is_pascal_case?({:variable, _, <<first, _rest::binary>>}) when first in ?A..?Z, do: true

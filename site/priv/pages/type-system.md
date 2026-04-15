@@ -295,6 +295,82 @@ fn classify(x: Int) -> String
 
 If a guard is unreachable (e.g., implied by a previous clause), the compiler warns about dead code.
 
+## Record types
+
+Records introduce named product types. The type checker tracks them with a
+lightweight `{:named, "TypeName"}` representation that preserves the record
+name instead of collapsing it to `Any`.
+
+### How records are type-checked
+
+The checker runs in two passes. In the first pass, every `rec` definition
+registers its field schema in the type environment:
+
+```
+rec Point        ->  "Point" : %{"x" => Int, "y" => Int}
+rec Person       ->  "Person" : %{"name" => String, "age" => Int}
+rec Rectangle    ->  "Rectangle" : %{"origin" => Point, "width" => Int, ...}
+```
+
+In the second pass, this schema is available to type-check every operation:
+
+**Construction** -- `Point{x: 3, y: 4}` produces type `Point`. The checker
+verifies each field value against its declared type.
+
+**Field access** -- `p.x` where `p : Point` produces type `Int` (looked up
+from the schema). Field access on an `Any`-typed value produces `Any`.
+
+**Record update** -- `Point{p | x: new_x}` where `p : Point`:
+- Verifies `new_x` has type `Int` (the declared type of `Point.x`)
+- Returns `Point`
+- Compiles to the BEAM map-update instruction, preserving all unlisted fields including `__struct__`
+
+**Function parameters** -- `fn f(p: Point)` makes `p` available as type
+`Point` inside the body, so `p.x` correctly infers `Int`.
+
+### Subtyping
+
+Named record types participate in subtyping:
+
+```cure
+# Point <: Any (universal rule)
+fn accepts_any(x: Any) -> Any = x
+fn use_point(p: Point) -> Any = accepts_any(p)  # valid
+
+# Point is the same type as Point (reflexivity)
+fn same_point(p: Point) -> Point = p  # valid
+```
+
+Named types are NOT subtypes of each other unless they are the same type.
+There is no structural record subtyping -- a record with fields `{x: Int, y: Int}`
+is not implicitly a subtype of one with fields `{x: Int}` in the current type
+system.
+
+### Examples
+
+```cure
+mod Geometry
+  rec Point
+    x: Int
+    y: Int
+
+  # Construction: typed as Point
+  fn origin() -> Point = Point{x: 0, y: 0}
+
+  # Field access: p.x -> Int, p.y -> Int
+  fn distance_squared(a: Point, b: Point) -> Int =
+    let dx = b.x - a.x
+    let dy = b.y - a.y
+    dx * dx + dy * dy
+
+  # Record update: returns Point
+  fn translate(p: Point, dx: Int, dy: Int) -> Point =
+    Point{p | x: p.x + dx, y: p.y + dy}
+
+  # Wrong field type -> type error at compile time
+  # fn bad(p: Point) -> Point = Point{p | x: "not an int"}  -- error!
+```
+
 ## Protocols and type checking
 
 Protocols provide ad-hoc polymorphism. The type checker:

@@ -25,16 +25,25 @@ mix compile
 
 ## Building the escript
 
-Cure ships with a standalone CLI. Build it as an Erlang escript:
+Cure v0.15.0 ships with a standalone CLI. Build it with the dedicated Mix
+task:
 
 ```bash
-mix escript.build
+mix cure.escript
 ```
 
-This produces a `cure` binary in the project root. Move it somewhere on your `$PATH` to use it globally:
+This compiles the project and produces a `cure` binary in the project root.
+Move it somewhere on your `$PATH` to use it globally:
 
 ```bash
 cp cure ~/.local/bin/
+```
+
+Verify the installation:
+
+```bash
+cure version
+# Cure 0.15.0
 ```
 
 ## Hello World

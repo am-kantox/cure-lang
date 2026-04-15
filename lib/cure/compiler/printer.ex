@@ -192,6 +192,15 @@ defmodule Cure.Compiler.Printer do
     end
   end
 
+  # -- Record Update ----------------------------------------------------------
+
+  defp to_string({:record_update, meta, [base | fields]}, depth, indent) do
+    name = Keyword.get(meta, :name)
+    base_str = to_string(base, depth, indent)
+    fields_str = pairs_to_string(fields, depth, indent)
+    "#{name}{#{base_str} | #{fields_str}}"
+  end
+
   # -- Attribute Access (dot) ------------------------------------------------
 
   defp to_string({:attribute_access, meta, [parent]}, depth, indent) do

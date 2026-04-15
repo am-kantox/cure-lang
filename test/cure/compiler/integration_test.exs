@@ -199,6 +199,56 @@ defmodule Cure.Compiler.IntegrationTest do
     after
       purge(:"Cure.RecordDemo")
     end
+
+    test "record update syntax TypeName{base | field: val}" do
+      source = """
+      mod RecordUpdate
+        rec Point
+          x: Int
+          y: Int
+
+        rec Person
+          name: String
+          age: Int
+
+        fn make_point(x: Int, y: Int) -> Point = Point{x: x, y: y}
+        fn make_person(name: String, age: Int) -> Person = Person{name: name, age: age}
+
+        fn set_x(p: Point, new_x: Int) -> Point = Point{p | x: new_x}
+        fn set_y(p: Point, new_y: Int) -> Point = Point{p | y: new_y}
+        fn move(p: Point, nx: Int, ny: Int) -> Point = Point{p | x: nx, y: ny}
+        fn birthday(p: Person) -> Person = Person{p | age: p.age + 1}
+        fn rename(p: Person, new_name: String) -> Person = Person{p | name: new_name}
+      """
+
+      {:ok, module} = Cure.Compiler.compile_and_load(source)
+
+      p = module.make_point(3, 4)
+      # Single-field updates preserve the untouched field
+      p2 = module.set_x(p, 10)
+      assert p2.x == 10
+      assert p2.y == 4
+
+      p3 = module.set_y(p, 99)
+      assert p3.x == 3
+      assert p3.y == 99
+
+      # Multi-field update
+      p4 = module.move(p, 0, 0)
+      assert p4.x == 0
+      assert p4.y == 0
+
+      person = module.make_person("Alice", 30)
+      older = module.birthday(person)
+      assert older.age == 31
+      assert older.name == "Alice"
+
+      renamed = module.rename(person, "Bob")
+      assert renamed.name == "Bob"
+      assert renamed.age == 30
+    after
+      purge(:"Cure.RecordUpdate")
+    end
   end
 
   # Helper to unload a module

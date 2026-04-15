@@ -90,6 +90,47 @@ fn process(x: Int) -> Int when x > 0 =
 For multi-clause functions, the type checker uses SMT to verify
 guard coverage and detect unreachable clauses.
 
+## Record types
+
+Records introduce named product types. The type checker represents them as
+`{:named, "TypeName"}` -- a lightweight reference that carries the original
+name without erasing it to `Any`.
+
+### Schema registration
+
+The checker's first pass (`collect_signatures`) registers each `rec` definition
+in `Env.types`:
+
+```
+"Point" -> {:record, :point, %{"x" => :int, "y" => :int}}
+"Person" -> {:record, :person, %{"name" => :string, "age" => :int}}
+```
+
+This schema is available during the second pass so that field accesses and
+record updates can be type-checked against the declared field types.
+
+### Typing rules
+
+- **Construction** -- `Point{x: 3, y: 4}` has type `{:named, "Point"}`.
+- **Field access** -- `p.x` where `p : {:named, "Point"}` has type `:int`
+  (looked up from the registered schema). Field access on `Any` produces `Any`.
+- **Record update** -- `Point{p | x: new_x}` where `p : {:named, "Point"}`
+  type-checks each override value against the declared field type and returns
+  `{:named, "Point"}`.
+- **Parameters** -- `fn f(p: Point)` resolves `Point` to `{:named, "Point"}`,
+  making `p` available with full field-type information in the body.
+
+### Subtyping for named types
+
+`{:named, Name}` participates in the subtype hierarchy:
+
+- `{:named, T} <: Any` for all T (inherited from the universal rule)
+- `{:named, "Pair"} <: {:adt, :pair, _params}` when
+  `String.downcase("Pair") == "pair"` -- named types satisfy their
+  corresponding parameterized ADT return type (e.g. `fn f() -> Pair(A, B)`
+  is satisfied by a body of type `{:named, "Pair"}`)
+- `{:named, T} <: {:named, T}` (reflexivity, from `subtype?(t, t)`)
+
 ## Protocols
 
 Protocols provide ad-hoc polymorphism. The type checker:

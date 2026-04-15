@@ -8,13 +8,11 @@ natively on the Erlang VM alongside Erlang and Elixir code.
 
 ## Status
 
-Milestone 11 -- Pattern Exhaustiveness. All core milestones complete plus
-a self-hosted standard library, ad-hoc polymorphism via `proto`/`impl`,
-SMT-backed refinement type verification using Z3, and pattern exhaustiveness
-checking. The full compilation pipeline is operational: lexer, parser,
-bidirectional type checker with refinement types and exhaustiveness analysis,
-protocol dispatch codegen, BEAM code generation, FSM compilation with
-structural verification, stdlib, CLI, CI, and example programs.
+All core milestones complete. The full compilation pipeline is operational:
+lexer, parser, bidirectional type checker with record types, refinement types
+and exhaustiveness analysis, protocol dispatch codegen, BEAM code generation,
+FSM compilation with structural verification, effect system, documentation
+generator, formatter, REPL, stdlib, CLI, CI, and example programs.
 
 ## Architecture
 
@@ -47,6 +45,9 @@ Metastatic's cross-language analysis tools.
 
 - **Dependent types** -- types that depend on values, verified at compile time
 - **Refinement types** -- constrained subtypes checked via SMT solver
+- **Records** -- named product types with construction (`Point{x: 1, y: 2}`),
+  field access (`p.x`), and functional update (`Point{p | x: new_x}`);
+  compile to BEAM maps; type-checked with per-field schemas
 - **First-class FSMs** -- finite state machines as language constructs with
   compile-time verification (reachability, deadlock freedom, guard exhaustiveness)
 - **Indentation-structured** -- no closing delimiters, visual layout determines scope
@@ -54,6 +55,7 @@ Metastatic's cross-language analysis tools.
 - **BEAM-native** -- compiles to standard BEAM bytecode, full OTP interoperability
 - **Protocols** -- ad-hoc polymorphism via `proto`/`impl` with
   guard-based dispatch compiled to multi-clause BEAM functions
+- **Effect system** -- `! Io, Exception, ...` annotations; inferred when omitted
 
 ## Quick Example
 
@@ -119,13 +121,15 @@ module.my_function(args)
 - `Cure.Compiler.BeamWriter` -- compiles Erlang abstract forms to BEAM
   bytecode via `:compile.forms/2` and writes `.beam` files
 - `Cure.Types.Type` -- canonical type representations (primitives, composites,
-  ADTs, records, function types); subtyping, join, type-expression resolution
-- `Cure.Types.Env` -- scoped typing environment with built-in types and
-  operator signatures; variable and type bindings
+  ADTs, `{:named, Name}` record references, function types, effects);
+  subtyping, join, type-expression resolution
+- `Cure.Types.Env` -- scoped typing environment with variable bindings and
+  named type definitions (`Env.extend_type/3`, `Env.lookup_type/2`)
 - `Cure.Types.Checker` -- bidirectional type checker; validates literals,
   variables, operators, function definitions, calls, let bindings, conditionals,
-  pattern matching, blocks, collections, lambdas, modules (two-pass); emits
-  `:type_checker` pipeline events
+  pattern matching, blocks, collections, lambdas, records (construction,
+  field access, update), modules (two-pass with record schema registration);
+  emits `:type_checker` pipeline events
 - `Cure.FSM.Verifier` -- structural FSM verification: reachability (BFS),
   deadlock freedom, terminal state validation; emits `:fsm_verifier` events
 - `Cure.FSM.Compiler` -- FSM MetaAST to `gen_statem` BEAM modules (`mod TrafficLight`
@@ -188,6 +192,8 @@ See the `examples/` directory for sample Cure programs:
 - `protocols.cure` -- protocol definition and dispatch
 - `ffi.cure` -- calling Erlang functions via @extern
 - `adt.cure` -- algebraic data types (Option, Result, Color)
+- `records.cure` -- record definition, construction, field access, and
+  functional update with `TypeName{base | field: val}` syntax
 
 Compile and run:
 

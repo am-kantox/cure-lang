@@ -121,6 +121,95 @@ type Percentage = {p: Int | p >= 0 and p <= 100}
 
 Refinement type subtyping is verified at compile time using Z3.
 
+## Records
+
+Records are named, typed product types. They compile to BEAM maps with a
+`__struct__` discriminator key, giving them nominal identity at runtime.
+
+### Definition
+
+```cure
+rec Point
+  x: Int
+  y: Int
+
+rec Person
+  name: String
+  age: Int
+
+rec Rectangle
+  origin: Point
+  width: Int
+  height: Int
+```
+
+Type parameters are supported for generic records:
+
+```cure
+rec Pair(A, B)
+  first: A
+  second: B
+```
+
+Type parameters are erased at runtime but are tracked by the type checker.
+
+### Construction
+
+Use `TypeName{field: expr, ...}` to build a record value:
+
+```cure
+fn make_point(x: Int, y: Int) -> Point = Point{x: x, y: y}
+fn origin() -> Point = Point{x: 0, y: 0}
+fn make_person(name: String, age: Int) -> Person =
+  Person{name: name, age: age}
+```
+
+### Field access
+
+Use dot notation `record.field`, which compiles to `maps:get(field, map)`:
+
+```cure
+fn x_coord(p: Point) -> Int = p.x
+fn area(r: Rectangle) -> Int = r.width * r.height
+fn rect_origin_x(r: Rectangle) -> Int = r.origin.x  # nested access
+```
+
+### Record update
+
+Produce a modified copy of a record with `TypeName{base | field: val, ...}`.
+Only the listed fields change; all others are copied from `base`:
+
+```cure
+fn set_x(p: Point, new_x: Int) -> Point = Point{p | x: new_x}
+fn birthday(p: Person) -> Person = Person{p | age: p.age + 1}
+fn translate(p: Point, dx: Int, dy: Int) -> Point =
+  Point{p | x: p.x + dx, y: p.y + dy}
+fn rename(p: Person, new_name: String) -> Person =
+  Person{p | name: new_name}
+```
+
+Multiple fields can be overridden in one expression:
+
+```cure
+fn move(p: Point, nx: Int, ny: Int) -> Point = Point{p | x: nx, y: ny}
+```
+
+The type name before `{` is required and must match the type of the base
+expression. The compiler verifies override field types against the declared
+schema.
+
+### Runtime representation
+
+Records compile to BEAM maps:
+
+```
+Point{x: 3, y: 4}  ->  %{__struct__: :point, x: 3, y: 4}
+```
+
+Record construction uses `map_field_assoc` (`:=>`). Record update uses
+`map_field_exact` (`:=`) which requires the keys to already exist, giving
+a `bad_key` error at runtime if the base value has an incompatible shape.
+
 ## Protocols
 
 ```cure

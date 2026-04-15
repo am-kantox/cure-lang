@@ -369,22 +369,114 @@ fn unwrap_or(opt: Option(Int), default: Int) -> Int =
 
 ## Records
 
-Define records with `rec`:
+Records are named product types. They compile to BEAM maps and are
+fully type-checked: the compiler tracks field names and types for
+each `rec` definition.
+
+### Definition
 
 ```cure
 rec Point
-  x: Float
-  y: Float
+  x: Int
+  y: Int
 
 rec Person
   name: String
   age: Int
+
+rec Rectangle
+  origin: Point
+  width: Int
+  height: Int
 ```
 
-Records compile to maps. Access fields with `.`:
+All field types must be named. `Any` is accepted as an escape hatch but
+forfeits field-level type checking for that field.
+
+### Parameterized records
+
+Records can take type parameters:
 
 ```cure
-fn distance(p: Point) -> Float = p.x + p.y
+rec Pair(A, B)
+  first: A
+  second: B
+```
+
+Type parameters are erased at runtime but used by the type checker.
+
+### Construction
+
+Use `TypeName{field: expr, ...}` to build a record value:
+
+```cure
+fn make_point(x: Int, y: Int) -> Point = Point{x: x, y: y}
+fn origin() -> Point = Point{x: 0, y: 0}
+fn make_person(name: String, age: Int) -> Person =
+  Person{name: name, age: age}
+fn make_pair(a: Any, b: Any) -> Pair(Any, Any) = Pair{first: a, second: b}
+```
+
+Fields can appear in any order. The type checker verifies each value type
+against the declared field type.
+
+### Field access
+
+Dot notation `record.field` looks up a field at runtime via `maps:get/2`:
+
+```cure
+fn x_coord(p: Point) -> Int = p.x
+fn y_coord(p: Point) -> Int = p.y
+fn person_name(p: Person) -> String = p.name
+fn area(r: Rectangle) -> Int = r.width * r.height
+```
+
+Nested access chains multiple `.` operations:
+
+```cure
+fn rect_origin_x(r: Rectangle) -> Int = r.origin.x
+```
+
+### Record update
+
+Produce a modified copy using `TypeName{base | field: val, ...}`.
+Only the listed fields change; all others are preserved unchanged:
+
+```cure
+# Single-field update
+fn set_x(p: Point, new_x: Int) -> Point = Point{p | x: new_x}
+fn birthday(p: Person) -> Person = Person{p | age: p.age + 1}
+
+# Multi-field update
+fn translate(p: Point, dx: Int, dy: Int) -> Point =
+  Point{p | x: p.x + dx, y: p.y + dy}
+fn move(p: Point, nx: Int, ny: Int) -> Point =
+  Point{p | x: nx, y: ny}
+```
+
+The type name before `{` is required. The base expression must have the same
+record type. The compiler checks each override value against its declared
+field type and returns the same named type.
+
+Record update compiles to the BEAM map-update instruction (`Map#{key := val}`),
+which copies the map and overwrites only the specified keys. The `__struct__`
+field is preserved automatically.
+
+### Records in computations
+
+```cure
+fn distance_squared(a: Point, b: Point) -> Int =
+  let dx = b.x - a.x
+  let dy = b.y - a.y
+  dx * dx + dy * dy
+
+fn midpoint(a: Point, b: Point) -> Point =
+  Point{x: (a.x + b.x) / 2, y: (a.y + b.y) / 2}
+
+fn older_of(a: Person, b: Person) -> Person =
+  if a.age > b.age then a else b
+
+fn greet(p: Person) -> String = "Hello, " <> p.name
 ```
 
 ## Protocols

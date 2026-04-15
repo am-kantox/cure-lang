@@ -28,17 +28,6 @@ mod Records
     second: B
 
   # ---------------------------------------------------------------------------
-  # Low-level functional update via the Erlang maps module.
-  #
-  # Cure does not yet have built-in `with`-style update syntax, so
-  # single-field updates use an @extern shim.  Reconstruction (shown below)
-  # is the idiomatic multi-field approach.
-  # ---------------------------------------------------------------------------
-
-  @extern(:maps, :put, 3)
-  fn map_put(key: Atom, val: Any, map: Any) -> Any
-
-  # ---------------------------------------------------------------------------
   # Construction
   #
   # Use `TypeName{field: expr, ...}` to build a record value.
@@ -65,26 +54,26 @@ mod Records
   fn person_age(p: Person) -> Int = p.age
 
   # ---------------------------------------------------------------------------
-  # Functional update by reconstruction (multi-field, idiomatic)
+  # Functional update
   #
-  # Since records are immutable values, "updating" means constructing a new
-  # record with the desired field values and the old record supplying the rest.
+  # Use `TypeName{base | field: expr, ...}` to produce an updated copy.
+  # Only the listed fields change; all others are copied from `base`.
+  # Compiles to the BEAM map-update instruction (no heap allocation for
+  # unchanged fields).
   # ---------------------------------------------------------------------------
+
+  fn set_x(p: Point, new_x: Int) -> Point = Point{p | x: new_x}
+  fn set_y(p: Point, new_y: Int) -> Point = Point{p | y: new_y}
 
   fn translate(p: Point, dx: Int, dy: Int) -> Point =
-    Point{x: p.x + dx, y: p.y + dy}
+    Point{p | x: p.x + dx, y: p.y + dy}
 
-  fn birthday(p: Person) -> Person =
-    Person{name: p.name, age: p.age + 1}
+  fn birthday(p: Person) -> Person = Person{p | age: p.age + 1}
+
+  fn rename(p: Person, new_name: String) -> Person = Person{p | name: new_name}
 
   fn scale_rect(r: Rectangle, factor: Int) -> Rectangle =
-    Rectangle{origin: r.origin, width: r.width * factor, height: r.height * factor}
-
-  # ---------------------------------------------------------------------------
-  # Functional update via maps:put (single-field, low-level)
-  # ---------------------------------------------------------------------------
-
-  fn set_x(p: Point, new_x: Int) -> Any = map_put(:x, new_x, p)
+    Rectangle{r | width: r.width * factor, height: r.height * factor}
 
   # ---------------------------------------------------------------------------
   # Records in computations

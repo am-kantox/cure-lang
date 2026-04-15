@@ -132,9 +132,10 @@ First-class testing support.
 - **670 tests.** Zero Credo issues. Zero compilation warnings. 49 Elixir
   source files. 18 stdlib modules.
 
-## Implemented: v0.15.0
+|## Implemented: v0.15.0
 
-Effect system, documentation generator, and developer experience improvements.
+Effect system, documentation generator, developer experience improvements,
+and full record type support with functional update syntax.
 
 ### Phase 1: Effect system
 
@@ -181,6 +182,31 @@ browsable HTML documentation.
   E007 warnings.
 - **Error catalog E006-E010** -- Effect Violation, Unused Variable,
   Undocumented Public Function, Unreachable Clause, Missing Effect Annotation.
+
+### Phase 4: Records
+
+Full record type support: definitions, typed field access, and functional
+update syntax.
+
+- **Named type representation** -- `Type.resolve/1` now returns
+  `{:named, "TypeName"}` for user-defined record/ADT names instead of `:any`.
+  This carries the name through the type checker so field schemas are
+  accessible during inference.
+- **Field schema registration** -- the checker's first pass registers each
+  `rec` definition's field types in `Env.types`. Field access `p.x` on a
+  `Point`-typed value infers the declared field type (`Int`) rather than `Any`.
+- **Record construction typing** -- `Point{x: 1, y: 2}` infers type
+  `{:named, "Point"}` and the codegen emits a BEAM map literal with a
+  `__struct__` key.
+- **Record update syntax** -- `TypeName{base | field: val, ...}` produces a
+  modified copy. Only listed fields change; all others are preserved.
+  Compiles to the BEAM map-update instruction (`Map#{key := val}`).
+  The parser detects update vs. construction by probing for `|` after the
+  first sub-expression, rewinding if not found.
+- **Type checker integration** -- override field values are checked against
+  the registered schema. Wrong field types produce a compile-time error.
+- **678 tests.** Zero Credo issues. Zero compilation warnings. 54 Elixir
+  source files.
 
 ## Future
 

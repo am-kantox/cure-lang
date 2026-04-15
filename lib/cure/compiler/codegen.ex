@@ -563,6 +563,10 @@ defmodule Cure.Compiler.Codegen do
       {:exception_handling, meta, children} ->
         compile_try(meta, children, state)
 
+      # Record update: TypeName{base | field: val, ...}
+      {:record_update, meta, [base | fields]} ->
+        compile_record_update(meta, base, fields, state)
+
       # Containers in expression position (nested modules, etc.) -- skip
       {:container, _meta, _body} ->
         line = 1
@@ -787,6 +791,31 @@ defmodule Cure.Compiler.Codegen do
   defp compile_constructor_call(name, arg_forms, line) do
     tag = constructor_tag(name)
     {:tuple, line, [{:atom, line, tag} | arg_forms]}
+  end
+
+  # -- Record Update Compilation -----------------------------------------------
+
+  defp compile_record_update(meta, base_ast, field_pairs, state) do
+    line = Keyword.get(meta, :line, state.line)
+    {base_form, state} = do_compile_expr(base_ast, state)
+
+    {exact_forms, state} =
+      Enum.map_reduce(field_pairs, state, fn
+        {:pair, _, [key, value]}, st ->
+          {k_form, st} = do_compile_expr(key, st)
+          {v_form, st} = do_compile_expr(value, st)
+          # map_field_exact compiles to Map#{key := value}, which requires the
+          # key to already exist.  This is the correct semantics for record update.
+          {{:map_field_exact, line, k_form, v_form}, st}
+
+        other, st ->
+          {form, st} = do_compile_expr(other, st)
+          {form, st}
+      end)
+
+    # {:map, Line, BaseExpr, [ExactPairs]} is Erlang abstract-format for Map#{...}
+    form = {:map, line, base_form, exact_forms}
+    {form, state}
   end
 
   defp compile_record_construction(name, pair_forms, line) do

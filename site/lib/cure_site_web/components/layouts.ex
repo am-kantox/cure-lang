@@ -40,7 +40,7 @@ defmodule CureSiteWeb.Layouts do
         <a href="/" class="flex items-center gap-2">
           <img src={~p"/images/logo-128x128-nobg.png"} width="32" height="32" alt="Cure" />
           <span class="text-lg font-bold tracking-tight">Cure</span>
-          <span class="text-xs text-base-content/50">v0.14.0</span>
+          <span class="text-xs text-base-content/50">v0.15.0</span>
         </a>
 
         <div class="hidden items-center gap-1 md:flex">
@@ -91,7 +91,7 @@ defmodule CureSiteWeb.Layouts do
             <a href={~p"/getting-started"} class="hover:text-base-content">Getting Started</a>
             <a href={~p"/roadmap"} class="hover:text-base-content">Roadmap</a>
           </div>
-          <p class="text-xs text-base-content/40">Cure v0.14.0 -- Aleksei Matiushkin</p>
+          <p class="text-xs text-base-content/40">Cure v0.15.0 -- Aleksei Matiushkin</p>
         </div>
       </div>
     </footer>

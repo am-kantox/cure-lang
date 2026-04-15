@@ -6,6 +6,24 @@ defmodule Cure.Types.Checker do
   Validates types, rejects ill-typed programs, and emits
   `:type_checker` pipeline events.
 
+  ## Two-pass module checking
+
+  1. **Signature collection** -- scans `function_def` nodes and `:struct`
+     containers. For each `rec` definition, the field schema is registered
+     in `Cure.Types.Env.types` as `{:record, name_atom, field_map}`.
+  2. **Body checking** -- checks each function body against its declared
+     return type, using the field schemas registered in pass 1.
+
+  ## Record type inference
+
+  - `rec Point` makes the type checker aware that `p : Point` gives
+    `p.x : Int`, `p.y : Int`, etc.
+  - Record construction `Point{x: 1, y: 2}` infers type `{:named, "Point"}`.
+  - Field access `p.field` on a `{:named, "T"}` value looks up the field
+    type in `Env.types["T"]`; access on `:any` produces `:any`.
+  - Record update `Point{p | x: new_x}` type-checks each override field
+    against the schema and returns `{:named, "Point"}`.
+
   ## Usage
 
       {:ok, ast} = Cure.Compiler.Parser.parse(tokens)
@@ -888,6 +906,55 @@ defmodule Cure.Types.Checker do
   defp do_infer(env, {:async_operation, _meta, _}), do: {:ok, :any, env}
   defp do_infer(env, {:decorator, _meta, _}), do: {:ok, :any, env}
   defp do_infer(env, {:property, _meta, _}), do: {:ok, :any, env}
+
+  # -- Record Update -----------------------------------------------------------
+
+  defp do_infer(env, {:record_update, meta, [base | fields]}) do
+    line = Keyword.get(meta, :line, 1)
+
+    with {:ok, base_type, env} <- do_infer(env, base) do
+      # Type-check each override value against the declared field type.
+      errors =
+        Enum.flat_map(fields, fn
+          {:pair, _, [key, value]} ->
+            field_name =
+              case key do
+                {:literal, [subtype: :symbol], atom} -> Atom.to_string(atom)
+                _ -> nil
+              end
+
+            case do_infer(env, value) do
+              {:ok, val_type, _} when field_name != nil ->
+                expected = resolve_record_field(env, base_type, field_name)
+
+                if expected == :any or Type.subtype?(val_type, expected) do
+                  []
+                else
+                  [
+                    {:type_mismatch,
+                     "field '#{field_name}' expects #{Type.display(expected)} " <>
+                       "but update value has type #{Type.display(val_type)}",
+                     line: line}
+                  ]
+                end
+
+              {:error, err} ->
+                [err]
+
+              _ ->
+                []
+            end
+
+          _ ->
+            []
+        end)
+
+      case errors do
+        [] -> {:ok, base_type, env}
+        [first | _] -> {:error, first}
+      end
+    end
+  end
 
   # -- Attribute Access --------------------------------------------------------
 
