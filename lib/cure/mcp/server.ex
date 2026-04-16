@@ -295,11 +295,36 @@ defmodule Cure.MCP.Server do
   defp describe_fsm({:container, meta, transitions}) do
     name = Keyword.get(meta, :name, "unnamed")
 
+    # Compilation mode
+    mode =
+      if Keyword.has_key?(meta, :on_transition),
+        do: "callback mode (GenServer with on_transition)",
+        else: "simple mode (gen_statem)"
+
+    # Timer
+    timer_info =
+      case Keyword.get(meta, :timer) do
+        ms when is_integer(ms) -> "\nTimer: #{ms}ms"
+        _ -> ""
+      end
+
+    # Transitions with event suffixes
     trans =
       Enum.flat_map(transitions, fn
         {:function_call, m, _} ->
           if Keyword.get(m, :name) == "transition" do
-            ["  #{Keyword.get(m, :from)} --#{Keyword.get(m, :event)}--> #{Keyword.get(m, :to)}"]
+            event = Keyword.get(m, :event, "?")
+            event_kind = Keyword.get(m, :event_kind, :normal)
+
+            suffix =
+              case event_kind do
+                :hard -> "!"
+                :soft -> "?"
+                _ -> ""
+              end
+
+            kind_tag = if event_kind != :normal, do: " (#{event_kind})", else: ""
+            ["  #{Keyword.get(m, :from)} --#{event}#{suffix}--> #{Keyword.get(m, :to)}#{kind_tag}"]
           else
             []
           end
@@ -308,7 +333,23 @@ defmodule Cure.MCP.Server do
           []
       end)
 
-    "FSM: #{name}\nTransitions:\n#{Enum.join(trans, "\n")}"
+    # Callback blocks
+    callbacks =
+      ~w(on_transition on_enter on_exit on_failure on_timer)a
+      |> Enum.flat_map(fn cb ->
+        case Keyword.get(meta, cb) do
+          clauses when is_list(clauses) and clauses != [] ->
+            ["  #{cb}: #{length(clauses)} clause(s)"]
+
+          _ ->
+            []
+        end
+      end)
+
+    callback_section =
+      if callbacks != [], do: "\nCallbacks:\n#{Enum.join(callbacks, "\n")}", else: ""
+
+    "FSM: #{name}\nMode: #{mode}#{timer_info}\nTransitions:\n#{Enum.join(trans, "\n")}#{callback_section}"
   end
 
   # -- Error Formatting --------------------------------------------------------
@@ -371,6 +412,8 @@ defmodule Cure.MCP.Server do
   defp syntax_help("fsm") do
     """
     === Finite State Machines ===
+
+    ## Simple mode (gen_statem, backward-compatible)
     fsm TrafficLight
       Red    --timer-->     Green
       Green  --timer-->     Yellow
@@ -378,7 +421,32 @@ defmodule Cure.MCP.Server do
       *      --emergency--> Red
 
     # * is a wildcard matching any state
-    # Compile with: mix cure.compile traffic.cure
+    # Guards: --event when guard-->
+    # Actions: --event do expr-->
+
+    ## Callback mode (GenServer with on_transition)
+    fsm Turnstile with Integer
+      Locked   --coin-->  Unlocked
+      Unlocked --push-->  Locked
+
+      on_transition
+        (:locked, :coin, _payload, data) -> {:ok, :unlocked, data + 1}
+        (:unlocked, :push, _payload, data) -> {:ok, :locked, data}
+        (_, _, _, data) -> {:ok, :__same__, data}
+
+    # on_transition clauses: (state, event, event_payload, state_payload)
+    # Return {:ok, next_state, new_payload} or {:error, reason}
+    # :__same__ keeps the current state
+
+    ## Event suffixes
+    # event!  -- hard/determined: auto-fires when sole outgoing event
+    # event?  -- soft: failed transitions silently swallowed
+
+    ## Lifecycle callbacks (callback mode)
+    # on_enter  -- after entering a state
+    # on_exit   -- before leaving a state
+    # on_failure -- on transition failure (non-soft)
+    # on_timer  -- periodic callback (with @timer annotation)
     """
   end
 

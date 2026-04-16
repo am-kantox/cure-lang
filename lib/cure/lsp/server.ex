@@ -385,6 +385,51 @@ defmodule Cure.LSP.Server do
           }
         }
 
+      String.contains?(target_line, "on_transition") ->
+        %{
+          "contents" => %{
+            "kind" => "markdown",
+            "value" =>
+              "**FSM callback** `on_transition`\n\n" <>
+                "Pattern-match on `(current_state, event, event_payload, state_payload)`.\n" <>
+                "Return `{:ok, next_state, new_payload}` or `{:error, reason}`.\n" <>
+                "Use `:__same__` as `next_state` to stay in the current state."
+          }
+        }
+
+      Enum.any?(["on_enter", "on_exit", "on_failure", "on_timer"], &String.contains?(target_line, &1)) ->
+        cb_name = Enum.find(["on_enter", "on_exit", "on_failure", "on_timer"], &String.contains?(target_line, &1))
+
+        detail =
+          case cb_name do
+            "on_enter" -> "Called after entering a state. Args: `(state, full_state)`"
+            "on_exit" -> "Called before leaving a state. Args: `(state, full_state)`"
+            "on_failure" -> "Called when a normal transition fails. Args: `(event, payload, state)`"
+            "on_timer" -> "Called periodically when `@timer` is set. Args: `(state, full_state)`"
+          end
+
+        %{"contents" => %{"kind" => "markdown", "value" => "**FSM lifecycle callback** `#{cb_name}`\n\n#{detail}"}}
+
+      String.match?(target_line, ~r/--\w+!--/) ->
+        %{
+          "contents" => %{
+            "kind" => "markdown",
+            "value" =>
+              "**Hard event** (determined, `!` suffix)\n\n" <>
+                "Auto-fires when the FSM enters a state where this is the sole outgoing event."
+          }
+        }
+
+      String.match?(target_line, ~r/--\w+\?--/) ->
+        %{
+          "contents" => %{
+            "kind" => "markdown",
+            "value" =>
+              "**Soft event** (`?` suffix)\n\n" <>
+                "Failed transitions are silently swallowed -- no error, no `on_failure` callback."
+          }
+        }
+
       true ->
         nil
     end
@@ -561,6 +606,39 @@ defmodule Cure.LSP.Server do
 
   # -- Completions -------------------------------------------------------------
 
+  @fsm_callback_completions [
+    %{
+      "label" => "on_transition",
+      "kind" => 15,
+      "detail" => "FSM transition handler (callback mode)",
+      "insertText" => "on_transition\n    "
+    },
+    %{
+      "label" => "on_enter",
+      "kind" => 15,
+      "detail" => "FSM lifecycle: after entering a state",
+      "insertText" => "on_enter\n    "
+    },
+    %{
+      "label" => "on_exit",
+      "kind" => 15,
+      "detail" => "FSM lifecycle: before leaving a state",
+      "insertText" => "on_exit\n    "
+    },
+    %{
+      "label" => "on_failure",
+      "kind" => 15,
+      "detail" => "FSM lifecycle: on transition failure",
+      "insertText" => "on_failure\n    "
+    },
+    %{
+      "label" => "on_timer",
+      "kind" => 15,
+      "detail" => "FSM lifecycle: periodic callback (@timer)",
+      "insertText" => "on_timer\n    "
+    }
+  ]
+
   defp keyword_completions do
     keywords =
       ~w(fn mod rec fsm proto impl type let if then else elif match return throw try catch finally use local when where)
@@ -575,18 +653,25 @@ defmodule Cure.LSP.Server do
   end
 
   defp context_completions(text) do
-    case parse_to_ast(text) do
-      {:ok, ast} ->
-        symbols = build_symbol_table(ast)
+    ast_completions =
+      case parse_to_ast(text) do
+        {:ok, ast} ->
+          symbols = build_symbol_table(ast)
 
-        Enum.map(symbols, fn s ->
-          kind = if s.kind == :function, do: 3, else: 2
-          %{"label" => s.name, "kind" => kind, "detail" => s.signature}
-        end)
+          Enum.map(symbols, fn s ->
+            kind = if s.kind == :function, do: 3, else: 2
+            %{"label" => s.name, "kind" => kind, "detail" => s.signature}
+          end)
 
-      _ ->
-        []
-    end
+        _ ->
+          []
+      end
+
+    # Add FSM callback completions if inside an FSM block
+    fsm_completions =
+      if String.contains?(text, "fsm "), do: @fsm_callback_completions, else: []
+
+    ast_completions ++ fsm_completions
   end
 
   # -- AST Helpers for LSP -------------------------------------------------------
