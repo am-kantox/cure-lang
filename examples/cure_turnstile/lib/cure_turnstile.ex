@@ -2,15 +2,15 @@ defmodule CureTurnstile do
   @moduledoc """
   A turnstile controller built on a Cure FSM.
 
-  The state machine is defined in `cure_src/turnstile.cure` and compiled to the
-  BEAM module `:\"Cure.FSM.Turnstile\"` which implements OTP `gen_statem`.
+  The state machine is defined in `cure_src/turnstile.cure` and compiled to
+  `:\"Cure.FSM.Turnstile\"` -- a GenServer-based module using Cure's callback
+  mode with an `on_transition` handler.
 
-  The FSM uses `do` blocks to mutate state data during transitions:
+  The `on_transition` clauses handle coin counting:
 
-      Locked --coin do data + 1--> Unlocked
+      (:locked, :coin, _payload, data) -> {:ok, :unlocked, data + 1}
 
-  Each `coin` event increments an integer counter stored in the FSM data.
-  This module wraps the raw FSM with a `GenServer` that adds passage counting.
+  This module wraps the FSM with passage counting on top.
 
   ## Quick Start
 
@@ -62,9 +62,7 @@ defmodule CureTurnstile do
 
   @impl true
   def init(_opts) do
-    # Pass 0 as initial FSM data -- the `do data + 1` actions increment it.
     {:ok, fsm_pid} = @fsm_module.start_link(0)
-
     {:ok, %{fsm: fsm_pid, passages: 0}}
   end
 
@@ -72,7 +70,6 @@ defmodule CureTurnstile do
   def handle_call(:coin, _from, state) do
     @fsm_module.send_event(state.fsm, :coin)
     sync_fsm(state.fsm)
-
     {:reply, :ok, state}
   end
 
@@ -84,7 +81,6 @@ defmodule CureTurnstile do
 
     {new_state, _} = @fsm_module.get_state(state.fsm)
 
-    # Count a passage only when the turnstile was unlocked and is now locked
     passages =
       if old_state == :unlocked and new_state == :locked do
         state.passages + 1
@@ -102,19 +98,18 @@ defmodule CureTurnstile do
 
   def handle_call(:stats, _from, state) do
     {fsm_state, coins} = @fsm_module.get_state(state.fsm)
-
     {:reply, %{state: fsm_state, coins: coins, passages: state.passages}, state}
   end
 
   @impl true
   def terminate(_reason, state) do
     try do
-      :gen_statem.stop(state.fsm)
+      GenServer.stop(state.fsm)
     catch
       :exit, _ -> :ok
     end
   end
 
-  # Wait for the async cast to be processed by gen_statem
+  # Sync: ensure the async cast has been processed
   defp sync_fsm(fsm_pid), do: _ = :sys.get_state(fsm_pid)
 end

@@ -74,10 +74,20 @@ defmodule Cure.Compiler do
          {:ok, ast} <- parse(tokens, file, emit?),
          {:ok, _} <- maybe_check(ast, file, emit?, check?),
          {:ok, ast} <- maybe_optimize(ast, optimize?),
-         {:ok, forms} <- codegen(ast, file, emit?),
-         {:ok, module, binary, warnings} <- BeamWriter.compile_forms(forms),
-         :ok <- BeamWriter.write_beam(module, binary, output_dir, emit_events: emit?, file: file) do
-      {:ok, module, warnings}
+         {:ok, forms} <- codegen(ast, file, emit?) do
+      # Callback mode FSMs are already compiled and loaded by the codegen step
+      case forms do
+        :callback_mode ->
+          # Extract the module name from the AST to report it
+          mod_atom = extract_fsm_module(ast)
+          {:ok, mod_atom, []}
+
+        forms when is_list(forms) ->
+          with {:ok, module, binary, warnings} <- BeamWriter.compile_forms(forms),
+               :ok <- BeamWriter.write_beam(module, binary, output_dir, emit_events: emit?, file: file) do
+            {:ok, module, warnings}
+          end
+      end
     end
   end
 
@@ -99,9 +109,14 @@ defmodule Cure.Compiler do
          {:ok, ast} <- parse(tokens, file, emit?),
          {:ok, _} <- maybe_check(ast, file, emit?, check?),
          {:ok, ast} <- maybe_optimize(ast, optimize?),
-         {:ok, forms} <- codegen(ast, file, emit?),
-         {:ok, module} <- BeamWriter.compile_and_load(forms) do
-      {:ok, module}
+         {:ok, forms} <- codegen(ast, file, emit?) do
+      case forms do
+        :callback_mode ->
+          {:ok, extract_fsm_module(ast)}
+
+        forms when is_list(forms) ->
+          BeamWriter.compile_and_load(forms)
+      end
     end
   end
 
@@ -143,4 +158,25 @@ defmodule Cure.Compiler do
       {:error, reason} -> {:error, {:codegen_error, reason}}
     end
   end
+
+  # Extract the FSM module atom from a parsed AST for callback-mode FSMs
+  defp extract_fsm_module({:container, meta, _}) do
+    name = Keyword.get(meta, :name, "unnamed")
+    Cure.FSM.Compiler.fsm_module_atom(name)
+  end
+
+  defp extract_fsm_module({:block, _, children}) do
+    Enum.find_value(children, fn
+      {:container, meta, _} ->
+        if Keyword.get(meta, :container_type) == :fsm do
+          name = Keyword.get(meta, :name, "unnamed")
+          Cure.FSM.Compiler.fsm_module_atom(name)
+        end
+
+      _ ->
+        nil
+    end)
+  end
+
+  defp extract_fsm_module(_), do: :"Cure.FSM.Unknown"
 end

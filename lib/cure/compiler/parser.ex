@@ -1819,6 +1819,14 @@ defmodule Cure.Compiler.Parser do
   end
 
   # -- FSM callback blocks: on_transition, on_enter, on_exit, on_failure, on_timer
+  #
+  # Clauses are written as:
+  #   (pattern1, pattern2, ...) -> body
+  # or with a guard:
+  #   (pattern1, pattern2, ...) when guard -> body
+  #
+  # The parenthesized patterns are parsed as comma-separated expressions and
+  # assembled into a {:tuple, [], [patterns...]} node to match the callback arity.
 
   defp parse_fsm_callback(state) do
     name_token = peek(state)
@@ -1826,22 +1834,97 @@ defmodule Cure.Compiler.Parser do
     state = advance(state)
     state = skip_newlines(state)
 
-    # Expect an indented block of match-arm-style clauses
     {clauses, state} =
       case peek(state) do
         %Token{type: :indent} ->
           state = advance(state)
-          {arms, state} = parse_block_match_arms(state)
+          {arms, state} = parse_fsm_callback_clauses(state)
           state = expect_dedent(state)
           {arms, state}
 
         _ ->
-          # Single inline clause (pattern -> body)
-          {arm, state} = parse_match_arm(state)
+          {arm, state} = parse_fsm_callback_clause(state)
           {[arm], state}
       end
 
     {[{cb_name, clauses}], state}
+  end
+
+  defp parse_fsm_callback_clauses(state) do
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: type} when type in [:dedent, :eof] ->
+        {[], state}
+
+      _ ->
+        {arm, state} = parse_fsm_callback_clause(state)
+        state = skip_newlines(state)
+        {rest, state} = parse_fsm_callback_clauses(state)
+        {[arm | rest], state}
+    end
+  end
+
+  # Parse a single FSM callback clause: (pat1, pat2, ...) [when guard] -> body
+  defp parse_fsm_callback_clause(state) do
+    # Expect opening paren
+    state = expect(state, :lparen)
+
+    # Parse comma-separated pattern expressions
+    {patterns, state} = parse_fsm_callback_params(state)
+
+    # Expect closing paren
+    state = expect(state, :rparen)
+    state = skip_newlines(state)
+
+    # Optional guard: when expr
+    {guard, state} =
+      case peek(state) do
+        %Token{type: :keyword, value: :when} ->
+          state = advance(state)
+          {g, state} = parse_expr(state, 0)
+          {g, state}
+
+        _ ->
+          {nil, state}
+      end
+
+    # Expect ->
+    state = expect(state, :arrow)
+    state = skip_newlines(state)
+
+    # Parse body
+    {body, state} = parse_expr_or_block(state)
+
+    # Assemble patterns into a tuple node
+    pattern = {:tuple, [], patterns}
+    meta = if guard, do: [pattern: pattern, guard: guard], else: [pattern: pattern]
+
+    {{:match_arm, meta, [body]}, state}
+  end
+
+  defp parse_fsm_callback_params(state) do
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: :rparen} ->
+        {[], state}
+
+      _ ->
+        {expr, state} = parse_expr(state, 0)
+        state = skip_newlines(state)
+
+        case peek(state) do
+          %Token{type: :comma} ->
+            state = advance(state)
+            state = skip_newlines(state)
+            {rest, state} = parse_fsm_callback_params(state)
+            {[expr | rest], state}
+
+          _ ->
+            {[expr], state}
+        end
+    end
   end
 
   defp parse_fsm_transition(state) do

@@ -5,7 +5,7 @@ fsm Turnstile with Integer
   Locked   --push-->  Locked
 
   on_transition
-    (:locked, :coin, _payload, data) -> {:ok, :unlocked, data + 1}
-    (:unlocked, :push, _payload, data) -> {:ok, :locked, data}
-    (:unlocked, :coin, _payload, data) -> {:ok, :unlocked, data + 1}
-    (_, _, _, data) -> {:ok, :__same__, data}
+    (:locked, :coin, _payload, data) -> %[:ok, :unlocked, data + 1]
+    (:unlocked, :push, _payload, data) -> %[:ok, :locked, data]
+    (:unlocked, :coin, _payload, data) -> %[:ok, :unlocked, data + 1]
+    (_, _, _, data) -> %[:ok, :__same__, data]
