@@ -87,7 +87,7 @@ defmodule CureSiteWeb.Layouts do
       <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div class="flex items-center gap-4 text-sm text-base-content/60">
-            <a href="https://github.com/Oeditus/cure" class="hover:text-base-content">GitHub</a>
+            <a href="https://github.com/am-kantox/cure-lang" class="hover:text-base-content">GitHub</a>
             <a href={~p"/getting-started"} class="hover:text-base-content">Getting Started</a>
             <a href={~p"/roadmap"} class="hover:text-base-content">Roadmap</a>
           </div>
