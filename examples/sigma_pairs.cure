@@ -1,0 +1,24 @@
+mod SigmaPairs
+  ## Dependent pairs (Sigma types) example.
+  #
+  # A Sigma type pairs a value with a type that may depend on it.
+  # Cure spells the type using the constructor `Sigma(name: T1, T2)`
+  # where `name` is bound in `T2`.
+  #
+  # Example: a "sized" structure carries its length at the type level,
+  # making it impossible to construct one whose claimed length and
+  # actual length disagree.
+
+  # Non-dependent pair: same as the regular tuple `%[Int, String]`.
+  fn pair_demo() -> Tuple = %[42, "hello"]
+
+  # Dependent pair: the second component's type can mention `n`.
+  # Here the second component is just a String, but the binding shape
+  # mirrors what you would use for `Vector(T, n)`.
+  fn make_sized() -> Tuple = %[3, "abc"]
+
+  # First projection.
+  fn first_of(p: Tuple) -> Int = Std.Pair.first(p)
+
+  # Second projection.
+  fn second_of(p: Tuple) -> String = Std.Pair.second(p)

@@ -138,3 +138,32 @@ Protocols provide ad-hoc polymorphism. The type checker:
 1. Registers protocol method signatures during the first pass
 2. Validates implementation method signatures match the protocol
 3. Checks implementation bodies against declared types
+
+## Sigma, Pi, equality, holes, totality (v0.17.0)
+
+See `DEPENDENT_TYPES.md` for the full guide. Brief summary:
+
+- **Sigma types** -- `{:sigma, var, fst_type, snd_ast}` -- dependent
+  pairs where the second component's type may reference the first
+  component's value. Surface syntax: `Sigma(name: T1, T2)`.
+- **Pi types** -- `{:pi, [{name, type, mode}], ret_ast}` -- dependent
+  function types. Return types may reference parameter names; the
+  checker substitutes and normalises at every call site.
+- **Equality types** -- `{:eq, T, a, b}` -- proofs that `a == b` at
+  type `T`. Constructor `refl(x)`, eliminator `rewrite eq in expr`.
+  Erased at runtime.
+- **Holes** -- `?name` and `??` placeholders. The checker emits a
+  `:hole_goal` event with the goal type and local context.
+- **Totality** -- `Cure.Types.Totality.classify/1` returns `:total`,
+  `:partial`, or `:unknown`. The `#[total]` decorator upgrades the
+  classification to a hard requirement.
+- **Type-level reduction** -- `Cure.Types.Reduce.normalize/2` folds
+  arithmetic, boolean, and projection operations on closed type-level
+  expressions; this gives definitional equality before the checker
+  falls back to SMT.
+- **Unification** -- `Cure.Types.Unify` solves implicit arguments via
+  first-order unification with an occurs check; failures emit a
+  `:unification_trace` event.
+- **Path-sensitive refinement** -- `Cure.Types.PathRefinement` extracts
+  refinements from `if`/`match` guards and applies them to in-scope
+  variables along the matching branch.

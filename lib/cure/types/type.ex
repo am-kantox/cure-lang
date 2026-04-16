@@ -146,6 +146,22 @@ defmodule Cure.Types.Type do
   def subtype?({:named, name}, {:record, key, _fields}),
     do: String.downcase(name) == Atom.to_string(key)
 
+  # Sigma subtyping (delegates to the Sigma module)
+  def subtype?({:sigma, _, _, _} = a, b), do: Cure.Types.Sigma.subtype?(a, b)
+  def subtype?(a, {:sigma, _, _, _} = b), do: Cure.Types.Sigma.subtype?(a, b)
+
+  # Equality types: invariant in T, structural on a/b after normalization
+  def subtype?({:eq, t1, a1, b1}, {:eq, t2, a2, b2}) do
+    subtype?(t1, t2) and subtype?(t2, t1) and a1 == a2 and b1 == b2
+  end
+
+  # Pi subtyping (covariant in return when params match)
+  def subtype?({:pi, ps1, r1}, {:pi, ps2, r2}) when length(ps1) == length(ps2) do
+    Enum.zip(ps1, ps2)
+    |> Enum.all?(fn {{_, t1, m1}, {_, t2, m2}} -> m1 == m2 and subtype?(t2, t1) end) and
+      r1 == r2
+  end
+
   def subtype?(_, _), do: false
 
   @doc "Returns true if `a` and `b` are compatible (either is subtype of the other, or either is `:any`)."
@@ -201,6 +217,35 @@ defmodule Cure.Types.Type do
       name == "Set" and length(params) == 1 ->
         {:list, resolve(hd(params))}
 
+      name in ["Sigma", "DPair"] ->
+        case Cure.Types.Sigma.from_function_call(meta, params) do
+          :not_sigma ->
+            resolved_params = Enum.map(params, &resolve/1)
+            {:adt, String.to_atom(String.downcase(name)), resolved_params}
+
+          sigma ->
+            sigma
+        end
+
+      name == "Eq" and length(params) == 3 ->
+        # Propositional equality: Eq(T, a, b)
+        [t_ast, a_ast, b_ast] = params
+        {:eq, resolve(t_ast), a_ast, b_ast}
+
+      name == "Pi" and length(params) >= 2 ->
+        # Pi(name: T, ret_ast) -- explicit dependent function notation
+        [{:param, pmeta, pname} | rest] = params
+
+        case rest do
+          [ret_ast] ->
+            t_ast = Keyword.get(pmeta, :type)
+            {:pi, [{pname, resolve(t_ast), :explicit}], ret_ast}
+
+          _ ->
+            resolved_params = Enum.map(params, &resolve/1)
+            {:adt, String.to_atom(String.downcase(name)), resolved_params}
+        end
+
       true ->
         # Generic parameterized type (ADT etc.)
         resolved_params = Enum.map(params, &resolve/1)
@@ -211,6 +256,9 @@ defmodule Cure.Types.Type do
   def resolve({:tuple, _, elems}) do
     {:tuple, Enum.map(elems, &resolve/1)}
   end
+
+  # Pre-resolved type wrapped by Cure.Types.Pi to keep Reduce opaque.
+  def resolve({:type_value, _meta, t}), do: t
 
   def resolve({:type_annotation, meta, children}) do
     if Keyword.get(meta, :refinement) do
@@ -286,7 +334,20 @@ defmodule Cure.Types.Type do
   def display({:type_var, id}), do: "t#{id}"
   def display({:type_hole, _}), do: "_"
   def display({:refinement, base, var, _pred}), do: "{#{var}: #{display(base)} | ...}"
+  def display({:sigma, _, _, _} = s), do: Cure.Types.Sigma.display(s)
+
+  def display({:eq, t, _a, _b}), do: "Eq(#{display(t)}, _, _)"
+
+  def display({:pi, params, _ret_ast}) do
+    "(#{Enum.map_join(params, ", ", fn {n, t, m} -> "#{mode_prefix(m)}#{n}: #{display(t)}" end)}) -> _"
+  end
+
+  def display({:hole, name, _ctx}), do: "?#{name}"
   def display(other), do: inspect(other)
+
+  defp mode_prefix(:implicit), do: "{"
+  defp mode_prefix(:erased), do: "@"
+  defp mode_prefix(_), do: ""
 
   @doc "Convert an effect atom to a display string."
   def display_effect(:io), do: "Io"

@@ -223,6 +223,99 @@ defmodule Cure.Compiler.Errors do
     This warning is only emitted when `--strict-effects` is enabled.
 
     Fix: add an effect annotation, e.g. `fn greet() -> Atom ! Io`.
+    """,
+    "E011" => """
+    E011: Missing Implicit Argument
+
+    Implicit unification could not solve every implicit parameter at a
+    call site. The unification trace shows which constraint failed.
+
+    Fix: pass the implicit explicitly with `{T = ConcreteType}`, or
+    constrain the explicit arguments so the implicit can be inferred.
+    """,
+    "E012" => """
+    E012: Sigma Destructuring Failure
+
+    A pattern attempted to destructure a sigma value into shapes that
+    don't agree with its declared first or second component.
+
+    Fix: ensure the pattern matches the sigma's structure, or relax
+    the type to a plain tuple where dependency is not required.
+    """,
+    "E013" => """
+    E013: Totality Failure
+
+    A function annotated `#[total]` is not provably total. Either
+    coverage is incomplete or a recursive call doesn't shrink any
+    structural argument.
+
+    Fix: add the missing patterns, restructure the recursion to use
+    a smaller sub-term, or remove `#[total]` if partiality is OK.
+    """,
+    "E014" => """
+    E014: Unfilled Hole
+
+    The compiler reached a `?name` or `??` placeholder. This is
+    informational by default; when running `cure check --strict`
+    every hole becomes an error.
+
+    Fix: replace the hole with a real expression of the reported
+    goal type.
+    """,
+    "E015" => """
+    E015: Refinement Counterexample
+
+    A value flowing into a refinement-typed parameter could violate
+    the refinement predicate. The Z3 model gives a concrete witness.
+
+    Fix: tighten the caller's invariants, change the refinement to
+    accept the witness, or guard the call with a runtime check.
+    """,
+    "E016" => """
+    E016: Dependent Type Mismatch
+
+    A function's dependent return type, after substituting the
+    call-site arguments and normalising, does not match the expected
+    type at the use site.
+
+    Fix: check that the actual arguments produce the expected
+    relationship (e.g. `m + n` versus the literal length).
+    """,
+    "E017" => """
+    E017: Equality Proof Mismatch
+
+    `refl(x)` was used to inhabit `Eq(T, a, b)` where `a` and `b` are
+    not definitionally equal to `x`.
+
+    Fix: if the equality is true but not definitional, prove it using
+    `Std.Equal.trans/2`, `Std.Equal.cong/2`, or a `rewrite` step.
+    """,
+    "E018" => """
+    E018: Path-sensitive Refinement Conflict
+
+    A path-sensitive refinement extracted from an `if`/`match` guard
+    contradicts a previously declared refinement on the same variable.
+
+    Fix: split the guard into incompatible sub-cases, or relax the
+    declared refinement.
+    """,
+    "E019" => """
+    E019: Implicit Argument Solved Inconsistently
+
+    The same implicit argument was solved to two different types from
+    different parts of the call site.
+
+    Fix: pass the implicit explicitly, or ensure the call-site
+    arguments agree on the inferred type.
+    """,
+    "E020" => """
+    E020: Doctest Mismatch
+
+    A `cure>` doctest produced a different value from its `=>`
+    expected line.
+
+    Fix: update either the doctest expectation or the function it
+    documents.
     """
   }
 

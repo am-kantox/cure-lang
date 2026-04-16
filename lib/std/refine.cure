@@ -1,0 +1,43 @@
+mod Std.Refine
+  ## Refinement type combinators.
+  #
+  # These are *type aliases* that capture common refinement shapes.
+  # Use them when you want to constrain a value at the type level.
+
+  # Non-zero integer (Int minus zero).
+  type NonZero = {x: Int | x != 0}
+
+  # Strictly positive integer.
+  type Positive = {x: Int | x > 0}
+
+  # Strictly negative integer.
+  type Negative = {x: Int | x < 0}
+
+  # Non-negative integer (zero or positive).
+  type NonNegative = {x: Int | x >= 0}
+
+  # Non-positive integer (zero or negative).
+  type NonPositive = {x: Int | x <= 0}
+
+  # Integer between 0 and 100 inclusive (a percentage).
+  type Percentage = {p: Int | p >= 0 and p <= 100}
+
+  # Strictly positive float (e.g. probability density, weight).
+  type PositiveFloat = {x: Float | x > 0.0}
+
+  # Float in [0.0, 1.0] inclusive (a probability).
+  type Probability = {p: Float | p >= 0.0 and p <= 1.0}
+
+  # Predicate combinators (compile-time hints; pure runtime helpers).
+
+  ## True if `n` is a positive integer.
+  fn positive?(n: Int) -> Bool = n > 0
+
+  ## True if `n` is a non-negative integer.
+  fn non_negative?(n: Int) -> Bool = n >= 0
+
+  ## True if `p` is a valid percentage value.
+  fn percentage?(p: Int) -> Bool = p >= 0 and p <= 100
+
+  ## True if `p` is a valid probability value.
+  fn probability?(p: Float) -> Bool = p >= 0.0 and p <= 1.0

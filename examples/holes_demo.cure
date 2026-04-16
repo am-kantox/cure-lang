@@ -1,0 +1,29 @@
+mod HolesDemo
+  ## Hole-driven development.
+  #
+  # Holes are placeholders the type checker reports on rather than
+  # silently accepts. There are two flavours:
+  #
+  #   ?name  -- a named hole; the checker prints its goal type and
+  #             the local context.
+  #   ??     -- an anonymous hole; numbered ?_1, ?_2, ... in source
+  #             order across a single source file.
+  #
+  # Holes appear as `Cure.Types.Holes` records inside the type checker.
+  # The :hole_goal pipeline event surfaces them to the LSP and REPL.
+  #
+  # In a finished program, every hole has been filled in. While
+  # writing, holes give you a structured to-do list.
+
+  ## Filled-in version (compiles cleanly).
+  fn double(n: Int) -> Int = n * 2
+
+  ## Sketch of a function with a single named hole.
+  ## Replace the `0` with the body once you know what it should be.
+  ## Once Cure surfaces ?name in the parser, the body becomes:
+  ##     n * n
+  ## and the hole report becomes a normal type check.
+  fn square_sketch(n: Int) -> Int = 0
+
+  ## Demonstration entry point.
+  fn main() -> Int = double(square_sketch(5))

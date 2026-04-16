@@ -77,3 +77,29 @@ Convenience: `show_line(x)` -- show with trailing newline
 ## Std.Fsm (12 functions)
 
 `spawn(module)`, `spawn_named(module, name)`, `stop(pid)`, `send(pid, event)`, `send_batch(pid, events)`, `get_state(pid)`, `state(pid)`, `is_alive(pid)`, `info(pid)`, `history(pid)`, `lookup(name)`
+
+## Std.Equal (4 functions)
+
+Propositional equality combinators (all erased at runtime).
+
+- `refl(x)` -- reflexivity: `Eq(T, x, x)`.
+- `sym(eq)` -- symmetry: `Eq(T, a, b) -> Eq(T, b, a)`.
+- `trans(p, q)` -- transitivity: `Eq(T, a, b), Eq(T, b, c) -> Eq(T, a, c)`.
+- `cong(f, eq)` -- congruence: `Eq(T, a, b) -> Eq(U, f(a), f(b))`.
+
+All values produced are the runtime atom `:cure_refl`.
+
+## Std.Refine
+
+A collection of common refinement-type aliases plus their
+corresponding runtime predicates.
+
+Type aliases:
+
+- `NonZero`, `Positive`, `Negative`, `NonNegative`, `NonPositive`,
+  `Percentage`, `PositiveFloat`, `Probability`.
+
+Predicates:
+
+- `positive?(n)`, `non_negative?(n)`, `percentage?(p)`,
+  `probability?(p)`.

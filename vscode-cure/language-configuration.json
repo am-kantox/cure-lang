@@ -1,0 +1,26 @@
+{
+  "comments": {
+    "lineComment": "#"
+  },
+  "brackets": [
+    ["[", "]"],
+    ["(", ")"],
+    ["{", "}"]
+  ],
+  "autoClosingPairs": [
+    ["[", "]"],
+    ["(", ")"],
+    ["{", "}"],
+    ["\"", "\""]
+  ],
+  "surroundingPairs": [
+    ["[", "]"],
+    ["(", ")"],
+    ["{", "}"],
+    ["\"", "\""]
+  ],
+  "indentationRules": {
+    "increaseIndentPattern": "^.*(do|->|=|then|else|with)\\s*$",
+    "decreaseIndentPattern": "^\\s*(end|\\)|\\])\\s*$"
+  }
+}

@@ -2,7 +2,7 @@ defmodule Cure.MixProject do
   use Mix.Project
 
   @app :cure
-  @version "0.16.0"
+  @version "0.17.0"
   @source_url "https://github.com/Oeditus/cure"
 
   def project do
@@ -18,6 +18,7 @@ defmodule Cure.MixProject do
       description: description(),
       docs: docs(),
       aliases: aliases(),
+      package: package(),
       test_coverage: [tool: ExCoveralls],
       dialyzer: [
         plt_file: {:no_warn, ".dialyzer/dialyzer.plt"},
@@ -85,10 +86,31 @@ defmodule Cure.MixProject do
     """
   end
 
+  defp package do
+    [
+      maintainers: ["Aleksei Matiushkin"],
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => @source_url,
+        "Changelog" => @source_url <> "/blob/main/CHANGELOG.md"
+      },
+      files: ~w(lib mix.exs README.md CHANGELOG.md LICENSE docs)
+    ]
+  end
+
   defp docs do
     [
       main: "readme",
-      extras: ["README.md"],
+      extras: [
+        "README.md",
+        "CHANGELOG.md",
+        "docs/TUTORIAL.md",
+        "docs/LANGUAGE_SPEC.md",
+        "docs/TYPE_SYSTEM.md",
+        "docs/DEPENDENT_TYPES.md",
+        "docs/FSM_GUIDE.md",
+        "docs/STDLIB.md"
+      ],
       source_url: @source_url,
       source_ref: "v#{@version}",
       formatters: ["html"],

@@ -1,0 +1,26 @@
+mod TotalityDemo
+  ## Totality / termination demo.
+  #
+  # Cure's totality checker classifies functions as :total, :partial,
+  # or :unknown based on:
+  #
+  #   - coverage: every clause-set covers all input shapes,
+  #   - termination: every direct recursive call shrinks a structural arg.
+  #
+  # Functions are *not* rejected for being partial. The classification
+  # is informational by default and surfaces in hover/check output.
+  # Add a `#[total]` decorator to opt into a hard error on regressions.
+
+  ## Total: structural recursion on a decreasing argument.
+  fn factorial(n: Int) -> Int
+    | 0 -> 1
+    | n -> n * factorial(n - 1)
+
+  ## Partial: would loop forever (recursive call doesn't shrink).
+  fn loop_forever(n: Int) -> Int = loop_forever(n)
+
+  ## Total: non-recursive.
+  fn double(n: Int) -> Int = n * 2
+
+  ## Demonstration entry point.
+  fn main() -> Int = factorial(5)

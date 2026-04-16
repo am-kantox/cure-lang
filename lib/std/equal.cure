@@ -1,0 +1,22 @@
+mod Std.Equal
+  ## Propositional equality combinators.
+  #
+  # `Eq(T, a, b)` is the type of proofs that `a` and `b` are equal.
+  # The constructor `refl(x) : Eq(T, x, x)` witnesses reflexivity.
+  # The eliminator `rewrite eq in expr` substitutes equal terms in
+  # the type of `expr` while type-checking it.
+  #
+  # All bindings here are erased at runtime: an Eq value lives only
+  # in the type checker.
+
+  ## Reflexivity: `x` equals itself.
+  fn refl(x: T) -> Atom = :cure_refl
+
+  ## Symmetry: if `a == b`, then `b == a`.
+  fn sym(eq: Atom) -> Atom = :cure_refl
+
+  ## Transitivity: if `a == b` and `b == c`, then `a == c`.
+  fn trans(p: Atom, q: Atom) -> Atom = :cure_refl
+
+  ## Congruence: applying a function preserves equality.
+  fn cong(f: T -> U, eq: Atom) -> Atom = :cure_refl

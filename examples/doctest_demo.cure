@@ -1,0 +1,18 @@
+mod DoctestDemo
+  ## Add two integers.
+  ##
+  ##   cure> DoctestDemo.add(2, 3)
+  ##   => 5
+  ##
+  ##   cure> DoctestDemo.add(10, -4)
+  ##   => 6
+  fn add(a: Int, b: Int) -> Int = a + b
+
+  ## Square a number.
+  ##
+  ##   cure> DoctestDemo.square(7)
+  ##   => 49
+  fn square(x: Int) -> Int = x * x
+
+  ## Demonstration entry point.
+  fn main() -> Int = add(square(3), square(4))

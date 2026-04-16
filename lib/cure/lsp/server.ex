@@ -101,16 +101,42 @@ defmodule Cure.LSP.Server do
         "hoverProvider" => true,
         "definitionProvider" => true,
         "documentSymbolProvider" => true,
+        "workspaceSymbolProvider" => true,
+        "documentFormattingProvider" => true,
+        "renameProvider" => %{"prepareProvider" => true},
+        "signatureHelpProvider" => %{
+          "triggerCharacters" => ["(", ","]
+        },
+        "inlayHintProvider" => %{"resolveProvider" => false},
+        "semanticTokensProvider" => %{
+          "legend" => %{
+            "tokenTypes" => [
+              "keyword",
+              "function",
+              "variable",
+              "type",
+              "string",
+              "number",
+              "comment",
+              "operator"
+            ],
+            "tokenModifiers" => []
+          },
+          "full" => true,
+          "range" => false
+        },
+        "codeLensProvider" => %{"resolveProvider" => false},
         "codeActionProvider" => %{
           "codeActionKinds" => ["quickfix"]
         },
         "completionProvider" => %{
-          "triggerCharacters" => [".", ":"]
+          "triggerCharacters" => [".", ":", "?"]
         }
       },
       "serverInfo" => %{
         "name" => "cure-lsp",
-        "version" => "0.1.0"
+        "version" => "0.2.0"
+        # bumped for v0.17.0
       }
     }
 
@@ -255,6 +281,93 @@ defmodule Cure.LSP.Server do
 
     actions = compute_code_actions(uri, diagnostics)
     Transport.send_response(id, actions)
+    {state, []}
+  end
+
+  defp do_handle("textDocument/inlayHint", id, params, state) do
+    td = Map.get(params, "textDocument", %{})
+    uri = Map.get(td, "uri", "")
+    docs = Map.get(state, :documents, %{})
+    text = Map.get(docs, uri, "")
+    hints = compute_inlay_hints(text)
+    Transport.send_response(id, hints)
+    {state, []}
+  end
+
+  defp do_handle("textDocument/signatureHelp", id, params, state) do
+    td = Map.get(params, "textDocument", %{})
+    uri = Map.get(td, "uri", "")
+    pos = Map.get(params, "position", %{})
+    line = Map.get(pos, "line", 0)
+    char = Map.get(pos, "character", 0)
+    docs = Map.get(state, :documents, %{})
+    text = Map.get(docs, uri, "")
+
+    Transport.send_response(id, compute_signature_help(text, line, char))
+    {state, []}
+  end
+
+  defp do_handle("textDocument/formatting", id, params, state) do
+    td = Map.get(params, "textDocument", %{})
+    uri = Map.get(td, "uri", "")
+    docs = Map.get(state, :documents, %{})
+    text = Map.get(docs, uri, "")
+
+    Transport.send_response(id, compute_formatting_edits(text))
+    {state, []}
+  end
+
+  defp do_handle("textDocument/prepareRename", id, params, state) do
+    td = Map.get(params, "textDocument", %{})
+    uri = Map.get(td, "uri", "")
+    pos = Map.get(params, "position", %{})
+    line = Map.get(pos, "line", 0)
+    char = Map.get(pos, "character", 0)
+    docs = Map.get(state, :documents, %{})
+    text = Map.get(docs, uri, "")
+
+    Transport.send_response(id, prepare_rename(text, line, char))
+    {state, []}
+  end
+
+  defp do_handle("textDocument/rename", id, params, state) do
+    td = Map.get(params, "textDocument", %{})
+    uri = Map.get(td, "uri", "")
+    pos = Map.get(params, "position", %{})
+    line = Map.get(pos, "line", 0)
+    char = Map.get(pos, "character", 0)
+    new_name = Map.get(params, "newName", "")
+    docs = Map.get(state, :documents, %{})
+    text = Map.get(docs, uri, "")
+
+    Transport.send_response(id, compute_rename(uri, text, line, char, new_name))
+    {state, []}
+  end
+
+  defp do_handle("textDocument/codeLens", id, params, state) do
+    td = Map.get(params, "textDocument", %{})
+    uri = Map.get(td, "uri", "")
+    docs = Map.get(state, :documents, %{})
+    text = Map.get(docs, uri, "")
+
+    Transport.send_response(id, compute_code_lenses(uri, text))
+    {state, []}
+  end
+
+  defp do_handle("textDocument/semanticTokens/full", id, params, state) do
+    td = Map.get(params, "textDocument", %{})
+    uri = Map.get(td, "uri", "")
+    docs = Map.get(state, :documents, %{})
+    text = Map.get(docs, uri, "")
+
+    Transport.send_response(id, %{"data" => compute_semantic_tokens(text)})
+    {state, []}
+  end
+
+  defp do_handle("workspace/symbol", id, params, state) do
+    query = Map.get(params, "query", "")
+    docs = Map.get(state, :documents, %{})
+    Transport.send_response(id, compute_workspace_symbols(query, docs))
     {state, []}
   end
 
@@ -721,6 +834,246 @@ defmodule Cure.LSP.Server do
   defp format_type({:function_call, meta, _}), do: Keyword.get(meta, :name, "?")
   defp format_type(other) when is_binary(other), do: other
   defp format_type(_), do: "Any"
+
+  # -- Inlay hints --------------------------------------------------------------
+
+  @doc false
+  def compute_inlay_hints(text) do
+    case parse_to_ast(text) do
+      {:ok, ast} ->
+        ast
+        |> build_symbol_table()
+        |> Enum.flat_map(fn s ->
+          case s do
+            %{kind: :function, line: l, signature: sig} ->
+              [
+                %{
+                  "position" => %{"line" => l - 1, "character" => 0},
+                  "label" => "# " <> sig,
+                  "kind" => 2,
+                  "paddingRight" => true
+                }
+              ]
+
+            _ ->
+              []
+          end
+        end)
+
+      _ ->
+        []
+    end
+  end
+
+  # -- Signature help -----------------------------------------------------------
+
+  @doc false
+  def compute_signature_help(text, line, char) do
+    lines = String.split(text, "\n")
+    target = Enum.at(lines, line, "")
+    prefix = String.slice(target, 0, char)
+
+    case Regex.run(~r/([a-z_][a-zA-Z0-9_]*)\s*\(/, prefix |> String.reverse() |> String.reverse()) do
+      [_, name] ->
+        case parse_to_ast(text) do
+          {:ok, ast} ->
+            symbols = build_symbol_table(ast)
+
+            case Enum.find(symbols, fn s -> s.name == name and s.kind == :function end) do
+              %{signature: sig} ->
+                %{
+                  "signatures" => [%{"label" => sig, "parameters" => []}],
+                  "activeSignature" => 0,
+                  "activeParameter" => 0
+                }
+
+              _ ->
+                nil
+            end
+
+          _ ->
+            nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  # -- Formatting ---------------------------------------------------------------
+
+  @doc false
+  def compute_formatting_edits(text) do
+    case parse_to_ast(text) do
+      {:ok, ast} ->
+        formatted = Cure.Compiler.Printer.quoted_to_string(ast)
+        line_count = text |> String.split("\n") |> length()
+
+        [
+          %{
+            "range" => %{
+              "start" => %{"line" => 0, "character" => 0},
+              "end" => %{"line" => line_count, "character" => 0}
+            },
+            "newText" => formatted <> "\n"
+          }
+        ]
+
+      _ ->
+        []
+    end
+  end
+
+  # -- Rename -------------------------------------------------------------------
+
+  @doc false
+  def prepare_rename(text, line, char) do
+    lines = String.split(text, "\n")
+    target = Enum.at(lines, line, "")
+    word = extract_word_at(target, char)
+
+    if word == "" do
+      nil
+    else
+      %{
+        "start" => %{"line" => line, "character" => max(char - String.length(word), 0)},
+        "end" => %{"line" => line, "character" => char + String.length(word)}
+      }
+    end
+  end
+
+  @doc false
+  def compute_rename(uri, text, line, char, new_name) do
+    lines = String.split(text, "\n")
+    target = Enum.at(lines, line, "")
+    old = extract_word_at(target, char)
+
+    edits =
+      lines
+      |> Enum.with_index()
+      |> Enum.flat_map(fn {l, i} ->
+        case word_occurrences(l, old) do
+          [] ->
+            []
+
+          ranges ->
+            Enum.map(ranges, fn {start_col, end_col} ->
+              %{
+                "range" => %{
+                  "start" => %{"line" => i, "character" => start_col},
+                  "end" => %{"line" => i, "character" => end_col}
+                },
+                "newText" => new_name
+              }
+            end)
+        end
+      end)
+
+    %{"changes" => %{uri => edits}}
+  end
+
+  defp word_occurrences(line, word) when word != "" do
+    pattern = Regex.compile!("\\b" <> Regex.escape(word) <> "\\b")
+
+    Regex.scan(pattern, line, return: :index)
+    |> Enum.map(fn [{start, len}] -> {start, start + len} end)
+  end
+
+  defp word_occurrences(_line, _word), do: []
+
+  # -- Code lens ----------------------------------------------------------------
+
+  @doc false
+  def compute_code_lenses(_uri, text) do
+    case parse_to_ast(text) do
+      {:ok, ast} ->
+        ast
+        |> build_symbol_table()
+        |> Enum.flat_map(fn
+          %{kind: :function, line: l, name: n} ->
+            [
+              %{
+                "range" => %{
+                  "start" => %{"line" => l - 1, "character" => 0},
+                  "end" => %{"line" => l - 1, "character" => 0}
+                },
+                "command" => %{"title" => "Type | Effects", "command" => "cure.type." <> n}
+              }
+            ]
+
+          _ ->
+            []
+        end)
+
+      _ ->
+        []
+    end
+  end
+
+  # -- Semantic tokens ----------------------------------------------------------
+
+  @doc false
+  def compute_semantic_tokens(text) do
+    keywords =
+      ~w(fn mod rec fsm proto impl type let if then else elif match return throw try catch finally use local when where)
+
+    lines = String.split(text, "\n")
+
+    {data, _} =
+      Enum.reduce(Enum.with_index(lines), {[], {0, 0}}, fn {line, idx}, {acc, prev} ->
+        tokens = scan_keyword_tokens(line, keywords, idx)
+
+        Enum.reduce(tokens, {acc, prev}, fn {l, c, len, ttype}, {acc2, {pl, pc}} ->
+          delta_line = l - pl
+          delta_start = if delta_line == 0, do: c - pc, else: c
+          {[delta_line, delta_start, len, ttype, 0 | acc2], {l, c}}
+        end)
+      end)
+
+    Enum.reverse(data)
+  end
+
+  defp scan_keyword_tokens(line, keywords, line_idx) do
+    keywords
+    |> Enum.flat_map(fn kw ->
+      pat = Regex.compile!("\\b" <> Regex.escape(kw) <> "\\b")
+
+      Regex.scan(pat, line, return: :index)
+      |> Enum.map(fn [{start, len}] -> {line_idx, start, len, 0} end)
+    end)
+    |> Enum.sort()
+  end
+
+  # -- Workspace symbols --------------------------------------------------------
+
+  @doc false
+  def compute_workspace_symbols(query, documents) do
+    documents
+    |> Enum.flat_map(fn {uri, text} ->
+      case parse_to_ast(text) do
+        {:ok, ast} ->
+          ast
+          |> build_symbol_table()
+          |> Enum.filter(fn s -> query == "" or String.contains?(s.name, query) end)
+          |> Enum.map(fn s ->
+            %{
+              "name" => s.name,
+              "kind" => if(s.kind == :function, do: 12, else: 2),
+              "location" => %{
+                "uri" => uri,
+                "range" => %{
+                  "start" => %{"line" => max(s.line - 1, 0), "character" => 0},
+                  "end" => %{"line" => max(s.line - 1, 0), "character" => 999}
+                }
+              }
+            }
+          end)
+
+        _ ->
+          []
+      end
+    end)
+  end
 
   # -- Stdin Reader (Content-Length aware) -------------------------------------
 

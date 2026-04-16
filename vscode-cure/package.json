@@ -1,0 +1,73 @@
+{
+  "name": "vscode-cure",
+  "displayName": "Cure",
+  "description": "Cure language support for VS Code (LSP, syntax highlighting).",
+  "version": "0.1.0",
+  "publisher": "oeditus",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Oeditus/cure"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:cure"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "cure",
+        "aliases": [
+          "Cure",
+          "cure"
+        ],
+        "extensions": [
+          ".cure"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "cure",
+        "scopeName": "source.cure",
+        "path": "./syntaxes/cure.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "Cure",
+      "properties": {
+        "cure.lsp.path": {
+          "type": "string",
+          "default": "cure",
+          "description": "Path to the Cure binary used to start the LSP."
+        },
+        "cure.lsp.args": {
+          "type": "array",
+          "default": [
+            "lsp"
+          ],
+          "description": "Arguments passed to the Cure binary to start the LSP."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.0.0"
+  }
+}

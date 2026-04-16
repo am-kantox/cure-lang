@@ -120,6 +120,70 @@ type Percentage = {p: Int | p >= 0 and p <= 100}
 ```
 
 Refinement type subtyping is verified at compile time using Z3.
+With **path-sensitive refinement** (v0.17.0), the type of a variable
+appearing in an `if`/`match` guard is refined for the duration of that
+branch.
+
+### Sigma types (dependent pairs)
+
+```cure
+type Sized(T) = Sigma(n: Nat, Vector(T, n))
+```
+
+A Sigma type pairs a value with a type that may depend on it.
+The surface forms `Sigma(T1, T2)`, `Sigma(name: T1, T2)`, and
+`DPair(...)` are all recognised.
+
+### Pi types (dependent function types)
+
+```cure
+fn append(xs: Vector(T, m), ys: Vector(T, n)) -> Vector(T, m + n)
+```
+
+Return types may freely reference parameter names. The type checker
+substitutes the call-site arguments and normalises the resulting
+expression with `Cure.Types.Reduce` before comparing.
+
+### Equality types
+
+```cure
+refl(x) : Eq(T, x, x)
+```
+
+`Eq(T, a, b)` is the type of proofs that `a == b` at type `T`.
+`refl(x)` is the only constructor; `rewrite eq in expr` is the only
+eliminator. All Eq values are erased at runtime.
+
+### Implicit arguments
+
+```cure
+fn id({T}, x: T) -> T = x
+```
+
+Parameters in `{...}` braces are inferred from explicit-argument types
+at each call site via `Cure.Types.Unify`. They cost nothing at runtime.
+
+### Holes
+
+```cure
+fn safe_head(xs: List(T)) -> T = ?body
+```
+
+A `?name` or `??` placeholder triggers a `:hole_goal` pipeline event
+that reports the goal type and the local context at the hole position.
+
+### Totality
+
+```cure
+#[total]
+fn factorial(n: Int) -> Int
+  | 0 -> 1
+  | n -> n * factorial(n - 1)
+```
+
+`Cure.Types.Totality` classifies every function as `:total`,
+`:partial`, or `:unknown`. Add `#[total]` to upgrade the
+classification to a compile-time error.
 
 ## Records
 

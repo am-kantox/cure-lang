@@ -8,6 +8,83 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.17.0] -- Proofs & Polish: Toward Idris
+
+The dependent-typing core grows up and the everyday UX catches up.
+Three themes land together: dependent-type maturation, friction-free
+UX, and ecosystem groundwork.
+
+### Added -- Dependent-type maturation (Theme A)
+- `Cure.Types.Sigma` -- dependent pairs; `Sigma(name: T1, T2)` surface
+  syntax, subtyping rules, `Type.resolve/1` integration.
+- `Cure.Types.Pi` -- dependent function types with `:explicit`,
+  `:implicit`, `:erased` parameter modes and an AST-based return type.
+- `Cure.Types.Reduce` -- terminating normaliser for type-level
+  arithmetic, booleans, comparisons, and pair projection.
+- `Cure.Types.Equality` -- propositional equality (`Eq(T, a, b)`),
+  `refl` constructor, `rewrite` eliminator; runtime-erased via
+  `:cure_refl`.
+- `Cure.Types.Unify` -- first-order unification with occurs check for
+  implicit-argument inference; `:unification_trace` pipeline event.
+- `Cure.Types.Holes` -- `?name` and `??` placeholders with goal-type
+  and local-context reporting via the `:hole_goal` event.
+- `Cure.Types.Totality` -- coverage + structural-recursion analysis;
+  `:total | :partial | :unknown` classification; `#[total]` decorator.
+- `Cure.Types.PathRefinement` -- path-sensitive refinement flow along
+  `if`/`match` guards.
+- `Std.Equal` -- equality combinators (`refl`, `sym`, `trans`, `cong`).
+- `Std.Refine` -- `NonZero`, `Positive`, `Negative`, `NonNegative`,
+  `Percentage`, `Probability`, and predicate helpers.
+
+### Added -- Friction-free UX (Theme B)
+- `Cure.REPL` -- multi-line input, `:t`, `:doc`, `:effects`, `:load`,
+  `:reload`, `:use`, `:holes`, `:env`, `:reset`, `:fmt`, `:help`,
+  `:quit`. History persisted to `~/.cure_history`.
+- `Cure.Watch` -- `cure watch` recompiles, checks, or tests on every
+  change with a 200 ms debounce.
+- `Cure.LSP.Server` -- inlay hints, signature help, formatting,
+  prepareRename / rename, code lenses, semantic tokens, workspace
+  symbols.
+- Error catalog codes `E011`-`E020` in `Cure.Compiler.Errors` covering
+  implicit-argument failures, sigma destructuring, totality,
+  unfilled holes, refinement counterexamples, dependent-type
+  mismatches, equality proof mismatches, and doctests.
+- `cure new <name> [--lib | --app | --fsm]` with three templates.
+- `Cure.lock` lockfile; `cure deps update`, `cure deps tree`;
+  git-based dependency resolution in `Cure.Project.resolve_git_dep/2`.
+- `cure bench` -- benchmark runner for `bench/**/*.cure`.
+- `cure test --filter PATTERN --doctests`.
+- `Cure.Doc.Doctests` -- harvests `cure>` / `=>` doctests from `##`
+  blocks and runs them.
+- `docs/TUTORIAL.md` -- ten progressive chapters.
+- `docs/DEPENDENT_TYPES.md` -- full guide for the new type-system
+  features.
+
+### Added -- Ecosystem groundwork (Theme C)
+- MIT `LICENSE` file.
+- Complete `mix.exs` `package` block for Hex publication, including
+  docs extras.
+- `vscode-cure/` -- TypeScript/LSP VS Code extension scaffold with
+  TextMate grammar and language configuration.
+- `docs/PACKAGE_REGISTRY.md` -- design document for the v0.18.0+
+  package registry.
+
+### Changed
+- `Cure.CLI`: adds `watch`, `new`, `bench`, `deps update`, `deps tree`,
+  `why`; extended OptionParser switches.
+- `Cure.Project`: `scaffold/2` supersedes `init/1`; lockfile and
+  git-dep support.
+- `Cure.Types.Type`: recognises `Sigma`, `DPair`, `Eq`, `Pi` names in
+  `resolve/1`; subtyping for sigma/eq/pi; `display/1` covers new
+  shapes.
+
+### Numbers
+- ~9 new Elixir modules, ~9 new test files, ~150 new tests.
+- 2 new `.cure` stdlib modules (total now 20).
+- 6 new examples; 3 new docs.
+
+---
+
 ## [0.16.0] -- Finitomata-Inspired FSM Rewrite
 
 Complete rethinking of FSM handling. The FSM definition and transition logic

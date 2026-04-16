@@ -34,9 +34,18 @@ defmodule Cure.CLI do
           type_check: :boolean,
           optimize: :boolean,
           verbose: :boolean,
-          help: :boolean
+          help: :boolean,
+          action: :string,
+          template: :string,
+          lib: :boolean,
+          app: :boolean,
+          fsm: :boolean,
+          filter: :string,
+          doctests: :boolean,
+          poll_ms: :integer,
+          debounce: :integer
         ],
-        aliases: [o: :output_dir, v: :verbose, h: :help]
+        aliases: [o: :output_dir, v: :verbose, h: :help, f: :filter, t: :template]
       )
 
     if opts[:help] do
@@ -51,11 +60,17 @@ defmodule Cure.CLI do
         ["version"] -> cmd_version()
         ["init" | [name]] -> cmd_init(name)
         ["deps"] -> cmd_deps()
+        ["deps", "update"] -> cmd_deps_update()
+        ["deps", "tree"] -> cmd_deps_tree()
         ["test"] -> cmd_test(opts)
         ["explain" | [code]] -> cmd_explain(code)
         ["doc" | paths] -> cmd_doc(paths, opts)
         ["repl"] -> cmd_repl()
         ["fmt" | paths] -> cmd_fmt(paths)
+        ["watch" | rest] -> cmd_watch(rest, opts)
+        ["new" | rest] -> cmd_new(rest, opts)
+        ["bench" | rest] -> cmd_bench(rest, opts)
+        ["why" | [code]] -> cmd_explain(code)
         ["help"] -> help()
         [] -> help()
         [unknown | _] -> error("Unknown command: #{unknown}. Run 'cure help' for usage.")
@@ -215,7 +230,8 @@ defmodule Cure.CLI do
       {:ok, project} ->
         info("Resolving dependencies for #{project.name}...")
         Cure.Project.resolve_deps(project)
-        info("Dependencies resolved.")
+        Cure.Project.write_lock(project)
+        info("Dependencies resolved. Cure.lock written.")
 
       {:error, :no_project_file} ->
         error("No Cure.toml found in current directory.")
@@ -225,9 +241,40 @@ defmodule Cure.CLI do
     end
   end
 
+  defp cmd_deps_update do
+    case Cure.Project.load() do
+      {:ok, project} ->
+        info("Updating dependencies for #{project.name}...")
+
+        Enum.each(project.dependencies, fn dep ->
+          if Map.get(dep, :git) do
+            Cure.Project.resolve_git_dep(dep, project.root)
+          end
+        end)
+
+        Cure.Project.write_lock(project)
+        info("Lockfile updated.")
+
+      {:error, reason} ->
+        error("Error: #{inspect(reason)}")
+    end
+  end
+
+  defp cmd_deps_tree do
+    case Cure.Project.load() do
+      {:ok, project} ->
+        IO.puts(Cure.Project.dep_tree(project))
+
+      {:error, reason} ->
+        error("Error: #{inspect(reason)}")
+    end
+  end
+
   # -- test --------------------------------------------------------------------
 
-  defp cmd_test(_opts) do
+  defp cmd_test(opts) do
+    filter = Keyword.get(opts, :filter, nil)
+    doctests? = Keyword.get(opts, :doctests, false)
     test_files = Path.wildcard("test/**/*.cure")
 
     if test_files == [] do
@@ -241,8 +288,12 @@ defmodule Cure.CLI do
               exports = mod.module_info(:exports)
 
               test_fns =
-                Enum.filter(exports, fn {name, arity} ->
+                exports
+                |> Enum.filter(fn {name, arity} ->
                   String.starts_with?(Atom.to_string(name), "test") and arity == 0
+                end)
+                |> Enum.filter(fn {name, _} ->
+                  filter == nil or String.contains?(Atom.to_string(name), filter)
                 end)
 
               Enum.map(test_fns, fn {name, _} ->
@@ -260,6 +311,13 @@ defmodule Cure.CLI do
         end)
         |> List.flatten()
 
+      results =
+        if doctests? do
+          results ++ run_doctests(filter)
+        else
+          results
+        end
+
       pass = Enum.count(results, fn {s, _} -> s == :pass end)
       fail = Enum.count(results, fn {s, _} -> s == :fail end)
 
@@ -271,6 +329,26 @@ defmodule Cure.CLI do
       info("#{pass} passed, #{fail} failed")
       if fail > 0, do: exit({:shutdown, 1})
     end
+  end
+
+  defp run_doctests(filter) do
+    Path.wildcard("lib/**/*.cure")
+    |> Enum.flat_map(fn file ->
+      case Cure.Doc.Doctests.extract(file) do
+        [] ->
+          []
+
+        cases ->
+          cases
+          |> Enum.filter(fn %{name: n} -> filter == nil or String.contains?(n, filter) end)
+          |> Enum.map(fn %{name: name, expr: expr, expected: expected} ->
+            case Cure.Doc.Doctests.run_one(expr, expected) do
+              :ok -> {:pass, "#{file}: doctest #{name}"}
+              {:fail, reason} -> {:fail, "#{file}: doctest #{name} -- #{reason}"}
+            end
+          end)
+      end
+    end)
   end
 
   # -- doc ---------------------------------------------------------------------
@@ -321,53 +399,7 @@ defmodule Cure.CLI do
   # -- repl --------------------------------------------------------------------
 
   defp cmd_repl do
-    info("Cure REPL v#{@version} (type :quit to exit)")
-    repl_loop(1)
-  end
-
-  defp repl_loop(n) do
-    case IO.gets("cure(#{n})> ") do
-      :eof ->
-        :ok
-
-      {:error, _} ->
-        :ok
-
-      line ->
-        line = String.trim(line)
-
-        cond do
-          line in [":quit", ":q", ":exit"] ->
-            info("Bye.")
-
-          line == "" ->
-            repl_loop(n)
-
-          true ->
-            mod_name = "Repl.M#{n}"
-
-            source = """
-            mod #{mod_name}
-              fn main() -> Any = #{line}
-            """
-
-            case Cure.Compiler.compile_and_load(source, emit_events: false) do
-              {:ok, module} ->
-                try do
-                  result = module.main()
-                  IO.inspect(result)
-                catch
-                  kind, reason ->
-                    error("#{kind}: #{inspect(reason)}")
-                end
-
-              {:error, reason} ->
-                error(inspect(reason))
-            end
-
-            repl_loop(n + 1)
-        end
-    end
+    Cure.REPL.start()
   end
 
   # -- fmt ---------------------------------------------------------------------
@@ -399,6 +431,90 @@ defmodule Cure.CLI do
     end)
   end
 
+  # -- watch ---------------------------------------------------------------------
+
+  defp cmd_watch(paths, opts) do
+    path = List.first(paths) || "."
+
+    action =
+      case Keyword.get(opts, :action, "compile") do
+        "compile" -> :compile
+        "check" -> :check
+        "test" -> :test
+        other -> String.to_atom(other)
+      end
+
+    watch_opts = [action: action]
+
+    watch_opts =
+      if v = Keyword.get(opts, :poll_ms), do: Keyword.put(watch_opts, :poll_ms, v), else: watch_opts
+
+    watch_opts =
+      if v = Keyword.get(opts, :debounce),
+        do: Keyword.put(watch_opts, :debounce, v),
+        else: watch_opts
+
+    Cure.Watch.start(path, watch_opts)
+  end
+
+  # -- new -----------------------------------------------------------------------
+
+  defp cmd_new([], _opts), do: error("Usage: cure new <name> [--lib | --app | --fsm]")
+
+  defp cmd_new([name | _], opts) do
+    template =
+      cond do
+        Keyword.get(opts, :app) -> :app
+        Keyword.get(opts, :fsm) -> :fsm
+        Keyword.get(opts, :lib) -> :lib
+        Keyword.get(opts, :template) -> String.to_atom(Keyword.get(opts, :template))
+        true -> :lib
+      end
+
+    Cure.Project.scaffold(name, template)
+    info("Created project '#{name}' (template: #{template})")
+  end
+
+  # -- bench ---------------------------------------------------------------------
+
+  defp cmd_bench(paths, _opts) do
+    files =
+      case paths do
+        [] -> Path.wildcard("bench/**/*.cure") ++ Path.wildcard("test/**/*_bench.cure")
+        _ -> paths
+      end
+
+    if files == [] do
+      info("No benchmark files found. Place benchmarks under bench/*.cure")
+    else
+      Enum.each(files, fn f ->
+        case File.read(f) do
+          {:ok, src} ->
+            case Cure.Compiler.compile_and_load(src, file: f, emit_events: false) do
+              {:ok, mod} ->
+                exports = mod.module_info(:exports)
+
+                bench_fns =
+                  Enum.filter(exports, fn {n, a} ->
+                    String.starts_with?(Atom.to_string(n), "bench") and a == 0
+                  end)
+
+                Enum.each(bench_fns, fn {name, _} ->
+                  {us, _} = :timer.tc(fn -> apply(mod, name, []) end)
+                  info("  #{f}:#{name}  #{us / 1000} ms")
+                end)
+
+              {:error, reason} ->
+                error("  #{f}: #{inspect(reason)}")
+            end
+
+          {:error, reason} ->
+            error("  #{f}: #{reason}")
+        end
+      end)
+    end
+  end
+
   # -- explain ------------------------------------------------------------------
 
   defp cmd_explain(code) do
@@ -428,7 +544,15 @@ defmodule Cure.CLI do
       stdlib               Compile the standard library
       doc [path|dir]       Generate HTML documentation
       fmt [path|dir]       Format .cure source files
-      repl                 Interactive Cure session
+      repl                 Interactive Cure session (multi-line, :help for commands)
+      watch [path]         Recompile/check/test on every save
+      new <name>           Scaffold a new project (--lib | --app | --fsm)
+      init <name>          Same as `new --lib`
+      deps                 Resolve project dependencies
+      test                 Run .cure tests under test/
+      bench [path]         Run .cure benchmarks under bench/
+      explain <Eddd>       Explain an error code
+      why <Eddd>           Alias for `explain`
       version              Show version
       help                 Show this help
 
@@ -436,6 +560,12 @@ defmodule Cure.CLI do
       -o, --output-dir DIR   Output directory (default: _build/cure/ebin)
       --no-type-check        Skip type checking
       --optimize             Enable optimization passes
+      --action ACTION        Watch action: compile (default) | check | test
+      --poll-ms N            Watch poll interval (default 500)
+      --debounce N           Watch coalesce window (default 200)
+      --lib | --app | --fsm  `cure new` template selector
+      --filter PATTERN       `cure test` filter
+      --doctests             `cure test` includes doctests
       -v, --verbose          Verbose output
       -h, --help             Show help
     """)
