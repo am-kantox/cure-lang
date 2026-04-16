@@ -36,11 +36,12 @@ defmodule Cure do
 
   alias Cure.Compiler.{Lexer, Parser}
 
+  @version Cure.MixProject.project()[:version]
   @doc """
   Returns the current Cure version.
   """
   @spec version :: String.t()
-  def version, do: "0.1.0"
+  def version, do: @version
 
   @doc """
   Parse a Cure source string into its MetaAST representation.
@@ -67,13 +68,10 @@ defmodule Cure do
   def quote(source, opts \\ []) do
     file = Keyword.get(opts, :file, "nofile")
     emit? = Keyword.get(opts, :emit_events, false)
-    lex_opts = [file: file, emit_events: emit?]
-    parse_opts = [file: file, emit_events: emit?]
+    lex_opts = parse_opts = [file: file, emit_events: emit?]
 
     with {:ok, tokens} <- Lexer.tokenize(source, lex_opts),
-         {:ok, ast} <- Parser.parse(tokens, parse_opts) do
-      {:ok, ast}
-    end
+         do: Parser.parse(tokens, parse_opts)
   end
 
   @doc """
