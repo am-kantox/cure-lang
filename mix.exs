@@ -75,7 +75,10 @@ defmodule Cure.MixProject do
       "quality.ci": [
         "format --check-formatted",
         "credo --strict"
-      ]
+      ],
+      # `mix check` runs the Cure stdlib and example regression
+      # suites. Invoke alongside `mix test` (CI does both).
+      check: ["cure.compile_stdlib", "cure.check"]
     ]
   end
 

@@ -10,13 +10,13 @@ mod Std.Equal
   # in the type checker.
 
   ## Reflexivity: `x` equals itself.
-  fn refl(x: T) -> Atom = :cure_refl
+  fn refl(_x: T) -> Atom = :cure_refl
 
   ## Symmetry: if `a == b`, then `b == a`.
-  fn sym(eq: Atom) -> Atom = :cure_refl
+  fn sym(_eq: Atom) -> Atom = :cure_refl
 
   ## Transitivity: if `a == b` and `b == c`, then `a == c`.
-  fn trans(p: Atom, q: Atom) -> Atom = :cure_refl
+  fn trans(_p: Atom, _q: Atom) -> Atom = :cure_refl
 
   ## Congruence: applying a function preserves equality.
-  fn cong(f: T -> U, eq: Atom) -> Atom = :cure_refl
+  fn cong(_f: T -> U, _eq: Atom) -> Atom = :cure_refl

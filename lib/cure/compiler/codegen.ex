@@ -1371,7 +1371,10 @@ defmodule Cure.Compiler.Codegen do
 
   @doc false
   def mangle_var("_"), do: :_
-  def mangle_var("_" <> _ = name), do: String.to_atom("V_" <> name)
+
+  # Preserve the user-intended `_name` shape so erl_lint does not warn
+  # about the mangled form. `_foo` becomes `_V_foo`, not `V__foo`.
+  def mangle_var("_" <> rest), do: String.to_atom("_V_" <> rest)
   def mangle_var(name), do: String.to_atom("V_" <> name)
 
   @doc false

@@ -16,7 +16,7 @@ mod Std.Core
 
   ## Returns a function that always returns x.
   fn const(x: T) -> (U -> T) =
-    fn(y) -> x
+    fn(_y) -> x
 
   # -- Boolean operations -----------------------------------------------------
 

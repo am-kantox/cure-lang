@@ -1015,12 +1015,21 @@ defmodule Cure.Compiler.Parser do
     state = advance(state)
 
     # fn followed by ( -> lambda
-    # fn followed by identifier -> named function definition
+    # fn followed by identifier or (soft) keyword -> named function definition
+    #
+    # Some Cure keywords (spawn, send, receive, after) are ordinary
+    # function names in other languages, and `Std.Fsm` defines e.g.
+    # `fn spawn(fsm_module: Atom) -> Pid`. Let those keywords double as
+    # function-definition names; they still behave as keywords in
+    # statement position.
     case peek(state) do
       %Token{type: :lparen} ->
         parse_lambda_body(state, token)
 
       %Token{type: :identifier} ->
+        parse_fn_def(state, token, :public)
+
+      %Token{type: :keyword} ->
         parse_fn_def(state, token, :public)
 
       _ ->
@@ -1037,7 +1046,14 @@ defmodule Cure.Compiler.Parser do
     case peek(state) do
       %Token{type: :keyword, value: :fn} ->
         state = advance(state)
-        parse_fn_def(state, token, :private)
+        # After `local fn`, a name (identifier or soft keyword) must follow.
+        case peek(state) do
+          %Token{type: type} when type in [:identifier, :keyword] ->
+            parse_fn_def(state, token, :private)
+
+          _ ->
+            parse_lambda_body(state, token)
+        end
 
       _ ->
         error = {:expected, :fn, :got, peek(state).type, token.line, token.col}
@@ -2376,7 +2392,37 @@ defmodule Cure.Compiler.Parser do
   end
 
   defp extract_literal_value({:literal, _, val}), do: val
+
+  # `@extern(Elixir.Cure.FSM.Builtins, :f, 1)` parses the first argument
+  # as a chain of attribute accesses rooted in a PascalCase variable.
+  # Collapse that chain to an atom so codegen receives a literal atom.
+  defp extract_literal_value({:attribute_access, _, _} = ast) do
+    case attribute_access_to_dotted(ast) do
+      nil -> ast
+      name -> String.to_atom(name)
+    end
+  end
+
+  defp extract_literal_value({:variable, _, name}) when is_binary(name) do
+    case name do
+      <<c, _::binary>> when c in ?A..?Z -> String.to_atom(name)
+      _ -> name
+    end
+  end
+
   defp extract_literal_value(other), do: other
+
+  defp attribute_access_to_dotted({:attribute_access, meta, [parent]}) do
+    attr = Keyword.get(meta, :attribute)
+
+    case attribute_access_to_dotted(parent) do
+      nil -> nil
+      path -> path <> "." <> to_string(attr)
+    end
+  end
+
+  defp attribute_access_to_dotted({:variable, _, name}) when is_binary(name), do: name
+  defp attribute_access_to_dotted(_), do: nil
 
   # -- Keyword unary (return, throw, yield, spawn) ---------------------------
 

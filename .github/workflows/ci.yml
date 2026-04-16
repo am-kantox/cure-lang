@@ -55,3 +55,9 @@ jobs:
 
       - name: Run tests
         run: mix test
+
+      - name: Compile Cure standard library
+        run: mix cure.compile_stdlib
+
+      - name: Cure regression checks (stdlib + examples)
+        run: mix cure.check

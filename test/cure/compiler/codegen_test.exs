@@ -652,7 +652,9 @@ defmodule Cure.Compiler.CodegenTest do
     test "variable mangling" do
       assert Codegen.mangle_var("x") == :V_x
       assert Codegen.mangle_var("_") == :_
-      assert Codegen.mangle_var("_unused") == :V__unused
+      # _prefixed vars round-trip with a leading underscore so that erl_lint
+      # still recognises them as "deliberately unused".
+      assert Codegen.mangle_var("_unused") == :_V_unused
     end
 
     test "function name mangling" do
