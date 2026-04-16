@@ -1752,6 +1752,8 @@ defmodule Cure.Compiler.Parser do
     end
   end
 
+  @fsm_callback_names ~w(on_transition on_enter on_exit on_failure on_timer)
+
   defp parse_fsm_items(state, items_acc, meta_acc) do
     state = skip_newlines(state)
 
@@ -1760,8 +1762,14 @@ defmodule Cure.Compiler.Parser do
         {Enum.reverse(items_acc), meta_acc, state}
 
       %Token{type: :at} ->
-        # @terminal, @invariant, @verify
+        # @terminal, @invariant, @verify, @timer
         {new_meta, state} = parse_fsm_annotation(state)
+        state = skip_newlines(state)
+        parse_fsm_items(state, items_acc, meta_acc ++ new_meta)
+
+      %Token{type: :identifier, value: cb_name} when cb_name in @fsm_callback_names ->
+        # Callback block: on_transition, on_enter, on_exit, on_failure, on_timer
+        {new_meta, state} = parse_fsm_callback(state)
         state = skip_newlines(state)
         parse_fsm_items(state, items_acc, meta_acc ++ new_meta)
 
@@ -1793,13 +1801,51 @@ defmodule Cure.Compiler.Parser do
         {expr, state} = parse_expr(state, 0)
         {[verify: [expr]], state}
 
+      "timer" ->
+        val_token = peek(state)
+        state = advance(state)
+
+        ms =
+          case val_token do
+            %Token{type: :integer, value: v} -> v
+            _ -> String.to_integer(to_string(val_token.value))
+          end
+
+        {[timer: ms], state}
+
       _ ->
         {[], state}
     end
   end
 
+  # -- FSM callback blocks: on_transition, on_enter, on_exit, on_failure, on_timer
+
+  defp parse_fsm_callback(state) do
+    name_token = peek(state)
+    cb_name = String.to_atom(name_token.value)
+    state = advance(state)
+    state = skip_newlines(state)
+
+    # Expect an indented block of match-arm-style clauses
+    {clauses, state} =
+      case peek(state) do
+        %Token{type: :indent} ->
+          state = advance(state)
+          {arms, state} = parse_block_match_arms(state)
+          state = expect_dedent(state)
+          {arms, state}
+
+        _ ->
+          # Single inline clause (pattern -> body)
+          {arm, state} = parse_match_arm(state)
+          {[arm], state}
+      end
+
+    {[{cb_name, clauses}], state}
+  end
+
   defp parse_fsm_transition(state) do
-    # Source --event [when guard] [do actions]--> Target
+    # Source --event[!?] [when guard] [do actions]--> Target
     # or * --event--> Target (wildcard)
     from_token = peek(state)
 
@@ -1817,18 +1863,31 @@ defmodule Cure.Compiler.Parser do
     # Event name and optional guard/action are lexed as tokens between -- and -->
     {event, guard, action, state} = parse_transition_body(state)
 
+    # Detect event kind from suffix: ! = hard, ? = soft, otherwise normal
+    {event_base, event_kind} = classify_event(event)
+
     # After transition_close (-->), parse target
     target_token = peek(state)
     target = to_string(target_token.value)
     state = advance(state)
 
-    meta = [name: "transition", from: from, event: event, to: target]
+    meta = [name: "transition", from: from, event: event_base, to: target, event_kind: event_kind]
     meta = if guard, do: Keyword.put(meta, :guard, guard), else: meta
     meta = if action, do: Keyword.put(meta, :action, action), else: meta
 
     ast = {:function_call, meta, []}
     {ast, state}
   end
+
+  defp classify_event(event) when is_binary(event) do
+    cond do
+      String.ends_with?(event, "!") -> {String.trim_trailing(event, "!"), :hard}
+      String.ends_with?(event, "?") -> {String.trim_trailing(event, "?"), :soft}
+      true -> {event, :normal}
+    end
+  end
+
+  defp classify_event(event), do: {to_string(event), :normal}
 
   defp parse_transition_body(state) do
     # Read tokens until :transition_close

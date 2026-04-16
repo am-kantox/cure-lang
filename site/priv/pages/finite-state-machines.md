@@ -1,10 +1,10 @@
 %{
   title: "Finite State Machines",
-  description: "First-class FSMs with compile-time verification, gen_statem compilation, and runtime API.",
+  description: "First-class FSMs with compile-time verification, dual-mode compilation, event suffixes, and inline transition handlers.",
   order: 4
 }
 ---
-FSMs are first-class language constructs in Cure. They define state machines declaratively, compile to OTP `gen_statem` BEAM modules, and are verified at compile time for reachability and deadlock freedom.
+FSMs are first-class language constructs in Cure. They define state machines declaratively and are verified at compile time for reachability and deadlock freedom. Cure supports two compilation modes: **simple mode** (compiles to OTP `gen_statem`) and **callback mode** (compiles to `GenServer` with inline `on_transition` handlers, inspired by [Finitomata](https://hexdocs.pm/finitomata)).
 
 ## Defining FSMs
 
@@ -43,48 +43,95 @@ fsm DoorLock
 # Initial state: Locked (first non-wildcard source)
 ```
 
-## Compilation to gen_statem
+## Callback mode (on_transition)
 
-FSMs compile to standard OTP `gen_statem` BEAM modules. When you compile:
+When an `on_transition` block is present, the FSM compiles to a `GenServer`-based module. The transition graph and handler logic coexist in the same file:
 
-```bash
-cure compile traffic_light.cure
+```cure
+fsm Turnstile with Integer
+  Locked   --coin-->  Unlocked
+  Unlocked --push-->  Locked
+  Unlocked --coin-->  Unlocked
+  Locked   --push-->  Locked
+
+  on_transition
+    (:locked, :coin, _payload, data) -> {:ok, :unlocked, data + 1}
+    (:unlocked, :push, _payload, data) -> {:ok, :locked, data}
+    (_, _, _, data) -> {:ok, :__same__, data}
 ```
 
-The compiler generates a BEAM module named after the FSM with a `Cure.FSM.` prefix. For `fsm TrafficLight`, the module is `:"Cure.FSM.TrafficLight"`. Each transition becomes a `handle_event` clause in the `gen_statem` callback module.
+The `on_transition` clauses receive `(current_state, event, event_payload, state_payload)` and return `{:ok, next_state, new_payload}` or `{:error, reason}`. Return `:__same__` as next_state to stay in the current state.
+
+## Event suffixes
+
+### Hard events (`event!`)
+
+A `!`-suffixed event auto-fires when the FSM enters a state where that event is the sole outgoing event:
+
+```cure
+fsm Pipeline
+  Idle    --start-->   Setup
+  Setup   --init!-->   Ready
+  Ready   --process--> Done
+```
+
+After entering `Setup`, the `init!` event fires automatically. The compiler verifies that hard events are the sole outgoing event from their source state.
+
+### Soft events (`event?`)
+
+A `?`-suffixed event silently fails without logging or calling `on_failure`:
+
+```cure
+fsm Poller
+  Active --poll?-->  Active
+  Active --done-->   Finished
+```
+
+If `poll?` fails, the FSM stays in its current state without noise.
+
+## Lifecycle callbacks
+
+Optional callback blocks inside the FSM body (callback mode only):
+
+- `on_enter` -- called after entering a state
+- `on_exit` -- called before leaving a state
+- `on_failure` -- called when a normal (non-soft) transition fails
+- `on_timer` -- called periodically when `@timer <ms>` is set
+
+## Simple mode compilation
+
+FSMs without `on_transition` compile to OTP `gen_statem` BEAM modules (the original behavior). Transitions can include inline `when` guards and `do` actions.
+
+The compiler generates a BEAM module named after the FSM with a `Cure.FSM.` prefix. For `fsm TrafficLight`, the module is `:"Cure.FSM.TrafficLight"`.
 
 ## Generated API
 
-Every compiled FSM module exports:
+Both compilation modes export:
 
-- `start_link/0` -- start the FSM process with the initial state
-- `start_link/1` -- start with options (e.g., registered name)
+- `start_link/0`, `start_link/1` -- start the FSM process
 - `send_event/2` -- send an event to an FSM process (asynchronous cast)
-- `get_state/1` -- get the current state (synchronous call)
+- `get_state/1` -- get the current `{state, data}` (synchronous call)
+- `transitions/0` -- return the compiled transition table
+- `allowed/2` or `allowed?/2` -- check if a transition is valid
+- `responds?/2` (callback mode) -- check if an event is handled from a state
 
 Usage from Elixir:
 
 ```elixir
 {:ok, pid} = :"Cure.FSM.TrafficLight".start_link()
 :"Cure.FSM.TrafficLight".send_event(pid, :timer)
-{:ok, {:green, %{}}} = :"Cure.FSM.TrafficLight".get_state(pid)
+{:green, %{}} = :"Cure.FSM.TrafficLight".get_state(pid)
 ```
 
 ## Compile-time verification
 
-The FSM compiler (`Cure.FSM.Verifier`) automatically checks three properties:
+The FSM compiler (`Cure.FSM.Verifier`) automatically checks:
 
-### Reachability
-
-Every state must be reachable from the initial state via BFS traversal of the transition graph. If a state is defined as a target but cannot be reached, the compiler emits a warning.
-
-### Deadlock freedom
-
-Every non-terminal state must have at least one outgoing transition. A state with no outgoing transitions that was not declared terminal is flagged as a potential deadlock.
-
-### Terminal state validation
-
-Declared terminal states must exist in the transition graph. The verifier checks that terminal states are actually reachable and that they correctly have no outgoing transitions.
+1. **Reachability**: every state is reachable from the initial state (BFS)
+2. **Deadlock freedom**: every non-terminal state has outgoing transitions
+3. **Terminal state validation**: declared terminal states exist in the graph
+4. **Hard event validation**: `!` events must be the sole outgoing event from their state
+5. **Ambiguous transition warnings**: warns when the same event from a state leads to multiple targets (requires `on_transition` to resolve)
 
 Example that triggers a reachability warning:
 

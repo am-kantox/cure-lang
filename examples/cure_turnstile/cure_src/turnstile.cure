@@ -1,5 +1,11 @@
-fsm Turnstile
-  Locked   --coin do data + 1--> Unlocked
-  Unlocked --push--> Locked
-  Unlocked --coin do data + 1--> Unlocked
-  Locked   --push--> Locked
+fsm Turnstile with Integer
+  Locked   --coin-->  Unlocked
+  Unlocked --push-->  Locked
+  Unlocked --coin-->  Unlocked
+  Locked   --push-->  Locked
+
+  on_transition
+    (:locked, :coin, _payload, data) -> {:ok, :unlocked, data + 1}
+    (:unlocked, :push, _payload, data) -> {:ok, :locked, data}
+    (:unlocked, :coin, _payload, data) -> {:ok, :unlocked, data + 1}
+    (_, _, _, data) -> {:ok, :__same__, data}

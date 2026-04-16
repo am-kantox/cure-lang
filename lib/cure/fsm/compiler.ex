@@ -1,15 +1,20 @@
 defmodule Cure.FSM.Compiler do
   @moduledoc """
-  Compiles Cure FSM MetaAST definitions into `gen_statem` BEAM modules.
+  Compiles Cure FSM MetaAST definitions into BEAM modules.
 
-  Takes a `{:container, [container_type: :fsm, ...], transitions}` node and
-  produces Erlang abstract forms that implement the OTP `gen_statem` behaviour.
+  Supports two compilation modes:
 
-  The generated module exports:
-  - `start_link/0`, `start_link/1` -- start the FSM process
-  - `send_event/2` -- cast an event to the FSM
-  - `get_state/1` -- synchronous call returning `{state, data}`
-  - `callback_mode/0`, `init/1`, `handle_event/4` -- gen_statem callbacks
+  - **Simple mode** (no `on_transition` block): generates a `gen_statem` module
+    with one `handle_event/4` clause per transition. Supports `when` guards,
+    `do` actions, and `!`/`?` event suffixes.
+
+  - **Callback mode** (`on_transition` present): generates a `GenServer`-based
+    module that embeds a transition table and delegates to user-defined
+    `on_transition` clauses, plus optional lifecycle callbacks (`on_enter`,
+    `on_exit`, `on_failure`, `on_timer`).
+
+  Both modes export a uniform API: `start_link/0,1`, `send_event/2`,
+  `get_state/1`, plus `transitions/0` and `allowed?/2` for introspection.
   """
 
   alias Cure.Pipeline.Events
@@ -21,6 +26,20 @@ defmodule Cure.FSM.Compiler do
   """
   @spec compile(tuple(), keyword()) :: {:ok, list()}
   def compile(ast, opts \\ []) do
+    {:container, meta, _transition_nodes} = ast
+
+    if Keyword.has_key?(meta, :on_transition) do
+      compile_callback_mode(ast, opts)
+    else
+      compile_simple_mode(ast, opts)
+    end
+  end
+
+  # ============================================================================
+  # Simple mode: gen_statem (backward-compatible)
+  # ============================================================================
+
+  defp compile_simple_mode(ast, opts) do
     emit? = Keyword.get(opts, :emit_events, true)
     file = Keyword.get(opts, :file, "nofile")
 
@@ -44,6 +63,8 @@ defmodule Cure.FSM.Compiler do
            {:start_link, 1},
            {:send_event, 2},
            {:get_state, 1},
+           {:transitions, 0},
+           {:allowed, 2},
            {:callback_mode, 0},
            {:init, 1},
            {:handle_event, 4}
@@ -55,6 +76,8 @@ defmodule Cure.FSM.Compiler do
           gen_start_link_1(mod_atom, line),
           gen_send_event(line),
           gen_get_state(line),
+          gen_transitions_fn(transitions, line),
+          gen_allowed_fn(transitions, line),
           gen_init(initial_atom, line),
           gen_handle_event(transitions, all_states, line)
         ]
@@ -66,7 +89,426 @@ defmodule Cure.FSM.Compiler do
     {:ok, forms}
   end
 
-  # -- Transition Extraction ---------------------------------------------------
+  # ============================================================================
+  # Callback mode: GenServer with on_transition dispatch
+  # ============================================================================
+
+  defp compile_callback_mode(ast, opts) do
+    emit? = Keyword.get(opts, :emit_events, true)
+    file = Keyword.get(opts, :file, "nofile")
+
+    {:container, meta, transition_nodes} = ast
+    name = Keyword.get(meta, :name, "unnamed")
+    mod_atom = fsm_module_atom(name)
+    line = Keyword.get(meta, :line, 1)
+    timer = Keyword.get(meta, :timer)
+    on_transition_clauses = Keyword.get(meta, :on_transition, [])
+    on_enter_clauses = Keyword.get(meta, :on_enter, [])
+    on_exit_clauses = Keyword.get(meta, :on_exit, [])
+    on_failure_clauses = Keyword.get(meta, :on_failure, [])
+    on_timer_clauses = Keyword.get(meta, :on_timer, [])
+
+    transitions = extract_transitions(transition_nodes)
+    initial_state = determine_initial_state(transitions)
+    initial_atom = String.to_atom(String.downcase(initial_state || "unknown"))
+
+    # Build the transition table as a list of {from, event, to, kind} tuples
+    trans_table = build_transition_table(transitions)
+
+    # Detect hard states: states where the sole outgoing event is hard (!)
+    hard_states = detect_hard_states(transitions)
+
+    # Detect soft events
+    soft_events = detect_soft_events(transitions)
+
+    # Generate the Elixir module source and compile it
+    module_code =
+      generate_genserver_module(
+        mod_atom,
+        initial_atom,
+        trans_table,
+        hard_states,
+        soft_events,
+        timer,
+        on_transition_clauses,
+        on_enter_clauses,
+        on_exit_clauses,
+        on_failure_clauses,
+        on_timer_clauses
+      )
+
+    # Compile the generated Elixir source to BEAM
+    [{^mod_atom, bytecode}] = Code.compile_string(module_code, file)
+
+    # Load the module
+    :code.purge(mod_atom)
+    {:module, ^mod_atom} = :code.load_binary(mod_atom, ~c"#{file}", bytecode)
+
+    if emit? do
+      Events.emit(:codegen, :module_assembled, mod_atom, Events.meta(file, line))
+    end
+
+    # Return empty forms since the module is already loaded
+    {:ok, :callback_mode}
+  end
+
+  # -- Transition table helpers ------------------------------------------------
+
+  defp build_transition_table(transitions) do
+    Enum.map(transitions, fn t ->
+      from = if t.from == "*", do: :wildcard, else: String.to_atom(String.downcase(t.from))
+      to = String.to_atom(String.downcase(t.to))
+      event = String.to_atom(String.downcase(t.event))
+      kind = Map.get(t, :event_kind, :normal)
+      {from, event, to, kind}
+    end)
+  end
+
+  defp detect_hard_states(transitions) do
+    transitions
+    |> Enum.filter(&(Map.get(&1, :event_kind) == :hard))
+    |> Enum.group_by(& &1.from)
+    |> Enum.flat_map(fn {from, trans} ->
+      all_events = transitions |> Enum.filter(&(&1.from == from)) |> Enum.map(& &1.event) |> Enum.uniq()
+
+      if length(all_events) == 1 do
+        event = String.to_atom(String.downcase(hd(trans).event))
+        [{String.to_atom(String.downcase(from)), event}]
+      else
+        []
+      end
+    end)
+  end
+
+  defp detect_soft_events(transitions) do
+    transitions
+    |> Enum.filter(&(Map.get(&1, :event_kind) == :soft))
+    |> Enum.map(fn t -> String.to_atom(String.downcase(t.event)) end)
+    |> Enum.uniq()
+  end
+
+  # -- Elixir source generation for callback mode ------------------------------
+
+  defp generate_genserver_module(
+         mod_atom,
+         initial_atom,
+         trans_table,
+         hard_states,
+         soft_events,
+         timer,
+         on_transition_clauses,
+         on_enter_clauses,
+         on_exit_clauses,
+         on_failure_clauses,
+         on_timer_clauses
+       ) do
+    trans_table_str = inspect(trans_table)
+    hard_states_str = inspect(hard_states)
+    soft_events_str = inspect(soft_events)
+
+    on_transition_fn = generate_callback_fn(:do_on_transition, 4, on_transition_clauses)
+    on_enter_fn = generate_lifecycle_fn(:do_on_enter, 2, on_enter_clauses)
+    on_exit_fn = generate_lifecycle_fn(:do_on_exit, 2, on_exit_clauses)
+    on_failure_fn = generate_lifecycle_fn(:do_on_failure, 3, on_failure_clauses)
+    on_timer_fn = generate_lifecycle_fn(:do_on_timer, 2, on_timer_clauses)
+
+    timer_init = if timer, do: "Process.send_after(self(), :on_timer, #{timer})", else: ""
+    timer_handler = if timer, do: generate_timer_handler(timer), else: ""
+
+    """
+    defmodule :"#{mod_atom}" do
+      use GenServer
+
+      @transition_table #{trans_table_str}
+      @hard_states #{hard_states_str}
+      @soft_events #{soft_events_str}
+
+      # -- Public API ----------------------------------------------------------
+
+      def start_link, do: start_link(%{})
+      def start_link(init_data) do
+        GenServer.start_link(__MODULE__, init_data)
+      end
+
+      def send_event(pid, event), do: GenServer.cast(pid, {:event, event, nil})
+      def send_event(pid, event, payload), do: GenServer.cast(pid, {:event, event, payload})
+
+      def get_state(pid), do: GenServer.call(pid, :get_state)
+
+      def transitions, do: @transition_table
+
+      def allowed?(from, to) do
+        Enum.any?(@transition_table, fn {f, _e, t, _k} ->
+          (f == from or f == :wildcard) and t == to
+        end)
+      end
+
+      def responds?(from, event) do
+        Enum.any?(@transition_table, fn {f, e, _t, _k} ->
+          (f == from or f == :wildcard) and e == event
+        end)
+      end
+
+      # -- GenServer callbacks -------------------------------------------------
+
+      @impl GenServer
+      def init(init_data) do
+        #{timer_init}
+        {:ok, %{current: :#{initial_atom}, payload: init_data, history: []}}
+      end
+
+      @impl GenServer
+      def handle_call(:get_state, _from, state) do
+        {:reply, {state.current, state.payload}, state}
+      end
+
+      @impl GenServer
+      def handle_cast({:event, event, event_payload}, state) do
+        # Check if the transition is allowed
+        allowed_targets =
+          Enum.flat_map(@transition_table, fn {from, ev, to, _kind} ->
+            if (from == state.current or from == :wildcard) and ev == event, do: [to], else: []
+          end)
+
+        if allowed_targets == [] do
+          # No transition for this event from current state
+          if event in @soft_events do
+            {:noreply, state}
+          else
+            do_on_failure(event, event_payload, state)
+            {:noreply, state}
+          end
+        else
+          # Call on_exit
+          do_on_exit(state.current, state)
+
+          # Call on_transition
+          case do_on_transition(state.current, event, event_payload, state.payload) do
+            {:ok, :__same__, new_payload} ->
+              new_state = %{state | payload: new_payload}
+              {:noreply, new_state}
+
+            {:ok, next, new_payload} ->
+              # Validate the returned target
+              if next in allowed_targets do
+                new_state = %{state |
+                  current: next,
+                  payload: new_payload,
+                  history: [{state.current, event} | Enum.take(state.history, 49)]
+                }
+                # Call on_enter
+                do_on_enter(next, new_state)
+                # Check for hard auto-fire
+                case Keyword.get(@hard_states, next) do
+                  nil -> {:noreply, new_state}
+                  hard_event -> {:noreply, new_state, {:continue, {:auto_transition, hard_event}}}
+                end
+              else
+                # Returned state not in allowed targets; pick first allowed
+                new_state = %{state |
+                  current: hd(allowed_targets),
+                  payload: new_payload,
+                  history: [{state.current, event} | Enum.take(state.history, 49)]
+                }
+                do_on_enter(hd(allowed_targets), new_state)
+                case Keyword.get(@hard_states, hd(allowed_targets)) do
+                  nil -> {:noreply, new_state}
+                  hard_event -> {:noreply, new_state, {:continue, {:auto_transition, hard_event}}}
+                end
+              end
+
+            {:error, _reason} ->
+              if event in @soft_events do
+                {:noreply, state}
+              else
+                do_on_failure(event, event_payload, state)
+                {:noreply, state}
+              end
+          end
+        end
+      end
+
+      @impl GenServer
+      def handle_continue({:auto_transition, event}, state) do
+        handle_cast({:event, event, nil}, state)
+      end
+
+      #{timer_handler}
+
+      # -- Callback implementations --------------------------------------------
+
+      #{on_transition_fn}
+      #{on_enter_fn}
+      #{on_exit_fn}
+      #{on_failure_fn}
+      #{on_timer_fn}
+    end
+    """
+  end
+
+  defp generate_timer_handler(timer_ms) do
+    """
+      @impl GenServer
+      def handle_info(:on_timer, state) do
+        case do_on_timer(state.current, state) do
+          :ok ->
+            Process.send_after(self(), :on_timer, #{timer_ms})
+            {:noreply, state}
+          {:ok, new_payload} ->
+            Process.send_after(self(), :on_timer, #{timer_ms})
+            {:noreply, %{state | payload: new_payload}}
+          {:transition, event, new_payload} ->
+            Process.send_after(self(), :on_timer, #{timer_ms})
+            new_state = %{state | payload: new_payload}
+            handle_cast({:event, event, nil}, new_state)
+          {:reschedule, new_ms} ->
+            Process.send_after(self(), :on_timer, new_ms)
+            {:noreply, state}
+        end
+      end
+    """
+  end
+
+  # Generate the on_transition function from parsed clauses.
+  # The clauses are match_arm AST nodes from the parser.
+  # Since these are Cure AST, we generate Elixir pattern-match function clauses.
+  defp generate_callback_fn(fn_name, _arity, clauses) when clauses != [] do
+    clause_strs =
+      Enum.map(clauses, fn {:match_arm, meta, [body]} ->
+        pattern = Keyword.get(meta, :pattern)
+        guard = Keyword.get(meta, :guard)
+        # If the pattern is a tuple, expand its elements as separate function args
+        args_str = expand_pattern_to_args(pattern)
+        body_str = cure_ast_to_elixir(body)
+        guard_str = if guard, do: " when #{cure_ast_to_elixir(guard)}", else: ""
+        "  defp #{fn_name}(#{args_str})#{guard_str}, do: #{body_str}"
+      end)
+
+    Enum.join(clause_strs, "\n")
+  end
+
+  defp generate_callback_fn(fn_name, _arity, _clauses) do
+    args = Enum.map_join(1..4, ", ", fn i -> "_arg#{i}" end)
+    "  defp #{fn_name}(#{args}), do: {:ok, :__same__, _arg4}"
+  end
+
+  defp generate_lifecycle_fn(fn_name, arity, clauses) when clauses != [] do
+    generate_callback_fn(fn_name, arity, clauses)
+  end
+
+  defp generate_lifecycle_fn(fn_name, arity, _clauses) do
+    args = Enum.map_join(1..arity, ", ", fn i -> "_arg#{i}" end)
+    "  defp #{fn_name}(#{args}), do: :ok"
+  end
+
+  # Expand a tuple pattern into comma-separated args for a function head.
+  # {:tuple, [], [a, b, c, d]} -> "a, b, c, d" (4 separate args)
+  # Non-tuple patterns are emitted as a single arg.
+  defp expand_pattern_to_args({:tuple, _meta, elements}) do
+    Enum.map_join(elements, ", ", &cure_ast_to_elixir/1)
+  end
+
+  defp expand_pattern_to_args(pattern) do
+    cure_ast_to_elixir(pattern)
+  end
+
+  # -- Cure AST to Elixir source string ----------------------------------------
+  # Minimal translator for the subset used in FSM callback clauses.
+
+  defp cure_ast_to_elixir(ast) do
+    case ast do
+      # Tuple literal: {:tuple, meta, elements}
+      {:function_call, meta, args} ->
+        name = Keyword.get(meta, :name, "")
+
+        case name do
+          "tuple" ->
+            inner = Enum.map_join(args, ", ", &cure_ast_to_elixir/1)
+            "{#{inner}}"
+
+          _ ->
+            arg_strs = Enum.map_join(args, ", ", &cure_ast_to_elixir/1)
+            "#{name}(#{arg_strs})"
+        end
+
+      # Literal values
+      {:literal, _meta, value} when is_atom(value) ->
+        inspect(value)
+
+      {:literal, _meta, value} when is_binary(value) ->
+        inspect(value)
+
+      {:literal, _meta, value} when is_integer(value) ->
+        Integer.to_string(value)
+
+      {:literal, _meta, value} when is_float(value) ->
+        Float.to_string(value)
+
+      {:literal, _meta, value} ->
+        inspect(value)
+
+      # Variable reference
+      {:variable, _meta, name} ->
+        if String.starts_with?(name, "_"), do: name, else: name
+
+      # Binary operations
+      {:binary_op, meta, [left, right]} ->
+        op = Keyword.get(meta, :op, "+")
+        "#{cure_ast_to_elixir(left)} #{op} #{cure_ast_to_elixir(right)}"
+
+      # Unary operations
+      {:unary_op, meta, [operand]} ->
+        op = Keyword.get(meta, :op, "-")
+        "#{op}#{cure_ast_to_elixir(operand)}"
+
+      # Tuple expression (direct tuple syntax)
+      {:tuple, _meta, elements} ->
+        inner = Enum.map_join(elements, ", ", &cure_ast_to_elixir/1)
+        "{#{inner}}"
+
+      # Map
+      {:map, _meta, pairs} ->
+        inner =
+          Enum.map_join(pairs, ", ", fn {k, v} ->
+            "#{cure_ast_to_elixir(k)} => #{cure_ast_to_elixir(v)}"
+          end)
+
+        "%{#{inner}}"
+
+      # List
+      {:list, _meta, elements} ->
+        inner = Enum.map_join(elements, ", ", &cure_ast_to_elixir/1)
+        "[#{inner}]"
+
+      # Block
+      {:block, _meta, stmts} ->
+        stmts |> Enum.map_join("\n", &cure_ast_to_elixir/1)
+
+      # Pattern match / assignment
+      {:assignment, _meta, [lhs, rhs]} ->
+        "#{cure_ast_to_elixir(lhs)} = #{cure_ast_to_elixir(rhs)}"
+
+      # Atom (direct)
+      atom when is_atom(atom) ->
+        inspect(atom)
+
+      # String (direct)
+      str when is_binary(str) ->
+        inspect(str)
+
+      # Integer (direct)
+      int when is_integer(int) ->
+        Integer.to_string(int)
+
+      # Fallback
+      other ->
+        inspect(other)
+    end
+  end
+
+  # ============================================================================
+  # Shared: Transition Extraction
+  # ============================================================================
 
   defp extract_transitions(transition_nodes) do
     Enum.flat_map(transition_nodes, fn
@@ -78,7 +520,8 @@ defmodule Cure.FSM.Compiler do
               event: Keyword.get(meta, :event, ""),
               to: Keyword.get(meta, :to, ""),
               guard: Keyword.get(meta, :guard),
-              action: Keyword.get(meta, :action)
+              action: Keyword.get(meta, :action),
+              event_kind: Keyword.get(meta, :event_kind, :normal)
             }
           ]
         else
@@ -103,20 +546,18 @@ defmodule Cure.FSM.Compiler do
     end
   end
 
-  # -- gen_statem callback_mode ------------------------------------------------
+  # ============================================================================
+  # Simple mode: gen_statem forms generation
+  # ============================================================================
 
   defp gen_callback_mode(l) do
-    # callback_mode() -> [handle_event_function, state_enter].
     body =
       {:cons, l, {:atom, l, :handle_event_function}, {:cons, l, {:atom, l, :state_enter}, {nil, l}}}
 
     {:function, l, :callback_mode, 0, [{:clause, l, [], [], [body]}]}
   end
 
-  # -- start_link/0 -----------------------------------------------------------
-
   defp gen_start_link_0(mod_atom, _initial_atom, l) do
-    # start_link() -> gen_statem:start_link(Module, #{}, []).
     body =
       {:call, l, {:remote, l, {:atom, l, :gen_statem}, {:atom, l, :start_link}},
        [{:atom, l, mod_atom}, {:map, l, []}, {nil, l}]}
@@ -124,10 +565,7 @@ defmodule Cure.FSM.Compiler do
     {:function, l, :start_link, 0, [{:clause, l, [], [], [body]}]}
   end
 
-  # -- start_link/1 -----------------------------------------------------------
-
   defp gen_start_link_1(mod_atom, l) do
-    # start_link(InitData) -> gen_statem:start_link(Module, InitData, []).
     body =
       {:call, l, {:remote, l, {:atom, l, :gen_statem}, {:atom, l, :start_link}},
        [{:atom, l, mod_atom}, {:var, l, :V_init_data}, {nil, l}]}
@@ -135,31 +573,60 @@ defmodule Cure.FSM.Compiler do
     {:function, l, :start_link, 1, [{:clause, l, [{:var, l, :V_init_data}], [], [body]}]}
   end
 
-  # -- send_event/2 -----------------------------------------------------------
-
   defp gen_send_event(l) do
-    # send_event(Pid, Event) -> gen_statem:cast(Pid, Event).
     body =
       {:call, l, {:remote, l, {:atom, l, :gen_statem}, {:atom, l, :cast}}, [{:var, l, :V_pid}, {:var, l, :V_event}]}
 
     {:function, l, :send_event, 2, [{:clause, l, [{:var, l, :V_pid}, {:var, l, :V_event}], [], [body]}]}
   end
 
-  # -- get_state/1 -----------------------------------------------------------
-
   defp gen_get_state(l) do
-    # get_state(Pid) -> gen_statem:call(Pid, get_state).
     body =
       {:call, l, {:remote, l, {:atom, l, :gen_statem}, {:atom, l, :call}}, [{:var, l, :V_pid}, {:atom, l, :get_state}]}
 
     {:function, l, :get_state, 1, [{:clause, l, [{:var, l, :V_pid}], [], [body]}]}
   end
 
-  # -- init/1 -----------------------------------------------------------------
+  # transitions/0 -- returns the compiled transition table as a list
+  defp gen_transitions_fn(transitions, l) do
+    table_elements =
+      Enum.reduce(Enum.reverse(transitions), {nil, l}, fn t, acc ->
+        from_atom = if t.from == "*", do: :wildcard, else: String.to_atom(String.downcase(t.from))
+        to_atom = String.to_atom(String.downcase(t.to))
+        event_atom = String.to_atom(String.downcase(t.event))
+        kind = Map.get(t, :event_kind, :normal)
+
+        elem =
+          {:tuple, l,
+           [
+             {:atom, l, from_atom},
+             {:atom, l, event_atom},
+             {:atom, l, to_atom},
+             {:atom, l, kind}
+           ]}
+
+        {:cons, l, elem, acc}
+      end)
+
+    {:function, l, :transitions, 0, [{:clause, l, [], [], [table_elements]}]}
+  end
+
+  # allowed/2 -- check if a (from, event) pair has a valid target
+  defp gen_allowed_fn(transitions, l) do
+    # Build clauses for each transition
+    match_clauses =
+      Enum.map(transitions, fn t ->
+        from_pat = if t.from == "*", do: {:var, l, :_}, else: {:atom, l, String.to_atom(String.downcase(t.from))}
+        event_atom = String.to_atom(String.downcase(t.event))
+        {:clause, l, [from_pat, {:atom, l, event_atom}], [], [{:atom, l, true}]}
+      end)
+
+    catch_all = {:clause, l, [{:var, l, :_}, {:var, l, :_}], [], [{:atom, l, false}]}
+
+    {:function, l, :allowed, 2, match_clauses ++ [catch_all]}
+  end
 
   defp gen_init(initial_atom, l) do
-    # init(InitData) -> {ok, InitialState, InitData}.
-    # start_link/0 passes #{} (empty map), start_link/1 passes custom data.
     body =
       {:tuple, l,
        [
@@ -168,16 +635,16 @@ defmodule Cure.FSM.Compiler do
          {:var, l, :V_init_data}
        ]}
 
-    clause =
-      {:clause, l, [{:var, l, :V_init_data}], [], [body]}
-
-    {:function, l, :init, 1, [clause]}
+    {:function, l, :init, 1, [{:clause, l, [{:var, l, :V_init_data}], [], [body]}]}
   end
 
-  # -- handle_event/4 ----------------------------------------------------------
-
   defp gen_handle_event(transitions, _all_states, l) do
-    # Generate one clause per transition (with optional guards and actions)
+    # Separate hard events for auto-fire actions
+    hard_transitions = Enum.filter(transitions, &(Map.get(&1, :event_kind) == :hard))
+
+    soft_events =
+      transitions |> Enum.filter(&(Map.get(&1, :event_kind) == :soft)) |> Enum.map(& &1.event) |> Enum.uniq()
+
     transition_clauses =
       Enum.flat_map(transitions, fn trans ->
         to_atom = String.to_atom(String.downcase(trans.to))
@@ -192,36 +659,39 @@ defmodule Cure.FSM.Compiler do
             String.to_atom(String.downcase(trans.from))
           end
 
-        [gen_transition_clause(from, event_atom, to_atom, guard_ast, action_ast, l)]
+        event_kind = Map.get(trans, :event_kind, :normal)
+        [gen_transition_clause(from, event_atom, to_atom, guard_ast, action_ast, event_kind, hard_transitions, l)]
       end)
 
-    # get_state handler: handle_event({call, From}, get_state, State, Data) ->
-    #   {keep_state_and_data, [{reply, From, {State, Data}}]}
-    get_state_clause = gen_get_state_clause(l)
+    # Soft-event catch-all: silently keep state for unmatched soft events
+    soft_catch_alls =
+      Enum.map(soft_events, fn event ->
+        event_atom = String.to_atom(String.downcase(event))
 
-    # state_enter handler (no-op)
+        {:clause, l, [{:atom, l, :cast}, {:atom, l, event_atom}, {:var, l, :_}, {:var, l, :_}], [],
+         [{:atom, l, :keep_state_and_data}]}
+      end)
+
+    get_state_clause = gen_get_state_clause(l)
     enter_clause = gen_enter_clause(l)
 
-    # Catch-all clause: handle_event(_, _, _, _) -> keep_state_and_data
     catch_all =
       {:clause, l, [{:var, l, :_}, {:var, l, :_}, {:var, l, :_}, {:var, l, :_}], [], [{:atom, l, :keep_state_and_data}]}
 
-    all_clauses = [get_state_clause, enter_clause] ++ transition_clauses ++ [catch_all]
+    all_clauses = [get_state_clause, enter_clause] ++ transition_clauses ++ soft_catch_alls ++ [catch_all]
 
     {:function, l, :handle_event, 4, all_clauses}
   end
 
-  defp gen_transition_clause(from, event_atom, to_atom, guard_ast, action_ast, l) do
+  defp gen_transition_clause(from, event_atom, to_atom, guard_ast, action_ast, _event_kind, hard_transitions, l) do
     from_pattern =
       case from do
         :_ -> {:var, l, :_}
         atom -> {:atom, l, atom}
       end
 
-    # Compile guard if present
     guard_forms =
       if guard_ast do
-        # Compile the guard AST to an Erlang guard expression
         case Cure.Compiler.Codegen.compile_expr(guard_ast) do
           {:ok, guard_form} -> [[guard_form]]
           _ -> []
@@ -230,10 +700,8 @@ defmodule Cure.FSM.Compiler do
         []
       end
 
-    # If there's an action, the body updates Data; otherwise just pass Data through
     data_expr =
       if action_ast do
-        # Action modifies the data map. Compile the action expression.
         case Cure.Compiler.Codegen.compile_expr(action_ast) do
           {:ok, action_form} -> action_form
           _ -> {:var, l, :V_data}
@@ -242,13 +710,35 @@ defmodule Cure.FSM.Compiler do
         {:var, l, :V_data}
       end
 
+    # For hard events (!) entering a state that has a sole hard outgoing event,
+    # emit {next_state, To, Data, [{next_event, internal, HardEvent}]}
+    next_hard =
+      Enum.find(hard_transitions, fn ht ->
+        ht.from != "*" and String.to_atom(String.downcase(ht.from)) == to_atom
+      end)
+
     body =
-      {:tuple, l,
-       [
-         {:atom, l, :next_state},
-         {:atom, l, to_atom},
-         data_expr
-       ]}
+      if next_hard do
+        next_event_atom = String.to_atom(String.downcase(next_hard.event))
+        # {next_state, To, Data, [{next_event, cast, Event}]}
+        action_list =
+          {:cons, l, {:tuple, l, [{:atom, l, :next_event}, {:atom, l, :cast}, {:atom, l, next_event_atom}]}, {nil, l}}
+
+        {:tuple, l,
+         [
+           {:atom, l, :next_state},
+           {:atom, l, to_atom},
+           data_expr,
+           action_list
+         ]}
+      else
+        {:tuple, l,
+         [
+           {:atom, l, :next_state},
+           {:atom, l, to_atom},
+           data_expr
+         ]}
+      end
 
     {:clause, l,
      [
@@ -260,8 +750,6 @@ defmodule Cure.FSM.Compiler do
   end
 
   defp gen_get_state_clause(l) do
-    # handle_event({call, From}, get_state, State, Data) ->
-    #   {keep_state_and_data, [{reply, From, {State, Data}}]}
     reply_action =
       {:tuple, l,
        [
@@ -287,7 +775,6 @@ defmodule Cure.FSM.Compiler do
   end
 
   defp gen_enter_clause(l) do
-    # handle_event(enter, _OldState, _State, Data) -> {keep_state_and_data, []}
     {:clause, l,
      [
        {:atom, l, :enter},
@@ -299,9 +786,8 @@ defmodule Cure.FSM.Compiler do
 
   # -- Helpers -----------------------------------------------------------------
 
-  defp fsm_module_atom(name) do
-    # "TrafficLight" -> :"Cure.FSM.TrafficLight"
-    # Elixir-style module atom with Cure.FSM. prefix, preserving PascalCase
+  @doc false
+  def fsm_module_atom(name) do
     String.to_atom("Cure.FSM." <> name)
   end
 end

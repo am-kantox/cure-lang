@@ -22,20 +22,28 @@ passage counting on top.
 Defined in `cure_src/turnstile.cure`:
 
 ```cure
-fsm Turnstile
-  Locked   --coin do data + 1--> Unlocked
-  Unlocked --push--> Locked
-  Unlocked --coin do data + 1--> Unlocked
-  Locked   --push--> Locked
+fsm Turnstile with Integer
+  Locked   --coin-->  Unlocked
+  Unlocked --push-->  Locked
+  Unlocked --coin-->  Unlocked
+  Locked   --push-->  Locked
+
+  on_transition
+    (:locked, :coin, _payload, data) -> {:ok, :unlocked, data + 1}
+    (:unlocked, :push, _payload, data) -> {:ok, :locked, data}
+    (:unlocked, :coin, _payload, data) -> {:ok, :unlocked, data + 1}
+    (_, _, _, data) -> {:ok, :__same__, data}
 ```
 
-The `do` blocks mutate the FSM's state data during transitions. Here
-`data` refers to the current value and the expression produces the new
-value. Each `coin` event increments the counter; `push` leaves it
-unchanged.
+The `on_transition` block contains pattern-matching clauses on
+`(current_state, event, event_payload, state_payload)` and returns
+`{:ok, next_state, new_payload}`. This keeps both the transition graph
+and the transition logic in the same `.cure` file -- inspired by
+Finitomata's approach.
 
-This compiles to `:\"Cure.FSM.Turnstile\"`, a full OTP `gen_statem` with
-`start_link/0`, `start_link/1`, `send_event/2`, and `get_state/1`.
+This compiles to `:\"Cure.FSM.Turnstile\"`, a `GenServer`-based module
+with `start_link/0,1`, `send_event/2`, `get_state/1`, `transitions/0`,
+`allowed?/2`, and `responds?/2`.
 `start_link/1` accepts custom initial data (e.g. `0` for the counter).
 
 ## Project Structure

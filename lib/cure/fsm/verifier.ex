@@ -34,6 +34,7 @@ defmodule Cure.FSM.Verifier do
     {:container, meta, transitions} = ast
     name = Keyword.get(meta, :name, "unnamed")
     terminal_states = Keyword.get(meta, :terminal_states, [])
+    on_transition_clauses = Keyword.get(meta, :on_transition, [])
     line = Keyword.get(meta, :line, 1)
 
     # Extract transition data
@@ -50,15 +51,23 @@ defmodule Cure.FSM.Verifier do
     reachability_errors = check_reachability(all_states, initial, graph, emit?, file, line)
     deadlock_errors = check_deadlock_freedom(all_states, graph, terminal_states, emit?, file, line)
     terminal_errors = check_terminal_states(terminal_states, all_states, file, line)
+    hard_errors = check_hard_events(trans, name, file, line)
 
-    all_errors = reachability_errors ++ deadlock_errors ++ terminal_errors
+    coverage_warnings =
+      if on_transition_clauses != [] do
+        check_on_transition_coverage(trans, on_transition_clauses, name, emit?, file, line)
+      else
+        []
+      end
+
+    all_errors = reachability_errors ++ deadlock_errors ++ terminal_errors ++ hard_errors
 
     if all_errors == [] do
       if emit? do
         Events.emit(:fsm_verifier, :verification_passed, name, Events.meta(file, line))
       end
 
-      {:ok, [{:verification_passed, name}]}
+      {:ok, [{:verification_passed, name}] ++ coverage_warnings}
     else
       if emit? do
         Events.emit(:fsm_verifier, :verification_failed, all_errors, Events.meta(file, line))
@@ -77,7 +86,8 @@ defmodule Cure.FSM.Verifier do
           from = Keyword.get(meta, :from, "*")
           event = Keyword.get(meta, :event, "")
           to = Keyword.get(meta, :to, "")
-          [%{from: from, event: event, to: to}]
+          event_kind = Keyword.get(meta, :event_kind, :normal)
+          [%{from: from, event: event, to: to, event_kind: event_kind}]
         else
           []
         end
@@ -195,5 +205,74 @@ defmodule Cure.FSM.Verifier do
         [{:invalid_terminal, "terminal state '#{ts}' does not exist in the FSM", line: line}]
       end
     end)
+  end
+
+  # -- Hard Event Validation ---------------------------------------------------
+  # A hard (!) event must be the sole outgoing event from its source state.
+
+  defp check_hard_events(trans, name, _file, line) do
+    hard_trans = Enum.filter(trans, &(&1.event_kind == :hard))
+
+    Enum.flat_map(hard_trans, fn %{from: from, event: event} ->
+      # Count distinct events leaving this state
+      outgoing_events =
+        trans
+        |> Enum.filter(&(&1.from == from and &1.from != "*"))
+        |> Enum.map(& &1.event)
+        |> Enum.uniq()
+
+      if length(outgoing_events) > 1 do
+        [
+          {:hard_event_not_sole,
+           "FSM '#{name}': hard event '#{event}!' from state '#{from}' must be the sole outgoing event, but found: #{inspect(outgoing_events)}",
+           line: line}
+        ]
+      else
+        []
+      end
+    end)
+  end
+
+  # -- on_transition coverage check --------------------------------------------
+  # Warn about (from, event) pairs not explicitly covered by on_transition clauses.
+  # This is informational only -- the catch-all clause is expected to handle the rest.
+
+  defp check_on_transition_coverage(trans, _clauses, name, emit?, file, line) do
+    # For now, emit an informational event; full clause analysis would require
+    # pattern-matching evaluation which is beyond compile-time verification.
+    non_wildcard = Enum.reject(trans, &(&1.from == "*"))
+    pairs = Enum.map(non_wildcard, fn t -> {t.from, t.event} end) |> Enum.uniq()
+
+    if emit? do
+      Events.emit(
+        :fsm_verifier,
+        :on_transition_coverage,
+        {name, length(pairs)},
+        Events.meta(file, line)
+      )
+    end
+
+    # Return informational warnings (not errors) if there are ambiguous transitions
+    ambiguous =
+      pairs
+      |> Enum.group_by(fn {from, _event} -> from end)
+      |> Enum.flat_map(fn {from, events_for_state} ->
+        events_for_state
+        |> Enum.group_by(fn {_from, event} -> event end)
+        |> Enum.flat_map(fn {event, _occurrences} ->
+          targets = trans |> Enum.filter(&(&1.from == from and &1.event == event)) |> Enum.map(& &1.to)
+
+          if length(targets) > 1 do
+            [
+              {:ambiguous_transition_warning,
+               "FSM '#{name}': event '#{event}' from '#{from}' leads to multiple states #{inspect(targets)}; on_transition must resolve"}
+            ]
+          else
+            []
+          end
+        end)
+      end)
+
+    ambiguous
   end
 end

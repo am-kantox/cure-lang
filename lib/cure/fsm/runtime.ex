@@ -94,6 +94,35 @@ defmodule Cure.FSM.Runtime do
   @spec alive?(pid()) :: boolean()
   def alive?(pid), do: Process.alive?(pid)
 
+  @doc """
+  Check if a transition from `from` state is allowed for `event` in the given FSM module.
+
+  Delegates to the FSM module's compiled `allowed/2` function.
+  """
+  @spec allowed?(module(), atom(), atom()) :: boolean()
+  def allowed?(fsm_module, from, event) do
+    if function_exported?(fsm_module, :allowed, 2) do
+      fsm_module.allowed(from, event)
+    else
+      false
+    end
+  end
+
+  @doc """
+  Check if the FSM module can respond to `event` from state `from`.
+
+  For callback-mode FSMs, delegates to `responds?/2`.
+  For simple-mode FSMs, delegates to `allowed/2`.
+  """
+  @spec responds?(module(), atom(), atom()) :: boolean()
+  def responds?(fsm_module, from, event) do
+    cond do
+      function_exported?(fsm_module, :responds?, 2) -> fsm_module.responds?(from, event)
+      function_exported?(fsm_module, :allowed, 2) -> fsm_module.allowed(from, event)
+      true -> false
+    end
+  end
+
   @doc "Get info about a running FSM instance from the registry."
   @spec get_info(pid()) :: {:ok, map()} | :error
   def get_info(pid) do

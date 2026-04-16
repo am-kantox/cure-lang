@@ -755,6 +755,7 @@ defmodule Cure.Compiler.Printer do
   defp fsm_to_string(meta, body, depth, indent) do
     name = Keyword.get(meta, :name)
     payload = Keyword.get(meta, :payload)
+    timer = Keyword.get(meta, :timer)
     pad = String.duplicate(indent, depth + 1)
 
     payload_str =
@@ -769,14 +770,45 @@ defmodule Cure.Compiler.Printer do
       |> Enum.map(&to_string(&1, depth + 1, indent))
       |> Enum.join("\n#{pad}")
 
-    "fsm #{name}#{payload_str}\n#{pad}#{transitions_str}"
+    # Annotations
+    annotations =
+      if timer, do: ["\n#{pad}@timer #{timer}"], else: []
+
+    # Callback blocks
+    callback_blocks =
+      ~w(on_transition on_enter on_exit on_failure on_timer)a
+      |> Enum.flat_map(fn cb_name ->
+        case Keyword.get(meta, cb_name) do
+          clauses when is_list(clauses) and clauses != [] ->
+            clauses_str =
+              clauses
+              |> Enum.map(&to_string(&1, depth + 2, indent))
+              |> Enum.join("\n#{String.duplicate(indent, depth + 2)}")
+
+            ["\n#{pad}#{cb_name}\n#{String.duplicate(indent, depth + 2)}#{clauses_str}"]
+
+          _ ->
+            []
+        end
+      end)
+
+    "fsm #{name}#{payload_str}\n#{pad}#{transitions_str}#{annotations}#{callback_blocks}"
   end
 
   defp fsm_transition_to_string(meta, _depth, _indent) do
     from = Keyword.get(meta, :from)
     event = Keyword.get(meta, :event)
     to = Keyword.get(meta, :to)
-    "#{from} --#{event}--> #{to}"
+    event_kind = Keyword.get(meta, :event_kind, :normal)
+
+    suffix =
+      case event_kind do
+        :hard -> "!"
+        :soft -> "?"
+        _ -> ""
+      end
+
+    "#{from} --#{event}#{suffix}--> #{to}"
   end
 
   # -- Type Annotation -------------------------------------------------------

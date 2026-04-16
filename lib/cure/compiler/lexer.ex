@@ -57,7 +57,8 @@ defmodule Cure.Compiler.Lexer do
     tokens: [],
     indent_stack: [0],
     at_line_start: true,
-    paren_depth: 0
+    paren_depth: 0,
+    fsm_transition_depth: 0
   ]
 
   @type t :: %__MODULE__{}
@@ -321,6 +322,21 @@ defmodule Cure.Compiler.Lexer do
       consume_while(state, fn c ->
         c in ?a..?z or c in ?A..?Z or c in ?0..?9 or c == ?_
       end)
+
+    # Inside FSM transition bodies, allow trailing ! or ? on identifiers
+    # to support determined (event!) and soft (event?) event suffixes.
+    {word, state} =
+      if state.fsm_transition_depth > 0 and word not in @keyword_strings do
+        case peek(state) do
+          c when c in [?!, ??] ->
+            {word <> <<c::utf8>>, advance(state, 1)}
+
+          _ ->
+            {word, state}
+        end
+      else
+        {word, state}
+      end
 
     {type, value} =
       if word in @keyword_strings do
@@ -765,7 +781,7 @@ defmodule Cure.Compiler.Lexer do
     state = advance(state, 2)
     token = Token.new(:transition_open, "--", state.line, start_col)
     maybe_emit_event(state, token)
-    state = %{state | tokens: [token | state.tokens]}
+    state = %{state | tokens: [token | state.tokens], fsm_transition_depth: state.fsm_transition_depth + 1}
 
     # Now lex until we find -->
     lex_fsm_transition_body(state)
@@ -778,7 +794,7 @@ defmodule Cure.Compiler.Lexer do
         state = advance(state, 3)
         token = Token.new(:transition_close, "-->", state.line, close_col)
         maybe_emit_event(state, token)
-        {:ok, %{state | tokens: [token | state.tokens]}}
+        {:ok, %{state | tokens: [token | state.tokens], fsm_transition_depth: max(state.fsm_transition_depth - 1, 0)}}
 
       {nil, _, _} ->
         {:error, {:unterminated_fsm_transition, state.line, state.col}, state}
