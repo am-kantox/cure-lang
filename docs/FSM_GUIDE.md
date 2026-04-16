@@ -38,13 +38,13 @@ fsm Turnstile with Integer
   Locked   --push-->  Locked
 
   on_transition
-    (:locked, :coin, _payload, data) -> {:ok, :unlocked, data + 1}
-    (:unlocked, :push, _payload, data) -> {:ok, :locked, data}
-    (_, _, _, data) -> {:ok, :__same__, data}
+    (:locked, :coin, _payload, data) -> %[:ok, :unlocked, data + 1]
+    (:unlocked, :push, _payload, data) -> %[:ok, :locked, data]
+    (_, _, _, data) -> %[:ok, :__same__, data]
 ```
 
 The `on_transition` clauses receive `(current_state, event, event_payload, state_payload)`
-and return `{:ok, next_state, new_payload}` or `{:error, reason}`.
+and return `%[:ok, next_state, new_payload]` or `%[:error, reason]`.
 Return `:__same__` as next_state to stay in the current state.
 
 ## Event Suffixes (Finitomata-inspired)

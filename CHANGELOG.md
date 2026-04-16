@@ -8,6 +8,73 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.16.0] -- Finitomata-Inspired FSM Rewrite
+
+Complete rethinking of FSM handling. The FSM definition and transition logic
+now coexist in the same `.cure` file via callback mode, inspired by
+[Finitomata](https://hexdocs.pm/finitomata). Simple mode remains
+backward-compatible.
+
+### Added -- Dual-Mode FSM Compilation
+- **Callback mode**: FSMs with an `on_transition` block compile to
+  `GenServer`-based modules with embedded transition tables, user-defined
+  `on_transition/4` dispatch, and lifecycle callbacks
+- **Simple mode** (backward-compatible): `gen_statem` codegen now includes
+  `transitions/0` and `allowed/2` introspection, hard event auto-fire via
+  `next_event` actions, and soft event silent catch-all clauses
+- `Cure.Compiler` pipeline handles both modes transparently
+
+### Added -- Event Suffixes
+- **Hard events** (`event!`): auto-fire when the FSM enters a state where
+  the event is the sole outgoing transition. Compiler verifies this constraint.
+- **Soft events** (`event?`): failed transitions are silently swallowed
+  without logging or calling `on_failure`
+
+### Added -- Lifecycle Callbacks
+- `on_enter` -- called after entering a state
+- `on_exit` -- called before leaving a state
+- `on_failure` -- called when a normal (non-soft) transition fails
+- `on_timer` -- called periodically when `@timer <ms>` is set
+
+### Added -- FSM Callback Clause Syntax
+- Parser: `(pat1, pat2, ...) -> body` clause syntax for FSM callbacks
+- Lexer: `fsm_transition_depth` tracking for `!`/`?` identifier suffixes
+- Parser: `@timer <ms>` annotation support
+- Parser: `event_kind` classification (`:hard`, `:soft`, `:normal`)
+
+### Added -- Verifier Enhancements
+- Hard event validation: `!` events must be the sole outgoing event
+- `on_transition` coverage warnings for ambiguous transitions
+- Informational pipeline events for coverage analysis
+
+### Added -- Introspection API
+- `transitions/0` -- compiled transition table (both modes)
+- `allowed/2` / `allowed?/2` -- check transition validity
+- `responds?/2` -- check event availability from a state (callback mode)
+- `Cure.FSM.Runtime.allowed?/3` and `responds?/3` delegation
+
+### Changed -- LSP
+- Symbols: FSM transitions as children with event suffix and kind labels;
+  callback blocks and `@timer` as FSM children; detail shows compilation mode
+- Hover: `on_transition` and lifecycle callbacks show signature documentation;
+  hard/soft event patterns show explanatory hover text
+- Completions: FSM callback names offered inside FSM blocks
+
+### Changed -- MCP
+- `analyze_fsm`: reports compilation mode, timer, event kinds with suffixes,
+  and callback blocks with clause counts
+- `syntax_help("fsm")`: documents both modes, event suffixes, lifecycle callbacks
+
+### Changed -- Printer
+- Event suffix output (`!`/`?`) in transition rendering
+- Callback block rendering in FSM output
+- `@timer` annotation rendering
+
+### Changed -- Examples
+- `cure_turnstile/` rewritten to use callback mode with `on_transition`
+
+---
+
 ## [0.15.0] -- Developer Experience
 
 Public API for parsing and printing Cure source, an effect system for tracking

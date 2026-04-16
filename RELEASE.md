@@ -1,84 +1,62 @@
-# Cure v0.15.0 -- Developer Experience
+# Cure v0.16.0 -- Finitomata-Inspired FSM Rewrite
 
 Cure is a dependently-typed programming language for the BEAM virtual machine
 with first-class finite state machines and SMT-backed verification.
 
-v0.15.0 focuses on developer experience: a public `Cure.quote` / `Cure.quoted_to_string`
-API (modeled after Elixir's `quote` and `Macro.to_string`), an effect system that
-tracks side effects through the type system, HTML documentation generation,
-a code formatter, and an interactive REPL.
+v0.16.0 completely rethinks FSM handling. Inspired by
+[Finitomata](https://hexdocs.pm/finitomata), FSM definitions and transition
+logic now coexist in the same `.cure` file. The new callback mode compiles
+to `GenServer`-based modules with inline `on_transition` handlers, while
+simple mode (backward-compatible `gen_statem`) gains introspection APIs and
+event suffix support.
 
 ## Highlights
 
-### Public API
-- `Cure.quote/2` -- parse Cure source into MetaAST 3-tuples
-- `Cure.quoted_to_string/2` -- convert MetaAST back to Cure source (round-trip capable)
-- Clean entry point for tooling, macros, and metaprogramming
+### Dual-Mode FSM Compilation
+- **Callback mode** (new): `on_transition` block compiles to a `GenServer`
+  with embedded transition table and user-defined dispatch clauses
+- **Simple mode** (enhanced): `gen_statem` now exports `transitions/0`,
+  `allowed/2`, and supports hard/soft event suffixes
 
-### Effect System
-- `Cure.Types.Effects` -- infer side effects from function bodies (IO, state, exception, spawn, extern)
-- Effect checking: declared effects validated against inferred effects
-- `@extern` classification by target module (`:io` -> IO, `:ets` -> state, etc.)
-- Pipeline event emission for effect inference results
-- Pure functions identified for aggressive optimization
+### Event Suffixes
+- `event!` -- hard/determined: auto-fires when the FSM enters a state where
+  this is the sole outgoing event
+- `event?` -- soft: failed transitions are silently swallowed
 
-### Source Printer
-- `Cure.Compiler.Printer` -- full AST-to-source printer covering all Cure constructs
-- Handles literals, operators, bindings, conditionals, pattern matching, collections,
-  comprehensions, lambdas, function definitions, containers (mod/rec/enum/proto/impl/fsm),
-  type annotations, decorators, imports, exception handling
-- Round-trip verified: `quote -> print -> re-quote` produces equivalent AST
+### Lifecycle Callbacks
+- `on_enter`, `on_exit`, `on_failure`, `on_timer`
 
-### Documentation Generator
-- `Cure.Doc.Extractor` -- extract structured docs from module ASTs
-- `Cure.Doc.HTMLGenerator` -- static HTML docs with dark/light theme (system preference)
-- Per-module pages with function signatures, types, protocols, effects, badges
-- `cure doc [path]` CLI command
+### Introspection API
+- `transitions/0`, `allowed/2` / `allowed?/2`, `responds?/2`
 
-### Code Formatter
-- `cure fmt [path]` -- format `.cure` source files via parse-then-print
-- Consistent indentation and style across projects
-
-### Interactive REPL
-- `cure repl` -- evaluate Cure expressions interactively
-- Wraps input in temporary modules, compiles and executes on the fly
-- `:quit` / `:q` / `:exit` to exit
-
-### Compiler Refactoring
-- `Cure.Compiler.Token` -- extracted Token struct with type, value, line, col
-- `Cure.Compiler.Parser.Precedence` -- extracted Pratt parser binding power table
-
-### Standard Library
-18 self-hosted modules:
-Std.Core, Std.List, Std.Math, Std.String, Std.Pair, Std.Io,
-Std.System, Std.Show, Std.Fsm, Std.Eq, Std.Ord, Std.Result,
-Std.Map, Std.Set, Std.Option, Std.Functor, Std.Vector, Std.Test
+### Compile-Time Verification
+- Hard event validation, ambiguous transition warnings, coverage analysis
+- All existing checks preserved (reachability, deadlock freedom, terminal states)
 
 ### Tooling
-- Standalone CLI: `cure compile|run|check|lsp|stdlib|init|deps|test|doc|fmt|repl|explain|version|help`
-- LSP server: diagnostics, hover, completions, document symbols, definition, code actions
-- MCP server: 7 AI tools for compile/parse/check/analyze/help
-- Compilation profiler with per-stage event tracking
-- `cure-lsp` executable for editor integration
+- LSP: FSM transitions as document symbols; hover for callbacks; completions
+- MCP: enhanced `analyze_fsm`; rewritten FSM syntax help
 
-## Changes since v0.14.0
+## Example
 
-### New modules
-- `Cure.quote/2`, `Cure.quoted_to_string/2` -- public parsing/printing API
-- `Cure.Compiler.Printer` -- MetaAST to Cure source code
-- `Cure.Compiler.Token` -- token struct (extracted from Lexer)
-- `Cure.Compiler.Parser.Precedence` -- binding power table (extracted from Parser)
-- `Cure.Doc.Extractor` -- documentation extraction from AST
-- `Cure.Doc.HTMLGenerator` -- static HTML doc generation
-- `Cure.Types.Effects` -- effect inference and checking
+```cure
+fsm Turnstile with Integer
+  Locked   --coin-->  Unlocked
+  Unlocked --push-->  Locked
+  Unlocked --coin-->  Unlocked
+  Locked   --push-->  Locked
 
-### New CLI commands
-- `cure doc [path|dir]` -- generate HTML documentation
-- `cure fmt [path|dir]` -- format Cure source files
-- `cure repl` -- interactive Cure session
+  on_transition
+    (:locked, :coin, _payload, data) -> %[:ok, :unlocked, data + 1]
+    (:unlocked, :push, _payload, data) -> %[:ok, :locked, data]
+    (_, _, _, data) -> %[:ok, :__same__, data]
+```
 
-### New stdlib
-- `Std.Test` (5 fns) -- assert, assert_eq, assert_ne, assert_gt, assert_lt
+## Changes since v0.15.0
 
-### New examples
-- `dependent_types.cure` -- refinement types and guarded functions
+See CHANGELOG.md for the full list.
+
+## The numbers
+
+714 tests (all passing). Zero compilation warnings. Zero credo issues.
+55 Elixir source files. 18 stdlib modules.

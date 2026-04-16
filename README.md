@@ -49,7 +49,10 @@ Metastatic's cross-language analysis tools.
   field access (`p.x`), and functional update (`Point{p | x: new_x}`);
   compile to BEAM maps; type-checked with per-field schemas
 - **First-class FSMs** -- finite state machines as language constructs with
-  compile-time verification (reachability, deadlock freedom, guard exhaustiveness)
+  compile-time verification (reachability, deadlock freedom, hard event validation),
+  dual-mode compilation (simple `gen_statem` or callback `GenServer`),
+  Finitomata-inspired `!`/`?` event suffixes, inline `on_transition` handlers,
+  and lifecycle callbacks (`on_enter`, `on_exit`, `on_failure`, `on_timer`)
 - **Indentation-structured** -- no closing delimiters, visual layout determines scope
 - **Expression-oriented** -- everything is an expression, the last expression in a block is its value
 - **BEAM-native** -- compiles to standard BEAM bytecode, full OTP interoperability
@@ -131,10 +134,14 @@ module.my_function(args)
   field access, update), modules (two-pass with record schema registration);
   emits `:type_checker` pipeline events
 - `Cure.FSM.Verifier` -- structural FSM verification: reachability (BFS),
-  deadlock freedom, terminal state validation; emits `:fsm_verifier` events
-- `Cure.FSM.Compiler` -- FSM MetaAST to `gen_statem` BEAM modules (`mod TrafficLight`
-  compiles to `:'Cure.FSM.TrafficLight'`); generates `start_link`, `send_event`,
-  `get_state`, transition handling with wildcard support
+  deadlock freedom, terminal state validation, hard event validation,
+  ambiguous transition warnings; emits `:fsm_verifier` events
+- `Cure.FSM.Compiler` -- dual-mode FSM compiler: simple mode generates
+  `gen_statem` BEAM modules; callback mode (with `on_transition` block)
+  generates `GenServer`-based modules with embedded transition tables.
+  Supports `!` (hard/auto-fire) and `?` (soft/silent) event suffixes,
+  lifecycle callbacks (`on_enter`, `on_exit`, `on_failure`, `on_timer`),
+  and introspection (`transitions/0`, `allowed?/2`, `responds?/2`)
 - `Cure.Compiler.Errors` -- structured error formatter with source locations
   for all pipeline stages (lex, parse, type, codegen, FSM verifier)
 - `Cure.Types.Protocol` -- protocol definition and implementation tracking;
@@ -194,6 +201,8 @@ See the `examples/` directory for sample Cure programs:
 - `adt.cure` -- algebraic data types (Option, Result, Color)
 - `records.cure` -- record definition, construction, field access, and
   functional update with `TypeName{base | field: val}` syntax
+- `cure_turnstile/` -- full example project: callback-mode FSM with
+  `on_transition` handler, GenServer wrapper, and tests
 
 Compile and run:
 
