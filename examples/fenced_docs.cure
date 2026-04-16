@@ -1,0 +1,29 @@
+mod FencedDocs
+  ###
+  Fenced triple-hash docstrings (v0.17.0).
+
+  A `###` line opens a fenced docstring and a matching `###` line
+  closes it. Everything in between becomes a single `:doc_comment`
+  token attached to the definition that follows.
+
+  The existing single-line form `## text` continues to work.
+  ###
+
+  ###
+  Structural recursion on n - 1.
+  This function is classified as :total.
+  ###
+  fn factorial(n: Int) -> Int
+    | 0 -> 1
+    | n -> n * factorial(n - 1)
+
+  ## Single-line doc comments work side by side with fenced ones.
+  fn double(n: Int) -> Int = n * 2
+
+  ###
+  Composes `factorial` and `double`.
+
+  Expected output when called with no args:
+    factorial(5) * double(1) = 120 * 2 = 240.
+  ###
+  fn main() -> Int = factorial(5) * double(1)

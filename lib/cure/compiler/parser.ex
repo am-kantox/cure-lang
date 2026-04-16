@@ -2253,18 +2253,58 @@ defmodule Cure.Compiler.Parser do
   end
 
   # Parse an indented block of definitions (for mod, proto, impl bodies)
+  #
+  # Tolerates doc_comment tokens that precede the leading `:indent` --
+  # the lexer emits fenced `###...###` docstrings *before* measuring the
+  # indentation of the line that follows, so a module body like
+  #
+  #     mod M
+  #       ###
+  #       description
+  #       ###
+  #       fn f() -> Int = 0
+  #
+  # will have the token stream `[mod, M, newline, doc_comment, indent,
+  # fn, ...]`. Prior to v0.17.0 we would bail out with an empty body.
+  # Now we carry the doc forward to attach to the first definition
+  # inside the block (if any).
   defp parse_definition_block(state) do
+    {leading_doc, state} = collect_leading_docs(state)
+
     case peek(state) do
       %Token{type: :indent} ->
         state = advance(state)
         {stmts, state} = parse_block_body(state)
         state = expect_dedent(state)
-        {stmts, state}
+        {attach_leading_doc(stmts, leading_doc), state}
 
       _ ->
         {[], state}
     end
   end
+
+  # Collect any doc_comment tokens (intermixed with newlines) and return
+  # their concatenated text plus the advanced state. Returns `{"", state}`
+  # when there are no doc comments to consume.
+  defp collect_leading_docs(state) do
+    state = skip_newlines(state)
+
+    case peek(state) do
+      %Token{type: :doc_comment} ->
+        {text, state} = collect_doc_comments(state)
+        state = skip_newlines(state)
+        {text, state}
+
+      _ ->
+        {"", state}
+    end
+  end
+
+  defp attach_leading_doc([first | rest], doc) when doc != "" do
+    [attach_doc(first, doc) | rest]
+  end
+
+  defp attach_leading_doc(stmts, _doc), do: stmts
 
   # -- Decorator Attachment (@name before fn) --------------------------------
 

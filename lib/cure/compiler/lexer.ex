@@ -204,18 +204,35 @@ defmodule Cure.Compiler.Lexer do
         {:ok, %{state | at_line_start: true}}
 
       ?# ->
-        # Comment-only line -- consume comment or doc comment, then treat as blank
-        if peek_at(state, 1) == ?# do
-          start_col = state.col
-          state = advance(state, 2)
-          state = if peek(state) == ?\s, do: advance(state, 1), else: state
-          {text, state} = consume_while(state, fn ch -> ch != ?\n end)
-          token = Token.new(:doc_comment, text, state.line, start_col)
-          maybe_emit_event(state, token)
-          {:ok, %{state | tokens: [token | state.tokens], at_line_start: true}}
-        else
-          {_comment, state} = consume_while(state, fn ch -> ch != ?\n end)
-          {:ok, %{state | at_line_start: true}}
+        # Comment-only line -- consume comment or doc comment, then treat as blank.
+        #
+        # Emit any `:dedent` tokens *first* so a doc comment that sits at
+        # a lower indent level than the previous block's contents binds to
+        # the outer block. Without this, the token stream would put
+        # `doc_comment` *before* `dedent`, which makes the parser treat
+        # the comment as belonging to the inner (ending) block.
+        state = maybe_emit_dedents_to(state, indent)
+
+        cond do
+          # `###` fenced multi-line doc comment
+          peek_at(state, 1) == ?# and peek_at(state, 2) == ?# ->
+            {:ok, state} = lex_fenced_doc(state)
+            {:ok, %{state | at_line_start: true}}
+
+          # `##` single-line doc comment
+          peek_at(state, 1) == ?# ->
+            start_col = state.col
+            state = advance(state, 2)
+            state = if peek(state) == ?\s, do: advance(state, 1), else: state
+            {text, state} = consume_while(state, fn ch -> ch != ?\n end)
+            token = Token.new(:doc_comment, text, state.line, start_col)
+            maybe_emit_event(state, token)
+            {:ok, %{state | tokens: [token | state.tokens], at_line_start: true}}
+
+          # plain `#` comment
+          true ->
+            {_comment, state} = consume_while(state, fn ch -> ch != ?\n end)
+            {:ok, %{state | at_line_start: true}}
         end
 
       _ ->
@@ -263,6 +280,16 @@ defmodule Cure.Compiler.Lexer do
 
   defp pop_indents(state, _target), do: state
 
+  # Emit any needed `:dedent` tokens so the current indent stack top is
+  # `<= target`. Used when a comment-only line reduces the effective
+  # indentation before we produce any content for that line.
+  defp maybe_emit_dedents_to(%{indent_stack: [current | _]} = state, target)
+       when current > target do
+    pop_indents(state, target)
+  end
+
+  defp maybe_emit_dedents_to(state, _target), do: state
+
   defp close_indents(%{indent_stack: [0]} = state), do: state
 
   defp close_indents(%{indent_stack: [level | rest]} = state) when level > 0 do
@@ -294,23 +321,171 @@ defmodule Cure.Compiler.Lexer do
   # -- Comments --------------------------------------------------------------
 
   defp lex_comment_or_operator(state) do
-    # A `#` at the start of a line or after whitespace is a comment.
-    # Inside a string interpolation `#{` it would already be handled.
-    # But `#` can never be an operator in Cure, so always treat as comment.
-    # Double hash `##` is a doc comment -- emit as a :doc_comment token.
-    if peek_at(state, 1) == ?# do
-      start_col = state.col
-      state = advance(state, 2)
-      # Skip optional leading space after ##
-      state = if peek(state) == ?\s, do: advance(state, 1), else: state
-      {text, state} = consume_while(state, fn c -> c != ?\n end)
-      token = Token.new(:doc_comment, text, state.line, start_col)
-      maybe_emit_event(state, token)
-      {:ok, %{state | tokens: [token | state.tokens]}}
-    else
-      {_comment, state} = consume_while(state, fn c -> c != ?\n end)
-      {:ok, state}
+    # `#` introduces a comment. There are three flavours:
+    #
+    #   #         plain line comment
+    #   ##        single-line doc comment (back-compat, one per line)
+    #   ###...### fenced multi-line doc comment (v0.17.0+)
+    #
+    # The fenced form is preferred because it sidesteps a long-standing
+    # parser ambiguity between `##` lines and multi-clause function
+    # definitions, and because multi-line prose reads better without
+    # having to prefix every line.
+    cond do
+      # ### ... ### -- fenced doc comment
+      peek_at(state, 1) == ?# and peek_at(state, 2) == ?# ->
+        lex_fenced_doc(state)
+
+      # ## single-line doc comment
+      peek_at(state, 1) == ?# ->
+        start_col = state.col
+        state = advance(state, 2)
+        state = if peek(state) == ?\s, do: advance(state, 1), else: state
+        {text, state} = consume_while(state, fn c -> c != ?\n end)
+        token = Token.new(:doc_comment, text, state.line, start_col)
+        maybe_emit_event(state, token)
+        {:ok, %{state | tokens: [token | state.tokens]}}
+
+      # plain `#` comment
+      true ->
+        {_comment, state} = consume_while(state, fn c -> c != ?\n end)
+        {:ok, state}
     end
+  end
+
+  # Consume a `###\n...\n###` block and emit a single `:doc_comment` token.
+  #
+  # The opening `###` must be followed by either a newline or optional
+  # whitespace and then a newline. Everything up to the next line that
+  # consists of (whitespace + `###` + optional trailing content) is
+  # collected as the doc body. Leading whitespace common to every body
+  # line is stripped.
+  defp lex_fenced_doc(state) do
+    start_line = state.line
+    start_col = state.col
+
+    # Consume the opening ###.
+    state = advance(state, 3)
+
+    # Consume any `### some trailing text` on the opening line.
+    {opening_tail, state} = consume_while(state, fn c -> c != ?\n end)
+
+    # Step over the newline that ends the opening line.
+    state =
+      case peek(state) do
+        ?\n ->
+          state
+          |> advance(1)
+          |> Map.put(:line, state.line + 1)
+          |> Map.put(:col, 1)
+
+        _ ->
+          state
+      end
+
+    {body_lines, state} = collect_fenced_lines(state, [])
+
+    text =
+      body_lines
+      |> strip_common_indent()
+      |> Enum.join("\n")
+      |> prepend_opening_tail(opening_tail)
+
+    token = Token.new(:doc_comment, text, start_line, start_col)
+    maybe_emit_event(state, token)
+    {:ok, %{state | tokens: [token | state.tokens]}}
+  end
+
+  defp collect_fenced_lines(state, acc) do
+    cond do
+      peek(state) == nil ->
+        {Enum.reverse(acc), state}
+
+      fence_close_line?(state) ->
+        state = consume_fence_close(state)
+        {Enum.reverse(acc), state}
+
+      true ->
+        {line, state} = consume_while(state, fn c -> c != ?\n end)
+
+        state =
+          case peek(state) do
+            ?\n ->
+              state
+              |> advance(1)
+              |> Map.put(:line, state.line + 1)
+              |> Map.put(:col, 1)
+
+            _ ->
+              state
+          end
+
+        collect_fenced_lines(state, [line | acc])
+    end
+  end
+
+  # True when the current position starts a line of the shape
+  # `<whitespace>* ### <anything>*<newline or eof>`.
+  defp fence_close_line?(state) do
+    {_spaces, offset} = count_leading_spaces(state, 0)
+    a = peek_at(state, offset)
+    b = peek_at(state, offset + 1)
+    c = peek_at(state, offset + 2)
+    a == ?# and b == ?# and c == ?#
+  end
+
+  defp count_leading_spaces(state, offset) do
+    case peek_at(state, offset) do
+      ?\s -> count_leading_spaces(state, offset + 1)
+      _ -> {offset, offset}
+    end
+  end
+
+  defp consume_fence_close(state) do
+    {_spaces, state} = consume_while(state, fn c -> c == ?\s end)
+    # Advance past the three #s.
+    state = advance(state, 3)
+    # Consume any trailing content up to newline.
+    {_trailing, state} = consume_while(state, fn c -> c != ?\n end)
+
+    case peek(state) do
+      ?\n ->
+        state
+        |> advance(1)
+        |> Map.put(:line, state.line + 1)
+        |> Map.put(:col, 1)
+
+      _ ->
+        state
+    end
+  end
+
+  defp strip_common_indent([]), do: []
+
+  defp strip_common_indent(lines) do
+    non_blank = Enum.reject(lines, fn l -> String.trim(l) == "" end)
+
+    indent =
+      case non_blank do
+        [] -> 0
+        _ -> Enum.map(non_blank, &leading_space_count/1) |> Enum.min()
+      end
+
+    Enum.map(lines, fn l ->
+      if String.length(l) >= indent, do: String.slice(l, indent..-1//1), else: l
+    end)
+  end
+
+  defp leading_space_count(line) do
+    line
+    |> String.graphemes()
+    |> Enum.take_while(fn g -> g == " " end)
+    |> length()
+  end
+
+  defp prepend_opening_tail(body, tail) do
+    trimmed = String.trim(tail)
+    if trimmed == "", do: body, else: trimmed <> "\n" <> body
   end
 
   # -- Identifiers & keywords -----------------------------------------------
@@ -325,17 +500,35 @@ defmodule Cure.Compiler.Lexer do
 
     # Inside FSM transition bodies, allow trailing ! or ? on identifiers
     # to support determined (event!) and soft (event?) event suffixes.
+    # Everywhere else, allow a trailing `?` for predicate-style names
+    # (Elixir convention, e.g. `is_empty?`, `even?`). `!` is reserved for
+    # effect annotations and FSM hard events.
     {word, state} =
-      if state.fsm_transition_depth > 0 and word not in @keyword_strings do
-        case peek(state) do
-          c when c in [?!, ??] ->
-            {word <> <<c::utf8>>, advance(state, 1)}
+      cond do
+        state.fsm_transition_depth > 0 and word not in @keyword_strings ->
+          case peek(state) do
+            c when c in [?!, ??] ->
+              {word <> <<c::utf8>>, advance(state, 1)}
 
-          _ ->
+            _ ->
+              {word, state}
+          end
+
+        word not in @keyword_strings and peek(state) == ?? ->
+          # `?` immediately followed by an identifier-starter is a *hole*
+          # prefix (`?name`), so only consume the `?` when it is a
+          # proper suffix (followed by something that can't begin a
+          # new identifier on its own on this side).
+          next = peek_at(state, 1)
+
+          if next in ?a..?z or next in ?A..?Z or next == ?_ do
             {word, state}
-        end
-      else
-        {word, state}
+          else
+            {word <> "?", advance(state, 1)}
+          end
+
+        true ->
+          {word, state}
       end
 
     {type, value} =

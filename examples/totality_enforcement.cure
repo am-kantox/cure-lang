@@ -1,29 +1,31 @@
 mod TotalityEnforcement
-  # Stress-test for the totality classifier (v0.17.0).
-  # The checker classifies every function as :total, :partial, or :unknown.
-  # v0.17.0 reports the classification; `#[total]` will elevate it to a
-  # compile-time error in a future release.
+  ###
+  Stress-test for the totality classifier (v0.17.0).
 
-  # factorial: structural recursion on n - 1, classified as :total.
+  The checker classifies every function as :total, :partial, or
+  :unknown. v0.17.0 reports the classification; `#[total]` will
+  elevate it to a compile-time error in a future release.
+  ###
+
+  ## factorial: structural recursion on n - 1, classified as :total.
   fn factorial(n: Int) -> Int
     | 0 -> 1
     | n -> n * factorial(n - 1)
 
-  # fib: two shrinking recursive calls, classified as :total.
+  ## fib: two shrinking recursive calls, classified as :total.
   fn fib(n: Int) -> Int
     | 0 -> 0
     | 1 -> 1
     | n -> fib(n - 1) + fib(n - 2)
 
-  # sum_to: cata-like sum, classified as :total.
+  ## sum_to: cata-like sum, classified as :total.
   fn sum_to(n: Int) -> Int
     | 0 -> 0
     | n -> n + sum_to(n - 1)
 
-  # double: non-recursive; classified as :total.
+  ## double: non-recursive; classified as :total.
   fn double(n: Int) -> Int = n * 2
 
-  # factorial(5) + fib(6) + sum_to(4) + double(2)
-  #   = 120 + 8 + 10 + 4 = 142
+  ## factorial(5) + fib(6) + sum_to(4) + double(2) = 142
   fn main() -> Int =
     factorial(5) + fib(6) + sum_to(4) + double(2)

@@ -12,6 +12,29 @@ indentation level, not by keywords like `do`/`end` or braces.
 `try`, `catch`, `finally`, `for`, `in`, `true`, `false`, `nil`,
 `and`, `or`, `not`
 
+### Identifiers
+
+Identifiers may carry a trailing `?` to signal a predicate (Elixir
+convention):
+
+```cure
+fn even?(n: Int) -> Bool = n % 2 == 0
+fn is_empty?(xs: List(T)) -> Bool = ...
+```
+
+The `!` suffix is reserved for effect annotations and FSM hard
+events.
+
+### Comments and docstrings
+
+- `# ...` -- line comment.
+- `## text` -- single-line doc comment. One per line; attached to the
+  following definition.
+- `###\n...\n###` -- fenced multi-line doc comment. Opens on a line
+  whose first three non-whitespace characters are `###`; closes on the
+  next line whose first three non-whitespace characters are `###`.
+  Leading indentation common to every body line is stripped.
+
 ### Operators (by precedence, low to high)
 
 - `|>` -- pipe (left-assoc)

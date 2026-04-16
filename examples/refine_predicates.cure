@@ -8,16 +8,14 @@ mod RefinePredicates
   # between untrusted input and a refinement-typed core.
 
   # classify: sign of a number via Std.Refine predicates.
-  fn classify(n: Int) -> Int
-    | n when n > 0 -> 1
-    | 0 -> 0
-    | _ -> 0 - 1
+  fn classify(n: Int) -> Int =
+    if Std.Refine.positive?(n) then 1 else 0 - 1
 
   # sanitise_percentage: clamp invalid input into the [0, 100] band.
-  fn sanitise_percentage(p: Int) -> Int
-    | p when p < 0 -> 0
-    | p when p > 100 -> 100
-    | p -> p
+  fn sanitise_percentage(p: Int) -> Int =
+    let ok = Std.Refine.percentage?(p)
+    let below = p < 0
+    if ok then p else if below then 0 else 100
 
   # classify(7) + sanitise_percentage(137) + sanitise_percentage(25)
   #   = 1 + 100 + 25 = 126
