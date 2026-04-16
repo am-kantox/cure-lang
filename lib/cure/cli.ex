@@ -128,6 +128,8 @@ defmodule Cure.CLI do
     check? = Keyword.get(opts, :type_check, false)
     optimize? = Keyword.get(opts, :optimize, false)
 
+    preload_stdlib()
+
     source =
       case File.read(path) do
         {:ok, s} -> s
@@ -153,6 +155,26 @@ defmodule Cure.CLI do
         error(formatted)
         exit({:shutdown, 1})
     end
+  end
+
+  # Ensure stdlib .beam files in _build/cure/ebin are on the code path
+  # and every Std.* module is loaded before executing a user script.
+  defp preload_stdlib do
+    ["_build/cure/ebin", "_build/cure/ex_ebin"]
+    |> Enum.each(fn dir ->
+      if File.dir?(dir) do
+        :code.add_patha(String.to_charlist(Path.expand(dir)))
+      end
+    end)
+
+    Enum.each(
+      ~w(Core List Pair Math String Io System Show Option Result
+         Eq Ord Functor Map Set Test Vector Equal Refine),
+      fn name ->
+        module = String.to_atom("Cure.Std.#{name}")
+        _ = Code.ensure_loaded(module)
+      end
+    )
   end
 
   # -- check -------------------------------------------------------------------

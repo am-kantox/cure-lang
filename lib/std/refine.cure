@@ -31,13 +31,13 @@ mod Std.Refine
   # Predicate combinators (compile-time hints; pure runtime helpers).
 
   ## True if `n` is a positive integer.
-  fn positive?(n: Int) -> Bool = n > 0
+  fn is_positive(n: Int) -> Bool = n > 0
 
   ## True if `n` is a non-negative integer.
-  fn non_negative?(n: Int) -> Bool = n >= 0
+  fn is_non_negative(n: Int) -> Bool = n >= 0
 
   ## True if `p` is a valid percentage value.
-  fn percentage?(p: Int) -> Bool = p >= 0 and p <= 100
+  fn is_percentage(p: Int) -> Bool = p >= 0 and p <= 100
 
   ## True if `p` is a valid probability value.
-  fn probability?(p: Float) -> Bool = p >= 0.0 and p <= 1.0
+  fn is_probability(p: Float) -> Bool = p >= 0.0 and p <= 1.0

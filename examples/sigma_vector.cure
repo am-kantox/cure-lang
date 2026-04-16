@@ -1,0 +1,36 @@
+mod SigmaVector
+  use Std.{List, Pair, Vector}
+
+  ## Sigma types + length-indexed vectors (v0.17.0).
+  #
+  # This example demonstrates the *pattern* for dependent pairs where
+  # the first component carries a length and the second component is
+  # a vector of exactly that length. Today the length dependency is
+  # tracked by the type checker but not enforced at runtime; tomorrow
+  # it will be.
+
+  ## Build a "sized vector" -- a pair whose first component is the
+  ## claimed length, and whose second component is the vector data.
+  fn make_sized(items: List(Int)) -> Tuple =
+    let vec = Std.Vector.from_list(items)
+    %[Std.Vector.length(vec), vec]
+
+  ## Project the length out of a sized vector.
+  fn claimed_length(sv: Tuple) -> Int =
+    Std.Pair.first(sv)
+
+  ## Project the payload out of a sized vector.
+  fn payload(sv: Tuple) -> Tuple =
+    Std.Pair.second(sv)
+
+  ## Total length of two sized vectors.
+  fn combined_length(a: Tuple, b: Tuple) -> Int =
+    claimed_length(a) + claimed_length(b)
+
+  ## Demonstration entry point:
+  ##   combined_length(make_sized([1, 2, 3]), make_sized([10, 20])) = 5
+  fn main() -> Int =
+    combined_length(
+      make_sized([1, 2, 3]),
+      make_sized([10, 20])
+    )
