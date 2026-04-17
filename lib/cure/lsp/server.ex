@@ -818,11 +818,7 @@ defmodule Cure.LSP.Server do
     params = Keyword.get(meta, :params, [])
     line = Keyword.get(meta, :line, 1)
 
-    param_str =
-      Enum.map_join(params, ", ", fn {:param, pm, pn} ->
-        type = Keyword.get(pm, :type)
-        if type, do: "#{pn}: #{format_type(type)}", else: pn
-      end)
+    param_str = Enum.map_join(params, ", ", &format_param/1)
 
     sig = "fn #{name}(#{param_str})"
     [%{name: name, kind: :function, line: line, signature: sig} | acc]
@@ -830,9 +826,32 @@ defmodule Cure.LSP.Server do
 
   defp extract_symbols(_, acc), do: acc
 
+  # Parameter pretty-printer tolerant of the various AST shapes the parser
+  # can emit (full `:param` tuples, bare `:variable` tuples in generic type
+  # parameter position, raw identifiers, etc.). Any shape we don't know is
+  # rendered with a safe fallback so inlay-hint / symbol requests cannot
+  # crash the LSP server.
+  defp format_param({:param, pm, pn}) when is_list(pm) do
+    case Keyword.get(pm, :type) do
+      nil -> to_string(pn)
+      type -> "#{pn}: #{format_type(type)}"
+    end
+  end
+
+  defp format_param({:variable, _, name}) when is_binary(name), do: name
+  defp format_param({:variable, _, name}) when is_atom(name), do: Atom.to_string(name)
+  defp format_param(name) when is_binary(name), do: name
+  defp format_param(name) when is_atom(name), do: Atom.to_string(name)
+  defp format_param(other), do: inspect(other)
+
   defp format_type({:variable, _, name}) when is_binary(name), do: name
-  defp format_type({:function_call, meta, _}), do: Keyword.get(meta, :name, "?")
+  defp format_type({:variable, _, name}) when is_atom(name), do: Atom.to_string(name)
+
+  defp format_type({:function_call, meta, _}) when is_list(meta),
+    do: Keyword.get(meta, :name, "?") |> to_string()
+
   defp format_type(other) when is_binary(other), do: other
+  defp format_type(other) when is_atom(other), do: Atom.to_string(other)
   defp format_type(_), do: "Any"
 
   # -- Inlay hints --------------------------------------------------------------
@@ -1026,7 +1045,10 @@ defmodule Cure.LSP.Server do
         Enum.reduce(tokens, {acc, prev}, fn {l, c, len, ttype}, {acc2, {pl, pc}} ->
           delta_line = l - pl
           delta_start = if delta_line == 0, do: c - pc, else: c
-          {[delta_line, delta_start, len, ttype, 0 | acc2], {l, c}}
+          # Prepend in reverse field order so that the final Enum.reverse/1
+          # produces the LSP-required 5-int tuple sequence
+          # [delta_line, delta_start, length, token_type, token_modifiers].
+          {[0, ttype, len, delta_start, delta_line | acc2], {l, c}}
         end)
       end)
 
