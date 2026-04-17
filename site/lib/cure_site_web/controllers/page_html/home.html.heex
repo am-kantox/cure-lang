@@ -13,6 +13,11 @@
       Dependently-typed programming language for the BEAM virtual machine
       with first-class finite state machines and SMT-backed verification.
     </p>
+    <p class="mt-2 text-sm text-base-content/50">
+      Current release: <span class="font-mono">v{CureSite.cure_version()}</span>
+      -- Sigma &amp; Pi types, propositional equality, implicit arguments,
+      holes, totality, path-sensitive refinement, records, REPL, watch mode.
+    </p>
   </div>
   <%!-- Quick example --%>
   <div class="mt-8" phx-no-curly-interpolation>
@@ -102,11 +107,24 @@
       <p class="mt-1 text-sm text-base-content/60">18 self-hosted modules, ~200 functions.</p>
     </a>
     <a
+      href={~p"/type-system" <> "#dependent-types"}
+      class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
+    >
+      <h3 class="font-semibold text-primary group-hover:text-accent">
+        Dependent Types <span class="badge badge-xs badge-accent align-middle">new</span>
+      </h3>
+      <p class="mt-1 text-sm text-base-content/60">
+        Sigma, Pi, equality types; implicit arguments, holes, totality.
+      </p>
+    </a>
+    <a
       href={~p"/roadmap"}
       class="group rounded-lg border border-base-300 p-5 transition hover:border-primary hover:bg-base-200"
     >
       <h3 class="font-semibold text-primary group-hover:text-accent">Roadmap</h3>
-      <p class="mt-1 text-sm text-base-content/60">What shipped in v0.15 and what comes next.</p>
+      <p class="mt-1 text-sm text-base-content/60">
+        What shipped through v{CureSite.cure_version()} and what comes next.
+      </p>
     </a>
   </div>
 </Layouts.app>

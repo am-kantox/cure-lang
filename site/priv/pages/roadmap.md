@@ -132,7 +132,7 @@ First-class testing support.
 - **670 tests.** Zero Credo issues. Zero compilation warnings. 49 Elixir
   source files. 18 stdlib modules.
 
-|## Implemented: v0.15.0
+## Implemented: v0.15.0
 
 Effect system, documentation generator, developer experience improvements,
 and full record type support with functional update syntax.
@@ -207,6 +207,119 @@ update syntax.
   the registered schema. Wrong field types produce a compile-time error.
 - **678 tests.** Zero Credo issues. Zero compilation warnings. 54 Elixir
   source files.
+
+## Implemented: v0.16.0
+
+Finitomata-inspired FSM rewrite. FSM definition and transition logic now
+coexist in the same `.cure` file via callback mode; simple mode stays
+backward-compatible.
+
+### Dual-mode compilation
+
+- **Callback mode** -- FSMs with an `on_transition` block compile to
+  `GenServer`-based modules with embedded transition tables, user-defined
+  `on_transition/4` dispatch, and lifecycle callbacks.
+- **Simple mode** (backward-compatible) -- `gen_statem` codegen now
+  includes `transitions/0` and `allowed/2` introspection, hard-event
+  auto-fire via `next_event` actions, and soft-event silent catch-all
+  clauses.
+- `Cure.Compiler` pipeline handles both modes transparently.
+
+### Event suffixes and lifecycle callbacks
+
+- **Hard events** `event!` auto-fire when the FSM enters a state where the
+  event is the sole outgoing transition. The compiler verifies the
+  constraint.
+- **Soft events** `event?` silently swallow failed transitions without
+  logging or calling `on_failure`.
+- `on_enter`, `on_exit`, `on_failure`, and `on_timer` lifecycle callbacks.
+- `@timer <ms>` annotation for periodic `on_timer` invocations.
+
+### Introspection and tooling
+
+- `transitions/0`, `allowed/2`, `allowed?/2`, `responds?/2` --
+  runtime-introspectable FSM API; `Cure.FSM.Runtime.allowed?/3` and
+  `responds?/3` delegation.
+- LSP: FSM transitions as children in the symbol tree with event-suffix
+  labels; lifecycle callbacks in hover; FSM callback completions inside
+  FSM blocks.
+- MCP: `analyze_fsm` reports compilation mode, timer, event kinds with
+  suffixes, and callback blocks.
+- Printer emits event suffixes and `@timer` annotations.
+- `examples/cure_turnstile/` rewritten to use callback mode.
+
+## Implemented: v0.17.0 -- Proofs & Polish
+
+The dependent-typing core grows up; the everyday UX catches up. Three
+themes land together: dependent-type maturation, friction-free UX, and
+ecosystem groundwork.
+
+### Dependent-type maturation
+
+- **Sigma types** `Sigma(name: T1, T2)` -- dependent pairs with
+  componentwise subtyping; round-trip to plain runtime tuples.
+- **Pi types** -- dependent function types with `:explicit`, `:implicit`,
+  and `:erased` parameter modes and AST-based return types.
+- **`Cure.Types.Reduce`** -- terminating normaliser for type-level
+  arithmetic, booleans, comparisons, and pair projection. Trivial
+  arithmetic never touches the SMT solver.
+- **Propositional equality** `Eq(T, a, b)` with constructor `refl` and
+  eliminator `rewrite`; runtime-erased via `:cure_refl`.
+- **`Cure.Types.Unify`** -- first-order unification with occurs check
+  for implicit-argument inference; `:unification_trace` pipeline event
+  rendered in LSP hover and CLI error output.
+- **`Cure.Types.Holes`** -- `?name` and `??` placeholders with goal-type
+  and local-context reporting via `:hole_goal`.
+- **`Cure.Types.Totality`** -- coverage + structural-recursion analysis;
+  `:total | :partial | :unknown` classification; `#[total]` decorator.
+- **`Cure.Types.PathRefinement`** -- path-sensitive refinement flow along
+  `if` / `match` guards.
+- `Std.Equal` -- `refl`, `sym`, `trans`, `cong`.
+- `Std.Refine` -- `NonZero`, `Positive`, `Negative`, `NonNegative`,
+  `Percentage`, `Probability`, and predicate helpers.
+
+### Friction-free UX
+
+- **`Cure.REPL`** -- full rewrite. Multi-line input, meta-commands `:t`,
+  `:doc`, `:effects`, `:load`, `:reload`, `:use`, `:holes`, `:env`,
+  `:reset`, `:fmt`, `:help`, `:quit`. History persisted to
+  `~/.cure_history`.
+- **`Cure.Watch`** -- `cure watch` recompiles, type-checks, or runs tests
+  on every save with a 200 ms debounce.
+- **`Cure.LSP.Server`** -- inlay hints, signature help, formatting,
+  `prepareRename` / rename, code lenses, semantic tokens, workspace
+  symbols.
+- Error catalog codes `E011`-`E020` covering implicit-argument failures,
+  sigma destructuring, totality, unfilled holes, refinement
+  counterexamples, dependent-type mismatches, equality-proof mismatches,
+  and doctests.
+- `cure new <name> [--lib | --app | --fsm]` with three templates.
+- `Cure.lock` lockfile; `cure deps update`, `cure deps tree`; git-based
+  dependency resolution in `Cure.Project.resolve_git_dep/2`.
+- `cure bench` -- benchmark runner for `bench/**/*.cure`.
+- `cure test --filter PATTERN --doctests`; `Cure.Doc.Doctests` harvests
+  `cure>` / `=>` doctests from `##` blocks.
+
+### Ecosystem groundwork
+
+- MIT `LICENSE` at repo root.
+- Complete `mix.exs` `package` block for Hex publication, including docs
+  extras.
+- `vscode-cure/` -- TypeScript / LSP VS Code extension scaffold with
+  TextMate grammar and language configuration.
+- `docs/PACKAGE_REGISTRY.md` -- design document for the v0.18.0+
+  package registry.
+- `docs/TUTORIAL.md` -- ten progressive chapters.
+- `docs/DEPENDENT_TYPES.md` -- full guide for the new type-system
+  features.
+
+### Numbers
+
+- ~11 new Elixir modules, ~12 new test files, ~155 new tests (830
+  total, 0 failures). Zero credo issues in strict mode.
+- 2 new stdlib `.cure` modules (`Std.Equal`, `Std.Refine`); 20 total.
+- 7 new examples, one for each major feature.
+- `mix check` runs 20 stdlib + 24 example regressions in CI.
 
 ## Future
 

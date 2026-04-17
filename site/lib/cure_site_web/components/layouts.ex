@@ -34,18 +34,30 @@ defmodule CureSiteWeb.Layouts do
   slot :inner_block, required: true
 
   def app(assigns) do
+    assigns = assign(assigns, :cure_version, CureSite.cure_version())
+
     ~H"""
     <header class="sticky top-0 z-50 border-b border-base-300 bg-base-100/95 backdrop-blur">
-      <nav class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
+      <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <a href="/" class="flex items-center gap-2">
           <img src={~p"/images/logo-128x128-nobg.png"} width="32" height="32" alt="Cure" />
           <span class="text-lg font-bold tracking-tight">Cure</span>
-          <span class="text-xs text-base-content/50">v0.15.0</span>
+          <span class="badge badge-xs badge-primary font-mono" title="Current Cure language version">
+            v{@cure_version}
+          </span>
         </a>
 
-        <div class="hidden items-center gap-1 md:flex">
+        <div class="hidden items-center gap-0.5 md:flex">
+          <a href={~p"/getting-started"} class="btn btn-ghost btn-sm">Start</a>
           <a href={~p"/language-guide"} class="btn btn-ghost btn-sm">Language</a>
           <a href={~p"/type-system"} class="btn btn-ghost btn-sm">Types</a>
+          <a
+            href={~p"/type-system" <> "#dependent-types"}
+            class="btn btn-ghost btn-sm gap-1"
+            title="Sigma, Pi and equality types, implicit arguments, holes, totality"
+          >
+            Dependent <span class="badge badge-xs badge-accent">new</span>
+          </a>
           <a href={~p"/finite-state-machines"} class="btn btn-ghost btn-sm">FSMs</a>
           <a href={~p"/protocols"} class="btn btn-ghost btn-sm">Protocols</a>
           <a href={~p"/standard-library"} class="btn btn-ghost btn-sm">Stdlib</a>
@@ -68,8 +80,12 @@ defmodule CureSiteWeb.Layouts do
 
       <%!-- Mobile navigation --%>
       <div id="mobile-menu" class="hidden border-t border-base-300 px-4 py-2 md:hidden">
+        <a href={~p"/getting-started"} class="block py-2 text-sm">Getting Started</a>
         <a href={~p"/language-guide"} class="block py-2 text-sm">Language Guide</a>
         <a href={~p"/type-system"} class="block py-2 text-sm">Type System</a>
+        <a href={~p"/type-system" <> "#dependent-types"} class="block py-2 text-sm">
+          Dependent Types <span class="badge badge-xs badge-accent align-middle">new</span>
+        </a>
         <a href={~p"/finite-state-machines"} class="block py-2 text-sm">Finite State Machines</a>
         <a href={~p"/protocols"} class="block py-2 text-sm">Protocols</a>
         <a href={~p"/standard-library"} class="block py-2 text-sm">Standard Library</a>
@@ -87,11 +103,11 @@ defmodule CureSiteWeb.Layouts do
       <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
           <div class="flex items-center gap-4 text-sm text-base-content/60">
-            <a href="https://github.com/am-kantox/cure-lang" class="hover:text-base-content">GitHub</a>
+            <a href="https://github.com/Oeditus/cure" class="hover:text-base-content">GitHub</a>
             <a href={~p"/getting-started"} class="hover:text-base-content">Getting Started</a>
             <a href={~p"/roadmap"} class="hover:text-base-content">Roadmap</a>
           </div>
-          <p class="text-xs text-base-content/40">Cure v0.15.0 -- Aleksei Matiushkin</p>
+          <p class="text-xs text-base-content/40">Cure v{@cure_version} -- Aleksei Matiushkin</p>
         </div>
       </div>
     </footer>

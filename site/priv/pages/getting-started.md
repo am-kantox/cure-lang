@@ -17,7 +17,7 @@ Cure requires:
 Clone the repository and fetch dependencies:
 
 ```bash
-git clone https://github.com/am-kantox/cure-lang.git
+git clone https://github.com/Oeditus/cure.git
 cd cure
 mix deps.get
 mix compile
@@ -25,7 +25,7 @@ mix compile
 
 ## Building the escript
 
-Cure v0.15.0 ships with a standalone CLI. Build it with the dedicated Mix
+Cure {{cure_vversion}} ships with a standalone CLI. Build it with the dedicated Mix
 task:
 
 ```bash
@@ -43,7 +43,7 @@ Verify the installation:
 
 ```bash
 cure version
-# Cure 0.15.0
+# Cure {{cure_version}}
 ```
 
 ## Hello World
@@ -108,17 +108,23 @@ Or via the Mix task:
 mix cure.compile_stdlib
 ```
 
-This compiles all `.cure` files in `lib/std/` and writes the resulting `.beam` files to `_build/cure/ebin/`. The stdlib provides 17 modules (~200 functions): `Std.Core`, `Std.List`, `Std.Math`, `Std.String`, `Std.Pair`, `Std.Show`, `Std.Io`, `Std.System`, `Std.Map`, `Std.Set`, `Std.Option`, `Std.Functor`, and more.
+This compiles all `.cure` files in `lib/std/` and writes the resulting `.beam` files to `_build/cure/ebin/`. The stdlib provides 20 modules (~220 functions), including `Std.Core`, `Std.List`, `Std.Math`, `Std.String`, `Std.Pair`, `Std.Show`, `Std.Io`, `Std.System`, `Std.Map`, `Std.Set`, `Std.Option`, `Std.Functor`, and the dependent-type helpers `Std.Equal` and `Std.Refine`.
 
 ## Other CLI commands
 
 ```bash
-cure version          # Show the Cure version
-cure help             # Show usage information
-cure explain E001     # Show a detailed explanation for error code E001
-cure init myproject   # Scaffold a new project
-cure deps             # List dependencies
-cure test             # Run tests
+cure version              # Show the Cure version
+cure help                 # Show usage information
+cure explain E011         # Show a detailed explanation for an error code
+cure new myproject --lib  # Scaffold a new library project
+cure deps                 # List dependencies
+cure deps tree            # Inspect dependency graph
+cure deps update          # Refresh Cure.lock
+cure test --doctests      # Run tests, including doctests
+cure repl                 # Multi-line REPL with :t, :doc, :holes, ...
+cure watch lib/           # Recompile / check / test on every save
+cure fmt lib/             # Format Cure sources
+cure bench                # Run bench/**/*.cure benchmarks
 ```
 
 ## Editor setup
@@ -152,12 +158,15 @@ vim.filetype.add({
 
 The LSP provides:
 
-- Real-time diagnostics (type errors, parse errors, exhaustiveness warnings)
-- Hover information (function signatures and types)
-- Go-to-definition
-- Document symbols (hierarchical module/function outline)
+- Real-time diagnostics (type errors, parse errors, exhaustiveness warnings, pattern coverage)
+- Hover information with function signatures, inferred effects, unification traces, and hole goals
+- Go-to-definition, `prepareRename` and rename
+- Document symbols (hierarchical module / function outline)
+- Workspace symbols
 - Code actions (add missing match arms, did-you-mean suggestions)
 - Completion (triggered by `.` and `:`)
+- Inlay hints, signature help, code lenses, semantic tokens
+- Formatting routed through the round-trip-tested `Cure.Compiler.Printer`
 
 ## MCP server for AI assistants
 
@@ -195,6 +204,7 @@ module.my_function(args)
 
 ## Next steps
 
-- [Language Guide](/pages/language-guide) -- full syntax reference
-- [Type System](/pages/type-system) -- bidirectional checking, refinement types, SMT verification
-- [Finite State Machines](/pages/finite-state-machines) -- first-class FSMs with compile-time verification
+- [Language Guide](/language-guide) -- full syntax reference
+- [Type System](/type-system) -- bidirectional checking, refinement types, SMT verification
+- [Dependent Types](/type-system#dependent-types) -- Sigma, Pi, equality, implicit arguments, holes, totality
+- [Finite State Machines](/finite-state-machines) -- first-class FSMs with compile-time verification
