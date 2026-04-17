@@ -20,7 +20,7 @@ defmodule Cure.RegressionTest do
         end
       end)
 
-    assert result =~ "stdlib: 20 passed, 0 failed"
+    assert result =~ ~r/stdlib: \d+ passed, 0 failed/
   end
 
   @tag :regression

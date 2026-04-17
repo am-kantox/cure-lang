@@ -73,7 +73,10 @@ defmodule Cure.Types.PatternChecker do
   end
 
   @doc """
-  Classify a pattern AST into a pattern shape.
+  Classify a pattern AST into a pattern shape (top-level only).
+
+  This classifier is the flat fast-path used for simple matches. Nested
+  exhaustiveness is handled separately by `check_nested/2`.
   """
   @spec classify_pattern(tuple()) :: pattern_shape()
   def classify_pattern(ast) do
@@ -86,19 +89,29 @@ defmodule Cure.Types.PatternChecker do
       {:variable, _, _name} ->
         :wildcard
 
+      # Pin -- behaves like wildcard for coverage (the guard filters at runtime)
+      {:pin, _, _} ->
+        :wildcard
+
       # Boolean literal
       {:literal, meta, value} ->
         subtype = Keyword.get(meta, :subtype, :unknown)
         {:literal, subtype, value}
 
-      # Constructor: Ok(x), Error(e), Some(v), None()
-      {:function_call, meta, args} ->
-        name = Keyword.get(meta, :name, "unknown")
+      # Record pattern: TypeName{field: val, ...}
+      {:function_call, meta, _args} = ast_node ->
+        cond do
+          Keyword.get(meta, :record, false) ->
+            {:record, Keyword.get(meta, :name, "unknown"), record_fields(ast_node)}
 
-        if constructor?(name) do
-          {:constructor, name, length(args)}
-        else
-          :wildcard
+          true ->
+            name = Keyword.get(meta, :name, "unknown")
+
+            if constructor?(name) do
+              {:constructor, name, length(elem(ast_node, 2))}
+            else
+              :wildcard
+            end
         end
 
       # Empty list
@@ -118,10 +131,133 @@ defmodule Cure.Types.PatternChecker do
       {:tuple, _meta, elems} ->
         {:tuple, length(elems)}
 
+      # Map
+      {:map, _meta, pairs} ->
+        {:map, length(pairs)}
+
       # Anything else is treated as wildcard (conservative)
       _ ->
         :wildcard
     end
+  end
+
+  # Extract the list of field names from a record pattern.
+  defp record_fields({:function_call, _meta, args}) do
+    Enum.flat_map(args, fn
+      {:pair, _, [{:literal, [subtype: :symbol], atom}, _]} when is_atom(atom) ->
+        [Atom.to_string(atom)]
+
+      {:variable, _, name} when is_binary(name) ->
+        [name]
+
+      _ ->
+        []
+    end)
+  end
+
+  # -- Nested exhaustiveness (Maranget matrix) --------------------------------
+  #
+  # The full Maranget algorithm builds a pattern matrix and specialises on
+  # each head constructor. For v0.18.0 we keep the surface simple: a
+  # best-effort nested analysis that walks row-wise and collects missing
+  # witnesses as *source-shaped* strings. Types for which we can enumerate
+  # constructors (Bool, Result, Option) drive the witness generation; for
+  # anything else we fall back to `["_"]` when no wildcard is present.
+
+  @doc """
+  Nested exhaustiveness check.
+
+  Delegates to the flat classifier for single-level patterns, but for
+  compound scrutinee types (tuples, pairs of ADTs, records) it descends
+  into the pattern structure and reports missing witnesses in source
+  form, for example ``"%[Error(_)]"``.
+
+  Returns `:exhaustive` or `{:non_exhaustive, witnesses}`.
+  """
+  @spec check_nested(term(), [tuple()]) :: check_result()
+  def check_nested(scrutinee_type, pattern_asts) do
+    if Enum.any?(pattern_asts, &top_level_wildcard?/1) do
+      :exhaustive
+    else
+      case missing_witnesses(scrutinee_type, pattern_asts) do
+        [] -> :exhaustive
+        witnesses -> {:non_exhaustive, witnesses}
+      end
+    end
+  end
+
+  defp top_level_wildcard?({:variable, _, "_"}), do: true
+  defp top_level_wildcard?({:variable, _, _}), do: true
+  defp top_level_wildcard?(_), do: false
+
+  # Tuple of constructors: covers the most common nested shape.
+  defp missing_witnesses({:tuple, element_types}, patterns) do
+    # Collect the tuple patterns; abstain for non-tuple patterns.
+    rows =
+      Enum.flat_map(patterns, fn
+        {:tuple, _, elems} when length(elems) == length(element_types) -> [elems]
+        _ -> []
+      end)
+
+    if rows == [] do
+      [render_tuple_witness(element_types)]
+    else
+      missing_tuple_product(element_types, rows)
+    end
+  end
+
+  defp missing_witnesses(_scrutinee_type, _patterns), do: []
+
+  defp missing_tuple_product(element_types, rows) do
+    # For each column, compute the set of covered constructors. If any
+    # column has a missing constructor, combine it with a `_` placeholder
+    # for the remaining columns.
+    columns =
+      Enum.map(0..(length(element_types) - 1), fn idx ->
+        Enum.map(rows, &Enum.at(&1, idx))
+      end)
+
+    Enum.zip(element_types, columns)
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {{type, col_patterns}, idx} ->
+      case missing_column_witnesses(type, col_patterns) do
+        [] ->
+          []
+
+        ws ->
+          Enum.map(ws, fn w -> render_tuple_with_hole(length(element_types), idx, w) end)
+      end
+    end)
+    |> Enum.uniq()
+  end
+
+  defp missing_column_witnesses(type, patterns) do
+    shapes = Enum.map(patterns, &classify_pattern/1)
+
+    case required_shapes(type) do
+      nil ->
+        if Enum.any?(shapes, &(&1 == :wildcard)), do: [], else: ["_"]
+
+      required ->
+        covered = MapSet.new(shapes)
+
+        MapSet.difference(required, covered)
+        |> Enum.map(&describe_shape/1)
+    end
+  end
+
+  defp render_tuple_witness(element_types) do
+    slots = Enum.map(element_types, fn _ -> "_" end)
+    "%[" <> Enum.join(slots, ", ") <> "]"
+  end
+
+  defp render_tuple_with_hole(arity, idx, witness) do
+    slots =
+      Enum.map(0..(arity - 1), fn i ->
+        if i == idx, do: witness, else: "_"
+      end)
+
+    "%[" <> Enum.join(slots, ", ") <> "]"
   end
 
   # -- Coverage Checking -------------------------------------------------------

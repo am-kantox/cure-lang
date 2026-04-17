@@ -242,6 +242,12 @@ defmodule Cure.Compiler.Parser do
       :at ->
         parse_at(state)
 
+      # Pin operator for patterns: ^x -- introduced in v0.18.0 as a
+      # prefix that references a previously-bound variable rather than
+      # rebinding. Compiled via {:pin, meta, [inner]}.
+      :caret ->
+        parse_pin(state)
+
       # Indent starts a block
       :indent ->
         parse_block(state)
@@ -250,6 +256,29 @@ defmodule Cure.Compiler.Parser do
         error = {:unexpected_token, token.type, token.line, token.col}
         state = add_error(state, error)
         {error_node(token), advance(state)}
+    end
+  end
+
+  # -- Pin Operator (pattern position) ---------------------------------------
+
+  defp parse_pin(state) do
+    token = peek(state)
+    state = advance(state)
+    inner_token = peek(state)
+
+    case inner_token.type do
+      :identifier ->
+        state = advance(state)
+        inner = variable(inner_token)
+        ast = {:pin, [line: token.line, col: token.col], [inner]}
+        {ast, state}
+
+      _ ->
+        # Fallback: parse any prefix expression and wrap it so that
+        # `Cure.Compiler.PatternCompiler.compile_pin/3` can unwrap it.
+        {inner, state} = parse_prefix(state)
+        ast = {:pin, [line: token.line, col: token.col], [inner]}
+        {ast, state}
     end
   end
 
@@ -645,6 +674,18 @@ defmodule Cure.Compiler.Parser do
         state = skip_newlines(state)
         {value, state} = parse_expr(state, 0)
         pair = {:pair, [], [{:literal, [subtype: :symbol], key_atom}, value]}
+        {pair, state}
+
+      # Pattern/construction field punning (v0.18.0): a bare identifier
+      # followed by `,` or the closing delimiter is shorthand for
+      # `name: name`. Used both in record patterns (`Point{x, y}`) and in
+      # map-construction shorthand (`%{x, y}` -> `%{x: x, y: y}`).
+      token.type == :identifier and next != nil and
+          next.type in [:comma, :rbrace, :newline] ->
+        key_atom = String.to_atom(token.value)
+        var_ast = variable(token)
+        state = advance(state)
+        pair = {:pair, [pun: true], [{:literal, [subtype: :symbol], key_atom}, var_ast]}
         {pair, state}
 
       true ->

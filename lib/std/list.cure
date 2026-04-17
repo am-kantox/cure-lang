@@ -128,6 +128,18 @@ mod Std.List
       [] -> true
       [h | t] -> if pred(h) then all(t, pred) else false
 
+  # -- Destructuring helpers (v0.18.0) ---------------------------------------
+
+  fn uncons(list: List(T)) -> Tuple =
+    match list
+      [h | t] -> %[h, t]
+      []      -> %[[], []]
+
+  fn split_first(list: List(T), default: T) -> Tuple =
+    match list
+      [h | t] -> %[h, t]
+      []      -> %[default, []]
+
   # -- Misc -------------------------------------------------------------------
 
   fn sum(list: List(Int)) -> Int =

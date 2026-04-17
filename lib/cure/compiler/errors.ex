@@ -323,6 +323,80 @@ defmodule Cure.Compiler.Errors do
 
     Fix: update either the doctest expectation or the function it
     documents.
+    """,
+    "E021" => """
+    E021: Unknown Record Field in Pattern
+
+    A record pattern references a field that is not declared in the
+    record's schema.
+
+    Example:
+      rec Point
+        x: Int
+        y: Int
+
+      fn f(p: Point) -> Int =
+        match p
+          Point{z: v} -> v   # Error: Point has no field 'z'
+
+    Fix: use one of the declared fields, or remove the clause.
+    """,
+    "E022" => """
+    E022: Record Pattern Field Type Mismatch
+
+    A sub-pattern inside a record pattern is incompatible with the
+    declared type of that field.
+
+    Example:
+      rec Person
+        age: Int
+
+      match p
+        Person{age: "forty"} -> ...   # Error: age is Int, not String
+
+    Fix: change the sub-pattern or the field type so they agree.
+    """,
+    "E023" => """
+    E023: Non-Literal Map Pattern Key
+
+    Map keys in pattern position must be literal values (atoms,
+    integers, strings, etc.). Bound variables may be used as keys
+    only when they are already in scope; in that case they are
+    looked up, not bound.
+
+    Example:
+      match m
+        %{key(): v} -> v   # Error: function calls not allowed as keys
+
+    Fix: use a literal key, or pre-compute the key with `let`.
+    """,
+    "E024" => """
+    E024: Unbound Pin Variable
+
+    The pin operator `^x` was used on a name that is not in scope at
+    the pattern's position. The pin operator only compares against
+    previously bound values.
+
+    Example:
+      match tag
+        ^status -> :hit   # Error: 'status' is not bound
+
+    Fix: bind the variable with `let` before the match, or drop the
+    `^` if you intended to introduce a fresh binding.
+    """,
+    "E025" => """
+    E025: Non-Exhaustive Nested Match
+
+    A `match` expression with nested patterns does not cover every
+    inhabitant of the scrutinee type. The compiler prints a concrete
+    witness for the missing case.
+
+    Example:
+      match %[r]
+        %[Ok(_)] -> :ok
+      # Warning: missing pattern `%[Error(_)]`
+
+    Fix: add the missing clause or a wildcard.
     """
   }
 

@@ -1,0 +1,78 @@
+mod JsonTree
+  # ---------------------------------------------------------------------------
+  # A miniature JSON-like interpreter driven entirely by nested destructuring.
+  #
+  # The data model is an algebraic sum type with five variants; every
+  # operation below inspects the structure through nested patterns.
+  # ---------------------------------------------------------------------------
+
+  type Json =
+    | JNull
+    | JBool(Bool)
+    | JInt(Int)
+    | JStr(String)
+    | JArr(List(Json))
+    | JObj(List(Tuple))
+
+  # ---------------------------------------------------------------------------
+  # Structural predicates
+  # ---------------------------------------------------------------------------
+
+  fn is_null(j: Json) -> Bool =
+    match j
+      JNull() -> true
+      _       -> false
+
+  fn is_truthy(j: Json) -> Bool =
+    match j
+      JNull()    -> false
+      JBool(b)   -> b
+      JInt(0)    -> false
+      JInt(_)    -> true
+      JStr("")   -> false
+      JStr(_)    -> true
+      JArr([])   -> false
+      JArr(_)    -> true
+      JObj([])   -> false
+      JObj(_)    -> true
+
+  # ---------------------------------------------------------------------------
+  # Lookup with nested destructuring: find the first Tuple %[key, value]
+  # in an object that matches the requested key.
+  # ---------------------------------------------------------------------------
+
+  fn lookup(obj: List(Tuple), key: String, default: Json) -> Json =
+    match obj
+      []                        -> default
+      [%[k, v] | rest] ->
+        if k == key then v else lookup(rest, key, default)
+
+  fn obj_get(j: Json, key: String, default: Json) -> Json =
+    match j
+      JObj(pairs) -> lookup(pairs, key, default)
+      _           -> default
+
+  # ---------------------------------------------------------------------------
+  # Sum all JInt leaves in any depth of nesting
+  # ---------------------------------------------------------------------------
+
+  fn sum_ints(j: Json) -> Int =
+    match j
+      JInt(n)     -> n
+      JArr(items) -> sum_list_of_json(items)
+      JObj(pairs) -> sum_pairs(pairs)
+      _           -> 0
+
+  local fn sum_list_of_json(items: List(Json)) -> Int =
+    match items
+      []       -> 0
+      [h | t]  -> sum_ints(h) + sum_list_of_json(t)
+
+  local fn sum_pairs(pairs: List(Tuple)) -> Int =
+    match pairs
+      []                 -> 0
+      [%[_, v] | rest]   -> sum_ints(v) + sum_pairs(rest)
+
+  fn main() -> Int =
+    let doc = JObj([%["answer", JInt(42)], %["items", JArr([JInt(1), JInt(2), JInt(3)])]])
+    sum_ints(doc)

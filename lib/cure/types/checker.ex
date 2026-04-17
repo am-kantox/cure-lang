@@ -738,7 +738,7 @@ defmodule Cure.Types.Checker do
       # Extract pattern ASTs for exhaustiveness checking
       patterns = Enum.map(arms, fn {:match_arm, arm_meta, _} -> Keyword.get(arm_meta, :pattern) end)
 
-      # Run exhaustiveness check
+      # Run exhaustiveness check (flat fast-path)
       case PatternChecker.check_match(scrut_type, patterns) do
         {:non_exhaustive, missing} ->
           line = Keyword.get(meta, :line, 1)
@@ -748,6 +748,22 @@ defmodule Cure.Types.Checker do
              line: line}
 
           # Emit as warning (not error) -- match still compiles
+          Events.emit(:type_checker, :type_warning, warning, Events.meta("nofile", line))
+
+        _ ->
+          :ok
+      end
+
+      # Nested Maranget-style pass for tuple/record scrutinees.
+      case PatternChecker.check_nested(scrut_type, patterns) do
+        {:non_exhaustive, missing} ->
+          line = Keyword.get(meta, :line, 1)
+
+          warning =
+            {:non_exhaustive_match,
+             "match expression has nested non-exhaustive cases (E025), missing: #{Enum.join(missing, ", ")}",
+             line: line}
+
           Events.emit(:type_checker, :type_warning, warning, Events.meta("nofile", line))
 
         _ ->
@@ -1113,17 +1129,35 @@ defmodule Cure.Types.Checker do
   defp bind_pattern(env, _, _type), do: env
 
   # Recursively bind all variables introduced by a match arm pattern.
+  #
+  # Threads the scrutinee type through the pattern so every leaf variable
+  # picks up the most precise type the structure allows. Supports:
+  #
+  # * wildcard (`_`) and `_name` -- no binding / bind without tracking
+  # * named variable -- extend env with the narrowed type
+  # * literals -- no-op
+  # * tuples -- zip children with tuple element types when available
+  # * lists (fixed and cons) -- use the list element type for items
+  # * maps -- use record field types (if the scrutinee is a record) or
+  #   the map value type; literal keys only
+  # * records (`{:function_call, [record: true], ...}`) -- resolve each
+  #   field's declared type from the record schema
+  # * ADT constructors -- delegate to variant argument types if known,
+  #   otherwise fall back to `:any`
+  # * pin (`^x`) -- do not bind; the existing type stays in scope
   defp bind_pattern_vars(env, nil, _type), do: env
   defp bind_pattern_vars(env, {:variable, _, "_"}, _type), do: env
+  defp bind_pattern_vars(env, {:variable, _, "_" <> _}, _type), do: env
   defp bind_pattern_vars(env, {:variable, _, name}, type), do: Env.extend(env, name, type)
   defp bind_pattern_vars(env, {:literal, _, _}, _type), do: env
 
+  defp bind_pattern_vars(env, {:pin, _, _}, _type), do: env
+
+  defp bind_pattern_vars(env, {:unary_op, _, [inner]}, type),
+    do: bind_pattern_vars(env, inner, type)
+
   defp bind_pattern_vars(env, {:list, meta, elems}, type) do
-    elem_type =
-      case type do
-        {:list, t} -> t
-        _ -> :any
-      end
+    elem_type = list_element_type(type)
 
     if Keyword.get(meta, :cons, false) do
       case elems do
@@ -1139,15 +1173,143 @@ defmodule Cure.Types.Checker do
     end
   end
 
-  defp bind_pattern_vars(env, {:function_call, _meta, args}, _type) do
-    Enum.reduce(args, env, &bind_pattern_vars(&2, &1, :any))
+  defp bind_pattern_vars(env, {:tuple, _, elems}, type) do
+    case type do
+      {:tuple, types} when is_list(types) and length(types) == length(elems) ->
+        Enum.zip(elems, types)
+        |> Enum.reduce(env, fn {el, t}, e -> bind_pattern_vars(e, el, t) end)
+
+      _ ->
+        Enum.reduce(elems, env, &bind_pattern_vars(&2, &1, :any))
+    end
   end
 
-  defp bind_pattern_vars(env, {:tuple, _, elems}, _type) do
-    Enum.reduce(elems, env, &bind_pattern_vars(&2, &1, :any))
+  defp bind_pattern_vars(env, {:map, _, pairs}, type) do
+    Enum.reduce(pairs, env, fn
+      {:pair, _, [key, value_pat]}, e ->
+        value_type = resolve_map_value_type(env, type, key)
+        bind_pattern_vars(e, value_pat, value_type)
+
+      _, e ->
+        e
+    end)
+  end
+
+  defp bind_pattern_vars(env, {:function_call, meta, args} = pat, type) do
+    cond do
+      Keyword.get(meta, :record, false) ->
+        bind_record_pattern(env, meta, args)
+
+      constructor?(Keyword.get(meta, :name)) ->
+        bind_constructor_pattern(env, pat, type)
+
+      true ->
+        Enum.reduce(args, env, &bind_pattern_vars(&2, &1, :any))
+    end
   end
 
   defp bind_pattern_vars(env, _, _type), do: env
+
+  defp list_element_type({:list, t}), do: t
+  defp list_element_type(_), do: :any
+
+  defp resolve_map_value_type(env, type, key) do
+    field_name =
+      case key do
+        {:literal, [subtype: :symbol], atom} when is_atom(atom) -> Atom.to_string(atom)
+        {:literal, [subtype: :symbol, _: _], atom} when is_atom(atom) -> Atom.to_string(atom)
+        _ -> nil
+      end
+
+    cond do
+      field_name != nil ->
+        resolve_record_field(env, type, field_name)
+
+      match?({:map, _, _}, type) ->
+        {_, _, vt} = type
+        vt
+
+      true ->
+        :any
+    end
+  end
+
+  defp bind_record_pattern(env, meta, args) do
+    rec_name = Keyword.get(meta, :name, "")
+
+    {known_fields, line} =
+      case Env.lookup_type(env, rec_name) do
+        {:ok, {:record, _, field_map}} -> {field_map, Keyword.get(meta, :line, 0)}
+        _ -> {%{}, Keyword.get(meta, :line, 0)}
+      end
+
+    Enum.reduce(args, env, fn arg, e ->
+      case arg do
+        # field punning shorthand: `x` inside `Point{x}` binds to field `x`.
+        {:variable, _, name} when is_binary(name) and name != "_" ->
+          type = Map.get(known_fields, name, :any)
+
+          if known_fields != %{} and not Map.has_key?(known_fields, name) do
+            emit_record_warning(e, rec_name, name, line)
+          end
+
+          Env.extend(e, name, type)
+
+        {:pair, _, [key, value_pat]} ->
+          field_name =
+            case key do
+              {:literal, [subtype: :symbol], atom} when is_atom(atom) -> Atom.to_string(atom)
+              _ -> nil
+            end
+
+          type =
+            case field_name do
+              nil -> :any
+              fname -> Map.get(known_fields, fname, :any)
+            end
+
+          if field_name != nil and known_fields != %{} and not Map.has_key?(known_fields, field_name) do
+            emit_record_warning(e, rec_name, field_name, line)
+          end
+
+          bind_pattern_vars(e, value_pat, type)
+
+        _ ->
+          e
+      end
+    end)
+  end
+
+  defp bind_constructor_pattern(env, {:function_call, _meta, args}, _type) do
+    # Without a resolved ADT variant registry we cannot narrow each argument's
+    # type, so fall back to `:any`. The compiler still benefits from binding
+    # the variable names.
+    Enum.reduce(args, env, &bind_pattern_vars(&2, &1, :any))
+  end
+
+  defp emit_record_warning(env, rec_name, field, line) do
+    if Map.get(env, :emit_events, false) do
+      file = Map.get(env, :file, "nofile")
+
+      Events.emit(
+        :type_checker,
+        :type_warning,
+        {:unknown_record_field, "record '#{rec_name}' pattern references unknown field '#{field}' (E021)", line: line},
+        Events.meta(file, line)
+      )
+    end
+
+    :ok
+  end
+
+  defp constructor?(name) when is_binary(name) do
+    case String.first(name) do
+      nil -> false
+      first -> first == String.upcase(first) and first != String.downcase(first)
+    end
+  end
+
+  defp constructor?(_), do: false
 
   defp extract_line({_, meta, _}) when is_list(meta), do: Keyword.get(meta, :line, 1)
   defp extract_line(_), do: 1

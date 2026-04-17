@@ -26,4 +26,31 @@ mod PatternGuards
       [h | _] -> h
       [] -> 0
 
+  # ---------------------------------------------------------------------------
+  # Record patterns (v0.18.0)
+  # ---------------------------------------------------------------------------
+
+  rec Person
+    name: String
+    age: Int
+
+  fn is_adult(p: Person) -> Bool =
+    match p
+      Person{age: a} when a >= 18 -> true
+      _                           -> false
+
+  # Field punning: `Person{name}` binds `name` to the `name` field.
+  fn salute(p: Person) -> String =
+    match p
+      Person{name} -> "Hi " <> name
+
+  # ---------------------------------------------------------------------------
+  # Nested destructuring (v0.18.0)
+  # ---------------------------------------------------------------------------
+
+  fn unwrap_head_ok(xs: List(Result(Int, String)), default: Int) -> Int =
+    match xs
+      [Ok(v) | _] -> v
+      _           -> default
+
   fn main() -> Int = 0

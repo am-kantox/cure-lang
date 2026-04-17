@@ -323,18 +323,96 @@ FSMs compile to `gen_statem` BEAM modules. The compiler verifies
 reachability and deadlock freedom at compile time.
 
 ## Pattern Matching
-
+`match` (and `let`) support deep destructuring across every structural
+form in the language. As of v0.18.0 the supported pattern shapes are:
+### Literals and variables
 ```cure
 match x
-  Ok(v) -> v
-  Error(e) -> default
-
-match list
-  [] -> "empty"
-  [h | t] -> "non-empty"
+  0      -> "zero"
+  n      -> "nonzero"
+  _      -> "never reached"
 ```
+`_` is the wildcard. A name starting with `_` (for example `_unused`)
+is a binding that silences the unused-variable warning.
+### Tuples and lists
+```cure
+match pair
+  %[a, b]        -> a + b
+  %[a, b, _rest] -> a + b
 
-The compiler checks pattern exhaustiveness and warns about missing cases.
+match xs
+  []             -> "empty"
+  [h | t]        -> "non-empty"
+  [a, b, c]      -> "exactly three"
+```
+Cons is single-head only: `[h | t]` binds `h` to the head and `t` to
+the tail. Matching against a literal-length list (`[a, b, c]`) requires
+the list to have that exact length.
+### Maps
+```cure
+match request
+  %{method: "GET", path: p}    -> fetch(p)
+  %{method: m, path: _}        -> reject(m)
+```
+Map keys in pattern position must be literal values. A map pattern
+matches if every listed key is present in the subject; keys not
+mentioned are ignored (open matching, like Elixir's `%{...}`).
+### Records and field punning
+```cure
+match person
+  Person{name, age}                    -> salute(name, age)
+  Person{name, address: Address{city}} -> greet(name, city)
+```
+A bare identifier inside a record pattern is shorthand for
+`name: name` (field punning). Record patterns compile to map patterns
+with a `__struct__ := :tag` guard, so they only match values built
+with the same record type.
+### ADT constructors
+```cure
+match result
+  Ok(v)         -> v
+  Error(reason) -> default
+
+match option
+  Some(x) -> x
+  None()  -> 0
+```
+Nullary constructors must be written with empty parentheses
+(`None()`), never bare `None` -- a bare `None` is a fresh variable
+binding.
+### The pin operator `^x`
+```cure
+let target = get_tag()
+
+match event.tag
+  ^target -> :hit
+  _       -> :miss
+```
+`^x` compares against a previously-bound value rather than binding
+fresh. Lowered by the compiler to a guard `V_fresh =:= V_x`.
+### Repeated variables
+```cure
+match pair
+  %[x, x] -> :equal
+  _       -> :different
+```
+A name that appears twice in the same pattern binds on its first
+occurrence and is turned into an equality guard at every later
+position (so the pattern only matches when all occurrences hold the
+same value).
+### Nested destructuring
+Any combination of the above can be nested:
+```cure
+match value
+  %[_, %{list: [head | tail]}, _] -> handle(head, tail)
+  Person{name: n, address: Address{city: c, zip: _}} when c == "Madrid" ->
+    greet(n)
+```
+### Exhaustiveness
+The compiler checks pattern exhaustiveness. Shallow coverage gaps are
+reported by the flat classifier (`E004`); nested gaps (tuples of ADTs,
+records in tuples, etc.) are reported with a concrete witness under
+code `E025`.
 
 ## Control Flow
 

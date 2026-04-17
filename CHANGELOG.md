@@ -6,34 +6,119 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
+---
 
-- `Cure.Compiler.Formatter` -- a source-preserving formatter that
-  normalises line endings, strips trailing whitespace, expands
-  leading tabs into two spaces, collapses runs of blank lines to a
-  single blank line, and canonicalises operator spacing. Operates
-  directly on the source buffer rather than re-printing from the
-  AST, so plain `#` comments, string/regex/char literals, and doc
-  comments are preserved byte-for-byte. Every rewrite is
-  round-trip-validated against the original AST before being
-  returned, and the formatter degrades to the unchanged buffer on
-  any mismatch or on unparseable input.
-- `cure fmt --check` -- exits non-zero if any file would be
-  reformatted, suitable for CI.
-- `cure fmt --aggressive` / `--ast` -- opt-in access to the
-  destructive AST pretty printer for users who want full
-  canonicalisation and accept the comment-stripping cost.
+## [0.18.0] -- Deep Destructuring
+
+`match` and `let` grow up. Patterns can now destructure arbitrary
+nesting across tuples, lists (cons and fixed), maps, records, and ADT
+constructors -- any combination, any depth. Along the way the pattern
+engine gained a pin operator (`^x`), repeated-variable equality
+guards, record field-punning shorthand, and a nested-exhaustiveness
+analyser.
+
+### Added -- Pattern engine
+
+- `Cure.Compiler.PatternCompiler` -- a dedicated pattern-to-Erlang
+  translator extracted from the old in-place `compile_pattern` in
+  `Cure.Compiler.Codegen`. Every pattern shape recurses through this
+  module rather than bottoming out at expression codegen.
+- Map patterns now use `map_field_exact` (`K := V`) instead of the
+  (wrong) `map_field_assoc` (`K => V`); matching a map pattern now
+  actually matches the subject instead of silently succeeding.
+- Record patterns: `Point{x: a, y: b}` in pattern position compiles to
+  a map pattern with an exact `__struct__ := :point` tag and per-field
+  exact matches. Unmentioned fields are open-matched.
+- Record field punning: `Point{x, y}` is shorthand for
+  `Point{x: x, y: y}`, both in patterns and in constructions.
+- ADT constructor patterns and cons patterns recurse correctly through
+  the new engine; `[Ok(x) | rest]` now binds `x`.
+- Pin operator `^x` in pattern position compares against a
+  previously-bound value by emitting a synthetic equality guard.
+- Repeated variable occurrences in the same pattern emit synthetic
+  equality guards too (`%[x, x]` matches only when both slots agree).
+
+### Added -- Type checker
+
+- `Cure.Types.Checker.bind_pattern_vars/3` rewritten for deep
+  recursion. Tuple patterns narrow element-by-element from the
+  scrutinee tuple type; map patterns narrow via the record schema
+  (when the scrutinee is a record) or the map value type; record
+  patterns resolve per-field via `Cure.Types.Env.lookup_type/2`.
+- Nested exhaustiveness pass in `Cure.Types.PatternChecker.check_nested/2`
+  -- a Maranget-style column walker that emits concrete missing
+  witnesses (`%[Error(_)]`, etc.) for tuple-of-ADT scrutinees. The
+  old flat classifier remains as a fast-path.
+- New error codes `E021` -- `E025`: unknown record field in pattern,
+  record pattern field type mismatch, non-literal map pattern key,
+  unbound pin variable, non-exhaustive nested match.
+
+### Added -- Parser
+
+- `^` lexed as `:caret` and parsed as the pin prefix operator,
+  producing `{:pin, meta, [inner]}`.
+- Field-punning in record patterns and map literals: a bare
+  identifier at a key position followed by `,` or `}` now desugars
+  to `name: name`.
+
+### Added -- Standard library
+
+- `Std.Match` -- new module with destructuring helpers
+  (`unpack_pair/1`, `fst/1`, `snd/1`, `head_tail/2`, `uncons/1`,
+  `first_two/2`, `unwrap_ok/2`, `unwrap_some/2`); every function
+  exercises the new pattern engine.
+- `Std.List.uncons/1` and `Std.List.split_first/2` added using cons
+  destructuring.
+
+### Added -- Examples
+
+- `examples/destructuring.cure` -- end-to-end showcase of nested
+  tuples, maps, records, cons, ADT constructors, and the pin operator.
+- `examples/json_tree.cure` -- small JSON-like interpreter driven
+  entirely by nested destructuring.
+- `examples/pattern_guards.cure` extended with record patterns,
+  field-punning, and nested ADT destructuring.
+
+### Added -- Documentation
+
+- `docs/PATTERNS.md` -- authoritative pattern matching reference with
+  Cure surface syntax, Erlang abstract-form mapping, and binding
+  semantics.
+- `docs/LANGUAGE_SPEC.md` pattern-matching section rewritten from a
+  12-line stub to a full reference.
+- `docs/TUTORIAL.md` -- new Chapter 4 "Destructuring in `match`" and
+  renumbering of later chapters.
 
 ### Changed
 
+- `Cure.Compiler.Codegen` structure gains `:pattern_guards` and
+  `:pattern_dup_counter` fields used by `PatternCompiler` to
+  accumulate synthetic guards.
+- `Cure.Compiler.Formatter` (v0.17.0) -- a source-preserving
+  formatter that normalises line endings, strips trailing whitespace,
+  expands leading tabs into two spaces, collapses runs of blank lines
+  to a single blank line, and canonicalises operator spacing.
+  Operates directly on the source buffer rather than re-printing from
+  the AST, so plain `#` comments, string/regex/char literals, and doc
+  comments are preserved byte-for-byte. Every rewrite is
+  round-trip-validated against the original AST before being returned,
+  and the formatter degrades to the unchanged buffer on any mismatch
+  or on unparseable input.
+- `cure fmt --check` -- exits non-zero if any file would be
+  reformatted, suitable for CI.
+- `cure fmt --aggressive` / `--ast` -- opt-in access to the
+  destructive AST pretty printer.
 - `Cure.LSP.Server` advertises `documentFormattingProvider: true`
-  again. The handler now delegates to `Cure.Compiler.Formatter`,
-  which makes `format_on_save = true` safe under LunarVim,
-  `conform.nvim`, `none-ls`, and other format-on-save runners:
-  comments and layout survive every save.
-- `cure fmt` without flags now uses the safe formatter by default.
-  The old AST-based behaviour is still reachable via
-  `--aggressive`, which keeps the pre-rewrite warning.
+  again; the handler delegates to `Cure.Compiler.Formatter`.
+
+### Deferred to v0.19.0
+
+The original v0.18.0 "Bring the Furniture" items (`proof` containers,
+`assert_type`, record defaults, `@derive`, property-based testing,
+`Std.Iter`, package registry first half, mutual-recursion totality)
+are moved to v0.19.0. The pin operator remains gated behind
+`--experimental-pin` in v0.18.0 and is promoted to default in v0.19.0
+once real-world feedback is in.
 
 ---
 

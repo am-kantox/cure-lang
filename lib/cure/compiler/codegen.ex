@@ -22,6 +22,7 @@ defmodule Cure.Compiler.Codegen do
   alias Cure.Pipeline.Events
   alias Cure.FSM.{Compiler, Verifier}
   alias Cure.Types.{Protocol, ProtocolRegistry}
+  alias Cure.Compiler.PatternCompiler
 
   # -- Codegen State -----------------------------------------------------------
 
@@ -33,7 +34,11 @@ defmodule Cure.Compiler.Codegen do
     imports: [],
     temp_counter: 0,
     emit_events: true,
-    file: "nofile"
+    file: "nofile",
+    # Extra guard conjuncts emitted by `Cure.Compiler.PatternCompiler`
+    # (for the pin operator `^x` and repeated variable occurrences).
+    pattern_guards: [],
+    pattern_dup_counter: 0
   ]
 
   @type t :: %__MODULE__{}
@@ -456,14 +461,17 @@ defmodule Cure.Compiler.Codegen do
     erl_clauses =
       Enum.map(clauses, fn %{params: params, guard: guard, body: body_list} ->
         # Each clause has its own scope
-        clause_state = %{state | vars: %{}}
+        clause_state = %{state | vars: %{}, pattern_guards: []}
 
         {pattern_forms, clause_state} =
           Enum.map_reduce(params, clause_state, fn pat, st ->
             compile_pattern(pat, st)
           end)
 
-        guard_forms = compile_guard(guard, clause_state)
+        extra_guards = Enum.reverse(clause_state.pattern_guards)
+        clause_state = %{clause_state | pattern_guards: []}
+
+        guard_forms = compile_guard_with_extras(guard, extra_guards, clause_state)
 
         body_forms = compile_body_exprs(body_list, clause_state)
 
@@ -898,7 +906,15 @@ defmodule Cure.Compiler.Codegen do
   defp compile_assignment(meta, pattern, value, state) do
     line = Keyword.get(meta, :line, state.line)
     {val_form, state} = do_compile_expr(value, state)
+
+    # A `let` binding cannot express a guard, so any extra pattern guards
+    # introduced by `^pin` or repeated variables must be absent here.
+    # We nevertheless thread `pattern_guards` through the state and drop
+    # them after the match; downstream code may still rely on the bound
+    # variables.
+    state = %{state | pattern_guards: []}
     {pat_form, state} = compile_pattern(pattern, state)
+    state = %{state | pattern_guards: []}
 
     form = {:match, line, pat_form, val_form}
     {form, state}
@@ -950,9 +966,12 @@ defmodule Cure.Compiler.Codegen do
         guard = Keyword.get(arm_meta, :guard)
 
         # Each arm gets its own scope for pattern variables
-        arm_state = st
+        arm_state = %{st | pattern_guards: []}
         {pat_form, arm_state} = compile_pattern(pattern, arm_state)
-        guard_forms = compile_guard(guard, arm_state)
+        extra_guards = Enum.reverse(arm_state.pattern_guards)
+        arm_state = %{arm_state | pattern_guards: []}
+
+        guard_forms = compile_guard_with_extras(guard, extra_guards, arm_state)
         {body_form, _arm_state} = do_compile_expr(body, arm_state)
 
         clause = {:clause, line, [pat_form], guard_forms, [body_form]}
@@ -1273,12 +1292,17 @@ defmodule Cure.Compiler.Codegen do
     {catch_clauses, state} =
       Enum.map_reduce(arms, state, fn {:match_arm, arm_meta, [body]}, st ->
         pattern = Keyword.get(arm_meta, :pattern)
+        guard = Keyword.get(arm_meta, :guard)
+        st = %{st | pattern_guards: []}
         {pat_form, st} = compile_pattern(pattern, st)
+        extra_guards = Enum.reverse(st.pattern_guards)
+        st = %{st | pattern_guards: []}
+        guard_forms = compile_guard_with_extras(guard, extra_guards, st)
         {body_form, st} = do_compile_expr(body, st)
 
         # Erlang catch clause: {Class, Pattern, Stacktrace} -> Body
         clause =
-          {:clause, line, [{:tuple, line, [{:var, line, :_}, pat_form, {:var, line, :_}]}], [], [body_form]}
+          {:clause, line, [{:tuple, line, [{:var, line, :_}, pat_form, {:var, line, :_}]}], guard_forms, [body_form]}
 
         {clause, st}
       end)
@@ -1297,55 +1321,12 @@ defmodule Cure.Compiler.Codegen do
   end
 
   # -- Pattern Compilation (for match arms and let destructuring) ---------------
+  #
+  # Thin delegate to `Cure.Compiler.PatternCompiler` so every call site gets
+  # the same deeply-recursive pattern handling for tuples, lists, cons, maps,
+  # records, constructors, binaries, wildcards, literals, pins, and variables.
 
-  defp compile_pattern(ast, state) do
-    case ast do
-      {:literal, meta, value} ->
-        compile_literal(meta, value, state)
-
-      {:variable, _meta, "_"} ->
-        {{:var, state.line, :_}, state}
-
-      {:variable, _meta, name} ->
-        var_atom = mangle_var(name)
-        state = %{state | vars: Map.put(state.vars, name, var_atom)}
-        {{:var, state.line, var_atom}, state}
-
-      {:list, meta, elems} ->
-        compile_list(meta, elems, state)
-
-      {:tuple, meta, elems} ->
-        compile_tuple(meta, elems, state)
-
-      {:map, meta, pairs} ->
-        compile_map(meta, pairs, state)
-
-      # Note: cons lists are already handled by the {:list, meta, elems} clause above
-      # since compile_list checks meta[:cons] internally
-
-      {:function_call, meta, args} ->
-        # Constructor pattern: Ok(x) -> {:ok, x}
-        name = Keyword.get(meta, :name, "unknown")
-
-        if constructor?(name) do
-          tag = constructor_tag(name)
-
-          {arg_forms, state} =
-            Enum.map_reduce(args, state, fn arg, st ->
-              compile_pattern(arg, st)
-            end)
-
-          {{:tuple, state.line, [{:atom, state.line, tag} | arg_forms]}, state}
-        else
-          # Regular call in pattern position -- compile as expression
-          do_compile_expr({:function_call, meta, args}, state)
-        end
-
-      _ ->
-        # Fallback: compile as expression
-        do_compile_expr(ast, state)
-    end
-  end
+  defp compile_pattern(ast, state), do: PatternCompiler.compile(ast, state)
 
   # -- Guard Compilation -------------------------------------------------------
 
@@ -1354,6 +1335,30 @@ defmodule Cure.Compiler.Codegen do
   defp compile_guard(guard_ast, state) do
     {form, _state} = do_compile_expr(guard_ast, state)
     [[form]]
+  end
+
+  # Merge a user-written guard AST with pattern guards injected by the
+  # pattern compiler (for the pin operator and repeated variable binding).
+  # Produces Erlang guard abstract form: [[Conj1 andalso Conj2 andalso ...]].
+  defp compile_guard_with_extras(nil, [], _state), do: []
+
+  defp compile_guard_with_extras(nil, extras, state) when is_list(extras) do
+    [[conjoin_guards(extras, state.line)]]
+  end
+
+  defp compile_guard_with_extras(guard_ast, [], state), do: compile_guard(guard_ast, state)
+
+  defp compile_guard_with_extras(guard_ast, extras, state) do
+    {user_form, _state} = do_compile_expr(guard_ast, state)
+    extra = conjoin_guards(extras, state.line)
+    combined = {:op, state.line, :andalso, user_form, extra}
+    [[combined]]
+  end
+
+  defp conjoin_guards([single], _line), do: single
+
+  defp conjoin_guards([g | rest], line) do
+    {:op, line, :andalso, g, conjoin_guards(rest, line)}
   end
 
   # -- Helper: build param forms -----------------------------------------------

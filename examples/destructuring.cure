@@ -1,0 +1,68 @@
+mod Destructuring
+  # ---------------------------------------------------------------------------
+  # Deep destructuring in `match` -- v0.18.0
+  #
+  # Every `match` arm below exercises a different pattern shape supported
+  # by the new pattern engine: nested tuples, cons lists, maps, records,
+  # ADT constructors, pin operator, and arbitrary nesting thereof.
+  # ---------------------------------------------------------------------------
+
+  rec Address
+    city: String
+    zip: Int
+
+  rec Person
+    name: String
+    address: Address
+
+  type Event(T) = Tick | Msg(T) | Quit
+
+  # ---------------------------------------------------------------------------
+  # The headline example from the v0.18.0 plan:
+  # destructure a 3-tuple whose middle element is a map holding a cons list.
+  # ---------------------------------------------------------------------------
+
+  fn first_of_middle_list(t: Tuple, default: Int) -> Int =
+    match t
+      %[_, %{list: [elem_head | _]}, _] -> elem_head
+      _                                  -> default
+
+  # ---------------------------------------------------------------------------
+  # Nested record patterns with field punning
+  # ---------------------------------------------------------------------------
+
+  fn greet(p: Person) -> String =
+    match p
+      Person{name, address: Address{city}} ->
+        "Hello " <> name <> " from " <> city
+      _ -> "Hello, stranger"
+
+  # ---------------------------------------------------------------------------
+  # ADT + cons + guards
+  # ---------------------------------------------------------------------------
+
+  fn first_message(events: List(Event(String)), default: String) -> String =
+    match events
+      [Msg(s) | _] -> s
+      [_       | rest] -> first_message(rest, default)
+      []           -> default
+
+  # ---------------------------------------------------------------------------
+  # Pin operator: reject events whose tag does not match a selected target
+  # ---------------------------------------------------------------------------
+
+  fn is_target_tag(tag: Atom, event_tag: Atom) -> Bool =
+    match event_tag
+      ^tag -> true
+      _    -> false
+
+  # ---------------------------------------------------------------------------
+  # Repeated-variable pattern: both slots must hold the same value
+  # ---------------------------------------------------------------------------
+
+  fn are_equal(t: Tuple) -> Bool =
+    match t
+      %[x, x] -> true
+      _       -> false
+
+  fn main() -> Int = 0
