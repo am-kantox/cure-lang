@@ -41,14 +41,9 @@ defmodule Cure.RegressionTest do
   end
 
   defp preload_stdlib do
-    for dir <- ["_build/cure/ebin", "_build/cure/ex_ebin"] do
-      if File.dir?(dir), do: :code.add_patha(String.to_charlist(Path.expand(dir)))
-    end
-
-    for name <-
-          ~w(Core List Pair Math String Io System Show Option Result
-             Eq Ord Functor Map Set Test Vector Equal Refine Fsm) do
-      _ = Code.ensure_loaded(String.to_atom("Cure.Std.#{name}"))
-    end
+    # Use the shared helper: loading beams by name instead of adding the
+    # build dirs to the code path prevents stale lowercase leftovers from
+    # shadowing OTP modules (notably `:math`) mid-suite.
+    Cure.Stdlib.Preload.preload(examples: true)
   end
 end

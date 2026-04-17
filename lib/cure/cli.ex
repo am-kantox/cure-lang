@@ -157,24 +157,14 @@ defmodule Cure.CLI do
     end
   end
 
-  # Ensure stdlib .beam files in _build/cure/ebin are on the code path
-  # and every Std.* module is loaded before executing a user script.
+  # Load stdlib .beam files from _build/cure/ebin (plus any Cure.* example
+  # modules previously compiled into _build/cure/ex_ebin) into the VM.
+  #
+  # The dedicated helper avoids adding the output directories to the
+  # global Erlang code path, so stale leftover lowercase beams (e.g. a
+  # pre-rename examples/math.cure -> math.beam) can't shadow OTP modules.
   defp preload_stdlib do
-    ["_build/cure/ebin", "_build/cure/ex_ebin"]
-    |> Enum.each(fn dir ->
-      if File.dir?(dir) do
-        :code.add_patha(String.to_charlist(Path.expand(dir)))
-      end
-    end)
-
-    Enum.each(
-      ~w(Core List Pair Math String Io System Show Option Result
-         Eq Ord Functor Map Set Test Vector Equal Refine),
-      fn name ->
-        module = String.to_atom("Cure.Std.#{name}")
-        _ = Code.ensure_loaded(module)
-      end
-    )
+    Cure.Stdlib.Preload.preload(examples: true)
   end
 
   # -- check -------------------------------------------------------------------

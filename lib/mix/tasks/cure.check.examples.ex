@@ -170,14 +170,9 @@ defmodule Mix.Tasks.Cure.Check.Examples do
   end
 
   defp preload_stdlib do
-    for dir <- ["_build/cure/ebin", "_build/cure/ex_ebin"] do
-      if File.dir?(dir), do: :code.add_patha(String.to_charlist(Path.expand(dir)))
-    end
-
-    for name <-
-          ~w(Core List Pair Math String Io System Show Option Result
-             Eq Ord Functor Map Set Test Vector Equal Refine Fsm) do
-      _ = Code.ensure_loaded(String.to_atom("Cure.Std.#{name}"))
-    end
+    # Load only `Cure.*.beam` files by name (no `:code.add_patha`) so
+    # stale lowercase artifacts under `_build/cure/ebin` cannot shadow
+    # OTP modules like `:math` while the examples are being exercised.
+    Cure.Stdlib.Preload.preload(examples: true)
   end
 end
