@@ -21,7 +21,7 @@ defmodule Cure.LSP.Server do
   use GenServer
 
   alias Cure.LSP.Transport
-  alias Cure.Compiler.{Lexer, Parser}
+  alias Cure.Compiler.{Formatter, Lexer, Parser}
 
   defstruct [
     :reader_pid,
@@ -102,6 +102,11 @@ defmodule Cure.LSP.Server do
         "definitionProvider" => true,
         "documentSymbolProvider" => true,
         "workspaceSymbolProvider" => true,
+        # Formatting is handled by `Cure.Compiler.Formatter`, a
+        # source-preserving formatter that round-trip-validates its
+        # output against the original AST before returning edits.
+        # The destructive AST pretty printer is still available via
+        # `cure fmt --aggressive` for users who want canonicalisation.
         "documentFormattingProvider" => true,
         "renameProvider" => %{"prepareProvider" => true},
         "signatureHelpProvider" => %{
@@ -921,27 +926,23 @@ defmodule Cure.LSP.Server do
 
   # -- Formatting ---------------------------------------------------------------
 
-  @doc false
-  def compute_formatting_edits(text) do
-    case parse_to_ast(text) do
-      {:ok, ast} ->
-        formatted = Cure.Compiler.Printer.quoted_to_string(ast)
-        line_count = text |> String.split("\n") |> length()
+  @doc """
+  Compute formatting edits for a document.
 
-        [
-          %{
-            "range" => %{
-              "start" => %{"line" => 0, "character" => 0},
-              "end" => %{"line" => line_count, "character" => 0}
-            },
-            "newText" => formatted <> "\n"
-          }
-        ]
-
-      _ ->
-        []
-    end
+  Delegates to `Cure.Compiler.Formatter`, which performs a small set
+  of source-preserving transformations (line-ending normalisation,
+  trailing-whitespace stripping, tab-to-space in indentation,
+  blank-line collapsing, and operator spacing) and validates the
+  result against a re-parse of the original AST. Returns a single
+  whole-document `TextEdit` when the formatter produces a change, or
+  an empty list otherwise.
+  """
+  @spec compute_formatting_edits(String.t()) :: [map()]
+  def compute_formatting_edits(text) when is_binary(text) do
+    Formatter.format_to_edits(text)
   end
+
+  def compute_formatting_edits(_), do: []
 
   # -- Rename -------------------------------------------------------------------
 

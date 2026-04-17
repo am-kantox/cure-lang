@@ -26,15 +26,31 @@ defmodule Cure.LSP.ServerV17Test do
   end
 
   describe "compute_formatting_edits/1" do
-    test "returns one full-document edit on parseable text" do
-      edits = Server.compute_formatting_edits(@sample)
-      assert [%{"range" => _, "newText" => _}] = edits
+    # LSP formatting delegates to `Cure.Compiler.Formatter`, a
+    # source-preserving formatter whose output is round-trip-validated
+    # against the original AST. The LSP handler returns a single
+    # whole-document `TextEdit` when the formatter produces a change,
+    # or `[]` otherwise.
+    test "returns an empty edit list on canonical text" do
+      assert [] = Server.compute_formatting_edits(@sample)
     end
 
-    test "handles unparseable input without crashing" do
-      # The parser is tolerant enough to turn lone tokens into a small AST;
-      # we only require the call to not raise and to return a list.
-      assert is_list(Server.compute_formatting_edits("@@@@"))
+    test "returns a whole-document TextEdit for dirty input" do
+      dirty = "mod Demo\n  fn add(a: Int, b: Int) -> Int = a+b\n"
+      assert [edit] = Server.compute_formatting_edits(dirty)
+      assert %{"range" => range, "newText" => new_text} = edit
+      assert %{"start" => %{"line" => 0, "character" => 0}} = range
+      assert new_text =~ "a + b"
+    end
+
+    test "degrades to [] on unparseable input" do
+      # Unterminated string: lexer error, so the formatter refuses to
+      # modify the buffer.
+      assert [] = Server.compute_formatting_edits(~s|mod D\n  fn f() -> String = "oops|)
+    end
+
+    test "returns [] on empty input" do
+      assert [] = Server.compute_formatting_edits("")
     end
   end
 

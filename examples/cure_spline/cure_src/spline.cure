@@ -109,7 +109,6 @@ mod Spline
   local fn monotone?(ks: List(Knot)) -> Bool =
     match ks
       [] -> true
-      [_] -> true
       [p | t] ->
         match t
           [] -> true

@@ -10,16 +10,18 @@ Copy the files to your Neovim configuration directory:
 
 ```bash
 # For Neovim (recommended)
-mkdir -p ~/.config/nvim/syntax ~/.config/nvim/ftdetect ~/.config/nvim/indent
-cp syntax/cure.vim ~/.config/nvim/syntax/
+mkdir -p ~/.config/nvim/syntax ~/.config/nvim/ftdetect ~/.config/nvim/ftplugin ~/.config/nvim/indent
+cp syntax/cure.vim   ~/.config/nvim/syntax/
 cp ftdetect/cure.vim ~/.config/nvim/ftdetect/
-cp indent/cure.vim ~/.config/nvim/indent/
+cp ftplugin/cure.vim ~/.config/nvim/ftplugin/
+cp indent/cure.vim   ~/.config/nvim/indent/
 
 # For Vim
-mkdir -p ~/.vim/syntax ~/.vim/ftdetect ~/.vim/indent
-cp syntax/cure.vim ~/.vim/syntax/
+mkdir -p ~/.vim/syntax ~/.vim/ftdetect ~/.vim/ftplugin ~/.vim/indent
+cp syntax/cure.vim   ~/.vim/syntax/
 cp ftdetect/cure.vim ~/.vim/ftdetect/
-cp indent/cure.vim ~/.vim/indent/
+cp ftplugin/cure.vim ~/.vim/ftplugin/
+cp indent/cure.vim   ~/.vim/indent/
 ```
 
 ### Using a Plugin Manager
@@ -100,6 +102,38 @@ Automatic indentation for:
 ### Filetype Detection
 
 Automatically detects `.cure` files and sets the appropriate filetype.
+
+### Filetype Plugin (ftplugin)
+
+On top of detection, `ftplugin/cure.vim` sets sensible per-buffer
+defaults for editing Cure:
+
+- `commentstring = "# %s"` so `gcc` / `Comment.nvim` / `vim-commentary`
+  pick the right comment leader
+- 2-space `expandtab` / `shiftwidth` / `softtabstop` / `tabstop`
+- Trimmed `formatoptions`: drops `a` (auto paragraph reflow), `t`
+  (text auto-wrap at `textwidth`), and `o` (forced comment leader after
+  `o`/`O`). `r` and `c` (comment continuation on `<CR>` / wrap) stay
+  on so doc comments keep working.
+- No kill switches for format-on-save: the Cure LSP and `cure fmt`
+  both now default to a safe, source-preserving formatter, so
+  `:w` with `format_on_save = true` is fine. If you want to opt
+  out anyway, set `b:autoformat = 0` / `b:disable_autoformat = 1`
+  yourself in `~/.config/nvim/after/ftplugin/cure.vim`.
+
+### Formatting Policy
+
+The Cure LSP advertises `textDocument/formatting`, backed by
+`Cure.Compiler.Formatter` -- a source-preserving formatter that
+round-trip-validates its output against the original AST. It
+normalises line endings, strips trailing whitespace, expands leading
+tabs into two spaces, collapses runs of blank lines to a single blank
+line, and canonicalises operator spacing. Comments, string and regex
+literals, and doc comments are preserved byte-for-byte.
+
+The destructive AST rewrite is still available via
+`cure fmt --aggressive`; it strips plain `#` comments and any
+non-canonical whitespace in exchange for a fully canonical buffer.
 
 ## Testing
 
@@ -232,6 +266,32 @@ Try a different color scheme or customize the highlighting in your config:
 hi cureFunctionDef guifg=#61AFEF
 hi cureKeyword guifg=#C678DD
 hi cureType guifg=#E5C07B
+```
+
+### `:w` eats my comments / collapses the file
+
+The default formatter (`Cure.Compiler.Formatter`, used by both the
+LSP and `cure fmt`) is source-preserving and does not touch comments
+or layout. If comments are disappearing, something is running the
+`--aggressive` AST rewrite on save. Diagnose:
+
+```vim
+:echo &filetype                                  " must be 'cure'
+:lua =vim.lsp.get_active_clients({ bufnr = 0 })  " only cure-lsp expected
+```
+
+If a generic formatter (e.g. `prettier`, `clang-format`) is attached,
+it is almost certainly because Neovim detected the wrong filetype --
+add `vim.filetype.add({ extension = { cure = 'cure' } })` to your
+config before any plugin manager setup.
+
+One-shot opt-out for the current buffer:
+
+```vim
+:lua vim.b.autoformat = false
+:lua vim.b.disable_autoformat = true
+" conform.nvim:
+:FormatDisable
 ```
 
 ## Contributing

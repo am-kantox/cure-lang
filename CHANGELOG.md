@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `Cure.Compiler.Formatter` -- a source-preserving formatter that
+  normalises line endings, strips trailing whitespace, expands
+  leading tabs into two spaces, collapses runs of blank lines to a
+  single blank line, and canonicalises operator spacing. Operates
+  directly on the source buffer rather than re-printing from the
+  AST, so plain `#` comments, string/regex/char literals, and doc
+  comments are preserved byte-for-byte. Every rewrite is
+  round-trip-validated against the original AST before being
+  returned, and the formatter degrades to the unchanged buffer on
+  any mismatch or on unparseable input.
+- `cure fmt --check` -- exits non-zero if any file would be
+  reformatted, suitable for CI.
+- `cure fmt --aggressive` / `--ast` -- opt-in access to the
+  destructive AST pretty printer for users who want full
+  canonicalisation and accept the comment-stripping cost.
+
+### Changed
+
+- `Cure.LSP.Server` advertises `documentFormattingProvider: true`
+  again. The handler now delegates to `Cure.Compiler.Formatter`,
+  which makes `format_on_save = true` safe under LunarVim,
+  `conform.nvim`, `none-ls`, and other format-on-save runners:
+  comments and layout survive every save.
+- `cure fmt` without flags now uses the safe formatter by default.
+  The old AST-based behaviour is still reachable via
+  `--aggressive`, which keeps the pre-rewrite warning.
+
 ---
 
 ## [0.17.0] -- Proofs & Polish: Toward Idris

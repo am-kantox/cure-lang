@@ -43,7 +43,10 @@ defmodule Cure.CLI do
           filter: :string,
           doctests: :boolean,
           poll_ms: :integer,
-          debounce: :integer
+          debounce: :integer,
+          aggressive: :boolean,
+          ast: :boolean,
+          check: :boolean
         ],
         aliases: [o: :output_dir, v: :verbose, h: :help, f: :filter, t: :template]
       )
@@ -66,7 +69,7 @@ defmodule Cure.CLI do
         ["explain" | [code]] -> cmd_explain(code)
         ["doc" | paths] -> cmd_doc(paths, opts)
         ["repl"] -> cmd_repl()
-        ["fmt" | paths] -> cmd_fmt(paths)
+        ["fmt" | paths] -> cmd_fmt(paths, opts)
         ["watch" | rest] -> cmd_watch(rest, opts)
         ["new" | rest] -> cmd_new(rest, opts)
         ["bench" | rest] -> cmd_bench(rest, opts)
@@ -416,7 +419,22 @@ defmodule Cure.CLI do
 
   # -- fmt ---------------------------------------------------------------------
 
-  defp cmd_fmt(paths) do
+  # Two modes:
+  #
+  #   * (default) safe, source-preserving formatter. Runs
+  #     `Cure.Compiler.Formatter`, which normalises line endings,
+  #     trailing whitespace, leading-tab indentation, blank-line runs,
+  #     and operator spacing. Plain `#` comments, string literals,
+  #     regex bodies, and doc comments are preserved byte-for-byte.
+  #     Every rewrite is round-trip-validated against the original
+  #     AST before being written to disk.
+  #
+  #   * `--aggressive` / `--ast`: canonicalising AST pretty printer.
+  #     Reformats the buffer from the parse tree, which strips plain
+  #     `#` comments and any layout that doesn't survive a parser
+  #     round-trip. The command prints a banner before touching disk
+  #     so users know what they're opting into.
+  defp cmd_fmt(paths, opts) do
     cure_files =
       case paths do
         [] ->
@@ -428,7 +446,62 @@ defmodule Cure.CLI do
           end)
       end
 
-    Enum.each(cure_files, fn file ->
+    cond do
+      cure_files == [] ->
+        info("No .cure files found")
+
+      Keyword.get(opts, :aggressive, false) or Keyword.get(opts, :ast, false) ->
+        fmt_aggressive(cure_files)
+
+      Keyword.get(opts, :check, false) ->
+        fmt_check(cure_files)
+
+      true ->
+        fmt_safe(cure_files)
+    end
+  end
+
+  defp fmt_safe(files) do
+    Enum.each(files, fn file ->
+      source = File.read!(file)
+
+      case Cure.Compiler.Formatter.format(source) do
+        {:ok, ^source} ->
+          :ok
+
+        {:ok, formatted} ->
+          File.write!(file, formatted)
+          info("  formatted #{file}")
+      end
+    end)
+  end
+
+  defp fmt_check(files) do
+    mismatched =
+      Enum.filter(files, fn file ->
+        source = File.read!(file)
+        {:ok, formatted} = Cure.Compiler.Formatter.format(source)
+        formatted != source
+      end)
+
+    case mismatched do
+      [] ->
+        info("All files are formatted")
+
+      _ ->
+        Enum.each(mismatched, fn file -> info("  needs formatting: #{file}") end)
+        exit({:shutdown, 1})
+    end
+  end
+
+  defp fmt_aggressive(files) do
+    warn(
+      "`cure fmt --aggressive` rewrites from the AST: plain `#` comments " <>
+        "and non-canonical whitespace will be stripped. Make sure the target " <>
+        "files are committed before continuing."
+    )
+
+    Enum.each(files, fn file ->
       source = File.read!(file)
 
       with {:ok, tokens} <- Cure.Compiler.Lexer.tokenize(source, file: file, emit_events: false),

@@ -95,13 +95,33 @@ Options:
 - `--output-dir DIR` -- output directory (default: `_build/cure/doc`)
 - `--title TITLE` -- project title for the index page
 
-**`cure fmt [path|dir]`** -- Format `.cure` source files in place. Parses
-each file and reprints it using `Cure.Compiler.Printer`.
+**`cure fmt [path|dir]`** -- Format `.cure` source files in place.
+
+By default, runs the **safe, source-preserving formatter**
+(`Cure.Compiler.Formatter`). It normalises line endings, strips
+trailing whitespace, expands leading tabs into two spaces, collapses
+runs of blank lines to a single blank line, canonicalises operator
+spacing, and ensures a single trailing newline. Plain `#` comments,
+string and regex literals, and doc comments are preserved
+byte-for-byte. Every rewrite is round-trip-validated against the
+original AST; if anything would change the parse result, the file is
+left untouched.
 
 ```bash
 cure fmt                         # formats all .cure files in lib/ and test/
 cure fmt lib/std/core.cure       # format a specific file
+cure fmt --check                 # CI mode: exits 1 if any file would change
+cure fmt --aggressive            # opt-in AST rewrite; strips comments
 ```
+
+Options:
+
+- `--check` -- report files that would be reformatted and exit
+  non-zero; leaves files on disk untouched.
+- `--aggressive` / `--ast` -- use the AST pretty printer
+  (`Cure.Compiler.Printer`) instead of the safe formatter. Strips
+  plain `#` comments and any non-canonical whitespace. Prints a
+  warning before touching files.
 
 **`cure repl`** -- Start a minimal interactive Cure session. Each expression
 is compiled via `compile_and_load` and its result printed.

@@ -28,6 +28,15 @@ Comprehensive syntax highlighting, indentation, and filetype detection for the [
 - Proper handling of nested structures
 - Bracket-aware indentation
 
+**Editor Defaults (ftplugin)**
+- 2-space indentation with `expandtab`
+- `commentstring = "# %s"` so `gcc` / `Comment.nvim` / `vim-commentary` work
+- Trimmed `formatoptions`: no paragraph auto-reflow, no auto-wrap, no
+  forced comment leader after `o` / `O`
+- Ships `b:autoformat = 0` and `b:disable_autoformat = 1` so LunarVim,
+  `conform.nvim`, and `none-ls`/`null-ls` skip Cure buffers on save
+  (the LSP formatter was lossy; see [Formatting](#formatting))
+
 **Easy Installation**
 - Works with all major plugin managers
 - Manual installation supported
@@ -76,16 +85,18 @@ Plug '/opt/Proyectos/Oeditus/cure/vicure'
 
 ```bash
 # For Neovim
-mkdir -p ~/.config/nvim/{syntax,ftdetect,indent}
-cp vicure/syntax/cure.vim ~/.config/nvim/syntax/
+mkdir -p ~/.config/nvim/{syntax,ftdetect,ftplugin,indent}
+cp vicure/syntax/cure.vim   ~/.config/nvim/syntax/
 cp vicure/ftdetect/cure.vim ~/.config/nvim/ftdetect/
-cp vicure/indent/cure.vim ~/.config/nvim/indent/
+cp vicure/ftplugin/cure.vim ~/.config/nvim/ftplugin/
+cp vicure/indent/cure.vim   ~/.config/nvim/indent/
 
 # For Vim
-mkdir -p ~/.vim/{syntax,ftdetect,indent}
-cp vicure/syntax/cure.vim ~/.vim/syntax/
+mkdir -p ~/.vim/{syntax,ftdetect,ftplugin,indent}
+cp vicure/syntax/cure.vim   ~/.vim/syntax/
 cp vicure/ftdetect/cure.vim ~/.vim/ftdetect/
-cp vicure/indent/cure.vim ~/.vim/indent/
+cp vicure/ftplugin/cure.vim ~/.vim/ftplugin/
+cp vicure/indent/cure.vim   ~/.vim/indent/
 ```
 
 ### Usage
@@ -206,6 +217,42 @@ This 156-line file demonstrates all supported features:
 - String interpolation
 - Erlang interop
 
+## Formatting
+
+The Cure LSP advertises `textDocument/formatting`, routed through
+`Cure.Compiler.Formatter` -- a **safe, source-preserving formatter**
+that only performs rewrites whose effect on the AST is a provable
+no-op. Plain `#` comments, string/regex/char literals, and doc
+comments are preserved byte-for-byte; every rewrite is
+round-trip-validated against the original parse tree before the LSP
+emits an edit. Format-on-save is safe by default.
+
+What the formatter does:
+
+- Normalises `\r\n` line endings to `\n`.
+- Strips trailing horizontal whitespace from code lines.
+- Expands leading tabs (a Cure lexer error) to two spaces.
+- Collapses runs of two or more consecutive blank lines to one.
+- Adds spaces around a fixed set of binary operators
+  (`==`, `!=`, `<=`, `>=`, `|>`, `->`, `=>`, `<>`, `+=`, `-=`, `*=`,
+  `/=`, `=`, `+`, `-`, `*`, `/`, `%`), with heuristics that leave
+  unary `-`/`*`, variadic `*args`/`**kwargs`, and exponent signs
+  alone.
+- Ensures exactly one trailing newline.
+
+If you prefer the old behaviour (no format-on-save at all), opt out
+per-buffer:
+
+```vim
+" In ~/.config/nvim/after/ftplugin/cure.vim
+let b:autoformat = 0
+let b:disable_autoformat = 1
+```
+
+The destructive AST pretty printer is still reachable on the CLI via
+`cure fmt --aggressive`, which strips plain `#` comments and any
+non-canonical whitespace in exchange for a fully canonical buffer.
+
 ## Configuration
 
 ### Custom Colors
@@ -260,6 +307,34 @@ Ensure filetype plugins are enabled:
 
 ```lua
 vim.cmd('filetype plugin indent on')
+```
+
+### Save is reformatting / stripping comments
+
+The default formatter (`Cure.Compiler.Formatter`, used by the LSP
+and by `cure fmt`) is source-preserving: it does not touch comments
+or non-code layout. If you are seeing comments disappear, another
+tool is almost certainly running `cure fmt --aggressive` or a fork
+of the old AST-based printer on save. Verify with:
+
+```vim
+:echo &filetype
+:lua =vim.b.autoformat
+:lua =vim.b.disable_autoformat
+:lua =vim.lsp.get_active_clients({ bufnr = 0 })
+```
+
+If `filetype` is not `cure`, `vim.filetype.add({ extension = { cure = 'cure' } })`
+is missing from your config. If a non-Cure LSP is attached, make sure
+its `root_dir`/`filetypes` do not claim `.cure` files.
+
+As a one-shot kill switch for the current buffer:
+
+```vim
+:lua vim.b.autoformat = false
+:lua vim.b.disable_autoformat = true
+" with conform.nvim:
+:FormatDisable
 ```
 
 ### Wrong colors

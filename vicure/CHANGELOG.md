@@ -1,5 +1,50 @@
 # Vicure Changelog
 
+## [Unreleased] - Format-on-save re-enabled
+### Changed
+
+- The Cure LSP now advertises `textDocument/formatting` again, backed
+  by `Cure.Compiler.Formatter`, a source-preserving formatter that
+  round-trip-validates its output against the original AST. Plain
+  `#` comments, string/regex literals, and doc comments survive a
+  save.
+- `ftplugin/cure.vim` no longer force-disables format-on-save. The
+  `b:autoformat = 0` / `b:disable_autoformat = 1` kill switches are
+  removed from the default buffer setup; if you still want to opt
+  out, set them yourself in
+  `~/.config/nvim/after/ftplugin/cure.vim`.
+- `README.md` and `NEOVIM_PLUGIN.md` updated to describe the safe
+  formatter and the `cure fmt --aggressive` opt-in for the AST
+  rewrite.
+## [2026-04-17] - Format-on-save protection
+
+### Added
+
+- **ftplugin/cure.vim**: per-buffer editor defaults (2-space indent,
+  `commentstring = "# %s"`, trimmed `formatoptions`) plus format-on-save
+  kill switches (`b:autoformat = 0`, `b:disable_autoformat = 1`) that
+  LunarVim, `conform.nvim`, and `none-ls`/`null-ls` all honour.
+- `README.md`: new `Formatting` section and a reformat-on-save entry in
+  `Troubleshooting` explaining why `.cure` buffers are skipped and how
+  to opt back in if you have a layout-preserving printer.
+- `NEOVIM_PLUGIN.md`: mirrors the new formatting policy and extends the
+  `Troubleshooting` section with diagnostics for `:w eats my comments`.
+
+### Changed
+
+- Manual installation snippets now copy `ftplugin/cure.vim` alongside
+  the syntax, ftdetect, and indent files.
+
+### Rationale
+
+The Cure LSP used to advertise `textDocument/formatting`, routed
+through `Cure.Compiler.Printer`. That printer is AST-only, so every
+format-on-save call dropped all comments and any non-canonical
+whitespace. The LSP capability has been withdrawn and the editor
+plugin now explicitly opts out of format-on-save, so editing `.cure`
+buffers under LunarVim (or any LSP-aware Neovim setup) is safe by
+default.
+
 ## [2025-01-05] - Modern Cure Support
 
 ### Added
