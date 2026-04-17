@@ -805,7 +805,10 @@ defmodule Cure.Types.Checker do
 
     case elems do
       [] ->
-        {:ok, {:list, :any}, env}
+        # The empty list is polymorphic: typing it as `{:list, :never}`
+        # makes it a subtype of every `{:list, T}`, so match arms like
+        # `[] -> []` compose cleanly with cons arms of a concrete type.
+        {:ok, {:list, :never}, env}
 
       _ when is_cons ->
         [head, tail] = elems

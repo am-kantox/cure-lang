@@ -39,6 +39,25 @@ defmodule Cure.Compiler.ErrorsTest do
       assert result =~ "type mismatch"
       assert result =~ "unbound variable"
     end
+
+    test "raw list of errors is rendered directly (regression: used to hit inspect/1)" do
+      # `Cure.Types.Checker.check_module/2` returns `{:error, errors}` with
+      # `errors` being a bare list. The formatter must render each entry as
+      # a proper diagnostic instead of dropping into the catch-all that just
+      # inspects the list.
+      errs = [
+        {:type_mismatch, "bad return type", line: 1},
+        {:unbound_variable, "undefined 'y'", line: 2}
+      ]
+
+      result = Errors.format_error(errs, "multi.cure")
+      refute result =~ "compilation error"
+      refute result =~ "error: error:"
+      assert result =~ "error: type mismatch"
+      assert result =~ "error: unbound variable"
+      assert result =~ "multi.cure:1"
+      assert result =~ "multi.cure:2"
+    end
   end
 
   describe "parse errors" do

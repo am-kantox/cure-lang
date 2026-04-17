@@ -156,7 +156,10 @@ defmodule Cure.Compiler.IntegrationTest do
         fn apply_fn(x: Int) -> Int = let f = fn(n) -> n * 2
       """
 
-      {:ok, module} = Cure.Compiler.compile_and_load(source)
+      # The declared return type is `Int` but the body is a lambda; this
+      # test exercises codegen behaviour, not the type checker, so opt
+      # out of the (now default-on) checker.
+      {:ok, module} = Cure.Compiler.compile_and_load(source, check_types: false)
       # Returns the lambda itself as match result
       result = module.apply_fn(5)
       assert is_function(result, 1)

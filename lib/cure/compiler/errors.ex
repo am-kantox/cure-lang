@@ -22,8 +22,15 @@ defmodule Cure.Compiler.Errors do
 
   # -- Type Errors -------------------------------------------------------------
 
+  def format_error(errors, file) when is_list(errors) do
+    # A bare list reaches this clause from `Cure.Types.Checker.check_module/2`,
+    # which returns `{:error, errors}` directly; joining with a blank line
+    # keeps multi-error output readable.
+    Enum.map_join(errors, "\n\n", &format_error(&1, file))
+  end
+
   def format_error({:type_error, errors}, file) when is_list(errors) do
-    Enum.map_join(errors, "\n", &format_error(&1, file))
+    format_error(errors, file)
   end
 
   def format_error({:type_mismatch, message, meta}, file) do
@@ -44,7 +51,7 @@ defmodule Cure.Compiler.Errors do
   # -- Parse Errors ------------------------------------------------------------
 
   def format_error({:parse_error, errors}, file) when is_list(errors) do
-    Enum.map_join(errors, "\n", &format_error(&1, file))
+    format_error(errors, file)
   end
 
   def format_error({:unexpected_token, token_type, line, col}, file) do

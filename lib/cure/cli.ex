@@ -121,14 +121,19 @@ defmodule Cure.CLI do
       {:error, reason} ->
         source = File.read(path) |> elem(1)
         formatted = Cure.Compiler.Errors.format_with_source(reason, path, source || "")
-        error(formatted)
+        # `formatted` already carries the `error: <category>` diagnostic;
+        # go straight to stderr so `error/1`'s own `error: ` prefix does
+        # not double-wrap the output.
+        diagnostic(formatted)
+        exit({:shutdown, 1})
     end
   end
 
   # -- run ---------------------------------------------------------------------
 
   defp cmd_run(path, opts) do
-    check? = Keyword.get(opts, :type_check, false)
+    # Type checking runs by default; use `--no-type-check` to opt out.
+    check? = Keyword.get(opts, :type_check, true)
     optimize? = Keyword.get(opts, :optimize, false)
 
     preload_stdlib()
@@ -155,7 +160,7 @@ defmodule Cure.CLI do
 
       {:error, reason} ->
         formatted = Cure.Compiler.Errors.format_error(reason, path)
-        error(formatted)
+        diagnostic(formatted)
         exit({:shutdown, 1})
     end
   end
@@ -185,8 +190,12 @@ defmodule Cure.CLI do
       info("#{path}: OK")
     else
       {:error, reason} ->
+        # `Checker.check_module/2` returns a bare list of diagnostics;
+        # every other pipeline stage returns a tagged tuple. Funnel both
+        # through `format_error/2` (which now accepts raw lists) and
+        # print the already-formatted string directly to stderr.
         formatted = Cure.Compiler.Errors.format_error(reason, path)
-        error(formatted)
+        diagnostic(formatted)
         exit({:shutdown, 1})
     end
   end
@@ -643,7 +652,8 @@ defmodule Cure.CLI do
 
     Options:
       -o, --output-dir DIR   Output directory (default: _build/cure/ebin)
-      --no-type-check        Skip type checking
+      --no-type-check        Skip the type checker (compile/run only; check
+                             always type-checks). Type checking is ON by default.
       --optimize             Enable optimization passes
       --action ACTION        Watch action: compile (default) | check | test
       --poll-ms N            Watch poll interval (default 500)
@@ -661,4 +671,9 @@ defmodule Cure.CLI do
   defp info(msg), do: IO.puts(msg)
   defp warn(msg), do: IO.puts(:stderr, "warning: #{msg}")
   defp error(msg), do: IO.puts(:stderr, "error: #{msg}")
+
+  # Print a pre-formatted multi-line diagnostic (e.g. from
+  # `Cure.Compiler.Errors`) verbatim. The string already contains its own
+  # `error: <category>` header, so avoid the extra prefix from `error/1`.
+  defp diagnostic(msg), do: IO.puts(:stderr, msg)
 end

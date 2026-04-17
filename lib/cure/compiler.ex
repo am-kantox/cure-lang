@@ -6,7 +6,8 @@ defmodule Cure.Compiler do
 
       source -> Lexer -> Parser -> [Checker] -> Codegen -> BeamWriter -> .beam
 
-  The type checker is optional and can be disabled with `check_types: false`.
+  The type checker runs before codegen by default; set `check_types: false`
+  (or pass `--no-type-check` to the CLI) to opt out.
 
   Emits pipeline events at each stage boundary.
 
@@ -36,7 +37,8 @@ defmodule Cure.Compiler do
 
   - `:output_dir` -- directory for `.beam` output (default: `"_build/cure/ebin"`)
   - `:emit_events` -- whether to emit pipeline events (default: `true`)
-  - `:check_types` -- whether to run the type checker (default: `false`)
+  - `:check_types` -- whether to run the type checker (default: `true`).
+    Set to `false` to skip type checking.
   """
   @spec compile_file(String.t(), keyword()) ::
           {:ok, module(), list()} | {:error, term()}
@@ -66,7 +68,7 @@ defmodule Cure.Compiler do
     file = Keyword.get(opts, :file, "nofile")
     output_dir = Keyword.get(opts, :output_dir, "_build/cure/ebin")
     emit? = Keyword.get(opts, :emit_events, true)
-    check? = Keyword.get(opts, :check_types, false)
+    check? = Keyword.get(opts, :check_types, true)
 
     optimize? = Keyword.get(opts, :optimize, false)
 
@@ -101,7 +103,7 @@ defmodule Cure.Compiler do
   def compile_and_load(source, opts \\ []) do
     file = Keyword.get(opts, :file, "nofile")
     emit? = Keyword.get(opts, :emit_events, false)
-    check? = Keyword.get(opts, :check_types, false)
+    check? = Keyword.get(opts, :check_types, true)
 
     optimize? = Keyword.get(opts, :optimize, false)
 

@@ -213,8 +213,11 @@ defmodule Cure.Types.CheckerTest do
 
   describe "collections" do
     test "empty list" do
+      # Typed as `{:list, :never}` so the literal is a subtype of every
+      # concrete list type. This is what lets match arms like `[] -> []`
+      # coexist with cons arms of a specific element type.
       ast = {:list, [line: 1], []}
-      assert {:ok, {:list, :any}} = Checker.infer_expr(ast)
+      assert {:ok, {:list, :never}} = Checker.infer_expr(ast)
     end
 
     test "homogeneous list" do
@@ -397,10 +400,57 @@ defmodule Cure.Types.CheckerTest do
       assert :any = Type.resolve(nil)
     end
 
+    test "single-letter uppercase names resolve to type variables" do
+      assert {:type_var, "T"} = Type.resolve({:variable, [], "T"})
+      assert {:type_var, "U"} = Type.resolve({:variable, [], "U"})
+    end
+
+    test "multi-char PascalCase names remain nominal" do
+      assert {:named, "Row"} = Type.resolve({:variable, [], "Row"})
+      assert {:named, "Knot"} = Type.resolve({:variable, [], "Knot"})
+    end
+
+    test "`Tuple` resolves to the generic tuple ADT" do
+      assert {:adt, :tuple, []} = Type.resolve({:variable, [], "Tuple"})
+    end
+
+    test "type variables are universally compatible under subtype?" do
+      tv = {:type_var, "T"}
+      assert Type.subtype?(tv, :int)
+      assert Type.subtype?(:int, tv)
+      assert Type.subtype?({:list, tv}, {:list, {:named, "ReducedRow"}})
+      assert Type.subtype?({:list, {:named, "ReducedRow"}}, {:list, tv})
+    end
+
+    test "concrete tuple is a subtype of Tuple ADT" do
+      assert Type.subtype?({:tuple, [:float, :float]}, {:adt, :tuple, []})
+      assert Type.subtype?({:list, {:tuple, [:float, :float]}}, {:list, {:adt, :tuple, []}})
+    end
+
+    test "structural joins widen component types" do
+      assert {:list, {:named, "Row"}} =
+               Type.join({:list, :never}, {:list, {:named, "Row"}})
+
+      assert {:list, :float} = Type.join({:list, :int}, {:list, :float})
+
+      assert {:tuple, [:float, :float]} =
+               Type.join({:tuple, [:float, :int]}, {:tuple, [:int, :float]})
+
+      assert {:adt, :tuple, []} =
+               Type.join({:tuple, [:float, :float]}, {:adt, :tuple, []})
+    end
+
+    test ":any is a top and bottom type" do
+      assert Type.subtype?(:any, :int)
+      assert Type.subtype?(:int, :any)
+    end
+
     test "display" do
       assert "Int" = Type.display(:int)
       assert "List(Int)" = Type.display({:list, :int})
       assert "(Int) -> Bool" = Type.display({:fun, [:int], :bool})
+      assert "T" = Type.display({:type_var, "T"})
+      assert "Tuple" = Type.display({:adt, :tuple, []})
     end
   end
 

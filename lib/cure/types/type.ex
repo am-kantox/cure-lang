@@ -62,6 +62,9 @@ defmodule Cure.Types.Type do
   @doc "Returns true if `t` is a numeric type (`:int` or `:float`)."
   def numeric?(:int), do: true
   def numeric?(:float), do: true
+  # Path-sensitive refinements narrow a base type; for arithmetic we only
+  # care whether the underlying base is numeric.
+  def numeric?({:refinement, base, _, _}), do: numeric?(base)
   def numeric?(_), do: false
 
   @doc "Returns the valid effect kind atoms."
@@ -95,8 +98,16 @@ defmodule Cure.Types.Type do
   """
   def subtype?(:never, _), do: true
   def subtype?(_, :any), do: true
+  # `:any` behaves as both top and bottom in Cure's gradual type system:
+  # this mirrors the permissive `a == :any or p == :any` clause that the
+  # checker already uses in `params_match?/2`.
+  def subtype?(:any, _), do: true
   def subtype?(_, {:type_hole, _}), do: true
   def subtype?({:type_hole, _}, _), do: true
+  # Type variables are polymorphic placeholders: treat them as universally
+  # compatible until proper unification is wired into `check_fn_call`.
+  def subtype?({:type_var, _}, _), do: true
+  def subtype?(_, {:type_var, _}), do: true
   def subtype?(t, t), do: true
   def subtype?(:int, :float), do: true
   def subtype?({:list, a}, {:list, b}), do: subtype?(a, b)
@@ -146,6 +157,14 @@ defmodule Cure.Types.Type do
   def subtype?({:named, name}, {:record, key, _fields}),
     do: String.downcase(name) == Atom.to_string(key)
 
+  def subtype?({:named, a}, {:named, b}), do: a == b
+
+  # `Tuple` as a user-written type name resolves to `{:adt, :tuple, []}` and
+  # is treated as "any tuple". Concrete tuples are subtypes of it and vice
+  # versa, so `List(Tuple)` unifies with e.g. `List(%[Float, Float])`.
+  def subtype?({:tuple, _}, {:adt, :tuple, _}), do: true
+  def subtype?({:adt, :tuple, _}, {:tuple, _}), do: true
+
   # Sigma subtyping (delegates to the Sigma module)
   def subtype?({:sigma, _, _, _} = a, b), do: Cure.Types.Sigma.subtype?(a, b)
   def subtype?(a, {:sigma, _, _, _} = b), do: Cure.Types.Sigma.subtype?(a, b)
@@ -165,6 +184,15 @@ defmodule Cure.Types.Type do
   def subtype?(_, _), do: false
 
   @doc "Returns true if `a` and `b` are compatible (either is subtype of the other, or either is `:any`)."
+  # Refinements only hold in the scope that introduced them. At use sites
+  # that only care about whether two values can be combined (arithmetic,
+  # comparisons, `if` branch joins, ...), the compatibility of the base
+  # type is what matters.
+  def compatible?({:refinement, a, _, _}, {:refinement, b, _, _}),
+    do: compatible?(a, b)
+
+  def compatible?({:refinement, base, _, _}, t), do: compatible?(base, t)
+  def compatible?(t, {:refinement, base, _, _}), do: compatible?(t, base)
   def compatible?(a, b), do: subtype?(a, b) or subtype?(b, a)
 
   # -- Join (least upper bound) ------------------------------------------------
@@ -177,6 +205,37 @@ defmodule Cure.Types.Type do
   def join(_, :any), do: :any
   def join(:int, :float), do: :float
   def join(:float, :int), do: :float
+
+  # Structural joins: widen component types rather than collapsing to `:any`.
+  def join({:list, a}, {:list, b}), do: {:list, join(a, b)}
+
+  def join({:tuple, as}, {:tuple, bs}) when length(as) == length(bs) do
+    {:tuple, Enum.zip(as, bs) |> Enum.map(fn {a, b} -> join(a, b) end)}
+  end
+
+  def join({:map, ka, va}, {:map, kb, vb}),
+    do: {:map, join(ka, kb), join(va, vb)}
+
+  # `Tuple` ADT is the top of the tuple lattice.
+  def join({:tuple, _}, {:adt, :tuple, _} = top), do: top
+  def join({:adt, :tuple, _} = top, {:tuple, _}), do: top
+
+  # Type variables collapse to whichever concrete type is on the other side.
+  def join({:type_var, _}, t), do: t
+  def join(t, {:type_var, _}), do: t
+
+  def join({:named, n}, {:named, n}), do: {:named, n}
+
+  def join({:adt, n, ps1}, {:adt, n, ps2}) when length(ps1) == length(ps2) do
+    {:adt, n, Enum.zip(ps1, ps2) |> Enum.map(fn {a, b} -> join(a, b) end)}
+  end
+
+  # Two branches that produce the same refined base collapse to the base:
+  # the refinement is only sound inside the branch that introduced it.
+  def join({:refinement, a, _, _}, {:refinement, b, _, _}), do: join(a, b)
+  def join({:refinement, base, _, _}, t), do: join(base, t)
+  def join(t, {:refinement, base, _, _}), do: join(t, base)
+
   def join(_, _), do: :any
 
   # -- Type-Expression AST Resolution ------------------------------------------
@@ -291,6 +350,12 @@ defmodule Cure.Types.Type do
   defp resolve_name("Pid"), do: :atom
   defp resolve_name("Ref"), do: :atom
   defp resolve_name("Nat"), do: :int
+  defp resolve_name("Tuple"), do: {:adt, :tuple, []}
+  # Single-letter uppercase names (T, U, V, E, K, ...) are treated as implicit
+  # type parameters. Without explicit `<T>` syntax this is the convention
+  # used by the Cure stdlib and user code; resolving them as `{:type_var, T}`
+  # lets `subtype?/2` accept any concrete type at the call site.
+  defp resolve_name(<<c>>) when c in ?A..?Z, do: {:type_var, <<c>>}
   # Unknown uppercase name -> named type reference (user-defined record, ADT, etc.)
   defp resolve_name(name = <<c, _::binary>>) when c in ?A..?Z, do: {:named, name}
   defp resolve_name(_), do: :any
@@ -324,6 +389,7 @@ defmodule Cure.Types.Type do
     end
   end
 
+  def display({:adt, :tuple, []}), do: "Tuple"
   def display({:adt, name, []}), do: Atom.to_string(name) |> String.capitalize()
 
   def display({:adt, name, ps}),
@@ -331,6 +397,7 @@ defmodule Cure.Types.Type do
 
   def display({:record, name, _}), do: Atom.to_string(name) |> String.capitalize()
   def display({:named, name}), do: name
+  def display({:type_var, id}) when is_binary(id), do: id
   def display({:type_var, id}), do: "t#{id}"
   def display({:type_hole, _}), do: "_"
   def display({:refinement, base, var, _pred}), do: "{#{var}: #{display(base)} | ...}"
